@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?> 
- 
+<addons> 
 <addon id="plugin.program.browser.launcher" name="Browser Launcher" version="1.1.1" provider-name="AddonScriptorDE + Sandmann79"> 
     <requires> 
         <import addon="xbmc.python" version="2.1.0"/> 
@@ -18,7 +18,6 @@
         <website></website> 
     </extension> 
 </addon> 
- 
 <addon id="plugin.video.amazon" 
        name="Amazon" 
        version="1.0.0" 
@@ -42,7 +41,6 @@
     <disclaimer>Some parts of this addon may not be legal in your country of residence - please check with your local laws before installing.</disclaimer> 
   </extension> 
 </addon> 
- 
 <addon id="script.module.amazon.database" 
        name="Amazon Database" 
        version="0.0.2" 
@@ -56,7 +54,6 @@
     <platform>all</platform> 
   </extension> 
 </addon> 
- 
 <addon id="script.module.beautifulsoup" 
        name="BeautifulSoup" 
        version="3.2.1" 
@@ -74,7 +71,6 @@
     <platform>all</platform> 
   </extension> 
 </addon> 
- 
 <addon id="script.module.demjson" 
        name="demjson" 
        version="1.5" 
@@ -88,7 +84,6 @@
     <platform>all</platform> 
   </extension> 
 </addon> 
- 
 <addon id="script.module.mechanize" 
 	name="Mechanize" 
 	version="0.2.6" 
@@ -110,4 +105,4 @@
 		<source>https://github.com/jjlee/mechanize</source> 
 	</extension> 
 </addon> 
- 
+</addons> 

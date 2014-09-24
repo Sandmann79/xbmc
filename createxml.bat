@@ -9,6 +9,5 @@ for /f %%f in ('dir /b /a:d') do (
     )
     echo. >> %~dp0addon.xml
 )
-"C:\Program Files\7-Zip\7z.exe" a "%~dp0amazon_piv_sandmann79.zip" "%~dp0*" -tzip -mx4 
-"C:\Program Files\7-Zip\7z.exe" d "%~dp0amazon_piv_sandmann79.zip" createxml.bat
+for /f "delims= " %%a in ('D:\Tools\fciv -md5 %~dp0addon.xml') do echo %%a > %~dp0addon.xml.md5
 pause

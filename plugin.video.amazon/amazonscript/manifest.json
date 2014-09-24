@@ -1,0 +1,16 @@
+{
+   "manifest_version": 2,
+   "content_scripts": [ {
+      "exclude_globs": [  ],
+      "exclude_matches": [  ],
+      "include_globs": [ "http://www.amazon.com/gp/video/streaming/mini-mode.html*" ],
+      "js": [ "script.js" ],
+      "matches": [ "http://*/*", "https://*/*" ],
+      "run_at": "document_idle"
+   } ],
+   "converted_from_user_script": true,
+   "description": "This will remove the white bars alongside amazon prime videos. (Used by XBMC)",
+   "key": "VJlHaGdzGiBv1jkoOHxiVZbrmDrpTCMwQfu7xOXrqz0=",
+   "name": "Amazon Instant Video Fullscreen Script",
+   "version": "1.0"
+}

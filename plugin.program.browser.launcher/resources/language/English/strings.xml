@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<strings>
+  <string id="30001">Add Website</string>
+  <string id="30002">Remove Website</string>
+  <string id="30003">Title</string>
+  <string id="30004">URL</string>
+  <string id="30005">Browser not found</string>
+  <string id="30006">Edit Website Settings</string>
+  <string id="30007">Thumbnail</string>
+  <string id="30009">Stop XBMC playback?</string>
+  <string id="30010">Use custom Browser/script path</string>
+  <string id="30011">Browser/script path</string>
+  <string id="30012">Use own user profile (Chrome, Firefox, Opera)</string>
+  <string id="30013">Webbrowser</string>
+  <string id="30016">Use kiosk mode?</string>
+  <string id="30017">Custom Browser</string>
+</strings>

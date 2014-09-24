@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?> 
+<addon id="plugin.program.browser.launcher" name="Browser Launcher" version="1.1.1" provider-name="AddonScriptorDE + Sandmann79"> 
+    <requires> 
+        <import addon="xbmc.python" version="2.1.0"/> 
+    </requires> 
+    <extension point="xbmc.python.pluginsource" library="default.py"> 
+        <provides>executable</provides> 
+    </extension> 
+    <extension point="xbmc.addon.metadata"> 
+        <platform>all</platform> 
+        <summary lang="en">Browser Launcher</summary> 
+        <language></language> 
+        <description lang="en">Launch websites via selected Browser in Kiosk-mode</description> 
+        <description lang="de">Öffnet Websiten mit dem ausgewählten Browser im Vollbildmodus</description> 
+        <license>GNU GENERAL PUBLIC LICENSE. Version 2, June 1991</license> 
+        <email>AddonScriptorDE at yahoo dot de</email> 
+        <website></website> 
+    </extension> 
+</addon> 
+ 
+<addon id="plugin.video.amazon" 
+       name="Amazon" 
+       version="1.0.0" 
+       provider-name="Sandmann79 + BlueCop + Romans I XVI"> 
+  <requires> 
+    <import addon="xbmc.python" version="2.1.0"/> 
+    <import addon="script.module.beautifulsoup" version="3.2.1"/> 
+    <import addon="script.module.demjson" version="1.5"/> 
+    <import addon="script.module.mechanize" version="0.2.6"/> 
+    <import addon="script.module.amazon.database" version="0.0.2"/> 
+    <import addon="plugin.program.browser.launcher" version="1.1.1"/> 
+  </requires> 
+  <extension point="xbmc.python.pluginsource" 
+             library="default.py"> 
+	<provides>video</provides> 
+  </extension> 
+  <extension point="xbmc.addon.metadata"> 
+    <platform>all</platform> 
+    <summary>Amazon Prime Video Streaming</summary> 
+    <description>Movies and Television Shows for Prime Members[CR][CR]In order to use this addon you must have Chrome Launcher installed.</description> 
+    <disclaimer>Some parts of this addon may not be legal in your country of residence - please check with your local laws before installing.</disclaimer> 
+  </extension> 
+</addon> 
+ 
+<addon id="script.module.amazon.database" 
+       name="Amazon Database" 
+       version="0.0.2" 
+       provider-name="BlueCop"> 
+  <requires> 
+    <import addon="xbmc.python" version="2.1.0"/> 
+  </requires> 
+  <extension point="xbmc.python.module" 
+             library="lib" /> 
+  <extension point="xbmc.addon.metadata"> 
+    <platform>all</platform> 
+  </extension> 
+</addon> 
+ 
+<addon id="script.module.beautifulsoup" 
+       name="BeautifulSoup" 
+       version="3.2.1" 
+       provider-name="Leonard Richardson (leonardr@segfault.org)"> 
+  <requires> 
+    <import addon="xbmc.python"  
+    		version="2.1.0"/> 
+  </requires> 
+  <extension point="xbmc.python.module" 
+             library="lib" /> 
+  <extension point="xbmc.addon.metadata"> 
+    <summary>HTML/XML parser for quick-turnaround applications like screen-scraping</summary> 
+    <description>Beautiful Soup parses arbitrarily invalid SGML and provides a variety of methods and Pythonic idioms for iterating and searching the parse tree.</description> 
+    <license>BSD</license> 
+    <platform>all</platform> 
+  </extension> 
+</addon> 
+ 
+<addon id="script.module.demjson" 
+       name="demjson" 
+       version="1.5" 
+       provider-name="deron.meranda.us"> 
+  <requires> 
+    <import addon="xbmc.python" version="2.1.0"/> 
+  </requires> 
+  <extension point="xbmc.python.module" 
+             library="lib" /> 
+  <extension point="xbmc.addon.metadata"> 
+    <platform>all</platform> 
+  </extension> 
+</addon> 
+ 
+<addon id="script.module.mechanize" 
+	name="Mechanize" 
+	version="0.2.6" 
+	provider-name="Tristan Fischer (sphere)"> 
+	<requires> 
+	<import addon="xbmc.python"  
+			version="2.1.0"/> 
+	</requires> 
+	<extension point="xbmc.python.module" 
+			 library="lib" /> 
+	<extension point="xbmc.addon.metadata"> 
+		<summary lang="en">Stateful programmatic web browsing in Python, after Andy Lester’s Perl module WWW::Mechanize.</summary> 
+		<description lang="en">packed for xbmc from https://github.com/jjlee/mechanize</description> 
+		<disclaimer lang="en">packed for xbmc from https://github.com/jjlee/mechanize</disclaimer> 
+		<forum></forum> 
+		<website>http://wwwsearch.sourceforge.net/mechanize/</website> 
+		<license>BSD</license> 
+		<platform>all</platform> 
+		<source>https://github.com/jjlee/mechanize</source> 
+	</extension> 
+</addon> 
+ 

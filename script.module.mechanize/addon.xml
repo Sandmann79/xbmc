@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<addon id="script.module.mechanize"
+	name="Mechanize"
+	version="0.2.6"
+	provider-name="Tristan Fischer (sphere)">
+	<requires>
+	<import addon="xbmc.python" 
+			version="2.1.0"/>
+	</requires>
+	<extension point="xbmc.python.module"
+			 library="lib" />
+	<extension point="xbmc.addon.metadata">
+		<summary lang="en">Stateful programmatic web browsing in Python, after Andy Lester’s Perl module WWW::Mechanize.</summary>
+		<description lang="en">packed for xbmc from https://github.com/jjlee/mechanize</description>
+		<disclaimer lang="en">packed for xbmc from https://github.com/jjlee/mechanize</disclaimer>
+		<forum></forum>
+		<website>http://wwwsearch.sourceforge.net/mechanize/</website>
+		<license>BSD</license>
+		<platform>all</platform>
+		<source>https://github.com/jjlee/mechanize</source>
+	</extension>
+</addon>

@@ -1,0 +1,6 @@
+<settings>
+    <setting id="winBrowser" type="enum" label="30013" values="Internet Explorer|Kylo|Chrome|Firefox|Opera" default="0"/>
+    <setting id="useCustomPath" type="bool" label="30010" default="false"/>
+    <setting id="customPath" type="file" label="30011" enable="eq(-1,true)" default="special://home/addons/plugin.program.browser.launcher/script.sh"/>
+    <setting id="useOwnProfile" type="bool" label="30012" enable="gt(-3,1)" default="false"/>
+</settings>

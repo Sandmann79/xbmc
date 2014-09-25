@@ -25,7 +25,7 @@
   <requires> 
     <import addon="xbmc.python" version="2.1.0"/> 
     <import addon="script.module.beautifulsoup" version="3.2.1"/> 
-    <import addon="script.module.demjson" version="1.5"/> 
+    <import addon="script.module.demjson" version="2.2.2"/> 
     <import addon="script.module.mechanize" version="0.2.6"/> 
     <import addon="script.module.amazon.database" version="0.0.2"/> 
     <import addon="plugin.program.browser.launcher" version="1.1.1"/> 
@@ -73,7 +73,7 @@
 </addon> 
 <addon id="script.module.demjson" 
        name="demjson" 
-       version="1.5" 
+       version="2.2.2" 
        provider-name="deron.meranda.us"> 
   <requires> 
     <import addon="xbmc.python" version="2.1.0"/> 

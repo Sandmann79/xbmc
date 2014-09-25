@@ -51,5 +51,56 @@
 	<string id="30041">Untertitel aktivieren</string>
 
     <string id="30042">Browser Kiosk Modus</string>
-	<string id="30043">In HD abspielen, sofern verfügbar</string>
+	<string id="30043">Wiedergabe in HD, sofern verfügbar</string>
+    
+  	<string id="30100">Empfohlene Filme</string>
+  	<string id="30101">Empfohlene Serien</string>
+  	<string id="30102">Filmfavoriten zur Bibliothek exportieren</string>
+  	<string id="30103">Filmdatenbank aktualisieren</string>
+  	<string id="30104">Filme</string>
+  	<string id="30105">Serienfavoriten zur Bibliothek exportieren</string>
+  	<string id="30106">Seriendatenbank aktualisieren</string>
+  	<string id="30107">Serien</string>
+  	<string id="30108">Suchen</string>
+    
+  	<string id="30120">Erstelle Filmdatenbank</string>
+  	<string id="30121">Starte Filmsuche</string>
+  	<string id="30122">Durchsuche Seite %s</string>
+  	<string id="30123">%s Filme durchsucht</string>
+   
+  	<string id="30130">Erstelle Seriendatenbank</string>
+  	<string id="30131">Starte Seriensuche</string>
+  	<string id="30132">%s Serien</string>
+  	<string id="30133">%s Staffeln</string>
+  	<string id="30134">%s Episoden</string>
+  	<string id="30135">%s Staffeln durchsucht</string>
+    
+  	<string id="30140">Favoriten zur Bibliothek exportieren</string>
+  	<string id="30141">Favoriten</string>
+  	<string id="30142">Alles zur Bibliothek exportieren</string>
+  	<string id="30143">Alle Filme</string>
+  	<string id="30144">Genres</string>
+  	<string id="30145">Jahre</string>
+  	<string id="30146">Studios</string>
+  	<string id="30147">Alterseinstufung</string>
+  	<string id="30148">Regisseure</string>
+  	<string id="30149">Gesehene zur Bibliothek exportieren</string>
+  	<string id="30150">Gesehene Filme</string>
+    <string id="30151">Zur Bibliothek exportieren</string>
+    <string id="30152">Von Favoriten entfernen</string>
+    <string id="30153">Zu Favoriten hinzufügen</string>
+    <string id="30154">Ungesehen</string>
+    <string id="30155">Als gesehen markieren</string>
+    <string id="30156">Aus Filmen entfernen</string>
+
+  	<string id="30160">Alle Serien</string>
+  	<string id="30161">Sender</string>
+  	<string id="30162">Alterseinstufung</string>
+  	<string id="30163">Serie umbenennen</string>
+  	<string id="30164">TVDB Daten aktualisieren</string>
+  	<string id="30165">Serie in TVDB anzeigen</string>
+  	<string id="30166">Serie entfernen</string>
+  	<string id="30167">Staffel </string>
+  	<string id="30168">Jahr </string>
+  	<string id="30169">Spezial</string>
 </strings>

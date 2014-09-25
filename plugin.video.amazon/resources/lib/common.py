@@ -40,7 +40,6 @@ class _Info:
         print "common.args"
         print kwargs
         self.__dict__.update( kwargs )
-
 exec "args = _Info(%s)" % (urllib.unquote_plus(sys.argv[2][1:].replace("&", ", ").replace('"',"\"")) , )
 
 def getURL( url , host='www.amazon.de',useCookie=False):
@@ -111,6 +110,7 @@ def addDir(name, mode, sitemode, url='', thumb='', fanart='', infoLabels=False, 
     if not infoLabels:
         infoLabels={ "Title": name}
     if cm:
+        print cm
         item.addContextMenuItems( cm, replaceItems=True  )
     item.setInfo( type="Video", infoLabels=infoLabels)
     xbmcplugin.addDirectoryItem(handle=pluginhandle,url=u,listitem=item,isFolder=True,totalItems=totalItems)

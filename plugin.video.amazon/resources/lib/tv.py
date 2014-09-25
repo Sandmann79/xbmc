@@ -14,8 +14,12 @@ try:
     from sqlite3 import dbapi2 as sqlite
 except:
     from pysqlite2 import dbapi2 as sqlite
+import xbmcaddon
+xmlstring = xbmcaddon.Addon().getLocalizedString
 
 ################################ TV db
+MAX_VALUES = [25,50,100,150,200,250]
+MAX=MAX_VALUES[int(common.addon.getSetting("perpage"))]
 
 def createTVdb():
     c = tvDB.cursor()
@@ -335,8 +339,8 @@ def lookupEpisodedb(asin,isPrime=True):
 
 def addTVdb():
     dialog = xbmcgui.DialogProgress()
-    dialog.create('Building Prime Television Database')
-    dialog.update(0,'Initializing Television Scan')
+    dialog.create(xmlstring(30130))
+    dialog.update(0,xmlstring(30131))
     page = 1
     endIndex = 0
     goAhead = True    
@@ -345,7 +349,6 @@ def addTVdb():
     EPISODE_COUNT = 0
     ALL_SERIES_ASINS = ''
     while goAhead:
-        #json = appfeed.getList('TVSeries',0)
         json = appfeed.getList('TVSeason',endIndex)
         titles = json['message']['body']['titles']
         SERIES_ASINS = ''
@@ -366,14 +369,14 @@ def addTVdb():
                 SERIES_COUNT += 1
                 SERIES_ASINS += title['ancestorTitles'][0]['titleId']+','
                 ALL_SERIES_ASINS += title['ancestorTitles'][0]['titleId']+','
-            EPISODE_FEEDS.append(title['childTitles'][0]['feedUrl']+'&NumberOfResults=400')
+            EPISODE_FEEDS.append(title['childTitles'][0]['feedUrl']+'&NumberOfResults='+str(MAX))
             if hdasin:
-                EPISODE_FEEDS.append(title['childTitles'][0]['feedUrl'].replace(asin,hdasin)+'&NumberOfResults=400')
+                EPISODE_FEEDS.append(title['childTitles'][0]['feedUrl'].replace(asin,hdasin)+'&NumberOfResults='+str(MAX))
         del titles
         ASIN_ADD(SERIES_ASINS)
-        dialog.update(int(page*100.0/9),'%s Shows' % str(SERIES_COUNT),'%s Seasons' % str(SEASON_COUNT),'%s Episodes' % str(EPISODE_COUNT) )
+        dialog.update(int(page*100.0/9), xmlstring(30132).replace("%s",str(SERIES_COUNT)), xmlstring(30133).replace("%s",str(SEASON_COUNT)),xmlstring(30134).replace("%s",str(EPISODE_COUNT)) )
         ASIN_ADD(SEASONS_ASINS)
-        dialog.update(int(page*100.0/9),'%s Shows' % str(SERIES_COUNT),'%s Seasons' % str(SEASON_COUNT),'%s Episodes' % str(EPISODE_COUNT) )
+        dialog.update(int(page*100.0/9), xmlstring(30132).replace("%s",str(SERIES_COUNT)), xmlstring(30133).replace("%s",str(SEASON_COUNT)),xmlstring(30134).replace("%s",str(EPISODE_COUNT)) )
         for url in EPISODE_FEEDS:
             titles = appfeed.URL_LOOKUP(url)['message']['body']['titles']
             EPISODE_ASINS=''
@@ -387,14 +390,14 @@ def addTVdb():
                                 EPISODE_ASINS += offer['asin']+','
             if EPISODE_ASINS <> '':
                 ASIN_ADD(EPISODE_ASINS)
-            dialog.update(int(page*100.0/9),'%s Shows' % str(SERIES_COUNT),'%s Seasons' % str(SEASON_COUNT),'%s Episodes' % str(EPISODE_COUNT) )
+            dialog.update(int(page*100.0/9), xmlstring(30132).replace("%s",str(SERIES_COUNT)), xmlstring(30133).replace("%s",str(SEASON_COUNT)),xmlstring(30134).replace("%s",str(EPISODE_COUNT)) )
         #endIndex = json['message']['body']['endIndex']
-        endIndex+=250
+        endIndex+=MAX
         if (dialog.iscanceled()):
             goAhead = False
         elif endIndex > 2500:
             goAhead = False
-        dialog.update(int(page*100.0/9),'Scanning Page %s' % str(page),'Scanned %s Seasons' % str(endIndex) )
+        dialog.update(int(page*100.0/9), xmlstring(30122).replace("%s",str(page)), xmlstring(30135).replace("%s", str(endIndex) ))
         page+=1
     print 'TOTALS'
     print SERIES_COUNT
@@ -465,7 +468,7 @@ def ASIN_ADD(ASINLIST,url=False,isPrime=True,isHD=False,single=False,addSeries=F
             else:
                 actors = None
             if title.has_key('genres'):
-                genres = ','.join(title['genres'])
+                genres = ','.join(title['genres']).replace('_', '&')
             else:
                 genres = None
             if title.has_key('amazonRating'):
@@ -587,7 +590,7 @@ def ASIN_ADD(ASINLIST,url=False,isPrime=True,isHD=False,single=False,addSeries=F
             else:
                 plot = None
             if title.has_key('runtime'):
-                runtime = str(title['runtime']['valueMillis']/1000)
+                runtime = str(title['runtime']['valueMillis']/60000)
             else:
                 runtime = None
             if title.has_key('releaseOrFirstAiringDate'):
@@ -609,7 +612,7 @@ def ASIN_ADD(ASINLIST,url=False,isPrime=True,isHD=False,single=False,addSeries=F
             else:
                 actors = None
             if title.has_key('genres'):
-                genres = ','.join(title['genres'])
+                genres = ','.join(title['genres']).replace('_', ' und ')
             else:
                 genres = None
             if title.has_key('customerReviewCollection'):

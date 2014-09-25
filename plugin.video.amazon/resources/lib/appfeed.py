@@ -65,7 +65,7 @@ PARAMETERS = '?firmware='+firmware+'&deviceTypeID='+deviceTypeID+'&deviceID='+de
 def BUILD_BASE_API(MODE,HOST='https://atv-eu.amazon.com/cdp/'):
     return HOST+MODE+PARAMETERS
 
-def getList(ContentType,start=0,isPrime=True,NumberOfResults=250,OrderBy='SalesRank',version=2):
+def getList(ContentType,start=0,isPrime=True,NumberOfResults=MAX,OrderBy='SalesRank',version=2):
     if isPrime:
         BROWSE_PARAMS = '&OfferGroups=B0043YVHMY'
     BROWSE_PARAMS +='&NumberOfResults='+str(NumberOfResults)
@@ -246,12 +246,12 @@ def BROWSE_SEASONS4SERIES(results=MAX,index=0):
     BROWSE_ADDITEMS(url,results,index)
 
 def BROWSE_EPISODES(results=MAX,index=0):
-    BROWSE_PARAMS = '&SeasonASIN='+common.args.url+'&IncludeAll=T&NumberOfResults=400&playbackInformationRequired=true&version=2'
+    BROWSE_PARAMS = '&SeasonASIN='+common.args.url+'&IncludeAll=T&NumberOfResults='+str(results)+'&playbackInformationRequired=true&version=2'
     url = BUILD_BASE_API('catalog/Browse')+BROWSE_PARAMS
     BROWSE_ADDITEMS(url,results,index)
 
 def BROWSE_EPISODES_HD(results=MAX,index=0):
-    BROWSE_PARAMS = '&SeasonASIN='+common.args.url+'&IncludeAll=T&NumberOfResults=400&playbackInformationRequired=true&version=2'
+    BROWSE_PARAMS = '&SeasonASIN='+common.args.url+'&IncludeAll=T&NumberOfResults='+str(results)+'&playbackInformationRequired=true&version=2'
     url = BUILD_BASE_API('catalog/Browse')+BROWSE_PARAMS
     BROWSE_ADDITEMS(url,results,index,HD=True)
 

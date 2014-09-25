@@ -14,9 +14,12 @@ try:
     from sqlite3 import dbapi2 as sqlite
 except:
     from pysqlite2 import dbapi2 as sqlite
-
+import xbmcaddon
+xmlstring = xbmcaddon.Addon().getLocalizedString
 
 ################################ Movie db
+MAX_VALUES = [25,50,100,150,200,250]
+MAX=MAX_VALUES[int(common.addon.getSetting("perpage"))]
 
 def createMoviedb():
     c = MovieDB.cursor()
@@ -51,8 +54,6 @@ def createMoviedb():
     c.close()
 
 def addMoviedb(moviedata):
-    #print 'addMoviedb:'
-    #print moviedata
     c = MovieDB.cursor()
     c.execute('insert or ignore into movies values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)', moviedata)
     MovieDB.commit()
@@ -167,8 +168,8 @@ def getMovieTypes(col):
 
 def addMoviesdb(isPrime=True):
     dialog = xbmcgui.DialogProgress()
-    dialog.create('Building Prime Movie Database')
-    dialog.update(0,'Initializing Movie Scan')
+    dialog.create(xmlstring(30120))
+    dialog.update(0,xmlstring(30121))
     page = 1
     goAhead = True
     endIndex=0
@@ -180,13 +181,13 @@ def addMoviesdb(isPrime=True):
         for title in titles:
             ASINLIST += title['titleId']+','
         ASIN_ADD(ASINLIST)
-        endIndex+=250
+        endIndex+=MAX
         #endIndex = json['message']['body']['endIndex']
         if (dialog.iscanceled()):
             goAhead = False
         elif endIndex > 14000:
             goAhead = False
-        dialog.update(int(page*100.0/56),'Scanning Page %s' % str(page),'Scanned %s Movies' % str(endIndex) )
+        dialog.update(int(page*100.0/56), xmlstring(30122).replace("%s",str(page)), xmlstring(30123).replace("%s", str(endIndex) ))
 
 def ASIN_ADD(ASINLIST,isPrime=True):
     titles = appfeed.ASIN_LOOKUP(ASINLIST)['message']['body']['titles']
@@ -210,7 +211,7 @@ def ASIN_ADD(ASINLIST,isPrime=True):
         else:
             director = None
         if title.has_key('runtime'):
-            runtime = str(title['runtime']['valueMillis']/1000)
+            runtime = str(title['runtime']['valueMillis']/60000)
         else:
             runtime = None
         if title.has_key('releaseOrFirstAiringDate'):
@@ -232,7 +233,7 @@ def ASIN_ADD(ASINLIST,isPrime=True):
         else:
             actors = None
         if title.has_key('genres'):
-            genres = ','.join(title['genres'])
+            genres = ','.join(title['genres']).replace('_', ' und ')
         else:
             genres = ''
         if title.has_key('customerReviewCollection'):

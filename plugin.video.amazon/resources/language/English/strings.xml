@@ -52,4 +52,55 @@
     
 	<string id="30042">Browser Kiosk Mode</string>
 	<string id="30043">Play HD If Available</string>
+
+  	<string id="30100">Featured Movies</string>
+  	<string id="30101">Featured Television</string>
+  	<string id="30102">Export Movie Favorites to Library</string>
+  	<string id="30103">Full Movie Refresh(DB)</string>
+  	<string id="30104">Movies</string>
+  	<string id="30105">Export TV Favorites to Library</string>
+  	<string id="30106">Full Television Refresh(DB)</string>
+  	<string id="30107">Television</string>
+  	<string id="30108">Search Prime</string>
+    
+  	<string id="30120">Building Prime Movie Database</string>
+  	<string id="30121">Initializing Movie Scan</string>
+  	<string id="30122">Scanning Page %s</string>
+  	<string id="30123">Scanned %s Movies</string>
+   
+  	<string id="30130">Building Prime Television Database</string>
+  	<string id="30131">Initializing Television Scan</string>
+  	<string id="30132">%s Shows</string>
+  	<string id="30133">%s Seasons</string>
+  	<string id="30134">%s Episodes</string>
+  	<string id="30135">Scanned %s Seasons</string>
+    
+  	<string id="30140">Export Favorited to Library</string>
+  	<string id="30141">Favorited</string>
+  	<string id="30142">Export All to Library</string>
+  	<string id="30143">All Movies</string>
+  	<string id="30144">Genres</string>
+  	<string id="30145">Years</string>
+  	<string id="30146">Studios</string>
+  	<string id="30147">MPAA Rating</string>
+  	<string id="30148">Directors</string>
+  	<string id="30149">Export Watched to Library</string>
+  	<string id="30150">Watched History</string>
+    <string id="30151">Export to Library</string>
+    <string id="30152">Remove from Favorites</string>
+    <string id="30153">Add to Favorites</string>
+    <string id="30154">Unwatch</string>
+    <string id="30155">Mark Watched</string>
+    <string id="30156">Remove from Movies</string>
+
+  	<string id="30160">All Shows</string>
+  	<string id="30161">Networks</string>
+  	<string id="30162">TV Rating</string>
+  	<string id="30163">Rename Show</string>
+  	<string id="30164">Refresh TVDB Data</string>
+  	<string id="30165">Lookup Show in TVDB</string>
+  	<string id="30166">Remove Show</string>
+  	<string id="30167">Season </string>
+  	<string id="30168">Year </string>
+  	<string id="30169">Specials</string>
 </strings>

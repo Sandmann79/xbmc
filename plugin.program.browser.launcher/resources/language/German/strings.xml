@@ -11,4 +11,11 @@
   <string id="30012">Eigenes Nutzerprofil nutzen (Chrome, Firefox, Opera)</string>
   <string id="30016">Vollbildmodus verwenden?</string>
   <string id="30017">Vordefinierter Browser</string>
+  <string id="30018">Prozess Priorität</string>
+  <string id="30020">Niedrig</string>
+  <string id="30021">Niedriger als normal</string>
+  <string id="30022">Normal</string>
+  <string id="30023">Höher als normal</string>
+  <string id="30024">Hoch</string>
+  <string id="30025">Echtzeit</string> 
 </strings>

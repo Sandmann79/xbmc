@@ -3,4 +3,5 @@
     <setting id="useCustomPath" type="bool" label="30010" default="false"/>
     <setting id="customPath" type="file" label="30011" enable="eq(-1,true)" default="special://home/addons/plugin.program.browser.launcher/script.sh"/>
     <setting id="useOwnProfile" type="bool" label="30012" enable="gt(-3,1)" default="false"/>
+    <setting id="priority" type="enum" label="30018" lvalues="30020|30021|30022|30023|30024|30025" default="2"/>
 </settings>

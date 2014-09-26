@@ -14,4 +14,11 @@
   <string id="30013">Webbrowser</string>
   <string id="30016">Use kiosk mode?</string>
   <string id="30017">Custom Browser</string>
+  <string id="30018">Process Priority</string>
+  <string id="30020">Low</string>
+  <string id="30021">Below Normal</string>
+  <string id="30022">Normal</string>
+  <string id="30023">Above Normal</string>
+  <string id="30024">High</string>
+  <string id="30025">Realtime</string> 
 </strings>

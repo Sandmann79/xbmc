@@ -36,7 +36,7 @@ def PLAYVIDEO():
         kiosk='no'
     url=common.args.url
     finalUrl=url.replace("http://www.amazon.de/gp/product/","http://www.amazon.de/dp/")+"/ref=vod_0_wnzw"
-    xbmc.executebuiltin("RunPlugin(plugin://plugin.program.browser.launcher/?url="+urllib.quote_plus(finalUrl)+"&mode=showSite&kiosk="+kiosk)")
+    xbmc.executebuiltin("RunPlugin(plugin://plugin.program.browser.launcher/?url="+urllib.quote_plus(finalUrl)+"&mode=showSite&kiosk="+kiosk+")")
     if osWin:
         try:
             xbmc.sleep(waitsec)

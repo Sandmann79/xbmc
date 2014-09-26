@@ -19,6 +19,8 @@ useOwnProfile = addon.getSetting("useOwnProfile") == "true"
 useCustomPath = addon.getSetting("useCustomPath") == "true"
 customPath = xbmc.translatePath(addon.getSetting("customPath"))
 winBrowser = int(addon.getSetting("winBrowser"))
+prio_values = [ 'LOW', 'BELOWNORMAL', 'NORMAL', 'ABOVENORMAL', 'HIGH', 'REALTIME' ]
+priority = prio_values[int(addon.getSetting("priority"))]
 
 userDataFolder = xbmc.translatePath("special://profile/addon_data/"+addonID)
 profileFolder = os.path.join(userDataFolder, 'profile')
@@ -131,26 +133,28 @@ def getFullPath(path, url, useKiosk, userAgent, selBrowser):
         kiosk = bKiosk[selBrowser]
     if (userAgent) and (bAgent[selBrowser]):
         userAgent = bAgent[selBrowser]+'"'+userAgent+'" '
-    return '"'+path+'" '+profile+userAgent+bExtra[selBrowser]+kiosk+'"'+url+'"'
+    return 'cmd.exe /c start "" /'+priority+' "'+path+'" '+profile+userAgent+bExtra[selBrowser]+kiosk+'"'+url+'"'
 
 
 def showSite(url, stopPlayback, kiosk, userAgent, custBrowser):
+    startupinfo = subprocess.STARTUPINFO()
+    startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
     if stopPlayback == "yes":
         xbmc.Player().stop()
     selBrowser = winBrowser
     if custBrowser:
         selBrowser = int(custBrowser)
     path = bPath[selBrowser]
-    path64 = path.replace("\\Program Files\\", "\\Program Files (x86)\\")
+    path86 = path.replace("\\Program Files\\", "\\Program Files (x86)\\")
     if useCustomPath and os.path.exists(customPath):
         fullUrl = getFullPath(customPath, url, kiosk, userAgent, selBrowser)
-        subprocess.Popen(fullUrl, shell=False)
+        subprocess.Popen(fullUrl, startupinfo=startupinfo)
     elif os.path.exists(path):
         fullUrl = getFullPath(path, url, kiosk, userAgent, selBrowser)
-        subprocess.Popen(fullUrl, shell=False)
-    elif os.path.exists(path64):
-        fullUrl = getFullPath(path64, url, kiosk, userAgent, selBrowser)
-        subprocess.Popen(fullUrl, shell=False)
+        subprocess.Popen(fullUrl, startupinfo=startupinfo)
+    elif os.path.exists(path86):
+        fullUrl = getFullPath(path86, url, kiosk, userAgent, selBrowser)
+        subprocess.Popen(fullUrl, startupinfo=startupinfo)
     else:
         xbmc.executebuiltin('XBMC.Notification(Info:,'+str(translation(30005))+'!,5000)')
         addon.openSettings()

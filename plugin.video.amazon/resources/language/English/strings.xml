@@ -52,6 +52,7 @@
     
 	<string id="30042">Browser Kiosk Mode</string>
 	<string id="30043">Play HD If Available</string>
+	<string id="30044">Wait for Fullscreen (sec)</string>
 
   	<string id="30100">Featured Movies</string>
   	<string id="30101">Featured Television</string>

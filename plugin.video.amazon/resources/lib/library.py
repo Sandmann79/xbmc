@@ -12,21 +12,23 @@ import resources.lib.common as common
 import re
 import appfeed
 import xbmclibrary
+import xbmcaddon
 
+xmlstring = xbmcaddon.Addon().getLocalizedString
 pluginhandle = common.pluginhandle
 confluence_views = [500,501,502,503,504,508]
 
 ################################ Library listing    
 def LIBRARY_ROOT():
-    common.addDir('Movies','library','LIBRARY_LIST_MOVIES','https://www.amazon.de/gp/video/library/movie?show=all&sort=alpha')
-    common.addDir('Television','library','LIBRARY_LIST_TV','https://www.amazon.de/gp/video/library/tv?show=all&sort=alpha')
+    common.addDir(xmlstring(30104),'library','LIBRARY_LIST_MOVIES','https://www.amazon.de/gp/video/library/movie?show=all&sort=alpha')
+    common.addDir(xmlstring(30107),'library','LIBRARY_LIST_TV','https://www.amazon.de/gp/video/library/tv?show=all&sort=alpha')
     xbmcplugin.endOfDirectory(pluginhandle)
 
 def WATCHLIST_ROOT():
-    cm = [ ('Export to Library', 'XBMC.RunPlugin(plugin://plugin.video.amazon?mode="library"&sitemode="WATCHLIST_LIST_MOVIES_EXPORT"&url="")') ]
-    common.addDir('Movies','library','WATCHLIST_LIST_MOVIES','',cm=cm)
-    cm = [ ('Export to Library', 'XBMC.RunPlugin(plugin://plugin.video.amazon?mode="library"&sitemode="WATCHLIST_LIST_TV_EXPORT"&url="")') ]
-    common.addDir('Television','library','WATCHLIST_LIST_TV','',cm=cm)
+    #cm = [(xmlstring(30151), 'XBMC.RunPlugin(%s?mode=<library>&sitemode=<WATCHLIST_LIST_MOVIES_EXPORT>&url=<>)' % sys.argv[0] ) ]
+    common.addDir(xmlstring(30104),'library','WATCHLIST_LIST_MOVIES','')
+    #cm = [(xmlstring(30151), 'XBMC.RunPlugin(%s?mode=<library>&sitemode=<WATCHLIST_LIST_TV_EXPORT>&url=<>)' % sys.argv[0] ) ]
+    common.addDir(xmlstring(30107),'library','WATCHLIST_LIST_TV','')
     xbmcplugin.endOfDirectory(pluginhandle)
 
 def WATCHLIST_LIST_MOVIES_EXPORT():

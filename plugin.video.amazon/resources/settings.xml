@@ -2,9 +2,10 @@
 	<!-- General -->
 	<category label="30011">
 		<setting id="kiosk" type="bool" label="30042" default="true" />
+        <setting id="clickwait" type="labelenum" values="6|7|8|9|10|11|12|13|14|15|16|17|18" label="30044" default="10" />
 		<!-- <setting id="HD" type="bool" label="30043" default="true" /> -->
 		<setting type="sep" />
-		<setting id="perpage" type="enum" values="25|50|100|150|200|250" label="30039" default="2"/>
+		<setting id="perpage" type="labelenum" values="25|50|100|150|200|250" label="30039" default="100"/>
 		<!-- <setting id="movieart" type="enum" lvalues="30020|30021|30022" label="30016" default="0"/> -->
 		<setting id="tvart" type="enum" lvalues="30018|30019|30022" label="30017" default="0"/>
 		<!--setting id="editenable" type ="bool" label="30033" default="false"/z-->

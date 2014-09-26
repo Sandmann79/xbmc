@@ -18,8 +18,7 @@ import xbmcaddon
 xmlstring = xbmcaddon.Addon().getLocalizedString
 
 ################################ Movie db
-MAX_VALUES = [25,50,100,150,200,250]
-MAX=MAX_VALUES[int(common.addon.getSetting("perpage"))]
+MAX=int(common.addon.getSetting("perpage"))
 
 def createMoviedb():
     c = MovieDB.cursor()

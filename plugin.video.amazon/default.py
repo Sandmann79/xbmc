@@ -30,22 +30,18 @@ def modes( ):
         #common.addDir(xmlstring(30101),'appfeed','APP_LEVEL2','3,2')
 
         updatemovie = []
-        updatemovie.append( (xmlstring(30102),   'XBMC.RunPlugin(plugin://plugin.video.amazon/?mode="xbmclibrary"&sitemode="LIST_MOVIES")' ) )
-        updatemovie.append((xmlstring(30103), 'XBMC.RunPlugin(plugin://plugin.video.amazon/?mode="movies"&sitemode="addMoviesdb")' ))
+        #updatemovie.append( (xmlstring(30102),   'XBMC.RunPlugin(%s?mode=<xbmclibrary>&sitemode=<LIST_MOVIES>)' % sys.argv[0]  ) )
+        updatemovie.append( (xmlstring(30103), 'XBMC.RunPlugin(%s?mode=<movies>&sitemode=<addMoviesdb>)'  % sys.argv[0] ) )
         common.addDir(xmlstring(30104),'listmovie','LIST_MOVIE_ROOT', cm=updatemovie)
 
         updatetv = []
-        updatetv.append( (xmlstring(30105),   'XBMC.RunPlugin(plugin://plugin.video.amazon/?mode="xbmclibrary"&sitemode="LIST_TVSHOWS")' ) )
-        updatetv.append( (xmlstring(30106), 'XBMC.RunPlugin(plugin://plugin.video.amazon/?mode="tv"&sitemode="addTVdb")' ) )
-        #updatetv.append( ('Scan TVDB(DB)',   'XBMC.RunPlugin(plugin://plugin.video.amazon/?mode="tv"&sitemode="scanTVDBshows")' ) )]
+        #updatetv.append( (xmlstring(30105),   'XBMC.RunPlugin(%s?mode=<xbmclibrary>&sitemode=<LIST_TVSHOWS>)' % sys.argv[0]  ) )
+        updatetv.append( (xmlstring(30106), 'XBMC.RunPlugin(%s?mode=<tv>&sitemode=<addTVdb>)' % sys.argv[0]  ) )
+        #updatetv.append( ('Scan TVDB(DB)',   'XBMC.RunPlugin(%s?mode="tv"&sitemode="scanTVDBshows")' % sys.argv[0] ) )]
         common.addDir(xmlstring(30107),'listtv','LIST_TV_ROOT', cm=updatetv)
 
         common.addDir(xmlstring(30108),'appfeed','SEARCH_PRIME','')
-        #OLD SEARCH
-        #common.addDir('Search Prime','searchprime','SEARCH_PRIME','http://www.amazon.com/s?ie=UTF8&field-is_prime_benefit=1&rh=n%3A2858778011%2Ck%3A')
 
-        #TESTS
-        #common.addDir('Categories Testing','appfeed','APP_ROOT')
         xbmcplugin.endOfDirectory(pluginhandle)
     else:
         exec 'import resources.lib.%s as sitemodule' % common.args.mode

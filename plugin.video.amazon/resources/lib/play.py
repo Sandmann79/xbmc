@@ -19,8 +19,10 @@ try:
     from xml.etree import ElementTree
 except:
     from elementtree import ElementTree
+
 settings = xbmcaddon.Addon( id = 'plugin.video.amazon' )
 mousemove = os.path.join( settings.getAddonInfo( 'path' ), 'amazonscript\\' )+"mousemove.exe"
+waitsec = int(settings.getSetting("clickwait")) * 1000
 osLinux = xbmc.getCondVisibility('system.platform.linux')
 osOsx = xbmc.getCondVisibility('system.platform.osx')
 osWin = xbmc.getCondVisibility('system.platform.windows')
@@ -34,16 +36,15 @@ def PLAYVIDEO():
         kiosk='no'
     url=common.args.url
     finalUrl=url.replace("http://www.amazon.de/gp/product/","http://www.amazon.de/dp/")+"/ref=vod_0_wnzw"
-    xbmc.executebuiltin("RunPlugin(plugin://plugin.program.browser.launcher/?url="+urllib.quote_plus(finalUrl)+"&mode=showSite&kiosk="+kiosk+")")
-    print mousemove
+    xbmc.executebuiltin("RunPlugin(plugin://plugin.program.browser.launcher/?url="+urllib.quote_plus(finalUrl)+"&mode=showSite&kiosk="+kiosk)")
     if osWin:
         try:
-            xbmc.sleep(10000)
+            xbmc.sleep(waitsec)
             subprocess.Popen(mousemove)
         except:pass
     if osLinux:
         try:
-            xbmc.sleep(10000)
+            xbmc.sleep(waitsec)
             subprocess.Popen('xdotool mousemove 9999 0 click 1', shell=True)
             xbmc.sleep(5000)
             subprocess.Popen('xdotool mousemove 9999 0 click 1', shell=True)
@@ -54,7 +55,7 @@ def PLAYVIDEO():
         except:pass
     if osOsx:
         try:
-            xbmc.sleep(10000)
+            xbmc.sleep(waitsec)
             subprocess.Popen('cliclick c:500,500', shell=True)
             xbmc.sleep(5000)
             subprocess.Popen('cliclick c:500,500', shell=True)

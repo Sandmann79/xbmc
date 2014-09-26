@@ -50,8 +50,7 @@ confluence_views = [500,501,502,503,504,508]
 #===============================================================================
 
 
-MAX_VALUES = [25,50,100,150,200,250]
-MAX=MAX_VALUES[int(common.addon.getSetting("perpage"))]
+MAX=int(common.addon.getSetting("perpage"))
 
 common.gen_id()
 
@@ -59,6 +58,7 @@ deviceID = common.addon.getSetting("GenDeviceID")#'000000000000'
 deviceTypeID = 'A2W5AJPLW5Q6YM'  #Android Type
 #deviceTypeID = 'A13Q6A55DBZB7M' #WEB Type
 firmware = 'fmw:15-app:1.1.19'
+#firmware = 'fmw:10-app:1.1.23'
 format = 'json'
 PARAMETERS = '?firmware='+firmware+'&deviceTypeID='+deviceTypeID+'&deviceID='+deviceID+'&format='+format
 
@@ -89,7 +89,6 @@ def getList(ContentType,start=0,isPrime=True,NumberOfResults=MAX,OrderBy='SalesR
 
 def ASIN_LOOKUP(ASINLIST):
     results = len(ASINLIST.split(','))-1
-    # &NumberOfResults=400
     BROWSE_PARAMS = '&asinList='+ASINLIST+'&NumberOfResults='+str(results)+'&IncludeAll=T&playbackInformationRequired=true&version=2'
     url = BUILD_BASE_API('catalog/GetASINDetails')+BROWSE_PARAMS
     return demjson.decode(common.getATVURL(url))
@@ -145,8 +144,8 @@ def APP_LEVEL2():
         if item.has_key('categories'):
             common.addDir(item['title'],'appfeed','APP_LEVEL3',common.args.url+','+str(categories.index(item)))
         else:
-            cm = [('Export to Library', 'XBMC.RunPlugin(plugin://plugin.video.amazon?mode="appfeed"&sitemode="BROWSE_EXPORT"&url="%s")' % ( urllib.quote_plus(item['query']) ) ) ]
-            common.addDir(item['title'],'appfeed','BROWSE',item['query'],cm=cm)
+            #cm = [(xmlstring(30151), 'XBMC.RunPlugin(%s?mode=<appfeed>&sitemode=<BROWSE_EXPORT>&url=<%s>)' % ( sys.argv[0], urllib.quote_plus(item['query']) ) ) ]
+            common.addDir(item['title'],'appfeed','BROWSE',item['query'])
     xbmcplugin.endOfDirectory(pluginhandle)    
 
 def APP_LEVEL3():
@@ -160,8 +159,8 @@ def APP_LEVEL3():
         if item.has_key('categories'):
             common.addDir(item['title'],'appfeed','APP_LEVEL4',common.args.url+','+str(categories.index(item)))
         else:
-            cm = [('Export to Library', 'XBMC.RunPlugin(plugin://plugin.video.amazon?mode="appfeed"&sitemode="BROWSE_EXPORT"&url="%s")' % ( urllib.quote_plus(item['query']) ) ) ]
-            common.addDir(item['title'],'appfeed','BROWSE',item['query'],cm=cm)
+            #cm = [(xmlstring(30151), 'XBMC.RunPlugin(%s?mode=<appfeed>&sitemode=<BROWSE_EXPORT>&url=<%s>)' % ( sys.argv[0], urllib.quote_plus(item['query']) ) ) ]
+            common.addDir(item['title'],'appfeed','BROWSE',item['query'])
     xbmcplugin.endOfDirectory(pluginhandle) 
 
 def APP_LEVEL4():

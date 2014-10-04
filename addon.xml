@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?> 
 <addons> 
-<addon id="plugin.program.browser.launcher" name="Browser Launcher" version="1.2.1" provider-name="AddonScriptorDE + Sandmann79"> 
+<addon id="plugin.program.browser.launcher" name="Browser Launcher" version="1.2.2" provider-name="AddonScriptorDE + Sandmann79"> 
     <requires> 
         <import addon="xbmc.python" version="2.1.0"/> 
     </requires> 
@@ -20,7 +20,7 @@
 </addon> 
 <addon id="plugin.video.amazon" 
        name="Amazon" 
-       version="1.1.0" 
+       version="1.1.1" 
        provider-name="Sandmann79 + BlueCop + Romans I XVI"> 
   <requires> 
     <import addon="xbmc.python" version="2.1.0"/> 

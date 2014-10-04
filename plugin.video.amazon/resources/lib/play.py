@@ -25,6 +25,7 @@ settings = xbmcaddon.Addon( id = 'plugin.video.amazon' )
 userinput = os.path.join( settings.getAddonInfo( 'path' ), 'amazonscript\\' )+"userinput.exe"
 waitsec = int(settings.getSetting("clickwait")) * 1000
 pin = settings.getSetting("pin")
+waitpin = int(settings.getSetting("waitpin")) * 1000
 osLinux = xbmc.getCondVisibility('system.platform.linux')
 osOsx = xbmc.getCondVisibility('system.platform.osx')
 osWin = xbmc.getCondVisibility('system.platform.windows')
@@ -46,14 +47,15 @@ def PLAYVIDEO():
         xbmc.executebuiltin("RunPlugin(plugin://plugin.program.browser.launcher/?url="+urllib.quote_plus(url)+"&mode=showSite&kiosk="+kiosk+")")
     xbmc.sleep(waitsec)
     if osWin:
+        subprocess.Popen(userinput + ' mouse -1 350')
         if isAdult == 1 and pininput == 1:
-            subprocess.Popen(userinput + ' key ' + pin + '{Enter}')
-            xbmc.sleep(5000)
+            subprocess.Popen(userinput + ' key ' + pin + '{Enter} 200')
+            xbmc.sleep(waitpin)
         if isAdult == 0: pininput = 1
         if pininput == 1:
             subprocess.Popen(userinput + ' mouse -1 350 2')
             xbmc.sleep(500)
-            subprocess.Popen(userinput + ' mouse 9999 0 0')
+            subprocess.Popen(userinput + ' mouse 9999 0')
     if osLinux:
         try:
             subprocess.Popen('xdotool mousemove 9999 0 click 1', shell=True)

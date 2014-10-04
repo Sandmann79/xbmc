@@ -20,7 +20,7 @@ xmlstring = xbmcaddon.Addon().getLocalizedString
 ################################ Movie db
 MAX=int(common.addon.getSetting("mov_perpage"))
 MOV_TOTAL=common.addon.getSetting("MoviesTotal")
-if MOV_TOTAL=='': MOV_TOTAL = '1000'
+if MOV_TOTAL=='': MOV_TOTAL = '2000'
 MOV_TOTAL = int(MOV_TOTAL)
 
 def createMoviedb():

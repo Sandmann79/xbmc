@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 from BeautifulSoup import BeautifulStoneSoup
 from BeautifulSoup import BeautifulSoup
@@ -18,7 +19,10 @@ import xbmcaddon
 xmlstring = xbmcaddon.Addon().getLocalizedString
 
 ################################ TV db
-MAX=int(common.addon.getSetting("perpage"))
+MAX=int(common.addon.getSetting("tv_perpage"))
+EPI_TOTAL=common.addon.getSetting("EpisodesTotal")
+if EPI_TOTAL=='': EPI_TOTAL = '14000'
+EPI_TOTAL = int(EPI_TOTAL)
 
 def createTVdb():
     c = tvDB.cursor()
@@ -97,6 +101,7 @@ def createTVdb():
                  runtime TEXT,
                  isHD BOOLEAN,
                  isprime BOOLEAN,
+                 isAdult BOOLEAN,
                  watched BOOLEAN,
                  PRIMARY KEY(asin,seriestitle,season,episode,episodetitle,isHD),
                  FOREIGN KEY(seriestitle,season) REFERENCES seasons(seriestitle,season)
@@ -128,17 +133,11 @@ def loadTVShowdb(HDonly=False,mpaafilter=False,genrefilter=False,creatorfilter=F
 
 def loadTVSeasonsdb(seriestitle,HDonly=False,isprime=True):
     c = tvDB.cursor()
-    if HDonly:
-        return c.execute('select distinct * from seasons where isprime = (?) and (seriestitle = (?) and isHD = (?))', (isprime,seriestitle,HDonly))
-    else:
-        return c.execute('select distinct * from seasons where isprime = (?) and seriestitle = (?)', (isprime,seriestitle))
+    return c.execute('select distinct * from seasons where isprime = (?) and seriesasin = (?)', (isprime,seriestitle))
 
-def loadTVEpisodesdb(seriestitle,season,HDonly=False,isprime=True):
+def loadTVEpisodesdb(seriestitle,HDonly=False,isprime=True):
     c = tvDB.cursor()
-    if HDonly:
-        return c.execute('select distinct * from episodes where isprime = (?) and (seriestitle = (?) and season = (?) and isHD = (?)) order by episode', (isprime,seriestitle,season,HDonly))
-    else:
-        return c.execute('select distinct * from episodes where isprime = (?) and (seriestitle = (?) and season = (?) and isHD = (?)) order by episode', (isprime,seriestitle,season,HDonly))
+    return c.execute('select distinct * from episodes where isprime = (?) and seasonasin = (?) order by episode', (isprime,seriestitle))
 
 def getShowTypes(col):
     c = tvDB.cursor()
@@ -150,7 +149,7 @@ def getShowTypes(col):
             if type(data) == type(str()):
                 data = data.decode('utf-8').encode('utf-8').split(',')
                 for item in data:
-                    item = item.replace('& ','').strip()
+                    item = item.strip()
                     if item not in list and item <> ' Inc':
                         if item <> '':
                             list.append(item)
@@ -285,7 +284,7 @@ def addEpisodedb(episodedata):
     print 'AMAZON: addEpisodedb'
     print episodedata
     c = tvDB.cursor()
-    c.execute('insert or ignore into episodes values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)', episodedata)
+    c.execute('insert or ignore into episodes values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)', episodedata)
     tvDB.commit()
     c.close()
     
@@ -312,7 +311,7 @@ def lookupShowsdb(asin,isPrime=True):
     elif c.execute('select distinct * from shows where asin2 = (?)', (asin,)).fetchone():
         return c.execute('select distinct * from shows where asin2 = (?)', (asin,))
     else:
-        asin1,asin2 = ASIN_ADD(asin,isPrime=isPrime,single=True)
+        asin1,asin2 = ASIN_ADD(0,asins=asin,isPrime=isPrime,single=True)
         if asin1 == asin2:
             return c.execute('select distinct * from shows where asin = (?)', (asin1,))
         elif asin1 <> asin2:
@@ -325,7 +324,7 @@ def lookupSeasondb(asin,isPrime=True,addSeries=False):
     if c.execute('select distinct * from seasons where asin = (?)', (asin,)).fetchone():
         return c.execute('select distinct * from seasons where asin = (?)', (asin,))
     else:
-        ASIN_ADD(asin,isPrime=isPrime,addSeries=addSeries)
+        ASIN_ADD(0,asins=asin,isPrime=isPrime,addSeries=addSeries)
         return c.execute('select distinct * from seasons where asin = (?)', (asin,))
 
 def lookupEpisodedb(asin,isPrime=True):
@@ -333,75 +332,70 @@ def lookupEpisodedb(asin,isPrime=True):
     if c.execute('select distinct * from episodes where asin = (?)', (asin,)).fetchone():
         return c.execute('select distinct * from episodes where asin = (?)', (asin,))
     else:
-        ASIN_ADD(asin,isPrime=isPrime)
+        ASIN_ADD(0,asins=asin,isPrime=isPrime)
         return c.execute('select distinct * from episodes where asin = (?)', (asin,))
 
 def addTVdb():
     dialog = xbmcgui.DialogProgress()
     dialog.create(xmlstring(30130))
     dialog.update(0,xmlstring(30131))
+    c = tvDB.cursor()
+    c.execute('drop table if exists shows')
+    c.execute('drop table if exists seasons')
+    c.execute('drop table if exists episodes')
+    c.close()
+    createTVdb()
     page = 1
     endIndex = 0
-    goAhead = True    
+    goAhead = 1    
     SERIES_COUNT = 0
     SEASON_COUNT = 0
     EPISODE_COUNT = 0
     ALL_SERIES_ASINS = ''
-    while goAhead:
-        json = appfeed.getList('TVSeason',endIndex)
+    while goAhead == 1:
+        json = appfeed.getList('TVSeason', endIndex, NumberOfResults=MAX)
         titles = json['message']['body']['titles']
-        SERIES_ASINS = ''
-        SEASONS_ASINS = ''
-        EPISODE_FEEDS = []
-        for title in titles:
-            SEASON_COUNT += 1
-            asin=title['titleId']
-            hdasin=False
-            SEASONS_ASINS += title['titleId']+','
-            for format in title['formats']:
-                if format['videoFormatType'] == 'HD':
-                    for offer in format['offers']:
-                        if offer['offerType'] == 'SEASON_PURCHASE':
-                            hdasin=offer['asin']
-                            SEASONS_ASINS.replace(asin,hdasin)            
-            if title['ancestorTitles'][0]['titleId'] not in ALL_SERIES_ASINS:
-                SERIES_COUNT += 1
-                SERIES_ASINS += title['ancestorTitles'][0]['titleId']+','
-                ALL_SERIES_ASINS += title['ancestorTitles'][0]['titleId']+','
-            EPISODE_FEEDS.append(title['childTitles'][0]['feedUrl']+'&NumberOfResults='+str(MAX))
-            if hdasin:
-                EPISODE_FEEDS.append(title['childTitles'][0]['feedUrl'].replace(asin,hdasin)+'&NumberOfResults='+str(MAX))
-        del titles
-        ASIN_ADD(SERIES_ASINS)
-        dialog.update(int(page*100.0/9), xmlstring(30132).replace("%s",str(SERIES_COUNT)), xmlstring(30133).replace("%s",str(SEASON_COUNT)),xmlstring(30134).replace("%s",str(EPISODE_COUNT)) )
-        ASIN_ADD(SEASONS_ASINS)
-        dialog.update(int(page*100.0/9), xmlstring(30132).replace("%s",str(SERIES_COUNT)), xmlstring(30133).replace("%s",str(SEASON_COUNT)),xmlstring(30134).replace("%s",str(EPISODE_COUNT)) )
-        for url in EPISODE_FEEDS:
-            titles = appfeed.URL_LOOKUP(url)['message']['body']['titles']
-            EPISODE_ASINS=''
+        if titles:
+            SERIES_ASINS = ''
+            EPISODE_FEEDS = []
             for title in titles:
-                EPISODE_COUNT += 1
-                EPISODE_ASINS += title['titleId']+','
-                for format in title['formats']:
-                    if format['videoFormatType'] == 'HD':
-                        for offer in format['offers']:
-                            if offer['offerType'] == 'PURCHASE':
-                                EPISODE_ASINS += offer['asin']+','
-            if EPISODE_ASINS <> '':
-                ASIN_ADD(EPISODE_ASINS)
-            dialog.update(int(page*100.0/9), xmlstring(30132).replace("%s",str(SERIES_COUNT)), xmlstring(30133).replace("%s",str(SEASON_COUNT)),xmlstring(30134).replace("%s",str(EPISODE_COUNT)) )
-        #endIndex = json['message']['body']['endIndex']
-        endIndex+=MAX
-        if (dialog.iscanceled()):
-            goAhead = False
-        elif endIndex > 2500:
-            goAhead = False
-        dialog.update(int(page*100.0/9), xmlstring(30122).replace("%s",str(page)), xmlstring(30135).replace("%s", str(endIndex) ))
+                if (dialog.iscanceled()):
+                    goAhead = -1
+                    break
+                print title['title'].encode('ascii', 'ignore')
+                if title['ancestorTitles']:
+                    SERIES_KEY = title['ancestorTitles'][0]['titleId']
+                else:
+                    SERIES_KEY = title['titleId']
+                if SERIES_KEY not in ALL_SERIES_ASINS:
+                    SERIES_COUNT += 1
+                    SERIES_ASINS += SERIES_KEY+','
+                    ALL_SERIES_ASINS += SERIES_KEY+','
+                season_size = int(title['childTitles'][0]['size'])
+                if season_size < 1:
+                    season_size = 250
+                EPISODE_FEEDS.append(title['childTitles'][0]['feedUrl']+'&NumberOfResults='+str(season_size))
+            result = ASIN_ADD(titles)
+            SEASON_COUNT += result
+            del titles
+            if SERIES_ASINS <> '':
+                ASIN_ADD(0, asins=SERIES_ASINS)
+            dialog.update(int(EPISODE_COUNT*100.0/EPI_TOTAL), xmlstring(30132).replace("%s",str(SERIES_COUNT)), xmlstring(30133).replace("%s",str(SEASON_COUNT)),xmlstring(30134).replace("%s",str(EPISODE_COUNT)) )
+            for url in EPISODE_FEEDS:
+                if (dialog.iscanceled()):
+                    goAhead = -1
+                    break
+                EPISODE_COUNT += ASIN_ADD(appfeed.URL_LOOKUP(url)['message']['body']['titles'])
+                dialog.update(int(EPISODE_COUNT*100.0/EPI_TOTAL), xmlstring(30132).replace("%s",str(SERIES_COUNT)), xmlstring(30133).replace("%s",str(SEASON_COUNT)),xmlstring(30134).replace("%s",str(EPISODE_COUNT)) )
+            endIndex+=result
+        else:
+            goAhead = 0
         page+=1
     print 'TOTALS'
     print SERIES_COUNT
     print SEASON_COUNT
     print EPISODE_COUNT
+    if goAhead == 0: common.addon.setSetting("EpisodesTotal",str(EPISODE_COUNT))
     fixHDshows()
 
 def ASIN_FEED(url):
@@ -410,25 +404,23 @@ def ASIN_FEED(url):
     for title in titles:
         EPISODE_ASINS += title['titleId']+','
     if EPISODE_ASINS <> '':
-        ASIN_ADD(EPISODE_ASINS)
+        ASIN_ADD(0,asins=EPISODE_ASINS)
 
-def ASIN_ADD(ASINLIST,url=False,isPrime=True,isHD=False,single=False,addSeries=False):
-    if url:
-        titles = appfeed.URL_LOOKUP(url)['message']['body']['titles']
-    else:
-        titles = appfeed.ASIN_LOOKUP(ASINLIST)['message']['body']['titles']
+def ASIN_ADD(titles,asins=False,url=False,isPrime=True,isHD=False,single=False,addSeries=False):
+    if asins:
+        titles = appfeed.ASIN_LOOKUP(asins)['message']['body']['titles']
+    count = 0
     for title in titles:
+        if asins:
+            contentType = 'SERIES'
+        else:
+            contentType = title['contentType']
+        count+=1
         isHD=False
         isPrime=True
-        if title['contentType'] == 'SERIES':
-            asin = title['titleId']
+        if contentType == 'SERIES':
+            asin, isHD, isPrime = GET_ASINS(title)
             seriestitle = title['title']
-            for format in title['formats']:
-                if format['videoFormatType'] == 'HD':
-                    isHD = True
-                for offer in format['offers']:
-                    if offer['offerType'] == 'SUBSCRIPTION':
-                        isPrime = True
             if title['formats'][0].has_key('images'):
                 try:
                     thumbnailUrl = title['formats'][0]['images'][0]['uri']
@@ -467,7 +459,7 @@ def ASIN_ADD(ASINLIST,url=False,isPrime=True,isHD=False,single=False,addSeries=F
             else:
                 actors = None
             if title.has_key('genres'):
-                genres = ','.join(title['genres']).replace('_', '&')
+                genres = ', '.join(title['genres']).replace('_', ' & ').replace('Musikfilm & Tanz', 'Musikfilm; Tanz')
             else:
                 genres = None
             if title.has_key('amazonRating'):
@@ -480,18 +472,20 @@ def ASIN_ADD(ASINLIST,url=False,isPrime=True,isHD=False,single=False,addSeries=F
             addShowdb([asin,None,seasonFeed,seriestitle,poster,plot,studio,mpaa,genres,actors,premiered,year,stars,votes,seasontotal,0,0,0,isHD,isPrime,False,None,None,None,None])
             if single:
                 return asin,ASINLIST
-        elif title['contentType'] == 'SEASON':
-            asin = title['titleId']
+        elif contentType == 'SEASON':
+            asin, isHD, isPrime = GET_ASINS(title)
             season = title['number']
-            if title.has_key('ancestorTitles'):
-                if len(title['ancestorTitles']) > 0:
-                    try:
-                        seriestitle = title['ancestorTitles'][0]['title']
-                        seriesasin = title['ancestorTitles'][0]['titleId']
-                    except:
-                        pass
+            if title['ancestorTitles']:
+                try:
+                    seriestitle = title['ancestorTitles'][0]['title']
+                    seriesasin = title['ancestorTitles'][0]['titleId']
+                except:
+                    pass
+            else:
+                seriesasin = asin.split(',')[0]
+                seriestitle = title['title']
             if addSeries:
-                ASIN_ADD(seriesasin)
+                ASIN_ADD(0,asins=seriesasin)
             if title['formats'][0].has_key('images'):
                 try:
                     thumbnailUrl = title['formats'][0]['images'][0]['uri']
@@ -530,7 +524,7 @@ def ASIN_ADD(ASINLIST,url=False,isPrime=True,isHD=False,single=False,addSeries=F
             else:
                 mpaa = None
             if title.has_key('genres'):
-                genres = ','.join(title['genres'])
+                genres = ', '.join(title['genres']).replace('_', ' & ').replace('Musikfilm & Tanz', 'Musikfilm; Tanz')
             else:
                 genres = None
             if title.has_key('amazonRating'):
@@ -539,42 +533,31 @@ def ASIN_ADD(ASINLIST,url=False,isPrime=True,isHD=False,single=False,addSeries=F
             else:
                 stars = None
                 votes = None
-            for format in title['formats']:
-                if format['videoFormatType'] == 'HD':
-                    for offer in format['offers']:
-                        if offer['offerType'] == 'SUBSCRIPTION':
-                            isPrime = True
-                    isHD = True
-                    for offer in format['offers']:
-                        if offer['offerType'] == 'SEASON_PURCHASE' or offer['offerType'] == 'TV_PASS':
-                            hd_asin = offer['asin']
-                            addSeasondb([hd_asin,seriesasin,episodeFeed,poster,season,seriestitle,plot,actors,studio,mpaa,genres,premiered,year,stars,votes,episodetotal,0,episodetotal,isHD,isPrime])
-                            #if hd_asin not in episodeFeed:
-                            #    ASIN_FEED(episodeFeed.replace(asin,hd_asin))
-                if format['videoFormatType'] == 'SD':
-                    for offer in format['offers']:
-                        if offer['offerType'] == 'SUBSCRIPTION':
-                            isPrime = True
-                    isHD = False
-                    for offer in format['offers']:
-                        if offer['offerType'] == 'SEASON_PURCHASE' or offer['offerType'] == 'TV_PASS':
-                            sd_asin = offer['asin']
-                            addSeasondb([sd_asin,seriesasin,episodeFeed,poster,season,seriestitle,plot,actors,studio,mpaa,genres,premiered,year,stars,votes,episodetotal,0,episodetotal,isHD,isPrime])
+            addSeasondb([asin,seriesasin,episodeFeed,poster,season,seriestitle,plot,actors,studio,mpaa,genres,premiered,year,stars,votes,episodetotal,0,episodetotal,isHD,isPrime])
             #            asin,episodeFeed,poster,season,seriestitle,plot,actors,studio,mpaa,genres,premiered,year,stars,votes,episodetotal,watched,unwatched,isHD,isprime
-        elif title['contentType'] == 'EPISODE':
-            asin = title['titleId']
+        elif contentType == 'EPISODE':
+            seriesasin = ''
+            asin, isHD, isPrime = GET_ASINS(title)
+            isAdult = False
+            asin = asin.split(',')[0]
             episodetitle = title['title']
-            if title.has_key('ancestorTitles'):
-                if len(title['ancestorTitles']) > 0:
-                    seriestitle = title['ancestorTitles'][0]['title']
-                    seriesasin = title['ancestorTitles'][0]['titleId']
-                    seasonasin = title['ancestorTitles'][1]['titleId']
-                    season = title['ancestorTitles'][1]['number']
+            if title['ancestorTitles']:
+                for content in title['ancestorTitles']:
+                    if content['contentType'] == 'SERIES':
+                        seriestitle = content['title']
+                        seriesasin = content['titleId']
+                    elif content['contentType'] == 'SEASON':
+                        seasontitle = content['title']
+                        seasonasin = content['titleId']
+                        season = content['number']
+                if seriesasin == '':
+                    seriesasin = seasonasin
+                    seriestitle = seasontitle                        
             if title.has_key('number'):
                 episode = title['number']
             else:
                 episode = 0
-            url = common.BASE_URL+'/gp/product/'+asin
+            url = common.BASE_URL+'/dp/'+asin+'/ref=vod_0_wnzw'
             if title['formats'][0].has_key('images'):
                 try:
                     thumbnailUrl = title['formats'][0]['images'][0]['uri']
@@ -611,7 +594,7 @@ def ASIN_ADD(ASINLIST,url=False,isPrime=True,isHD=False,single=False,addSeries=F
             else:
                 actors = None
             if title.has_key('genres'):
-                genres = ','.join(title['genres']).replace('_', ' und ')
+                genres = ', '.join(title['genres']).replace('_', ' & ').replace('Musikfilm & Tanz', 'Musikfilm; Tanz')
             else:
                 genres = None
             if title.has_key('customerReviewCollection'):
@@ -620,22 +603,27 @@ def ASIN_ADD(ASINLIST,url=False,isPrime=True,isHD=False,single=False,addSeries=F
             else:
                 stars = None
                 votes = None
-            for format in title['formats']:
-                if format['videoFormatType'] == 'HD':
-                    for offer in format['offers']:
-                        if offer['offerType'] == 'PURCHASE':
-                            isHD = True
-                            hd_asin = offer['asin']
-                            hd_url = common.BASE_URL+'/gp/product/'+hd_asin
-                for offer in format['offers']:
-                    if offer['offerType'] == 'SUBSCRIPTION':
-                        isPrime = True
-            #             asin,seriestitle,season,episode,poster,mpaa,actors,genres,episodetitle,studio,stars,votes,url,plot,airdate,year,runtime,isHD,isprime,watched
-            if isHD:
-                addEpisodedb([hd_asin,seasonasin,seriesasin,seriestitle,season,episode,poster,mpaa,actors,genres,episodetitle,studio,stars,votes,hd_url,plot,premiered,year,runtime,isHD,isPrime,False])
-                addEpisodedb([asin,seasonasin,seriesasin,seriestitle,season,episode,poster,mpaa,actors,genres,episodetitle,studio,stars,votes,url,plot,premiered,year,runtime,False,isPrime,False])
-            else:
-                addEpisodedb([asin,seasonasin,seriesasin,seriestitle,season,episode,poster,mpaa,actors,genres,episodetitle,studio,stars,votes,url,plot,premiered,year,runtime,isHD,isPrime,False])
+            if title.has_key('restrictions'):
+                for rest in title['restrictions']:
+                    if rest['action'] == 'playback':
+                        if rest['type'] == 'ageVerificationRequired': isAdult = True
+            addEpisodedb([asin,seasonasin,seriesasin,seriestitle,season,episode,poster,mpaa,actors,genres,episodetitle,studio,stars,votes,url,plot,premiered,year,runtime,isHD,isPrime,isAdult,False])
+    return count
+    
+def GET_ASINS(content):
+    asins = ''
+    hd_key = False
+    prime_key = True
+    if content.has_key('titleId'): asins += content['titleId']
+    for format in content['formats']:
+        if format['videoFormatType'] == 'HD': hd_key = True
+        for offer in format['offers']:
+            if offer['offerType'] == 'SUBSCRIPTION': prime_key = True
+            if offer.has_key('asin'):
+                if offer['asin'] not in asins:
+                    asins += ',' + offer['asin']
+    del content
+    return asins, hd_key, prime_key
 
 tvDBfile = os.path.join(xbmc.translatePath('special://home/addons/script.module.amazon.database/lib/'),'tv.db')
 if not os.path.exists(tvDBfile):

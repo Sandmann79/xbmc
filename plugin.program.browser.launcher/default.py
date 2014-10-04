@@ -21,11 +21,14 @@ customPath = xbmc.translatePath(addon.getSetting("customPath"))
 winBrowser = int(addon.getSetting("winBrowser"))
 prio_values = [ 'LOW', 'BELOWNORMAL', 'NORMAL', 'ABOVENORMAL', 'HIGH', 'REALTIME' ]
 priority = prio_values[int(addon.getSetting("priority"))]
+cmd = ''
 
 userDataFolder = xbmc.translatePath("special://profile/addon_data/"+addonID)
 profileFolder = os.path.join(userDataFolder, 'profile')
 siteFolder = os.path.join(userDataFolder, 'sites')
 
+if priority != 'NORMAL':
+    cmd='cmd.exe /c start "" /'+priority+' '
 if not os.path.isdir(userDataFolder):
     os.mkdir(userDataFolder)
 if not os.path.isdir(profileFolder):
@@ -133,6 +136,7 @@ def getFullPath(path, url, useKiosk, userAgent, selBrowser):
         kiosk = bKiosk[selBrowser]
     if (userAgent) and (bAgent[selBrowser]):
         userAgent = bAgent[selBrowser]+'"'+userAgent+'" '
+    print 'cmd.exe /c start "" /'+priority+' "'+path+'" '+profile+userAgent+bExtra[selBrowser]+kiosk+'"'+url+'"'
     return 'cmd.exe /c start "" /'+priority+' "'+path+'" '+profile+userAgent+bExtra[selBrowser]+kiosk+'"'+url+'"'
 
 

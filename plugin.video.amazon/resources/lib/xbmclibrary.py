@@ -83,7 +83,7 @@ def EXPORT_MOVIE(asin=False,makeNFO=True):
         asin=common.args.asin
     #SetupLibrary()
     movie = moviesDB.lookupMoviedb(asin,isPrime=True)
-    for asin,hd_asin,movietitle,url,poster,plot,director,writer,runtime,year,premiered,studio,mpaa,actors,genres,stars,votes,TMDBbanner,TMDBposter,TMDBfanart,isprime,isHD,watched,favor,TMDB_ID in movie:       
+    for asin,hd_asin,movietitle,url,poster,plot,director,writer,runtime,year,premiered,studio,mpaa,actors,genres,stars,votes,TMDBbanner,TMDBposter,TMDBfanart,isprime,isHD,isAdult,watched,favor,TMDB_ID in movie:       
         if year:
             filename = cleanfilename(movietitle+' ('+str(year)+')')
         else:
@@ -180,7 +180,7 @@ def EXPORT_EPISODE(asin=False,makeNFO=True,isHD=False,isPrime=True):
         asin=common.args.asin
     #SetupLibrary()
     episodes = tvDB.lookupEpisodedb(asin,isPrime=isPrime)
-    for asin,seasonASIN,seriesASIN,seriestitle,season,episode,poster,mpaa,actors,genres,episodetitle,network,stars,votes,url,plot,airdate,year,runtime,isHD,isprime,watched in episodes:
+    for asin,seasonASIN,seriesASIN,seriestitle,season,episode,poster,mpaa,actors,genres,episodetitle,network,stars,votes,url,plot,airdate,year,runtime,isHD,isprime,isAdult,watched in episodes:
         directorname = os.path.join(TV_SHOWS_PATH,seriestitle.replace(':',''))
         CreateDirectory(directorname)
         name = 'Season '+str(season)

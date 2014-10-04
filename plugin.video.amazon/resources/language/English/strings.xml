@@ -1,92 +1,94 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <strings>
-	<string id="30011">General</string>
-	<string id="30000">E-Mail</string>
-	<string id="30001">Password</string>
-	<string id="30004">Bitrate</string>
-	<string id="30005">Ask</string>
-	<string id="30006">2500kbps</string>
-	<string id="30007">1328kbps</string>
-	<string id="30008">996kbps</string>
-	<string id="30009">664kbps</string>
-	<string id="30010">348kbps</string>
-	
-
-	<string id="30012">Library</string>
-	<string id="30013">Enable Purchases & Rentals Library</string>
-	<string id="30014">Library Metadata(cached)</string>
-
-	<string id="30015">Views</string>
-	<string id="30016">Movie Image Source</string>
-	<string id="30017">TV Image Source</string>
-	<string id="30018">TVDB Posters</string>
-	<string id="30019">TVDB Banners</string>
-	<string id="30020">TMDB Posters</string>
-	<string id="30021">TMDB Banners</string>
-	<string id="30022">Amazon</string>
-	
-	<string id="30023">Thumbnail</string>
-	<string id="30024">Poster Wrap</string>
-	<string id="30025">List</string>
-	<string id="30026">Media Info 2</string>
-	<string id="30027">Media Info</string>
-	<string id="30028">Fanart</string>
-	<string id="30034">Big List</string>
-	
-	<string id="30029">Movie View</string>
-	<string id="30030">Show View</string>
-	<string id="30031">Season View</string>
-	<string id="30032">Episode View</string>
-	
-	<string id="30033">Enable DB Edit</string>
-	<string id="30035">Enable Views</string>
-	
-	<string id="30036">Custom Library Folder</string>
-	<string id="30037">Library Folder stored in addon settings</string>
-	<string id="30038">Update Library when complete</string>
-	
-	<string id="30039">Items Per Page</string>
-	<string id="30040">Watchlist & Purchased Television view</string>
-	
-	<string id="30041">Enable Subtitles</string>
+    <string id="30011">General</string>
+    <string id="30000">E-Mail</string>
+    <string id="30001">Password</string>
+    <string id="30004">Bitrate</string>
+    <string id="30005">Ask</string>
+    <string id="30006">2500kbps</string>
+    <string id="30007">1328kbps</string>
+    <string id="30008">996kbps</string>
+    <string id="30009">664kbps</string>
+    <string id="30010">348kbps</string>
     
-	<string id="30042">Browser Kiosk Mode</string>
-	<string id="30043">Play HD If Available</string>
-	<string id="30044">Wait for Fullscreen (sec)</string>
 
-  	<string id="30100">Featured Movies</string>
-  	<string id="30101">Featured Television</string>
-  	<string id="30102">Export Movie Favorites to Library</string>
-  	<string id="30103">Full Movie Refresh(DB)</string>
-  	<string id="30104">Movies</string>
-  	<string id="30105">Export TV Favorites to Library</string>
-  	<string id="30106">Full Television Refresh(DB)</string>
-  	<string id="30107">Television</string>
-  	<string id="30108">Search Prime</string>
+    <string id="30012">Library</string>
+    <string id="30013">Enable Purchases & Rentals Library</string>
+    <string id="30014">Library Metadata(cached)</string>
+
+    <string id="30015">Views</string>
+    <string id="30016">Movie Image Source</string>
+    <string id="30017">TV Image Source</string>
+    <string id="30018">TVDB Posters</string>
+    <string id="30019">TVDB Banners</string>
+    <string id="30020">TMDB Posters</string>
+    <string id="30021">TMDB Banners</string>
+    <string id="30022">Amazon</string>
     
-  	<string id="30120">Building Prime Movie Database</string>
-  	<string id="30121">Initializing Movie Scan</string>
-  	<string id="30122">Scanning Page %s</string>
-  	<string id="30123">Scanned %s Movies</string>
+    <string id="30023">Thumbnail</string>
+    <string id="30024">Poster Wrap</string>
+    <string id="30025">List</string>
+    <string id="30026">Media Info 2</string>
+    <string id="30027">Media Info</string>
+    <string id="30028">Fanart</string>
+    <string id="30034">Big List</string>
+    
+    <string id="30029">Movie View</string>
+    <string id="30030">Show View</string>
+    <string id="30031">Season View</string>
+    <string id="30032">Episode View</string>
+    
+    <string id="30033">Enable DB Edit</string>
+    <string id="30035">Enable Views</string>
+    
+    <string id="30036">Custom Library Folder</string>
+    <string id="30037">Library Folder stored in addon settings</string>
+    <string id="30038">Update Library when complete</string>
+    
+    <string id="30039">Items Per Page (Movie scan)</string>
+    <string id="30040">Items Per Page (TV-Show scan)</string>
+    
+    <string id="30041">Browser Plugin</string>
+    
+    <string id="30042">Browser Kiosk Mode</string>
+    <string id="30043">Play HD If Available</string>
+    <string id="30044">Wait for Fullscreen (sec)</string>
+    <string id="30045">Automatic PIN Input</string>  
+    <string id="30046">PIN</string>
+    
+    <string id="30100">Featured Movies</string>
+    <string id="30101">Featured Television</string>
+    <string id="30102">Export Movie Favorites to Library</string>
+    <string id="30103">Full Movie Refresh(DB)</string>
+    <string id="30104">Movies</string>
+    <string id="30105">Export TV Favorites to Library</string>
+    <string id="30106">Full Television Refresh(DB)</string>
+    <string id="30107">Television</string>
+    <string id="30108">Search Prime</string>
+    
+    <string id="30120">Building Prime Movie Database</string>
+    <string id="30121">Initializing Movie Scan</string>
+    <string id="30122">Scanning Page %s</string>
+    <string id="30123">Scanned %s Movies</string>
    
-  	<string id="30130">Building Prime Television Database</string>
-  	<string id="30131">Initializing Television Scan</string>
-  	<string id="30132">%s Shows</string>
-  	<string id="30133">%s Seasons</string>
-  	<string id="30134">%s Episodes</string>
-  	<string id="30135">Scanned %s Seasons</string>
+    <string id="30130">Building Prime Television Database</string>
+    <string id="30131">Initializing Television Scan</string>
+    <string id="30132">%s Shows</string>
+    <string id="30133">%s Seasons</string>
+    <string id="30134">%s Episodes</string>
+    <string id="30135">Scanned %s Seasons</string>
     
-  	<string id="30140">Export Favorited to Library</string>
-  	<string id="30141">Favorited</string>
-  	<string id="30142">Export All to Library</string>
-  	<string id="30143">All Movies</string>
-  	<string id="30144">Genres</string>
-  	<string id="30145">Years</string>
-  	<string id="30146">Studios</string>
-  	<string id="30147">MPAA Rating</string>
-  	<string id="30148">Directors</string>
-  	<string id="30149">Export Watched to Library</string>
-  	<string id="30150">Watched History</string>
+    <string id="30140">Export Favorited to Library</string>
+    <string id="30141">Favorited</string>
+    <string id="30142">Export All to Library</string>
+    <string id="30143">All Movies</string>
+    <string id="30144">Genres</string>
+    <string id="30145">Years</string>
+    <string id="30146">Studios</string>
+    <string id="30147">MPAA Rating</string>
+    <string id="30148">Directors</string>
+    <string id="30149">Export Watched to Library</string>
+    <string id="30150">Watched History</string>
     <string id="30151">Export to Library</string>
     <string id="30152">Remove from Favorites</string>
     <string id="30153">Add to Favorites</string>
@@ -94,14 +96,14 @@
     <string id="30155">Mark Watched</string>
     <string id="30156">Remove from Movies</string>
 
-  	<string id="30160">All Shows</string>
-  	<string id="30161">Networks</string>
-  	<string id="30162">TV Rating</string>
-  	<string id="30163">Rename Show</string>
-  	<string id="30164">Refresh TVDB Data</string>
-  	<string id="30165">Lookup Show in TVDB</string>
-  	<string id="30166">Remove Show</string>
-  	<string id="30167">Season </string>
-  	<string id="30168">Year </string>
-  	<string id="30169">Specials</string>
+    <string id="30160">All Shows</string>
+    <string id="30161">Networks</string>
+    <string id="30162">TV Rating</string>
+    <string id="30163">Rename Show</string>
+    <string id="30164">Refresh TVDB Data</string>
+    <string id="30165">Lookup Show in TVDB</string>
+    <string id="30166">Remove Show</string>
+    <string id="30167">Season </string>
+    <string id="30168">Year </string>
+    <string id="30169">Specials</string>
 </strings>

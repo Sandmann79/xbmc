@@ -57,9 +57,6 @@ def getURL( url , host='www.amazon.de',useCookie=False):
 
 def getATVURL( url , values = None ):
     try:
-        #proxy = 'http://192.168.2.104:8888'
-        #proxy_handler = urllib2.ProxyHandler({'http':proxy})
-        #opener = urllib2.build_opener(proxy_handler)
         opener = urllib2.build_opener()
         print 'ATVURL --> url = '+url
         opener.addheaders = [('x-android-sign', androidsig(url) )]
@@ -87,10 +84,6 @@ def androidsig(url):
     return base64.encodestring(sig.digest()).replace('\n','')
 
 def addDir(name, mode, sitemode, url='', thumb='', fanart='', infoLabels=False, totalItems=0, cm=False ,page=1):
-    ok = True
-    isHD = name[-1:]
-    if isHD ==']':
-	return ok
     u  = sys.argv[0]
     u += '?url="'+urllib.quote_plus(url)+'"'
     u += '&mode="'+mode+'"'
@@ -114,7 +107,7 @@ def addDir(name, mode, sitemode, url='', thumb='', fanart='', infoLabels=False, 
     item.setInfo( type="Video", infoLabels=infoLabels)
     xbmcplugin.addDirectoryItem(handle=pluginhandle,url=u,listitem=item,isFolder=True,totalItems=totalItems)
 
-def addVideo(name,url,poster='',fanart='',infoLabels=False,totalItems=0,cm=False,traileronly=False,HD=False):
+def addVideo(name,url,poster='',fanart='',infoLabels=False,totalItems=0,cm=False,traileronly=False,isAdult=False):
     if not infoLabels:
         infoLabels={ "Title": name}
     u  = sys.argv[0]
@@ -122,6 +115,7 @@ def addVideo(name,url,poster='',fanart='',infoLabels=False,totalItems=0,cm=False
     u += '&mode="play"'
     u += '&name="'+urllib.quote_plus(name)+'"'
     u += '&sitemode="PLAYVIDEO"'
+    u += '&adult="'+str(isAdult)+'"'
     try:
 	liz=xbmcgui.ListItem(name, thumbnailImage=poster)
     except:

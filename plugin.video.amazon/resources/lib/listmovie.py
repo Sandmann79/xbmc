@@ -19,10 +19,10 @@ confluence_views = [500,501,502,503,504,508]
 
 ################################ Movie listing
 def LIST_MOVIE_ROOT():
-    cm = [(xmlstring(30140), 'XBMC.RunPlugin(%s?mode=<listmovie>&sitemode=<LIST_MOVIES_FAVOR_FILTERED_EXPORT>&url=<>)' % sys.argv[0]) ]
-    common.addDir(xmlstring(30141),'listmovie','LIST_MOVIES_FAVOR_FILTERED',cm=cm)
-    cm = [(xmlstring(30142), 'XBMC.RunPlugin(%s?mode=<listmovie>&sitemode=<LIST_MOVIES_EXPORT>&url=<>)' % sys.argv[0]) ]
-    common.addDir(xmlstring(30143),'listmovie','LIST_MOVIES',cm=cm)
+    #cm = [(xmlstring(30140), 'XBMC.RunPlugin(%s?mode=<listmovie>&sitemode=<LIST_MOVIES_FAVOR_FILTERED_EXPORT>&url=<>)' % sys.argv[0]) ]
+    common.addDir(xmlstring(30141),'listmovie','LIST_MOVIES_FAVOR_FILTERED')
+    #cm = [(xmlstring(30142), 'XBMC.RunPlugin(%s?mode=<listmovie>&sitemode=<LIST_MOVIES_EXPORT>&url=<>)' % sys.argv[0]) ]
+    common.addDir(xmlstring(30143),'listmovie','LIST_MOVIES')
     #common.addDir('Alphabetical','listmovie','LIST_MOVIE_AZ')
     common.addDir(xmlstring(30144),'listmovie','LIST_MOVIE_TYPES','GENRE')
     common.addDir(xmlstring(30145),'listmovie','LIST_MOVIE_TYPES','YEARS')
@@ -31,7 +31,7 @@ def LIST_MOVIE_ROOT():
     common.addDir(xmlstring(30148),'listmovie','LIST_MOVIE_TYPES','DIRECTORS')
     #common.addDir('Actors','listmovie','LIST_MOVIE_TYPES','ACTORS')
     cm = [(xmlstring(30149), 'XBMC.RunPlugin(%s?mode=<listmovie>&sitemode=<LIST_MOVIES_WATCHED_FILTERED_EXPORT>&url=<>)' % sys.argv[0]) ]
-    common.addDir(xmlstring(30150),'listmovie','LIST_MOVIES_WATCHED_FILTERED',cm=cm)
+    common.addDir(xmlstring(30150),'listmovie','LIST_MOVIES_WATCHED_FILTERED')
     xbmcplugin.endOfDirectory(pluginhandle)
     
 def LIST_MOVIE_AZ():
@@ -150,7 +150,7 @@ def LIST_MOVIES(export=False,genrefilter=False,actorfilter=False,directorfilter=
         xbmcplugin.endOfDirectory(pluginhandle,updateListing=False)
     
 def ADD_MOVIE_ITEM(moviedata,override_url=False,inWatchlist=False):
-    asin,hd_asin,movietitle,url,poster,plot,director,writer,runtime,year,premiered,studio,mpaa,actors,genres,stars,votes,TMDBbanner,TMDBposter,TMDBfanart,isprime,isHD,watched,favor,TMDB_ID = moviedata
+    asin,hd_asin,movietitle,url,poster,plot,director,writer,runtime,year,premiered,studio,mpaa,actors,genres,stars,votes,TMDBbanner,TMDBposter,TMDBfanart,isprime,isHD,isAdult,watched,favor,TMDB_ID = moviedata
     if override_url:
         url=override_url
     if poster == None or poster == 'None':
@@ -195,6 +195,6 @@ def ADD_MOVIE_ITEM(moviedata,override_url=False,inWatchlist=False):
     else: cm.append( (xmlstring(30155), 'XBMC.RunPlugin(%s?mode=<movies>&sitemode=<watchMoviedb>&url=<%s>)' % ( sys.argv[0], urllib.quote_plus(asin) ) ) )
     if common.addon.getSetting("editenable") == 'true':
         cm.append( (xmlstring(30156), 'XBMC.RunPlugin(%s?mode=<movies>&sitemode=<deleteMoviedb>&url=<%s>)' % ( sys.argv[0], urllib.quote_plus(asin) ) ) )
-    common.addVideo(movietitle,url,poster,fanart,infoLabels=infoLabels,cm=cm)
+    common.addVideo(movietitle,url,poster,fanart,infoLabels=infoLabels,cm=cm,isAdult=isAdult)
         
 

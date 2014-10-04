@@ -18,7 +18,10 @@ import xbmcaddon
 xmlstring = xbmcaddon.Addon().getLocalizedString
 
 ################################ Movie db
-MAX=int(common.addon.getSetting("perpage"))
+MAX=int(common.addon.getSetting("mov_perpage"))
+MOV_TOTAL=common.addon.getSetting("MoviesTotal")
+if MOV_TOTAL=='': MOV_TOTAL = '1000'
+MOV_TOTAL = int(MOV_TOTAL)
 
 def createMoviedb():
     c = MovieDB.cursor()
@@ -45,6 +48,7 @@ def createMoviedb():
                  externalFanart TEXT,
                  isprime BOOLEAN,
                  isHD BOOLEAN,
+                 isAdult BOOLEAN,
                  watched BOOLEAN,
                  favor BOOLEAN,
                  IMDB_ID TEXT,
@@ -54,7 +58,7 @@ def createMoviedb():
 
 def addMoviedb(moviedata):
     c = MovieDB.cursor()
-    c.execute('insert or ignore into movies values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)', moviedata)
+    c.execute('insert or ignore into movies values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)', moviedata)
     MovieDB.commit()
     c.close()
 
@@ -155,8 +159,10 @@ def getMovieTypes(col):
                     list.append(item)
             else:
                 data = data.decode('utf-8').encode('utf-8').split(',')
+                print data
                 for item in data:
-                    item = item.replace('& ','').strip()
+                    item = item.strip()
+                    print item
                     if item not in list and item <> '' and item <> 0 and item <> 'Inc.' and item <> 'LLC.':
                         list.append(item)
         elif data <> 0:
@@ -169,31 +175,34 @@ def addMoviesdb(isPrime=True):
     dialog = xbmcgui.DialogProgress()
     dialog.create(xmlstring(30120))
     dialog.update(0,xmlstring(30121))
+    c = MovieDB.cursor()
+    c.execute('drop table if exists movies')
+    c.close()
+    createMoviedb()
     page = 1
-    goAhead = True
+    goAhead = 1
     endIndex=0
-    while goAhead:
+    while goAhead == 1:
         page+=1
-        json = appfeed.getList('Movie',endIndex)
+        json = appfeed.getList('Movie', endIndex, NumberOfResults=MAX)
         titles = json['message']['body']['titles']
-        ASINLIST = ''
-        for title in titles:
-            ASINLIST += title['titleId']+','
-        ASIN_ADD(ASINLIST)
-        endIndex+=MAX
-        #endIndex = json['message']['body']['endIndex']
-        if (dialog.iscanceled()):
-            goAhead = False
-        elif endIndex > 14000:
-            goAhead = False
-        dialog.update(int(page*100.0/56), xmlstring(30122).replace("%s",str(page)), xmlstring(30123).replace("%s", str(endIndex) ))
+        if titles:
+            endIndex += ASIN_ADD(titles)
+        else:
+            goAhead = 0
+        if (dialog.iscanceled()): goAhead = -1
+        dialog.update(int((endIndex)*100.0/MOV_TOTAL), xmlstring(30122).replace("%s",str(page)), xmlstring(30123).replace("%s", str(endIndex) ))
+    if goAhead == 0: common.addon.setSetting("MoviesTotal",str(endIndex))
+    dialog.close()
 
-def ASIN_ADD(ASINLIST,isPrime=True):
-    titles = appfeed.ASIN_LOOKUP(ASINLIST)['message']['body']['titles']
+
+def ASIN_ADD(titles,isPrime=True):
+    titelnum = 0
     for title in titles:
         asin = title['titleId']
+        titelnum+=1
         movietitle = title['title']
-        url = common.BASE_URL+'/gp/product/'+asin
+        url = common.BASE_URL+'/dp/'+asin+'/ref=vod_0_wnzw'
         if title['formats'][0].has_key('images'):
             try:
                 thumbnailUrl = title['formats'][0]['images'][0]['uri']
@@ -232,7 +241,7 @@ def ASIN_ADD(ASINLIST,isPrime=True):
         else:
             actors = None
         if title.has_key('genres'):
-            genres = ','.join(title['genres']).replace('_', ' und ')
+            genres = ', '.join(title['genres']).replace('_', ' & ').replace('Musikfilm & Tanz', 'Musikfilm; Tanz')
         else:
             genres = ''
         if title.has_key('customerReviewCollection'):
@@ -242,22 +251,17 @@ def ASIN_ADD(ASINLIST,isPrime=True):
             stars = None
             votes = None
         isHD = False
+        isAdult = False
         hd_asin = None
         for format in title['formats']:
-            if format['videoFormatType'] == 'HD':
-                isHD = True
-                for offer in format['offers']:
-                    if offer['offerType'] == 'PURCHASE':
-                        hd_asin = offer['asin']
-                    elif offer['offerType'] == 'RENTAL':
-                        hd_asin = offer['asin']
-            #for offer in format['offers']:
-            #    if offer['offerType'] == 'SUBSCRIPTION':
-            #        isPrime = True
-        #Add Movie
-        moviedata = [asin,hd_asin,movietitle,url,poster,plot,director,None,runtime,year,premiered,studio,mpaa,actors,genres,stars,votes,None,None,None,isPrime,isHD,False,False,None]
+            if format['videoFormatType'] == 'HD': isHD = True
+        if title.has_key('restrictions'):
+            for rest in title['restrictions']:
+                if rest['action'] == 'playback':
+                    if rest['type'] == 'ageVerificationRequired': isAdult = True
+        moviedata = [asin,hd_asin,movietitle,url,poster,plot,director,None,runtime,year,premiered,studio,mpaa,actors,genres,stars,votes,None,None,None,isPrime,isHD,isAdult,False,False,None]
         addMoviedb(moviedata)
-    return [asin,hd_asin]
+    return titelnum
 
 MovieDBfile = os.path.join(xbmc.translatePath('special://home/addons/script.module.amazon.database/lib/'),'movies.db')
 if not os.path.exists(MovieDBfile):

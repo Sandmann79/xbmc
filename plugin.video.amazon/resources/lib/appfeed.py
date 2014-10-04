@@ -55,12 +55,15 @@ MAX=int(common.addon.getSetting("perpage"))
 common.gen_id()
 
 deviceID = common.addon.getSetting("GenDeviceID")#'000000000000'
-deviceTypeID = 'A2W5AJPLW5Q6YM'  #Android Type
+#deviceTypeID = 'A2W5AJPLW5Q6YM'  #Android Type
 #deviceTypeID = 'A13Q6A55DBZB7M' #WEB Type
-firmware = 'fmw:15-app:1.1.19'
+#firmware = 'fmw:15-app:1.1.19' #Android
 #firmware = 'fmw:10-app:1.1.23'
+deviceTypeID = 'A3VN4E5F7BBC7S'
+firmware = 'fmw:045.01E01164A-app:4.7'
 format = 'json'
-PARAMETERS = '?firmware='+firmware+'&deviceTypeID='+deviceTypeID+'&deviceID='+deviceID+'&format='+format
+
+PARAMETERS = '?encoding=UTF8&firmware='+firmware+'&deviceTypeID='+deviceTypeID+'&deviceID='+deviceID+'&format='+format
 
 def BUILD_BASE_API(MODE,HOST='https://atv-eu.amazon.com/cdp/'):
     return HOST+MODE+PARAMETERS
@@ -317,7 +320,6 @@ def BROWSE_ADDITEMS(url,results,index,search=False,series4season=False,HD=False,
                         for offer in format['offers']:
                             if offer['offerType'] == 'SEASON_PURCHASE':
                                 asin = offer['asin']
-                                #ADD_SEASON(asin,seriesTitle=True)
                                 ADD_SEASON(asin,seriesTitle=search,submode='BROWSE_EPISODES_HD',export=export)
                 Season = True
         elif title['contentType'] == 'EPISODE':

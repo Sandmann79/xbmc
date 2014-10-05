@@ -11,6 +11,7 @@ import xbmc
 import xbmcgui
 import resources.lib.common as common
 import appfeed
+import urlparse
 try:
     from sqlite3 import dbapi2 as sqlite
 except:
@@ -20,6 +21,7 @@ xmlstring = xbmcaddon.Addon().getLocalizedString
 
 ################################ TV db
 MAX=int(common.addon.getSetting("tv_perpage"))
+MAX_MOV=int(common.addon.getSetting("mov_perpage"))
 EPI_TOTAL=common.addon.getSetting("EpisodesTotal")
 if EPI_TOTAL=='': EPI_TOTAL = '14000'
 EPI_TOTAL = int(EPI_TOTAL)
@@ -147,7 +149,8 @@ def getShowTypes(col):
         if data and data[0] <> None:
             data = data[0]
             if type(data) == type(str()):
-                data = data.decode('utf-8').encode('utf-8').split(',')
+                if 'genres' in col: data = data.decode('utf-8').encode('utf-8').split('/')
+                else: data = data.decode('utf-8').encode('utf-8').split(',')
                 for item in data:
                     item = item.strip()
                     if item not in list and item <> ' Inc':
@@ -281,24 +284,24 @@ def unwatchEpisodedb(asin=False):
     c.close()
 
 def addEpisodedb(episodedata):
-    print 'AMAZON: addEpisodedb'
-    print episodedata
+    #print 'AMAZON: addEpisodedb'
+    #print episodedata
     c = tvDB.cursor()
     c.execute('insert or ignore into episodes values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)', episodedata)
     tvDB.commit()
     c.close()
     
 def addSeasondb(seasondata):
-    print 'AMAZON: addSeasondb'
-    print seasondata
+    #print 'AMAZON: addSeasondb'
+    #print seasondata
     c = tvDB.cursor()
     c.execute('insert or ignore into seasons values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)', seasondata)
     tvDB.commit()
     c.close()
 
 def addShowdb(showdata):
-    print 'AMAZON: addShowdb'
-    print showdata
+    #print 'AMAZON: addShowdb'
+    #print showdata
     c = tvDB.cursor()
     c.execute('insert or ignore into shows values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)', showdata)
     tvDB.commit()
@@ -347,7 +350,7 @@ def addTVdb():
     createTVdb()
     page = 1
     endIndex = 0
-    goAhead = 1    
+    goAhead = 1
     SERIES_COUNT = 0
     SEASON_COUNT = 0
     EPISODE_COUNT = 0
@@ -357,12 +360,12 @@ def addTVdb():
         titles = json['message']['body']['titles']
         if titles:
             SERIES_ASINS = ''
-            EPISODE_FEEDS = []
+            EPISODE_ASINS = []
+            EPISODE_NUM = []
             for title in titles:
                 if (dialog.iscanceled()):
                     goAhead = -1
                     break
-                print title['title'].encode('ascii', 'ignore')
                 if title['ancestorTitles']:
                     SERIES_KEY = title['ancestorTitles'][0]['titleId']
                 else:
@@ -373,20 +376,40 @@ def addTVdb():
                     ALL_SERIES_ASINS += SERIES_KEY+','
                 season_size = int(title['childTitles'][0]['size'])
                 if season_size < 1:
-                    season_size = 250
-                EPISODE_FEEDS.append(title['childTitles'][0]['feedUrl']+'&NumberOfResults='+str(season_size))
+                    season_size = MAX_MOV
+                parsed = urlparse.urlparse(title['childTitles'][0]['feedUrl'])
+                EPISODE_ASINS.append(urlparse.parse_qs(parsed.query)['SeasonASIN'])
+                EPISODE_NUM.append(season_size)
             result = ASIN_ADD(titles)
             SEASON_COUNT += result
             del titles
             if SERIES_ASINS <> '':
                 ASIN_ADD(0, asins=SERIES_ASINS)
             dialog.update(int(EPISODE_COUNT*100.0/EPI_TOTAL), xmlstring(30132).replace("%s",str(SERIES_COUNT)), xmlstring(30133).replace("%s",str(SEASON_COUNT)),xmlstring(30134).replace("%s",str(EPISODE_COUNT)) )
-            for url in EPISODE_FEEDS:
-                if (dialog.iscanceled()):
-                    goAhead = -1
-                    break
-                EPISODE_COUNT += ASIN_ADD(appfeed.URL_LOOKUP(url)['message']['body']['titles'])
-                dialog.update(int(EPISODE_COUNT*100.0/EPI_TOTAL), xmlstring(30132).replace("%s",str(SERIES_COUNT)), xmlstring(30133).replace("%s",str(SEASON_COUNT)),xmlstring(30134).replace("%s",str(EPISODE_COUNT)) )
+            goAheadepi = 1
+            episodes = 0
+            AsinList = ''
+            EPISODE_NUM.append(MAX_MOV+1)
+            for index, item in enumerate(EPISODE_ASINS):
+                episodes += EPISODE_NUM[index]
+                AsinList += ','.join(item) + ','
+                print episodes,AsinList,index
+                if (episodes + EPISODE_NUM[index+1]) > MAX_MOV:
+                    print 'start'
+                    json = appfeed.getList('TVEpisode', 0, NumberOfResults=MAX_MOV, AsinList=AsinList)
+                    titles = json['message']['body']['titles']
+                    if titles:
+                        EPISODE_COUNT += ASIN_ADD(titles)
+                    else:
+                        goAheadepi = -1
+                    if (dialog.iscanceled()):
+                        goAheadepi = -1
+                        goAhead = -1
+                        break
+                    episodes = 0
+                    AsinList = ''
+                    dialog.update(int(EPISODE_COUNT*100.0/EPI_TOTAL), xmlstring(30132).replace("%s",str(SERIES_COUNT)), xmlstring(30133).replace("%s",str(SEASON_COUNT)),xmlstring(30134).replace("%s",str(EPISODE_COUNT)) )
+                    del titles
             endIndex+=result
         else:
             goAhead = 0
@@ -451,7 +474,8 @@ def ASIN_ADD(titles,asins=False,url=False,isPrime=True,isHD=False,single=False,a
             else:
                 studio = None
             if title.has_key('regulatoryRating'):
-                mpaa = title['regulatoryRating']
+                if title['regulatoryRating'] == 'not_checked': mpaa = xmlstring(30171)
+                else: mpaa = xmlstring(30170) + title['regulatoryRating']
             else:
                 mpaa = None
             if title.has_key('starringCast'):
@@ -459,7 +483,7 @@ def ASIN_ADD(titles,asins=False,url=False,isPrime=True,isHD=False,single=False,a
             else:
                 actors = None
             if title.has_key('genres'):
-                genres = ', '.join(title['genres']).replace('_', ' & ').replace('Musikfilm & Tanz', 'Musikfilm; Tanz')
+                genres = ' / '.join(title['genres']).replace('_', ' & ').replace('Musikfilm & Tanz', 'Musikfilm, Tanz')
             else:
                 genres = None
             if title.has_key('amazonRating'):
@@ -520,11 +544,12 @@ def ASIN_ADD(titles,asins=False,url=False,isPrime=True,isHD=False,single=False,a
             else:
                 studio = None
             if title.has_key('regulatoryRating'):
-                mpaa = title['regulatoryRating']
+                if title['regulatoryRating'] == 'not_checked': mpaa = xmlstring(30171)
+                else: mpaa = xmlstring(30170) + title['regulatoryRating']
             else:
                 mpaa = None
             if title.has_key('genres'):
-                genres = ', '.join(title['genres']).replace('_', ' & ').replace('Musikfilm & Tanz', 'Musikfilm; Tanz')
+                genres = ' / '.join(title['genres']).replace('_', ' & ').replace('Musikfilm & Tanz', 'Musikfilm, Tanz')
             else:
                 genres = None
             if title.has_key('amazonRating'):
@@ -586,7 +611,8 @@ def ASIN_ADD(titles,asins=False,url=False,isPrime=True,isHD=False,single=False,a
             else:
                 studio = None
             if title.has_key('regulatoryRating'):
-                mpaa = title['regulatoryRating']
+                if title['regulatoryRating'] == 'not_checked': mpaa = xmlstring(30171)
+                else: mpaa = xmlstring(30170) + title['regulatoryRating']
             else:
                 mpaa = None
             if title.has_key('starringCast'):
@@ -594,7 +620,7 @@ def ASIN_ADD(titles,asins=False,url=False,isPrime=True,isHD=False,single=False,a
             else:
                 actors = None
             if title.has_key('genres'):
-                genres = ', '.join(title['genres']).replace('_', ' & ').replace('Musikfilm & Tanz', 'Musikfilm; Tanz')
+                genres = ' / '.join(title['genres']).replace('_', ' & ').replace('Musikfilm & Tanz', 'Musikfilm, Tanz')
             else:
                 genres = None
             if title.has_key('customerReviewCollection'):

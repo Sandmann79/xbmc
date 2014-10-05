@@ -97,7 +97,7 @@
 
     <string id="30160">Alle Serien</string>
     <string id="30161">Sender</string>
-    <string id="30162">Alterseinstufung</string>
+    <string id="30162">Altersfreigabe</string>
     <string id="30163">Serie umbenennen</string>
     <string id="30164">TVDB Daten aktualisieren</string>
     <string id="30165">Serie in TVDB anzeigen</string>
@@ -105,4 +105,6 @@
     <string id="30167">Staffel </string>
     <string id="30168">Jahr </string>
     <string id="30169">Spezial</string>
+    <string id="30170">FSK </string>
+    <string id="30171">Ungeprüft</string>
 </strings>

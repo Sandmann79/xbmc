@@ -68,16 +68,20 @@ PARAMETERS = '?encoding=UTF8&firmware='+firmware+'&deviceTypeID='+deviceTypeID+'
 def BUILD_BASE_API(MODE,HOST='https://atv-eu.amazon.com/cdp/'):
     return HOST+MODE+PARAMETERS
 
-def getList(ContentType,start=0,isPrime=True,NumberOfResults=MAX,OrderBy='SalesRank',version=2):
+def getList(ContentType,start=0,isPrime=True,NumberOfResults=MAX,OrderBy='SalesRank',version=2,AsinList=False):
     if isPrime:
         BROWSE_PARAMS = '&OfferGroups=B0043YVHMY'
     BROWSE_PARAMS +='&NumberOfResults='+str(NumberOfResults)
     BROWSE_PARAMS +='&StartIndex='+str(start)
     BROWSE_PARAMS +='&ContentType='+ContentType
     BROWSE_PARAMS +='&OrderBy='+OrderBy
-    #BROWSE_PARAMS +='&Detailed=T'
-    #BROWSE_PARAMS +='&IncludeNonWeb=T'
-    #BROWSE_PARAMS +=
+    if ContentType == 'TVEpisode':
+        BROWSE_PARAMS +='&Detailed=T'
+        BROWSE_PARAMS +='&IncludeAll=T'
+        BROWSE_PARAMS +='&AID=T'
+        BROWSE_PARAMS +='&tag=1'
+        BROWSE_PARAMS +='&SeasonASIN='+AsinList
+        BROWSE_PARAMS +='&IncludeBlackList=T'
     #&HighDef=F # T or F ??
     #&playbackInformationRequired=false
     #&OrderBy=SalesRank

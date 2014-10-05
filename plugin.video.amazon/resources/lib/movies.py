@@ -158,8 +158,8 @@ def getMovieTypes(col):
                 if item not in list and item <> '' and item <> 0 and item <> 'Inc.' and item <> 'LLC.':
                     list.append(item)
             else:
-                data = data.decode('utf-8').encode('utf-8').split(',')
-                print data
+                if 'genres' in col: data = data.decode('utf-8').encode('utf-8').split('/')
+                else: data = data.decode('utf-8').encode('utf-8').split(',')
                 for item in data:
                     item = item.strip()
                     print item
@@ -233,7 +233,8 @@ def ASIN_ADD(titles,isPrime=True):
         else:
             studio = None
         if title.has_key('regulatoryRating'):
-            mpaa = title['regulatoryRating']
+            if title['regulatoryRating'] == 'not_checked': mpaa = xmlstring(30171)
+            else: mpaa = xmlstring(30170) + title['regulatoryRating']
         else:
             mpaa = ''
         if title.has_key('starringCast'):
@@ -241,7 +242,7 @@ def ASIN_ADD(titles,isPrime=True):
         else:
             actors = None
         if title.has_key('genres'):
-            genres = ', '.join(title['genres']).replace('_', ' & ').replace('Musikfilm & Tanz', 'Musikfilm; Tanz')
+            genres = ' / '.join(title['genres']).replace('_', ' & ').replace('Musikfilm & Tanz', 'Musikfilm, Tanz')
         else:
             genres = ''
         if title.has_key('customerReviewCollection'):

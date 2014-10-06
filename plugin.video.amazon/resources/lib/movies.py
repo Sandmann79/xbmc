@@ -18,9 +18,9 @@ import xbmcaddon
 xmlstring = xbmcaddon.Addon().getLocalizedString
 
 ################################ Movie db
-MAX=int(common.addon.getSetting("mov_perpage"))
-MOV_TOTAL=common.addon.getSetting("MoviesTotal")
-if MOV_TOTAL=='': MOV_TOTAL = '2000'
+MAX = int(common.addon.getSetting("mov_perpage"))
+MOV_TOTAL = common.addon.getSetting("MoviesTotal")
+if MOV_TOTAL == '': MOV_TOTAL = '2000'
 MOV_TOTAL = int(MOV_TOTAL)
 
 def createMoviedb():
@@ -125,8 +125,6 @@ def loadMoviedb(genrefilter=False,actorfilter=False,directorfilter=False,studiof
         genrefilter = '%'+genrefilter+'%'
         return c.execute('select distinct * from movies where isprime = (?) and genres like (?)', (isprime,genrefilter))
     elif mpaafilter:
-        #mpaafilter = '%'+mpaafilter+'%'
-        #return c.execute('select distinct * from movies where isprime = (?) and mpaa like (?)', (isprime,mpaafilter))
         return c.execute('select distinct * from movies where isprime = (?) and mpaa = (?)', (isprime,mpaafilter))
     elif actorfilter:
         actorfilter = '%'+actorfilter+'%'
@@ -162,7 +160,6 @@ def getMovieTypes(col):
                 else: data = data.decode('utf-8').encode('utf-8').split(',')
                 for item in data:
                     item = item.strip()
-                    print item
                     if item not in list and item <> '' and item <> 0 and item <> 'Inc.' and item <> 'LLC.':
                         list.append(item)
         elif data <> 0:
@@ -171,10 +168,20 @@ def getMovieTypes(col):
     c.close()
     return list
 
+def getMoviedbAsins(table,col):
+    c = MovieDB.cursor()
+    content = ''
+    for item in c.execute('select asin from %s where %s = (1)' % (table, col)).fetchall():
+        content += ','.join(item)
+    return content
+    
 def addMoviesdb(isPrime=True):
+    global MovWatched, MovFav
     dialog = xbmcgui.DialogProgress()
     dialog.create(xmlstring(30120))
     dialog.update(0,xmlstring(30121))
+    MovWatched = getMoviedbAsins('movies', 'watched')
+    MovFav = getMoviedbAsins('movies', 'favor')
     c = MovieDB.cursor()
     c.execute('drop table if exists movies')
     c.close()
@@ -193,12 +200,16 @@ def addMoviesdb(isPrime=True):
         if (dialog.iscanceled()): goAhead = -1
         dialog.update(int((endIndex)*100.0/MOV_TOTAL), xmlstring(30122).replace("%s",str(page)), xmlstring(30123).replace("%s", str(endIndex) ))
     if goAhead == 0: common.addon.setSetting("MoviesTotal",str(endIndex))
+    del MovWatched, MovFav
     dialog.close()
-
 
 def ASIN_ADD(titles,isPrime=True):
     titelnum = 0
     for title in titles:
+        isWatched=False
+        isFav=False
+        isHD = False
+        isAdult = False
         asin = title['titleId']
         titelnum+=1
         movietitle = title['title']
@@ -251,17 +262,15 @@ def ASIN_ADD(titles,isPrime=True):
         else:
             stars = None
             votes = None
-        isHD = False
-        isAdult = False
-        hd_asin = None
         for format in title['formats']:
             if format['videoFormatType'] == 'HD': isHD = True
         if title.has_key('restrictions'):
             for rest in title['restrictions']:
                 if rest['action'] == 'playback':
                     if rest['type'] == 'ageVerificationRequired': isAdult = True
-        moviedata = [asin,hd_asin,movietitle,url,poster,plot,director,None,runtime,year,premiered,studio,mpaa,actors,genres,stars,votes,None,None,None,isPrime,isHD,isAdult,False,False,None]
-        addMoviedb(moviedata)
+        if asin in MovWatched: isWatched = True
+        if asin in MovFav: isFav = True
+        addMoviedb([asin,None,movietitle,url,poster,plot,director,None,runtime,year,premiered,studio,mpaa,actors,genres,stars,votes,None,None,None,isPrime,isHD,isAdult,isWatched,isFav,None])
     return titelnum
 
 MovieDBfile = os.path.join(xbmc.translatePath('special://home/addons/script.module.amazon.database/lib/'),'movies.db')
@@ -272,190 +281,3 @@ if not os.path.exists(MovieDBfile):
 else:
     MovieDB = sqlite.connect(MovieDBfile)
     MovieDB.text_factory = str
-
-
-#===============================================================================
-# MovieDBdownload = os.path.join(xbmc.translatePath(common.pluginpath),'resources','cache','newmovies.db')
-# MovieDBold = os.path.join(xbmc.translatePath('special://profile/addon_data/plugin.video.amazon/'),'movies.db')
-# MovieDBfile = os.path.join(xbmc.translatePath('special://profile/addon_data/plugin.video.amazon/'),'movies0.db')
-# MovieDBfile0 = os.path.join(xbmc.translatePath('special://profile/addon_data/plugin.video.amazon/'),'movies1.db')
-# if not os.path.exists(MovieDBfile) and os.path.exists(MovieDBdownload):
-#    import shutil
-#    shutil.move(MovieDBdownload, MovieDBfile)
-#    if os.path.exists(MovieDBfile0):
-#        os.remove(MovieDBfile0)
-#    if os.path.exists(MovieDBold): 
-#        os.remove(MovieDBold)
-# if not os.path.exists(MovieDBfile):
-#    MovieDB = sqlite.connect(MovieDBfile)
-#    MovieDB.text_factory = str
-#    createMoviedb()
-# else:
-#    MovieDB = sqlite.connect(MovieDBfile)
-#    MovieDB.text_factory = str
-#===============================================================================
-
-######### OLD HTML SCRAPING CODE
-#MOVIE_URL = 'http://www.amazon.com/gp/search/ref=sr_st?qid=1314934213&rh=n%3A2625373011%2Cn%3A!2644981011%2Cn%3A!2644982011%2Cn%3A2858778011%2Cn%3A2858905011%2Cp_85%3A2470955011&sort=-releasedate'
-#===============================================================================
-# def addNewMoviesdbHTML():
-#    addMoviesdb(MOVIE_URL,singlepage=True)
-# 
-# def addMoviesdbHTML(url=MOVIE_URL,isprime=True,singlepage=False):
-#    dialog = xbmcgui.DialogProgress()
-#    dialog.create('Refreshing Prime Movie Database')
-#    dialog.update(0,'Initializing Movie Scan')
-#    if not singlepage:
-#        data = common.getURL(url)
-#        tree = BeautifulSoup(data, convertEntities=BeautifulSoup.HTML_ENTITIES)
-#        #total = int(tree.find('div',attrs={'id':'resultCount','class':'resultCount'}).span.string.replace(',','').split('of')[1].split('Results')[0].strip())
-#        total = 1300
-#        del tree; del data
-#    else:
-#        total=12
-#    pages = (total/12)+1
-#    increment = 100.0 / pages 
-#    page = 1
-#    percent = int(increment*page)
-#    dialog.update(percent,'Scanning Page %s of %s' % (str(page),str(pages)),'Scanned %s of %s Movies' % (str((page-1)*12),str(total)))
-#    pagenext = scrapeMoviesdb(url,isprime)
-#    if not singlepage:
-#        while pagenext:
-#            page += 1
-#            percent = int(increment*page)
-#            dialog.update(percent,'Scanning Page %s of %s' % (str(page),str(pages)),'Scanned %s of %s Movies' % (str((page-1)*12),str(total)))
-#            pagenext = scrapeMoviesdb(pagenext,isprime)
-#            if (dialog.iscanceled()):
-#                return False
-# 
-# def scrapeMoviesdbHTML(url,isprime=True):
-#    data = common.getURL(url)
-#    scripts = re.compile(r'<script.*?script>',re.DOTALL)
-#    data = scripts.sub('', data)
-#    style = re.compile(r'<style.*?style>',re.DOTALL)
-#    data = style.sub('', data)
-#    tree = BeautifulSoup(data, convertEntities=BeautifulSoup.HTML_ENTITIES)
-#    atf = tree.find(attrs={'id':'atfResults'}).findAll('div',recursive=False,attrs={'name':True})
-#    try:
-#        btf = tree.find(attrs={'id':'btfResults'}).findAll('div',recursive=False,attrs={'name':True})
-#        atf.extend(btf)
-#        del btf
-#    except:
-#        print 'AMAZON: No btf found'
-#    nextpage = tree.find(attrs={'title':'Next page','id':'pagnNextLink','class':'pagnNext'})
-#    del tree
-#    del data  
-#    for movie in atf:
-#        asin = movie['name']
-#        movietitle = movie.find('a', attrs={'class':'title'}).string
-#        poster = movie.find(attrs={'class':'image'}).find('img')['src'].replace('._AA160_','')
-#        url = common.BASE_URL+'/gp/product/'+asin
-#        print getMovieInfo(asin,movietitle,url,poster,isPrime=True)
-#    del atf
-#    if nextpage:
-#        pagenext = common.BASE_URL + nextpage['href']
-#        del nextpage
-#        return pagenext
-#    else:
-#        return False
-# 
-# def getMovieInfoHTML(asin,movietitle,url,poster,isPrime=False):
-#    c = MovieDB.cursor()
-#    returndata = c.execute('select asin,movietitle,url,poster,plot,director,writer,runtime,year,premiered,studio,mpaa,actors,genres,stars,votes,TMDBbanner,TMDBposter,TMDBfanart,isprime,watched,favor from movies where asin = (?) and movietitle = (?)', (asin,movietitle)).fetchone()
-#    c.close()
-#    if returndata:
-#        print 'AMAZON: Returning Cached Meta for ASIN: '+asin
-#        return returndata
-#    else:
-#        plot,director,runtime,year,premiered,studio,mpaa,actors,genres,stars,votes = scrapeMovieInfo(asin)
-#        moviedata = [asin,movietitle,url,poster,plot,director,None,runtime,year,premiered,studio,mpaa,actors,genres,stars,votes,None,None,None,isPrime,False,False,None]
-#        addMoviedb(moviedata)
-#        print 'AMAZON: Cached Meta for ASIN: '+asin
-#        return moviedata
-# 
-# def scrapeMovieInfoHTML(asin):
-#    url = common.BASE_URL+'/gp/product/'+asin
-#    tags = re.compile(r'<.*?>')
-#    scripts = re.compile(r'<script.*?script>',re.DOTALL)
-#    spaces = re.compile(r'\s+')
-#    data = common.getURL(url)
-#    scripts = re.compile(r'<script.*?script>',re.DOTALL)
-#    data = scripts.sub('', data)
-#    style = re.compile(r'<style.*?style>',re.DOTALL)
-#    data = style.sub('', data)
-#    tree = BeautifulSoup(data, convertEntities=BeautifulSoup.HTML_ENTITIES)
-#    try:
-#        stardata = tree.find('span',attrs={'class':'crAvgStars'}).renderContents()
-#        stardata = scripts.sub('', stardata)
-#        stardata = tags.sub('', stardata)
-#        stardata = spaces.sub(' ', stardata).strip().split('out of ')
-#        stars = float(stardata[0])*2
-#        votes = stardata[1].split('customer reviews')[0].split('See all reviews')[1].replace('(','').strip()
-#    except:
-#        stars = None
-#        votes = None
-#    try:
-#        premieredpossible = tree.find('div', attrs={'class':'bucket','id':'stills'}).findAll('li')
-#        for item in premieredpossible:
-#            if item.contents[0].string == 'US Theatrical Release Date:':
-#                premiered = item.contents[1].strip()
-#                d = datetime.strptime(premiered, '%B %d, %Y')
-#                premiered = d.strftime('%Y-%m-%d')
-#        if not premiered:
-#            premiered = None
-#    except:
-#        premiered = None
-#    metadatas = tree.findAll('div', attrs={'style':'margin-top:7px;margin-bottom:7px;'})
-#    del tree, data
-#    metadict = {}
-#    for metadata in metadatas:
-#        mdata = metadata.renderContents()
-#        mdata = scripts.sub('', mdata)
-#        mdata = tags.sub('', mdata)
-#        mdata = spaces.sub(' ', mdata).strip().split(':')
-#        fd = ''
-#        for md in mdata[1:]:
-#            fd += ' '+md
-#        metadict[mdata[0].strip()] = fd.strip()
-#    try:plot = metadict['Synopsis']
-#    except: plot = None
-#    try:director = metadict['Directed by']
-#    except:director = None
-#    try:
-#        runtime = metadict['Runtime']
-#        if 'hours' in runtime:
-#            split = 'hours'
-#        elif 'hour' in runtime:
-#            split = 'hour'
-#        if 'minutes' in runtime:
-#            replace = 'minutes'
-#        elif 'minute' in runtime:
-#            replace = 'minute'
-#        if 'hour' not in runtime:
-#            runtime = runtime.replace(replace,'')
-#            minutes = int(runtime.strip())
-#        elif 'minute' not in runtime:
-#            runtime = runtime.replace(split,'')
-#            minutes = (int(runtime.strip())*60)     
-#        else:
-#            runtime = runtime.replace(replace,'').split(split)
-#            try:
-#                minutes = (int(runtime[0].strip())*60)+int(runtime[1].strip())
-#            except:
-#                minutes = (int(runtime[0].strip())*60)
-#        runtime = str(minutes)
-#    except: runtime = None
-#    try: year = int(metadict['Release year'])
-#    except: year = None
-#    try: studio = metadict['Studio']
-#    except: studio = None
-#    try: mpaa = metadict['MPAA Rating']
-#    except: mpaa = None
-#    try: actors = metadict['Starring']+', '+metadict['Supporting actors']
-#    except:
-#        try: actors = metadict['Starring']
-#        except: actors = None     
-#    try: genres = metadict['Genre']
-#    except: genres = None
-#    return plot,director,runtime,year,premiered,studio,mpaa,actors,genres,stars,votes
-#===============================================================================

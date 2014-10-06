@@ -151,7 +151,6 @@ def APP_LEVEL2():
         if item.has_key('categories'):
             common.addDir(item['title'],'appfeed','APP_LEVEL3',common.args.url+','+str(categories.index(item)))
         else:
-            #cm = [(xmlstring(30151), 'XBMC.RunPlugin(%s?mode=<appfeed>&sitemode=<BROWSE_EXPORT>&url=<%s>)' % ( sys.argv[0], urllib.quote_plus(item['query']) ) ) ]
             common.addDir(item['title'],'appfeed','BROWSE',item['query'])
     xbmcplugin.endOfDirectory(pluginhandle)    
 
@@ -166,7 +165,6 @@ def APP_LEVEL3():
         if item.has_key('categories'):
             common.addDir(item['title'],'appfeed','APP_LEVEL4',common.args.url+','+str(categories.index(item)))
         else:
-            #cm = [(xmlstring(30151), 'XBMC.RunPlugin(%s?mode=<appfeed>&sitemode=<BROWSE_EXPORT>&url=<%s>)' % ( sys.argv[0], urllib.quote_plus(item['query']) ) ) ]
             common.addDir(item['title'],'appfeed','BROWSE',item['query'])
     xbmcplugin.endOfDirectory(pluginhandle) 
 
@@ -179,9 +177,8 @@ def ADD_MOVIE(addASIN,isPrime=True,inWatchlist=False,export=False):
         if export:
             xbmclibrary.EXPORT_MOVIE(moviedata[0])
         else:
-            righturl='http://www.amazon.de/gp/product/' + addASIN
+            righturl='http://www.amazon.de/dp/' + addASIN + '/ref=vod_0_wnzw'
             listmovie.ADD_MOVIE_ITEM(moviedata,righturl,inWatchlist=inWatchlist)
-            #listmovie.ADD_MOVIE_ITEM(moviedata,inWatchlist=inWatchlist)
 
 def ADD_SERIES(addASIN,isPrime=True,export=False):
     shows = tvDB.lookupShowsdb(addASIN,isPrime)

@@ -140,7 +140,7 @@ def loadMoviedb(genrefilter=False,actorfilter=False,directorfilter=False,studiof
     elif favorfilter:
         return c.execute('select distinct * from movies where isprime = (?) and favor = (?)', (isprime,favorfilter))
     elif alphafilter:
-        return c.execute('select distinct * from movies where isprime = (?) and movietitle regexp (?)', (isprime,alphafilter+'*'))       
+        return c.execute('select distinct * from movies where isprime = (?) and movietitle like (?)', (isprime,alphafilter))       
     else:
         return c.execute('select distinct * from movies where isprime = (?)', (isprime,))
 

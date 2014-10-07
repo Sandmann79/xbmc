@@ -96,6 +96,7 @@
     <string id="30154">Unwatch</string>
     <string id="30155">Mark Watched</string>
     <string id="30156">Remove from Movies</string>
+    <string id="30157">Popular Movies</string>
 
     <string id="30160">All Shows</string>
     <string id="30161">Networks</string>
@@ -109,4 +110,5 @@
     <string id="30169">Specials</string>
     <string id="30170"></string>
     <string id="30171">Unrated</string>
+    <string id="30172">Popular Shows</string>
 </strings>

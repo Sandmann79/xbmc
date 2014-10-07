@@ -12,6 +12,7 @@ import xbmcgui
 import resources.lib.common as common
 import appfeed
 import urlparse
+import string
 try:
     from sqlite3 import dbapi2 as sqlite
 except:
@@ -110,7 +111,7 @@ def createTVdb():
     tvDB.commit()
     c.close()
 
-def loadTVShowdb(HDonly=False,mpaafilter=False,genrefilter=False,creatorfilter=False,networkfilter=False,yearfilter=False,watchedfilter=False,favorfilter=False,isprime=True):
+def loadTVShowdb(HDonly=False,mpaafilter=False,genrefilter=False,creatorfilter=False,networkfilter=False,yearfilter=False,watchedfilter=False,favorfilter=False,alphafilter=False,isprime=True):
     c = tvDB.cursor()
     if HDonly:
         return c.execute('select distinct * from shows where isprime = (?) and isHD = (?)', (isprime,HDonly))
@@ -127,6 +128,8 @@ def loadTVShowdb(HDonly=False,mpaafilter=False,genrefilter=False,creatorfilter=F
         return c.execute('select distinct * from shows where isprime = (?) and year = (?)', (isprime,int(yearfilter)))
     elif favorfilter:
         return c.execute('select distinct * from shows where isprime = (?) and favor = (?)', (isprime,favorfilter)) 
+    elif alphafilter:
+        return c.execute('select distinct * from shows where isprime = (?) and seriestitle like (?)', (isprime,alphafilter)) 
     else:
         return c.execute('select distinct * from shows where isprime = (?)', (isprime,))
 
@@ -189,6 +192,31 @@ def fixYears():
     tvDB.commit()
     c.close()
     
+def fixDBLShows():
+    c = tvDB.cursor()
+    allseries = []
+    for asin,seriestitle in c.execute('select asin,seriestitle from shows').fetchall():
+        flttitle = cleanTitle(seriestitle)
+        addlist = True
+        index = 0
+        for asinlist,titlelist,fltlist in allseries:
+            if flttitle == fltlist:
+                allseries.pop(index)
+                allseries.insert(index, [asinlist + ',' + asin,titlelist,fltlist])
+                c.execute('delete from shows where seriestitle = (?) and asin = (?)', (seriestitle,asin))
+                addlist = False
+            index += 1
+        if addlist: allseries.append([asin,seriestitle,flttitle])
+    for asinlist,titlelist,fltlist in allseries: 
+        c.execute("update shows set asin = (?) where seriestitle = (?)", (asinlist, titlelist))
+    tvDB.commit()
+    c.close()
+
+def cleanTitle(content):
+    content = content.replace(' und ','').lower()
+    invalid_chars = "?!.:&,;' "
+    return ''.join(c for c in content if c not in invalid_chars)
+
 def deleteShowdb(seriestitle=False):
     if not seriestitle:
         seriestitle = common.args.title
@@ -429,6 +457,7 @@ def addTVdb():
     print SEASON_COUNT
     print EPISODE_COUNT
     if goAhead == 0: common.addon.setSetting("EpisodesTotal",str(EPISODE_COUNT))
+    fixDBLShows()
     fixHDshows()
 
 def ASIN_FEED(url):

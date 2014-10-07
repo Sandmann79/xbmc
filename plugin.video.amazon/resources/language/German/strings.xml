@@ -46,7 +46,7 @@
     <string id="30038">Nach Abschluss Bibliothek aktualisieren</string>
     
     <string id="30039">Elemente pro Seite (Filmsuche)</string>
-    <string id="30040">Elemente pro Seite (Serienuche)</string>
+    <string id="30040">Elemente pro Seite (Seriensuche)</string>
 
     <string id="30042">Browser Kiosk Modus</string>
     <string id="30043">Wiedergabe in HD, sofern verfügbar</string>
@@ -68,14 +68,14 @@
     <string id="30120">Erstelle Filmdatenbank</string>
     <string id="30121">Starte Filmsuche</string>
     <string id="30122">Durchsuche Seite %s</string>
-    <string id="30123">%s Filme durchsucht</string>
+    <string id="30123">%s Filme gefunden</string>
    
     <string id="30130">Erstelle Seriendatenbank</string>
     <string id="30131">Starte Seriensuche</string>
     <string id="30132">%s Serien</string>
     <string id="30133">%s Staffeln</string>
     <string id="30134">%s Episoden</string>
-    <string id="30135">%s Staffeln durchsucht</string>
+    <string id="30135">%s Staffeln gefunden</string>
     
     <string id="30140">Favoriten zur Bibliothek exportieren</string>
     <string id="30141">Favoriten</string>
@@ -91,9 +91,10 @@
     <string id="30151">Zur Bibliothek exportieren</string>
     <string id="30152">Von Favoriten entfernen</string>
     <string id="30153">Zu Favoriten hinzufügen</string>
-    <string id="30154">Ungesehen</string>
+    <string id="30154">Als ungesehen markieren</string>
     <string id="30155">Als gesehen markieren</string>
     <string id="30156">Aus Filmen entfernen</string>
+    <string id="30157">Beliebte Filme</string>
 
     <string id="30160">Alle Serien</string>
     <string id="30161">Sender</string>
@@ -107,4 +108,5 @@
     <string id="30169">Spezial</string>
     <string id="30170">FSK </string>
     <string id="30171">Ungeprüft</string>
+    <string id="30172">Beliebte Serien</string>
 </strings>

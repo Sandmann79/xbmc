@@ -20,6 +20,7 @@ confluence_views = [500,501,502,503,504,508]
 ################################ Movie listing
 def LIST_MOVIE_ROOT():
     common.addDir(xmlstring(30141),'listmovie','LIST_MOVIES_FAVOR_FILTERED')
+    common.addDir(xmlstring(30157),'listmovie','LIST_MOVIES','no')
     common.addDir(xmlstring(30143),'listmovie','LIST_MOVIES')
     common.addDir(xmlstring(30144),'listmovie','LIST_MOVIE_TYPES','GENRE')
     common.addDir(xmlstring(30145),'listmovie','LIST_MOVIE_TYPES','YEARS')
@@ -120,24 +121,21 @@ def LIST_MOVIES_FAVOR_FILTERED(export=False):
 def LIST_MOVIES_EXPORT():
     LIST_MOVIES(export=True)
 
-def LIST_MOVIES(export=False,genrefilter=False,actorfilter=False,directorfilter=False,studiofilter=False,yearfilter=False,mpaafilter=False,watchedfilter=False,favorfilter=False,alphafilter=False):
-    if export:
-        xbmclibrary.SetupLibrary()
+def LIST_MOVIES(export=False,genrefilter=False,actorfilter=False,directorfilter=False,studiofilter=False,yearfilter=False,mpaafilter=False,watchedfilter=False,favorfilter=False,alphafilter=False,sortaz=True):
     import movies as moviesDB
+    if common.args.url == 'no': sortaz = False
     movies = moviesDB.loadMoviedb(genrefilter=genrefilter,actorfilter=actorfilter,directorfilter=directorfilter,studiofilter=studiofilter,yearfilter=yearfilter,mpaafilter=mpaafilter,watchedfilter=watchedfilter,favorfilter=favorfilter,alphafilter=alphafilter)
     for moviedata in movies:
-        if export:
-            xbmclibrary.EXPORT_MOVIE(moviedata[0])
-        else:
-            ADD_MOVIE_ITEM(moviedata)
+        ADD_MOVIE_ITEM(moviedata)
     if not export:
         xbmcplugin.setContent(pluginhandle, 'Movies')
-        xbmcplugin.addSortMethod(pluginhandle, xbmcplugin.SORT_METHOD_VIDEO_TITLE)
-        xbmcplugin.addSortMethod(pluginhandle, xbmcplugin.SORT_METHOD_VIDEO_YEAR)
-        xbmcplugin.addSortMethod(pluginhandle, xbmcplugin.SORT_METHOD_VIDEO_RUNTIME)
-        xbmcplugin.addSortMethod(pluginhandle, xbmcplugin.SORT_METHOD_VIDEO_RATING)
-        xbmcplugin.addSortMethod(pluginhandle, xbmcplugin.SORT_METHOD_DURATION)
-        xbmcplugin.addSortMethod(pluginhandle, xbmcplugin.SORT_METHOD_STUDIO_IGNORE_THE)
+        if sortaz:
+            xbmcplugin.addSortMethod(pluginhandle, xbmcplugin.SORT_METHOD_VIDEO_TITLE)
+            xbmcplugin.addSortMethod(pluginhandle, xbmcplugin.SORT_METHOD_VIDEO_YEAR)
+            xbmcplugin.addSortMethod(pluginhandle, xbmcplugin.SORT_METHOD_VIDEO_RUNTIME)
+            xbmcplugin.addSortMethod(pluginhandle, xbmcplugin.SORT_METHOD_VIDEO_RATING)
+            xbmcplugin.addSortMethod(pluginhandle, xbmcplugin.SORT_METHOD_DURATION)
+            xbmcplugin.addSortMethod(pluginhandle, xbmcplugin.SORT_METHOD_STUDIO_IGNORE_THE)
         viewenable=common.addon.getSetting("viewenable")
         if viewenable == 'true':
             view=int(common.addon.getSetting("movieview"))
@@ -186,4 +184,3 @@ def ADD_MOVIE_ITEM(moviedata,override_url=False,inWatchlist=False):
     if common.addon.getSetting("editenable") == 'true':
         cm.append( (xmlstring(30156), 'XBMC.RunPlugin(%s?mode=<movies>&sitemode=<deleteMoviedb>&url=<%s>)' % ( sys.argv[0], urllib.quote_plus(asin) ) ) )
     common.addVideo(movietitle,url,poster,fanart,infoLabels=infoLabels,cm=cm,isAdult=isAdult)    
-

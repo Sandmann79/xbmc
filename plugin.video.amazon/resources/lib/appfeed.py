@@ -14,12 +14,14 @@ import demjson
 import listtv
 import listmovie
 import xbmclibrary
+import xbmcaddon
 
 import movies as moviesDB
 import tv as tvDB
 
 pluginhandle = common.pluginhandle
 confluence_views = [500,501,502,503,504,508]
+xmlstring = xbmcaddon.Addon().getLocalizedString
 
 #Modes
 #===============================================================================
@@ -60,6 +62,7 @@ deviceID = common.addon.getSetting("GenDeviceID")#'000000000000'
 #firmware = 'fmw:15-app:1.1.19' #Android
 #firmware = 'fmw:10-app:1.1.23'
 deviceTypeID = 'A3VN4E5F7BBC7S'
+#deviceTypeID = 'A28RQHJKHM2A2W' # ps3
 firmware = 'fmw:045.01E01164A-app:4.7'
 format = 'json'
 
@@ -104,73 +107,6 @@ def URL_LOOKUP(url):
     return demjson.decode(common.getATVURL(url+PARAMETERS.replace('?','&')))
 
 ################################ Library listing
-def APP_ROOT():
-    common.addDir('Prime Movie Categories','appfeed','APP_LEVEL2','2,2')
-    common.addDir('Prime TV shows Categories','appfeed','APP_LEVEL2','3,2')
-    common.addDir('All Seasons','appfeed','BROWSE_SEASONS','')
-    common.addDir('All Shows','appfeed','BROWSE_SERIES','')
-    common.addDir('Full Category List','appfeed','APP_LEVEL0','')
-    xbmcplugin.endOfDirectory(pluginhandle)
-    
-def APP_LEVEL0():
-    url = BUILD_BASE_API('catalog/GetCategoryList')+'&version=1'
-    data = common.getATVURL(url)
-    json = demjson.decode(data)
-    del data
-    categories = json['message']['body']['categories']
-    del json
-    for item in categories:
-        if item.has_key('categories'):
-            common.addDir(item['title'],'appfeed','APP_LEVEL1',str(categories.index(item)))
-        else:
-            common.addDir(item['title'],'appfeed','BROWSE',item['query'])
-    xbmcplugin.endOfDirectory(pluginhandle)
-    
-def APP_LEVEL1():
-    url = BUILD_BASE_API('catalog/GetCategoryList')+'&version=1'
-    data = common.getATVURL(url)
-    json = demjson.decode(data)
-    del data
-    categories = json['message']['body']['categories'][int(common.args.url)]['categories']
-    del json
-    for item in categories:
-        if item.has_key('categories'):
-            common.addDir(item['title'],'appfeed','APP_LEVEL2',common.args.url+','+str(categories.index(item)))
-        else:
-            common.addDir(item['title'],'appfeed','BROWSE',item['query'])
-    xbmcplugin.endOfDirectory(pluginhandle)    
-
-def APP_LEVEL2():
-    url = BUILD_BASE_API('catalog/GetCategoryList')+'&version=1'
-    data = common.getATVURL(url)
-    json = demjson.decode(data)
-    del data
-    categories = json['message']['body']['categories'][int(common.args.url.split(',')[0])]['categories'][int(common.args.url.split(',')[1])]['categories']
-    del json
-    for item in categories:
-        if item.has_key('categories'):
-            common.addDir(item['title'],'appfeed','APP_LEVEL3',common.args.url+','+str(categories.index(item)))
-        else:
-            common.addDir(item['title'],'appfeed','BROWSE',item['query'])
-    xbmcplugin.endOfDirectory(pluginhandle)    
-
-def APP_LEVEL3():
-    url = BUILD_BASE_API('catalog/GetCategoryList')+'&version=1'
-    data = common.getATVURL(url)
-    json = demjson.decode(data)
-    del data
-    categories = json['message']['body']['categories'][int(common.args.url.split(',')[0])]['categories'][int(common.args.url.split(',')[1])]['categories'][int(common.args.url.split(',')[2])]['categories']
-    del json
-    for item in categories:
-        if item.has_key('categories'):
-            common.addDir(item['title'],'appfeed','APP_LEVEL4',common.args.url+','+str(categories.index(item)))
-        else:
-            common.addDir(item['title'],'appfeed','BROWSE',item['query'])
-    xbmcplugin.endOfDirectory(pluginhandle) 
-
-def APP_LEVEL4():
-    common.addDir('ADD LEVEL4','appfeed','APP_LEVEL4','')
-    
 def ADD_MOVIE(addASIN,isPrime=True,inWatchlist=False,export=False):
     movies = moviesDB.lookupMoviedb(addASIN,isPrime=True)
     for moviedata in movies:
@@ -258,6 +194,27 @@ def BROWSE_EPISODES_HD(results=MAX,index=0):
     url = BUILD_BASE_API('catalog/Browse')+BROWSE_PARAMS
     BROWSE_ADDITEMS(url,results,index,HD=True)
 
+def SEARCH_DB(searchString=False,results=MAX,index=0):
+    if not searchString:
+        keyboard = xbmc.Keyboard('')
+        keyboard.doModal()
+        q = keyboard.getText()
+        if (keyboard.isConfirmed()):
+            searchString=urllib.quote_plus(keyboard.getText())
+            if searchString <> '':
+                item = xbmcgui.ListItem('          ----=== ' + xmlstring(30104) + ' ===----')
+                xbmcplugin.addDirectoryItem(handle=pluginhandle,url='',listitem=item)
+                listmovie.LIST_MOVIES(export=True, alphafilter = '%' + searchString + '%')
+                item = xbmcgui.ListItem('          ----=== ' + xmlstring(30107) + ' ===----')
+                xbmcplugin.addDirectoryItem(handle=pluginhandle,url='',listitem=item)
+                listtv.LIST_TVSHOWS(export=True, alphafilter = '%' + searchString + '%')
+                xbmcplugin.endOfDirectory(pluginhandle,updateListing=False)
+                viewenable=common.addon.getSetting("viewenable")
+                if viewenable == 'true':
+                    view=int(common.addon.getSetting("showview"))
+                    xbmc.executebuiltin("Container.SetViewMode("+str(confluence_views[view])+")")
+    
+    
 def SEARCH_PRIME(searchString=False,results=MAX,index=0):
     if not searchString:
         keyboard = xbmc.Keyboard('')

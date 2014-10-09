@@ -125,7 +125,9 @@ def LIST_MOVIES(export=False,genrefilter=False,actorfilter=False,directorfilter=
     import movies as moviesDB
     if common.args.url == 'no': sortaz = False
     movies = moviesDB.loadMoviedb(genrefilter=genrefilter,actorfilter=actorfilter,directorfilter=directorfilter,studiofilter=studiofilter,yearfilter=yearfilter,mpaafilter=mpaafilter,watchedfilter=watchedfilter,favorfilter=favorfilter,alphafilter=alphafilter)
+    count = 0
     for moviedata in movies:
+        count += 1
         ADD_MOVIE_ITEM(moviedata)
     if not export:
         xbmcplugin.setContent(pluginhandle, 'Movies')
@@ -141,6 +143,7 @@ def LIST_MOVIES(export=False,genrefilter=False,actorfilter=False,directorfilter=
             view=int(common.addon.getSetting("movieview"))
             xbmc.executebuiltin("Container.SetViewMode("+str(confluence_views[view])+")")
         xbmcplugin.endOfDirectory(pluginhandle,updateListing=False)
+    return count
     
 def ADD_MOVIE_ITEM(moviedata,override_url=False,inWatchlist=False):
     asin,hd_asin,movietitle,url,poster,plot,director,writer,runtime,year,premiered,studio,mpaa,actors,genres,stars,votes,TMDBbanner,TMDBposter,TMDBfanart,isprime,isHD,isAdult,watched,favor,TMDB_ID = moviedata

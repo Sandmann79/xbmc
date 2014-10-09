@@ -131,6 +131,10 @@ def addVideo(name,url,poster='',fanart='',infoLabels=False,totalItems=0,cm=False
         liz.addContextMenuItems( cm , replaceItems=True )
     xbmcplugin.addDirectoryItem(handle=pluginhandle,url=u,listitem=liz,isFolder=True,totalItems=totalItems)     
 
+def addText(name):
+    item = xbmcgui.ListItem(name)
+    xbmcplugin.addDirectoryItem(handle=pluginhandle,url='',listitem=item)
+
 def setCustomer(check=False):
     if check:
         url = 'http://www.amazon.de'

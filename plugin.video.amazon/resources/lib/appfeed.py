@@ -51,9 +51,7 @@ xmlstring = xbmcaddon.Addon().getLocalizedString
 # 'usage/GetServerConfig'
 #===============================================================================
 
-
-MAX=int(common.addon.getSetting("perpage"))
-
+MAX = 20
 common.gen_id()
 
 deviceID = common.addon.getSetting("GenDeviceID")#'000000000000'
@@ -62,7 +60,6 @@ deviceID = common.addon.getSetting("GenDeviceID")#'000000000000'
 #firmware = 'fmw:15-app:1.1.19' #Android
 #firmware = 'fmw:10-app:1.1.23'
 deviceTypeID = 'A3VN4E5F7BBC7S'
-#deviceTypeID = 'A28RQHJKHM2A2W' # ps3
 firmware = 'fmw:045.01E01164A-app:4.7'
 format = 'json'
 
@@ -202,12 +199,12 @@ def SEARCH_DB(searchString=False,results=MAX,index=0):
         if (keyboard.isConfirmed()):
             searchString=urllib.quote_plus(keyboard.getText())
             if searchString <> '':
-                item = xbmcgui.ListItem('          ----=== ' + xmlstring(30104) + ' ===----')
-                xbmcplugin.addDirectoryItem(handle=pluginhandle,url='',listitem=item)
-                listmovie.LIST_MOVIES(export=True, alphafilter = '%' + searchString + '%')
-                item = xbmcgui.ListItem('          ----=== ' + xmlstring(30107) + ' ===----')
-                xbmcplugin.addDirectoryItem(handle=pluginhandle,url='',listitem=item)
-                listtv.LIST_TVSHOWS(export=True, alphafilter = '%' + searchString + '%')
+                common.addText('          ----=== ' + xmlstring(30104) + ' ===----')
+                if not listmovie.LIST_MOVIES(export=True, alphafilter = '%' + searchString + '%'):
+                    common.addText(xmlstring(30180))
+                common.addText('          ----=== ' + xmlstring(30107) + ' ===----')
+                if not listtv.LIST_TVSHOWS(export=True, alphafilter = '%' + searchString + '%'):
+                    common.addText(xmlstring(30180))
                 xbmcplugin.endOfDirectory(pluginhandle,updateListing=False)
                 viewenable=common.addon.getSetting("viewenable")
                 if viewenable == 'true':

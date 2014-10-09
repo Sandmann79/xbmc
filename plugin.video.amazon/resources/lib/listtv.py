@@ -103,7 +103,9 @@ def LIST_TVSHOWS(export=False,HDonly=False,mpaafilter=False,genrefilter=False,cr
     import tv as tvDB
     if common.args.url == 'no': sortaz = False
     shows = tvDB.loadTVShowdb(HDonly=HDonly,mpaafilter=mpaafilter,genrefilter=genrefilter,creatorfilter=creatorfilter,networkfilter=networkfilter,yearfilter=yearfilter,favorfilter=favorfilter,alphafilter=alphafilter)
+    count = 0
     for showdata in shows:
+        count += 1
         ADD_SHOW_ITEM(showdata,HDonly=HDonly)
     if not export:
         xbmcplugin.setContent(pluginhandle, 'tvshows')
@@ -117,6 +119,7 @@ def LIST_TVSHOWS(export=False,HDonly=False,mpaafilter=False,genrefilter=False,cr
         if viewenable == 'true':
             view=int(common.addon.getSetting("showview"))
             xbmc.executebuiltin("Container.SetViewMode("+str(confluence_views[view])+")")
+    return count
 
 def ADD_SHOW_ITEM(showdata,mode='listtv',submode='LIST_TV_SEASONS',HDonly=False):
     artOptions = ['Poster','Banner','Amazon']
@@ -249,7 +252,7 @@ def LIST_EPISODES_DB(HDonly=False,owned=False,url=False,export=False):
     viewenable=common.addon.getSetting("viewenable")
     if viewenable == 'true':
         view=int(common.addon.getSetting("episodeview"))
-        xbmc.executebuiltin("Container.SetViewMode("+str(confluence_views[view])+")")  
+        xbmc.executebuiltin("Container.SetViewMode("+str(confluence_views[view])+")")
         
 def ADD_EPISODE_ITEM(episodedata,seriesTitle=False):
    #asin,seriestitle,season,episode,poster,mpaa,actors,genres,episodetitle,studio,stars,votes,url,plot,airdate,year,runtime,isHD,isprime,watched

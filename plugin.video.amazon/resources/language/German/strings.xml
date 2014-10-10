@@ -1,20 +1,6 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <strings>
     <string id="30011">Allgemein</string>
-    <string id="30000">E-Mail</string>
-    <string id="30001">Passwort</string>
-    <string id="30004">Bitrate</string>
-    <string id="30005">Fragen</string>
-    <string id="30006">2500kbps</string>
-    <string id="30007">1328kbps</string>
-    <string id="30008">996kbps</string>
-    <string id="30009">664kbps</string>
-    <string id="30010">348kbps</string>
-    
-
-    <string id="30012">Bibliothek</string>
-    <string id="30013">Kauf & Miet Bibliothek aktivieren</string>
-    <string id="30014">Bibliothek Metadata(gecacht)</string>
 
     <string id="30015">Ansicht</string>
     <string id="30016">Film Bildquelle</string>
@@ -33,21 +19,17 @@
     <string id="30028">Fanart</string>
     <string id="30034">Große Liste</string>
     
+    <string id="30035">Ansichten aktivieren</string>
     <string id="30029">Film Ansicht</string>
     <string id="30030">Serien Ansicht</string>
     <string id="30031">Staffel Ansicht</string>
     <string id="30032">Episoden Ansicht</string>
-    
-    <string id="30033">DB Bearbeitung aktivieren</string>
-    <string id="30035">Ansichten aktivieren</string>
-    
-    <string id="30036">Eigener Bibliothek Ordner</string>
-    <string id="30037">Bibliothek Ordner gespeichert in AddOn Einstellungen</string>
-    <string id="30038">Nach Abschluss Bibliothek aktualisieren</string>
-    
+
+    <string id="30038">Aktualisierung</string>
     <string id="30039">Elemente pro Seite (Filmsuche)</string>
     <string id="30040">Elemente pro Seite (Seriensuche)</string>
 
+    <string id="30041">Vollbild aktivieren</string>
     <string id="30042">Browser Kiosk Modus</string>
     <string id="30043">Wiedergabe in HD, sofern verfügbar</string>
     <string id="30044">Wartezeit für Vollbild (sek)</string>

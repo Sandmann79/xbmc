@@ -1,20 +1,6 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <strings>
     <string id="30011">General</string>
-    <string id="30000">E-Mail</string>
-    <string id="30001">Password</string>
-    <string id="30004">Bitrate</string>
-    <string id="30005">Ask</string>
-    <string id="30006">2500kbps</string>
-    <string id="30007">1328kbps</string>
-    <string id="30008">996kbps</string>
-    <string id="30009">664kbps</string>
-    <string id="30010">348kbps</string>
-    
-
-    <string id="30012">Library</string>
-    <string id="30013">Enable Purchases & Rentals Library</string>
-    <string id="30014">Library Metadata(cached)</string>
 
     <string id="30015">Views</string>
     <string id="30016">Movie Image Source</string>
@@ -33,23 +19,18 @@
     <string id="30028">Fanart</string>
     <string id="30034">Big List</string>
     
+    <string id="30035">Enable Views</string>
     <string id="30029">Movie View</string>
     <string id="30030">Show View</string>
     <string id="30031">Season View</string>
     <string id="30032">Episode View</string>
     
-    <string id="30033">Enable DB Edit</string>
-    <string id="30035">Enable Views</string>
-    
-    <string id="30036">Custom Library Folder</string>
-    <string id="30037">Library Folder stored in addon settings</string>
-    <string id="30038">Update Library when complete</string>
-    
+    <string id="30038">Update</string>
     <string id="30039">Items Per Page (Movie scan)</string>
     <string id="30040">Items Per Page (TV-Show scan)</string>
     
-    <string id="30041">Browser Plugin</string>
-    
+    <string id="30041">Switch Fullscreen</string>
+    <string id="30048">Browser Plugin</string>
     <string id="30042">Browser Kiosk Mode</string>
     <string id="30043">Play HD If Available</string>
     <string id="30044">Wait for Fullscreen (sec)</string>

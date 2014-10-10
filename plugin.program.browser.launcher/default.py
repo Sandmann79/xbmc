@@ -41,7 +41,7 @@ bPath = ['C:\\Program Files\\Internet Explorer\\iexplore.exe',
          'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
          'C:\\Program Files\\Mozilla Firefox\\firefox.exe',
          'C:\\Program Files\\Opera\opera.exe']
-bKiosk = ['-k ', '', '--kiosk ', '-chrome chrome://kiosk/content ', '-fullscreen ']
+bKiosk = ['-k ', '', '--kiosk ', '', '-fullscreen ']
 bProfile = ['', '', '--user-data-dir=', '-profile ', '-pd ']
 bAgent = ['', '', '--user-agent=', '', '']
 bExtra = ['',
@@ -137,28 +137,26 @@ def getFullPath(path, url, useKiosk, userAgent, selBrowser):
 
 
 def showSite(url, stopPlayback, kiosk, userAgent, custBrowser):
-    startupinfo = subprocess.STARTUPINFO()
-    startupinfo.dwFlags |= 1
-    if stopPlayback == "yes":
-        xbmc.Player().stop()
+    if stopPlayback == "yes": xbmc.Player().stop()
     selBrowser = winBrowser
-    if custBrowser:
-        selBrowser = int(custBrowser)
+    if custBrowser: selBrowser = int(custBrowser)
     path = bPath[selBrowser]
+    fullUrl = False
     path86 = path.replace("\\Program Files\\", "\\Program Files (x86)\\")
     if useCustomPath and os.path.exists(customPath):
         fullUrl = getFullPath(customPath, url, kiosk, userAgent, selBrowser)
-        subprocess.Popen(fullUrl, startupinfo=startupinfo, creationflags=priority)
     elif os.path.exists(path):
         fullUrl = getFullPath(path, url, kiosk, userAgent, selBrowser)
-        subprocess.Popen(fullUrl, startupinfo=startupinfo, creationflags=priority)
     elif os.path.exists(path86):
         fullUrl = getFullPath(path86, url, kiosk, userAgent, selBrowser)
-        subprocess.Popen(fullUrl, startupinfo=startupinfo, creationflags=priority)
+    if fullUrl:
+        if xbmc.getCondVisibility('system.platform.windows'):
+            subprocess.Popen(fullUrl, creationflags=priority)
+        else:
+            subprocess.Popen(fullUrl, shell=True)
     else:
         xbmc.executebuiltin('XBMC.Notification(Info:,'+str(translation(30005))+'!,5000)')
         addon.openSettings()
-
 
 def removeSite(title):
     os.remove(os.path.join(siteFolder, getFileName(title)+".link"))

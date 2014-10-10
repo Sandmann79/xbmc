@@ -49,17 +49,19 @@ def PLAYVIDEO():
         pininput = 0
         if settings.getSetting("pininput") == 'true': pininput = 1
         input(mousex=-1,mousey=350)
-        xbmc.sleep(waitsec)
         if isAdult == 1 and pininput == 1:
+            xbmc.sleep(int(waitsec*0.75))
             input(keys=pin)
             xbmc.sleep(waitpin)
+        else:
+            xbmc.sleep(waitsec)
         if isAdult == 0: pininput = 1
         if pininput == 1:
             input(mousex=-1,mousey=350,click=2)
             xbmc.sleep(500)
             #input(mousex=9999,mousey=0)
 
-def input(mousex=0,mousey=0,click=0,keys=False,kbdDelay='200'):
+def input(mousex=0,mousey=0,click=0,keys=False,delay='200'):
     if mousex == -1: mousex = screenWidth/2
     if mousey == -1: mousey = screenHeight/2
     
@@ -67,16 +69,12 @@ def input(mousex=0,mousey=0,click=0,keys=False,kbdDelay='200'):
         app = userinput
         mouse = ' mouse %s %s' % (mousex,mousey)
         mclk = ' ' + str(click)
-        keybd = ' key '
-        ent = '{Enter}'
-        delay = ' '
+        keybd = ' key %s{Enter} %s' % (keys,delay)
     elif osLinux:
         app = 'xdotool'
         mouse = ' mousemove %s %s' % (mousex,mousey)
-        mclk = ' click ' + str(click)
-        keybd = ' type '
-        ent = ' key Return'
-        delay = ' --delay '
+        mclk = ' click --repeat %s 1' % click
+        keybd = ' type --delay %s %s && xdotool key Return' % (delay, keys)
     elif osOsx:
         app = 'cliclick'
         mouse = ' m:'
@@ -84,12 +82,12 @@ def input(mousex=0,mousey=0,click=0,keys=False,kbdDelay='200'):
         elif click == 2: mouse = ' dc:'
         mouse += '%s,%s' % (mousex,mousey)
         mclk = ''
-        keybd = ' t:'
-        ent = ' kp:return'
-        delay = ' -w '
+        keybd = ' -w %s t:%s kp:return' % (delay, keys)
+
     if keys:
-        cmd = app + keybd + keys + ent + delay + kbdDelay
+        cmd = app + keybd
     else:
         cmd = app + mouse
         if click: cmd += mclk
+    print cmd
     subprocess.Popen(cmd, shell=True)

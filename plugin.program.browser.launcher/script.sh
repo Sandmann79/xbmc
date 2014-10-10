@@ -1,4 +1,4 @@
 #!/bin/bash
 openbox &
-/usr/bin/google-chrome "$@"
+/usr/bin/firefox "$@"
 kill %1

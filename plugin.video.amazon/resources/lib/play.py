@@ -22,7 +22,7 @@ except:
     from elementtree import ElementTree
 
 settings = xbmcaddon.Addon( id = 'plugin.video.amazon' )
-userinput = os.path.join( settings.getAddonInfo( 'path' ), 'amazonscript\\' )+"userinput.exe"
+userinput = os.path.join( settings.getAddonInfo( 'path' ), 'amazonscript/userinput.exe' )
 waitsec = int(settings.getSetting("clickwait")) * 1000
 pin = settings.getSetting("pin")
 waitpin = int(settings.getSetting("waitpin")) * 1000

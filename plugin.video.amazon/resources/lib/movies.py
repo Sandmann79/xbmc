@@ -210,6 +210,9 @@ def ASIN_ADD(titles,isPrime=True):
         isFav=False
         isHD = False
         isAdult = False
+        stars = None
+        votes = None
+        #isPrime = False
         asin = title['titleId']
         titelnum+=1
         movietitle = title['title']
@@ -259,11 +262,14 @@ def ASIN_ADD(titles,isPrime=True):
         if title.has_key('customerReviewCollection'):
             stars = float(title['customerReviewCollection']['customerReviewSummary']['averageOverallRating'])*2
             votes = str(title['customerReviewCollection']['customerReviewSummary']['totalReviewCount'])
-        else:
-            stars = None
-            votes = None
+        elif title.has_key('amazonRating'):
+            if title['amazonRating'].has_key('rating'): stars = float(title['amazonRating']['rating'])*2
+            if title['amazonRating'].has_key('count'): votes = str(title['amazonRating']['count'])
         for format in title['formats']:
             if format['videoFormatType'] == 'HD': isHD = True
+            for offer in format['offers']:
+                if offer['offerType'] == 'SUBSCRIPTION':
+                    isPrime = True
         if title.has_key('restrictions'):
             for rest in title['restrictions']:
                 if rest['action'] == 'playback':

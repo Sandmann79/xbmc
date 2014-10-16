@@ -6,7 +6,6 @@ import xbmcgui
 import os.path
 import sys
 import urllib
-import string
 import resources.lib.common as common
 import xbmclibrary
 import xbmcaddon
@@ -186,4 +185,4 @@ def ADD_MOVIE_ITEM(moviedata,override_url=False,inWatchlist=False):
     else: cm.append( (xmlstring(30155), 'XBMC.RunPlugin(%s?mode=<movies>&sitemode=<watchMoviedb>&url=<%s>)' % ( sys.argv[0], urllib.quote_plus(asin) ) ) )
     if common.addon.getSetting("editenable") == 'true':
         cm.append( (xmlstring(30156), 'XBMC.RunPlugin(%s?mode=<movies>&sitemode=<deleteMoviedb>&url=<%s>)' % ( sys.argv[0], urllib.quote_plus(asin) ) ) )
-    common.addVideo(movietitle,url,poster,fanart,infoLabels=infoLabels,cm=cm,isAdult=isAdult)    
+    common.addVideo(movietitle,url,poster,fanart,infoLabels=infoLabels,cm=cm,isAdult=isAdult,isHD=isHD)    

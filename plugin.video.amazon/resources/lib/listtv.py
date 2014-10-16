@@ -170,7 +170,7 @@ def ADD_SHOW_ITEM(showdata,mode='listtv',submode='LIST_TV_SEASONS',HDonly=False)
             cm.append( (xmlstring(30164), 'XBMC.RunPlugin(%s?mode=<tv>&sitemode=<refreshTVDBshow>&title=<%s>)' % ( sys.argv[0], urllib.quote_plus(seriestitle) ) ) )
         cm.append( (xmlstring(30165), 'XBMC.RunPlugin(%s?mode=<tv>&sitemode=<scanTVDBshow>&title=<%s>)' % ( sys.argv[0], urllib.quote_plus(seriestitle) ) ) )
         cm.append( (xmlstring(30166), 'XBMC.RunPlugin(%s?mode=<tv>&sitemode=<deleteShowdb>&title=<%s>)' % ( sys.argv[0], urllib.quote_plus(seriestitle) ) ) )
-    common.addDir(seriestitle,mode,submode,item_url,poster,fanart,infoLabels,cm=cm)
+    common.addDir(seriestitle,mode,submode,item_url,poster,fanart,infoLabels,cm=cm,isHD=isHD)
 
 def LIST_HDTV_SEASONS():
     LIST_TV_SEASONS(HDonly=True)
@@ -226,7 +226,7 @@ def ADD_SEASON_ITEM(seasondata,mode='listtv',submode='LIST_EPISODES_DB',seriesTi
     else: displayname += xmlstring(30169)
     cm = []
     fanart = poster
-    common.addDir(displayname,mode,submode,url,poster,fanart,infoLabels,cm=cm)
+    common.addDir(displayname,mode,submode,url,poster,fanart,infoLabels,cm=cm,isHD=isHD)
 
 
 def LIST_HDEPISODES_DB(url=False):
@@ -297,4 +297,4 @@ def ADD_EPISODE_ITEM(episodedata,seriesTitle=False):
         cm.append( (xmlstring(30154), 'XBMC.RunPlugin(%s?mode=<tv>&sitemode=<unwatchEpisodedb>&url=<%s>)' % ( sys.argv[0], urllib.quote_plus(asin) ) ) )
     else: cm.append( (xmlstring(30155), 'XBMC.RunPlugin(%s?mode=<tv>&sitemode=<watchEpisodedb>&url=<%s>)' % ( sys.argv[0], urllib.quote_plus(asin) ) ) )
     #cm.append( (xmlstring(30151), 'XBMC.RunPlugin(%s?mode=<xbmclibrary>&sitemode=<EXPORT_EPISODE>&asin=<%s>)' % ( sys.argv[0], urllib.quote_plus(asin) ) ) )
-    common.addVideo(displayname,url,poster,fanart,infoLabels=infoLabels,cm=cm,isAdult=isAdult)
+    common.addVideo(displayname,url,poster,fanart,infoLabels=infoLabels,cm=cm,isAdult=isAdult,isHD=isHD)

@@ -61,11 +61,13 @@ deviceID = common.addon.getSetting("GenDeviceID")#'000000000000'
 #firmware = 'fmw:10-app:1.1.23'
 deviceTypeID = 'A3VN4E5F7BBC7S'
 firmware = 'fmw:045.01E01164A-app:4.7'
+#deviceTypeID = 'A63V4FRV3YUP9'
+#firmware = '1'
 format = 'json'
 
-PARAMETERS = '?encoding=UTF8&firmware='+firmware+'&deviceTypeID='+deviceTypeID+'&deviceID='+deviceID+'&format='+format
+PARAMETERS = '?firmware='+firmware+'&deviceTypeID='+deviceTypeID+'&deviceID='+deviceID+'&format='+format
 
-def BUILD_BASE_API(MODE,HOST='https://atv-eu.amazon.com/cdp/'):
+def BUILD_BASE_API(MODE,HOST='https://atv-ps-eu.amazon.com/cdp/'):
     return HOST+MODE+PARAMETERS
 
 def getList(ContentType,start=0,isPrime=True,NumberOfResults=MAX,OrderBy='SalesRank',version=2,AsinList=False):
@@ -75,13 +77,14 @@ def getList(ContentType,start=0,isPrime=True,NumberOfResults=MAX,OrderBy='SalesR
     BROWSE_PARAMS +='&StartIndex='+str(start)
     BROWSE_PARAMS +='&ContentType='+ContentType
     BROWSE_PARAMS +='&OrderBy='+OrderBy
+    BROWSE_PARAMS +='&IncludeAll=T'
     if ContentType == 'TVEpisode':
         BROWSE_PARAMS +='&Detailed=T'
-        BROWSE_PARAMS +='&IncludeAll=T'
         BROWSE_PARAMS +='&AID=T'
         BROWSE_PARAMS +='&tag=1'
         BROWSE_PARAMS +='&SeasonASIN='+AsinList
         BROWSE_PARAMS +='&IncludeBlackList=T'
+    BROWSE_PARAMS +='&version='+str(version)    
     #&HighDef=F # T or F ??
     #&playbackInformationRequired=false
     #&OrderBy=SalesRank
@@ -90,7 +93,6 @@ def getList(ContentType,start=0,isPrime=True,NumberOfResults=MAX,OrderBy='SalesR
     #&Detailed=T
     #&AID=1
     #&IncludeNonWeb=T
-    BROWSE_PARAMS +='&version='+str(version)    
     url = BUILD_BASE_API('catalog/Browse')+BROWSE_PARAMS
     return demjson.decode(common.getATVURL(url))
 

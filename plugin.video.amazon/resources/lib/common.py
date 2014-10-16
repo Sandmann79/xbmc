@@ -48,7 +48,7 @@ def getURL( url , host='www.amazon.de',useCookie=False):
     if useCookie and os.path.isfile(COOKIEFILE):
         cj.load(COOKIEFILE, ignore_discard=True, ignore_expires=True)
     opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cj))
-    opener.addheaders = [('User-Agent', 'Mozilla/4.0 (compatible; MSIE 8.0; Windows NT 6.1)'),
+    opener.addheaders = [('User-Agent', 'Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko'),
                          ('Host', host)]
     usock = opener.open(url)#,timeout=30)
     response = usock.read()
@@ -83,7 +83,7 @@ def androidsig(url):
     sig = hmac.new(hmac_key, url, sha1)
     return base64.encodestring(sig.digest()).replace('\n','')
 
-def addDir(name, mode, sitemode, url='', thumb='', fanart='', infoLabels=False, totalItems=0, cm=False ,page=1):
+def addDir(name, mode, sitemode, url='', thumb='', fanart='', infoLabels=False, totalItems=0, cm=False ,page=1,isHD=False):
     u  = sys.argv[0]
     u += '?url="'+urllib.quote_plus(url)+'"'
     u += '&mode="'+mode+'"'
@@ -105,9 +105,13 @@ def addDir(name, mode, sitemode, url='', thumb='', fanart='', infoLabels=False, 
     if cm:
         item.addContextMenuItems( cm, replaceItems=True  )
     item.setInfo( type="Video", infoLabels=infoLabels)
+    #if isHD:
+    #    item.addStreamInfo('video', { 'width':1280 ,'height' : 720 })
+    #else:
+    #    item.addStreamInfo('video', { 'width':720 ,'height' : 576 })
     xbmcplugin.addDirectoryItem(handle=pluginhandle,url=u,listitem=item,isFolder=True,totalItems=totalItems)
 
-def addVideo(name,url,poster='',fanart='',infoLabels=False,totalItems=0,cm=False,traileronly=False,isAdult=False):
+def addVideo(name,url,poster='',fanart='',infoLabels=False,totalItems=0,cm=False,traileronly=False,isAdult=False,isHD=False):
     if not infoLabels:
         infoLabels={ "Title": name}
     u  = sys.argv[0]
@@ -127,6 +131,10 @@ def addVideo(name,url,poster='',fanart='',infoLabels=False,totalItems=0,cm=False
     except:
         print 'invalid fanart'
     liz.setProperty('IsPlayable', 'true')
+    #if isHD:
+    #    liz.addStreamInfo('video', { 'width':1280 ,'height' : 720 })
+    #else:
+    #    liz.addStreamInfo('video', { 'width':720 ,'height' : 576 })
     if cm:
         liz.addContextMenuItems( cm , replaceItems=True )
     xbmcplugin.addDirectoryItem(handle=pluginhandle,url=u,listitem=liz,isFolder=True,totalItems=totalItems)     

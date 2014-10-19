@@ -19,7 +19,7 @@ xmlstring = xbmcaddon.Addon().getLocalizedString
 __plugin__ = "AMAZON"
 __authors__ = "Sandmann79 + BlueCop + Romans I XVI"
 __credits__ = ""
-__version__ = "1.1.8"
+__version__ = "1.1.9"
 
 print "\n\n\n\n\n\n\n====================AMAZON START====================\n\n\n\n\n\n"
 

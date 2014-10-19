@@ -111,13 +111,15 @@ def createTVdb():
     tvDB.commit()
     c.close()
 
-def loadTVShowdb(HDonly=False,mpaafilter=False,genrefilter=False,creatorfilter=False,networkfilter=False,yearfilter=False,watchedfilter=False,favorfilter=False,alphafilter=False,isprime=True):
+def loadTVShowdb(HDonly=False,actorfilter=False,mpaafilter=False,genrefilter=False,creatorfilter=False,networkfilter=False,yearfilter=False,watchedfilter=False,favorfilter=False,alphafilter=False,isprime=True):
     c = tvDB.cursor()
     if HDonly:
         return c.execute('select distinct * from shows where isprime = (?) and isHD = (?)', (isprime,HDonly))
     elif genrefilter:
         genrefilter = '%'+genrefilter+'%'
         return c.execute('select distinct * from shows where isprime = (?) and genres like (?)', (isprime,genrefilter))
+    elif actorfilter:
+        return c.execute('select distinct * from shows where isprime = (?) and actors like (?)', (isprime,actorfilter))
     elif mpaafilter:
         return c.execute('select distinct * from shows where isprime = (?) and mpaa = (?)', (isprime,mpaafilter))
     elif creatorfilter:
@@ -145,6 +147,7 @@ def getShowTypes(col):
     c = tvDB.cursor()
     items = c.execute('select distinct %s from shows' % col)
     list = []
+    lowlist = []
     for data in items:
         if data and data[0] <> None:
             data = data[0]
@@ -153,9 +156,9 @@ def getShowTypes(col):
                 else: data = data.decode('utf-8').encode('utf-8').split(',')
                 for item in data:
                     item = item.strip()
-                    if item not in list and item <> ' Inc':
-                        if item <> '':
-                            list.append(item)
+                    if item.lower() not in lowlist and item <> '' and item <> 0 and item <> 'Inc.' and item <> 'LLC.':
+                        list.append(item)
+                        lowlist.append(item.lower())
             else:
                 list.append(str(data))
     c.close()
@@ -190,7 +193,6 @@ def fixYears():
     for asin,year,season in seasons:
         asin = '%' + asin + '%'
         c.execute("update seasons set year=? where season=? and asin like ?", (year,season,asin))
-
     seasons = c.execute('select seriesasin,year from seasons where year is not null order by year desc').fetchall()
     for asin,year in seasons:
         asin = '%' + asin + '%'
@@ -224,7 +226,6 @@ def fixStars():
     for title in series:
         title = title[0]
         stars = c.execute('select avg(stars) from seasons where seriestitle like ? and votes is not 0', (title,)).fetchone()[0]
-        print title,stars
         if stars: c.execute('update shows set stars = (?) where seriestitle = (?)', (stars, title))
     tvDB.commit()
     c.close()
@@ -299,6 +300,7 @@ def favorShowdb(seriestitle=False):
     c = tvDB.cursor()
     c.execute("update shows set favor=? where seriestitle=?", (True,seriestitle))
     tvDB.commit()
+    xbmc.executebuiltin("XBMC.Container.Refresh")
     c.close()
     
 def unfavorShowdb(seriestitle=False):
@@ -307,22 +309,27 @@ def unfavorShowdb(seriestitle=False):
     c = tvDB.cursor()
     c.execute("update shows set favor=? where seriestitle=?", (False,seriestitle))
     tvDB.commit()
+    xbmc.executebuiltin("XBMC.Container.Refresh")
     c.close()
     
-def watchEpisodedb(asin=False):
+def watchTVdb(asin=False):
     if not asin:
         asin = common.args.url
+        db = common.args.db
     c = tvDB.cursor()
-    c.execute("update episodes set watched=? where asin=?", (True,asin))
+    c.execute("update %s set watched=? where asin like ?" % db, (True,asin))
     tvDB.commit()
+    xbmc.executebuiltin("XBMC.Container.Refresh")
     c.close()
     
-def unwatchEpisodedb(asin=False):
+def unwatchTVdb(asin=False):
     if not asin:
         asin = common.args.url
+        db = common.args.db
     c = tvDB.cursor()
-    c.execute("update episodes set watched=? where asin=?", (False,asin))
+    c.execute("update %s set watched=? where asin like ?" % db, (False,asin))
     tvDB.commit()
+    xbmc.executebuiltin("XBMC.Container.Refresh")
     c.close()
 
 def addEpisodedb(episodedata):
@@ -427,7 +434,7 @@ def addTVdb():
                     SERIES_KEY = title['ancestorTitles'][0]['titleId']
                 else:
                     SERIES_KEY = title['titleId']
-                if SERIES_KEY not in ALL_SERIES_ASINS:
+                if SERIES_KEY not in ALL_SERIES_ASINS and 'bbl test' not in title['title'].lower():
                     SERIES_COUNT += 1
                     SERIES_ASINS += SERIES_KEY+','
                     ALL_SERIES_ASINS += SERIES_KEY+','
@@ -496,8 +503,6 @@ def ASIN_ADD(titles,asins=False,url=False,isPrime=True,isHD=False,single=False,a
         else:
             contentType = title['contentType']
         count+=1
-        isHD=False
-        isPrime=True
         isWatched=False
         isFav=False
         if contentType == 'SERIES':
@@ -553,7 +558,8 @@ def ASIN_ADD(titles,asins=False,url=False,isPrime=True,isHD=False,single=False,a
                 votes = None
             if asin.split(',')[0] in ShowWatched: isWatched = True
             if asin.split(',')[0] in ShowFav: isFav = True
-            addShowdb([asin,None,seasonFeed,seriestitle,poster,plot,studio,mpaa,genres,actors,premiered,year,stars,votes,seasontotal,0,isWatched,0,isHD,isPrime,isFav,None,None,None,None])
+            showdata = [common.cleanData(x) for x in [asin,None,seasonFeed,seriestitle,poster,plot,studio,mpaa,genres,actors,premiered,year,stars,votes,seasontotal,0,isWatched,0,isHD,isPrime,isFav,None,None,None,None]]
+            addShowdb(showdata)
             if single:
                 return asin,ASINLIST
         elif contentType == 'SEASON':
@@ -619,7 +625,8 @@ def ASIN_ADD(titles,asins=False,url=False,isPrime=True,isHD=False,single=False,a
                 stars = None
                 votes = None
             if asin.split(',')[0] in SesWatched: isWatched = True
-            addSeasondb([asin,seriesasin,episodeFeed,poster,season,seriestitle,plot,actors,studio,mpaa,genres,premiered,year,stars,votes,episodetotal,isWatched,episodetotal,isHD,isPrime])
+            seasondata = [common.cleanData(x) for x in [asin,seriesasin,episodeFeed,poster,season,seriestitle,plot,actors,studio,mpaa,genres,premiered,year,stars,votes,episodetotal,isWatched,episodetotal,isHD,isPrime]]
+            addSeasondb(seasondata)
         elif contentType == 'EPISODE':
             seriesasin = ''
             asin, isHD, isPrime = GET_ASINS(title)
@@ -696,7 +703,8 @@ def ASIN_ADD(titles,asins=False,url=False,isPrime=True,isHD=False,single=False,a
                     if rest['action'] == 'playback':
                         if rest['type'] == 'ageVerificationRequired': isAdult = True
             if asin in EpWatched: isWatched = True
-            addEpisodedb([asin,seasonasin,seriesasin,seriestitle,season,episode,poster,mpaa,actors,genres,episodetitle,studio,stars,votes,url,plot,premiered,year,runtime,isHD,isPrime,isAdult,isWatched])
+            episodedata = [common.cleanData(x) for x in [asin,seasonasin,seriesasin,seriestitle,season,episode,poster,mpaa,actors,genres,episodetitle,studio,stars,votes,url,plot,premiered,year,runtime,isHD,isPrime,isAdult,isWatched]]
+            addEpisodedb(episodedata)
     return count
     
 def GET_ASINS(content):

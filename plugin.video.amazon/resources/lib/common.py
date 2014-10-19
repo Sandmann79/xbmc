@@ -247,7 +247,6 @@ def dologin():
         br.set_cookiejar(cj)
         br.addheaders = [('User-agent', 'Mozilla/4.0 (compatible; MSIE 8.0; Windows NT 6.1)')]  
         sign_in = br.open("http://www.amazon.de/gp/flex/sign-out.html") 
-        #print sign_in.read()  
         br.select_form(name="sign-in")  
         br["email"] = addon.getSetting("login_name")
         br["password"] = addon.getSetting("login_pass")
@@ -264,3 +263,11 @@ def dologin():
             return True
     except:
         return False
+        
+def cleanData(data):
+    if type(data) == type(str()) or type(data) == type(unicode()):
+        if data.replace('-','').strip() == '': data = ''
+        data = data.replace(u'\u00A0', ' ') #non-breaking space
+        data = data.strip()
+        if data == '': data = None
+    return data

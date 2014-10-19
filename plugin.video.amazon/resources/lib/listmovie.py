@@ -25,6 +25,7 @@ def LIST_MOVIE_ROOT():
     common.addDir(xmlstring(30145),'listmovie','LIST_MOVIE_TYPES','YEARS')
     common.addDir(xmlstring(30146),'listmovie','LIST_MOVIE_TYPES','STUDIOS')
     common.addDir(xmlstring(30147),'listmovie','LIST_MOVIE_TYPES','MPAA')
+    common.addDir(xmlstring(30158),'listmovie','LIST_MOVIE_TYPES','ACTORS')
     common.addDir(xmlstring(30148),'listmovie','LIST_MOVIE_TYPES','DIRECTORS')
     cm = [(xmlstring(30149), 'XBMC.RunPlugin(%s?mode=<listmovie>&sitemode=<LIST_MOVIES_WATCHED_FILTERED_EXPORT>&url=<>)' % sys.argv[0]) ]
     common.addDir(xmlstring(30150),'listmovie','LIST_MOVIES_WATCHED_FILTERED')
@@ -180,7 +181,7 @@ def ADD_MOVIE_ITEM(moviedata,override_url=False,inWatchlist=False):
     if favor: cm.append( (xmlstring(30152), 'XBMC.RunPlugin(%s?mode=<movies>&sitemode=<unfavorMoviedb>&url=<%s>)' % ( sys.argv[0], urllib.quote_plus(asin) ) ) )
     else: cm.append( (xmlstring(30153), 'XBMC.RunPlugin(%s?mode=<movies>&sitemode=<favorMoviedb>&url=<%s>)' % ( sys.argv[0], urllib.quote_plus(asin) ) ) )
     if watched:
-        infoLabels['overlay']=7
+        infoLabels['playcount']=1
         cm.append( (xmlstring(30154), 'XBMC.RunPlugin(%s?mode=<movies>&sitemode=<unwatchMoviedb>&url=<%s>)' % ( sys.argv[0], urllib.quote_plus(asin) ) ) )
     else: cm.append( (xmlstring(30155), 'XBMC.RunPlugin(%s?mode=<movies>&sitemode=<watchMoviedb>&url=<%s>)' % ( sys.argv[0], urllib.quote_plus(asin) ) ) )
     if common.addon.getSetting("editenable") == 'true':

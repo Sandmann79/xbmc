@@ -10,6 +10,7 @@ import xbmcgui
 import shutil
 import appfeed
 import resources.lib.common as common
+
 try:
     from sqlite3 import dbapi2 as sqlite
 except:
@@ -93,6 +94,7 @@ def watchMoviedb(asin=False):
     c = MovieDB.cursor()
     c.execute("update movies set watched=? where asin=?", (True,asin))
     MovieDB.commit()
+    xbmc.executebuiltin("XBMC.Container.Refresh")
     c.close()
     
 def unwatchMoviedb(asin=False):
@@ -101,6 +103,7 @@ def unwatchMoviedb(asin=False):
     c = MovieDB.cursor()
     c.execute("update movies set watched=? where asin=?", (False,asin))
     MovieDB.commit()
+    xbmc.executebuiltin("XBMC.Container.Refresh")
     c.close()
 
 def favorMoviedb(asin=False):
@@ -148,6 +151,7 @@ def getMovieTypes(col):
     c = MovieDB.cursor()
     items = c.execute('select distinct %s from movies' % col)
     list = []
+    lowlist = []
     for data in items:
         data = data[0]
         if type(data) == type(str()):
@@ -160,8 +164,9 @@ def getMovieTypes(col):
                 else: data = data.decode('utf-8').encode('utf-8').split(',')
                 for item in data:
                     item = item.strip()
-                    if item not in list and item <> '' and item <> 0 and item <> 'Inc.' and item <> 'LLC.':
+                    if item.lower() not in lowlist and item <> '' and item <> 0 and item <> 'Inc.' and item <> 'LLC.':
                         list.append(item)
+                        lowlist.append(item.lower())
         elif data <> 0:
             if data is not None:
                 list.append(str(data))
@@ -214,7 +219,6 @@ def ASIN_ADD(titles,isPrime=True):
         votes = None
         #isPrime = False
         asin = title['titleId']
-        titelnum+=1
         movietitle = title['title']
         url = common.BASE_URL+'/dp/'+asin+'/ref=vod_0_wnzw'
         if title['formats'][0].has_key('images'):
@@ -276,7 +280,10 @@ def ASIN_ADD(titles,isPrime=True):
                     if rest['type'] == 'ageVerificationRequired': isAdult = True
         if asin in MovWatched: isWatched = True
         if asin in MovFav: isFav = True
-        addMoviedb([asin,None,movietitle,url,poster,plot,director,None,runtime,year,premiered,studio,mpaa,actors,genres,stars,votes,None,None,None,isPrime,isHD,isAdult,isWatched,isFav,None])
+        titelnum+=1
+        if 'bbl test' not in movietitle.lower():
+            moviedata = [common.cleanData(x) for x in [asin,None,movietitle,url,poster,plot,director,None,runtime,year,premiered,studio,mpaa,actors,genres,stars,votes,None,None,None,isPrime,isHD,isAdult,isWatched,isFav,None]]
+            addMoviedb(moviedata)
     return titelnum
 
 MovieDBfile = os.path.join(xbmc.translatePath('special://home/addons/script.module.amazon.database/lib/'),'movies.db')

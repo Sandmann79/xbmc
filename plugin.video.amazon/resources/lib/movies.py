@@ -30,7 +30,7 @@ def createMoviedb():
                 (asin UNIQUE,
                  HDasin UNIQUE,
                  movietitle TEXT,
-                 url TEXT,
+                 trailer BOOLEAN,
                  poster TEXT,
                  plot TEXT,
                  director TEXT,
@@ -217,10 +217,10 @@ def ASIN_ADD(titles,isPrime=True):
         isAdult = False
         stars = None
         votes = None
+        trailer = False
         #isPrime = False
         asin = title['titleId']
         movietitle = title['title']
-        url = common.BASE_URL+'/dp/'+asin+'/ref=vod_0_wnzw'
         if title['formats'][0].has_key('images'):
             try:
                 thumbnailUrl = title['formats'][0]['images'][0]['uri']
@@ -263,6 +263,7 @@ def ASIN_ADD(titles,isPrime=True):
             genres = ' / '.join(title['genres']).replace('_', ' & ').replace('Musikfilm & Tanz', 'Musikfilm, Tanz')
         else:
             genres = ''
+        if title.has_key('trailerAvailable'): trailer = title['trailerAvailable']
         if title.has_key('customerReviewCollection'):
             stars = float(title['customerReviewCollection']['customerReviewSummary']['averageOverallRating'])*2
             votes = str(title['customerReviewCollection']['customerReviewSummary']['totalReviewCount'])
@@ -272,8 +273,7 @@ def ASIN_ADD(titles,isPrime=True):
         for format in title['formats']:
             if format['videoFormatType'] == 'HD': isHD = True
             for offer in format['offers']:
-                if offer['offerType'] == 'SUBSCRIPTION':
-                    isPrime = True
+                if offer['offerType'] == 'SUBSCRIPTION': isPrime = True
         if title.has_key('restrictions'):
             for rest in title['restrictions']:
                 if rest['action'] == 'playback':
@@ -282,7 +282,7 @@ def ASIN_ADD(titles,isPrime=True):
         if asin in MovFav: isFav = True
         titelnum+=1
         if 'bbl test' not in movietitle.lower():
-            moviedata = [common.cleanData(x) for x in [asin,None,movietitle,url,poster,plot,director,None,runtime,year,premiered,studio,mpaa,actors,genres,stars,votes,None,None,None,isPrime,isHD,isAdult,isWatched,isFav,None]]
+            moviedata = [common.cleanData(x) for x in [asin,None,movietitle,trailer,poster,plot,director,None,runtime,year,premiered,studio,mpaa,actors,genres,stars,votes,None,None,None,isPrime,isHD,isAdult,isWatched,isFav,None]]
             addMoviedb(moviedata)
     return titelnum
 

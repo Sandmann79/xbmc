@@ -146,9 +146,7 @@ def LIST_MOVIES(export=False,genrefilter=False,actorfilter=False,directorfilter=
     return count
     
 def ADD_MOVIE_ITEM(moviedata,override_url=False,inWatchlist=False):
-    asin,hd_asin,movietitle,url,poster,plot,director,writer,runtime,year,premiered,studio,mpaa,actors,genres,stars,votes,TMDBbanner,TMDBposter,TMDBfanart,isprime,isHD,isAdult,watched,favor,TMDB_ID = moviedata
-    if override_url:
-        url=override_url
+    asin,hd_asin,movietitle,trailer,poster,plot,director,writer,runtime,year,premiered,studio,mpaa,actors,genres,stars,votes,TMDBbanner,TMDBposter,TMDBfanart,isprime,isHD,isAdult,watched,favor,TMDB_ID = moviedata
     if poster == None or poster == 'None':
         fanart = ''
         poster =''
@@ -186,4 +184,4 @@ def ADD_MOVIE_ITEM(moviedata,override_url=False,inWatchlist=False):
     else: cm.append( (xmlstring(30155), 'XBMC.RunPlugin(%s?mode=<movies>&sitemode=<watchMoviedb>&url=<%s>)' % ( sys.argv[0], urllib.quote_plus(asin) ) ) )
     if common.addon.getSetting("editenable") == 'true':
         cm.append( (xmlstring(30156), 'XBMC.RunPlugin(%s?mode=<movies>&sitemode=<deleteMoviedb>&url=<%s>)' % ( sys.argv[0], urllib.quote_plus(asin) ) ) )
-    common.addVideo(movietitle,url,poster,fanart,infoLabels=infoLabels,cm=cm,isAdult=isAdult,isHD=isHD)    
+    common.addVideo(movietitle,asin,poster,fanart,infoLabels=infoLabels,cm=cm,trailer=trailer,isAdult=isAdult,isHD=isHD)    

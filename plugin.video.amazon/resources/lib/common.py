@@ -111,15 +111,18 @@ def addDir(name, mode, sitemode, url='', thumb='', fanart='', infoLabels=False, 
     #    item.addStreamInfo('video', { 'width':720 ,'height' : 576 })
     xbmcplugin.addDirectoryItem(handle=pluginhandle,url=u,listitem=item,isFolder=True,totalItems=totalItems)
 
-def addVideo(name,url,poster='',fanart='',infoLabels=False,totalItems=0,cm=False,traileronly=False,isAdult=False,isHD=False):
+def addVideo(name,url,poster='',fanart='',infoLabels=False,totalItems=0,cm=False,trailer=False,isAdult=False,isHD=False):
     if not infoLabels:
         infoLabels={ "Title": name}
     u  = sys.argv[0]
-    u += '?url="'+urllib.quote_plus(url)+'"'
+    u += '?asin="'+urllib.quote_plus(url)+'"'
     u += '&mode="play"'
     u += '&name="'+urllib.quote_plus(name)+'"'
     u += '&sitemode="PLAYVIDEO"'
     u += '&adult="'+str(isAdult)+'"'
+    if trailer:
+        infoLabels['Trailer'] = u + '&trailer="1"'
+    u += '&trailer="0"'
     try:
 	liz=xbmcgui.ListItem(name, thumbnailImage=poster)
     except:

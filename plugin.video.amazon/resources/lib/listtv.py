@@ -311,4 +311,4 @@ def ADD_EPISODE_ITEM(episodedata,seriesTitle=False):
         cm.append( (xmlstring(30154), 'XBMC.RunPlugin(%s?mode=<tv>&sitemode=<unwatchTVdb>&url=<%s>&db=<episodes>)' % ( sys.argv[0], urllib.quote_plus(asin) ) ) )
     else: cm.append( (xmlstring(30155), 'XBMC.RunPlugin(%s?mode=<tv>&sitemode=<watchTVdb>&url=<%s>&db=<episodes>)' % ( sys.argv[0], urllib.quote_plus(asin) ) ) )
     #cm.append( (xmlstring(30151), 'XBMC.RunPlugin(%s?mode=<xbmclibrary>&sitemode=<EXPORT_EPISODE>&asin=<%s>)' % ( sys.argv[0], urllib.quote_plus(asin) ) ) )
-    common.addVideo(displayname,url,poster,fanart,infoLabels=infoLabels,cm=cm,isAdult=isAdult,isHD=isHD)
+    common.addVideo(displayname,asin,poster,fanart,infoLabels=infoLabels,cm=cm,isAdult=isAdult,isHD=isHD)

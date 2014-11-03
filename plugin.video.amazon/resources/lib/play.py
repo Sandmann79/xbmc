@@ -40,8 +40,16 @@ def PLAYVIDEO():
     kiosk = 'yes'
     if settings.getSetting("kiosk") == 'false':
         kiosk = 'no'
-    url = common.args.url
+    asin = common.args.asin
+    trailer = common.args.trailer
     isAdult = int(common.args.adult)
+    
+    url = common.BASE_URL + "/dp/" + asin
+    if trailer == '1':
+        url += "/?autoplaytrailer=1"
+    else:
+        url += "/ref=_wnzw"
+        url += "/?autoplay=1"
     selPlugin = int(settings.getSetting("browser"))
     xbmc.executebuiltin("RunPlugin(plugin://" + browserPlugin[selPlugin] + "/?url=" + urllib.quote_plus(url) + "&mode=showSite&kiosk=" + kiosk + ")")
 

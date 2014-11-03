@@ -651,7 +651,7 @@ def ASIN_ADD(titles,asins=False,url=False,isPrime=True,isHD=False,single=False,a
                 episode = title['number']
             else:
                 episode = 0
-            url = common.BASE_URL+'/dp/'+asin+'/ref=vod_0_wnzw'
+            url = common.BASE_URL+'/dp/'+asin+'/ref=_wnzw'
             if title['formats'][0].has_key('images'):
                 try:
                     thumbnailUrl = title['formats'][0]['images'][0]['uri']

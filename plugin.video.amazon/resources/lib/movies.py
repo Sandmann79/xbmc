@@ -51,7 +51,7 @@ def createMoviedb():
                  isHD BOOLEAN,
                  isAdult BOOLEAN,
                  watched BOOLEAN,
-                 favor BOOLEAN,
+                 audio INTEGER,
                  IMDB_ID TEXT,
                  PRIMARY KEY(movietitle,year,asin))''')
     MovieDB.commit()
@@ -88,41 +88,7 @@ def deleteMoviedb(asin=False):
     
     c.close()
 
-def watchMoviedb(asin=False):
-    if not asin:
-        asin = common.args.url
-    c = MovieDB.cursor()
-    c.execute("update movies set watched=? where asin=?", (True,asin))
-    MovieDB.commit()
-    xbmc.executebuiltin("XBMC.Container.Refresh")
-    c.close()
-    
-def unwatchMoviedb(asin=False):
-    if not asin:
-        asin = common.args.url
-    c = MovieDB.cursor()
-    c.execute("update movies set watched=? where asin=?", (False,asin))
-    MovieDB.commit()
-    xbmc.executebuiltin("XBMC.Container.Refresh")
-    c.close()
-
-def favorMoviedb(asin=False):
-    if not asin:
-        asin = common.args.url
-    c = MovieDB.cursor()
-    c.execute("update movies set favor=? where asin=?", (True,asin))
-    MovieDB.commit()
-    c.close()
-    
-def unfavorMoviedb(asin=False):
-    if not asin:
-        asin = common.args.url
-    c = MovieDB.cursor()
-    c.execute("update movies set favor=? where asin=?", (False,asin))
-    MovieDB.commit()
-    c.close() 
-
-def loadMoviedb(genrefilter=False,actorfilter=False,directorfilter=False,studiofilter=False,yearfilter=False,mpaafilter=False,watchedfilter=False,favorfilter=False,alphafilter=False,isprime=True):
+def loadMoviedb(genrefilter=False,actorfilter=False,directorfilter=False,studiofilter=False,yearfilter=False,mpaafilter=False,alphafilter=False,isprime=True):
     c = MovieDB.cursor()
     if genrefilter:
         genrefilter = '%'+genrefilter+'%'
@@ -138,10 +104,6 @@ def loadMoviedb(genrefilter=False,actorfilter=False,directorfilter=False,studiof
         return c.execute('select distinct * from movies where isprime = (?) and studio = (?)', (isprime,studiofilter))
     elif yearfilter:    
         return c.execute('select distinct * from movies where isprime = (?) and year = (?)', (isprime,int(yearfilter)))
-    elif watchedfilter:
-        return c.execute('select distinct * from movies where isprime = (?) and watched = (?)', (isprime,watchedfilter))
-    elif favorfilter:
-        return c.execute('select distinct * from movies where isprime = (?) and favor = (?)', (isprime,favorfilter))
     elif alphafilter:
         return c.execute('select distinct * from movies where isprime = (?) and movietitle like (?)', (isprime,alphafilter))       
     else:
@@ -181,12 +143,9 @@ def getMoviedbAsins(table,col):
     return content
     
 def addMoviesdb(isPrime=True):
-    global MovWatched, MovFav
     dialog = xbmcgui.DialogProgress()
     dialog.create(xmlstring(30120))
     dialog.update(0,xmlstring(30121))
-    MovWatched = getMoviedbAsins('movies', 'watched')
-    MovFav = getMoviedbAsins('movies', 'favor')
     c = MovieDB.cursor()
     c.execute('drop table if exists movies')
     c.close()
@@ -205,7 +164,6 @@ def addMoviesdb(isPrime=True):
         if (dialog.iscanceled()): goAhead = -1
         dialog.update(int((endIndex)*100.0/MOV_TOTAL), xmlstring(30122).replace("%s",str(page)), xmlstring(30123).replace("%s", str(endIndex) ))
     if goAhead == 0: common.addon.setSetting("MoviesTotal",str(endIndex))
-    del MovWatched, MovFav
     dialog.close()
 
 def ASIN_ADD(titles,isPrime=True):
@@ -218,6 +176,7 @@ def ASIN_ADD(titles,isPrime=True):
         stars = None
         votes = None
         trailer = False
+        audio = 1
         #isPrime = False
         asin = title['titleId']
         movietitle = title['title']
@@ -271,18 +230,22 @@ def ASIN_ADD(titles,isPrime=True):
             if title['amazonRating'].has_key('rating'): stars = float(title['amazonRating']['rating'])*2
             if title['amazonRating'].has_key('count'): votes = str(title['amazonRating']['count'])
         for format in title['formats']:
-            if format['videoFormatType'] == 'HD': isHD = True
+            if format['videoFormatType'] == 'HD':
+                for offer in format['offers']:
+                    if offer['offerType'] == 'SUBSCRIPTION':
+                        isHD = True
+                        isPrime = True
             for offer in format['offers']:
                 if offer['offerType'] == 'SUBSCRIPTION': isPrime = True
+            if 'STEREO' in format['audioFormatTypes']: audio = 2
+            if 'AC_3_5_1' in format['audioFormatTypes']: audio = 6
         if title.has_key('restrictions'):
             for rest in title['restrictions']:
                 if rest['action'] == 'playback':
                     if rest['type'] == 'ageVerificationRequired': isAdult = True
-        if asin in MovWatched: isWatched = True
-        if asin in MovFav: isFav = True
         titelnum+=1
         if 'bbl test' not in movietitle.lower():
-            moviedata = [common.cleanData(x) for x in [asin,None,movietitle,trailer,poster,plot,director,None,runtime,year,premiered,studio,mpaa,actors,genres,stars,votes,None,None,None,isPrime,isHD,isAdult,isWatched,isFav,None]]
+            moviedata = [common.cleanData(x) for x in [asin,None,movietitle,trailer,poster,plot,director,None,runtime,year,premiered,studio,mpaa,actors,genres,stars,votes,None,None,None,isPrime,isHD,isAdult,isWatched,audio,None]]
             addMoviedb(moviedata)
     return titelnum
 

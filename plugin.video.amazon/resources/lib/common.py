@@ -40,7 +40,7 @@ class _Info:
         print "common.args"
         print kwargs
         self.__dict__.update( kwargs )
-exec "args = _Info(%s)" % (urllib.unquote_plus(sys.argv[2][1:].replace("&", ", ").replace('<',"\"").replace('>',"\"")) , )
+exec "args = _Info(%s)" % urllib.unquote_plus(sys.argv[2][1:].replace('&', ', ')).replace('<','"').replace('>','"')
 
 def getURL( url , host='www.amazon.de',useCookie=False):
     print 'getURL: '+url
@@ -84,67 +84,58 @@ def androidsig(url):
     return base64.encodestring(sig.digest()).replace('\n','')
 
 def addDir(name, mode, sitemode, url='', thumb='', fanart='', infoLabels=False, totalItems=0, cm=False ,page=1,isHD=False):
-    u  = sys.argv[0]
-    u += '?url="'+urllib.quote_plus(url)+'"'
-    u += '&mode="'+mode+'"'
-    u += '&sitemode="'+sitemode+'"'
-    u += '&name="'+urllib.quote_plus(name)+'"'
-    u += '&page="'+urllib.quote_plus(str(page))+'"'
+    u = '%s?url=<%s>&mode=<%s>&sitemode=<%s>&name=<%s>&page=<%s>' % (sys.argv[0], urllib.quote_plus(url), mode, sitemode, urllib.quote_plus(name), urllib.quote_plus(str(page)))
     if fanart == '' or fanart == None:
         try:fanart = args.fanart
         except:fanart = os.path.join(addon.getAddonInfo('path'),'fanart.jpg')
-    else:u += '&fanart="'+urllib.quote_plus(fanart)+'"'
+    else:u += '&fanart=<%s>' % urllib.quote_plus(fanart)
     if thumb == '' or thumb == None:
         try:thumb = args.thumb
         except:thumb = os.path.join(addon.getAddonInfo('path'),'icon.png')
-    else:u += '&thumb="'+urllib.quote_plus(thumb)+'"'
+    else:u += '&thumb=<%s>' % urllib.quote_plus(thumb)
     item=xbmcgui.ListItem(name, iconImage="DefaultFolder.png", thumbnailImage=thumb)
     item.setProperty('fanart_image',fanart)
-    if not infoLabels:
-        infoLabels={ "Title": name}
+    item.setProperty('IsPlayable', 'false')
+    try: 
+        item.setProperty('TotalSeasons', str(infoLabels['TotalSeasons']))
+    except: pass
+    if infoLabels:
+        item.setInfo(type='Video', infoLabels=infoLabels)
     if cm:
         item.addContextMenuItems( cm, replaceItems=True  )
-    item.setInfo( type="Video", infoLabels=infoLabels)
-    #if isHD:
-    #    item.addStreamInfo('video', { 'width':1280 ,'height' : 720 })
-    #else:
-    #    item.addStreamInfo('video', { 'width':720 ,'height' : 576 })
     xbmcplugin.addDirectoryItem(handle=pluginhandle,url=u,listitem=item,isFolder=True,totalItems=totalItems)
 
-def addVideo(name,url,poster='',fanart='',infoLabels=False,totalItems=0,cm=False,trailer=False,isAdult=False,isHD=False):
+def addVideo(name,asin,poster='',fanart='',infoLabels=False,totalItems=0,cm=False,trailer=False,isAdult=False,isHD=False):
     if not infoLabels:
         infoLabels={ "Title": name}
-    u  = sys.argv[0]
-    u += '?asin="'+urllib.quote_plus(url)+'"'
-    u += '&mode="play"'
-    u += '&name="'+urllib.quote_plus(name)+'"'
-    u += '&sitemode="PLAYVIDEO"'
-    u += '&adult="'+str(isAdult)+'"'
+    u  = '%s?asin=<%s>&mode=<play>&name=<%s>&sitemode=<PLAYVIDEO>&adult=<%s>' % (sys.argv[0], asin, urllib.quote_plus(name), str(isAdult))
     if trailer:
-        infoLabels['Trailer'] = u + '&trailer="1"'
-    u += '&trailer="0"'
+        infoLabels['Trailer'] = u + '&trailer=<1>'
+    u += '&trailer=<0>'
     try:
 	liz=xbmcgui.ListItem(name, thumbnailImage=poster)
     except:
 	liz=xbmcgui.ListItem(name)
-    liz.setInfo( type="Video", infoLabels=infoLabels)
+    liz.setInfo(type='Video', infoLabels=infoLabels)
     try:
         if fanart <> '' or fanart <> None:
             liz.setProperty('fanart_image',fanart)
     except:
         print 'invalid fanart'
-    liz.setProperty('IsPlayable', 'true')
-    #if isHD:
-    #    liz.addStreamInfo('video', { 'width':1280 ,'height' : 720 })
-    #else:
-    #    liz.addStreamInfo('video', { 'width':720 ,'height' : 576 })
+    liz.setProperty('IsPlayable', 'false')
+    if isHD:
+        liz.addStreamInfo('video', { 'width':1280 ,'height' : 720 })
+    else:
+        liz.addStreamInfo('video', { 'width':720 ,'height' : 576 })
+    if infoLabels['AudioChannels']: liz.addStreamInfo('audio', { 'codec': 'ac3' ,'channels': int(infoLabels['AudioChannels']) })
     if cm:
         liz.addContextMenuItems( cm , replaceItems=True )
-    xbmcplugin.addDirectoryItem(handle=pluginhandle,url=u,listitem=liz,isFolder=True,totalItems=totalItems)     
+    xbmcplugin.addDirectoryItem(handle=pluginhandle,url=u,listitem=liz,isFolder=False,totalItems=totalItems)     
 
 def addText(name):
     item = xbmcgui.ListItem(name)
-    xbmcplugin.addDirectoryItem(handle=pluginhandle,url='',listitem=item)
+    item.setProperty('IsPlayable', 'false')
+    xbmcplugin.addDirectoryItem(handle=pluginhandle,url=sys.argv[0],listitem=item)
 
 def setCustomer(check=False):
     if check:

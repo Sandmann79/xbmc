@@ -48,7 +48,7 @@ def PLAYVIDEO():
     if trailer == '1':
         url += "/?autoplaytrailer=1"
     else:
-        url += "/ref=_wnzw"
+        #url += "/ref=_wnzw"
         url += "/?autoplay=1"
     selPlugin = int(settings.getSetting("browser"))
     xbmc.executebuiltin("RunPlugin(plugin://" + browserPlugin[selPlugin] + "/?url=" + urllib.quote_plus(url) + "&mode=showSite&kiosk=" + kiosk + ")")

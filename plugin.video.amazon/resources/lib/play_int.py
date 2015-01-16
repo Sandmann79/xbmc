@@ -249,7 +249,7 @@ def GETFLASHVARS(pageurl):
     for item in flashVars:
         item = item.replace('"','').split(':',1)
         if item[0]      == 'csrfToken':
-            values['token']         = 'bba9a4216cd8ec5afea664f2b9a8319c'
+            csrfToken               = urllib.quote_plus(item[1])
         elif item[0]    == 'customer':
             values['customerID']    = item[1]
         elif item[0]    == 'ASIN':
@@ -265,6 +265,11 @@ def GETFLASHVARS(pageurl):
             #values['userAgent']     = "GoogleTV 162671"
         elif item[0]    == 'playerSwf':
             swfUrl                  = item[1]
+            
+    pltoken = common.getURL("https://www.amazon.de/gp/video/streaming/player-token.json?callback=jQuery&csrftoken=" + csrfToken, useCookie=True)
+    print pltoken
+    values['token']  = re.compile('"([^"]*).*"([^"]*)"').findall(pltoken)[0][1]
+    
     return swfUrl, values, owned
         
 def PLAY(rtmpurls,swfUrl,Trailer=False,resolve=True,title=False):

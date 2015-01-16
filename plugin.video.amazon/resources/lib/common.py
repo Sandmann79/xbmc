@@ -31,8 +31,8 @@ pluginpath = addon.getAddonInfo('path')
 
 pluginhandle = int(sys.argv[1])
 
-COOKIEFILE = os.path.join(xbmc.translatePath(pluginpath),'resources','cache','cookies.lwp')
-
+COOKIEPATH = os.path.join(xbmc.translatePath(pluginpath),'resources','cache')
+COOKIEFILE = os.path.join(COOKIEPATH,'cookies.lwp')
 BASE_URL = 'http://www.amazon.de'
                      
 class _Info:
@@ -234,6 +234,8 @@ def mechanizeLogin():
 def dologin():
         if os.path.isfile(COOKIEFILE):
             os.remove(COOKIEFILE)
+        if not os.path.exists(COOKIEPATH):
+            os.mkdir(COOKIEPATH)
         cj = cookielib.LWPCookieJar()
         br = mechanize.Browser()  
         br.set_handle_robots(False)

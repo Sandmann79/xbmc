@@ -1,6 +1,13 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <strings>
+    <string id="30001">Konto</string>
+    <string id="30002">Benutzername</string>
+    <string id="30003">Passwort</string>
+    <string id="30004">Stream Bitrate (0 - Fragen)</string>
+    <string id="30005">Untertitel aktivieren</string>
+
     <string id="30011">Allgemein</string>
+    <string id="30012">Wiedergabemethode</string>
 
     <string id="30015">Ansicht</string>
     <string id="30016">Film Bildquelle</string>

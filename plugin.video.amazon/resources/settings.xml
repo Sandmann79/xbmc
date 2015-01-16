@@ -1,20 +1,24 @@
 <settings>
 	<!-- General -->
 	<category label="30011">
-        <setting id="browser" type="enum" label="30048" values="Browser Launcher|Chrome Launcher" default="0" />
-		<setting id="kiosk" type="bool" label="30042" default="true" />
-		<setting id="fullscreen" type="bool" label="30041" default="false" />
-        <setting id="clickwait" type="labelenum" values="1|2|3|4|5|6|7|8|9|10|11|12|13|14|15|16|17|18|19|20|21|22|23|24|25|26|27|28|29|30" label="30044" default="10" enable="eq(-1,true)" />
-        <setting id="pininput" type="bool" label="30045" default="false" enable="eq(-2,true)" />
-        <setting id="pin" type="number" label="30046" enable="eq(-1,true) + eq(-3,true)" default="" />
-        <setting id="waitpin" type="labelenum" values="1|2|3|4|5|6|7|8|9|10|11|12|13|14|15|16|17|18|19|20|21|22|23|24|25|26|27|28|29|30" enable="eq(-2,true) + eq(-4,true)" label="30047" default="5" />
+        <setting id="playmethod" type="enum" label="30012" values="Kodi Player|Browser Launcher|Chrome Launcher" default="0" />
+		<setting id="kiosk" type="bool" label="30042" default="true" enable="!eq(-1,0)" />
+		<setting id="fullscreen" type="bool" label="30041" default="false" enable="!eq(-2,0)" />
+        <setting id="clickwait" type="labelenum" values="1|2|3|4|5|6|7|8|9|10|11|12|13|14|15|16|17|18|19|20|21|22|23|24|25|26|27|28|29|30" label="30044" default="10" enable="eq(-1,true) + !eq(-3,0)" />
+        <setting id="pininput" type="bool" label="30045" default="false" enable="eq(-2,true) + !eq(-4,0)" />
+        <setting id="pin" type="number" label="30046" enable="eq(-1,true) + eq(-3,true) + !eq(-5,0)" default="" />
+        <setting id="waitpin" type="labelenum" values="1|2|3|4|5|6|7|8|9|10|11|12|13|14|15|16|17|18|19|20|21|22|23|24|25|26|27|28|29|30" enable="eq(-2,true) + eq(-4,true) + !eq(-6,0)" label="30047" default="5" />
+	</category>
+	<category label="30001">
+        <setting id="login_name" type="text" label="30002" />
+		<setting id="login_pass" type="text" option="hidden" label="30003" />
+		<setting id="bitrate" label="30004" type="labelenum" values="0|300|600|2500|4000|6000|10000" default="0" />
+        <setting id="enable_captions" type="bool" label="30005" />
 	</category>
 	<category label="30038">
 		<setting id="mov_perpage" type="labelenum" values="25|50|100|150|200|250" label="30039" default="250"/>
 		<setting id="tv_perpage" type="labelenum" values="25|50|100|150|200|250" label="30040" default="150"/>
-		<!-- <setting id="movieart" type="enum" lvalues="30020|30021|30022" label="30016" default="0"/> -->
 		<setting id="tvart" type="enum" lvalues="30018|30019|30022" label="30017" default="0"/>
-		<!--setting id="editenable" type ="bool" label="30033" default="false"/z-->
 	</category>
 	<category label="30015">
 		<setting id="viewenable" type ="bool" label="30035" default="true"/>

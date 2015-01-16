@@ -18,7 +18,7 @@ confluence_views = [500,501,502,503,504,508]
 
 ################################ Movie listing
 def LIST_MOVIE_ROOT():
-    common.addDir(xmlstring(30157),'listmovie','LIST_MOVIES','no')
+    #common.addDir(xmlstring(30157),'listmovie','LIST_MOVIES','no')
     common.addDir(xmlstring(30143),'listmovie','LIST_MOVIES')
     common.addDir(xmlstring(30144),'listmovie','LIST_MOVIE_TYPES','GENRE')
     common.addDir(xmlstring(30145),'listmovie','LIST_MOVIE_TYPES','YEARS')

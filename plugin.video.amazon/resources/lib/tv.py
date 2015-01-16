@@ -24,7 +24,7 @@ xmlstring = xbmcaddon.Addon().getLocalizedString
 MAX = int(common.addon.getSetting("tv_perpage"))
 MAX_MOV = int(common.addon.getSetting("mov_perpage"))
 EPI_TOTAL = common.addon.getSetting("EpisodesTotal")
-if EPI_TOTAL == '': EPI_TOTAL = '14000'
+if EPI_TOTAL == '': EPI_TOTAL = '17000'
 EPI_TOTAL = int(EPI_TOTAL)
 
 def createTVdb():

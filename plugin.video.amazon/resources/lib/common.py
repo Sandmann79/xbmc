@@ -232,30 +232,32 @@ def mechanizeLogin():
             succeeded=True
 
 def dologin():
-    try:
         if os.path.isfile(COOKIEFILE):
             os.remove(COOKIEFILE)
         cj = cookielib.LWPCookieJar()
         br = mechanize.Browser()  
         br.set_handle_robots(False)
         br.set_cookiejar(cj)
+        br.set_debug_http(True)
+        br.set_debug_responses(True)
         br.addheaders = [('User-agent', 'Mozilla/4.0 (compatible; MSIE 8.0; Windows NT 6.1)')]  
         sign_in = br.open("http://www.amazon.de/gp/flex/sign-out.html") 
-        br.select_form(name="sign-in")  
+        #print sign_in.read()  
+        br.select_form(name="signIn")  
         br["email"] = addon.getSetting("login_name")
         br["password"] = addon.getSetting("login_pass")
         logged_in = br.submit()  
-        error_str = "The e-mail address and password you entered do not match any accounts on record."  
+        #error_str = "The e-mail address and password you entered do not match any accounts on record."  
+        error_str = "message_error"
+        #print logged_in.read()
         if error_str in logged_in.read():
-            xbmcgui.Dialog().ok('Login Error',error_str)
-            print error_str
+            xbmcgui.Dialog().ok('Login Error','email or pw')
             return True
         else:
             cj.save(COOKIEFILE, ignore_discard=True, ignore_expires=True)
             #setCustomer(check=True)
             gen_id()
             return True
-    except:
         return False
         
 def cleanData(data):

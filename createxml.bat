@@ -4,6 +4,9 @@ set tools_dir=%~dp0tools
 
 echo ^<?xml version="1.0" encoding="UTF-8" standalone="yes"?^> > %~dp0addon.xml
 echo ^<addons^> >> %~dp0addon.xml
+
+if exist plugin.video.amazon\resources\cache rd /s /q plugin.video.amazon\resources\cache >nul 2>&1
+
 for /f %%f in ('dir /b /a:d') do if exist %%f\addon.xml (
     del /q /s %%f\*.pyo >nul 2>&1
     del /q /s %%f\*.pyc >nul 2>&1

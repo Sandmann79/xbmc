@@ -19,7 +19,7 @@ confluence_views = [500,501,502,503,504,508]
 ###################### Television
 
 def LIST_TV_ROOT():
-    common.addDir(xmlstring(30172),'listtv','LIST_TVSHOWS','no')
+    #common.addDir(xmlstring(30172),'listtv','LIST_TVSHOWS','no')
     common.addDir(xmlstring(30160),'listtv','LIST_TVSHOWS')
     common.addDir(xmlstring(30144),'listtv','LIST_TVSHOWS_TYPES','GENRE' )
     common.addDir(xmlstring(30158),'listtv','LIST_TVSHOWS_TYPES','ACTORS')

@@ -20,7 +20,7 @@
 </addon> 
 <addon id="plugin.video.amazon" 
        name="Amazon" 
-       version="1.2.1" 
+       version="1.2.5" 
        provider-name="Sandmann79 + BlueCop + Romans I XVI"> 
   <requires> 
     <import addon="xbmc.python" version="2.1.0"/> 
@@ -28,7 +28,7 @@
     <import addon="script.module.demjson" version="2.2.2"/> 
     <import addon="script.module.mechanize" version="0.2.6"/> 
     <import addon="script.module.amazon.database" version="0.0.2"/> 
-    <import addon="plugin.program.browser.launcher" version="1.2.3"/> 
+    <--<import addon="plugin.program.browser.launcher" version="1.2.3"/>--> 
   </requires> 
   <extension point="xbmc.python.pluginsource" 
              library="default.py"> 
@@ -38,15 +38,15 @@
     <platform>all</platform> 
     <summary lang="en">Amazon Prime Video Streaming</summary> 
     <summary lang="de">Amazon Prime Instant Video</summary> 
-    <description lang="en">Movies and Television Shows for Prime Members[CR][CR]In order to use this addon you must have Browser Launcher or Chrome Launcher installed.</description> 
-    <description lang="de">Filme und Serien für Amazon Prime Mitglieder[CR][CR]Zur Verwendung dieses Addons, wird der Browser Launcher oder Chrome Launcher benötigt.</description> 
+    <description lang="en">Movies and Television Shows for Prime Members</description> 
+    <description lang="de">Filme und Serien für Amazon Prime Mitglieder</description> 
     <disclaimer lang="en">Some parts of this addon may not be legal in your country of residence - please check with your local laws before installing.</disclaimer> 
     <disclaimer lang="de">Möglicherweise sind einge Teile dieses Addons in Ihrem Land illegal, Sie sollten dies unbedingt vor der Installation überprüfen.</disclaimer> 
   </extension> 
 </addon> 
 <addon id="script.module.amazon.database" 
        name="Amazon Database" 
-       version="0.0.2" 
+       version="0.0.3" 
        provider-name="BlueCop"> 
   <requires> 
     <import addon="xbmc.python" version="2.1.0"/> 

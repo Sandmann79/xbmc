@@ -1,6 +1,13 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <strings>
+    <string id="30001">Account</string>
+    <string id="30002">Username</string>
+    <string id="30003">Password</string>
+    <string id="30004">Stream Bitrate (0 - Ask)</string>
+    <string id="30005">Enable Subtitles</string>
+
     <string id="30011">General</string>
+    <string id="30012">Playback with</string>
 
     <string id="30015">Views</string>
     <string id="30016">Movie Image Source</string>

@@ -10,6 +10,7 @@ import xbmcaddon
 import xbmcgui
 import os
 import subprocess
+import sys
 import resources.lib.common as common
 import urllib2
 
@@ -22,36 +23,42 @@ except:
     from elementtree import ElementTree
 
 settings = xbmcaddon.Addon( id = 'plugin.video.amazon' )
-userinput = os.path.join( settings.getAddonInfo( 'path' ), 'amazonscript/userinput.exe' )
+userinput = os.path.join( settings.getAddonInfo( 'path' ), 'tools', 'userinput.exe' )
 waitsec = int(settings.getSetting("clickwait")) * 1000
 pin = settings.getSetting("pin")
 waitpin = int(settings.getSetting("waitpin")) * 1000
 osLinux = xbmc.getCondVisibility('system.platform.linux')
 osOsx = xbmc.getCondVisibility('system.platform.osx')
 osWin = xbmc.getCondVisibility('system.platform.windows')
-browserPlugin = ['plugin.program.browser.launcher', 'plugin.program.chrome.launcher']
+playPlugin = ['','plugin.program.browser.launcher', 'plugin.program.chrome.launcher']
 screenWidth = int(xbmc.getInfoLabel('System.ScreenWidth'))
 screenHeight = int(xbmc.getInfoLabel('System.ScreenHeight'))
+
 
 def PLAYVIDEO():
     xbmc.Player().stop()
     dialog = xbmcgui.Dialog()
     ok = True
     kiosk = 'yes'
-    if settings.getSetting("kiosk") == 'false':
-        kiosk = 'no'
+    if settings.getSetting("kiosk") == 'false': kiosk = 'no'
     asin = common.args.asin
     trailer = common.args.trailer
     isAdult = int(common.args.adult)
-    
     url = common.BASE_URL + "/dp/" + asin
+    selPlugin = playPlugin[int(settings.getSetting("playmethod"))]
+    
     if trailer == '1':
+        if selPlugin == '':
+            xbmc.executebuiltin('RunPlugin(%s?mode=<play_int>&sitemode=<PLAYTRAILER>&url=<%s>)' % (sys.argv[0], url) )
+            return
         url += "/?autoplaytrailer=1"
     else:
-        #url += "/ref=_wnzw"
+        if selPlugin == '':
+            xbmc.executebuiltin('RunPlugin(%s?mode=<play_int>&sitemode=<PLAYVIDEO>&url=<%s>)' % (sys.argv[0], url) )
+            return
         url += "/?autoplay=1"
-    selPlugin = int(settings.getSetting("browser"))
-    xbmc.executebuiltin("RunPlugin(plugin://" + browserPlugin[selPlugin] + "/?url=" + urllib.quote_plus(url) + "&mode=showSite&kiosk=" + kiosk + ")")
+    
+    xbmc.executebuiltin("RunPlugin(plugin://" + selPlugin + "/?url=" + urllib.quote_plus(url) + "&mode=showSite&kiosk=" + kiosk + ")")
 
     if settings.getSetting("fullscreen") == 'true':
         pininput = 0

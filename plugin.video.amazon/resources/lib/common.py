@@ -26,13 +26,14 @@ import base64
 import demjson
 
 print sys.argv
-addon = xbmcaddon.Addon('plugin.video.amazon')
+addon = xbmcaddon.Addon()
 pluginpath = addon.getAddonInfo('path')
-
+pldatapath = xbmc.translatePath("special://profile/addon_data/"+addon.getAddonInfo('id')).decode('utf-8')
+dbpath = xbmc.translatePath('special://home/addons/script.module.amazon.database/lib').decode('utf-8')
 pluginhandle = int(sys.argv[1])
+xmlstring = addon.getLocalizedString
 
-COOKIEPATH = os.path.join(xbmc.translatePath(pluginpath),'resources','cache')
-COOKIEFILE = os.path.join(COOKIEPATH,'cookies.lwp')
+COOKIEFILE = os.path.join(pldatapath, "cookies.lwp").encode('utf-8')
 BASE_URL = 'http://www.amazon.de'
                      
 class _Info:
@@ -87,11 +88,11 @@ def addDir(name, mode, sitemode, url='', thumb='', fanart='', infoLabels=False, 
     u = '%s?url=<%s>&mode=<%s>&sitemode=<%s>&name=<%s>&page=<%s>' % (sys.argv[0], urllib.quote_plus(url), mode, sitemode, urllib.quote_plus(name), urllib.quote_plus(str(page)))
     if fanart == '' or fanart == None:
         try:fanart = args.fanart
-        except:fanart = os.path.join(addon.getAddonInfo('path'),'fanart.jpg')
+        except:fanart = os.path.join(pluginpath,'fanart.jpg').encode('utf-8')
     else:u += '&fanart=<%s>' % urllib.quote_plus(fanart)
     if thumb == '' or thumb == None:
         try:thumb = args.thumb
-        except:thumb = os.path.join(addon.getAddonInfo('path'),'icon.png')
+        except:thumb = os.path.join(pluginpath,'fanart.jpg').encode('utf-8')
     else:u += '&thumb=<%s>' % urllib.quote_plus(thumb)
     item=xbmcgui.ListItem(name, iconImage="DefaultFolder.png", thumbnailImage=thumb)
     item.setProperty('fanart_image',fanart)
@@ -105,31 +106,31 @@ def addDir(name, mode, sitemode, url='', thumb='', fanart='', infoLabels=False, 
         item.addContextMenuItems( cm, replaceItems=True  )
     xbmcplugin.addDirectoryItem(handle=pluginhandle,url=u,listitem=item,isFolder=True,totalItems=totalItems)
 
-def addVideo(name,asin,poster='',fanart='',infoLabels=False,totalItems=0,cm=False,trailer=False,isAdult=False,isHD=False):
+def addVideo(name,asin,poster=False,fanart=False,infoLabels=False,totalItems=0,cm=False,trailer=False,isAdult=False,isHD=False):
     if not infoLabels:
         infoLabels={ "Title": name}
     u  = '%s?asin=<%s>&mode=<play>&name=<%s>&sitemode=<PLAYVIDEO>&adult=<%s>' % (sys.argv[0], asin, urllib.quote_plus(name), str(isAdult))
+    if not cm:
+        cm = []
+    cm.append( (xmlstring(30109), 'XBMC.RunPlugin(%s&trailer=<0>&selbitrate=<1>)' % u) )
     if trailer:
-        infoLabels['Trailer'] = u + '&trailer=<1>'
-    u += '&trailer=<0>'
-    try:
-	liz=xbmcgui.ListItem(name, thumbnailImage=poster)
-    except:
-	liz=xbmcgui.ListItem(name)
+        infoLabels['Trailer'] = u + '&trailer=<1>&selbitrate=<0>'
+    u += '&trailer=<0>&selbitrate=<0>'
+    if poster:
+        liz=xbmcgui.ListItem(name, thumbnailImage=poster)
+    else:
+        liz=xbmcgui.ListItem(name)
+        
     liz.setInfo(type='Video', infoLabels=infoLabels)
-    try:
-        if fanart <> '' or fanart <> None:
-            liz.setProperty('fanart_image',fanart)
-    except:
-        print 'invalid fanart'
+    if fanart:
+        liz.setProperty('fanart_image',fanart)
     liz.setProperty('IsPlayable', 'false')
     if isHD:
         liz.addStreamInfo('video', { 'width':1280 ,'height' : 720 })
     else:
         liz.addStreamInfo('video', { 'width':720 ,'height' : 576 })
     if infoLabels['AudioChannels']: liz.addStreamInfo('audio', { 'codec': 'ac3' ,'channels': int(infoLabels['AudioChannels']) })
-    if cm:
-        liz.addContextMenuItems( cm , replaceItems=True )
+    liz.addContextMenuItems( cm , replaceItems=False )
     xbmcplugin.addDirectoryItem(handle=pluginhandle,url=u,listitem=liz,isFolder=False,totalItems=totalItems)     
 
 def addText(name):
@@ -232,36 +233,44 @@ def mechanizeLogin():
             succeeded=True
 
 def dologin():
-        if os.path.isfile(COOKIEFILE):
-            os.remove(COOKIEFILE)
-        if not os.path.exists(COOKIEPATH):
-            os.mkdir(COOKIEPATH)
-        cj = cookielib.LWPCookieJar()
-        br = mechanize.Browser()  
-        br.set_handle_robots(False)
-        br.set_cookiejar(cj)
-        br.set_debug_http(True)
-        br.set_debug_responses(True)
-        br.addheaders = [('User-agent', 'Mozilla/4.0 (compatible; MSIE 8.0; Windows NT 6.1)')]  
-        sign_in = br.open("http://www.amazon.de/gp/flex/sign-out.html") 
-        #print sign_in.read()  
-        br.select_form(name="signIn")  
-        br["email"] = addon.getSetting("login_name")
-        br["password"] = addon.getSetting("login_pass")
-        logged_in = br.submit()  
-        #error_str = "The e-mail address and password you entered do not match any accounts on record."  
-        error_str = "message_error"
-        #print logged_in.read()
-        if error_str in logged_in.read():
-            xbmcgui.Dialog().ok('Login Error','email or pw')
-            return True
-        else:
-            cj.save(COOKIEFILE, ignore_discard=True, ignore_expires=True)
-            #setCustomer(check=True)
-            gen_id()
-            return True
-        return False
-        
+    br = mechanize.Browser()  
+    content = br.open(BASE_URL).read()
+    if '"isPrime":1' in content:
+        return True
+    else:
+        content = ""
+        keyboard = xbmc.Keyboard('', xmlstring(30002))
+        keyboard.doModal()
+        if keyboard.isConfirmed() and keyboard.getText():
+            email = keyboard.getText()
+            keyboard = xbmc.Keyboard('', xmlstring(30003))
+            keyboard.doModal()
+            if keyboard.isConfirmed() and keyboard.getText():
+                password = keyboard.getText()
+                if os.path.isfile(COOKIEFILE):
+                    os.remove(COOKIEFILE)
+                cj = cookielib.LWPCookieJar()
+                br.set_handle_robots(False)
+                br.set_cookiejar(cj)
+                br.set_debug_http(True)
+                br.set_debug_responses(True)
+                br.addheaders = [('User-agent', 'Mozilla/4.0 (compatible; MSIE 8.0; Windows NT 6.1)')]  
+                sign_in = br.open("http://www.amazon.de/gp/flex/sign-out.html") 
+                br.select_form(name="signIn")  
+                br["email"] = email
+                br["password"] = password
+                logged_in = br.submit()  
+                error_str = "message_error"
+                if error_str in logged_in.read():
+                    xbmcgui.Dialog().ok(xmlstring(30190), xmlstring(30191))
+                    return True
+                else:
+                    cj.save(COOKIEFILE, ignore_discard=True, ignore_expires=True)
+                    #setCustomer(check=True)
+                    gen_id()
+                    return True
+    return False
+                    
 def cleanData(data):
     if type(data) == type(str()) or type(data) == type(unicode()):
         if data.replace('-','').strip() == '': data = ''

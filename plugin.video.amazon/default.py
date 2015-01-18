@@ -14,12 +14,15 @@ import urllib
 
 pluginhandle = common.pluginhandle
 xmlstring = xbmcaddon.Addon().getLocalizedString
+info = xbmcaddon.Addon().getAddonInfo
+xbmcaddon.Addon().setSetting('login_name', '')
+xbmcaddon.Addon().setSetting('login_pass', '')
 
 #plugin constants
-__plugin__ = "AMAZON"
-__authors__ = "Sandmann79 + BlueCop + Romans I XVI"
+__plugin__ = info('name')
+__authors__ = info('author')
 __credits__ = ""
-__version__ = "1.2.5"
+__version__ = info('version')
 
 print "\n\n\n\n\n\n\n====================AMAZON START====================\n\n\n\n\n\n"
 
@@ -40,8 +43,8 @@ def modes( ):
 
         xbmcplugin.endOfDirectory(pluginhandle)
     else:
-        exec 'import resources.lib.%s as sitemodule' % common.args.mode
-        exec 'sitemodule.%s()' % common.args.sitemode
+        exec 'import resources.lib.%s as sitemodule' % common.args.mode.lower()
+        exec 'sitemodule.%s()' % common.args.sitemode.upper()
 
 modes ( )
 sys.modules.clear()

@@ -13,7 +13,6 @@ import re
 import demjson
 import listtv
 import listmovie
-import xbmclibrary
 import xbmcaddon
 
 import movies as moviesDB
@@ -124,3 +123,5 @@ def SEARCH_DB(searchString=False,results=MAX,index=0):
                 if viewenable == 'true':
                     view=int(common.addon.getSetting("showview"))
                     xbmc.executebuiltin("Container.SetViewMode("+str(confluence_views[view])+")")
+                    
+                    

@@ -249,7 +249,7 @@ def ASIN_ADD(titles,isPrime=True):
             addMoviedb(moviedata)
     return titelnum
 
-MovieDBfile = os.path.join(xbmc.translatePath('special://home/addons/script.module.amazon.database/lib/'),'movies.db')
+MovieDBfile =os.path.join(common.dbpath, 'movies.db').encode('utf-8')
 if not os.path.exists(MovieDBfile):
     MovieDB = sqlite.connect(MovieDBfile)
     MovieDB.text_factory = str

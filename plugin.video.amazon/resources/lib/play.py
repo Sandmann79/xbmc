@@ -23,7 +23,7 @@ except:
     from elementtree import ElementTree
 
 settings = xbmcaddon.Addon( id = 'plugin.video.amazon' )
-userinput = os.path.join( settings.getAddonInfo( 'path' ), 'tools', 'userinput.exe' )
+userinput = os.path.join( settings.getAddonInfo( 'path' ), 'tools', 'userinput.exe' ).encode('utf-8')
 waitsec = int(settings.getSetting("clickwait")) * 1000
 pin = settings.getSetting("pin")
 waitpin = int(settings.getSetting("waitpin")) * 1000
@@ -43,18 +43,19 @@ def PLAYVIDEO():
     if settings.getSetting("kiosk") == 'false': kiosk = 'no'
     asin = common.args.asin
     trailer = common.args.trailer
+    selbitrate = common.args.selbitrate
     isAdult = int(common.args.adult)
     url = common.BASE_URL + "/dp/" + asin
     selPlugin = playPlugin[int(settings.getSetting("playmethod"))]
     
     if trailer == '1':
         if selPlugin == '':
-            xbmc.executebuiltin('RunPlugin(%s?mode=<play_int>&sitemode=<PLAYTRAILER>&url=<%s>)' % (sys.argv[0], url) )
+            xbmc.executebuiltin('RunPlugin(%s?mode=<play_int>&sitemode=<PLAYTRAILER>&url=<%s>&selbitrate=<%s>)' % (sys.argv[0], url, selbitrate) )
             return
         url += "/?autoplaytrailer=1"
     else:
         if selPlugin == '':
-            xbmc.executebuiltin('RunPlugin(%s?mode=<play_int>&sitemode=<PLAYVIDEO>&url=<%s>)' % (sys.argv[0], url) )
+            xbmc.executebuiltin('RunPlugin(%s?mode=<play_int>&sitemode=<PLAYVIDEO>&url=<%s>&selbitrate=<%s>)' % (sys.argv[0], url, selbitrate) )
             return
         url += "/?autoplay=1"
     

@@ -7,7 +7,6 @@ import demjson
 import xbmcplugin
 import xbmc
 import xbmcgui
-import subprocess
 import os
 import resources.lib.common as common
 
@@ -17,8 +16,6 @@ try:
     from xml.etree import ElementTree
 except:
     from elementtree import ElementTree
-
-pluginhandle = common.pluginhandle
 
 def GETSUBTITLES(values):
     getsubs  = 'https://atv-ps-eu.amazon.com/cdp/catalog/GetSubtitleUrls'
@@ -37,7 +34,7 @@ def GETSUBTITLES(values):
     if len(subtitleLanguages) > 0:
         subtitleUrl = subtitleLanguages[0]['url']
         subtitles = CONVERTSUBTITLES(subtitleUrl)
-        common.SaveFile(os.path.join(common.pluginpath,'resources','cache',values['asin']+'.srt'), subtitles)
+        common.SaveFile(os.path.join(common.pldatapath,values['asin']+'.srt').encode('utf-8'), subtitles)
 
 def CONVERTSUBTITLES(url):
     xml=common.getURL(url)
@@ -63,12 +60,12 @@ def CONVERTSUBTITLES(url):
     return srt_output.encode('utf-8')
 
 def SETSUBTITLES(asin):
-    subtitles = os.path.join(common.pluginpath,'resources','cache',asin+'.srt')
+    subtitles = os.path.join(common.pldatapath, asin+'.srt').encode('utf-8')
     if os.path.isfile(subtitles) and xbmc.Player().isPlaying():
         print "AMAZON --> Subtitles Enabled."
         xbmc.Player().setSubtitles(subtitles)
     elif xbmc.Player().isPlaying():
-        print "AMAZON --> Subtitles File Available."
+        print "AMAZON --> No Subtitles File Available."
     else:
         print "AMAZON --> No Media Playing. Subtitles Not Assigned."
 
@@ -84,11 +81,10 @@ def GETTRAILERS(getstream):
     else:
         return False, False, False
 
-def PLAYTRAILER_RESOLVE():
-    PLAYTRAILER(resolve=True)
-
-def PLAYTRAILER(resolve=False):
+def PLAYTRAILER():
     swfUrl, values, owned = GETFLASHVARS(common.args.url) 
+    if swfUrl == False:        
+        return
     values['deviceID'] = values['customerID'] + str(int(time.time() * 1000)) + values['asin']
     getstream  = 'https://atv-ps-eu.amazon.com/cdp/catalog/GetStreamingTrailerUrls'
     getstream += '?asin='+values['asin']
@@ -103,7 +99,7 @@ def PLAYTRAILER(resolve=False):
     elif cdn == 'limelight':
         xbmcgui.Dialog().ok('Limelight CDN','Limelight uses swfverfiy2. Playback may fail.')
     else:
-        PLAY(rtmpurls,swfUrl=swfUrl,Trailer=videoname,resolve=resolve)
+        PLAY(rtmpurls,swfUrl=swfUrl,Trailer=videoname)
         
 def GETSTREAMS(getstream):
     data = common.getURL(getstream,'atv-ps-eu.amazon.com',useCookie=True)
@@ -126,7 +122,8 @@ def PLAYVIDEO():
     if not os.path.isfile(common.COOKIEFILE):
         common.mechanizeLogin()
     swfUrl, values, owned = GETFLASHVARS(common.args.url)
-
+    if swfUrl == False:        
+        return
     values['deviceID'] = values['customerID'] + str(int(time.time() * 1000)) + values['asin']
     
     if common.addon.getSetting("enable_captions")=='true':
@@ -144,86 +141,23 @@ def PLAYVIDEO():
     rtmpurls, streamSessionID, cdn, title = GETSTREAMS(getstream)
     if not rtmpurls:
         xbmcgui.Dialog().ok("Fehler beim Laden, bitte Datenbank aktualisieren\n%s: %s" % (cdn,title), "Amazon")
-        return PLAYTRAILER_RESOLVE()
+        return
     if cdn == 'limelight':
         xbmcgui.Dialog().ok('Limelight CDN','Limelight uses swfverfiy2. Playback may fail.')
     if rtmpurls <> False:
         basertmp, ip = PLAY(rtmpurls,swfUrl=swfUrl,title=title)
-        if not basertmp: return
-    if streamSessionID <> False:
-        epoch = str(int(time.mktime(time.gmtime()))*1000)
-        USurl =  'https://atv-ps-eu.amazon.com/cdp/usage/UpdateStream'
-        USurl += '?device_type_id='+values['deviceTypeID']
-        USurl += '&deviceTypeID='+values['deviceTypeID']
-        USurl += '&streaming_session_id='+streamSessionID
-        USurl += '&operating_system='
-        USurl += '&timecode=45.003'
-        USurl += '&flash_version=WIN%2016,0,0,235%20PlugIn'
-        USurl += '&asin='+values['asin']
-        USurl += '&token='+values['token']
-        USurl += '&browser='+urllib.quote_plus(values['userAgent'])
-        USurl += '&server_id='+ip
-        USurl += '&client_version='+swfUrl.split('/')[-2]
-        USurl += '&unique_browser_id='+values['UBID']
-        USurl += '&device_id='+values['deviceID']
-        USurl += '&format=json'
-        USurl += '&version=1'
-        USurl += '&page_type='+values['pageType']
-        USurl += '&start_state=Video'
-        USurl += '&amazon_session_id='+values['sessionID']
-        USurl += '&event=STOP'
-        USurl += '&firmware=WIN%2016,0,0,235%20PlugIn'
-        USurl += '&customerID='+values['customerID']
-        USurl += '&deviceID='+values['deviceID']
-        USurl += '&source_system=http://www.amazon.de'
-        USurl += '&http_referer=ecx.images-amazon.com'
-        USurl += '&event_timestamp='+epoch
-        USurl += '&encrypted_customer_id='+values['customerID']
-
-        epoch = str(int(time.mktime(time.gmtime()))*1000)
-        surl =  'https://atv-ps-eu.amazon.com/cdp/usage/ReportStopStreamEvent'
-        surl += '?deviceID='+values['deviceID']
-        surl += '&source_system=http://www.amazon.de'
-        surl += '&format=json'
-        surl += '&event_timestamp='+epoch
-        surl += '&encrypted_customer_id='+values['customerID']
-        surl += '&http_referer=ecx.images-amazon.com'
-        surl += '&device_type_id='+values['deviceTypeID']
-        surl += '&download_bandwidth=9926.295518207282'
-        surl += '&device_id='+values['deviceTypeID']
-        surl += '&from_mode=purchased'
-        surl += '&operating_system='
-        surl += '&version=1'
-        surl += '&flash_version=WIN%2016,0,0,235%20PlugIn'
-        surl += '&url='+urllib.quote_plus(basertmp)
-        surl += '&streaming_session_id='+streamSessionID
-        surl += '&browser='+urllib.quote_plus(values['userAgent'])
-        surl += '&server_id='+ip
-        surl += '&client_version='+swfUrl.split('/')[-2]
-        surl += '&unique_browser_id='+values['UBID']
-        surl += '&amazon_session_id='+values['sessionID']
-        surl += '&page_type='+values['pageType']
-        surl += '&start_state=Video'
-        surl += '&token='+values['token']
-        surl += '&to_timecode=3883'
-        surl += '&streaming_bit_rate=348'
-        surl += '&new_streaming_bit_rate=2500'
-        surl += '&asin='+values['asin']
-        surl += '&deviceTypeID='+values['deviceTypeID']
-        surl += '&firmware=WIN%2016,0,0,235%20PlugIn'
-        surl += '&customerID='+values['customerID']
-                
-        """if values['pageType'] == 'movie':
-            import movies as moviesDB
-            moviesDB.watchMoviedb(values['asin'])
-        if values['pageType'] == 'tv':
-            import tv as tvDB
-            tvDB.watchEpisodedb(values['asin'])
-        """    
-        if common.addon.getSetting("enable_captions")=='true':
-            while not xbmc.Player().isPlaying():
-                xbmc.sleep(100)
-            SETSUBTITLES(values['asin'])
+        if basertmp:
+            """if values['pageType'] == 'movie':
+                import movies as moviesDB
+                moviesDB.watchMoviedb(values['asin'])
+            if values['pageType'] == 'tv':
+                import tv as tvDB
+                tvDB.watchEpisodedb(values['asin'])
+            """    
+            if common.addon.getSetting("enable_captions")=='true':
+                while not xbmc.Player().isPlaying():
+                    xbmc.sleep(100)
+                SETSUBTITLES(values['asin'])
             
 def GETFLASHVARS(pageurl):
     swfUrl = ''
@@ -268,12 +202,17 @@ def GETFLASHVARS(pageurl):
             
     pltoken = common.getURL("https://www.amazon.de/gp/video/streaming/player-token.json?callback=jQuery&csrftoken=" + csrfToken, useCookie=True)
     print pltoken
-    values['token']  = re.compile('"([^"]*).*"([^"]*)"').findall(pltoken)[0][1]
-    
+    try:
+        values['token']  = re.compile('"([^"]*).*"([^"]*)"').findall(pltoken)[0][1]
+    except:
+        xbmcgui.Dialog().ok("Fehler beim Laden, bitte später erneut versuchen", "Amazon")
+        return False, False, False
     return swfUrl, values, owned
         
-def PLAY(rtmpurls,swfUrl,Trailer=False,resolve=True,title=False):
+def PLAY(rtmpurls,swfUrl,Trailer=False,title=False):
     lbitrate = int(common.addon.getSetting("bitrate"))
+    if common.args.selbitrate == '1':
+        lbitrate = 0
     mbitrate = 0
     streams = []
     for data in rtmpurls:
@@ -323,7 +262,7 @@ def PLAY(rtmpurls,swfUrl,Trailer=False,resolve=True,title=False):
     else:
         stream += auth
 
-    if Trailer and not resolve:
+    if Trailer:
         finalname = 'Trailer - ' + Trailer
     else:
         finalname = title

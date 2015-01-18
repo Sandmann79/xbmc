@@ -7,7 +7,6 @@ import os.path
 import sys
 import urllib
 import resources.lib.common as common
-import xbmclibrary
 import xbmcaddon
 
 xmlstring = xbmcaddon.Addon().getLocalizedString

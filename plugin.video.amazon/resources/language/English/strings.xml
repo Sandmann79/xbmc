@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <strings>
-    <string id="30001">Account</string>
-    <string id="30002">Username</string>
+    <string id="30001">Internal Player</string>
+    <string id="30002">Email Adress</string>
     <string id="30003">Password</string>
     <string id="30004">Stream Bitrate (0 - Ask)</string>
     <string id="30005">Enable Subtitles</string>
@@ -54,6 +54,7 @@
     <string id="30106">Full Television Refresh(DB)</string>
     <string id="30107">Television</string>
     <string id="30108">Search Prime</string>
+    <string id="30109">Choose Bitrate for Playback</string>
     
     <string id="30120">Building Prime Movie Database</string>
     <string id="30121">Initializing Movie Scan</string>
@@ -100,5 +101,9 @@
     <string id="30170"></string>
     <string id="30171">Unrated</string>
     <string id="30172">Popular Shows</string>
-    <string id="30180">No Results</string>   
+    
+    <string id="30180">No Results</string>
+    
+    <string id="30190">Login Error</string>
+    <string id="30191">Wrong Email Adress or Password</string>
 </strings>

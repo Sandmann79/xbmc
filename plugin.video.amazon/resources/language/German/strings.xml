@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <strings>
-    <string id="30001">Konto</string>
-    <string id="30002">Benutzername</string>
+    <string id="30001">Interner Player</string>
+    <string id="30002">E-Mail Adresse</string>
     <string id="30003">Passwort</string>
     <string id="30004">Stream Bitrate (0 - Fragen)</string>
     <string id="30005">Untertitel aktivieren</string>
@@ -53,6 +53,7 @@
     <string id="30106">Seriendatenbank aktualisieren</string>
     <string id="30107">Serien</string>
     <string id="30108">Suchen</string>
+    <string id="30109">Bitrate auswählen und wiedergeben</string>
     
     <string id="30120">Erstelle Filmdatenbank</string>
     <string id="30121">Starte Filmsuche</string>
@@ -99,5 +100,10 @@
     <string id="30170">FSK </string>
     <string id="30171">Ungeprüft</string>
     <string id="30172">Beliebte Serien</string>
+
     <string id="30180">Keine Suchergebnisse</string>   
+    
+    <string id="30190">Fehler bei der Anmeldung</string>   
+    <string id="30191">E-Mail Adresse oder Passwort falsch</string>   
+    
 </strings>

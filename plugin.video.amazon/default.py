@@ -25,6 +25,7 @@ __credits__ = ""
 __version__ = info('version')
 
 print "\n\n\n\n\n\n\n====================AMAZON START====================\n\n\n\n\n\n"
+print int(sys.argv[1])
 
 def modes( ):
     if sys.argv[2]=='':
@@ -43,8 +44,8 @@ def modes( ):
 
         xbmcplugin.endOfDirectory(pluginhandle)
     else:
-        exec 'import resources.lib.%s as sitemodule' % common.args.mode.lower()
-        exec 'sitemodule.%s()' % common.args.sitemode.upper()
+        exec 'import resources.lib.%s as sitemodule' % common.args.mode
+        exec 'sitemodule.%s()' % common.args.sitemode
 
-modes ( )
+modes()
 sys.modules.clear()

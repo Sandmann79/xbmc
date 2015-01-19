@@ -249,7 +249,7 @@ def ASIN_ADD(titles,isPrime=True):
             addMoviedb(moviedata)
     return titelnum
 
-MovieDBfile =os.path.join(common.dbpath, 'movies.db').encode('utf-8')
+MovieDBfile =os.path.join(common.dbpath, 'movies.db')
 if not os.path.exists(MovieDBfile):
     MovieDB = sqlite.connect(MovieDBfile)
     MovieDB.text_factory = str

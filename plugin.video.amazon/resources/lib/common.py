@@ -4,7 +4,6 @@ from BeautifulSoup import BeautifulStoneSoup
 from BeautifulSoup import BeautifulSoup
 import cookielib
 import mechanize
-#import operator
 import sys
 import urllib
 import urllib2
@@ -27,13 +26,13 @@ import demjson
 
 print sys.argv
 addon = xbmcaddon.Addon()
-pluginpath = addon.getAddonInfo('path')
+pluginpath = addon.getAddonInfo('path').decode('utf-8')
 pldatapath = xbmc.translatePath("special://profile/addon_data/"+addon.getAddonInfo('id')).decode('utf-8')
 dbpath = xbmc.translatePath('special://home/addons/script.module.amazon.database/lib').decode('utf-8')
 pluginhandle = int(sys.argv[1])
 xmlstring = addon.getLocalizedString
 
-COOKIEFILE = os.path.join(pldatapath, "cookies.lwp").encode('utf-8')
+COOKIEFILE = os.path.join(pldatapath, "cookies.lwp")
 BASE_URL = 'http://www.amazon.de'
                      
 class _Info:
@@ -88,11 +87,11 @@ def addDir(name, mode, sitemode, url='', thumb='', fanart='', infoLabels=False, 
     u = '%s?url=<%s>&mode=<%s>&sitemode=<%s>&name=<%s>&page=<%s>' % (sys.argv[0], urllib.quote_plus(url), mode, sitemode, urllib.quote_plus(name), urllib.quote_plus(str(page)))
     if fanart == '' or fanart == None:
         try:fanart = args.fanart
-        except:fanart = os.path.join(pluginpath,'fanart.jpg').encode('utf-8')
+        except:fanart = os.path.join(pluginpath,'fanart.jpg')
     else:u += '&fanart=<%s>' % urllib.quote_plus(fanart)
     if thumb == '' or thumb == None:
         try:thumb = args.thumb
-        except:thumb = os.path.join(pluginpath,'fanart.jpg').encode('utf-8')
+        except:thumb = os.path.join(pluginpath,'fanart.jpg')
     else:u += '&thumb=<%s>' % urllib.quote_plus(thumb)
     item=xbmcgui.ListItem(name, iconImage="DefaultFolder.png", thumbnailImage=thumb)
     item.setProperty('fanart_image',fanart)

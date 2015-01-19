@@ -628,7 +628,7 @@ def GET_ASINS(content):
     del content
     return asins, hd_key, prime_key, channels
 
-tvDBfile = os.path.join(common.dbpath, 'tv.db').encode('utf-8')
+tvDBfile = os.path.join(common.dbpath, 'tv.db')
 if not os.path.exists(tvDBfile):
     tvDB = sqlite.connect(tvDBfile)
     tvDB.text_factory = str

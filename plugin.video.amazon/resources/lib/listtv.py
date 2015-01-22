@@ -213,7 +213,7 @@ def LIST_EPISODES_DB(owned=False,url=False):
         view=int(common.addon.getSetting("episodeview"))
         xbmc.executebuiltin("Container.SetViewMode("+str(confluence_views[view])+")")
         
-def ADD_EPISODE_ITEM(episodedata,seriesTitle=False):
+def ADD_EPISODE_ITEM(episodedata, onlyinfo=False):
     asin,seasonASIN,seriesASIN,seriestitle,season,episode,poster,mpaa,actors,genres,episodetitle,network,stars,votes,url,plot,airdate,year,runtime,isHD,isprime,isAdult,audio = episodedata
     infoLabels={'Title': episodetitle,'TVShowTitle':seriestitle,
                 'Episode': episode,'Season':season}
@@ -239,12 +239,15 @@ def ADD_EPISODE_ITEM(episodedata,seriesTitle=False):
         infoLabels['Studio'] = network
     if audio:
         infoLabels['AudioChannels'] = audio
-    displayname =  str(episode)+' - '+episodetitle 
-    displayname = displayname.replace('"','')
-    infoLabels['Title'] = displayname
     try:
         if common.args.thumb and poster == None: poster = common.args.thumb
         if common.args.fanart and common.args.fanart <>'': fanart = common.args.fanart
         else: fanart=poster
     except: fanart=poster
-    common.addVideo(displayname,asin,poster,fanart,infoLabels=infoLabels,isAdult=isAdult,isHD=isHD)
+    if onlyinfo:
+        return infoLabels
+    else:
+        displayname =  str(episode)+' - '+episodetitle 
+        displayname = displayname.replace('"','')
+        infoLabels['Title'] = displayname
+        common.addVideo(displayname,asin,poster,fanart,infoLabels=infoLabels,isAdult=isAdult,isHD=isHD)

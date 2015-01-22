@@ -107,7 +107,7 @@ def LIST_MOVIES(genrefilter=False,actorfilter=False,directorfilter=False,studiof
         xbmcplugin.endOfDirectory(pluginhandle,updateListing=False)
     return count
     
-def ADD_MOVIE_ITEM(moviedata,override_url=False,inWatchlist=False):
+def ADD_MOVIE_ITEM(moviedata, onlyinfo=False,inWatchlist=False):
     asin,hd_asin,movietitle,trailer,poster,plot,director,writer,runtime,year,premiered,studio,mpaa,actors,genres,stars,votes,TMDBbanner,TMDBposter,TMDBfanart,isprime,isHD,isAdult,watched,audio,TMDB_ID = moviedata
     if poster == None or poster == 'None':
         fanart = ''
@@ -126,7 +126,7 @@ def ADD_MOVIE_ITEM(moviedata,override_url=False,inWatchlist=False):
     if premiered:
         infoLabels['Premiered'] = premiered
     if stars:
-        infoLabels['Rating'] = stars           
+        infoLabels['Rating'] = stars
     if votes:
         infoLabels['Votes'] = votes  
     if genres:
@@ -140,16 +140,7 @@ def ADD_MOVIE_ITEM(moviedata,override_url=False,inWatchlist=False):
     if audio:
         infoLabels['AudioChannels'] = audio
     cm = []
-#    if favor: cm.append( (xmlstring(30152), 'XBMC.RunPlugin(%s?mode=<movies>&sitemode=<unfavorMoviedb>&url=<%s>)' % ( sys.argv[0], urllib.quote_plus(asin) ) ) )
-#    else: cm.append( (xmlstring(30153), 'XBMC.RunPlugin(%s?mode=<movies>&sitemode=<favorMoviedb>&url=<%s>)' % ( sys.argv[0], urllib.quote_plus(asin) ) ) )
-#    if watched:
-#        infoLabels['playcount']=1
-#        infoLabels['overlay']=5
-#        cm.append( (xmlstring(30154), 'XBMC.RunPlugin(%s?mode=<movies>&sitemode=<unwatchMoviedb>&url=<%s>)' % ( sys.argv[0], urllib.quote_plus(asin) ) ) )
-#    else:
-#        infoLabels['playcount']=0
-#        infoLabels['overlay']=4
-#        cm.append( (xmlstring(30155), 'XBMC.RunPlugin(%s?mode=<movies>&sitemode=<watchMoviedb>&url=<%s>)' % ( sys.argv[0], urllib.quote_plus(asin) ) ) )
-    if common.addon.getSetting("editenable") == 'true':
-        cm.append( (xmlstring(30156), 'XBMC.RunPlugin(%s?mode=<movies>&sitemode=<deleteMoviedb>&url=<%s>)' % ( sys.argv[0], urllib.quote_plus(asin) ) ) )
-    common.addVideo(movietitle,asin,poster,fanart,infoLabels=infoLabels,cm=cm,trailer=trailer,isAdult=isAdult,isHD=isHD)    
+    if onlyinfo:
+        return infoLabels
+    else:
+        common.addVideo(movietitle,asin,poster,fanart,infoLabels=infoLabels,cm=cm,trailer=trailer,isAdult=isAdult,isHD=isHD)    

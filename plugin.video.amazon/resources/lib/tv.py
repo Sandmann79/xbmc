@@ -263,36 +263,14 @@ def addShowdb(showdata):
     tvDB.commit()
     c.close()
 
-def lookupShowsdb(asin,isPrime=True):
-    c = tvDB.cursor()
-    if c.execute('select distinct * from shows where asin = (?)', (asin,)).fetchone():
-        return c.execute('select distinct * from shows where asin = (?)', (asin,))
-    elif c.execute('select distinct * from shows where asin2 = (?)', (asin,)).fetchone():
-        return c.execute('select distinct * from shows where asin2 = (?)', (asin,))
-    else:
-        asin1,asin2 = ASIN_ADD(0,asins=asin,isPrime=isPrime,single=True)
-        if asin1 == asin2:
-            return c.execute('select distinct * from shows where asin = (?)', (asin1,))
-        elif asin1 <> asin2:
-            c.execute("update shows set asin2=? where asin=?", (asin2,asin1))
-            tvDB.commit()
-            return c.execute('select distinct * from shows where asin = (?)', (asin1,))
-
-def lookupSeasondb(asin,isPrime=True,addSeries=False):
-    c = tvDB.cursor()
-    if c.execute('select distinct * from seasons where asin = (?)', (asin,)).fetchone():
-        return c.execute('select distinct * from seasons where asin = (?)', (asin,))
-    else:
-        ASIN_ADD(0,asins=asin,isPrime=isPrime,addSeries=addSeries)
-        return c.execute('select distinct * from seasons where asin = (?)', (asin,))
-
-def lookupEpisodedb(asin,isPrime=True):
+def lookupEpisodedb(asin):
     c = tvDB.cursor()
     if c.execute('select distinct * from episodes where asin = (?)', (asin,)).fetchone():
-        return c.execute('select distinct * from episodes where asin = (?)', (asin,))
+        result = c.execute('select distinct * from episodes where asin = (?)', (asin,))
+        for epidata in result:
+            return epidata        
     else:
-        ASIN_ADD(0,asins=asin,isPrime=isPrime)
-        return c.execute('select distinct * from episodes where asin = (?)', (asin,))
+        return False
         
 def rebuildTVdb():
     c = tvDB.cursor()

@@ -25,7 +25,6 @@ __credits__ = ""
 __version__ = info('version')
 
 print "\n\n\n\n\n\n\n====================AMAZON START====================\n\n\n\n\n\n"
-print int(sys.argv[1])
 
 def modes( ):
     if sys.argv[2]=='':

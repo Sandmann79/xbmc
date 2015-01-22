@@ -63,22 +63,14 @@ def addMoviedb(moviedata):
     MovieDB.commit()
     c.close()
 
-def lookupMoviedb(asin,isPrime):
+def lookupMoviedb(asin):
     c = MovieDB.cursor()
     if c.execute('select distinct * from movies where asin = (?)', (asin,)).fetchone():
-        return c.execute('select distinct * from movies where asin = (?)', (asin,))
-    elif c.execute('select distinct * from movies where HDasin = (?)', (asin,)).fetchone():
-        return c.execute('select distinct * from movies where HDasin = (?)', (asin,))
+        result = c.execute('select distinct * from movies where asin = (?)', (asin,))
+        for moviedata in result:
+            return moviedata
     else:
-        p_asin,hd_asin = ASIN_ADD(asin,isPrime)
-        if p_asin == asin:
-            return c.execute('select distinct * from movies where asin = (?)', (asin,))
-        elif hd_asin == asin:
-            return c.execute('select distinct * from movies where HDasin = (?)', (asin,))
-        else:
-            c.execute("update movies set HDasin=? where asin=?", (asin,p_asin))
-            MovieDB.commit()
-            return c.execute('select distinct * from movies where HDasin = (?)', (asin,))
+        return False
 
 def deleteMoviedb(asin=False):
     if not asin:
@@ -249,7 +241,7 @@ def ASIN_ADD(titles,isPrime=True):
             addMoviedb(moviedata)
     return titelnum
 
-MovieDBfile =os.path.join(common.dbpath, 'movies.db')
+MovieDBfile = os.path.join(common.dbpath, 'movies.db')
 if not os.path.exists(MovieDBfile):
     MovieDB = sqlite.connect(MovieDBfile)
     MovieDB.text_factory = str

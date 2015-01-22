@@ -123,7 +123,9 @@ def addVideo(name,asin,poster=False,fanart=False,infoLabels=False,totalItems=0,c
     liz.setInfo(type='Video', infoLabels=infoLabels)
     if fanart:
         liz.setProperty('fanart_image',fanart)
-    liz.setProperty('IsPlayable', 'false')
+    liz.setProperty('IsPlayable', 'true')
+    if int(addon.getSetting("playmethod")):
+        liz.setProperty('IsPlayable', 'false')
     if isHD:
         liz.addStreamInfo('video', { 'width':1280 ,'height' : 720 })
     else:

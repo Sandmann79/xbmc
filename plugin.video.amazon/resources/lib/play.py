@@ -4,13 +4,12 @@ import re
 import time
 import urllib
 import demjson
-import xbmcplugin
 import xbmc
 import xbmcaddon
 import xbmcgui
+import xbmcplugin
 import os
 import subprocess
-import sys
 import resources.lib.common as common
 
 from BeautifulSoup import BeautifulStoneSoup
@@ -20,7 +19,8 @@ try:
     from xml.etree import ElementTree
 except:
     from elementtree import ElementTree
-
+    
+pluginhandle = common.pluginhandle
 settings = xbmcaddon.Addon( id = 'plugin.video.amazon' )
 userinput = os.path.join(common.pluginpath, 'tools', 'userinput.exe' )
 waitsec = int(settings.getSetting("clickwait")) * 1000
@@ -29,31 +29,31 @@ waitpin = int(settings.getSetting("waitpin")) * 1000
 osLinux = xbmc.getCondVisibility('system.platform.linux')
 osOsx = xbmc.getCondVisibility('system.platform.osx')
 osWin = xbmc.getCondVisibility('system.platform.windows')
-playPlugin = ['','plugin.program.browser.launcher', 'plugin.program.chrome.launcher']
 screenWidth = int(xbmc.getInfoLabel('System.ScreenWidth'))
 screenHeight = int(xbmc.getInfoLabel('System.ScreenHeight'))
-amazonurl = common.BASE_URL + "/dp/" + common.args.asin
 trailer = common.args.trailer
 selbitrate = common.args.selbitrate
 isAdult = int(common.args.adult)
+playPlugin = ['','plugin.program.browser.launcher', 'plugin.program.chrome.launcher']
 selPlugin = playPlugin[int(settings.getSetting("playmethod"))]
-xbmc.Player().stop()
+amazonUrl = common.BASE_URL + "/dp/" + common.args.asin
 
 def PLAYVIDEO():
-    kiosk = 'yes'
-    if settings.getSetting("kiosk") == 'false': kiosk = 'no'
+    global amazonUrl
     if trailer == '1':
         if selPlugin == '':
             PLAYTRAILER()
             return
-        amazonurl += "/?autoplaytrailer=1"
+        amazonUrl += "/?autoplaytrailer=1"
     else:
         if selPlugin == '':
             PLAYVIDEOINT()
             return
-        amazonurl += "/?autoplay=1"
+        amazonUrl += "/?autoplay=1"
+    kiosk = 'yes'
+    if settings.getSetting("kiosk") == 'false': kiosk = 'no'
     
-    xbmc.executebuiltin("RunPlugin(plugin://" + selPlugin + "/?url=" + urllib.quote_plus(amazonurl) + "&mode=showSite&kiosk=" + kiosk + ")")
+    xbmc.executebuiltin('RunPlugin(plugin://%s/?url=%s&mode=showSite&kiosk=%s)' % (selPlugin, urllib.quote_plus(amazonUrl), kiosk))
 
     if settings.getSetting("fullscreen") == 'true':
         pininput = 0
@@ -70,6 +70,7 @@ def PLAYVIDEO():
             input(mousex=-1,mousey=350,click=2)
             xbmc.sleep(500)
             #input(mousex=9999,mousey=0)
+
 
 def input(mousex=0,mousey=0,click=0,keys=False,delay='200'):
     if mousex == -1: mousex = screenWidth/2
@@ -167,7 +168,7 @@ def GETTRAILERS(getstream):
         return False, False, False
 
 def PLAYTRAILER():
-    swfUrl, values, owned = GETFLASHVARS(amazonurl) 
+    swfUrl, values, owned = GETFLASHVARS(amazonUrl) 
     if swfUrl == False:        
         return
     values['deviceID'] = values['customerID'] + str(int(time.time() * 1000)) + values['asin']
@@ -206,7 +207,7 @@ def GETSTREAMS(getstream):
 def PLAYVIDEOINT():
     if not os.path.isfile(common.COOKIEFILE):
         common.mechanizeLogin()
-    swfUrl, values, owned = GETFLASHVARS(amazonurl)
+    swfUrl, values, owned = GETFLASHVARS(amazonUrl)
     if swfUrl == False:        
         return
     values['deviceID'] = values['customerID'] + str(int(time.time() * 1000)) + values['asin']
@@ -232,13 +233,6 @@ def PLAYVIDEOINT():
     if rtmpurls <> False:
         basertmp, ip = PLAY(rtmpurls,swfUrl=swfUrl,title=title)
         if basertmp:
-            """if values['pageType'] == 'movie':
-                import movies as moviesDB
-                moviesDB.watchMoviedb(values['asin'])
-            if values['pageType'] == 'tv':
-                import tv as tvDB
-                tvDB.watchEpisodedb(values['asin'])
-            """    
             if common.addon.getSetting("enable_captions")=='true':
                 while not xbmc.Player().isPlaying():
                     xbmc.sleep(100)
@@ -296,7 +290,7 @@ def GETFLASHVARS(pageurl):
         
 def PLAY(rtmpurls,swfUrl,Trailer=False,title=False):
     lbitrate = int(common.addon.getSetting("bitrate"))
-    if common.args.selbitrate == '1':
+    if selbitrate == '1':
         lbitrate = 0
     mbitrate = 0
     streams = []
@@ -337,30 +331,39 @@ def PLAY(rtmpurls,swfUrl,Trailer=False,title=False):
     stream = rtmpurlSplit[3]
     auth = rtmpurlSplit[4]
         
-    basertmp = 'rtmp://'+hostname+'/'+appName
+    basertmp = protocol[0:-1] + '://' + hostname + '/' + appName
 
     if 'edgefcs' in hostname:
         basertmp += auth
     else:
         stream += auth
 
-    if Trailer:
-        finalname = 'Trailer - ' + Trailer
-    else:
-        finalname = title
+    finalname = title
+    if Trailer or lbitrate == 0:
+        if Trailer: finalname = 'Trailer - ' + Trailer
+
+    finalUrl = '%s app=%s swfUrl=%s pageUrl=%s playpath=%s swfVfy=true' % (basertmp, appName, swfUrl, amazonUrl, stream)
+    item = xbmcgui.ListItem(path=finalUrl)
+    infoLabels = GetStreamInfo(common.args.asin, finalname)
+    item.setInfo(type="Video", infoLabels=infoLabels)
     
-    finalUrl = '%s app=%s swfUrl=%s pageUrl=%s playpath=%s swfVfy=true' % (basertmp, appName, swfUrl, amazonurl, stream)
-    item = xbmcgui.ListItem(finalname, path=finalUrl)
-    item.setInfo( type="Video", infoLabels={ "Title": finalname})
-    item.setProperty('IsPlayable', 'true')
-    print xbmc.Player().play(finalUrl, item)
-    """
-    item = xbmcgui.ListItem(path=basertmp)
-    item.setProperty('PlayPath', stream)
-    item.setProperty('app', appName)
-    item.setProperty('swfUrl', swfUrl)
-    item.setProperty('pageUrl', amazonurl)
-    item.setProperty('swfVfy', 'true')
-    xbmcplugin.setResolvedUrl(common.pluginhandle, True, item)
-    """
+    if Trailer or lbitrate == 0:
+        item.setProperty('IsPlayable', 'true')
+        xbmc.Player().play(finalUrl, item)
+    else:
+        xbmcplugin.setResolvedUrl(pluginhandle, True, item)
     return basertmp, hostname
+    
+def GetStreamInfo(asin, finalname):
+    import movies
+    import listmovie
+    import tv
+    import listtv
+    moviedata = movies.lookupMoviedb(asin)
+    if moviedata:
+        return listmovie.ADD_MOVIE_ITEM(moviedata, onlyinfo=True)
+    else:
+        epidata = tv.lookupEpisodedb(asin)
+        if epidata:
+            return listtv.ADD_EPISODE_ITEM(epidata, onlyinfo=True)
+    return {'Title': finalname}

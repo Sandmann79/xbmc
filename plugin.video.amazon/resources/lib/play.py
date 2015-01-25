@@ -284,14 +284,14 @@ def GETFLASHVARS(pageurl):
     try:
         values['token']  = re.compile('"([^"]*).*"([^"]*)"').findall(pltoken)[0][1]
     except:
-        xbmcgui.Dialog().ok("Fehler beim Laden, bitte später erneut versuchen", "Amazon")
+        xbmcgui.Dialog().ok("Fehler beim Login, bitte Benutzername und Passwort überprüfen", "Amazon")
         return False, False, False
     return swfUrl, values, owned
         
 def PLAY(rtmpurls,swfUrl,Trailer=False,title=False):
     lbitrate = int(common.addon.getSetting("bitrate"))
     if selbitrate == '1':
-        lbitrate = 0
+        lbitrate = -1
     mbitrate = 0
     streams = []
     for data in rtmpurls:
@@ -299,18 +299,18 @@ def PLAY(rtmpurls,swfUrl,Trailer=False,title=False):
         bitrate = float(data['bitrate'])
         videoquality = data['contentQuality']
         audioquality = data['audioCodec']
-        formatsplit = re.compile("_video_([^_]*)_.*_audio_([^_]*)_([0-9a-zA-Z]*)").findall(url)
         try:
+            formatsplit = re.compile("_video_([^_]*)_.*_audio_([^_]*)_([0-9a-zA-Z]*)").findall(url)
             videoquality += ' ' + formatsplit[0][0]
             audioquality += ' ' + formatsplit[0][2]
         except: pass
-        if lbitrate == 0:
+        if lbitrate <= 0:
             streams.append([bitrate,url,videoquality,audioquality])
         elif bitrate >= mbitrate and bitrate <= lbitrate:
             mbitrate = bitrate
             rtmpurl = url
 
-    if lbitrate == 0:
+    if lbitrate <= 0:
         streamsout = []
         for stream in streams:
             if stream[0] > 999: 
@@ -339,15 +339,14 @@ def PLAY(rtmpurls,swfUrl,Trailer=False,title=False):
         stream += auth
 
     finalname = title
-    if Trailer or lbitrate == 0:
-        if Trailer: finalname = 'Trailer - ' + Trailer
+    if Trailer: finalname = 'Trailer - ' + Trailer
 
     finalUrl = '%s app=%s swfUrl=%s pageUrl=%s playpath=%s swfVfy=true' % (basertmp, appName, swfUrl, amazonUrl, stream)
     item = xbmcgui.ListItem(path=finalUrl)
     infoLabels = GetStreamInfo(common.args.asin, finalname)
     item.setInfo(type="Video", infoLabels=infoLabels)
     
-    if Trailer or lbitrate == 0:
+    if Trailer or lbitrate == -1:
         item.setProperty('IsPlayable', 'true')
         xbmc.Player().play(finalUrl, item)
     else:

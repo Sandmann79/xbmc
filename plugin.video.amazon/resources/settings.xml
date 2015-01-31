@@ -10,7 +10,7 @@
         <setting id="pin" type="number" label="30046" enable="eq(-1,true) + eq(-3,true) + !eq(-6,0)" default="" />
         <setting id="waitpin" type="labelenum" values="1|2|3|4|5|6|7|8|9|10|11|12|13|14|15|16|17|18|19|20|21|22|23|24|25|26|27|28|29|30" enable="eq(-2,true) + eq(-4,true) + !eq(-7,0)" label="30047" default="5" />
         <setting label="Kodi Player" type="lsep"/>
-        <setting id="bitrate" label="30004" type="labelenum" values="0|300|600|2500|4000|6000|10000" default="0" enable="eq(-9,0)" />
+        <setting id="bitrate" label="30004" type="labelenum" values="0|300|600|900|1350|2000|2500|4000|6000|10000" default="0" enable="eq(-9,0)" />
         <setting id="enable_captions" type="bool" label="30005" enable="eq(-10,0)" />
     </category>
     <category label="30038">

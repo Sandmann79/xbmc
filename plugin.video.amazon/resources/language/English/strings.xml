@@ -1,109 +1,114 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <strings>
-    <string id="30001">Internal Player</string>
-    <string id="30002">Email Adress</string>
-    <string id="30003">Password</string>
-    <string id="30004">Stream Bitrate (0 - Ask)</string>
-    <string id="30005">Enable Subtitles</string>
+    <string id="30001">Interner Player</string>
+    <string id="30002">E-Mail Adresse</string>
+    <string id="30003">Passwort</string>
+    <string id="30004">Stream Bitrate (0 - Fragen)</string>
+    <string id="30005">Untertitel aktivieren</string>
 
-    <string id="30011">General</string>
-    <string id="30012">Playback with</string>
+    <string id="30011">Allgemein</string>
+    <string id="30012">Wiedergabemethode</string>
 
-    <string id="30015">Views</string>
-    <string id="30016">Movie Image Source</string>
-    <string id="30017">TV Image Source</string>
+    <string id="30015">Ansicht</string>
+    <string id="30016">Film Bildquelle</string>
+    <string id="30017">Serien Bildquelle</string>
     <string id="30018">TVDB Posters</string>
     <string id="30019">TVDB Banners</string>
     <string id="30020">TMDB Posters</string>
     <string id="30021">TMDB Banners</string>
     <string id="30022">Amazon</string>
     
-    <string id="30023">Thumbnail</string>
+    <string id="30023">Vorschau</string>
     <string id="30024">Poster Wrap</string>
-    <string id="30025">List</string>
+    <string id="30025">Liste</string>
     <string id="30026">Media Info 2</string>
     <string id="30027">Media Info</string>
     <string id="30028">Fanart</string>
-    <string id="30034">Big List</string>
+    <string id="30034">Große Liste</string>
     
-    <string id="30035">Enable Views</string>
-    <string id="30029">Movie View</string>
-    <string id="30030">Show View</string>
-    <string id="30031">Season View</string>
-    <string id="30032">Episode View</string>
-    
-    <string id="30038">Update</string>
-    <string id="30039">Items Per Page (Movie scan)</string>
-    <string id="30040">Items Per Page (TV-Show scan)</string>
-    
-    <string id="30041">Switch Fullscreen</string>
-    <string id="30048">Browser Plugin</string>
-    <string id="30042">Browser Kiosk Mode</string>
-    <string id="30043">Play HD If Available</string>
-    <string id="30044">Wait for Fullscreen (sec)</string>
-    <string id="30045">Automatic PIN Input</string>  
-    <string id="30046">PIN</string>
-    <string id="30047">Wait after PIN Input</string>
-    
-    <string id="30100">Featured Movies</string>
-    <string id="30101">Featured Television</string>
-    <string id="30102">Export Movie Favorites to Library</string>
-    <string id="30103">Full Movie Refresh(DB)</string>
-    <string id="30104">Movies</string>
-    <string id="30105">Export TV Favorites to Library</string>
-    <string id="30106">Full Television Refresh(DB)</string>
-    <string id="30107">Television</string>
-    <string id="30108">Search Prime</string>
-    <string id="30109">Choose Bitrate for Playback</string>
-    
-    <string id="30120">Building Prime Movie Database</string>
-    <string id="30121">Initializing Movie Scan</string>
-    <string id="30122">Scanning Page %s</string>
-    <string id="30123">Scanned %s Movies</string>
-   
-    <string id="30130">Building Prime Television Database</string>
-    <string id="30131">Initializing Television Scan</string>
-    <string id="30132">%s Shows</string>
-    <string id="30133">%s Seasons</string>
-    <string id="30134">%s Episodes</string>
-    <string id="30135">Scanned %s Seasons</string>
-    
-    <string id="30140">Export Favorited to Library</string>
-    <string id="30141">Favorited</string>
-    <string id="30142">Export All to Library</string>
-    <string id="30143">All Movies</string>
-    <string id="30144">Genres</string>
-    <string id="30145">Years</string>
-    <string id="30146">Studios</string>
-    <string id="30147">MPAA Rating</string>
-    <string id="30148">Directors</string>
-    <string id="30149">Export Watched to Library</string>
-    <string id="30150">Watched History</string>
-    <string id="30151">Export to Library</string>
-    <string id="30152">Remove from Favorites</string>
-    <string id="30153">Add to Favorites</string>
-    <string id="30154">Unwatch</string>
-    <string id="30155">Mark Watched</string>
-    <string id="30156">Remove from Movies</string>
-    <string id="30157">Popular Movies</string>
-    <string id="30158">Actor</string>
+    <string id="30035">Ansichten aktivieren</string>
+    <string id="30029">Film Ansicht</string>
+    <string id="30030">Serien Ansicht</string>
+    <string id="30031">Staffel Ansicht</string>
+    <string id="30032">Episoden Ansicht</string>
 
-    <string id="30160">All Shows</string>
-    <string id="30161">Networks</string>
-    <string id="30162">TV Rating</string>
-    <string id="30163">Rename Show</string>
-    <string id="30164">Refresh TVDB Data</string>
-    <string id="30165">Lookup Show in TVDB</string>
-    <string id="30166">Remove Show</string>
-    <string id="30167">Season </string>
-    <string id="30168">Year </string>
-    <string id="30169">Specials</string>
-    <string id="30170"></string>
-    <string id="30171">Unrated</string>
-    <string id="30172">Popular Shows</string>
+    <string id="30038">Aktualisierung</string>
+    <string id="30039">Elemente pro Seite (Filmsuche)</string>
+    <string id="30040">Elemente pro Seite (Seriensuche)</string>
+
+    <string id="30041">Vollbild aktivieren</string>
+    <string id="30042">Browser Kiosk Modus</string>
+    <string id="30043">Wiedergabe in HD, sofern verfügbar</string>
+    <string id="30044">Wartezeit für Vollbild (sek)</string>
+    <string id="30045">Automatische PIN Eingabe</string>  
+    <string id="30046">PIN</string>
+    <string id="30047">Wartezeit nach PIN Eingabe</string>
     
-    <string id="30180">No Results</string>
+    <string id="30100">Beliebt</string>
+    <string id="30102">Komplette Filmdatenbank erstellen</string>
+    <string id="30103">Filmdatenbank aktualisieren</string>
+    <string id="30104">Filme</string>
+    <string id="30105">Komplette Seriendatenbank erstellen</string>
+    <string id="30106">Seriendatenbank aktualisieren</string>
+    <string id="30107">Serien</string>
+    <string id="30108">Suchen</string>
+    <string id="30109">Bitrate auswählen und wiedergeben</string>
+    <string id="30110">Neu bei Amazon</string>
+    <string id="30111">Weiter</string>
+    <string id="30112">Zurück</string>
+
+    <string id="30120">Erstelle Filmdatenbank</string>
+    <string id="30121">Starte Filmsuche</string>
+    <string id="30122">Durchsuche Seite %s</string>
+    <string id="30123">%s Filme gefunden</string>
+    <string id="30124">hinzugefügt</string>
+    <string id="30125">entfernt</string>
+    <string id="30126">Update abgeschlossen</string>
+    <string id="30127">Keine neuen Inhalte gefunden</string>
+   
+    <string id="30130">Erstelle Seriendatenbank</string>
+    <string id="30131">Starte Seriensuche</string>
+    <string id="30132">%s Serien</string>
+    <string id="30133">%s Staffeln</string>
+    <string id="30134">%s Episoden</string>
+    <string id="30135">Aktualisiere Seriendatenbank</string>
+    <string id="30136">Datenbank erstellen</string>
+    <string id="30137">Datenbank komplett neu anlegen?</string>
+    <string id="30138">Dies kann bis zu %s Minuten dauern</string>
     
-    <string id="30190">Login Error</string>
-    <string id="30191">Wrong Email Adress or Password</string>
+    <string id="30140">Favoriten zur Bibliothek exportieren</string>
+    <string id="30141">Favoriten</string>
+    <string id="30142">Alles zur Bibliothek exportieren</string>
+    <string id="30143">Alle Filme</string>
+    <string id="30144">Genres</string>
+    <string id="30145">Jahre</string>
+    <string id="30146">Studios</string>
+    <string id="30147">Altersfreigabe</string>
+    <string id="30148">Regisseure</string>
+
+    <string id="30154">Film </string>
+    <string id="30155">entfernen</string>
+    <string id="30156">%s aus Datenbank löschen?</string>
+    <string id="30157">Beliebte Filme</string>
+    <string id="30158">Darsteller</string>
+
+    <string id="30160">Alle Serien</string>
+    <string id="30161">Sender</string>
+    <string id="30162">Altersfreigabe</string>
+    <string id="30163">Serie umbenennen</string>
+    <string id="30164">TVDB Daten aktualisieren</string>
+    <string id="30165">Serie in TVDB anzeigen</string>
+    <string id="30166">Serie </string>
+    <string id="30167">Staffel </string>
+    <string id="30168">Jahr </string>
+    <string id="30169">Spezial</string>
+    <string id="30170">FSK </string>
+    <string id="30171">Ungeprüft</string>
+    <string id="30172">Beliebte Serien</string>
+
+    <string id="30180">Keine Suchergebnisse</string>   
+    
+    <string id="30190">Fehler bei der Anmeldung</string>   
+    <string id="30191">E-Mail Adresse oder Passwort falsch</string>   
+    
 </strings>

@@ -15,12 +15,8 @@ import listtv
 import listmovie
 import xbmcaddon
 
-import movies as moviesDB
-import tv as tvDB
-
 pluginhandle = common.pluginhandle
 confluence_views = [500,501,502,503,504,508]
-xmlstring = xbmcaddon.Addon().getLocalizedString
 
 #Modes
 #===============================================================================
@@ -53,12 +49,12 @@ xmlstring = xbmcaddon.Addon().getLocalizedString
 MAX = 20
 common.gen_id()
 
-deviceID = common.addon.getSetting("GenDeviceID")#'000000000000'
+deviceID = common.addon.getSetting("GenDeviceID")
 #deviceTypeID = 'A2W5AJPLW5Q6YM'  #Android Type
 #deviceTypeID = 'A13Q6A55DBZB7M' #WEB Type
 #firmware = 'fmw:15-app:1.1.19' #Android
 #firmware = 'fmw:10-app:1.1.23'
-deviceTypeID = 'A3VN4E5F7BBC7S'
+deviceTypeID = 'A3VN4E5F7BBC7S' #Roku
 firmware = 'fmw:045.01E01164A-app:4.7'
 #deviceTypeID = 'A63V4FRV3YUP9'
 #firmware = '1'
@@ -66,7 +62,7 @@ format = 'json'
 
 PARAMETERS = '?firmware='+firmware+'&deviceTypeID='+deviceTypeID+'&deviceID='+deviceID+'&format='+format
 
-def BUILD_BASE_API(MODE,HOST='https://atv-ps-eu.amazon.com/cdp/'):
+def BUILD_BASE_API(MODE,HOST=common.ATV_URL + '/cdp/'):
     return HOST+MODE+PARAMETERS
 
 def getList(ContentType,start=0,isPrime=True,NumberOfResults=MAX,OrderBy='SalesRank',version=2,AsinList=False):
@@ -87,7 +83,7 @@ def getList(ContentType,start=0,isPrime=True,NumberOfResults=MAX,OrderBy='SalesR
     #&HighDef=F # T or F ??
     #&playbackInformationRequired=false
     #&OrderBy=SalesRank
-    #SuppressBlackedoutEST=T
+    #&SuppressBlackedoutEST=T
     #&HideNum=T
     #&Detailed=T
     #&AID=1
@@ -112,16 +108,40 @@ def SEARCH_DB(searchString=False,results=MAX,index=0):
         if (keyboard.isConfirmed()):
             searchString=urllib.quote_plus(keyboard.getText())
             if searchString <> '':
-                common.addText('          ----=== ' + xmlstring(30104) + ' ===----')
+                common.addText('          ----=== ' + common.getString(30104) + ' ===----')
                 if not listmovie.LIST_MOVIES(search=True, alphafilter = '%' + searchString + '%'):
-                    common.addText(xmlstring(30180))
-                common.addText('          ----=== ' + xmlstring(30107) + ' ===----')
+                    common.addText(common.getString(30180))
+                common.addText('          ----=== ' + common.getString(30107) + ' ===----')
                 if not listtv.LIST_TVSHOWS(search=True, alphafilter = '%' + searchString + '%'):
-                    common.addText(xmlstring(30180))
+                    common.addText(common.getString(30180))
+                xbmcplugin.setContent(pluginhandle, 'Movies')
                 xbmcplugin.endOfDirectory(pluginhandle,updateListing=False)
                 viewenable=common.addon.getSetting("viewenable")
                 if viewenable == 'true':
                     view=int(common.addon.getSetting("showview"))
                     xbmc.executebuiltin("Container.SetViewMode("+str(confluence_views[view])+")")
-                    
-                    
+
+def CATEGORY():
+    import tv
+    page = int(common.args.page)
+    asins = common.SCRAP_ASINS(common.args.url, page)
+    opt = common.args.opt
+    showasins = []
+    
+    if page > 1:
+        common.addDir("////      %s      \\\\\\\\" % common.getString(30112), common.args.mode, common.args.sitemode, url = common.args.url, page = page - 1, options = opt)
+        
+    for value in asins:
+        if listmovie.LIST_MOVIES(search=True, asinfilter = value) == 0:
+            seritem, seaitem = tv.lookupTVdb(value, rvalue='seriesasin,seasonasin', tbl='episodes', name='asin')
+            if (seaitem) and (opt == ''):
+                for seasondata in tv.lookupTVdb(seaitem, tbl='seasons', single=False):
+                    listtv.ADD_SEASON_ITEM(seasondata, disptitle=True)
+            if (seritem) and (opt == 'shows') and (seritem not in showasins):
+                    showasins.append(seritem)
+                    listtv.LIST_TVSHOWS(search=True, asinfilter = seritem)
+
+    if len(asins) > 0:
+        common.addDir("\\\\\\\\      %s      ////" % common.getString(30111), common.args.mode, common.args.sitemode, url = common.args.url, page = page + 1, options = opt)
+    xbmcplugin.setContent(pluginhandle, 'Movies')
+    xbmcplugin.endOfDirectory(pluginhandle,updateListing=False)

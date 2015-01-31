@@ -16,7 +16,6 @@ try:
 except:
     from pysqlite2 import dbapi2 as sqlite
 import xbmcaddon
-xmlstring = xbmcaddon.Addon().getLocalizedString
 
 ################################ Movie db
 MAX = int(common.addon.getSetting("mov_perpage"))
@@ -65,8 +64,9 @@ def addMoviedb(moviedata):
 
 def lookupMoviedb(asin):
     c = MovieDB.cursor()
-    if c.execute('select distinct * from movies where asin = (?)', (asin,)).fetchone():
-        result = c.execute('select distinct * from movies where asin = (?)', (asin,))
+    asin = "%" + asin + "%"
+    if c.execute('select distinct * from movies where asin like (?)', (asin,)).fetchone():
+        result = c.execute('select distinct * from movies where asin like (?)', (asin,))
         for moviedata in result:
             return moviedata
     else:
@@ -80,7 +80,7 @@ def deleteMoviedb(asin=False):
     
     c.close()
 
-def loadMoviedb(genrefilter=False,actorfilter=False,directorfilter=False,studiofilter=False,yearfilter=False,mpaafilter=False,alphafilter=False,isprime=True):
+def loadMoviedb(genrefilter=False,actorfilter=False,directorfilter=False,studiofilter=False,yearfilter=False,mpaafilter=False,alphafilter=False,asinfilter=False,isprime=True):
     c = MovieDB.cursor()
     if genrefilter:
         genrefilter = '%'+genrefilter+'%'
@@ -98,6 +98,9 @@ def loadMoviedb(genrefilter=False,actorfilter=False,directorfilter=False,studiof
         return c.execute('select distinct * from movies where isprime = (?) and year = (?)', (isprime,int(yearfilter)))
     elif alphafilter:
         return c.execute('select distinct * from movies where isprime = (?) and movietitle like (?)', (isprime,alphafilter))       
+    elif asinfilter:
+        asinfilter = '%' + asinfilter + '%'
+        return c.execute('select distinct * from movies where isprime = (?) and asin like (?)', (isprime,asinfilter))       
     else:
         return c.execute('select distinct * from movies where isprime = (?)', (isprime,))
 
@@ -136,8 +139,8 @@ def getMoviedbAsins(table,col):
     
 def addMoviesdb(isPrime=True):
     dialog = xbmcgui.DialogProgress()
-    dialog.create(xmlstring(30120))
-    dialog.update(0,xmlstring(30121))
+    dialog.create(common.getString(30120))
+    dialog.update(0,common.getString(30121))
     c = MovieDB.cursor()
     c.execute('drop table if exists movies')
     c.close()
@@ -154,23 +157,20 @@ def addMoviesdb(isPrime=True):
         else:
             goAhead = 0
         if (dialog.iscanceled()): goAhead = -1
-        dialog.update(int((endIndex)*100.0/MOV_TOTAL), xmlstring(30122).replace("%s",str(page)), xmlstring(30123).replace("%s", str(endIndex) ))
+        dialog.update(int((endIndex)*100.0/MOV_TOTAL), common.getString(30122).replace("%s",str(page)), common.getString(30123).replace("%s", str(endIndex) ))
     if goAhead == 0: common.addon.setSetting("MoviesTotal",str(endIndex))
     dialog.close()
 
 def ASIN_ADD(titles,isPrime=True):
     titelnum = 0
     for title in titles:
-        isWatched=False
-        isFav=False
-        isHD = False
         isAdult = False
         stars = None
         votes = None
         trailer = False
-        audio = 1
-        #isPrime = False
-        asin = title['titleId']
+        fanart = None
+        poster = None
+        asin, isHD, isPrime, audio = common.GET_ASINS(title)
         movietitle = title['title']
         if title['formats'][0].has_key('images'):
             try:
@@ -179,6 +179,8 @@ def ASIN_ADD(titles,isPrime=True):
                 thumbnailBase = thumbnailUrl.replace(thumbnailFilename,'')
                 poster = thumbnailBase+thumbnailFilename.split('.')[0]+'.jpg'
             except: poster = None
+        if title.has_key('heroUrl'):
+            fanart = title['heroUrl']
         if title.has_key('synopsis'):
             plot = title['synopsis']
         else:
@@ -202,8 +204,8 @@ def ASIN_ADD(titles,isPrime=True):
         else:
             studio = None
         if title.has_key('regulatoryRating'):
-            if title['regulatoryRating'] == 'not_checked': mpaa = xmlstring(30171)
-            else: mpaa = xmlstring(30170) + title['regulatoryRating']
+            if title['regulatoryRating'] == 'not_checked': mpaa = common.getString(30171)
+            else: mpaa = common.getString(30170) + title['regulatoryRating']
         else:
             mpaa = ''
         if title.has_key('starringCast'):
@@ -221,26 +223,37 @@ def ASIN_ADD(titles,isPrime=True):
         elif title.has_key('amazonRating'):
             if title['amazonRating'].has_key('rating'): stars = float(title['amazonRating']['rating'])*2
             if title['amazonRating'].has_key('count'): votes = str(title['amazonRating']['count'])
-        for format in title['formats']:
-            if format['videoFormatType'] == 'HD':
-                for offer in format['offers']:
-                    if offer['offerType'] == 'SUBSCRIPTION':
-                        isHD = True
-                        isPrime = True
-            for offer in format['offers']:
-                if offer['offerType'] == 'SUBSCRIPTION': isPrime = True
-            if 'STEREO' in format['audioFormatTypes']: audio = 2
-            if 'AC_3_5_1' in format['audioFormatTypes']: audio = 6
         if title.has_key('restrictions'):
             for rest in title['restrictions']:
                 if rest['action'] == 'playback':
                     if rest['type'] == 'ageVerificationRequired': isAdult = True
         titelnum+=1
         if 'bbl test' not in movietitle.lower():
-            moviedata = [common.cleanData(x) for x in [asin,None,movietitle,trailer,poster,plot,director,None,runtime,year,premiered,studio,mpaa,actors,genres,stars,votes,None,None,None,isPrime,isHD,isAdult,isWatched,audio,None]]
+            moviedata = [common.cleanData(x) for x in [asin,None,movietitle,trailer,poster,plot,director,None,runtime,year,premiered,studio,mpaa,actors,genres,stars,votes,None,None,fanart,isPrime,isHD,isAdult,None,audio,None]]
             addMoviedb(moviedata)
     return titelnum
 
+def GET_ASINS(content):
+    asins = ''
+    hd_key = False
+    prime_key = True
+    channels = 1
+    if content.has_key('titleId'): asins += content['titleId']
+    for format in content['formats']:
+        if format['videoFormatType'] == 'HD':
+            for offer in format['offers']:
+                if offer['offerType'] == 'SUBSCRIPTION': 
+                    hd_key = True
+        for offer in format['offers']:
+            if offer['offerType'] == 'SUBSCRIPTION':
+                prime_key = True
+            elif offer.has_key('asin'):
+                if offer['asin'] not in asins:
+                    asins += ',' + offer['asin']
+        if 'STEREO' in format['audioFormatTypes']: channels = 2
+        if 'AC_3_5_1' in format['audioFormatTypes']: channels = 6
+    del content
+    return asins, hd_key, prime_key, channels
 MovieDBfile = os.path.join(common.dbpath, 'movies.db')
 if not os.path.exists(MovieDBfile):
     MovieDB = sqlite.connect(MovieDBfile)

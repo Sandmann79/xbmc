@@ -9,7 +9,6 @@ import urllib
 import resources.lib.common as common
 import xbmcaddon
 
-xmlstring = xbmcaddon.Addon().getLocalizedString
 pluginhandle = common.pluginhandle
 
 # 501-POSTER WRAP 503-MLIST3 504=MLIST2 508-FANARTPOSTER 
@@ -17,14 +16,14 @@ confluence_views = [500,501,502,503,504,508]
 
 ################################ Movie listing
 def LIST_MOVIE_ROOT():
-    #common.addDir(xmlstring(30157),'listmovie','LIST_MOVIES','no')
-    common.addDir(xmlstring(30143),'listmovie','LIST_MOVIES')
-    common.addDir(xmlstring(30144),'listmovie','LIST_MOVIE_TYPES','GENRE')
-    common.addDir(xmlstring(30145),'listmovie','LIST_MOVIE_TYPES','YEARS')
-    common.addDir(xmlstring(30146),'listmovie','LIST_MOVIE_TYPES','STUDIOS')
-    common.addDir(xmlstring(30158),'listmovie','LIST_MOVIE_TYPES','ACTORS')
-    common.addDir(xmlstring(30147),'listmovie','LIST_MOVIE_TYPES','MPAA')
-    common.addDir(xmlstring(30148),'listmovie','LIST_MOVIE_TYPES','DIRECTORS')
+    common.addDir(common.getString(30100),'appfeed','CATEGORY','rh=n%3A3010075031%2Cn%3A3356018031&sort=popularity-rank')
+    common.addDir(common.getString(30143),'listmovie','LIST_MOVIES')
+    common.addDir(common.getString(30144),'listmovie','LIST_MOVIE_TYPES','GENRE')
+    common.addDir(common.getString(30145),'listmovie','LIST_MOVIE_TYPES','YEARS')
+    common.addDir(common.getString(30146),'listmovie','LIST_MOVIE_TYPES','STUDIOS')
+    common.addDir(common.getString(30158),'listmovie','LIST_MOVIE_TYPES','ACTORS')
+    common.addDir(common.getString(30147),'listmovie','LIST_MOVIE_TYPES','MPAA')
+    common.addDir(common.getString(30148),'listmovie','LIST_MOVIE_TYPES','DIRECTORS')
     xbmcplugin.endOfDirectory(pluginhandle)
     
 def LIST_MOVIE_AZ():
@@ -83,10 +82,10 @@ def LIST_MOVIES_DIRECTOR_FILTERED():
 def LIST_MOVIES_ACTOR_FILTERED():
     LIST_MOVIES(actorfilter=common.args.url)
 
-def LIST_MOVIES(genrefilter=False,actorfilter=False,directorfilter=False,studiofilter=False,yearfilter=False,mpaafilter=False,alphafilter=False,sortaz=True,search=False):
+def LIST_MOVIES(genrefilter=False,actorfilter=False,directorfilter=False,studiofilter=False,yearfilter=False,mpaafilter=False,alphafilter=False,asinfilter=False,sortaz=True,search=False):
     import movies as moviesDB
     if common.args.url == 'no': sortaz = False
-    movies = moviesDB.loadMoviedb(genrefilter=genrefilter,actorfilter=actorfilter,directorfilter=directorfilter,studiofilter=studiofilter,yearfilter=yearfilter,mpaafilter=mpaafilter,alphafilter=alphafilter)
+    movies = moviesDB.loadMoviedb(genrefilter=genrefilter,actorfilter=actorfilter,directorfilter=directorfilter,studiofilter=studiofilter,yearfilter=yearfilter,mpaafilter=mpaafilter,alphafilter=alphafilter,asinfilter=asinfilter)
     count = 0
     for moviedata in movies:
         count += 1
@@ -108,12 +107,10 @@ def LIST_MOVIES(genrefilter=False,actorfilter=False,directorfilter=False,studiof
     return count
     
 def ADD_MOVIE_ITEM(moviedata, onlyinfo=False,inWatchlist=False):
-    asin,hd_asin,movietitle,trailer,poster,plot,director,writer,runtime,year,premiered,studio,mpaa,actors,genres,stars,votes,TMDBbanner,TMDBposter,TMDBfanart,isprime,isHD,isAdult,watched,audio,TMDB_ID = moviedata
-    if poster == None or poster == 'None':
-        fanart = ''
-        poster =''
-    else:
-        fanart = poster.replace('.jpg','._BO354,0,0,0_CR177,354,708,500_.jpg')
+    asin,hd_asin,movietitle,trailer,poster,plot,director,writer,runtime,year,premiered,studio,mpaa,actors,genres,stars,votes,TMDBbanner,TMDBposter,fanart,isprime,isHD,isAdult,watched,audio,TMDB_ID = moviedata
+    if not fanart:
+        if poster: 
+            fanart = poster.replace('.jpg','._BO354,0,0,0_CR177,354,708,500_.jpg')
     infoLabels={'Title':movietitle}
     if plot:
         infoLabels['Plot'] = plot
@@ -143,4 +140,4 @@ def ADD_MOVIE_ITEM(moviedata, onlyinfo=False,inWatchlist=False):
     if onlyinfo:
         return infoLabels
     else:
-        common.addVideo(movietitle,asin,poster,fanart,infoLabels=infoLabels,cm=cm,trailer=trailer,isAdult=isAdult,isHD=isHD)    
+        common.addVideo(movietitle,asin.split(',')[0],poster,fanart,infoLabels=infoLabels,cm=cm,trailer=trailer,isAdult=isAdult,isHD=isHD)

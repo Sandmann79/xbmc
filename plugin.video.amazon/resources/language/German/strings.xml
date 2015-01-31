@@ -44,28 +44,37 @@
     <string id="30046">PIN</string>
     <string id="30047">Wartezeit nach PIN Eingabe</string>
     
-    <string id="30100">Empfohlene Filme</string>
-    <string id="30101">Empfohlene Serien</string>
-    <string id="30102">Filmfavoriten zur Bibliothek exportieren</string>
+    <string id="30100">Beliebt</string>
+    <string id="30102">Komplette Filmdatenbank erstellen</string>
     <string id="30103">Filmdatenbank aktualisieren</string>
     <string id="30104">Filme</string>
-    <string id="30105">Serienfavoriten zur Bibliothek exportieren</string>
+    <string id="30105">Komplette Seriendatenbank erstellen</string>
     <string id="30106">Seriendatenbank aktualisieren</string>
     <string id="30107">Serien</string>
     <string id="30108">Suchen</string>
     <string id="30109">Bitrate auswählen und wiedergeben</string>
-    
+    <string id="30110">Neu bei Amazon</string>
+    <string id="30111">Weiter</string>
+    <string id="30112">Zurück</string>
+
     <string id="30120">Erstelle Filmdatenbank</string>
     <string id="30121">Starte Filmsuche</string>
     <string id="30122">Durchsuche Seite %s</string>
     <string id="30123">%s Filme gefunden</string>
+    <string id="30124">hinzugefügt</string>
+    <string id="30125">entfernt</string>
+    <string id="30126">Update abgeschlossen</string>
+    <string id="30127">Keine neuen Inhalte gefunden</string>
    
     <string id="30130">Erstelle Seriendatenbank</string>
     <string id="30131">Starte Seriensuche</string>
     <string id="30132">%s Serien</string>
     <string id="30133">%s Staffeln</string>
     <string id="30134">%s Episoden</string>
-    <string id="30135">%s Staffeln gefunden</string>
+    <string id="30135">Aktualisiere Seriendatenbank</string>
+    <string id="30136">Datenbank erstellen</string>
+    <string id="30137">Datenbank komplett neu anlegen?</string>
+    <string id="30138">Dies kann bis zu %s Minuten dauern</string>
     
     <string id="30140">Favoriten zur Bibliothek exportieren</string>
     <string id="30141">Favoriten</string>
@@ -76,14 +85,10 @@
     <string id="30146">Studios</string>
     <string id="30147">Altersfreigabe</string>
     <string id="30148">Regisseure</string>
-    <string id="30149">Gesehene zur Bibliothek exportieren</string>
-    <string id="30150">Gesehene Filme</string>
-    <string id="30151">Zur Bibliothek exportieren</string>
-    <string id="30152">Von Favoriten entfernen</string>
-    <string id="30153">Zu Favoriten hinzufügen</string>
-    <string id="30154">Als ungesehen markieren</string>
-    <string id="30155">Als gesehen markieren</string>
-    <string id="30156">Aus Filmen entfernen</string>
+
+    <string id="30154">Film</string>
+    <string id="30155">%s entfernen</string>
+    <string id="30156">%s aus Datenbank löschen?</string>
     <string id="30157">Beliebte Filme</string>
     <string id="30158">Darsteller</string>
 
@@ -93,8 +98,8 @@
     <string id="30163">Serie umbenennen</string>
     <string id="30164">TVDB Daten aktualisieren</string>
     <string id="30165">Serie in TVDB anzeigen</string>
-    <string id="30166">Serie entfernen</string>
-    <string id="30167">Staffel </string>
+    <string id="30166">Serie</string>
+    <string id="30167">Staffel</string>
     <string id="30168">Jahr </string>
     <string id="30169">Spezial</string>
     <string id="30170">FSK </string>

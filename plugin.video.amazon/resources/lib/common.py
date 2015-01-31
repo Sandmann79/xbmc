@@ -30,11 +30,14 @@ pluginpath = addon.getAddonInfo('path').decode('utf-8')
 pldatapath = xbmc.translatePath("special://profile/addon_data/"+addon.getAddonInfo('id')).decode('utf-8')
 dbpath = xbmc.translatePath('special://home/addons/script.module.amazon.database/lib').decode('utf-8')
 pluginhandle = int(sys.argv[1])
-xmlstring = addon.getLocalizedString
 
 COOKIEFILE = os.path.join(pldatapath, "cookies.lwp")
-BASE_URL = 'http://www.amazon.de'
-                     
+BASE_URL = 'https://www.amazon.de'
+#ATV_URL = 'https://atv-ps-eu.amazon.com'
+ATV_URL = 'https://atv-ext-eu.amazon.com'
+#UserAgent = 'Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko'
+UserAgent = 'Mozilla/5.0 (X11; U; Linux i686; en-US) AppleWebKit/533.4 (KHTML, like Gecko) Chrome/5.0.375.127 Large Screen Safari/533.4 GoogleTV/162671'
+
 class _Info:
     def __init__( self, *args, **kwargs ):
         print "common.args"
@@ -42,17 +45,20 @@ class _Info:
         self.__dict__.update( kwargs )
 exec "args = _Info(%s)" % urllib.unquote_plus(sys.argv[2][1:].replace('&', ', ')).replace('<','"').replace('>','"')
 
-def getURL( url , host='www.amazon.de',useCookie=False):
+def getURL( url, host=BASE_URL.split('//')[1], useCookie=False):
     print 'getURL: '+url
     cj = cookielib.LWPCookieJar()
     if useCookie and os.path.isfile(COOKIEFILE):
         cj.load(COOKIEFILE, ignore_discard=True, ignore_expires=True)
-    opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cj))
-    opener.addheaders = [('User-Agent', 'Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko'),
-                         ('Host', host)]
-    usock = opener.open(url)#,timeout=30)
-    response = usock.read()
-    usock.close()
+    try:
+        opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cj))
+        opener.addheaders = [('User-Agent', UserAgent ), ('Host', host)]
+        usock = opener.open(url)#,timeout=30)
+        response = usock.read()
+        usock.close()
+    except urllib2.URLError, e:
+        print 'Error reason: ', e
+        return False
     return response
 
 def getATVURL( url , values = None ):
@@ -83,8 +89,8 @@ def androidsig(url):
     sig = hmac.new(hmac_key, url, sha1)
     return base64.encodestring(sig.digest()).replace('\n','')
 
-def addDir(name, mode, sitemode, url='', thumb='', fanart='', infoLabels=False, totalItems=0, cm=False ,page=1,isHD=False):
-    u = '%s?url=<%s>&mode=<%s>&sitemode=<%s>&name=<%s>&page=<%s>' % (sys.argv[0], urllib.quote_plus(url), mode, sitemode, urllib.quote_plus(name), urllib.quote_plus(str(page)))
+def addDir(name, mode, sitemode, url='', thumb='', fanart='', infoLabels=False, totalItems=0, cm=False ,page=1,isHD=False, options=''):
+    u = '%s?url=<%s>&mode=<%s>&sitemode=<%s>&name=<%s>&page=<%s>&opt=<%s>' % (sys.argv[0], urllib.quote_plus(url), mode, sitemode, urllib.quote_plus(name), urllib.quote_plus(str(page)), options)
     if fanart == '' or fanart == None:
         try:fanart = args.fanart
         except:fanart = os.path.join(pluginpath,'fanart.jpg')
@@ -102,7 +108,7 @@ def addDir(name, mode, sitemode, url='', thumb='', fanart='', infoLabels=False, 
     if infoLabels:
         item.setInfo(type='Video', infoLabels=infoLabels)
     if cm:
-        item.addContextMenuItems( cm, replaceItems=True  )
+        item.addContextMenuItems( cm, replaceItems=False  )
     xbmcplugin.addDirectoryItem(handle=pluginhandle,url=u,listitem=item,isFolder=True,totalItems=totalItems)
 
 def addVideo(name,asin,poster=False,fanart=False,infoLabels=False,totalItems=0,cm=False,trailer=False,isAdult=False,isHD=False):
@@ -111,7 +117,7 @@ def addVideo(name,asin,poster=False,fanart=False,infoLabels=False,totalItems=0,c
     u  = '%s?asin=<%s>&mode=<play>&name=<%s>&sitemode=<PLAYVIDEO>&adult=<%s>' % (sys.argv[0], asin, urllib.quote_plus(name), str(isAdult))
     if not cm:
         cm = []
-    cm.append( (xmlstring(30109), 'XBMC.RunPlugin(%s&trailer=<0>&selbitrate=<1>)' % u) )
+    cm.append( (getString(30109), 'XBMC.RunPlugin(%s&trailer=<0>&selbitrate=<1>)' % u) )
     if trailer:
         infoLabels['Trailer'] = u + '&trailer=<1>&selbitrate=<0>'
     u += '&trailer=<0>&selbitrate=<0>'
@@ -129,7 +135,7 @@ def addVideo(name,asin,poster=False,fanart=False,infoLabels=False,totalItems=0,c
     if isHD:
         liz.addStreamInfo('video', { 'width':1280 ,'height' : 720 })
     else:
-        liz.addStreamInfo('video', { 'width':720 ,'height' : 576 })
+        liz.addStreamInfo('video', { 'width':720 ,'height' : 480 })
     if infoLabels['AudioChannels']: liz.addStreamInfo('audio', { 'codec': 'ac3' ,'channels': int(infoLabels['AudioChannels']) })
     liz.addContextMenuItems( cm , replaceItems=False )
     xbmcplugin.addDirectoryItem(handle=pluginhandle,url=u,listitem=liz,isFolder=False,totalItems=totalItems)     
@@ -141,21 +147,19 @@ def addText(name):
 
 def setCustomer(check=False):
     if check:
-        url = 'http://www.amazon.de'
-        data = getURL(url,useCookie=True)
+        data = getURL(BASE_URL, useCookie=True)
         customerId = re.compile('"customerId":"(.*?)"').findall(data)[0]
         if customerId <> addon.getSetting("customerId"):
-            addon.setSetting("customerId",customerId)
+            addon.setSetting("customerId", customerId)
             return False
         else:
             return True
     elif addon.getSetting("customerId"):
         return addon.getSetting("customerId")
     else:
-        url = 'http://www.amazon.de'
-        data = getURL(url,useCookie=True)
+        data = getURL(BASE_URL, useCookie=True)
         customerId = re.compile('"customerId":"(.*?)"').findall(data)[0]
-        addon.setSetting("customerId",customerId)
+        addon.setSetting("customerId", customerId)
         return customerId
 
 def addMovieWatchlist():
@@ -168,12 +172,12 @@ def addWatchlist(prodType,asin=False):
     if not asin:
         asin=args.asin
     #customerid=setCustomer()
-    url = 'http://www.amazon.de/gp/video/watchlist/ajax/hoverbubble.html?ASIN='+asin
+    url = BASE_URL + '/gp/video/watchlist/ajax/hoverbubble.html?ASIN=' + asin
     data = getURL(url,useCookie=True)
     tree = BeautifulSoup(data, convertEntities=BeautifulSoup.HTML_ENTITIES)
     form = tree.find('form',attrs={'id':'watchlistForm'})
     token = form.find('input',attrs={'id':'token'})['value']
-    url = 'http://www.amazon.de/gp/video/watchlist/ajax/addRemove.html'
+    url = BASE_URL + '/gp/video/watchlist/ajax/addRemove.html'
     url += '?dataType=json'
     #url += '&addItem=0'
     url += '&ASIN='+asin
@@ -194,12 +198,12 @@ def removeWatchlist(prodType,asin=False):
     if not asin:
         asin=args.asin
     #customerid=setCustomer()
-    url = 'http://www.amazon.de/gp/video/watchlist/ajax/hoverbubble.html?ASIN='+asin
+    url = BASE_URL + '/gp/video/watchlist/ajax/hoverbubble.html?ASIN='+asin
     data = getURL(url,useCookie=True)
     tree = BeautifulSoup(data, convertEntities=BeautifulSoup.HTML_ENTITIES)
     form = tree.find('form',attrs={'id':'watchlistForm'})
     token = form.find('input',attrs={'id':'token'})['value']
-    url = 'http://www.amazon.de/gp/video/watchlist/ajax/addRemove.html'
+    url = BASE_URL + '/gp/video/watchlist/ajax/addRemove.html'
     url += '?dataType=json'
     url += '&ASIN='+asin
     url += '&token='+token
@@ -240,11 +244,11 @@ def dologin():
         return True
     else:
         content = ""
-        keyboard = xbmc.Keyboard('', xmlstring(30002))
+        keyboard = xbmc.Keyboard('', getString(30002))
         keyboard.doModal()
         if keyboard.isConfirmed() and keyboard.getText():
             email = keyboard.getText()
-            keyboard = xbmc.Keyboard('', xmlstring(30003))
+            keyboard = xbmc.Keyboard('', getString(30003))
             keyboard.doModal()
             if keyboard.isConfirmed() and keyboard.getText():
                 password = keyboard.getText()
@@ -255,15 +259,15 @@ def dologin():
                 br.set_cookiejar(cj)
                 br.set_debug_http(True)
                 br.set_debug_responses(True)
-                br.addheaders = [('User-agent', 'Mozilla/4.0 (compatible; MSIE 8.0; Windows NT 6.1)')]  
-                sign_in = br.open("http://www.amazon.de/gp/flex/sign-out.html") 
+                br.addheaders = [('User-agent', UserAgent)]  
+                sign_in = br.open(BASE_URL + "/gp/flex/sign-out.html") 
                 br.select_form(name="signIn")  
                 br["email"] = email
                 br["password"] = password
                 logged_in = br.submit()  
                 error_str = "message_error"
                 if error_str in logged_in.read():
-                    xbmcgui.Dialog().ok(xmlstring(30190), xmlstring(30191))
+                    xbmcgui.Dialog().ok(getString(30190), getString(30191))
                     return True
                 else:
                     cj.save(COOKIEFILE, ignore_discard=True, ignore_expires=True)
@@ -275,7 +279,44 @@ def dologin():
 def cleanData(data):
     if type(data) == type(str()) or type(data) == type(unicode()):
         if data.replace('-','').strip() == '': data = ''
-        data = data.replace(u'\u00A0', ' ') #non-breaking space
+        data = data.replace(u'\u00A0', ' ').replace(u'\u2013', '-')
         data = data.strip()
         if data == '': data = None
     return data
+    
+def GET_ASINS(content):
+    asins = ''
+    hd_key = False
+    prime_key = True
+    channels = 1
+    if content.has_key('titleId'):
+        asins += content['titleId']
+        titleId = content['titleId']
+    for format in content['formats']:
+        hasprime = False
+        for offer in format['offers']:
+            if offer['offerType'] == 'SUBSCRIPTION':
+                hasprime = True
+                prime_key = True
+            elif offer.has_key('asin'):
+                newasin = offer['asin']
+                if format['videoFormatType'] == 'HD':
+                    if (newasin == titleId) and (hasprime):
+                        hd_key = True
+                if newasin not in asins:
+                    asins += ',' + newasin
+        if 'STEREO' in format['audioFormatTypes']: channels = 2
+        if 'AC_3_5_1' in format['audioFormatTypes']: channels = 6
+    #print content['title'].encode('ascii', 'ignore') + ' ' + asins + ' ' + str(hd_key)
+    del content
+    return asins, hd_key, prime_key, channels
+    
+def SCRAP_ASINS(mode, page):
+    asins = []
+    url = BASE_URL + '/gp/search/ajax/?_encoding=UTF8&page=%s&%s' % (page, mode)
+    content = getURL(url)
+    asins += re.compile('asin=."(.+?)."', re.DOTALL).findall(content)
+    return asins
+    
+def getString(id):
+    return addon.getLocalizedString(id).encode('utf-8')

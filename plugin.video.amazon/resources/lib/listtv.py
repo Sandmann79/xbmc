@@ -133,7 +133,7 @@ def ADD_SHOW_ITEM(showdata,mode='listtv',submode='LIST_TV_SEASONS'):
         poster = TVDBbanner
     if not fanart:
         fanart = poster
-    cm = [(common.getString(30166) + common.getString(30155), 'XBMC.RunPlugin(%s?mode=<tv>&sitemode=<delfromTVdb>&asins=<%s>&table=<shows>&title=<%s>)' % ( sys.argv[0], urllib.quote_plus(asin), urllib.quote_plus(seriestitle)))]
+    cm = [(common.getString(30166), 'XBMC.RunPlugin(%s?mode=<tv>&sitemode=<delfromTVdb>&asins=<%s>&table=<shows>&title=<%s>)' % ( sys.argv[0], urllib.quote_plus(asin), urllib.quote_plus(seriestitle)))]
     common.addDir(seriestitle,mode,submode,asin,poster,fanart,infoLabels,isHD=isHD,cm=cm)
    
 def LIST_TV_SEASONS(seasons=False):
@@ -188,7 +188,7 @@ def ADD_SEASON_ITEM(seasondata,mode='listtv',submode='LIST_EPISODES_DB',disptitl
     if not fanart:
         fanart = poster
     infoLabels['TotalSeasons'] = 1
-    cm = [(common.getString(30167) + common.getString(30155), 'XBMC.RunPlugin(%s?mode=<tv>&sitemode=<delfromTVdb>&asins=<%s>&table=<seasons>&title=<%s>)' % ( sys.argv[0], urllib.quote_plus(asin), urllib.quote_plus(displayname)))]
+    cm = [(common.getString(30155), 'XBMC.RunPlugin(%s?mode=<tv>&sitemode=<delfromTVdb>&asins=<%s>&table=<seasons>&title=<%s>)' % ( sys.argv[0], urllib.quote_plus(asin), urllib.quote_plus(displayname)))]
     common.addDir(displayname,mode,submode,asin,poster,fanart,infoLabels,isHD=isHD,cm=cm)
 
 def LIST_EPISODES_DB(owned=False,url=False):
@@ -244,7 +244,7 @@ def ADD_EPISODE_ITEM(episodedata, onlyinfo=False):
     if onlyinfo:
         return infoLabels
     else:
-        displayname =  str(episode)+' - '+episodetitle 
+        displayname = str(episode)+' - '+episodetitle 
         displayname = displayname.replace('"','')
         infoLabels['Title'] = displayname
         common.addVideo(displayname,asin.split(',')[0],poster,fanart,infoLabels=infoLabels,isAdult=isAdult,isHD=isHD)

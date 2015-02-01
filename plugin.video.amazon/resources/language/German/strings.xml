@@ -86,8 +86,8 @@
     <string id="30147">Altersfreigabe</string>
     <string id="30148">Regisseure</string>
 
-    <string id="30154">Film</string>
-    <string id="30155">%s entfernen</string>
+    <string id="30154">Film entfernen</string>
+    <string id="30155">Staffel entfernen</string>
     <string id="30156">%s aus Datenbank löschen?</string>
     <string id="30157">Beliebte Filme</string>
     <string id="30158">Darsteller</string>
@@ -98,8 +98,8 @@
     <string id="30163">Serie umbenennen</string>
     <string id="30164">TVDB Daten aktualisieren</string>
     <string id="30165">Serie in TVDB anzeigen</string>
-    <string id="30166">Serie</string>
-    <string id="30167">Staffel</string>
+    <string id="30166">Serie entfernen</string>
+    <string id="30167">Staffel </string>
     <string id="30168">Jahr </string>
     <string id="30169">Spezial</string>
     <string id="30170">FSK </string>

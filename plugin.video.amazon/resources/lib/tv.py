@@ -298,9 +298,9 @@ def delfromTVdb():
     title = common.args.title
     table = common.args.table
     id = 30166
-    if table == 'seasons': id = 30167
+    if table == 'seasons': id = 30155
 
-    if Dialog.yesno(common.getString(id) + common.getString(30155), common.getString(30156) % title):
+    if Dialog.yesno(common.getString(id), common.getString(30156) % title):
         delasins = []
         if table == 'seasons':
             delasins.append(asins)

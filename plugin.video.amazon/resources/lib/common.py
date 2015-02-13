@@ -26,11 +26,15 @@ import demjson
 
 print sys.argv
 addon = xbmcaddon.Addon()
+__plugin__ = addon.getAddonInfo('name')
+__authors__ = addon.getAddonInfo('author')
+__credits__ = ""
+__version__ = addon.getAddonInfo('version')
 pluginpath = addon.getAddonInfo('path').decode('utf-8')
 pldatapath = xbmc.translatePath("special://profile/addon_data/"+addon.getAddonInfo('id')).decode('utf-8')
 dbpath = xbmc.translatePath('special://home/addons/script.module.amazon.database/lib').decode('utf-8')
 pluginhandle = int(sys.argv[1])
-
+tmdb = base64.b64decode('YjM0NDkwYzA1NmYwZGQ5ZTNlYzlhZjIxNjdhNzMxZjQ=')
 COOKIEFILE = os.path.join(pldatapath, "cookies.lwp")
 BASE_URL = 'https://www.amazon.de'
 #ATV_URL = 'https://atv-ps-eu.amazon.com'
@@ -45,8 +49,9 @@ class _Info:
         self.__dict__.update( kwargs )
 exec "args = _Info(%s)" % urllib.unquote_plus(sys.argv[2][1:].replace('&', ', ')).replace('<','"').replace('>','"')
 
-def getURL( url, host=BASE_URL.split('//')[1], useCookie=False):
-    print 'getURL: '+url
+def getURL( url, host=BASE_URL.split('//')[1], useCookie=False, silent=False):
+    if not silent:
+        print 'getURL: '+url
     cj = cookielib.LWPCookieJar()
     if useCookie and os.path.isfile(COOKIEFILE):
         cj.load(COOKIEFILE, ignore_discard=True, ignore_expires=True)
@@ -115,12 +120,6 @@ def addVideo(name,asin,poster=False,fanart=False,infoLabels=False,totalItems=0,c
     if not infoLabels:
         infoLabels={ "Title": name}
     u  = '%s?asin=<%s>&mode=<play>&name=<%s>&sitemode=<PLAYVIDEO>&adult=<%s>' % (sys.argv[0], asin, urllib.quote_plus(name), str(isAdult))
-    if not cm:
-        cm = []
-    cm.append( (getString(30109), 'XBMC.RunPlugin(%s&trailer=<0>&selbitrate=<1>)' % u) )
-    if trailer:
-        infoLabels['Trailer'] = u + '&trailer=<1>&selbitrate=<0>'
-    u += '&trailer=<0>&selbitrate=<0>'
     if poster:
         liz=xbmcgui.ListItem(name, thumbnailImage=poster)
     else:
@@ -129,14 +128,20 @@ def addVideo(name,asin,poster=False,fanart=False,infoLabels=False,totalItems=0,c
     liz.setInfo(type='Video', infoLabels=infoLabels)
     if fanart:
         liz.setProperty('fanart_image',fanart)
-    liz.setProperty('IsPlayable', 'true')
-    if int(addon.getSetting("playmethod")):
-        liz.setProperty('IsPlayable', 'false')
+    liz.setProperty('IsPlayable', 'false')
+    if not cm:
+        cm = []
+    if int(addon.getSetting("playmethod")) == 0:
+        liz.setProperty('IsPlayable', 'true')
+        cm.append( (getString(30109), 'XBMC.RunPlugin(%s&trailer=<0>&selbitrate=<1>)' % u) )
     if isHD:
         liz.addStreamInfo('video', { 'width':1280 ,'height' : 720 })
     else:
         liz.addStreamInfo('video', { 'width':720 ,'height' : 480 })
     if infoLabels['AudioChannels']: liz.addStreamInfo('audio', { 'codec': 'ac3' ,'channels': int(infoLabels['AudioChannels']) })
+    if trailer:
+        infoLabels['Trailer'] = u + '&trailer=<1>&selbitrate=<0>'
+    u += '&trailer=<0>&selbitrate=<0>'
     liz.addContextMenuItems( cm , replaceItems=False )
     xbmcplugin.addDirectoryItem(handle=pluginhandle,url=u,listitem=liz,isFolder=False,totalItems=totalItems)     
 
@@ -144,23 +149,6 @@ def addText(name):
     item = xbmcgui.ListItem(name)
     item.setProperty('IsPlayable', 'false')
     xbmcplugin.addDirectoryItem(handle=pluginhandle,url=sys.argv[0],listitem=item)
-
-def setCustomer(check=False):
-    if check:
-        data = getURL(BASE_URL, useCookie=True)
-        customerId = re.compile('"customerId":"(.*?)"').findall(data)[0]
-        if customerId <> addon.getSetting("customerId"):
-            addon.setSetting("customerId", customerId)
-            return False
-        else:
-            return True
-    elif addon.getSetting("customerId"):
-        return addon.getSetting("customerId")
-    else:
-        data = getURL(BASE_URL, useCookie=True)
-        customerId = re.compile('"customerId":"(.*?)"').findall(data)[0]
-        addon.setSetting("customerId", customerId)
-        return customerId
 
 def addMovieWatchlist():
     addWatchlist('movie')
@@ -197,7 +185,6 @@ def removeTVWatchlist():
 def removeWatchlist(prodType,asin=False):
     if not asin:
         asin=args.asin
-    #customerid=setCustomer()
     url = BASE_URL + '/gp/video/watchlist/ajax/hoverbubble.html?ASIN='+asin
     data = getURL(url,useCookie=True)
     tree = BeautifulSoup(data, convertEntities=BeautifulSoup.HTML_ENTITIES)
@@ -242,40 +229,53 @@ def dologin():
     content = br.open(BASE_URL).read()
     if '"isPrime":1' in content:
         return True
-    else:
-        content = ""
+    del content
+    email = addon.getSetting('login_name')
+    password = base64.b64decode(addon.getSetting('login_pass'))
+    
+    if addon.getSetting('save_login') == 'false' or email == '' or password == '':
         keyboard = xbmc.Keyboard('', getString(30002))
         keyboard.doModal()
         if keyboard.isConfirmed() and keyboard.getText():
             email = keyboard.getText()
-            keyboard = xbmc.Keyboard('', getString(30003))
-            keyboard.doModal()
-            if keyboard.isConfirmed() and keyboard.getText():
-                password = keyboard.getText()
-                if os.path.isfile(COOKIEFILE):
-                    os.remove(COOKIEFILE)
-                cj = cookielib.LWPCookieJar()
-                br.set_handle_robots(False)
-                br.set_cookiejar(cj)
-                br.set_debug_http(True)
-                br.set_debug_responses(True)
-                br.addheaders = [('User-agent', UserAgent)]  
-                sign_in = br.open(BASE_URL + "/gp/flex/sign-out.html") 
-                br.select_form(name="signIn")  
-                br["email"] = email
-                br["password"] = password
-                logged_in = br.submit()  
-                error_str = "message_error"
-                if error_str in logged_in.read():
-                    xbmcgui.Dialog().ok(getString(30190), getString(30191))
-                    return True
-                else:
-                    cj.save(COOKIEFILE, ignore_discard=True, ignore_expires=True)
-                    #setCustomer(check=True)
-                    gen_id()
-                    return True
+            password = setLoginPW(False)
+    if password:            
+        if os.path.isfile(COOKIEFILE):
+            os.remove(COOKIEFILE)
+        cj = cookielib.LWPCookieJar()
+        br.set_handle_robots(False)
+        br.set_cookiejar(cj)
+        br.set_debug_http(True)
+        br.set_debug_responses(True)
+        br.addheaders = [('User-agent', UserAgent)]  
+        sign_in = br.open(BASE_URL + "/gp/flex/sign-out.html") 
+        br.select_form(name="signIn")  
+        br["email"] = email
+        br["password"] = password
+        logged_in = br.submit()  
+        error_str = "message_error"
+        if error_str in logged_in.read():
+            xbmcgui.Dialog().ok(getString(30190), getString(30191))
+            return True
+        else:
+            if addon.getSetting('save_login') == 'true':
+                addon.setSetting('login_name', email)
+                addon.setSetting('login_pass', base64.b64encode(password))
+            cj.save(COOKIEFILE, ignore_discard=True, ignore_expires=True)
+            gen_id()
+            return True
     return False
-                    
+    
+def setLoginPW(save=True):
+    keyboard = xbmc.Keyboard('', getString(30003), True)
+    keyboard.doModal()
+    if keyboard.isConfirmed() and keyboard.getText():
+        password = keyboard.getText()
+        if save:
+            addon.setSetting('login_pass', base64.b64encode(password))
+        return password
+    return False
+        
 def cleanData(data):
     if type(data) == type(str()) or type(data) == type(unicode()):
         if data.replace('-','').strip() == '': data = ''
@@ -307,7 +307,6 @@ def GET_ASINS(content):
                     asins += ',' + newasin
         if 'STEREO' in format['audioFormatTypes']: channels = 2
         if 'AC_3_5_1' in format['audioFormatTypes']: channels = 6
-    #print content['title'].encode('ascii', 'ignore') + ' ' + asins + ' ' + str(hd_key)
     del content
     return asins, hd_key, prime_key, channels
     
@@ -320,3 +319,14 @@ def SCRAP_ASINS(mode, page):
     
 def getString(id):
     return addon.getLocalizedString(id).encode('utf-8')
+
+def remLoginData():
+    if os.path.isfile(COOKIEFILE):
+        os.remove(COOKIEFILE)
+    addon.setSetting('login_name', '')
+    addon.setSetting('login_pass', '')
+
+def checkCase(title):
+    if title.isupper():
+        title = title.title().replace('[Ov]', '[OV]').replace('Bc', 'BC')
+    return title

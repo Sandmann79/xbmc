@@ -50,7 +50,7 @@ MAX = 20
 common.gen_id()
 
 deviceID = common.addon.getSetting("GenDeviceID")
-#deviceTypeID = 'A2W5AJPLW5Q6YM'  #Android Type
+#Android id: A2W5AJPLW5Q6YM, A1PY8QQU9P0WJV, A1MPSLFC7L5AFK // fmw:{AndroidSDK}-app:{AppVersion}
 #deviceTypeID = 'A13Q6A55DBZB7M' #WEB Type
 #firmware = 'fmw:15-app:1.1.19' #Android
 #firmware = 'fmw:10-app:1.1.23'
@@ -123,10 +123,13 @@ def SEARCH_DB(searchString=False,results=MAX,index=0):
 
 def CATEGORY():
     import tv
+    import time
+    starttime = time.time()
     page = int(common.args.page)
     asins = common.SCRAP_ASINS(common.args.url, page)
     opt = common.args.opt
     showasins = []
+    print 'Scrap: %s' % (time.time()-starttime)
     
     if page > 1:
         common.addDir("////      %s      \\\\\\\\" % common.getString(30112), common.args.mode, common.args.sitemode, url = common.args.url, page = page - 1, options = opt)
@@ -140,8 +143,46 @@ def CATEGORY():
             if (seritem) and (opt == 'shows') and (seritem not in showasins):
                     showasins.append(seritem)
                     listtv.LIST_TVSHOWS(search=True, asinfilter = seritem)
+            xbmcplugin.setContent(pluginhandle, 'tvshows')
+        else:
+            xbmcplugin.setContent(pluginhandle, 'Movies')
 
     if len(asins) > 0:
         common.addDir("\\\\\\\\      %s      ////" % common.getString(30111), common.args.mode, common.args.sitemode, url = common.args.url, page = page + 1, options = opt)
-    xbmcplugin.setContent(pluginhandle, 'Movies')
+    print 'Done: %s' % (time.time()-starttime)
     xbmcplugin.endOfDirectory(pluginhandle,updateListing=False)
+
+def getTMDBImages(title,year,titelorg = None):
+    fanart = None
+    TMDB_URL = 'http://image.tmdb.org/t/p/original'
+    str_year = ''
+    if year:
+        str_year = '&year=' + str(year)
+    movie = urllib.quote_plus(title)
+    result = common.getURL('http://api.themoviedb.org/3/search/movie?api_key=%s&query=%s%s' % (common.tmdb, movie, str_year), silent=True)
+    if result == False: 
+        return False
+    data = demjson.decode(result)
+    if data['total_results'] > 0:
+        if data['results'][0]['backdrop_path']:
+            fanart = TMDB_URL + data['results'][0]['backdrop_path']
+    elif title.count(' - ') and not titelorg:
+        fanart = getTMDBImages(title.split(' - ')[0], year, title)
+    elif year:
+        if titelorg:
+            title = titelorg
+        fanart = getTMDBImages(title, 0, titelorg)
+    if not fanart:
+        fanart = 'na'
+    return fanart
+    
+def updateAll():
+    import movies
+    import tv
+    from datetime import date
+    Notif = xbmcgui.Dialog().notification
+    Notif(common.__plugin__, common.getString(30106), sound = False)
+    tv.addTVdb(full_update = False)
+    movies.addMoviesdb(full_update = False)
+    common.addon.setSetting('last_update', str(date.today()))
+    Notif(common.__plugin__, common.getString(30126), sound = False)

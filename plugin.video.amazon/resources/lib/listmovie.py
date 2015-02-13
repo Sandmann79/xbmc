@@ -108,8 +108,8 @@ def LIST_MOVIES(genrefilter=False,actorfilter=False,directorfilter=False,studiof
     
 def ADD_MOVIE_ITEM(moviedata, onlyinfo=False,inWatchlist=False):
     asin,hd_asin,movietitle,trailer,poster,plot,director,writer,runtime,year,premiered,studio,mpaa,actors,genres,stars,votes,TMDBbanner,TMDBposter,fanart,isprime,isHD,isAdult,watched,audio,TMDB_ID = moviedata
-    if not fanart:
-        if poster: 
+    if not fanart or fanart == 'na':
+        if poster:
             fanart = poster.replace('.jpg','._BO354,0,0,0_CR177,354,708,500_.jpg')
     infoLabels={'Title':movietitle}
     if plot:

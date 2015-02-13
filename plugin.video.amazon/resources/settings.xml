@@ -2,21 +2,28 @@
     <!-- General -->
     <category label="30011">
         <setting id="playmethod" type="enum" label="30012" values="Kodi Player|Browser Launcher|Chrome Launcher" default="0" />
-        <setting label="Browser/Chrome Launcher" type="lsep"/>
+        <setting label="Browser/Chrome Launcher" type="lsep" />
         <setting id="kiosk" type="bool" label="30042" default="true" enable="!eq(-2,0)" />
         <setting id="fullscreen" type="bool" label="30041" default="false" enable="!eq(-3,0)" />
         <setting id="clickwait" type="labelenum" values="1|2|3|4|5|6|7|8|9|10|11|12|13|14|15|16|17|18|19|20|21|22|23|24|25|26|27|28|29|30" label="30044" default="10" enable="eq(-1,true) + !eq(-4,0)" />
         <setting id="pininput" type="bool" label="30045" default="false" enable="eq(-2,true) + !eq(-5,0)" />
         <setting id="pin" type="number" label="30046" enable="eq(-1,true) + eq(-3,true) + !eq(-6,0)" default="" />
         <setting id="waitpin" type="labelenum" values="1|2|3|4|5|6|7|8|9|10|11|12|13|14|15|16|17|18|19|20|21|22|23|24|25|26|27|28|29|30" enable="eq(-2,true) + eq(-4,true) + !eq(-7,0)" label="30047" default="5" />
-        <setting label="Kodi Player" type="lsep"/>
+        <setting label="Kodi Player" type="lsep" />
         <setting id="bitrate" label="30004" type="labelenum" values="0|300|600|900|1350|2000|2500|4000|6000|10000" default="0" enable="eq(-9,0)" />
         <setting id="enable_captions" type="bool" label="30005" enable="eq(-10,0)" />
     </category>
     <category label="30038">
+        <setting label="30001" type="lsep"/>
+        <setting id="save_login" type="bool" label="30006" default="false" />
+        <setting id="login_name" type="text" label="30002" enable="eq(-1,true)" default="" />
+        <setting label="30003" type="action" enable="eq(-2,true)" action="RunPlugin(plugin://plugin.video.amazon/?mode=<common>&sitemode=<setLoginPW>)" />
+        <setting label="30007" type="action" action="RunPlugin(plugin://plugin.video.amazon/?mode=<common>&sitemode=<remLoginData>)" option="close"/>
+        <setting label="30008" type="lsep"/>
+        <setting id="auto_update" type="enum" lvalues="30010|30018|30019|30020|30021" label="30009" default="0"/>
+        <setting id="tmdb_art" type="bool" label="30016" default="false"/>
         <setting id="mov_perpage" type="labelenum" values="25|50|100|150|200|250" label="30039" default="250"/>
         <setting id="tv_perpage" type="labelenum" values="25|50|100|150|200|250" label="30040" default="150"/>
-        <setting id="tvart" type="enum" lvalues="30018|30019|30022" label="30017" default="0"/>
     </category>
     <category label="30015">
         <setting id="viewenable" type ="bool" label="30035" default="true"/>

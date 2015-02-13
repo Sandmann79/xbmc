@@ -351,26 +351,29 @@ def getTVdbAsins(table,col=False,list=False):
             content += ','.join(item) + ','
     return content
     
-def addTVdb():
+def addTVdb(full_update = True):
+    try:
+        if common.args.url == 'u':
+            full_update = False
+    except: pass
     page = 1
     endIndex = 0
     goAhead = 1
     SERIES_COUNT = 0
     SEASON_COUNT = 0
     EPISODE_COUNT = 0
-    print countDB('episodes')
-    if common.args.url == 'u':
-        DialogPG.create(common.getString(30135))
-        ALL_SEASONS_ASINS = getTVdbAsins('seasons', list=True)
-        ALL_SERIES_ASINS = getTVdbAsins('shows')
-    else:
+
+    if full_update:
         if not Dialog.yesno(common.getString(30136), common.getString(30137), common.getString(30138) % '30'):
             return
         DialogPG.create(common.getString(30130))
+        DialogPG.update(0,common.getString(30131))
         rebuildTVdb()
         ALL_SERIES_ASINS = ''
         ALL_SEASONS_ASINS = []
-    DialogPG.update(0,common.getString(30131))
+    else:
+        ALL_SEASONS_ASINS = getTVdbAsins('seasons', list=True)
+        ALL_SERIES_ASINS = getTVdbAsins('shows')
     
     while goAhead == 1:
         json = appfeed.getList('TVSeason', endIndex, NumberOfResults=MAX)
@@ -382,7 +385,7 @@ def addTVdb():
             EPISODE_NUM = []
             result = len(titles)
             for title in titles:
-                if (DialogPG.iscanceled()):
+                if full_update and DialogPG.iscanceled():
                     goAhead = -1
                     break
                 SEASONS_ASIN = title['titleId']
@@ -411,9 +414,7 @@ def addTVdb():
             del titles, newtitles
             if SERIES_ASINS <> '':
                 ASIN_ADD(0, asins=SERIES_ASINS)
-            if (common.args.url == 'u') and (SEASON_COUNT == 0):
-                DialogPG.update(0, common.getString(30122).replace("%s",str(page)))
-            else:
+            if full_update:
                 DialogPG.update(int(EPISODE_COUNT*100.0/EPI_TOTAL), common.getString(30132) % SERIES_COUNT, common.getString(30133) % SEASON_COUNT,common.getString(30134) % EPISODE_COUNT)
             goAheadepi = 1
             episodes = 0
@@ -429,32 +430,30 @@ def addTVdb():
                         EPISODE_COUNT += ASIN_ADD(titles)
                     else:
                         goAheadepi = -1
-                    if (DialogPG.iscanceled()):
+                    if full_update and DialogPG.iscanceled():
                         goAheadepi = -1
                         goAhead = -1
                         break
                     episodes = 0
                     AsinList = ''
-                    if (common.args.url == 'u') and (SEASON_COUNT == 0):
-                        DialogPG.update(0, common.getString(30122).replace("%s",str(page)))
-                    else:
+                    if full_update:
                         DialogPG.update(int(EPISODE_COUNT*100.0/EPI_TOTAL), common.getString(30132) % SERIES_COUNT, common.getString(30133) % SEASON_COUNT,common.getString(30134) % EPISODE_COUNT)
                     del titles
             endIndex+=result
         else:
             goAhead = 0
         page+=1
+    if full_update: DialogPG.close()
     if goAhead == 0:
         common.addon.setSetting("EpisodesTotal",str(countDB('episodes')))
-    fixDBLShows()
-    fixYears()
-    fixStars()
-    fixHDshows()
-    updateEpisodes()
-    DialogPG.close()
-    print ALL_SEASONS_ASINS
-    delShows, delSeasons, delEpisodes = deleteremoved(ALL_SEASONS_ASINS)
-    UpdateDialog(SERIES_COUNT, SEASON_COUNT, EPISODE_COUNT, delShows, delSeasons, delEpisodes)
+        fixDBLShows()
+        fixYears()
+        fixStars()
+        fixHDshows()
+        updateEpisodes()
+        print ALL_SEASONS_ASINS
+        delShows, delSeasons, delEpisodes = deleteremoved(ALL_SEASONS_ASINS)
+        UpdateDialog(SERIES_COUNT, SEASON_COUNT, EPISODE_COUNT, delShows, delSeasons, delEpisodes)
     
 def UpdateDialog(SERIES_COUNT, SEASON_COUNT, EPISODE_COUNT, delShows, delSeasons, delEpisodes):
     line1 = ''
@@ -476,7 +475,11 @@ def UpdateDialog(SERIES_COUNT, SEASON_COUNT, EPISODE_COUNT, delShows, delSeasons
     if (delEpisodes) and (not EPISODE_COUNT):
         line3 += '%s %s' % (common.getString(30134) % delEpisodes, common.getString(30125))
     if line1 + line2 + line3 == '': line2 = common.getString(30127)
-    Dialog.ok(common.getString(30126), line1, line2, line3)
+    print 'TV Shows Update:'
+    print line1
+    print line2
+    print line3
+    #Dialog.ok(common.getString(30126), line1, line2, line3)
     
 def ASIN_ADD(titles,asins=False,url=False,isPrime=True,isHD=False,single=False):
     if asins:
@@ -528,7 +531,7 @@ def ASIN_ADD(titles,asins=False,url=False,isPrime=True,isHD=False,single=False):
             seriestitle = title['title']
             if title.has_key('childTitles'):
                 seasontotal = title['childTitles'][0]['size']
-            showdata = [common.cleanData(x) for x in [asin,None,None,seriestitle,poster,plot,studio,mpaa,genres,actors,premiered,year,stars,votes,seasontotal,0,False,0,isHD,isPrime,audio,None,None,fanart,None]]
+            showdata = [common.cleanData(x) for x in [asin,None,None,common.checkCase(seriestitle),poster,plot,studio,mpaa,genres,actors,premiered,year,stars,votes,seasontotal,0,False,0,isHD,isPrime,audio,None,None,fanart,None]]
             addShowdb(showdata)
             if single:
                 return asin,ASINLIST
@@ -544,7 +547,7 @@ def ASIN_ADD(titles,asins=False,url=False,isPrime=True,isHD=False,single=False):
                 seriestitle = title['title']
             if title.has_key('childTitles'):
                 episodetotal = title['childTitles'][0]['size']
-            seasondata = [common.cleanData(x) for x in [asin,seriesasin,fanart,poster,season,seriestitle,plot,actors,studio,mpaa,genres,premiered,year,stars,votes,episodetotal,audio,0,isHD,isPrime]]
+            seasondata = [common.cleanData(x) for x in [asin,seriesasin,fanart,poster,season,common.checkCase(seriestitle),plot,actors,studio,mpaa,genres,premiered,year,stars,votes,episodetotal,audio,0,isHD,isPrime]]
             addSeasondb(seasondata)
         elif contentType == 'EPISODE':
             episodetitle = title['title']
@@ -568,7 +571,7 @@ def ASIN_ADD(titles,asins=False,url=False,isPrime=True,isHD=False,single=False):
                 for rest in title['restrictions']:
                     if rest['action'] == 'playback':
                         if rest['type'] == 'ageVerificationRequired': isAdult = True
-            episodedata = [common.cleanData(x) for x in [asin,seasonasin,seriesasin,seriestitle,season,episode,poster,mpaa,actors,genres,episodetitle,studio,stars,votes,fanart,plot,premiered,year,runtime,isHD,isPrime,isAdult,audio]]
+            episodedata = [common.cleanData(x) for x in [asin,seasonasin,seriesasin,common.checkCase(seriestitle),season,episode,poster,mpaa,actors,genres,common.checkCase(episodetitle),studio,stars,votes,fanart,plot,premiered,year,runtime,isHD,isPrime,isAdult,audio]]
             addEpisodedb(episodedata)
     return count
     

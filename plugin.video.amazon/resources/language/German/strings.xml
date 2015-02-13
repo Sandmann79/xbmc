@@ -1,23 +1,27 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <strings>
-    <string id="30001">Interner Player</string>
+    <string id="30001">Amazon Zugangsdaten</string>
     <string id="30002">E-Mail Adresse</string>
     <string id="30003">Passwort</string>
     <string id="30004">Stream Bitrate (0 - Fragen)</string>
     <string id="30005">Untertitel aktivieren</string>
-
+    <string id="30006">Zugangsdaten speichern (unsicher)?</string>
+    <string id="30007">Zugangsdaten und Cookie entfernen</string>
+    <string id="30008">Datenbankaktualisierung</string>
+    <string id="30009">Datenbank automatisch aktualisieren</string>
+    <string id="30010">Aus</string>
+    <string id="30018">Täglich</string>
+    <string id="30019">Alle 2 Tage</string>
+    <string id="30020">Alle 5 Tage</string>
+    <string id="30021">Wöchentlich</string>
+    
     <string id="30011">Allgemein</string>
     <string id="30012">Wiedergabemethode</string>
 
     <string id="30015">Ansicht</string>
-    <string id="30016">Film Bildquelle</string>
-    <string id="30017">Serien Bildquelle</string>
-    <string id="30018">TVDB Posters</string>
-    <string id="30019">TVDB Banners</string>
-    <string id="30020">TMDB Posters</string>
-    <string id="30021">TMDB Banners</string>
-    <string id="30022">Amazon</string>
-    
+    <string id="30016">Fehlende Film-Fanart über TMDB beziehen (im Hintergrund)</string>
+    <string id="30017">Fehlende TV-Fanart über TVDB beziehen (im Hintergrund)</string>
+
     <string id="30023">Vorschau</string>
     <string id="30024">Poster Wrap</string>
     <string id="30025">Liste</string>
@@ -32,7 +36,7 @@
     <string id="30031">Staffel Ansicht</string>
     <string id="30032">Episoden Ansicht</string>
 
-    <string id="30038">Aktualisierung</string>
+    <string id="30038">Verbindung</string>
     <string id="30039">Elemente pro Seite (Filmsuche)</string>
     <string id="30040">Elemente pro Seite (Seriensuche)</string>
 
@@ -46,10 +50,10 @@
     
     <string id="30100">Beliebt</string>
     <string id="30102">Komplette Filmdatenbank erstellen</string>
-    <string id="30103">Filmdatenbank aktualisieren</string>
+    <string id="30103">Film &amp; TV-Datenbank aktualisieren</string>
     <string id="30104">Filme</string>
     <string id="30105">Komplette Seriendatenbank erstellen</string>
-    <string id="30106">Seriendatenbank aktualisieren</string>
+    <string id="30106">Starte Datenbankupdate</string>
     <string id="30107">Serien</string>
     <string id="30108">Suchen</string>
     <string id="30109">Bitrate auswählen und wiedergeben</string>
@@ -110,5 +114,4 @@
     
     <string id="30190">Fehler bei der Anmeldung</string>   
     <string id="30191">E-Mail Adresse oder Passwort falsch</string>   
-    
 </strings>

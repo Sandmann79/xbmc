@@ -94,9 +94,6 @@ def LIST_TVSHOWS(actorfilter=False,mpaafilter=False,genrefilter=False,creatorfil
     return count
 
 def ADD_SHOW_ITEM(showdata,mode='listtv',submode='LIST_TV_SEASONS'):
-    artOptions = ['Poster','Banner','Amazon']
-    tvart=int(common.addon.getSetting("tvart"))
-    option = artOptions[tvart]
     asin,asin2,feed,seriestitle,poster,plot,network,mpaa,genres,actors,premiered,year,stars,votes,seasontotal,episodetotal,watched,unwatched,isHD,isprime,audio,TVDBbanner,TVDBposter, fanart,TVDBseriesid = showdata
     infoLabels={'Title': seriestitle,'TVShowTitle':seriestitle}
     if plot:
@@ -127,10 +124,6 @@ def ADD_SHOW_ITEM(showdata,mode='listtv',submode='LIST_TV_SEASONS'):
         submode = 'LIST_TV_SEASONS'
     if poster is None:
         poster=''
-    if TVDBposter and option == 'Poster':
-        poster = TVDBposter
-    elif TVDBbanner and option == 'Banner':
-        poster = TVDBbanner
     if not fanart:
         fanart = poster
     cm = [(common.getString(30166), 'XBMC.RunPlugin(%s?mode=<tv>&sitemode=<delfromTVdb>&asins=<%s>&table=<shows>&title=<%s>)' % ( sys.argv[0], urllib.quote_plus(asin), urllib.quote_plus(seriestitle)))]

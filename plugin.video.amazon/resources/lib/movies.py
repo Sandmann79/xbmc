@@ -10,6 +10,7 @@ import xbmcgui
 import shutil
 import appfeed
 import resources.lib.common as common
+import sys
 
 try:
     from sqlite3 import dbapi2 as sqlite
@@ -20,8 +21,9 @@ import xbmcaddon
 ################################ Movie db
 MAX = int(common.addon.getSetting("mov_perpage"))
 MOV_TOTAL = common.addon.getSetting("MoviesTotal")
-if MOV_TOTAL == '': MOV_TOTAL = '2400'
+if MOV_TOTAL == '' or MOV_TOTAL == '0': MOV_TOTAL = '2400'
 MOV_TOTAL = int(MOV_TOTAL)
+tmdb_art = common.addon.getSetting("tmdb_art")
 
 def createMoviedb():
     c = MovieDB.cursor()
@@ -62,24 +64,44 @@ def addMoviedb(moviedata):
     MovieDB.commit()
     c.close()
 
-def lookupMoviedb(asin):
+def lookupMoviedb(value, rvalue='distinct *', name='asin', single=True, exact=False):
     c = MovieDB.cursor()
-    asin = "%" + asin + "%"
-    if c.execute('select distinct * from movies where asin like (?)', (asin,)).fetchone():
-        result = c.execute('select distinct * from movies where asin like (?)', (asin,))
-        for moviedata in result:
-            return moviedata
+    sqlstring = 'select %s from movies where %s ' % (rvalue, name)
+    retlen = len(rvalue.split(','))
+    if not exact:
+        value = '%' + value + '%'
+        sqlstring += 'like (?)'
     else:
-        return False
+        sqlstring += '= (?)'
+    if c.execute(sqlstring, (value,)).fetchall():
+        result = c.execute(sqlstring, (value,)).fetchall()
+        if single:
+            if len(result[0]) > 1:
+                return result[0]
+            return result[0][0]
+        else:
+            return result
+    if (retlen < 2) and (single):
+        return None
+    return (None,) * retlen
+
 
 def deleteMoviedb(asin=False):
     if not asin:
         asin = common.args.url
+    asin = '%' + asin + '%'
     c = MovieDB.cursor()
-    shownamedata = c.execute('delete from movies where asin = (?)', (asin,))
-    
-    c.close()
+    return c.execute('delete from movies where asin like (?)', (asin,)).rowcount
 
+def updateMoviedb(asin, col, value):
+    c = MovieDB.cursor()
+    asin = '%' + asin + '%'
+    sqlquery = 'update movies set %s=? where asin like (?)' % col
+    result = c.execute(sqlquery, (value,asin)).rowcount
+    MovieDB.commit()
+    c.close()    
+    return result
+    
 def loadMoviedb(genrefilter=False,actorfilter=False,directorfilter=False,studiofilter=False,yearfilter=False,mpaafilter=False,alphafilter=False,asinfilter=False,isprime=True):
     c = MovieDB.cursor()
     if genrefilter:
@@ -130,130 +152,172 @@ def getMovieTypes(col):
     c.close()
     return list
 
-def getMoviedbAsins(table,col):
+def getMoviedbAsins(col=False,list=False):
     c = MovieDB.cursor()
     content = ''
-    for item in c.execute('select asin from %s where %s = (1)' % (table, col)).fetchall():
-        content += ','.join(item)
+    sqlstring = 'select asin from movies'
+    if list:
+        content = []
+    if col:
+         sqlstring += ' where %s = (1)' % col
+    for item in c.execute(sqlstring).fetchall():
+        if list:
+            content.append(','.join(item))
+        else:
+            content += ','.join(item)
     return content
     
-def addMoviesdb(isPrime=True):
+def addMoviesdb(full_update = True):
+    try:
+        if common.args.url == 'u':
+            full_update = False
+    except: pass
     dialog = xbmcgui.DialogProgress()
-    dialog.create(common.getString(30120))
-    dialog.update(0,common.getString(30121))
     c = MovieDB.cursor()
-    c.execute('drop table if exists movies')
-    c.close()
-    createMoviedb()
+    if full_update:
+        dialog.create(common.getString(30120))
+        dialog.update(0,common.getString(30121))
+        c.execute('drop table if exists movies')
+        c.close()
+        createMoviedb()
+        MOVIE_ASINS = []
+        full_update = True
+    else:
+        MOVIE_ASINS = getMoviedbAsins(list=True)
     page = 1
     goAhead = 1
-    endIndex=0
+    endIndex = 0
+    new_mov = 0
+    
     while goAhead == 1:
         page+=1
         json = appfeed.getList('Movie', endIndex, NumberOfResults=MAX)
         titles = json['message']['body']['titles']
         if titles:
-            endIndex += ASIN_ADD(titles)
+            for title in titles:
+                if full_update and dialog.iscanceled():
+                    goAhead = -1
+                    break
+                if title.has_key('titleId'):
+                    asin = title['titleId']
+                    listpos = [i for i, j in enumerate(MOVIE_ASINS) if asin in j]
+                    if listpos == []:
+                        new_mov += ASIN_ADD(title)
+                        if full_update: dialog.update(int((endIndex)*100.0/MOV_TOTAL), common.getString(30122) % page, common.getString(30123) % new_mov)
+                    else:
+                        while listpos != []:
+                            del MOVIE_ASINS[listpos[0]]
+                            listpos = [i for i, j in enumerate(MOVIE_ASINS) if asin in j]
+            endIndex += len(titles)
         else:
             goAhead = 0
-        if (dialog.iscanceled()): goAhead = -1
-        dialog.update(int((endIndex)*100.0/MOV_TOTAL), common.getString(30122).replace("%s",str(page)), common.getString(30123).replace("%s", str(endIndex) ))
-    if goAhead == 0: common.addon.setSetting("MoviesTotal",str(endIndex))
-    dialog.close()
+        if full_update and dialog.iscanceled(): goAhead = -1
+    if full_update: dialog.close()
+    print MOVIE_ASINS
+    if goAhead == 0: 
+        common.addon.setSetting("MoviesTotal",str(endIndex))
+        print 'Amazon Movie Update: New %s Deleted %s Total %s' % (new_mov, deleteremoved(MOVIE_ASINS), endIndex)
+        if tmdb_art == 'true':
+            updateFanart()
+        xbmc.executebuiltin("XBMC.Container.Refresh")
 
-def ASIN_ADD(titles,isPrime=True):
+def updateFanart():
+    asin = movie = year = None
+    c = MovieDB.cursor()
+    print "Amazon Movie Update: Updating Fanart"
+    for asin, movie, year in c.execute("select asin, movietitle, year from movies where externalFanart is null"):
+        movie = movie.replace('[OV]', '').replace('Omu', '').split('[')[0].split('(')[0].strip()
+        result = appfeed.getTMDBImages(movie, year)
+        #print 'Amazon Movie Fanart: %s' % (result)
+        if result == False:
+            print "Amazon Movie Fanart: Pause 10 sec..."
+            xbmc.sleep(10000)
+            result = appfeed.getTMDBImages(movie, year)
+        updateMoviedb(asin, 'externalFanart', result)
+    print "Amazon Movie Update: Updating Fanart Finished"
+
+       
+def deleteremoved(asins):
+    c = MovieDB.cursor()
+    delMovies = 0
+    for item in asins:
+        for asin in item.split(','):
+            delMovies += deleteMoviedb(asin)
+    MovieDB.commit()
+    c.close()
+    return delMovies
+
+def ASIN_ADD(title,isPrime=True):
     titelnum = 0
-    for title in titles:
-        isAdult = False
-        stars = None
-        votes = None
-        trailer = False
-        fanart = None
-        poster = None
-        asin, isHD, isPrime, audio = common.GET_ASINS(title)
-        movietitle = title['title']
-        if title['formats'][0].has_key('images'):
-            try:
-                thumbnailUrl = title['formats'][0]['images'][0]['uri']
-                thumbnailFilename = thumbnailUrl.split('/')[-1]
-                thumbnailBase = thumbnailUrl.replace(thumbnailFilename,'')
-                poster = thumbnailBase+thumbnailFilename.split('.')[0]+'.jpg'
-            except: poster = None
-        if title.has_key('heroUrl'):
-            fanart = title['heroUrl']
-        if title.has_key('synopsis'):
-            plot = title['synopsis']
-        else:
-            plot = None
-        if title.has_key('director'):
-            director = title['director']
-        else:
-            director = None
-        if title.has_key('runtime'):
-            runtime = str(title['runtime']['valueMillis']/60000)
-        else:
-            runtime = None
-        if title.has_key('releaseOrFirstAiringDate'):
-            premiered = title['releaseOrFirstAiringDate']['valueFormatted'].split('T')[0]
-            year = int(premiered.split('-')[0])
-        else:
-            premiered = None
-            year = None
-        if title.has_key('studioOrNetwork'):
-            studio = title['studioOrNetwork']
-        else:
-            studio = None
-        if title.has_key('regulatoryRating'):
-            if title['regulatoryRating'] == 'not_checked': mpaa = common.getString(30171)
-            else: mpaa = common.getString(30170) + title['regulatoryRating']
-        else:
-            mpaa = ''
-        if title.has_key('starringCast'):
-            actors = title['starringCast']
-        else:
-            actors = None
-        if title.has_key('genres'):
-            genres = ' / '.join(title['genres']).replace('_', ' & ').replace('Musikfilm & Tanz', 'Musikfilm, Tanz')
-        else:
-            genres = ''
-        if title.has_key('trailerAvailable'): trailer = title['trailerAvailable']
-        if title.has_key('customerReviewCollection'):
-            stars = float(title['customerReviewCollection']['customerReviewSummary']['averageOverallRating'])*2
-            votes = str(title['customerReviewCollection']['customerReviewSummary']['totalReviewCount'])
-        elif title.has_key('amazonRating'):
-            if title['amazonRating'].has_key('rating'): stars = float(title['amazonRating']['rating'])*2
-            if title['amazonRating'].has_key('count'): votes = str(title['amazonRating']['count'])
-        if title.has_key('restrictions'):
-            for rest in title['restrictions']:
-                if rest['action'] == 'playback':
-                    if rest['type'] == 'ageVerificationRequired': isAdult = True
+    isAdult = False
+    stars = None
+    votes = None
+    trailer = False
+    fanart = None
+    poster = None
+    asin, isHD, isPrime, audio = common.GET_ASINS(title)
+    movietitle = title['title']
+    if title.has_key('synopsis'):
+        plot = title['synopsis']
+    else:
+        plot = None
+    if title.has_key('director'):
+        director = title['director']
+    else:
+        director = None
+    if title.has_key('runtime'):
+        runtime = str(title['runtime']['valueMillis']/60000)
+    else:
+        runtime = None
+    if title.has_key('releaseOrFirstAiringDate'):
+        premiered = title['releaseOrFirstAiringDate']['valueFormatted'].split('T')[0]
+        year = int(premiered.split('-')[0])
+    else:
+        premiered = None
+        year = None
+    if title.has_key('studioOrNetwork'):
+        studio = title['studioOrNetwork']
+    else:
+        studio = None
+    if title.has_key('regulatoryRating'):
+        if title['regulatoryRating'] == 'not_checked': mpaa = common.getString(30171)
+        else: mpaa = common.getString(30170) + title['regulatoryRating']
+    else:
+        mpaa = ''
+    if title.has_key('starringCast'):
+        actors = title['starringCast']
+    else:
+        actors = None
+    if title.has_key('genres'):
+        genres = ' / '.join(title['genres']).replace('_', ' & ').replace('Musikfilm & Tanz', 'Musikfilm, Tanz')
+    else:
+        genres = ''
+    if title.has_key('trailerAvailable'): trailer = title['trailerAvailable']
+    if title.has_key('customerReviewCollection'):
+        stars = float(title['customerReviewCollection']['customerReviewSummary']['averageOverallRating'])*2
+        votes = str(title['customerReviewCollection']['customerReviewSummary']['totalReviewCount'])
+    elif title.has_key('amazonRating'):
+        if title['amazonRating'].has_key('rating'): stars = float(title['amazonRating']['rating'])*2
+        if title['amazonRating'].has_key('count'): votes = str(title['amazonRating']['count'])
+    if title.has_key('restrictions'):
+        for rest in title['restrictions']:
+            if rest['action'] == 'playback':
+                if rest['type'] == 'ageVerificationRequired': isAdult = True
+    if title['formats'][0].has_key('images'):
+        try:
+            thumbnailUrl = title['formats'][0]['images'][0]['uri']
+            thumbnailFilename = thumbnailUrl.split('/')[-1]
+            thumbnailBase = thumbnailUrl.replace(thumbnailFilename,'')
+            poster = thumbnailBase+thumbnailFilename.split('.')[0]+'.jpg'
+        except: poster = None
+    if title.has_key('heroUrl'):
+        fanart = title['heroUrl']
+    if 'bbl test' not in movietitle.lower():
+        moviedata = [common.cleanData(x) for x in [asin,None,common.checkCase(movietitle),trailer,poster,plot,director,None,runtime,year,premiered,studio,mpaa,actors,genres,stars,votes,None,None,fanart,isPrime,isHD,isAdult,None,audio,None]]
+        addMoviedb(moviedata)
         titelnum+=1
-        if 'bbl test' not in movietitle.lower():
-            moviedata = [common.cleanData(x) for x in [asin,None,movietitle,trailer,poster,plot,director,None,runtime,year,premiered,studio,mpaa,actors,genres,stars,votes,None,None,fanart,isPrime,isHD,isAdult,None,audio,None]]
-            addMoviedb(moviedata)
     return titelnum
 
-def GET_ASINS(content):
-    asins = ''
-    hd_key = False
-    prime_key = True
-    channels = 1
-    if content.has_key('titleId'): asins += content['titleId']
-    for format in content['formats']:
-        if format['videoFormatType'] == 'HD':
-            for offer in format['offers']:
-                if offer['offerType'] == 'SUBSCRIPTION': 
-                    hd_key = True
-        for offer in format['offers']:
-            if offer['offerType'] == 'SUBSCRIPTION':
-                prime_key = True
-            elif offer.has_key('asin'):
-                if offer['asin'] not in asins:
-                    asins += ',' + offer['asin']
-        if 'STEREO' in format['audioFormatTypes']: channels = 2
-        if 'AC_3_5_1' in format['audioFormatTypes']: channels = 6
-    del content
-    return asins, hd_key, prime_key, channels
 MovieDBfile = os.path.join(common.dbpath, 'movies.db')
 if not os.path.exists(MovieDBfile):
     MovieDB = sqlite.connect(MovieDBfile)

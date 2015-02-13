@@ -1,22 +1,26 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <strings>
-    <string id="30001">Internal Player</string>
+    <string id="30001">Amazon Account</string>
     <string id="30002">Email Adress</string>
     <string id="30003">Password</string>
     <string id="30004">Stream Bitrate (0 - Ask)</string>
     <string id="30005">Enable Subtitles</string>
-
+    <string id="30006">Remember Credentials (unsecure)?</string>
+    <string id="30007">Remove Credentials and Cookie</string>
+    <string id="30008">Database Update</string>
+    <string id="30009">Automatically Update Database</string>
+    <string id="30010">Off</string>
+    <string id="30018">Daily</string>
+    <string id="30019">Every Two Days</string>
+    <string id="30020">Every Five Days</string>
+    <string id="30021">Weekly</string>
+    
     <string id="30011">General</string>
     <string id="30012">Playback with</string>
 
     <string id="30015">Views</string>
-    <string id="30016">Movie Image Source</string>
-    <string id="30017">TV Image Source</string>
-    <string id="30018">TVDB Posters</string>
-    <string id="30019">TVDB Banners</string>
-    <string id="30020">TMDB Posters</string>
-    <string id="30021">TMDB Banners</string>
-    <string id="30022">Amazon</string>
+    <string id="30016">Get missing Movie Fanart from TMDb (Background)</string>
+    <string id="30017">Get missing TV Fanart from TVDB (Background)</string>
     
     <string id="30023">Thumbnail</string>
     <string id="30024">Poster Wrap</string>
@@ -46,10 +50,10 @@
     
     <string id="30100">Popular</string>
     <string id="30102">Full Movie Refresh(DB)</string>
-    <string id="30103">Refresh Movie Database</string>
+    <string id="30103">Refresh TV &amp; Movie Database</string>
     <string id="30104">Movies</string>
     <string id="30105">Full Television Refresh(DB)</string>
-    <string id="30106">Refresh TV Database</string>
+    <string id="30106">Starting Database Update</string>
     <string id="30107">Television</string>
     <string id="30108">Search Prime</string>
     <string id="30109">Choose Bitrate for Playback</string>
@@ -86,21 +90,11 @@
     <string id="30147">MPAA Rating</string>
     <string id="30148">Directors</string>
 
-
-
-
-
-
-
-
-
-
     <string id="30154">Remove Movie</string>
     <string id="30155">Remove Season</string>
     <string id="30156">Remove %s from Database</string>
     <string id="30157">Popular Movies</string>
     <string id="30158">Actor</string>
-
 
     <string id="30160">All Shows</string>
     <string id="30161">Networks</string>
@@ -115,8 +109,6 @@
     <string id="30170"></string>
     <string id="30171">Unrated</string>
     <string id="30172">Popular Shows</string>
-    
-
 
     <string id="30180">No Results</string>
     

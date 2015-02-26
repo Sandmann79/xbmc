@@ -16,7 +16,8 @@ confluence_views = [500,501,502,503,504,508]
 
 ################################ Movie listing
 def LIST_MOVIE_ROOT():
-    common.addDir(common.getString(30100),'appfeed','CATEGORY','rh=n%3A3010075031%2Cn%3A3356018031&sort=popularity-rank')
+    common.addDir(common.getString(30100),'listmovie','LIST_MOVIES_SORTED','popularity')
+    common.addDir(common.getString(30110),'listmovie','LIST_MOVIES_SORTED','recent')
     common.addDir(common.getString(30143),'listmovie','LIST_MOVIES')
     common.addDir(common.getString(30144),'listmovie','LIST_MOVIE_TYPES','GENRE')
     common.addDir(common.getString(30145),'listmovie','LIST_MOVIE_TYPES','YEARS')
@@ -26,17 +27,6 @@ def LIST_MOVIE_ROOT():
     common.addDir(common.getString(30148),'listmovie','LIST_MOVIE_TYPES','DIRECTORS')
     xbmcplugin.endOfDirectory(pluginhandle)
     
-def LIST_MOVIE_AZ():
-    common.addDir('#','listmovie','LIST_MOVIES_AZ_FILTERED','')
-    alphabet=set(string.ascii_uppercase)
-    for letter in alphabet:
-        common.addDir(letter,'listmovie','LIST_MOVIES_AZ_FILTERED',letter)
-    xbmcplugin.addSortMethod(pluginhandle, xbmcplugin.SORT_METHOD_LABEL)
-    xbmcplugin.endOfDirectory(pluginhandle)
-
-def LIST_MOVIES_AZ_FILTERED():
-    LIST_MOVIES(alphafilter=common.args.url)
-
 def LIST_MOVIE_TYPES(type=False):
     import movies as moviesDB
     if not type:
@@ -82,14 +72,16 @@ def LIST_MOVIES_DIRECTOR_FILTERED():
 def LIST_MOVIES_ACTOR_FILTERED():
     LIST_MOVIES(actorfilter=common.args.url)
 
-def LIST_MOVIES(genrefilter=False,actorfilter=False,directorfilter=False,studiofilter=False,yearfilter=False,mpaafilter=False,alphafilter=False,asinfilter=False,sortaz=True,search=False):
+def LIST_MOVIES_SORTED():
+    LIST_MOVIES(sortaz = False, sortcol = common.args.url)
+    
+def LIST_MOVIES(genrefilter=False,actorfilter=False,directorfilter=False,studiofilter=False,yearfilter=False,mpaafilter=False,alphafilter=False,asinfilter=False,sortcol=False,sortaz=True,search=False,cmmode=0):
     import movies as moviesDB
-    if common.args.url == 'no': sortaz = False
-    movies = moviesDB.loadMoviedb(genrefilter=genrefilter,actorfilter=actorfilter,directorfilter=directorfilter,studiofilter=studiofilter,yearfilter=yearfilter,mpaafilter=mpaafilter,alphafilter=alphafilter,asinfilter=asinfilter)
+    movies = moviesDB.loadMoviedb(sortcol=sortcol,genrefilter=genrefilter,actorfilter=actorfilter,directorfilter=directorfilter,studiofilter=studiofilter,yearfilter=yearfilter,mpaafilter=mpaafilter,alphafilter=alphafilter,asinfilter=asinfilter)
     count = 0
     for moviedata in movies:
         count += 1
-        ADD_MOVIE_ITEM(moviedata)
+        ADD_MOVIE_ITEM(moviedata, cmmode=cmmode)
     if not search:
         xbmcplugin.setContent(pluginhandle, 'Movies')
         if sortaz:
@@ -99,15 +91,11 @@ def LIST_MOVIES(genrefilter=False,actorfilter=False,directorfilter=False,studiof
             xbmcplugin.addSortMethod(pluginhandle, xbmcplugin.SORT_METHOD_VIDEO_RATING)
             xbmcplugin.addSortMethod(pluginhandle, xbmcplugin.SORT_METHOD_DURATION)
             xbmcplugin.addSortMethod(pluginhandle, xbmcplugin.SORT_METHOD_STUDIO_IGNORE_THE)
-        viewenable=common.addon.getSetting("viewenable")
-        if viewenable == 'true':
-            view=int(common.addon.getSetting("movieview"))
-            xbmc.executebuiltin("Container.SetViewMode("+str(confluence_views[view])+")")
-        xbmcplugin.endOfDirectory(pluginhandle,updateListing=False)
+        common.SetView('Movies', 'movieview')
     return count
     
-def ADD_MOVIE_ITEM(moviedata, onlyinfo=False,inWatchlist=False):
-    asin,hd_asin,movietitle,trailer,poster,plot,director,writer,runtime,year,premiered,studio,mpaa,actors,genres,stars,votes,TMDBbanner,TMDBposter,fanart,isprime,isHD,isAdult,watched,audio,TMDB_ID = moviedata
+def ADD_MOVIE_ITEM(moviedata, onlyinfo=False,cmmode=0):
+    asin,hd_asin,movietitle,trailer,poster,plot,director,writer,runtime,year,premiered,studio,mpaa,actors,genres,stars,votes,fanart,isprime,isHD,isAdult,popularity,recent,audio = moviedata
     if not fanart or fanart == 'na':
         if poster:
             fanart = poster.replace('.jpg','._BO354,0,0,0_CR177,354,708,500_.jpg')
@@ -136,8 +124,21 @@ def ADD_MOVIE_ITEM(moviedata, onlyinfo=False,inWatchlist=False):
         infoLabels['Duration'] = runtime
     if audio:
         infoLabels['AudioChannels'] = audio
+    if poster:
+        infoLabels['Thumb'] = poster
+    if fanart:
+        infoLabels['Fanart'] = fanart
+    infoLabels['isHD'] = isHD
+    infoLabels['isAdult'] = isAdult
+    asin = asin.split(',')[0]
     cm = []
+    if cmmode == 1:
+        cm.append((common.getString(30181) % common.getString(30154), 'XBMC.RunPlugin(%s?mode=<common>&sitemode=<removeWatchlist>&asin=<%s>)' % (sys.argv[0], asin)))
+    else:
+        cm.append((common.getString(30180) % common.getString(30154), 'XBMC.RunPlugin(%s?mode=<common>&sitemode=<addWatchlist>&asin=<%s>)' % (sys.argv[0], asin)))
+    cm.append((common.getString(30185) % common.getString(30154), 'XBMC.RunPlugin(%s?mode=<xbmclibrary>&sitemode=<EXPORT_MOVIE>&asin=<%s>)' % (sys.argv[0], asin)))
+    cm.append((common.getString(30186), 'XBMC.RunPlugin(%s?mode=<xbmclibrary>&sitemode=<UpdateLibrary>)' % sys.argv[0]))
     if onlyinfo:
         return infoLabels
     else:
-        common.addVideo(movietitle,asin.split(',')[0],poster,fanart,infoLabels=infoLabels,cm=cm,trailer=trailer,isAdult=isAdult,isHD=isHD)
+        common.addVideo(movietitle,asin,poster,fanart,infoLabels=infoLabels,cm=cm,trailer=trailer,isAdult=isAdult,isHD=isHD)

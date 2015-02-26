@@ -27,9 +27,13 @@
     </category>
     <category label="30015">
         <setting id="viewenable" type ="bool" label="30035" default="true"/>
-        <setting id="movieview" type="enum" lvalues="30023|30024|30025|30026|30027|30028" label="30029" default="5"/>
-        <setting id="showview" type="enum" lvalues="30023|30024|30025|30026|30027|30034" label="30030" default="4"/>
-        <setting id="seasonview" type="enum" lvalues="30023|30024|30025|30026|30027|30034" label="30031" default="4"/>
-        <setting id="episodeview" type="enum" lvalues="30023|30024|30025|30026|30027|30034" label="30032" default="3"/>
+        <setting id="movieview" type="enum" lvalues="30023|30024|30025|30026|30027|30028" label="30029" default="5" enable="eq(-1,true)" />
+        <setting id="showview" type="enum" lvalues="30023|30024|30025|30026|30027|30034" label="30030" default="4" enable="eq(-2,true)"/>
+        <setting id="seasonview" type="enum" lvalues="30023|30024|30025|30026|30027|30034" label="30031" default="4" enable="eq(-3,true)"/>
+        <setting id="episodeview" type="enum" lvalues="30023|30024|30025|30026|30027|30034" label="30032" default="3" enable="eq(-4,true)"/>
+    </category>
+    <category label="30060">
+        <setting id="enablelibraryfolder" type="bool" label="30061" default="false" />
+        <setting id="customlibraryfolder" type="text" label="30062" enable="eq(-1,true)" default="special://profile/addon_data/plugin.video.amazon" />
     </category>
 </settings>

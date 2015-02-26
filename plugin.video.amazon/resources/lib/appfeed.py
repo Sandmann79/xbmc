@@ -16,7 +16,6 @@ import listmovie
 import xbmcaddon
 
 pluginhandle = common.pluginhandle
-confluence_views = [500,501,502,503,504,508]
 
 #Modes
 #===============================================================================
@@ -65,12 +64,15 @@ PARAMETERS = '?firmware='+firmware+'&deviceTypeID='+deviceTypeID+'&deviceID='+de
 def BUILD_BASE_API(MODE,HOST=common.ATV_URL + '/cdp/'):
     return HOST+MODE+PARAMETERS
 
-def getList(ContentType,start=0,isPrime=True,NumberOfResults=MAX,OrderBy='SalesRank',version=2,AsinList=False):
+def getList(ContentType,start=0,isPrime=True,NumberOfResults=MAX,OrderBy='MostPopular',version=2,AsinList=False):
     if isPrime:
         BROWSE_PARAMS = '&OfferGroups=B0043YVHMY'
     BROWSE_PARAMS +='&NumberOfResults='+str(NumberOfResults)
     BROWSE_PARAMS +='&StartIndex='+str(start)
-    BROWSE_PARAMS +='&ContentType='+ContentType
+    if ContentType == 'TVSeason':
+        BROWSE_PARAMS +='&ContentType=TVEpisode&RollupToSeason=T'
+    else:
+        BROWSE_PARAMS +='&ContentType='+ContentType
     BROWSE_PARAMS +='&OrderBy='+OrderBy
     BROWSE_PARAMS +='&IncludeAll=T'
     if ContentType == 'TVEpisode':
@@ -110,46 +112,24 @@ def SEARCH_DB(searchString=False,results=MAX,index=0):
             if searchString <> '':
                 common.addText('          ----=== ' + common.getString(30104) + ' ===----')
                 if not listmovie.LIST_MOVIES(search=True, alphafilter = '%' + searchString + '%'):
-                    common.addText(common.getString(30180))
+                    common.addText(common.getString(30202))
                 common.addText('          ----=== ' + common.getString(30107) + ' ===----')
                 if not listtv.LIST_TVSHOWS(search=True, alphafilter = '%' + searchString + '%'):
-                    common.addText(common.getString(30180))
-                xbmcplugin.setContent(pluginhandle, 'Movies')
-                xbmcplugin.endOfDirectory(pluginhandle,updateListing=False)
-                viewenable=common.addon.getSetting("viewenable")
-                if viewenable == 'true':
-                    view=int(common.addon.getSetting("showview"))
-                    xbmc.executebuiltin("Container.SetViewMode("+str(confluence_views[view])+")")
+                    common.addText(common.getString(30202))
+                common.SetView('tvshows', 'showview')
 
-def CATEGORY():
+def WatchList():
     import tv
-    import time
-    starttime = time.time()
     page = int(common.args.page)
     asins = common.SCRAP_ASINS(common.args.url, page)
     opt = common.args.opt
-    showasins = []
-    print 'Scrap: %s' % (time.time()-starttime)
-    
-    if page > 1:
-        common.addDir("////      %s      \\\\\\\\" % common.getString(30112), common.args.mode, common.args.sitemode, url = common.args.url, page = page - 1, options = opt)
-        
-    for value in asins:
-        if listmovie.LIST_MOVIES(search=True, asinfilter = value) == 0:
-            seritem, seaitem = tv.lookupTVdb(value, rvalue='seriesasin,seasonasin', tbl='episodes', name='asin')
-            if (seaitem) and (opt == ''):
-                for seasondata in tv.lookupTVdb(seaitem, tbl='seasons', single=False):
-                    listtv.ADD_SEASON_ITEM(seasondata, disptitle=True)
-            if (seritem) and (opt == 'shows') and (seritem not in showasins):
-                    showasins.append(seritem)
-                    listtv.LIST_TVSHOWS(search=True, asinfilter = seritem)
-            xbmcplugin.setContent(pluginhandle, 'tvshows')
-        else:
-            xbmcplugin.setContent(pluginhandle, 'Movies')
 
-    if len(asins) > 0:
-        common.addDir("\\\\\\\\      %s      ////" % common.getString(30111), common.args.mode, common.args.sitemode, url = common.args.url, page = page + 1, options = opt)
-    print 'Done: %s' % (time.time()-starttime)
+    for value in asins:
+        if listmovie.LIST_MOVIES(search=True, asinfilter = value, cmmode=1) == 0:
+            if listtv.LIST_TVSHOWS(search=True, asinfilter = value, cmmode=1) == 0:
+                for seasondata in tv.lookupTVdb(value, tbl='seasons', single=False):
+                    listtv.ADD_SEASON_ITEM(seasondata, disptitle=True, cmmode=1)
+    xbmcplugin.setContent(pluginhandle, 'tvshows')
     xbmcplugin.endOfDirectory(pluginhandle,updateListing=False)
 
 def getTMDBImages(title,year,titelorg = None):
@@ -184,5 +164,8 @@ def updateAll():
     Notif(common.__plugin__, common.getString(30106), sound = False)
     tv.addTVdb(full_update = False)
     movies.addMoviesdb(full_update = False)
+    NewAsins = common.getNewest()
+    movies.setNewest(NewAsins)
+    tv.setNewest(NewAsins)
     common.addon.setSetting('last_update', str(date.today()))
     Notif(common.__plugin__, common.getString(30126), sound = False)

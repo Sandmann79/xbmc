@@ -213,14 +213,12 @@ def GETFLASHVARS(pageurl):
     csrfToken = urllib.quote_plus(flashVars['general']['csrfToken'])
     values['deviceTypeID'] = flashVars['customer']['deviceTypeId']
     values['deviceID'] = flashVars['customer']['deviceId']
-
     #values['deviceTypeID']  = 'A13Q6A55DBZB7M'
     values['deviceTypeID']  = 'A324MFXUEZFF7B' # GoogleTV
     #values['deviceTypeID']  = 'A2EUQ1WTGCTBG2'
     #values['userAgent']     = "GoogleTV 162671"
-    #values['deviceID']      = values['customer'] + str(int(time.time() * 1000)) + values['asin']
+    values['deviceID']      = values['customer'] + str(int(time.time() * 1000)) + values['asin']
     pltoken = common.getURL(common.BASE_URL + "/gp/video/streaming/player-token.json?callback=jQuery&csrftoken=" + csrfToken, useCookie=True)
-    print values['userAgent'] 
     try:
         values['token']  = re.compile('"([^"]*).*"([^"]*)"').findall(pltoken)[0][1]
     except:
@@ -279,12 +277,11 @@ def PLAY(rtmpurls,swfUrl,Trailer=False,title=False):
         stream += auth
 
     finalUrl = '%s app=%s swfUrl=%s pageUrl=%s playpath=%s swfVfy=true' % (basertmp, appName, swfUrl, amazonUrl, stream)
-    item = xbmcgui.ListItem(path=finalUrl)
     infoLabels = GetStreamInfo(common.args.asin, title)
+    item = xbmcgui.ListItem(path=finalUrl)
     if Trailer:
         infoLabels['Title'] += ' (Trailer)'
     item.setInfo(type="Video", infoLabels=infoLabels)
-
     if Trailer or lbitrate == -1:
         item.setProperty('IsPlayable', 'true')
         xbmc.Player().play(finalUrl, item)
@@ -332,9 +329,13 @@ def Error(code):
     if 'CDP.InvalidRequest' in code:
         return 'Fehler bei der Suchanfrage'
     elif 'CDP.Playback.NoAvailableStreams' in code:
-        return 'Momentan keine Streams verfügbar, später erneut versuchen'
+        return 'Keine Streams zu diesen Video verfügbar, möglicherweise Datenbank veraltet'
     elif 'CDP.Playback.NotOwned' in code:
-        return 'Produkt nicht erworben, möglicherweise Datenbank veraltet'
+        return 'Produkt nicht erworben oder Datenbank veraltet'
+    elif 'CDP.Authorization.InvalidGeoIP' in code:
+        return 'Dieses Video ist in diesen Land nicht verfügbar'
+    elif 'CDP.Playback.TemporarilyUnavailable' in code:
+        return 'Wiedergabe momentan nicht verfügbar, später erneut versuchen'
     else:
         print code
         return 'Unbekannt: ' + code

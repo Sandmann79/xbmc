@@ -45,22 +45,20 @@ def createMoviedb():
                  genres TEXT,
                  stars FLOAT,
                  votes TEXT,
-                 externalBanner TEXT,
-                 externalPoster TEXT,
-                 externalFanart TEXT,
+                 fanart TEXT,
                  isprime BOOLEAN,
                  isHD BOOLEAN,
                  isAdult BOOLEAN,
-                 watched BOOLEAN,
+                 popularity INTEGER,
+                 recent INTEGER,
                  audio INTEGER,
-                 IMDB_ID TEXT,
                  PRIMARY KEY(movietitle,year,asin))''')
     MovieDB.commit()
     c.close()
 
 def addMoviedb(moviedata):
     c = MovieDB.cursor()
-    c.execute('insert or ignore into movies values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)', moviedata)
+    c.execute('insert or ignore into movies values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)', moviedata)
     MovieDB.commit()
     c.close()
 
@@ -85,7 +83,6 @@ def lookupMoviedb(value, rvalue='distinct *', name='asin', single=True, exact=Fa
         return None
     return (None,) * retlen
 
-
 def deleteMoviedb(asin=False):
     if not asin:
         asin = common.args.url
@@ -102,7 +99,7 @@ def updateMoviedb(asin, col, value):
     c.close()    
     return result
     
-def loadMoviedb(genrefilter=False,actorfilter=False,directorfilter=False,studiofilter=False,yearfilter=False,mpaafilter=False,alphafilter=False,asinfilter=False,isprime=True):
+def loadMoviedb(genrefilter=False,actorfilter=False,directorfilter=False,studiofilter=False,yearfilter=False,mpaafilter=False,alphafilter=False,asinfilter=False,sortcol=False,isprime=True):
     c = MovieDB.cursor()
     if genrefilter:
         genrefilter = '%'+genrefilter+'%'
@@ -120,9 +117,11 @@ def loadMoviedb(genrefilter=False,actorfilter=False,directorfilter=False,studiof
         return c.execute('select distinct * from movies where isprime = (?) and year = (?)', (isprime,int(yearfilter)))
     elif alphafilter:
         return c.execute('select distinct * from movies where isprime = (?) and movietitle like (?)', (isprime,alphafilter))       
+    elif sortcol:
+        return c.execute('select distinct * from movies where %s is not null order by %s asc' % (sortcol,sortcol))
     elif asinfilter:
         asinfilter = '%' + asinfilter + '%'
-        return c.execute('select distinct * from movies where isprime = (?) and asin like (?)', (isprime,asinfilter))       
+        return c.execute('select distinct * from movies where isprime = (?) and asin like (?)', (isprime,asinfilter))        
     else:
         return c.execute('select distinct * from movies where isprime = (?)', (isprime,))
 
@@ -199,20 +198,23 @@ def addMoviesdb(full_update = True):
                     goAhead = -1
                     break
                 if title.has_key('titleId'):
+                    endIndex += 1
                     asin = title['titleId']
                     listpos = [i for i, j in enumerate(MOVIE_ASINS) if asin in j]
                     if listpos == []:
                         new_mov += ASIN_ADD(title)
-                        if full_update: dialog.update(int((endIndex)*100.0/MOV_TOTAL), common.getString(30122) % page, common.getString(30123) % new_mov)
                     else:
                         while listpos != []:
                             del MOVIE_ASINS[listpos[0]]
                             listpos = [i for i, j in enumerate(MOVIE_ASINS) if asin in j]
-            endIndex += len(titles)
+                    updateMoviedb(asin, 'popularity', endIndex)
         else:
             goAhead = 0
+        if full_update: dialog.update(int((endIndex)*100.0/MOV_TOTAL), common.getString(30122) % page, common.getString(30123) % new_mov)
         if full_update and dialog.iscanceled(): goAhead = -1
-    if full_update: dialog.close()
+    if full_update: 
+        setNewest()
+        dialog.close()
     print MOVIE_ASINS
     if goAhead == 0: 
         common.addon.setSetting("MoviesTotal",str(endIndex))
@@ -221,19 +223,28 @@ def addMoviesdb(full_update = True):
             updateFanart()
         xbmc.executebuiltin("XBMC.Container.Refresh")
 
+def setNewest(asins=False):
+    if not asins:
+        asins = common.getNewest()
+    c = MovieDB.cursor()
+    c.execute('update movies set recent=null')
+    count = 1
+    for asin in asins['movies']:
+        updateMoviedb(asin, 'recent', count)
+        count += 1
+    
 def updateFanart():
     asin = movie = year = None
     c = MovieDB.cursor()
     print "Amazon Movie Update: Updating Fanart"
-    for asin, movie, year in c.execute("select asin, movietitle, year from movies where externalFanart is null"):
+    for asin, movie, year in c.execute("select asin, movietitle, year from movies where fanart is null"):
         movie = movie.replace('[OV]', '').replace('Omu', '').split('[')[0].split('(')[0].strip()
         result = appfeed.getTMDBImages(movie, year)
-        #print 'Amazon Movie Fanart: %s' % (result)
         if result == False:
             print "Amazon Movie Fanart: Pause 10 sec..."
             xbmc.sleep(10000)
             result = appfeed.getTMDBImages(movie, year)
-        updateMoviedb(asin, 'externalFanart', result)
+        updateMoviedb(asin, 'fanart', result)
     print "Amazon Movie Update: Updating Fanart Finished"
 
        
@@ -313,7 +324,7 @@ def ASIN_ADD(title,isPrime=True):
     if title.has_key('heroUrl'):
         fanart = title['heroUrl']
     if 'bbl test' not in movietitle.lower():
-        moviedata = [common.cleanData(x) for x in [asin,None,common.checkCase(movietitle),trailer,poster,plot,director,None,runtime,year,premiered,studio,mpaa,actors,genres,stars,votes,None,None,fanart,isPrime,isHD,isAdult,None,audio,None]]
+        moviedata = [common.cleanData(x) for x in [asin,None,common.checkCase(movietitle),trailer,poster,plot,director,None,runtime,year,premiered,studio,mpaa,actors,genres,stars,votes,fanart,isPrime,isHD,isAdult,None,None,audio]]
         addMoviedb(moviedata)
         titelnum+=1
     return titelnum

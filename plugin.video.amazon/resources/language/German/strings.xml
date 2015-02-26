@@ -14,7 +14,7 @@
     <string id="30019">Alle 2 Tage</string>
     <string id="30020">Alle 5 Tage</string>
     <string id="30021">Wöchentlich</string>
-    
+
     <string id="30011">Allgemein</string>
     <string id="30012">Wiedergabemethode</string>
 
@@ -29,7 +29,7 @@
     <string id="30027">Media Info</string>
     <string id="30028">Fanart</string>
     <string id="30034">Große Liste</string>
-    
+
     <string id="30035">Ansichten aktivieren</string>
     <string id="30029">Film Ansicht</string>
     <string id="30030">Serien Ansicht</string>
@@ -47,7 +47,11 @@
     <string id="30045">Automatische PIN Eingabe</string>  
     <string id="30046">PIN</string>
     <string id="30047">Wartezeit nach PIN Eingabe</string>
-    
+
+    <string id="30060">Bibliothek</string>
+    <string id="30061">Eigener Bibliothekordner</string>
+    <string id="30062">Pfad</string>
+
     <string id="30100">Beliebt</string>
     <string id="30102">Komplette Filmdatenbank erstellen</string>
     <string id="30103">Film &amp; TV-Datenbank aktualisieren</string>
@@ -57,7 +61,7 @@
     <string id="30107">Serien</string>
     <string id="30108">Suchen</string>
     <string id="30109">Bitrate auswählen und wiedergeben</string>
-    <string id="30110">Neu bei Amazon</string>
+    <string id="30110">Neuerscheinungen</string>
     <string id="30111">Weiter</string>
     <string id="30112">Zurück</string>
 
@@ -69,7 +73,7 @@
     <string id="30125">entfernt</string>
     <string id="30126">Update abgeschlossen</string>
     <string id="30127">Keine neuen Inhalte gefunden</string>
-   
+
     <string id="30130">Erstelle Seriendatenbank</string>
     <string id="30131">Starte Seriensuche</string>
     <string id="30132">%s Serien</string>
@@ -79,7 +83,7 @@
     <string id="30136">Datenbank erstellen</string>
     <string id="30137">Datenbank komplett neu anlegen?</string>
     <string id="30138">Dies kann bis zu %s Minuten dauern</string>
-    
+
     <string id="30140">Favoriten zur Bibliothek exportieren</string>
     <string id="30141">Favoriten</string>
     <string id="30142">Alles zur Bibliothek exportieren</string>
@@ -90,8 +94,8 @@
     <string id="30147">Altersfreigabe</string>
     <string id="30148">Regisseure</string>
 
-    <string id="30154">Film entfernen</string>
-    <string id="30155">Staffel entfernen</string>
+    <string id="30154">Film</string>
+    <string id="30155">%s entfernen</string>
     <string id="30156">%s aus Datenbank löschen?</string>
     <string id="30157">Beliebte Filme</string>
     <string id="30158">Darsteller</string>
@@ -99,19 +103,31 @@
     <string id="30160">Alle Serien</string>
     <string id="30161">Sender</string>
     <string id="30162">Altersfreigabe</string>
-    <string id="30163">Serie umbenennen</string>
+    <string id="30163">%s umbenennen</string>
     <string id="30164">TVDB Daten aktualisieren</string>
     <string id="30165">Serie in TVDB anzeigen</string>
-    <string id="30166">Serie entfernen</string>
-    <string id="30167">Staffel </string>
+    <string id="30166">Serie</string>
+    <string id="30167">Staffel</string>
     <string id="30168">Jahr </string>
     <string id="30169">Spezial</string>
     <string id="30170">FSK </string>
     <string id="30171">Ungeprüft</string>
     <string id="30172">Beliebte Serien</string>
+    <string id="30173">Episode</string>
 
-    <string id="30180">Keine Suchergebnisse</string>   
-    
-    <string id="30190">Fehler bei der Anmeldung</string>   
-    <string id="30191">E-Mail Adresse oder Passwort falsch</string>   
+    <string id="30180">%s zur Watchlist hinzufügen</string>
+    <string id="30181">%s aus Watchlist entfernen</string>
+
+    <string id="30185">%s zur Bibliothek hinzufügen</string>
+    <string id="30186">Bibliothek aktualisieren</string>
+    <string id="30187">Amazon Video-Quellen hinzugefügt</string>
+    <string id="30188">Zum Abschluß des Setups:</string>
+    <string id="30189"> 1) XBMC/Kodi neustarten</string>
+    <string id="30190"> 2) den Inhalt der Ordner festlegen</string>
+    <string id="30191">Neustart</string>
+    <string id="30192">Soll der XBMC/Kodi neugestartet werden?</string>
+
+    <string id="30200">Fehler bei der Anmeldung</string>   
+    <string id="30201">E-Mail Adresse oder Passwort falsch</string>   
+    <string id="30202">Keine Suchergebnisse</string>
 </strings>

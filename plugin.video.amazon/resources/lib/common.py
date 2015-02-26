@@ -103,7 +103,8 @@ def addDir(name, mode, sitemode, url='', thumb='', fanart='', infoLabels=False, 
     if thumb == '' or thumb == None:
         try:thumb = args.thumb
         except:thumb = os.path.join(pluginpath,'fanart.jpg')
-    else:u += '&thumb=<%s>' % urllib.quote_plus(thumb)
+    else:
+        u += '&thumb="%s"' % urllib.quote_plus(thumb)
     item=xbmcgui.ListItem(name, iconImage="DefaultFolder.png", thumbnailImage=thumb)
     item.setProperty('fanart_image',fanart)
     item.setProperty('IsPlayable', 'false')
@@ -150,55 +151,22 @@ def addText(name):
     item.setProperty('IsPlayable', 'false')
     xbmcplugin.addDirectoryItem(handle=pluginhandle,url=sys.argv[0],listitem=item)
 
-def addMovieWatchlist():
-    addWatchlist('movie')
-
-def addTVWatchlist():
-    addWatchlist('tv')
-
-def addWatchlist(prodType,asin=False):
+def addWatchlist(asin=False):
     if not asin:
         asin=args.asin
-    #customerid=setCustomer()
-    url = BASE_URL + '/gp/video/watchlist/ajax/hoverbubble.html?ASIN=' + asin
+    url = BASE_URL + '/gp/video/watchlist/?toggleOnWatchlist=1&action=add&ASIN=' + asin
     data = getURL(url,useCookie=True)
-    tree = BeautifulSoup(data, convertEntities=BeautifulSoup.HTML_ENTITIES)
-    form = tree.find('form',attrs={'id':'watchlistForm'})
-    token = form.find('input',attrs={'id':'token'})['value']
-    url = BASE_URL + '/gp/video/watchlist/ajax/addRemove.html'
-    url += '?dataType=json'
-    #url += '&addItem=0'
-    url += '&ASIN='+asin
-    url += '&token='+token
-    url += '&prodType='+prodType #movie or tv
-    data = getURL(url,useCookie=True)
-    json = demjson.decode(data)
-    if json['AsinStatus'] == '0':
-        getURL(url,useCookie=True)
+    if asin in data:
+        print asin + " added"
 
-def removeMovieWatchlist():
-    removeWatchlist('movie')
-
-def removeTVWatchlist():
-    removeWatchlist('tv')
-
-def removeWatchlist(prodType,asin=False):
+def removeWatchlist(asin=False):
     if not asin:
         asin=args.asin
-    url = BASE_URL + '/gp/video/watchlist/ajax/hoverbubble.html?ASIN='+asin
+    url = BASE_URL + '/gp/video/watchlist/?toggleOnWatchlist=1&action=remove&ASIN=' + asin
     data = getURL(url,useCookie=True)
-    tree = BeautifulSoup(data, convertEntities=BeautifulSoup.HTML_ENTITIES)
-    form = tree.find('form',attrs={'id':'watchlistForm'})
-    token = form.find('input',attrs={'id':'token'})['value']
-    url = BASE_URL + '/gp/video/watchlist/ajax/addRemove.html'
-    url += '?dataType=json'
-    url += '&ASIN='+asin
-    url += '&token='+token
-    url += '&prodType='+prodType #movie or tv
-    data = getURL(url,useCookie=True)
-    json = demjson.decode(data)
-    if json['AsinStatus'] == '1':
-        getURL(url,useCookie=True)
+    if asin not in data:
+        xbmc.executebuiltin('Container.Refresh')
+        print asin + " removed"
         
 def makeGUID():
     import random
@@ -255,7 +223,7 @@ def dologin():
         logged_in = br.submit()  
         error_str = "message_error"
         if error_str in logged_in.read():
-            xbmcgui.Dialog().ok(getString(30190), getString(30191))
+            xbmcgui.Dialog().ok(getString(30200), getString(30201))
             return True
         else:
             if addon.getSetting('save_login') == 'true':
@@ -312,9 +280,9 @@ def GET_ASINS(content):
     
 def SCRAP_ASINS(mode, page):
     asins = []
-    url = BASE_URL + '/gp/search/ajax/?_encoding=UTF8&page=%s&%s' % (page, mode)
-    content = getURL(url)
-    asins += re.compile('asin=."(.+?)."', re.DOTALL).findall(content)
+    url = BASE_URL + '/gp/video/watchlist/?show=all&sort=DATE_ADDED_DESC&_encoding=UTF8'
+    content = getURL(url, useCookie=True)
+    asins += re.compile('class="innerItem" id="(.+?)."', re.DOTALL).findall(content)
     return asins
     
 def getString(id):
@@ -330,3 +298,50 @@ def checkCase(title):
     if title.isupper():
         title = title.title().replace('[Ov]', '[OV]').replace('Bc', 'BC')
     return title
+    
+def getNewest():
+    import urlparse
+    response = getURL(ATV_URL + '/cdp/catalog/GetCategoryList?firmware=fmw:15-app:1.1.23&deviceTypeID=A1MPSLFC7L5AFK&deviceID=%s&format=json&OfferGroups=B0043YVHMY&IncludeAll=T&version=2' % addon.getSetting("GenDeviceID"))
+    data = demjson.decode(response)
+    asins = {}
+    for type in data['message']['body']['categories']:
+        if type['id'] == 'movies' or type['id'] == 'tv_shows':
+            for cat in type['categories']:
+                if cat['id'] == 'prime':
+                    for subcat in cat['categories']:
+                        if subcat['title'] == 'Neuerscheinungen':
+                            asins.update({type['id']: urlparse.parse_qs(subcat['query'])['ASINList'][0].split(',')})
+    return asins
+
+def SetView(content, view=False, updateListing=False):
+    """
+    confluence_views = {'List': 50,
+                        'BannerPlex': 53,
+                        'PosterInfo': 56,
+                        'LowInfoList': 57,
+                        'Banner': 60,
+                        'PosterWrap': 501,
+                        'WallVideo': 502,
+                        'PanelCarousel': 503,    
+                        'BannerCarousel': 504,
+                        'ClassicPoster': 506,
+                        'Landscape': 507,
+                        'PanelVideo': 508,
+                        'BannerPanelVideo': 509,
+                        'PanelWall': 510,
+                        'LowList': 511,
+                        'LandscapeCarousel': 513,
+                        'InfoList': 552,
+                        'LoveFilm': 566,
+                        'VideoWall': 582,
+                        'BannerOriginal': 600,
+                        'Top250InfoList': 652 }
+    """
+    # 501-POSTER WRAP 503-MLIST3 504=MLIST2 508-FANARTPOSTER 
+    confluence_views = [500,501,502,503,504,508]
+    xbmcplugin.setContent(pluginhandle, content)
+    viewenable = addon.getSetting("viewenable")
+    if viewenable == 'true' and view:
+        view = int(addon.getSetting(view))
+        xbmc.executebuiltin('Container.SetViewMode(%s)' % confluence_views[view])
+    xbmcplugin.endOfDirectory(pluginhandle,updateListing=updateListing)

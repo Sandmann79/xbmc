@@ -14,8 +14,7 @@ print "\n\n\n\n\n\n\n====================AMAZON START====================\n\n\n\
 
 def modes():
     if sys.argv[2]=='':
-        common.addDir(common.getString(30110),'appfeed','CATEGORY','rh=n%3A3279204031&bbn=3279204031&sort=date-desc-rank')
-
+        common.addDir('Watchlist','appfeed','WatchList','')
         updatemovie = []
         updatemovie.append( (common.getString(30103), 'XBMC.RunPlugin(%s?mode=<appfeed>&sitemode=<updateAll>)'  % sys.argv[0] ) )
         updatemovie.append( (common.getString(30102), 'XBMC.RunPlugin(%s?mode=<movies>&sitemode=<addMoviesdb>&url=<f>)'  % sys.argv[0] ) )

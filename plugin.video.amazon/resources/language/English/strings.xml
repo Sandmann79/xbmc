@@ -47,7 +47,11 @@
     <string id="30045">Automatic PIN Input</string>  
     <string id="30046">PIN</string>
     <string id="30047">Wait after PIN Input</string>
-    
+
+    <string id="30060">Library</string>
+    <string id="30061">Custom Library Folder</string>
+    <string id="30062">Path</string>
+
     <string id="30100">Popular</string>
     <string id="30102">Full Movie Refresh(DB)</string>
     <string id="30103">Refresh TV &amp; Movie Database</string>
@@ -90,28 +94,40 @@
     <string id="30147">MPAA Rating</string>
     <string id="30148">Directors</string>
 
-    <string id="30154">Remove Movie</string>
-    <string id="30155">Remove Season</string>
-    <string id="30156">Remove %s from Database</string>
+    <string id="30154">Movie</string>
+    <string id="30155">Remove %s</string>
+    <string id="30156">Remove %s from Database?</string>
     <string id="30157">Popular Movies</string>
     <string id="30158">Actor</string>
 
     <string id="30160">All Shows</string>
     <string id="30161">Networks</string>
     <string id="30162">TV Rating</string>
-    <string id="30163">Rename Show</string>
+    <string id="30163">Rename %s</string>
     <string id="30164">Refresh TVDB Data</string>
     <string id="30165">Lookup Show in TVDB</string>
-    <string id="30166">Remove Show</string>
-    <string id="30167">Season </string>
+    <string id="30166">Show</string>
+    <string id="30167">Season</string>
     <string id="30168">Year </string>
     <string id="30169">Specials</string>
     <string id="30170"></string>
     <string id="30171">Unrated</string>
     <string id="30172">Popular Shows</string>
-
-    <string id="30180">No Results</string>
+    <string id="30173">Episode</string>
     
-    <string id="30190">Login Error</string>
-    <string id="30191">Wrong Email Adress or Password</string>
+    <string id="30180">Add %s to Watchlist</string>
+    <string id="30181">Remove %s from Watchlist</string>
+    
+    <string id="30185">Export %s to Library</string>
+    <string id="30186">Update Library</string>
+    <string id="30187">Source folders added</string>
+    <string id="30188">To complete the setup:</string>
+    <string id="30189"> 1) Restart Kodi</string>
+    <string id="30190"> 2) Set the content type of added folders</string>
+    <string id="30191">Restart</string>
+    <string id="30192">Do you want to restart Kodi now?</string>
+
+    <string id="30200">Login Error</string>
+    <string id="30201">Wrong Email Adress or Password</string>
+    <string id="30202">No Results</string>
 </strings>

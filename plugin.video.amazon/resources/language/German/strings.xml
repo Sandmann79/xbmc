@@ -64,6 +64,9 @@
     <string id="30110">Neuerscheinungen</string>
     <string id="30111">Weiter</string>
     <string id="30112">Zurück</string>
+    <string id="30113">Sprache auswählen und wiedergeben</string>
+    <string id="30114">Stream Qualität auswählen:</string>
+    <string id="30115">Verfügbare Sprachen:</string>
 
     <string id="30120">Erstelle Filmdatenbank</string>
     <string id="30121">Starte Filmsuche</string>
@@ -130,4 +133,11 @@
     <string id="30200">Fehler bei der Anmeldung</string>   
     <string id="30201">E-Mail Adresse oder Passwort falsch</string>   
     <string id="30202">Keine Suchergebnisse</string>
+    <string id="30203">Wiedergabe nicht möglich</string>
+    <string id="30204">Anfrage fehlgeschlagen</string>
+    <string id="30205">Keine Streams zu diesen Video verfügbar, möglicherweise Datenbank veraltet</string>
+    <string id="30206">Produkt nicht erworben</string>
+    <string id="30207">Dieses Video ist in Ihren Land nicht verfügbar</string>
+    <string id="30208">Wiedergabe momentan nicht möglich, später erneut versuchen</string>
+    <string id="30209">Unbekannt: </string>
 </strings>

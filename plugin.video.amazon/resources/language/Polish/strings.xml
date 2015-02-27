@@ -64,6 +64,9 @@
     <string id="30110">Nowe</string>
     <string id="30111">Dalej</string>
     <string id="30112">Wróć</string>
+    <string id="30113">Wybierz język i odtwarzaj</string>
+    <string id="30114">Wybierz jakość streamu:</string>
+    <string id="30115">Dostępne języki:</string>
 
     <string id="30120">Utwórz bazę danych filmów</string>
     <string id="30121">Szukaj filmów</string>
@@ -130,4 +133,11 @@
     <string id="30200">Błąd w trakcie logowania</string>   
     <string id="30201">Błędny adres email lub hasło</string>   
     <string id="30202">Brak wyników wyszukiwania</string>   
+    <string id="30203">Odtwarzanie niemożliwe</string>
+    <string id="30204">Zapytanie zakończone niepowodzeniem</string>
+    <string id="30205">Brak streamu wideo, możliwe że baza danych jest nieaktualna</string>
+    <string id="30206">Produkt nie został nabyty</string>
+    <string id="30207">To wideo nie jest dostępne w Twoim kraju</string>
+    <string id="30208">Odtwarzanie jest teraz niemożliwe, spróbuj ponownie później</string>
+    <string id="30209">Nieznane: </string>
 </strings>

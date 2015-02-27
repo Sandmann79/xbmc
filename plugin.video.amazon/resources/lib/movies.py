@@ -239,11 +239,11 @@ def updateFanart():
     print "Amazon Movie Update: Updating Fanart"
     for asin, movie, year in c.execute("select asin, movietitle, year from movies where fanart is null"):
         movie = movie.replace('[OV]', '').replace('Omu', '').split('[')[0].split('(')[0].strip()
-        result = appfeed.getTMDBImages(movie, year)
+        result = appfeed.getTMDBImages(movie, year=year)
         if result == False:
             print "Amazon Movie Fanart: Pause 10 sec..."
             xbmc.sleep(10000)
-            result = appfeed.getTMDBImages(movie, year)
+            result = appfeed.getTMDBImages(movie, year=year)
         updateMoviedb(asin, 'fanart', result)
     print "Amazon Movie Update: Updating Fanart Finished"
 

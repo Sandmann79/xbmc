@@ -21,7 +21,7 @@ except:
     from elementtree import ElementTree
     
 pluginhandle = common.pluginhandle
-settings = xbmcaddon.Addon( id = 'plugin.video.amazon' )
+settings = common.addon
 userinput = os.path.join(common.pluginpath, 'tools', 'userinput.exe' )
 waitsec = int(settings.getSetting("clickwait")) * 1000
 pin = settings.getSetting("pin")
@@ -179,20 +179,43 @@ def GETSTREAMS(suc, rtmpdata):
     rtmpurls = rtmpdata['urlSets']['streamingURLInfoSet'][0]['streamingURLInfo']
     title = rtmpdata['metadata']['title'].replace('[HD]','')
     return rtmpurls, sessionId, cdn, title
-
+    
+def GETLANG(suc, rtmpdata):
+    if not suc:
+        return False, rtmpdata
+    langid = []
+    langname = []
+    try:
+        format = rtmpdata['titles'][0]['formats'][0]
+        for lang in format['audioTrackLanguageList']['audioTrackLanguage'][0]['audioLanguageList']['audioLanguage']:
+            langid.append(lang['audioFormatAssetList']['audioFormatAsset'][0]['audioTrackId'])
+            langname.append(lang['language']['displayName'])
+    except:
+        langname.append('Deutsch')
+        langid.append('')
+    lang = Dialog.select(common.getString(30115), langname)
+    if lang > -1:
+        return True, '&audioTrackId=' + langid[lang]
+    return False, False
+        
 def PLAYVIDEOINT():
+    audioid = ''
     if not os.path.isfile(common.COOKIEFILE):
         common.mechanizeLogin()
     swfUrl, values = GETFLASHVARS(amazonUrl)
     if not swfUrl:        
         return
     
+    if selbitrate == 'org':
+        suc, audioid = GETLANG(*getUrldata('GetASINDetails', values, devicetypeid='A13Q6A55DBZB7M', asinlist=True, opt='&NumberOfResults=1', useCookie=True, version=2))
+        if not suc:
+            return
     if common.addon.getSetting("enable_captions")=='true':
         GETSUBTITLES(*getUrldata('GetSubtitleUrls', values, opt='&NumberOfResults=1&videoType=content', useCookie=True))
     
-    rtmpurls, streamSessionID, cdn, title = GETSTREAMS(*getUrldata('GetStreamingUrlSets', values, useCookie=True))
+    rtmpurls, streamSessionID, cdn, title = GETSTREAMS(*getUrldata('GetStreamingUrlSets', values, opt=audioid, useCookie=True))
     if not rtmpurls:
-        Dialog.notification("Wiedergabe nicht möglich", title, xbmcgui.NOTIFICATION_ERROR)
+        Dialog.notification(common.getString(30203), title, xbmcgui.NOTIFICATION_ERROR)
         return
     if cdn == 'limelight':
         Dialog.ok('Limelight CDN','Limelight uses swfverfiy2. Playback may fail.')
@@ -222,7 +245,7 @@ def GETFLASHVARS(pageurl):
     try:
         values['token']  = re.compile('"([^"]*).*"([^"]*)"').findall(pltoken)[0][1]
     except:
-        Dialog.notification("Fehler beim Login, bitte Benutzername und Passwort überprüfen", "Amazon", xbmcgui.NOTIFICATION_ERROR)
+        Dialog.notification(common.getString(30200), common.getString(30201), xbmcgui.NOTIFICATION_ERROR)
         return False, False
     return swfUrl, values
         
@@ -255,7 +278,7 @@ def PLAY(rtmpurls,swfUrl,Trailer=False,title=False):
                 streamsout.append(str(stream[0]/1000)+' Mbps - '+stream[2]+', '+stream[3])
             else: 
                 streamsout.append(str(int(stream[0]))+' Kbps - '+stream[2]+', '+stream[3])
-        quality = Dialog.select('Stream Qualität auswählen:', streamsout)
+        quality = Dialog.select(common.getString(30114), streamsout)
         if quality!=-1:
             mbitrate = streams[quality][0]
             rtmpurl = streams[quality][1]
@@ -282,7 +305,7 @@ def PLAY(rtmpurls,swfUrl,Trailer=False,title=False):
     if Trailer:
         infoLabels['Title'] += ' (Trailer)'
     item.setInfo(type="Video", infoLabels=infoLabels)
-    if Trailer or lbitrate == -1:
+    if Trailer or selbitrate != '0':
         item.setProperty('IsPlayable', 'true')
         xbmc.Player().play(finalUrl, item)
     else:
@@ -303,10 +326,12 @@ def GetStreamInfo(asin, finalname):
             return listtv.ADD_EPISODE_ITEM(epidata, onlyinfo=True)
     return {'Title': finalname}
     
-def getUrldata(mode, values, format='json', version=1, firmware='WIN%2016,0,0,235%20PlugIn', opt='', useCookie=False):
+def getUrldata(mode, values, format='json', asinlist=False, devicetypeid=False, version=1, firmware='WIN%2016,0,0,235%20PlugIn', opt='', useCookie=False):
+    if not devicetypeid:
+        devicetypeid = values['deviceTypeID']
     url  = common.ATV_URL + '/cdp/catalog/' + mode
     url += '?asin=' + values['asin']
-    url += '&deviceTypeID=' + values['deviceTypeID']
+    url += '&deviceTypeID=' + devicetypeid
     url += '&firmware=' + firmware
     url += '&customerID=' + values['customer']
     url += '&deviceID=' + values['deviceID']
@@ -316,6 +341,8 @@ def getUrldata(mode, values, format='json', version=1, firmware='WIN%2016,0,0,23
     url += '&version=' + str(version)
     url += '&xws-fa-ov=true'
     url += opt
+    if asinlist:
+        url = url.replace('?asin=', '?asinlist=')
     data = common.getURL(url, common.ATV_URL.split('//')[1], useCookie=useCookie)
     if data:
         jsondata = demjson.decode(data)
@@ -327,15 +354,15 @@ def getUrldata(mode, values, format='json', version=1, firmware='WIN%2016,0,0,23
 
 def Error(code):
     if 'CDP.InvalidRequest' in code:
-        return 'Fehler bei der Suchanfrage'
+        return common.getString(30204)
     elif 'CDP.Playback.NoAvailableStreams' in code:
-        return 'Keine Streams zu diesen Video verfügbar, möglicherweise Datenbank veraltet'
+        return common.getString(30205)
     elif 'CDP.Playback.NotOwned' in code:
-        return 'Produkt nicht erworben oder Datenbank veraltet'
+        return common.getString(30206)
     elif 'CDP.Authorization.InvalidGeoIP' in code:
-        return 'Dieses Video ist in diesen Land nicht verfügbar'
+        return common.getString(30207)
     elif 'CDP.Playback.TemporarilyUnavailable' in code:
-        return 'Wiedergabe momentan nicht verfügbar, später erneut versuchen'
+        return common.getString(30208)
     else:
         print code
-        return 'Unbekannt: ' + code
+        return common.getString(30209) + code

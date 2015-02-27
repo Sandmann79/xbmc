@@ -35,7 +35,9 @@ pldatapath = xbmc.translatePath("special://profile/addon_data/"+addon.getAddonIn
 dbpath = xbmc.translatePath('special://home/addons/script.module.amazon.database/lib').decode('utf-8')
 pluginhandle = int(sys.argv[1])
 tmdb = base64.b64decode('YjM0NDkwYzA1NmYwZGQ5ZTNlYzlhZjIxNjdhNzMxZjQ=')
-COOKIEFILE = os.path.join(pldatapath, "cookies.lwp")
+tvdb = base64.b64decode('MUQ2MkYyRjkwMDMwQzQ0NA==')
+COOKIEFILE = os.path.join(pldatapath, 'cookies.lwp')
+def_fanart = os.path.join(pluginpath, 'fanart.jpg')
 BASE_URL = 'https://www.amazon.de'
 #ATV_URL = 'https://atv-ps-eu.amazon.com'
 ATV_URL = 'https://atv-ext-eu.amazon.com'
@@ -98,13 +100,13 @@ def addDir(name, mode, sitemode, url='', thumb='', fanart='', infoLabels=False, 
     u = '%s?url=<%s>&mode=<%s>&sitemode=<%s>&name=<%s>&page=<%s>&opt=<%s>' % (sys.argv[0], urllib.quote_plus(url), mode, sitemode, urllib.quote_plus(name), urllib.quote_plus(str(page)), options)
     if fanart == '' or fanart == None:
         try:fanart = args.fanart
-        except:fanart = os.path.join(pluginpath,'fanart.jpg')
+        except:fanart = def_fanart
     else:u += '&fanart=<%s>' % urllib.quote_plus(fanart)
     if thumb == '' or thumb == None:
         try:thumb = args.thumb
-        except:thumb = os.path.join(pluginpath,'fanart.jpg')
+        except:thumb = def_fanart
     else:
-        u += '&thumb="%s"' % urllib.quote_plus(thumb)
+        u += '&thumb=<%s>' % urllib.quote_plus(thumb)
     item=xbmcgui.ListItem(name, iconImage="DefaultFolder.png", thumbnailImage=thumb)
     item.setProperty('fanart_image',fanart)
     item.setProperty('IsPlayable', 'false')
@@ -134,7 +136,8 @@ def addVideo(name,asin,poster=False,fanart=False,infoLabels=False,totalItems=0,c
         cm = []
     if int(addon.getSetting("playmethod")) == 0:
         liz.setProperty('IsPlayable', 'true')
-        cm.append( (getString(30109), 'XBMC.RunPlugin(%s&trailer=<0>&selbitrate=<1>)' % u) )
+        cm.insert(0, (getString(30109), 'XBMC.RunPlugin(%s&trailer=<0>&selbitrate=<1>)' % u) )
+        cm.insert(1, (getString(30113), 'XBMC.RunPlugin(%s&trailer=<0>&selbitrate=<org>)' % u) )
     if isHD:
         liz.addStreamInfo('video', { 'width':1280 ,'height' : 720 })
     else:

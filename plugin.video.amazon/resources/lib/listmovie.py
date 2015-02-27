@@ -83,7 +83,6 @@ def LIST_MOVIES(genrefilter=False,actorfilter=False,directorfilter=False,studiof
         count += 1
         ADD_MOVIE_ITEM(moviedata, cmmode=cmmode)
     if not search:
-        xbmcplugin.setContent(pluginhandle, 'Movies')
         if sortaz:
             xbmcplugin.addSortMethod(pluginhandle, xbmcplugin.SORT_METHOD_VIDEO_TITLE)
             xbmcplugin.addSortMethod(pluginhandle, xbmcplugin.SORT_METHOD_VIDEO_YEAR)
@@ -91,7 +90,7 @@ def LIST_MOVIES(genrefilter=False,actorfilter=False,directorfilter=False,studiof
             xbmcplugin.addSortMethod(pluginhandle, xbmcplugin.SORT_METHOD_VIDEO_RATING)
             xbmcplugin.addSortMethod(pluginhandle, xbmcplugin.SORT_METHOD_DURATION)
             xbmcplugin.addSortMethod(pluginhandle, xbmcplugin.SORT_METHOD_STUDIO_IGNORE_THE)
-        common.SetView('Movies', 'movieview')
+        common.SetView('movies', 'movieview')
     return count
     
 def ADD_MOVIE_ITEM(moviedata, onlyinfo=False,cmmode=0):

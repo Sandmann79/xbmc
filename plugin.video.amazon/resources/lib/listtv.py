@@ -119,7 +119,7 @@ def ADD_SHOW_ITEM(showdata,mode='listtv',submode='LIST_TV_SEASONS',cmmode=0,only
         submode = 'LIST_TV_SEASONS'
     if poster is None:
         poster=''
-    if not fanart:
+    if not fanart or fanart == 'na':
         fanart = poster
     infoLabels['Thumb'] = poster
     infoLabels['Fanart'] = fanart
@@ -134,7 +134,7 @@ def ADD_SHOW_ITEM(showdata,mode='listtv',submode='LIST_TV_SEASONS',cmmode=0,only
     if onlyinfo:
         return infoLabels
     else:
-        common.addDir(seriestitle,mode,submode,asin,poster,fanart,infoLabels,isHD=isHD,cm=cm)
+        common.addDir(seriestitle,mode,submode,infoLabels['Asins'],poster,fanart,infoLabels,isHD=isHD,cm=cm)
    
 def LIST_TV_SEASONS(seasons=False):
     seriesasin = common.args.url
@@ -187,7 +187,7 @@ def ADD_SEASON_ITEM(seasondata,mode='listtv',submode='LIST_EPISODES_DB',disptitl
     if season <> 0 and len(str(season)) < 3: displayname += common.getString(30167) + ' %s' % season
     elif len(str(season)) > 2: displayname += common.getString(30168) + str(season)
     else: displayname += common.getString(30169)
-    if not fanart:
+    if not fanart or fanart == 'na':
         fanart = poster
     infoLabels['TotalSeasons'] = 1
     infoLabels['Thumb'] = poster
@@ -203,7 +203,7 @@ def ADD_SEASON_ITEM(seasondata,mode='listtv',submode='LIST_EPISODES_DB',disptitl
     if onlyinfo:
         return infoLabels
     else:
-        common.addDir(displayname,mode,submode,asin,poster,fanart,infoLabels,isHD=isHD,cm=cm)
+        common.addDir(displayname,mode,submode,infoLabels['Asins'],poster,fanart,infoLabels,isHD=isHD,cm=cm)
 
 def LIST_EPISODES_DB(owned=False,url=False):
     if not url:
@@ -220,7 +220,7 @@ def LIST_EPISODES_DB(owned=False,url=False):
         for episodedata in episodes:
             ADD_EPISODE_ITEM(episodedata)
     xbmcplugin.addSortMethod(pluginhandle, xbmcplugin.SORT_METHOD_LABEL)
-    common.SetView('Episodes', 'episodeview')
+    common.SetView('episodes', 'episodeview')
         
 def ADD_EPISODE_ITEM(episodedata, onlyinfo=False):
     asin,seasonASIN,seriesASIN,seriestitle,season,episode,poster,mpaa,actors,genres,episodetitle,network,stars,votes,fanart,plot,airdate,year,runtime,isHD,isprime,isAdult,audio = episodedata
@@ -248,8 +248,11 @@ def ADD_EPISODE_ITEM(episodedata, onlyinfo=False):
         infoLabels['Studio'] = network
     if audio:
         infoLabels['AudioChannels'] = audio
-    if not fanart:
+    if not fanart or fanart == 'na':
         fanart = poster
+    displayname = str(episode) + ' - ' + episodetitle 
+    displayname = displayname.replace('"','')
+    infoLabels['Title'] = displayname
     infoLabels['Thumb'] = poster
     infoLabels['Fanart'] = fanart
     infoLabels['isHD'] = isHD
@@ -262,7 +265,4 @@ def ADD_EPISODE_ITEM(episodedata, onlyinfo=False):
     if onlyinfo:
         return infoLabels
     else:
-        displayname = str(episode)+' - '+episodetitle 
-        displayname = displayname.replace('"','')
-        infoLabels['Title'] = displayname
-        common.addVideo(displayname,asin,poster,fanart,infoLabels=infoLabels,isAdult=isAdult,isHD=isHD)
+        common.addVideo(displayname,asin,poster,fanart,infoLabels=infoLabels,isAdult=isAdult,isHD=isHD,cm=cm)

@@ -25,6 +25,7 @@ MAX_MOV = int(common.addon.getSetting("mov_perpage"))
 EPI_TOTAL = common.addon.getSetting("EpisodesTotal")
 if EPI_TOTAL == '': EPI_TOTAL = '17000'
 EPI_TOTAL = int(EPI_TOTAL)
+tvdb_art = common.addon.getSetting("tvdb_art")
 
 Dialog = xbmcgui.Dialog()
 DialogPG = xbmcgui.DialogProgress()
@@ -461,8 +462,6 @@ def addTVdb(full_update = True):
         else:
             goAhead = 0
         page+=1
-    if full_update: 
-        DialogPG.close()
     if goAhead == 0:
         common.addon.setSetting("EpisodesTotal",str(countDB('episodes')))
         fixDBLShows()
@@ -473,10 +472,13 @@ def addTVdb(full_update = True):
         fixTitles()
         print ALL_SEASONS_ASINS
         delShows, delSeasons, delEpisodes = deleteremoved(ALL_SEASONS_ASINS)
+        UpdateDialog(SERIES_COUNT, SEASON_COUNT, EPISODE_COUNT, delShows, delSeasons, delEpisodes)
         updatePop(POP_ASINS)
         if full_update:
             setNewest()
-        UpdateDialog(SERIES_COUNT, SEASON_COUNT, EPISODE_COUNT, delShows, delSeasons, delEpisodes)
+            DialogPG.close()
+        if tvdb_art == 'true':
+            updateFanart()
 
 def updatePop(POP_ASINS):
     c = tvDB.cursor()
@@ -607,6 +609,18 @@ def ASIN_ADD(titles,asins=False,url=False,isPrime=True,isHD=False,single=False):
             episodedata = [common.cleanData(x) for x in [asin,seasonasin,seriesasin,common.checkCase(seriestitle),season,episode,poster,mpaa,actors,genres,common.checkCase(episodetitle),studio,stars,votes,fanart,plot,premiered,year,runtime,isHD,isPrime,isAdult,audio]]
             addEpisodedb(episodedata)
     return count
+
+def updateFanart():
+    asin = title = season = year = None
+    c = tvDB.cursor()
+    print "Amazon TV Update: Updating Fanart"
+    for asin, title, year in c.execute("select asin, seriestitle, year from shows where fanart is null").fetchall():
+        title = title.replace('[OV]', '').replace('Omu', '').split('[')[0].split('(')[0].strip()
+        result = appfeed.getTVDBImages(title)
+        c.execute("update shows set fanart=? where asin = (?)", (result, asin))
+        tvDB.commit()
+    c.close()
+    print "Amazon TV Update: Updating Fanart Finished"
 
 def setNewest(asins=False):
     if not asins:

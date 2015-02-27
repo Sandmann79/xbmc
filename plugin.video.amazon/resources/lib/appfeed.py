@@ -132,14 +132,32 @@ def WatchList():
     xbmcplugin.setContent(pluginhandle, 'tvshows')
     xbmcplugin.endOfDirectory(pluginhandle,updateListing=False)
 
-def getTMDBImages(title,year,titelorg = None):
+def getTVDBImages(title):
+    langcodes = ['de', 'en']
+    fanart = None
+    tv = urllib.quote_plus(title)
+    TVDB_URL = 'http://www.thetvdb.com/banners/'
+    result = common.getURL('http://www.thetvdb.com/api/GetSeries.php?seriesname=%s' % (tv), silent=False)
+    soup = BeautifulSoup(result)
+    id = soup.find('seriesid')
+    if not id: return getTMDBImages(title, content='tv')
+    id = id.string
+    for lang in langcodes:
+        result = common.getURL('http://www.thetvdb.com/api/%s/series/%s/%s.xml' % (common.tvdb, id, lang), silent=False)
+        soup = BeautifulSoup(result)
+        fanart = soup.find('fanart')
+        if len(fanart):
+            return TVDB_URL + fanart.string
+    return getTMDBImages(title, content='tv')
+
+def getTMDBImages(title, content='movie', year=None, season=None, titelorg=None):
     fanart = None
     TMDB_URL = 'http://image.tmdb.org/t/p/original'
     str_year = ''
     if year:
         str_year = '&year=' + str(year)
     movie = urllib.quote_plus(title)
-    result = common.getURL('http://api.themoviedb.org/3/search/movie?api_key=%s&query=%s%s' % (common.tmdb, movie, str_year), silent=True)
+    result = common.getURL('http://api.themoviedb.org/3/search/%s?api_key=%s&query=%s%s' % (content, common.tmdb, movie, str_year), silent=False)
     if result == False: 
         return False
     data = demjson.decode(result)
@@ -147,11 +165,11 @@ def getTMDBImages(title,year,titelorg = None):
         if data['results'][0]['backdrop_path']:
             fanart = TMDB_URL + data['results'][0]['backdrop_path']
     elif title.count(' - ') and not titelorg:
-        fanart = getTMDBImages(title.split(' - ')[0], year, title)
+        fanart = getTMDBImages(title.split(' - ')[0], content=content, year=year, season=season, titelorg=title)
     elif year:
         if titelorg:
             title = titelorg
-        fanart = getTMDBImages(title, 0, titelorg)
+        fanart = getTMDBImages(title, content=content, year=0, season=season, titelorg=titelorg)
     if not fanart:
         fanart = 'na'
     return fanart

@@ -129,8 +129,7 @@ def WatchList():
             if listtv.LIST_TVSHOWS(search=True, asinfilter = value, cmmode=1) == 0:
                 for seasondata in tv.lookupTVdb(value, tbl='seasons', single=False):
                     listtv.ADD_SEASON_ITEM(seasondata, disptitle=True, cmmode=1)
-    xbmcplugin.setContent(pluginhandle, 'tvshows')
-    xbmcplugin.endOfDirectory(pluginhandle,updateListing=False)
+    common.SetView('tvshows', 'showview')
 
 def getTVDBImages(title):
     langcodes = ['de', 'en']

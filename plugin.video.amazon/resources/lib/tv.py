@@ -477,7 +477,7 @@ def addTVdb(full_update = True):
         if full_update:
             setNewest()
             DialogPG.close()
-        if tvdb_art == 'true':
+        if tvdb_art != '0':
             updateFanart()
 
 def updatePop(POP_ASINS):
@@ -613,10 +613,15 @@ def ASIN_ADD(titles,asins=False,url=False,isPrime=True,isHD=False,single=False):
 def updateFanart():
     asin = title = season = year = None
     c = tvDB.cursor()
+    sqlstring = 'select asin, seriestitle, fanart from shows where fanart is null'
     print "Amazon TV Update: Updating Fanart"
-    for asin, title, year in c.execute("select asin, seriestitle, year from shows where fanart is null").fetchall():
-        title = title.replace('[OV]', '').replace('Omu', '').split('[')[0].split('(')[0].strip()
+    if tvdb_art == '2':
+        sqlstring += ' or fanart like "%images-amazon.com%"'
+    for asin, title, oldfanart in c.execute(sqlstring).fetchall():
+        title = title.lower().replace('[ov]', '').replace('[ultra hd]', '').replace('omu', '').split('(')[0].strip()
         result = appfeed.getTVDBImages(title)
+        if oldfanart and result == 'na':
+            result = oldfanart
         c.execute("update shows set fanart=? where asin = (?)", (result, asin))
         tvDB.commit()
     c.close()

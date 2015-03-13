@@ -29,6 +29,7 @@
     <string id="30027">Media Info</string>
     <string id="30028">Fanart</string>
     <string id="30034">Big List</string>
+    <string id="30033">Custom</string>
     
     <string id="30035">Enable Views</string>
     <string id="30029">Movie View</string>
@@ -135,9 +136,9 @@
     <string id="30202">No Search Results</string>
     <string id="30203">Unable to Play</string>
     <string id="30204">Invalid Request</string>
-    <string id="30205">No Streams for this Video available, possibly outdated Database</string>
+    <string id="30205">Playback Limit reached, try again later</string>
     <string id="30206">Product not purchased</string>
     <string id="30207">This Video is unavailable in your Country</string>
     <string id="30208">Playback currently not possible, try again later</string>
-    <string id="30209">Unbekannt: </string>
+    <string id="30209">Unknown</string>
 </strings>

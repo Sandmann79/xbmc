@@ -191,7 +191,7 @@ def GETLANG(suc, rtmpdata):
             langid.append(lang['audioFormatAssetList']['audioFormatAsset'][0]['audioTrackId'])
             langname.append(lang['language']['displayName'])
     except:
-        langname.append('Deutsch')
+        langname.append(common.getString(30209))
         langid.append('')
     lang = Dialog.select(common.getString(30115), langname)
     if lang > -1:
@@ -238,7 +238,7 @@ def GETFLASHVARS(pageurl):
     values['deviceID'] = flashVars['customer']['deviceId']
     #values['deviceTypeID']  = 'A13Q6A55DBZB7M'
     values['deviceTypeID']  = 'A324MFXUEZFF7B' # GoogleTV
-    #values['deviceTypeID']  = 'A2EUQ1WTGCTBG2'
+    #values['deviceTypeID']  = 'A1MPSLFC7L5AFK'
     #values['userAgent']     = "GoogleTV 162671"
     values['deviceID']      = values['customer'] + str(int(time.time() * 1000)) + values['asin']
     pltoken = common.getURL(common.BASE_URL + "/gp/video/streaming/player-token.json?callback=jQuery&csrftoken=" + csrfToken, useCookie=True)
@@ -301,10 +301,12 @@ def PLAY(rtmpurls,swfUrl,Trailer=False,title=False):
 
     finalUrl = '%s app=%s swfUrl=%s pageUrl=%s playpath=%s swfVfy=true' % (basertmp, appName, swfUrl, amazonUrl, stream)
     infoLabels = GetStreamInfo(common.args.asin, title)
-    item = xbmcgui.ListItem(path=finalUrl)
     if Trailer:
         infoLabels['Title'] += ' (Trailer)'
+    item = xbmcgui.ListItem(path=finalUrl, thumbnailImage=infoLabels['Thumb'])
+    item.setProperty('fanart_image', infoLabels['Fanart'])
     item.setInfo(type="Video", infoLabels=infoLabels)
+    #common.Log('\n\nTitle: %s\n%s' % (infoLabels['Title'].decode('utf8', 'ignore'), finalUrl))
     if Trailer or selbitrate != '0':
         item.setProperty('IsPlayable', 'true')
         xbmc.Player().play(finalUrl, item)
@@ -365,4 +367,4 @@ def Error(code):
         return common.getString(30208)
     else:
         print code
-        return common.getString(30209) + code
+        return common.getString(30209) + ': ' + code

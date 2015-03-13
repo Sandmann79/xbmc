@@ -11,6 +11,7 @@ import xbmcaddon
 
 pluginhandle = common.pluginhandle
 watch_mode = ['addWatchlist', 'removeWatchlist']
+showfanart = common.addon.getSetting("useshowfanart")
 ###################### Television
 
 def LIST_TV_ROOT():
@@ -146,14 +147,15 @@ def LIST_TV_SEASONS(seasons=False):
     xbmcplugin.addSortMethod(pluginhandle, xbmcplugin.SORT_METHOD_LABEL)
     common.SetView('tvshows', 'seasonview')
 
-def LIST_TVSEASON_SORTED(cmmode=0):
+def LIST_TVSEASON_SORTED(seasons=False, cmmode=0):
     import tv as tvDB
-    seasons = tvDB.loadTVSeasonsdb(sortcol=common.args.url).fetchall()
+    if not seasons:
+        seasons = tvDB.loadTVSeasonsdb(sortcol=common.args.url).fetchall()
     for seasondata in seasons:
         ADD_SEASON_ITEM(seasondata, disptitle=True, cmmode=cmmode)
     common.SetView('tvshows', 'seasonview')
         
-def ADD_SEASON_ITEM(seasondata,mode='listtv',submode='LIST_EPISODES_DB',disptitle=False,cmmode=0,onlyinfo=False):
+def ADD_SEASON_ITEM(seasondata, mode='listtv', submode='LIST_EPISODES_DB', disptitle=False, cmmode=0, onlyinfo=False):
     asin,seriesASIN,fanart,poster,season,seriestitle,plot,actors,network,mpaa,genres,premiered,year,stars,votes,episodetotal,audio,popularity,recent,isHD,isprime = seasondata
     infoLabels={'Title': seriestitle,'TVShowTitle':seriestitle}
     if plot:
@@ -189,6 +191,8 @@ def ADD_SEASON_ITEM(seasondata,mode='listtv',submode='LIST_EPISODES_DB',disptitl
     else: displayname += common.getString(30169)
     if not fanart or fanart == 'na':
         fanart = poster
+    if showfanart == 'true': 
+        fanart = getFanart(seriesASIN)
     infoLabels['TotalSeasons'] = 1
     infoLabels['Thumb'] = poster
     infoLabels['Fanart'] = fanart
@@ -205,15 +209,9 @@ def ADD_SEASON_ITEM(seasondata,mode='listtv',submode='LIST_EPISODES_DB',disptitl
     else:
         common.addDir(displayname,mode,submode,infoLabels['Asins'],poster,fanart,infoLabels,isHD=isHD,cm=cm)
 
-def LIST_EPISODES_DB(owned=False,url=False):
+def LIST_EPISODES_DB(owned=False, url=False):
     if not url:
-        url = common.args.url
-    split = url.split('<split>')
-    seriestitle = split[0]
-    try:
-        season = int(split[1])
-    except:
-        season = 0
+        seriestitle = common.args.url
     import tv as tvDB
     for asin in seriestitle.split(','):
         episodes = tvDB.loadTVEpisodesdb(asin)
@@ -250,6 +248,8 @@ def ADD_EPISODE_ITEM(episodedata, onlyinfo=False):
         infoLabels['AudioChannels'] = audio
     if not fanart or fanart == 'na':
         fanart = poster
+    if showfanart == 'true': 
+        fanart = getFanart(seriesASIN)
     displayname = str(episode) + ' - ' + episodetitle 
     displayname = displayname.replace('"','')
     infoLabels['Title'] = displayname
@@ -266,3 +266,10 @@ def ADD_EPISODE_ITEM(episodedata, onlyinfo=False):
         return infoLabels
     else:
         common.addVideo(displayname,asin,poster,fanart,infoLabels=infoLabels,isAdult=isAdult,isHD=isHD,cm=cm)
+        
+def getFanart(asin):
+    import tv
+    fanart, poster = tv.lookupTVdb(asin, rvalue='fanart, poster', tbl='shows')
+    if not fanart or fanart == 'na':
+        fanart = poster
+    return fanart

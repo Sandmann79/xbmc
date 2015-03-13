@@ -219,7 +219,7 @@ def addMoviesdb(full_update = True):
     if goAhead == 0: 
         common.addon.setSetting("MoviesTotal",str(endIndex))
         print 'Amazon Movie Update: New %s Deleted %s Total %s' % (new_mov, deleteremoved(MOVIE_ASINS), endIndex)
-        if tmdb_art == 'true':
+        if tmdb_art != '0':
             updateFanart()
         xbmc.executebuiltin("XBMC.Container.Refresh")
 
@@ -235,15 +235,20 @@ def setNewest(asins=False):
     
 def updateFanart():
     asin = movie = year = None
+    sqlstring = 'select asin, movietitle, year, fanart from movies where fanart is null'
     c = MovieDB.cursor()
     print "Amazon Movie Update: Updating Fanart"
-    for asin, movie, year in c.execute("select asin, movietitle, year from movies where fanart is null"):
-        movie = movie.replace('[OV]', '').replace('Omu', '').split('[')[0].split('(')[0].strip()
+    if tmdb_art == '2':
+        sqlstring += ' or fanart like "%images-amazon.com%"'
+    for asin, movie, year, oldfanart in c.execute(sqlstring):
+        movie = movie.lower().replace('[ov]', '').replace('omu', '').replace('[ultra hd]', '').split('(')[0].strip()
         result = appfeed.getTMDBImages(movie, year=year)
         if result == False:
             print "Amazon Movie Fanart: Pause 10 sec..."
             xbmc.sleep(10000)
             result = appfeed.getTMDBImages(movie, year=year)
+        if oldfanart and result == 'na':
+            result = oldfanart
         updateMoviedb(asin, 'fanart', result)
     print "Amazon Movie Update: Updating Fanart Finished"
 

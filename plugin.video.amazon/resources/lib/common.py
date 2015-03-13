@@ -86,6 +86,14 @@ def getATVURL( url , values = None ):
     else:
         return response
 
+def Log(data, path=os.path.join(pluginpath, 'amazon.log')):
+    mode = 'w'
+    if os.path.isfile(path):
+        mode = 'a'
+    file = open(path, mode)
+    file.write(data.encode('ascii', 'ignore'))
+    file.close()
+
 def SaveFile(path, data):
     file = open(path,'w')
     file.write(data)
@@ -127,8 +135,6 @@ def addVideo(name,asin,poster=False,fanart=False,infoLabels=False,totalItems=0,c
         liz=xbmcgui.ListItem(name, thumbnailImage=poster)
     else:
         liz=xbmcgui.ListItem(name)
-        
-    liz.setInfo(type='Video', infoLabels=infoLabels)
     if fanart:
         liz.setProperty('fanart_image',fanart)
     liz.setProperty('IsPlayable', 'false')
@@ -146,6 +152,7 @@ def addVideo(name,asin,poster=False,fanart=False,infoLabels=False,totalItems=0,c
     if trailer:
         infoLabels['Trailer'] = u + '&trailer=<1>&selbitrate=<0>'
     u += '&trailer=<0>&selbitrate=<0>'
+    liz.setInfo(type='Video', infoLabels=infoLabels)
     liz.addContextMenuItems( cm , replaceItems=False )
     xbmcplugin.addDirectoryItem(handle=pluginhandle,url=u,listitem=liz,isFolder=False,totalItems=totalItems)     
 
@@ -255,6 +262,14 @@ def cleanData(data):
         if data == '': data = None
     return data
     
+def cleanName(name, file=True, cp='utf-8'):
+    if file:
+        notallowed = ['<', '>', ':', '"', '\\', '/', '|', '*', '?']
+        for c in notallowed:
+            name = name.replace(c,'')
+    name = str(BeautifulSoup(name))
+    return name.strip().decode(cp)
+    
 def GET_ASINS(content):
     asins = ''
     hd_key = False
@@ -317,34 +332,13 @@ def getNewest():
     return asins
 
 def SetView(content, view=False, updateListing=False):
-    """
-    confluence_views = {'List': 50,
-                        'BannerPlex': 53,
-                        'PosterInfo': 56,
-                        'LowInfoList': 57,
-                        'Banner': 60,
-                        'PosterWrap': 501,
-                        'WallVideo': 502,
-                        'PanelCarousel': 503,    
-                        'BannerCarousel': 504,
-                        'ClassicPoster': 506,
-                        'Landscape': 507,
-                        'PanelVideo': 508,
-                        'BannerPanelVideo': 509,
-                        'PanelWall': 510,
-                        'LowList': 511,
-                        'LandscapeCarousel': 513,
-                        'InfoList': 552,
-                        'LoveFilm': 566,
-                        'VideoWall': 582,
-                        'BannerOriginal': 600,
-                        'Top250InfoList': 652 }
-    """
     # 501-POSTER WRAP 503-MLIST3 504=MLIST2 508-FANARTPOSTER 
-    confluence_views = [500,501,502,503,504,508]
+    confluence_views = [500,501,502,503,504,508,-1]
     xbmcplugin.setContent(pluginhandle, content)
     viewenable = addon.getSetting("viewenable")
     if viewenable == 'true' and view:
-        view = int(addon.getSetting(view))
-        xbmc.executebuiltin('Container.SetViewMode(%s)' % confluence_views[view])
+        viewid = confluence_views[int(addon.getSetting(view))]
+        if viewid == -1:
+            viewid = int(addon.getSetting(view.replace('view', 'id')))
+        xbmc.executebuiltin('Container.SetViewMode(%s)' % viewid)
     xbmcplugin.endOfDirectory(pluginhandle,updateListing=updateListing)

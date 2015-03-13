@@ -41,14 +41,6 @@ def CreateDirectory(dir_path):
     if not os.path.exists(dir_path):
         os.makedirs(dir_path)
 
-def cleanfilename(name):
-    notallowed = ['<', '>', ':', '"', '\\', '/', '|', '*', '?']
-    for c in notallowed:
-        name = name.replace(c,'')
-    name = str(BeautifulSoup(name))
-    #valid_chars = "-_.() %s%s" % (string.ascii_letters, string.digits)
-    return name.strip().decode('utf-8')
-
 def SetupLibrary():
     CreateDirectory(MOVIE_PATH)
     CreateDirectory(TV_SHOWS_PATH) 
@@ -107,9 +99,9 @@ def EXPORT_MOVIE(asin=False,makeNFO=True):
     for moviedata in moviesDB.lookupMoviedb(asin, single=False):
         Info = listmovie.ADD_MOVIE_ITEM(moviedata, onlyinfo=True)
         if Info['Year']:
-            filename = cleanfilename('%s (%s)' % (Info['Title'], Info['Year']))
+            filename = common.cleanName('%s (%s)' % (Info['Title'], Info['Year']))
         else:
-            filename = cleanfilename(Info['Title'])
+            filename = common.cleanName(Info['Title'])
  
         strm_file = filename + ".strm"
         u  = '%s?asin=<%s>&mode=<play>&name=<%s>&sitemode=<PLAYVIDEO>&adult=<%s>&trailer=<0>&selbitrate=<0>' % (sys.argv[0], asin, urllib.quote_plus(Info['Title']), Info['isAdult'])
@@ -128,7 +120,7 @@ def EXPORT_SHOW(asin=False):
         SetupLibrary()
     for data in tvDB.lookupTVdb(asin, tbl='shows', single=False):
         Info = listtv.ADD_SHOW_ITEM(data, onlyinfo=True)
-        directorname = os.path.join(TV_SHOWS_PATH,cleanfilename(Info['Title']))
+        directorname = os.path.join(TV_SHOWS_PATH, common.cleanName(Info['Title']))
         CreateDirectory(directorname)
         for showasin in Info['Asins'].split(','):
             asins = tvDB.lookupTVdb(showasin, rvalue='asin', tbl='seasons', name='seriesasin', single=False)
@@ -142,7 +134,7 @@ def EXPORT_SEASON(asin=False):
         SetupLibrary()
     for data in tvDB.lookupTVdb(asin, tbl='seasons', single=False):
         Info = listtv.ADD_SEASON_ITEM(data, onlyinfo=True)
-        directorname = os.path.join(TV_SHOWS_PATH,cleanfilename(Info['Title']))
+        directorname = os.path.join(TV_SHOWS_PATH, common.cleanName(Info['Title']))
         CreateDirectory(directorname)
         name = 'Season '+str(Info['Season'])
         seasonpath = os.path.join(directorname,name)
@@ -159,12 +151,12 @@ def EXPORT_EPISODE(asin=False,makeNFO=True):
         SetupLibrary()
     for data in tvDB.lookupTVdb(asin, single=False):
         Info = listtv.ADD_EPISODE_ITEM(data, onlyinfo=True)
-        directorname = os.path.join(TV_SHOWS_PATH,cleanfilename(Info['TVShowTitle']))
+        directorname = os.path.join(TV_SHOWS_PATH, common.cleanName(Info['TVShowTitle']))
         CreateDirectory(directorname)
         name = 'Season '+str(Info['Season'])
         seasonpath = os.path.join(directorname,name)
         CreateDirectory(seasonpath)
-        filename = 'S%02dE%02d - %s' % (Info['Season'],Info['Episode'],cleanfilename(Info['Title']))
+        filename = 'S%02dE%02d - %s' % (Info['Season'],Info['Episode'], common.cleanName(Info['Title']))
         strm_file = filename + ".strm"
         u  = '%s?asin=<%s>&mode=<play>&name=<%s>&sitemode=<PLAYVIDEO>&adult=<%s>&trailer=<0>&selbitrate=<0>' % (sys.argv[0], asin, urllib.quote_plus(Info['Title']), Info['isAdult']) 
         SaveFile(strm_file, u, seasonpath)

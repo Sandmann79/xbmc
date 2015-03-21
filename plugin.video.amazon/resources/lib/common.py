@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-from BeautifulSoup import BeautifulStoneSoup
 from BeautifulSoup import BeautifulSoup
 import cookielib
 import mechanize
@@ -8,11 +7,14 @@ import sys
 import urllib
 import urllib2
 import re
-import os.path
+import os
 import xbmcplugin
 import xbmcgui
 import xbmcaddon
 import xbmc
+import urlparse
+import base64
+import demjson
 
 import binascii
 import hmac
@@ -21,17 +23,14 @@ try:
 except:
     import sha as sha1
 
-import base64
-import demjson
-
-print sys.argv
 addon = xbmcaddon.Addon()
 __plugin__ = addon.getAddonInfo('name')
 __authors__ = addon.getAddonInfo('author')
 __credits__ = ""
 __version__ = addon.getAddonInfo('version')
+profilpath = xbmc.translatePath('special://profile')
 pluginpath = addon.getAddonInfo('path').decode('utf-8')
-pldatapath = xbmc.translatePath("special://profile/addon_data/"+addon.getAddonInfo('id')).decode('utf-8')
+pldatapath = xbmc.translatePath('special://profile/addon_data/' + addon.getAddonInfo('id')).decode('utf-8')
 dbpath = xbmc.translatePath('special://home/addons/script.module.amazon.database/lib').decode('utf-8')
 pluginhandle = int(sys.argv[1])
 tmdb = base64.b64decode('YjM0NDkwYzA1NmYwZGQ5ZTNlYzlhZjIxNjdhNzMxZjQ=')
@@ -51,16 +50,18 @@ class _Info:
         self.__dict__.update( kwargs )
 exec "args = _Info(%s)" % urllib.unquote_plus(sys.argv[2][1:].replace('&', ', ')).replace('<','"').replace('>','"')
 
-def getURL( url, host=BASE_URL.split('//')[1], useCookie=False, silent=False):
-    if not silent:
-        print 'getURL: '+url
+def getURL( url, host=BASE_URL.split('//')[1], useCookie=False, silent=False, headers=None):
     cj = cookielib.LWPCookieJar()
     if useCookie and os.path.isfile(COOKIEFILE):
         cj.load(COOKIEFILE, ignore_discard=True, ignore_expires=True)
+    if not silent:
+        print 'getURL: '+url
+    if not headers:
+        headers = [('User-Agent', UserAgent ), ('Host', host)]
     try:
-        opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cj))
-        opener.addheaders = [('User-Agent', UserAgent ), ('Host', host)]
-        usock = opener.open(url)#,timeout=30)
+        opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cj),urllib2.HTTPRedirectHandler)
+        opener.addheaders = headers
+        usock = opener.open(url)
         response = usock.read()
         usock.close()
     except urllib2.URLError, e:
@@ -86,14 +87,17 @@ def getATVURL( url , values = None ):
     else:
         return response
 
-def Log(data, path=os.path.join(pluginpath, 'amazon.log')):
+def WriteLog(data, path=os.path.join(profilpath, 'amazon.log')):
     mode = 'w'
     if os.path.isfile(path):
         mode = 'a'
     file = open(path, mode)
     file.write(data.encode('ascii', 'ignore'))
     file.close()
-
+    
+def Log(data):
+    print BeautifulSoup(data)
+    
 def SaveFile(path, data):
     file = open(path,'w')
     file.write(data)
@@ -262,13 +266,13 @@ def cleanData(data):
         if data == '': data = None
     return data
     
-def cleanName(name, file=True, cp='utf-8'):
+def cleanName(name, file=True):
     if file:
         notallowed = ['<', '>', ':', '"', '\\', '/', '|', '*', '?']
         for c in notallowed:
             name = name.replace(c,'')
-    name = str(BeautifulSoup(name))
-    return name.strip().decode(cp)
+    #name = BeautifulSoup(name, convertEntities=None).contents
+    return name.strip().decode('utf-8')
     
 def GET_ASINS(content):
     asins = ''
@@ -296,7 +300,7 @@ def GET_ASINS(content):
     del content
     return asins, hd_key, prime_key, channels
     
-def SCRAP_ASINS(mode, page):
+def SCRAP_ASINS():
     asins = []
     url = BASE_URL + '/gp/video/watchlist/?show=all&sort=DATE_ADDED_DESC&_encoding=UTF8'
     content = getURL(url, useCookie=True)

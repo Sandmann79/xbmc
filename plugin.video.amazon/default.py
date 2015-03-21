@@ -4,17 +4,15 @@
         AMAZON
 """
 #main imports
-import xbmcplugin
-import xbmcaddon
-import sys
 import resources.lib.common as common
-import resources.lib.appfeed as appfeed
+sys = common.sys
 
 print "\n\n\n\n\n\n\n====================AMAZON START====================\n\n\n\n\n\n"
 
 def modes():
     if sys.argv[2]=='':
-        common.addDir('Watchlist','appfeed','WatchList','')
+        cm_watchlist = [(common.getString(30185) % 'Watchlist', 'XBMC.RunPlugin(%s?mode=<appfeed>&sitemode=<ExportWatchlist>)'  % sys.argv[0] )]
+        common.addDir('Watchlist','appfeed','WatchList', cm=cm_watchlist)
         updatemovie = []
         updatemovie.append( (common.getString(30103), 'XBMC.RunPlugin(%s?mode=<appfeed>&sitemode=<updateAll>)'  % sys.argv[0] ) )
         updatemovie.append( (common.getString(30102), 'XBMC.RunPlugin(%s?mode=<movies>&sitemode=<addMoviesdb>&url=<f>)'  % sys.argv[0] ) )
@@ -27,12 +25,12 @@ def modes():
 
         common.addDir(common.getString(30108),'appfeed','SEARCH_DB','')
 
-        xbmcplugin.endOfDirectory(common.pluginhandle)
+        common.xbmcplugin.endOfDirectory(common.pluginhandle)
     else:
         exec 'import resources.lib.%s as sitemodule' % common.args.mode
         exec 'sitemodule.%s()' % common.args.sitemode
 
-addon = xbmcaddon.Addon()
+addon = common.xbmcaddon.Addon()
 if addon.getSetting('save_login') == 'false':
     addon.setSetting('login_name', '')
     addon.setSetting('login_pass', '')

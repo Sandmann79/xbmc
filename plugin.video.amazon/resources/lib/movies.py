@@ -2,21 +2,19 @@
 # -*- coding: utf-8 -*-
 from BeautifulSoup import BeautifulStoneSoup
 from BeautifulSoup import BeautifulSoup
-import os.path
-import re
-import xbmcplugin
-import xbmc
-import xbmcgui
-import shutil
+import common
 import appfeed
-import resources.lib.common as common
-import sys
 
 try:
     from sqlite3 import dbapi2 as sqlite
 except:
     from pysqlite2 import dbapi2 as sqlite
-import xbmcaddon
+
+xbmc = common.xbmc
+xbmcgui = common.xbmcgui
+re = common.re
+demjson = common.demjson
+os = common.os
 
 ################################ Movie db
 MAX = int(common.addon.getSetting("mov_perpage"))
@@ -243,16 +241,12 @@ def updateFanart():
     for asin, movie, year, oldfanart in c.execute(sqlstring):
         movie = movie.lower().replace('[ov]', '').replace('omu', '').replace('[ultra hd]', '').split('(')[0].strip()
         result = appfeed.getTMDBImages(movie, year=year)
-        if result == False:
-            print "Amazon Movie Fanart: Pause 10 sec..."
-            xbmc.sleep(10000)
-            result = appfeed.getTMDBImages(movie, year=year)
-        if oldfanart and result == 'na':
-            result = oldfanart
+        if oldfanart:
+            if result == 'not available' or not result:
+                result = oldfanart
         updateMoviedb(asin, 'fanart', result)
     print "Amazon Movie Update: Updating Fanart Finished"
 
-       
 def deleteremoved(asins):
     c = MovieDB.cursor()
     delMovies = 0

@@ -3,21 +3,21 @@
 # -*- coding: utf-8 -*-
 from BeautifulSoup import BeautifulStoneSoup
 from BeautifulSoup import BeautifulSoup
-import os.path
-import re
-import urllib
-import xbmcplugin
-import xbmc
-import xbmcgui
-import resources.lib.common as common
+import common
 import appfeed
-import urlparse
-import string
+
 try:
     from sqlite3 import dbapi2 as sqlite
 except:
     from pysqlite2 import dbapi2 as sqlite
-import xbmcaddon
+
+xbmc = common.xbmc
+urllib = common.urllib
+xbmcgui = common.xbmcgui
+re = common.re
+demjson = common.demjson
+os = common.os
+urlparse = common.urlparse
 
 ################################ TV db
 MAX = int(common.addon.getSetting("tv_perpage"))
@@ -34,9 +34,7 @@ def createTVdb():
     c = tvDB.cursor()
     c.execute('''CREATE TABLE shows(
                  asin TEXT UNIQUE,
-                 asin2 TEXT UNIQUE,
                  seriestitle TEXT,
-                 poster TEXT,
                  plot TEXT,
                  network TEXT,
                  mpaa TEXT,
@@ -48,19 +46,20 @@ def createTVdb():
                  votes TEXT,
                  seasontotal INTEGER,
                  episodetotal INTEGER,
+                 audio INTEGER,
                  isHD BOOLEAN,
                  isprime BOOLEAN,
-                 audio INTEGER,
                  popularity INTEGER,
                  recent INTEGER,
+                 imdb TEXT,
+                 poster TEXT,
+                 banner TEXT,
                  fanart TEXT,
                  PRIMARY KEY(asin,seriestitle)
                  );''')
     c.execute('''CREATE TABLE seasons(
                  asin TEXT UNIQUE,
                  seriesasin TEXT,
-                 fanart TEXT,
-                 poster TEXT,
                  season INTEGER,
                  seriestitle TEXT,
                  plot TEXT,
@@ -78,6 +77,10 @@ def createTVdb():
                  recent INTEGER,
                  isHD BOOLEAN,
                  isprime BOOLEAN,
+                 imdburl TEXT,
+                 poster TEXT,
+                 banner TEXT,
+                 fanart TEXT,
                  PRIMARY KEY(asin,seriestitle,season,isHD),
                  FOREIGN KEY(seriestitle) REFERENCES shows(seriestitle)
                  );''')
@@ -276,13 +279,13 @@ def addEpisodedb(episodedata):
     
 def addSeasondb(seasondata):
     c = tvDB.cursor()
-    c.execute('insert or ignore into seasons values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)', seasondata)
+    c.execute('insert or ignore into seasons values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)', seasondata)
     tvDB.commit()
     c.close()
 
 def addShowdb(showdata):
     c = tvDB.cursor()
-    c.execute('insert or ignore into shows values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)', showdata)
+    c.execute('insert or ignore into shows values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)', showdata)
     tvDB.commit()
     c.close()
 
@@ -521,8 +524,8 @@ def ASIN_ADD(titles,asins=False,url=False,isPrime=True,isHD=False,single=False):
         titles = appfeed.ASIN_LOOKUP(asins)['message']['body']['titles']
     count = 0
     for title in titles:
-        poster = plot = premiered = year = studio = mpaa = fanart = None
-        actors = genres = stars = votes = seriesasin = runtime = None
+        poster = plot = premiered = year = studio = mpaa = fanart = imdburl = None
+        actors = genres = stars = votes = seriesasin = runtime = banner = None
         seasontotal = episodetotal = episode = 0
         isAdult = False
         if asins:
@@ -566,7 +569,7 @@ def ASIN_ADD(titles,asins=False,url=False,isPrime=True,isHD=False,single=False):
             seriestitle = title['title']
             if title.has_key('childTitles'):
                 seasontotal = title['childTitles'][0]['size']
-            showdata = [common.cleanData(x) for x in [asin,None,common.checkCase(seriestitle),poster,plot,studio,mpaa,genres,actors,premiered,year,stars,votes,seasontotal,0,isHD,isPrime,audio,None,None,fanart]]
+            showdata = [common.cleanData(x) for x in [asin,common.checkCase(seriestitle),plot,studio,mpaa,genres,actors,premiered,year,stars,votes,seasontotal,0,audio,isHD,isPrime,None,None,None,poster,None,fanart]]
             addShowdb(showdata)
             if single:
                 return asin,ASINLIST
@@ -582,7 +585,11 @@ def ASIN_ADD(titles,asins=False,url=False,isPrime=True,isHD=False,single=False):
                 seriestitle = title['title']
             if title.has_key('childTitles'):
                 episodetotal = title['childTitles'][0]['size']
-            seasondata = [common.cleanData(x) for x in [asin,seriesasin,fanart,poster,season,common.checkCase(seriestitle),plot,actors,studio,mpaa,genres,premiered,year,stars,votes,episodetotal,audio,None,None,isHD,isPrime]]
+            #if title.has_key('drakeUrl'):
+            #    imdburl = title['drakeUrl']
+            if title.has_key('imdbUrl'):
+                imdburl = title['imdbUrl']
+            seasondata = [common.cleanData(x) for x in [asin,seriesasin,season,common.checkCase(seriestitle),plot,actors,studio,mpaa,genres,premiered,year,stars,votes,episodetotal,audio,None,None,isHD,isPrime,imdburl,poster,None,fanart]]
             addSeasondb(seasondata)
         elif contentType == 'EPISODE':
             episodetitle = title['title']
@@ -611,22 +618,67 @@ def ASIN_ADD(titles,asins=False,url=False,isPrime=True,isHD=False,single=False):
     return count
 
 def updateFanart():
-    asin = title = season = year = None
+    asin = title = year = None
+    seasons = False
     c = tvDB.cursor()
-    sqlstring = 'select asin, seriestitle, fanart from shows where fanart is null'
+    sqlstring = 'select asin, seriestitle, fanart, poster from shows where fanart is null'
     print "Amazon TV Update: Updating Fanart"
     if tvdb_art == '2':
         sqlstring += ' or fanart like "%images-amazon.com%"'
-    for asin, title, oldfanart in c.execute(sqlstring).fetchall():
-        title = title.lower().replace('[ov]', '').replace('[ultra hd]', '').replace('omu', '').split('(')[0].strip()
-        result = appfeed.getTVDBImages(title)
-        if oldfanart and result == 'na':
-            result = oldfanart
-        c.execute("update shows set fanart=? where asin = (?)", (result, asin))
+    if tvdb_art == '3':
+        sqlstring += ' or poster like "%images-amazon.com%"'
+        seasons = True
+    for asin, title, oldfanart, oldposter in c.execute(sqlstring).fetchall():
+        title = title.lower().replace('[ov]', '').replace('[ultra hd]', '').replace('?', '').replace('omu', '').split('(')[0].strip()
+        tvid, poster, fanart = appfeed.getTVDBImages(title, seasons=seasons)
+        if not fanart: fanart = appfeed.getTMDBImages(title, content='tv')
+        if oldfanart and not fanart: fanart = oldfanart
+        if oldposter and not poster: poster = oldposter
+        if tvid:
+            if not fanart: fanart = 'not available'
+            if not poster: fanart = 'not available'
+        c.execute("update shows set fanart=? where asin = (?)", (fanart, asin))
+        if tvdb_art == '3':
+            c.execute("update shows set poster=? where asin = (?)", (poster, asin))
+            if tvid:
+                for season, url in tvid.items():
+                    for singleasin in asin.split(','):
+                        singleasin = '%' + singleasin + '%'
+                        c.execute("update seasons set poster=? where seriesasin like (?) and season = (?)", (url, singleasin, season))
         tvDB.commit()
     c.close()
     print "Amazon TV Update: Updating Fanart Finished"
-
+    
+def getIMDbID(asins,title):
+    url = id = None
+    c = tvDB.cursor()
+    for asin in asins.split(','):
+        asin = '%' + asin + '%'
+        url = c.execute('select imdburl from seasons where seriesasin like (?) and imdburl is not null', (asin,)).fetchone()
+        if url:
+            url = url[0]
+            break
+    if not url:
+        while not id:
+            response = common.getURL('http://www.omdbapi.com/?type=series&t=' + urllib.quote_plus(title))
+            data = demjson.decode(response)
+            if data['Response'] == 'True':
+                id = data['imdbID']
+            else:
+                oldtitle = title
+                if title.count(' - '):
+                    title = title.split(' - ')[0]
+                elif title.count(': '):
+                    title = title.split(': ')[0]
+                elif title.count('?'):
+                    title = title.replace('?', '')
+                if title == oldtitle:
+                    id = 'na'
+    else:
+        id = re.compile('/title/(.+?)/', re.DOTALL).findall(url)
+    print id, asins.split(',')[0]
+    return id
+    
 def setNewest(asins=False):
     if not asins:
         asins = common.getNewest()

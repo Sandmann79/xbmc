@@ -22,7 +22,7 @@
         <setting label="30008" type="lsep"/>
         <setting id="auto_update" type="enum" lvalues="30010|30018|30019|30020|30021" label="30009" default="2"/>
         <setting id="tmdb_art" type="enum" lvalues="30050|30051|30052" label="30016" default="1"/>
-        <setting id="tvdb_art" type="enum" lvalues="30050|30053|30054" label="30017" default="1"/>
+        <setting id="tvdb_art" type="enum" lvalues="30050|30053|30054|30056" label="30017" default="1"/>
         <setting id="mov_perpage" type="labelenum" values="25|50|100|150|200|250" label="30039" default="250"/>
         <setting id="tv_perpage" type="labelenum" values="25|50|100|150|200|250" label="30040" default="150"/>
     </category>

@@ -2,20 +2,19 @@
 # -*- coding: utf-8 -*-
 from BeautifulSoup import BeautifulStoneSoup
 from BeautifulSoup import BeautifulSoup
-import xbmcplugin
-import xbmc
-import xbmcgui
-import os.path
-import sys
-import urllib
-import resources.lib.common as common
-import re
-import demjson
+import common
 import listtv
 import listmovie
-import xbmcaddon
 
 pluginhandle = common.pluginhandle
+xbmc = common.xbmc
+xbmcplugin = common.xbmcplugin
+urllib = common.urllib
+sys = common.sys
+xbmcgui = common.xbmcgui
+re = common.re
+demjson = common.demjson
+os = common.os
 
 #Modes
 #===============================================================================
@@ -118,59 +117,100 @@ def SEARCH_DB(searchString=False,results=MAX,index=0):
                     common.addText(common.getString(30202))
                 common.SetView('tvshows', 'showview')
 
-def WatchList():
+def ExportWatchlist():
+    WatchList(True)
+
+def WatchList(export=False):
     import tv
-    page = int(common.args.page)
-    asins = common.SCRAP_ASINS(common.args.url, page)
-    opt = common.args.opt
+    asins = common.SCRAP_ASINS()
 
     for value in asins:
-        if listmovie.LIST_MOVIES(search=True, asinfilter = value, cmmode=1) == 0:
-            if listtv.LIST_TVSHOWS(search=True, asinfilter = value, cmmode=1) == 0:
+        if listmovie.LIST_MOVIES(search=True, asinfilter = value, cmmode=1, export=export) == 0:
+            if listtv.LIST_TVSHOWS(search=True, asinfilter = value, cmmode=1, export=export) == 0:
                 for seasondata in tv.lookupTVdb(value, tbl='seasons', single=False):
-                    listtv.ADD_SEASON_ITEM(seasondata, disptitle=True, cmmode=1)
-    common.SetView('tvshows', 'showview')
+                    listtv.ADD_SEASON_ITEM(seasondata, disptitle=True, cmmode=1, export=export)
+    if not export: common.SetView('tvshows', 'showview')
 
-def getTVDBImages(title):
+def getTVDBImages(title, imdb=None, id=None, seasons=False):
+    posterurl = fanarturl = None
+    splitter = [' - ', ': ', ', ']
     langcodes = ['de', 'en']
-    fanart = None
-    tv = urllib.quote_plus(title)
     TVDB_URL = 'http://www.thetvdb.com/banners/'
-    result = common.getURL('http://www.thetvdb.com/api/GetSeries.php?seriesname=%s' % (tv), silent=False)
-    soup = BeautifulSoup(result)
-    id = soup.find('seriesid')
-    if not id: return getTMDBImages(title, content='tv')
-    id = id.string
-    for lang in langcodes:
-        result = common.getURL('http://www.thetvdb.com/api/%s/series/%s/%s.xml' % (common.tvdb, id, lang), silent=False)
+    while not id:
+        tv = urllib.quote_plus(title)
+        result = common.getURL('http://www.thetvdb.com/api/GetSeries.php?seriesname=%s&language=de' % (tv), silent=True)
         soup = BeautifulSoup(result)
-        fanart = soup.find('fanart')
-        if len(fanart):
-            return TVDB_URL + fanart.string
-    return getTMDBImages(title, content='tv')
+        id = soup.find('seriesid')
+        if id:
+            id = id.string
+        else:
+            oldtitle = title
+            for splitchar in splitter:
+                if title.count(splitchar):
+                    title = title.split(splitchar)[0]
+                    break
+            if title == oldtitle:
+                break
+    if not id: return None, None, None
+    if seasons:
+        soup = BeautifulSoup(common.getURL('http://www.thetvdb.com/api/%s/series/%s/banners.xml' % (common.tvdb, id), silent=True))
+        seasons = {}
+        for lang in langcodes:
+            for datalang in soup.findAll('language'):
+                if datalang.string == lang:
+                    data = datalang.parent
+                    if data.bannertype.string == 'fanart' and not fanarturl: fanarturl = TVDB_URL + data.bannerpath.string
+                    if data.bannertype.string == 'poster' and not posterurl: posterurl = TVDB_URL + data.bannerpath.string
+                    if data.bannertype.string == data.bannertype2.string == 'season':
+                        snr = data.season.string
+                        if not seasons.has_key(snr):
+                            seasons[snr] = TVDB_URL + data.bannerpath.string
+        return seasons, posterurl, fanarturl
+    else:
+        for lang in langcodes:
+            result = common.getURL('http://www.thetvdb.com/api/%s/series/%s/%s.xml' % (common.tvdb, id, lang), silent=True)
+            soup = BeautifulSoup(result)
+            fanart = soup.find('fanart')
+            poster = soup.find('poster')
+            if len(fanart) and not fanarturl: fanarturl = TVDB_URL + fanart.string
+            if len(poster) and not posterurl : posterurl = TVDB_URL + poster.string
+            if posterurl and fanarturl: return id, posterurl, fanarturl
+        return id, posterurl, fanarturl
 
-def getTMDBImages(title, content='movie', year=None, season=None, titelorg=None):
-    fanart = None
+def getTMDBImages(title, imdb=None, content='movie', year=None):
+    fanart = poster = id = None
+    splitter = [' - ', ': ', ', ']
     TMDB_URL = 'http://image.tmdb.org/t/p/original'
-    str_year = ''
-    if year:
-        str_year = '&year=' + str(year)
-    movie = urllib.quote_plus(title)
-    result = common.getURL('http://api.themoviedb.org/3/search/%s?api_key=%s&query=%s%s' % (content, common.tmdb, movie, str_year), silent=False)
-    if result == False: 
-        return False
-    data = demjson.decode(result)
-    if data['total_results'] > 0:
-        if data['results'][0]['backdrop_path']:
-            fanart = TMDB_URL + data['results'][0]['backdrop_path']
-    elif title.count(' - ') and not titelorg:
-        fanart = getTMDBImages(title.split(' - ')[0], content=content, year=year, season=season, titelorg=title)
-    elif year:
-        if titelorg:
-            title = titelorg
-        fanart = getTMDBImages(title, content=content, year=0, season=season, titelorg=titelorg)
-    if not fanart:
-        fanart = 'na'
+    yearorg = year
+
+    while not id:
+        str_year = ''
+        if year: str_year = '&year=' + str(year)
+        movie = urllib.quote_plus(title)
+        result = common.getURL('http://api.themoviedb.org/3/search/%s?api_key=%s&language=de&query=%s%s' % (content, common.tmdb, movie, str_year), silent=True)
+        if not result:
+            print "Amazon Fanart: Pause 5 sec..."
+            xbmc.sleep(5000)
+            continue
+        data = demjson.decode(result)
+        if data['total_results'] > 0:
+            result = data['results'][0]
+            if result['backdrop_path']: fanart = TMDB_URL + result['backdrop_path']
+            if result['poster_path']: poster = TMDB_URL + result['poster_path']
+            id = result['id']
+        elif year:
+            year = 0
+        else:
+            year = yearorg
+            oldtitle = title
+            for splitchar in splitter:
+                if title.count(splitchar):
+                    title = title.split(splitchar)[0]
+                    break
+            if title == oldtitle:
+                break
+    if content == 'movie' and id and not fanart:
+        fanart = 'not available'
     return fanart
     
 def updateAll():

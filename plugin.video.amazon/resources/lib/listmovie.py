@@ -1,18 +1,15 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-import xbmcplugin
-import xbmc
-import xbmcgui
-import os.path
-import sys
-import urllib
-import resources.lib.common as common
-import xbmcaddon
+import common
+import xbmclibrary
 
 pluginhandle = common.pluginhandle
-
-# 501-POSTER WRAP 503-MLIST3 504=MLIST2 508-FANARTPOSTER 
-confluence_views = [500,501,502,503,504,508]
+xbmc = common.xbmc
+xbmcplugin = common.xbmcplugin
+xbmcaddon = common.xbmcaddon
+urllib = common.urllib
+sys = common.sys
+xbmcgui = common.xbmcgui
 
 ################################ Movie listing
 def LIST_MOVIE_ROOT():
@@ -75,13 +72,13 @@ def LIST_MOVIES_ACTOR_FILTERED():
 def LIST_MOVIES_SORTED():
     LIST_MOVIES(sortaz = False, sortcol = common.args.url)
     
-def LIST_MOVIES(genrefilter=False,actorfilter=False,directorfilter=False,studiofilter=False,yearfilter=False,mpaafilter=False,alphafilter=False,asinfilter=False,sortcol=False,sortaz=True,search=False,cmmode=0):
+def LIST_MOVIES(genrefilter=False,actorfilter=False,directorfilter=False,studiofilter=False,yearfilter=False,mpaafilter=False,alphafilter=False,asinfilter=False,sortcol=False,sortaz=True,search=False,cmmode=0, export=False):
     import movies as moviesDB
     movies = moviesDB.loadMoviedb(sortcol=sortcol,genrefilter=genrefilter,actorfilter=actorfilter,directorfilter=directorfilter,studiofilter=studiofilter,yearfilter=yearfilter,mpaafilter=mpaafilter,alphafilter=alphafilter,asinfilter=asinfilter)
     count = 0
     for moviedata in movies:
         count += 1
-        ADD_MOVIE_ITEM(moviedata, cmmode=cmmode)
+        ADD_MOVIE_ITEM(moviedata, cmmode=cmmode, export=export)
     if not search:
         if sortaz:
             xbmcplugin.addSortMethod(pluginhandle, xbmcplugin.SORT_METHOD_VIDEO_TITLE)
@@ -93,7 +90,7 @@ def LIST_MOVIES(genrefilter=False,actorfilter=False,directorfilter=False,studiof
         common.SetView('movies', 'movieview')
     return count
     
-def ADD_MOVIE_ITEM(moviedata, onlyinfo=False,cmmode=0):
+def ADD_MOVIE_ITEM(moviedata, onlyinfo=False,cmmode=0, export=False):
     asin,hd_asin,movietitle,trailer,poster,plot,director,writer,runtime,year,premiered,studio,mpaa,actors,genres,stars,votes,fanart,isprime,isHD,isAdult,popularity,recent,audio = moviedata
     if not fanart or fanart == 'na':
         if poster:
@@ -130,6 +127,9 @@ def ADD_MOVIE_ITEM(moviedata, onlyinfo=False,cmmode=0):
     infoLabels['isHD'] = isHD
     infoLabels['isAdult'] = isAdult
     asin = asin.split(',')[0]
+    if export:
+        xbmclibrary.EXPORT_MOVIE(asin)
+        return
     cm = []
     if cmmode == 1:
         cm.append((common.getString(30181) % common.getString(30154), 'XBMC.RunPlugin(%s?mode=<common>&sitemode=<removeWatchlist>&asin=<%s>)' % (sys.argv[0], asin)))

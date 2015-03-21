@@ -1,16 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-import re
 import time
-import urllib
-import demjson
-import xbmc
-import xbmcaddon
-import xbmcgui
-import xbmcplugin
-import os
 import subprocess
-import resources.lib.common as common
+import common
 
 from BeautifulSoup import BeautifulStoneSoup
 from BeautifulSoup import BeautifulSoup
@@ -21,7 +13,16 @@ except:
     from elementtree import ElementTree
     
 pluginhandle = common.pluginhandle
+xbmc = common.xbmc
+xbmcplugin = common.xbmcplugin
+urllib = common.urllib
+sys = common.sys
+xbmcgui = common.xbmcgui
+re = common.re
+demjson = common.demjson
 settings = common.addon
+os = common.os
+
 userinput = os.path.join(common.pluginpath, 'tools', 'userinput.exe' )
 waitsec = int(settings.getSetting("clickwait")) * 1000
 pin = settings.getSetting("pin")
@@ -236,9 +237,9 @@ def GETFLASHVARS(pageurl):
     csrfToken = urllib.quote_plus(flashVars['general']['csrfToken'])
     values['deviceTypeID'] = flashVars['customer']['deviceTypeId']
     values['deviceID'] = flashVars['customer']['deviceId']
-    #values['deviceTypeID']  = 'A13Q6A55DBZB7M'
-    values['deviceTypeID']  = 'A324MFXUEZFF7B' # GoogleTV
-    #values['deviceTypeID']  = 'A1MPSLFC7L5AFK'
+    #values['deviceTypeID']  = 'A13Q6A55DBZB7M' #enc Flash
+    values['deviceTypeID']  = 'A324MFXUEZFF7B' #GoogleTV unenc Flash
+    #values['deviceTypeID']  = 'A63V4FRV3YUP9' #enc Silverlight
     #values['userAgent']     = "GoogleTV 162671"
     values['deviceID']      = values['customer'] + str(int(time.time() * 1000)) + values['asin']
     pltoken = common.getURL(common.BASE_URL + "/gp/video/streaming/player-token.json?callback=jQuery&csrftoken=" + csrfToken, useCookie=True)
@@ -341,7 +342,7 @@ def getUrldata(mode, values, format='json', asinlist=False, devicetypeid=False, 
     url += '&token=' + values['token']
     url += '&format=' + format
     url += '&version=' + str(version)
-    url += '&xws-fa-ov=true'
+    #url += '&xws-fa-ov=true'
     url += opt
     if asinlist:
         url = url.replace('?asin=', '?asinlist=')

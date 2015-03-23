@@ -24,29 +24,30 @@ if (common.addon.getSetting('enablelibraryfolder') == 'true'):
 else:
     MOVIE_PATH = os.path.join(common.pldatapath,'Movies')
     TV_SHOWS_PATH = os.path.join(common.pldatapath,'TV')
-    
+
 def UpdateLibrary():
     xbmc.executebuiltin('UpdateLibrary(video)')
     
 def SaveFile(filename, data, dir=False):
-    filename = common.cleanName(filename)
     if dir:
+        filename = common.cleanName(filename)
         filename = os.path.join(dir, filename)
-    file = open(filename,'w')
+    filename = common.cleanName(filename, file=False)
+    file = open(filename, 'w')
     file.write(data)
     file.close()
 
 def CreateDirectory(dir_path):
-    dir_path = dir_path.strip()
+    dir_path = common.cleanName(dir_path.strip(), file=False)
     if not os.path.exists(dir_path):
         os.makedirs(dir_path)
         return True
     return False
 
 def SetupLibrary():
-    if CreateDirectory(MOVIE_PATH):
-        CreateDirectory(TV_SHOWS_PATH) 
-        SetupAmazonLibrary()
+    CreateDirectory(MOVIE_PATH)
+    CreateDirectory(TV_SHOWS_PATH) 
+    SetupAmazonLibrary()
 
 def streamDetails(Info, language='ger', hasSubtitles=False):
     skip_keys = ('ishd', 'isadult', 'audiochannels', 'genre', 'cast', 'duration', 'trailer', 'asins')
@@ -145,7 +146,6 @@ def EXPORT_SEASON(asin=False, dispnotif = True):
                     EXPORT_EPISODE(asin[0].split(',')[0], dispnotif=dispnotif)
                     dispnotif = False
 def EXPORT_EPISODE(asin=False, makeNFO=True, dispnotif = True):
-    SetupLibrary()
     if not asin: asin=common.args.asin
     for data in tvDB.lookupTVdb(asin, single=False):
         Info = listtv.ADD_EPISODE_ITEM(data, onlyinfo=True)
@@ -154,6 +154,7 @@ def EXPORT_EPISODE(asin=False, makeNFO=True, dispnotif = True):
         CreateDirectory(directorname)
         name = 'Season '+str(Info['Season'])
         if dispnotif:
+            SetupLibrary()
             common.Log('Amazon Export: %s %s' %(showname, name))
             #dialog.notification('Export', showname + ' ' + name, sound = False)
             dispnotif = False
@@ -173,7 +174,7 @@ def EXPORT_EPISODE(asin=False, makeNFO=True, dispnotif = True):
 
 def SetupAmazonLibrary():
     print "Trying to add Amazon source paths..."
-    source_path = os.path.join(xbmc.translatePath('special://masterprofile/'), 'sources.xml').decode('utf-8')
+    source_path = os.path.join(common.profilpath, 'sources.xml')
     source_added = False
     
     try:

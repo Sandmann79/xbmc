@@ -4,10 +4,12 @@
         AMAZON
 """
 #main imports
+from __future__ import unicode_literals
 import resources.lib.common as common
 sys = common.sys
 
 print "\n\n\n\n\n\n\n====================AMAZON START====================\n\n\n\n\n\n"
+print 'Unicode support: %s' % common.os.path.supports_unicode_filenames
 
 def modes():
     if sys.argv[2]=='':

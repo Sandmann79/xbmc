@@ -166,8 +166,8 @@ def getShowTypes(col):
         if data and data[0] <> None:
             data = data[0]
             if type(data) == type(str()):
-                if 'genres' in col: data = data.decode('utf-8').encode('utf-8').split('/')
-                else: data = data.decode('utf-8').encode('utf-8').split(',')
+                if 'genres' in col: data = data.split('/')
+                else: data = data.split(',')
                 for item in data:
                     item = item.strip()
                     if item.lower() not in lowlist and item <> '' and item <> 0 and item <> 'Inc.' and item <> 'LLC.':
@@ -321,7 +321,7 @@ def delfromTVdb():
     id = 30166
     if table == 'seasons': id = 30167
 
-    if Dialog.yesno(common.getString(30155) % common.getString(id), common.getString(30156) % title):
+    if Dialog.yesno(common.getString(30155) % common.getString(id), common.getString(30156) % title.decode('utf-8')):
         delasins = []
         if table == 'seasons':
             delasins.append(asins)
@@ -513,10 +513,7 @@ def UpdateDialog(SERIES_COUNT, SEASON_COUNT, EPISODE_COUNT, delShows, delSeasons
     if (delEpisodes) and (not EPISODE_COUNT):
         line3 += '%s %s' % (common.getString(30134) % delEpisodes, common.getString(30125))
     if line1 + line2 + line3 == '': line2 = common.getString(30127)
-    print 'TV Shows Update:'
-    print line1
-    print line2
-    print line3
+    common.Log('TV Shows Update:\n%s\n%s\n%s' % (line1,line2,line3))
     #Dialog.ok(common.getString(30126), line1, line2, line3)
     
 def ASIN_ADD(titles,asins=False,url=False,isPrime=True,isHD=False,single=False):

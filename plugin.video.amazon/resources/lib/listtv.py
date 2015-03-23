@@ -184,13 +184,11 @@ def ADD_SEASON_ITEM(seasondata, mode='listtv', submode='LIST_EPISODES_DB', dispt
         infoLabels['Studio'] = network
     if audio:
         infoLabels['AudioChannels'] = audio
-    if disptitle:
-        displayname = seriestitle + ' - '
-    else:
-        displayname=''
-    if season <> 0 and len(str(season)) < 3: displayname += common.getString(30167) + ' %s' % season
-    elif len(str(season)) > 2: displayname += common.getString(30168) + str(season)
-    else: displayname += common.getString(30169)
+    displayname = ''
+    if disptitle: displayname = seriestitle + ' - '
+    if season != 0 and len(str(season)) < 3: displayname += '%s %s' % (common.getString(30167, True), season)
+    elif len(str(season)) > 2: displayname += common.getString(30168, True) + str(season)
+    else: displayname += common.getString(30169, True)
     if not fanart or fanart == 'na':
         fanart = poster
     if showfanart == 'true': 

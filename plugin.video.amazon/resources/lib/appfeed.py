@@ -107,7 +107,7 @@ def SEARCH_DB(searchString=False,results=MAX,index=0):
         keyboard.doModal()
         q = keyboard.getText()
         if (keyboard.isConfirmed()):
-            searchString=urllib.quote_plus(keyboard.getText())
+            searchString=keyboard.getText()
             if searchString <> '':
                 common.addText('          ----=== ' + common.getString(30104) + ' ===----')
                 if not listmovie.LIST_MOVIES(search=True, alphafilter = '%' + searchString + '%'):
@@ -128,7 +128,8 @@ def WatchList(export=False):
         if listmovie.LIST_MOVIES(search=True, asinfilter = value, cmmode=1, export=export) == 0:
             if listtv.LIST_TVSHOWS(search=True, asinfilter = value, cmmode=1, export=export) == 0:
                 for seasondata in tv.lookupTVdb(value, tbl='seasons', single=False):
-                    listtv.ADD_SEASON_ITEM(seasondata, disptitle=True, cmmode=1, export=export)
+                    if seasondata:
+                        listtv.ADD_SEASON_ITEM(seasondata, disptitle=True, cmmode=1, export=export)
     if not export: common.SetView('tvshows', 'showview')
 
 def getTVDBImages(title, imdb=None, id=None, seasons=False):

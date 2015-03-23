@@ -15,7 +15,6 @@ import xbmc
 import urlparse
 import base64
 import demjson
-
 import binascii
 import hmac
 try:
@@ -28,7 +27,7 @@ __plugin__ = addon.getAddonInfo('name')
 __authors__ = addon.getAddonInfo('author')
 __credits__ = ""
 __version__ = addon.getAddonInfo('version')
-profilpath = xbmc.translatePath('special://profile')
+profilpath = xbmc.translatePath('special://masterprofile/').decode('utf-8')
 pluginpath = addon.getAddonInfo('path').decode('utf-8')
 pldatapath = xbmc.translatePath('special://profile/addon_data/' + addon.getAddonInfo('id')).decode('utf-8')
 dbpath = xbmc.translatePath('special://home/addons/script.module.amazon.database/lib').decode('utf-8')
@@ -269,10 +268,13 @@ def cleanData(data):
 def cleanName(name, file=True):
     if file:
         notallowed = ['<', '>', ':', '"', '\\', '/', '|', '*', '?']
-        for c in notallowed:
-            name = name.replace(c,'')
-    #name = BeautifulSoup(name, convertEntities=None).contents
-    return name.strip().decode('utf-8')
+        name = name.decode('utf-8')
+    else:
+        notallowed = ['<', '>', '"', '|', '*', '?']
+        if not os.path.supports_unicode_filenames: name = name.encode('utf-8')
+    for c in notallowed:
+        name = name.replace(c,'')
+    return name
     
 def GET_ASINS(content):
     asins = ''
@@ -307,8 +309,9 @@ def SCRAP_ASINS():
     asins += re.compile('class="innerItem" id="(.+?)."', re.DOTALL).findall(content)
     return asins
     
-def getString(id):
-    return addon.getLocalizedString(id).encode('utf-8')
+def getString(id, enc=False):
+    if enc: return addon.getLocalizedString(id).encode('utf-8')
+    return addon.getLocalizedString(id)
 
 def remLoginData():
     if os.path.isfile(COOKIEFILE):

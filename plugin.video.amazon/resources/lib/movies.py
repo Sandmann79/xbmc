@@ -136,8 +136,8 @@ def getMovieTypes(col):
                 if item not in list and item <> '' and item <> 0 and item <> 'Inc.' and item <> 'LLC.':
                     list.append(item)
             else:
-                if 'genres' in col: data = data.decode('utf-8').encode('utf-8').split('/')
-                else: data = data.decode('utf-8').encode('utf-8').split(',')
+                if 'genres' in col: data = data.split('/')
+                else: data = data.split(',')
                 for item in data:
                     item = item.strip()
                     if item.lower() not in lowlist and item <> '' and item <> 0 and item <> 'Inc.' and item <> 'LLC.':

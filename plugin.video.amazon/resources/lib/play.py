@@ -307,7 +307,6 @@ def PLAY(rtmpurls,swfUrl,Trailer=False,title=False):
     item = xbmcgui.ListItem(path=finalUrl, thumbnailImage=infoLabels['Thumb'])
     item.setProperty('fanart_image', infoLabels['Fanart'])
     item.setInfo(type="Video", infoLabels=infoLabels)
-    #common.Log('\n\nTitle: %s\n%s' % (infoLabels['Title'].decode('utf8', 'ignore'), finalUrl))
     if Trailer or selbitrate != '0':
         item.setProperty('IsPlayable', 'true')
         xbmc.Player().play(finalUrl, item)

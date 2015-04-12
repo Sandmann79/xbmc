@@ -32,11 +32,11 @@ osOsx = xbmc.getCondVisibility('system.platform.osx')
 osWin = xbmc.getCondVisibility('system.platform.windows')
 screenWidth = int(xbmc.getInfoLabel('System.ScreenWidth'))
 screenHeight = int(xbmc.getInfoLabel('System.ScreenHeight'))
+playPlugin = ['','plugin.program.browser.launcher', 'plugin.program.chrome.launcher']
+selPlugin = playPlugin[int(settings.getSetting("playmethod"))]
 trailer = common.args.trailer
 selbitrate = common.args.selbitrate
 isAdult = int(common.args.adult)
-playPlugin = ['','plugin.program.browser.launcher', 'plugin.program.chrome.launcher']
-selPlugin = playPlugin[int(settings.getSetting("playmethod"))]
 amazonUrl = common.BASE_URL + "/dp/" + common.args.asin
 Dialog = xbmcgui.Dialog()
 
@@ -138,12 +138,12 @@ def CONVERTSUBTITLES(url):
 def SETSUBTITLES(asin):
     subtitles = os.path.join(common.pldatapath, asin+'.srt')
     if os.path.isfile(subtitles) and xbmc.Player().isPlaying():
-        print "AMAZON --> Subtitles Enabled."
+        common.Log('Subtitles Enabled.')
         xbmc.Player().setSubtitles(subtitles)
     elif xbmc.Player().isPlaying():
-        print "AMAZON --> No Subtitles File Available."
+        common.Log('No Subtitles File Available.')
     else:
-        print "AMAZON --> No Media Playing. Subtitles Not Assigned."
+        common.Log('No Media Playing. Subtitles Not Assigned.')
 
 def GETTRAILERS(suc, rtmpdata):
     if suc:
@@ -228,7 +228,7 @@ def PLAYVIDEOINT():
                     xbmc.sleep(100)
                 SETSUBTITLES(values['asin'])
             
-def GETFLASHVARS(pageurl):
+def GETFLASHVARS_old(showpage):
     showpage = common.getURL(pageurl, useCookie=True)
     flashVars = re.compile('var config = (.*?);',re.DOTALL).findall(showpage)
     flashVars = demjson.decode(unicode(flashVars[0], errors='ignore'))
@@ -250,6 +250,33 @@ def GETFLASHVARS(pageurl):
         return False, False
     return swfUrl, values
         
+def GETFLASHVARS(pageurl):
+    showpage = common.getURL(pageurl, useCookie=True)
+    if not showpage:
+        Dialog.notification(__plugin__, Error('CDP.InvalidRequest'), xbmcgui.NOTIFICATION_ERROR)
+        return False, False
+    if 'var config' in showpage: return GETFLASHVARS_old(showpage)
+    else: return GETFLASHVARS_new(showpage)
+
+def GETFLASHVARS_new(showpage):
+    values = {}
+    swfUrl = 'http://ecx.images-amazon.com/images/G/01/digital/video/streaming/169.0-0/UnboxScreeningRoomClient._V320644271_.swf'
+    csrfToken = re.compile('"csrfToken":"(.*?)"',re.DOTALL).findall(showpage)[0]
+    csrfToken = urllib.quote_plus(csrfToken)
+    values['asin'] = re.compile('"pageAsin":"(.*?)"',re.DOTALL).findall(showpage)[0]
+    values['sessionID'] = re.compile("ue_sid='(.*?)'",re.DOTALL).findall(showpage)[0]
+    values['marketplace'] = re.compile("ue_mid='(.*?)'",re.DOTALL).findall(showpage)[0]
+    values['customer'] = re.compile('"customerID":"(.*?)"',re.DOTALL).findall(showpage)[0]
+    values['deviceTypeID']  = 'A324MFXUEZFF7B' #GoogleTV unenc Flash
+    values['deviceID'] = values['customer'] + str(int(time.time() * 1000)) + values['asin']
+    pltoken = common.getURL(common.BASE_URL + "/gp/video/streaming/player-token.json?callback=jQuery&csrftoken=" + csrfToken, useCookie=True)
+    try:
+        values['token']  = re.compile('"([^"]*).*"([^"]*)"').findall(pltoken)[0][1]
+    except:
+        Dialog.notification(common.getString(30200), common.getString(30201), xbmcgui.NOTIFICATION_ERROR)
+        return False, False
+    return swfUrl, values
+
 def PLAY(rtmpurls,swfUrl,Trailer=False,title=False):
     lbitrate = int(common.addon.getSetting("bitrate"))
     if selbitrate == '1':
@@ -292,21 +319,23 @@ def PLAY(rtmpurls,swfUrl,Trailer=False,title=False):
     appName =  rtmpurlSplit[2]
     stream = rtmpurlSplit[3]
     auth = rtmpurlSplit[4]
-
+    tcurl = protocol[0:-1] + '://' + hostname + '/' + appName
+    #hostname = getIP(hostname) + ':1935'
     basertmp = protocol[0:-1] + '://' + hostname + '/' + appName
-
     if 'edgefcs' in hostname:
         basertmp += auth
     else:
         stream += auth
 
-    finalUrl = '%s app=%s swfUrl=%s pageUrl=%s playpath=%s swfVfy=true' % (basertmp, appName, swfUrl, amazonUrl, stream)
+    finalUrl = '%s app=%s swfUrl=%s pageUrl=%s playpath=%s tcUrl=%s swfVfy=true' % (basertmp, appName, swfUrl, amazonUrl, stream, tcurl)
     infoLabels = GetStreamInfo(common.args.asin, title)
+    
     if Trailer:
         infoLabels['Title'] += ' (Trailer)'
     item = xbmcgui.ListItem(path=finalUrl, thumbnailImage=infoLabels['Thumb'])
     item.setProperty('fanart_image', infoLabels['Fanart'])
     item.setInfo(type="Video", infoLabels=infoLabels)
+    common.WriteLog('Content: %s\nRTMPUrl: %s' %(title,finalUrl))
     if Trailer or selbitrate != '0':
         item.setProperty('IsPlayable', 'true')
         xbmc.Player().play(finalUrl, item)
@@ -353,8 +382,15 @@ def getUrldata(mode, values, format='json', asinlist=False, devicetypeid=False, 
             return False, Error(jsondata['message']['body']['code'])
         return True, jsondata['message']['body']
     return False, 'HTTP Fehler'
+    
+def getIP(url):
+    identurl = 'http://'+url+'/fcs/ident'
+    ident = common.getURL(identurl)
+    ip = re.compile('<fcs><ip>(.+?)</ip></fcs>').findall(ident)[0]
+    return ip
 
 def Error(code):
+    common.Log(code, xbmc.LOGERROR)
     if 'CDP.InvalidRequest' in code:
         return common.getString(30204)
     elif 'CDP.Playback.NoAvailableStreams' in code:
@@ -366,5 +402,4 @@ def Error(code):
     elif 'CDP.Playback.TemporarilyUnavailable' in code:
         return common.getString(30208)
     else:
-        print code
         return common.getString(30209) + ': ' + code

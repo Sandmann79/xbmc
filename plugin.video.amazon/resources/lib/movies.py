@@ -56,11 +56,15 @@ def createMoviedb():
 
 def addMoviedb(moviedata):
     c = MovieDB.cursor()
-    c.execute('insert or ignore into movies values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)', moviedata)
-    MovieDB.commit()
-    c.close()
+    num = c.execute('insert or ignore into movies values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)', moviedata).rowcount
+    if num: 
+        common.WriteLog('Add Movie: (%s) %s' % (moviedata[0], moviedata[2]))
+        MovieDB.commit()
+    else: common.WriteLog('NOT ADDED Movie: (%s) %s' % (moviedata[0], moviedata[2]))
+    return num
 
 def lookupMoviedb(value, rvalue='distinct *', name='asin', single=True, exact=False):
+    common.waitforDB('movie')
     c = MovieDB.cursor()
     sqlstring = 'select %s from movies where %s ' % (rvalue, name)
     retlen = len(rvalue.split(','))
@@ -84,46 +88,35 @@ def lookupMoviedb(value, rvalue='distinct *', name='asin', single=True, exact=Fa
 def deleteMoviedb(asin=False):
     if not asin:
         asin = common.args.url
-    asin = '%' + asin + '%'
-    c = MovieDB.cursor()
-    return c.execute('delete from movies where asin like (?)', (asin,)).rowcount
+    movietitle = lookupMoviedb(asin, 'movietitle')
+    num = 0
+    if movietitle:
+        common.WriteLog('Remove Movie: (%s) %s' % (asin, movietitle))
+        c = MovieDB.cursor()
+        num = c.execute('delete from movies where asin like (?)', ('%'+asin+'%',)).rowcount
+        if num: MovieDB.commit()
+    return num
 
 def updateMoviedb(asin, col, value):
     c = MovieDB.cursor()
     asin = '%' + asin + '%'
     sqlquery = 'update movies set %s=? where asin like (?)' % col
     result = c.execute(sqlquery, (value,asin)).rowcount
-    MovieDB.commit()
-    c.close()    
     return result
     
-def loadMoviedb(genrefilter=False,actorfilter=False,directorfilter=False,studiofilter=False,yearfilter=False,mpaafilter=False,alphafilter=False,asinfilter=False,sortcol=False,isprime=True):
+def loadMoviedb(filter=False,value=False,sortcol=False,isprime=True):
+    common.waitforDB('movie')
     c = MovieDB.cursor()
-    if genrefilter:
-        genrefilter = '%'+genrefilter+'%'
-        return c.execute('select distinct * from movies where isprime = (?) and genres like (?)', (isprime,genrefilter))
-    elif mpaafilter:
-        return c.execute('select distinct * from movies where isprime = (?) and mpaa = (?)', (isprime,mpaafilter))
-    elif actorfilter:
-        actorfilter = '%'+actorfilter+'%'
-        return c.execute('select distinct * from movies where isprime = (?) and actors like (?)', (isprime,actorfilter))
-    elif directorfilter:
-        return c.execute('select distinct * from movies where isprime = (?) and director like (?)', (isprime,directorfilter))
-    elif studiofilter:
-        return c.execute('select distinct * from movies where isprime = (?) and studio = (?)', (isprime,studiofilter))
-    elif yearfilter:    
-        return c.execute('select distinct * from movies where isprime = (?) and year = (?)', (isprime,int(yearfilter)))
-    elif alphafilter:
-        return c.execute('select distinct * from movies where isprime = (?) and movietitle like (?)', (isprime,alphafilter))       
+    if filter:
+        value = '%' + value + '%'
+        return c.execute('select distinct * from movies where isprime = (?) and %s like (?)' % filter, (isprime,value))
     elif sortcol:
         return c.execute('select distinct * from movies where %s is not null order by %s asc' % (sortcol,sortcol))
-    elif asinfilter:
-        asinfilter = '%' + asinfilter + '%'
-        return c.execute('select distinct * from movies where isprime = (?) and asin like (?)', (isprime,asinfilter))        
     else:
         return c.execute('select distinct * from movies where isprime = (?)', (isprime,))
 
 def getMovieTypes(col):
+    common.waitforDB('movie')
     c = MovieDB.cursor()
     items = c.execute('select distinct %s from movies' % col)
     list = []
@@ -137,7 +130,7 @@ def getMovieTypes(col):
                     list.append(item)
             else:
                 if 'genres' in col: data = data.split('/')
-                else: data = data.split(',')
+                else: data = re.split(r'[,;/]', data)
                 for item in data:
                     item = item.strip()
                     if item.lower() not in lowlist and item <> '' and item <> 0 and item <> 'Inc.' and item <> 'LLC.':
@@ -159,7 +152,7 @@ def getMoviedbAsins(col=False,list=False):
          sqlstring += ' where %s = (1)' % col
     for item in c.execute(sqlstring).fetchall():
         if list:
-            content.append(','.join(item))
+            content.append([','.join(item), 0])
         else:
             content += ','.join(item)
     return content
@@ -175,7 +168,6 @@ def addMoviesdb(full_update = True):
         dialog.create(common.getString(30120))
         dialog.update(0,common.getString(30121))
         c.execute('drop table if exists movies')
-        c.close()
         createMoviedb()
         MOVIE_ASINS = []
         full_update = True
@@ -198,28 +190,25 @@ def addMoviesdb(full_update = True):
                 if title.has_key('titleId'):
                     endIndex += 1
                     asin = title['titleId']
-                    listpos = [i for i, j in enumerate(MOVIE_ASINS) if asin in j]
-                    if listpos == []:
+                    found, MOVIE_ASINS = common.compasin(MOVIE_ASINS, asin)
+                    if not found:
                         new_mov += ASIN_ADD(title)
-                    else:
-                        while listpos != []:
-                            del MOVIE_ASINS[listpos[0]]
-                            listpos = [i for i, j in enumerate(MOVIE_ASINS) if asin in j]
                     updateMoviedb(asin, 'popularity', endIndex)
+            if len(titles) < MAX: goAhead = 0
+            else: endIndex = endIndex - int(MAX/4)
         else:
             goAhead = 0
         if full_update: dialog.update(int((endIndex)*100.0/MOV_TOTAL), common.getString(30122) % page, common.getString(30123) % new_mov)
         if full_update and dialog.iscanceled(): goAhead = -1
-    if full_update: 
-        setNewest()
-        dialog.close()
-    print MOVIE_ASINS
     if goAhead == 0: 
         common.addon.setSetting("MoviesTotal",str(endIndex))
-        print 'Amazon Movie Update: New %s Deleted %s Total %s' % (new_mov, deleteremoved(MOVIE_ASINS), endIndex)
-        if tmdb_art != '0':
+        common.Log('Movie Update: New %s Deleted %s Total %s' % (new_mov, deleteremoved(MOVIE_ASINS), endIndex))
+        if full_update: 
+            setNewest()
+            dialog.close()
             updateFanart()
         xbmc.executebuiltin("XBMC.Container.Refresh")
+        MovieDB.commit()
 
 def setNewest(asins=False):
     if not asins:
@@ -227,34 +216,35 @@ def setNewest(asins=False):
     c = MovieDB.cursor()
     c.execute('update movies set recent=null')
     count = 1
-    for asin in asins['movies']:
+    for asin in asins['PrimeMovieRecentlyAdded']:
         updateMoviedb(asin, 'recent', count)
         count += 1
     
 def updateFanart():
+    if tmdb_art == '0': return
     asin = movie = year = None
     sqlstring = 'select asin, movietitle, year, fanart from movies where fanart is null'
     c = MovieDB.cursor()
-    print "Amazon Movie Update: Updating Fanart"
+    common.Log('Movie Update: Updating Fanart')
     if tmdb_art == '2':
         sqlstring += ' or fanart like "%images-amazon.com%"'
     for asin, movie, year, oldfanart in c.execute(sqlstring):
         movie = movie.lower().replace('[ov]', '').replace('omu', '').replace('[ultra hd]', '').split('(')[0].strip()
         result = appfeed.getTMDBImages(movie, year=year)
         if oldfanart:
-            if result == 'not available' or not result:
+            if result == common.na or not result:
                 result = oldfanart
         updateMoviedb(asin, 'fanart', result)
-    print "Amazon Movie Update: Updating Fanart Finished"
+    MovieDB.commit()
+    common.Log('Movie Update: Updating Fanart Finished')
 
 def deleteremoved(asins):
     c = MovieDB.cursor()
     delMovies = 0
     for item in asins:
-        for asin in item.split(','):
-            delMovies += deleteMoviedb(asin)
-    MovieDB.commit()
-    c.close()
+        if item[1] == 0:
+            for asin in item[0].split(','):
+                delMovies += deleteMoviedb(asin)
     return delMovies
 
 def ASIN_ADD(title,isPrime=True):
@@ -324,8 +314,7 @@ def ASIN_ADD(title,isPrime=True):
         fanart = title['heroUrl']
     if 'bbl test' not in movietitle.lower():
         moviedata = [common.cleanData(x) for x in [asin,None,common.checkCase(movietitle),trailer,poster,plot,director,None,runtime,year,premiered,studio,mpaa,actors,genres,stars,votes,fanart,isPrime,isHD,isAdult,None,None,audio]]
-        addMoviedb(moviedata)
-        titelnum+=1
+        titelnum += addMoviedb(moviedata)
     return titelnum
 
 MovieDBfile = os.path.join(common.dbpath, 'movies.db')

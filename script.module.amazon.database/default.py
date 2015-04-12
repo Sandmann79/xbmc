@@ -1,6 +1,14 @@
 import xbmc
 import xbmcaddon
-from datetime import datetime, timedelta
+
+import_suc = False
+while not import_suc:
+    import_suc = True
+    try:
+        from datetime import datetime, timedelta
+    except:
+        import_suc = False
+        xbmc.sleep(5000)
 
 if __name__ == '__main__':
     print 'AmazonDB: Service Start'

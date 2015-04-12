@@ -173,7 +173,7 @@ def EXPORT_EPISODE(asin=False, makeNFO=True, dispnotif = True):
             SaveFile(nfo_file, nfo, seasonpath)
 
 def SetupAmazonLibrary():
-    print "Trying to add Amazon source paths..."
+    common.Log('Trying to add Amazon source paths...')
     source_path = os.path.join(common.profilpath, 'sources.xml')
     source_added = False
     
@@ -219,7 +219,7 @@ def SetupAmazonLibrary():
         source_added = True
     
     if source_added:
-        print "Source paths added!"
+        common.Log('Source paths added!')
         SaveFile(source_path, str(soup))
         dialog.ok(common.getString(30187), common.getString(30188), common.getString(30189), common.getString(30190))
         if dialog.yesno(common.getString(30191), common.getString(30192)):

@@ -114,34 +114,19 @@ def createTVdb():
     tvDB.commit()
     c.close()
 
-def loadTVShowdb(actorfilter=False,mpaafilter=False,genrefilter=False,creatorfilter=False,networkfilter=False,yearfilter=False,favorfilter=False,alphafilter=False,asinfilter=False,sortcol=False,isprime=True):
+def loadTVShowdb(filter=False,value=False,sortcol=False,isprime=True):
+    common.waitforDB('tv')
     c = tvDB.cursor()
-    if genrefilter:
-        genrefilter = '%'+genrefilter+'%'
-        return c.execute('select distinct * from shows where isprime = (?) and genres like (?)', (isprime,genrefilter))
-    elif actorfilter:
-        return c.execute('select distinct * from shows where isprime = (?) and actors like (?)', (isprime,actorfilter))
-    elif mpaafilter:
-        return c.execute('select distinct * from shows where isprime = (?) and mpaa = (?)', (isprime,mpaafilter))
-    elif creatorfilter:
-        return c.execute('select distinct * from shows where isprime = (?) and creator = (?)', (isprime,creatorfilter))
-    elif networkfilter:
-        return c.execute('select distinct * from shows where isprime = (?) and network = (?)', (isprime,networkfilter))
-    elif yearfilter:    
-        return c.execute('select distinct * from shows where isprime = (?) and year = (?)', (isprime,int(yearfilter)))
-    elif favorfilter:
-        return c.execute('select distinct * from shows where isprime = (?) and favor = (?)', (isprime,favorfilter)) 
-    elif alphafilter:
-        return c.execute('select distinct * from shows where isprime = (?) and seriestitle like (?)', (isprime,alphafilter)) 
+    if filter:
+        value = '%' + value + '%'
+        return c.execute('select distinct * from shows where isprime = (?) and %s like (?)' % filter, (isprime,value))
     elif sortcol:
         return c.execute('select distinct * from shows where %s is not null order by %s asc' % (sortcol,sortcol))
-    elif asinfilter:
-        asinfilter = '%' + asinfilter + '%'
-        return c.execute('select distinct * from shows where isprime = (?) and asin like (?)', (isprime,asinfilter)) 
     else:
         return c.execute('select distinct * from shows where isprime = (?)', (isprime,))
 
 def loadTVSeasonsdb(seriesasin=False,isprime=True,sortcol=False,seasonasin=False):
+    common.waitforDB('tv')
     c = tvDB.cursor()
     if seriesasin:
         return c.execute('select distinct * from seasons where isprime = (?) and seriesasin = (?)', (isprime,seriesasin))
@@ -154,10 +139,12 @@ def loadTVSeasonsdb(seriesasin=False,isprime=True,sortcol=False,seasonasin=False
         return c.execute('select distinct * from seasons where isprime = (?)', (isprime,))
 
 def loadTVEpisodesdb(seriestitle,isprime=True):
+    common.waitforDB('tv')
     c = tvDB.cursor()
     return c.execute('select distinct * from episodes where isprime = (?) and seasonasin = (?) order by episode', (isprime,seriestitle))
 
 def getShowTypes(col):
+    common.waitforDB('tv')
     c = tvDB.cursor()
     items = c.execute('select distinct %s from shows' % col)
     list = []
@@ -167,7 +154,7 @@ def getShowTypes(col):
             data = data[0]
             if type(data) == type(str()):
                 if 'genres' in col: data = data.split('/')
-                else: data = data.split(',')
+                else: data = re.split(r'[,;/]', data)
                 for item in data:
                     item = item.strip()
                     if item.lower() not in lowlist and item <> '' and item <> 0 and item <> 'Inc.' and item <> 'LLC.':
@@ -189,8 +176,6 @@ def fixHDshows():
     HDseasons = c.execute('select distinct seriestitle from seasons where isHD = (?)', (True,)).fetchall()
     for series in HDseasons:
         c.execute("update shows set isHD=? where seriestitle=?", (True,series[0]))
-    tvDB.commit()
-    c.close()
     
 def fixGenres():
     c = tvDB.cursor()
@@ -198,8 +183,6 @@ def fixGenres():
     for series,genres in seasons:
         c.execute("update seasons set genres=? where seriestitle=? and genres is null", (genres,series))
         c.execute("update shows set genres=? where seriestitle=? and genres is null", (genres,series))
-    tvDB.commit()
-    c.close()
 
 def updateEpisodes():
     c = tvDB.cursor()
@@ -210,8 +193,6 @@ def updateEpisodes():
         for sasin in asinn.split(','):
             nums += int((c.execute("select count(*) from episodes where seriesasin like ?", (sasin,)).fetchone())[0])
         c.execute("update shows set episodetotal=? where asin=?", (nums,asinn))
-    tvDB.commit()
-    c.close()
     
 def fixYears():
     c = tvDB.cursor()
@@ -223,8 +204,6 @@ def fixYears():
     for asin,year in seasons:
         asin = '%' + asin + '%'
         c.execute("update shows set year=? where asin like ?", (year,asin))
-    tvDB.commit()
-    c.close()
     
 def fixDBLShows():
     c = tvDB.cursor()
@@ -243,8 +222,6 @@ def fixDBLShows():
         if addlist: allseries.append([asin,seriestitle,flttitle])
     for asinlist,titlelist,fltlist in allseries: 
         c.execute("update shows set asin = (?) where seriestitle = (?)", (asinlist, titlelist))
-    tvDB.commit()
-    c.close()
     
 def fixStars():
     c = tvDB.cursor()
@@ -253,8 +230,6 @@ def fixStars():
         title = title[0]
         stars = c.execute('select avg(stars) from seasons where seriestitle like ? and votes is not 0', (title,)).fetchone()[0]
         if stars: c.execute('update shows set stars = (?) where seriestitle = (?)', (stars, title))
-    tvDB.commit()
-    c.close()
     
 def fixTitles():
     c = tvDB.cursor()
@@ -262,34 +237,31 @@ def fixTitles():
         for asin in asins.split(','):
             c.execute('update seasons set seriestitle = (?) where seriesasin = (?)', (title, asin))
             c.execute('update episodes set seriestitle = (?) where seriesasin = (?)', (title, asin))
-    tvDB.commit()
-    c.close()
     
 def cleanTitle(content):
     content = content.replace(' und ','').lower()
     invalid_chars = "?!.:&,;' "
     return ''.join(c for c in content if c not in invalid_chars)
 
-
-def addEpisodedb(episodedata):
+def addDB(table, data):
+    if table == 'shows': columns = 22
+    elif table == 'seasons': columns = 23
+    elif table == 'episodes': columns = 23
+    else: return
+    query = '?,' * columns
     c = tvDB.cursor()
-    c.execute('insert or ignore into episodes values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)', episodedata)
-    tvDB.commit()
+    num = c.execute('insert or ignore into %s values (%s)' % (table, query[0:-1]), data).rowcount
+    logstring = 'NOT ADDED '
+    if num: 
+        tvDB.commit()
+        logstring = 'Add '
+    if table == 'seasons': common.WriteLog(logstring + table + ': (%s) %s Season %s' % (data[0], data[3], data[2]))
+    if table == 'shows': common.WriteLog(logstring + table + ': (%s) %s' % (data[0], data[1]))
     c.close()
+    return num
     
-def addSeasondb(seasondata):
-    c = tvDB.cursor()
-    c.execute('insert or ignore into seasons values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)', seasondata)
-    tvDB.commit()
-    c.close()
-
-def addShowdb(showdata):
-    c = tvDB.cursor()
-    c.execute('insert or ignore into shows values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)', showdata)
-    tvDB.commit()
-    c.close()
-
 def lookupTVdb(value, rvalue='distinct *', tbl='episodes', name='asin', single=True, exact=False):
+    common.waitforDB('tv')
     c = tvDB.cursor()
     sqlstring = 'select %s from %s where %s ' % (rvalue, tbl, name)
     retlen = len(rvalue.split(','))
@@ -327,7 +299,7 @@ def delfromTVdb():
             delasins.append(asins)
         else:
             for asin in asins.split(','):
-                for item in lookupTVdb(asin, rvalue='asin', tbl='seasons', name='seriesasin', single=False):
+                for item in lookupTVdb(asin, rvalue='asin', tbl='seasons', name='seriesasin'):
                     if item: delasins += (item)
         UpdateDialog(0, 0, 0, *deleteremoved(delasins))
         
@@ -336,14 +308,18 @@ def deleteremoved(asins):
     delShows = 0
     delSeasons = 0
     delEpisodes = 0
+    common.Log('ASINS to Remove: ' + asins.__str__())
     for item in asins:
         for seasonasin in item.split(','):
             title, season = lookupTVdb(seasonasin, rvalue='seriestitle, season', tbl='seasons', name='asin')
             if title and season:
-                delEpisodes += c.execute('delete from episodes where seriestitle = (?) and season = (?)', (title, season)).rowcount
-                delSeasons += c.execute('delete from seasons where seriestitle = (?) and season = (?)', (title, season)).rowcount
+                asin = '%' + seasonasin + '%'
+                delEpisodes += c.execute('delete from episodes where seriestitle = (?) and season = (?) and seasonasin like (?)', (title, season, asin)).rowcount
+                delSeasons += c.execute('delete from seasons where seriestitle = (?) and season = (?) and asin like (?)', (title, season, asin)).rowcount
+                common.WriteLog('Removed Season: (%s) %s Season %s' % (seasonasin, title, season))
                 if not lookupTVdb(title, rvalue='asin', tbl='seasons', name='seriestitle'):
                     delShows += c.execute('delete from shows where seriestitle = (?)', (title,)).rowcount
+                    common.WriteLog('Removed Show: %s' % title)
     tvDB.commit()
     c.close()
     xbmc.executebuiltin('Container.Refresh')
@@ -354,7 +330,6 @@ def rebuildTVdb():
     c.execute('drop table if exists shows')
     c.execute('drop table if exists seasons')
     c.execute('drop table if exists episodes')
-    c.close()
     createTVdb()
 
 def getTVdbAsins(table,col=False,list=False):
@@ -367,7 +342,7 @@ def getTVdbAsins(table,col=False,list=False):
          sqlstring += ' where %s = (1)' % col
     for item in c.execute(sqlstring).fetchall():
         if list:
-            content.append(','.join(item))
+            content.append([','.join(item), 0])
         else:
             content += ','.join(item) + ','
     return content
@@ -377,7 +352,6 @@ def addTVdb(full_update = True):
         if common.args.url == 'u':
             full_update = False
     except: pass
-    page = 1
     endIndex = 0
     goAhead = 1
     SERIES_COUNT = 0
@@ -394,13 +368,11 @@ def addTVdb(full_update = True):
         ALL_SERIES_ASINS = ''
         ALL_SEASONS_ASINS = []
     else:
-        ALL_SEASONS_ASINS = getTVdbAsins('seasons', list=True)
+        ALL_SEASONS_ASINS = getTVdbAsins('seasons',list=True)
         ALL_SERIES_ASINS = getTVdbAsins('shows')
-    
     while goAhead == 1:
-        json = appfeed.getList('TVSeason', endIndex, NumberOfResults=MAX)
+        json = appfeed.getList('TVEpisode&RollupToSeason=T', endIndex, OrderBy='SalesRank', NumberOfResults=MAX)
         titles = json['message']['body']['titles']
-        newtitles = []
         if titles:
             SERIES_ASINS = ''
             EPISODE_ASINS = []
@@ -411,31 +383,27 @@ def addTVdb(full_update = True):
                     break
                 SEASONS_ASIN = title['titleId']
                 endIndex += 1
-                POP_ASINS.append((SEASONS_ASIN, endIndex))
-                listpos = [i for i, j in enumerate(ALL_SEASONS_ASINS) if SEASONS_ASIN in j]
-                if listpos == []:
-                    if title['ancestorTitles']:
-                        SERIES_KEY = title['ancestorTitles'][0]['titleId']
-                    else:
-                        SERIES_KEY = title['titleId']
-                    if SERIES_KEY not in ALL_SERIES_ASINS and 'bbl test' not in title['title'].lower():
-                        SERIES_COUNT += 1
-                        SERIES_ASINS += SERIES_KEY+','
-                        ALL_SERIES_ASINS += SERIES_KEY+','
-                    season_size = int(title['childTitles'][0]['size'])
-                    if season_size < 1:
-                        season_size = MAX_MOV
-                    parsed = urlparse.urlparse(title['childTitles'][0]['feedUrl'])
-                    EPISODE_ASINS.append(urlparse.parse_qs(parsed.query)['SeasonASIN'])
-                    EPISODE_NUM.append(season_size)
-                    newtitles.append(title)
-                else:
-                    while listpos != []:
-                        del ALL_SEASONS_ASINS[listpos[0]]
-                        listpos = [i for i, j in enumerate(ALL_SEASONS_ASINS) if SEASONS_ASIN in j]
-            SEASON_COUNT += ASIN_ADD(newtitles)
-            del titles, newtitles
-            if SERIES_ASINS <> '':
+                found, ALL_SEASONS_ASINS = common.compasin(ALL_SEASONS_ASINS, SEASONS_ASIN)
+                if not found:
+                    if ASIN_ADD([title]):
+                        SEASON_COUNT += 1
+                        if title['ancestorTitles']:
+                            SERIES_KEY = title['ancestorTitles'][0]['titleId']
+                        else:
+                            SERIES_KEY = title['titleId']
+                        if SERIES_KEY not in ALL_SERIES_ASINS and 'bbl test' not in title['title'].lower():
+                            SERIES_COUNT += 1
+                            SERIES_ASINS += SERIES_KEY+','
+                            ALL_SERIES_ASINS += SERIES_KEY+','
+                        season_size = int(title['childTitles'][0]['size'])
+                        if season_size < 1:
+                            season_size = MAX_MOV
+                        parsed = urlparse.urlparse(title['childTitles'][0]['feedUrl'])
+                        EPISODE_ASINS.append(urlparse.parse_qs(parsed.query)['SeasonASIN'])
+                        EPISODE_NUM.append(season_size)
+            if len(titles) < MAX: goAhead = 0
+            del titles
+            if SERIES_ASINS:
                 ASIN_ADD(0, asins=SERIES_ASINS)
             if full_update:
                 DialogPG.update(int(EPISODE_COUNT*100.0/EPI_TOTAL), common.getString(30132) % SERIES_COUNT, common.getString(30133) % SEASON_COUNT,common.getString(30134) % EPISODE_COUNT)
@@ -464,35 +432,40 @@ def addTVdb(full_update = True):
                     del titles
         else:
             goAhead = 0
-        page+=1
     if goAhead == 0:
         common.addon.setSetting("EpisodesTotal",str(countDB('episodes')))
+        updatePop()
+        removed_seasons = []
+        for item in ALL_SEASONS_ASINS:
+            if item[1] == 0: removed_seasons.append(item[0])
+        delShows, delSeasons, delEpisodes = deleteremoved(removed_seasons)
         fixDBLShows()
         fixYears()
         fixStars()
         fixHDshows()
         updateEpisodes()
         fixTitles()
-        print ALL_SEASONS_ASINS
-        delShows, delSeasons, delEpisodes = deleteremoved(ALL_SEASONS_ASINS)
         UpdateDialog(SERIES_COUNT, SEASON_COUNT, EPISODE_COUNT, delShows, delSeasons, delEpisodes)
-        updatePop(POP_ASINS)
         if full_update:
             setNewest()
             DialogPG.close()
-        if tvdb_art != '0':
             updateFanart()
+        tvDB.commit()
 
-def updatePop(POP_ASINS):
+def updatePop():
     c = tvDB.cursor()
     c.execute("update shows set popularity=null")
-    for asin, num in POP_ASINS:
-        serasin = lookupTVdb(asin, rvalue='seriesasin', tbl='seasons', name='asin')
-        serasin = '%' + serasin + '%'
-        c.execute("update shows set popularity=? where asin like (?) and popularity is null", (num, serasin))
-    tvDB.commit()
-    c.close()
-     
+    Index = 0
+    
+    while Index != -1:
+        json = appfeed.getList('TVEpisode&RollupToSeries=T', Index, NumberOfResults=MAX)
+        titles = json['message']['body']['titles']
+        for title in titles:
+            Index += 1
+            asin = title['titleId']
+            if asin: c.execute("update shows set popularity=? where asin like (?) and popularity is null", (Index, '%' + asin + '%'))
+        if len(titles) == 0: Index = -1
+        
 def UpdateDialog(SERIES_COUNT, SEASON_COUNT, EPISODE_COUNT, delShows, delSeasons, delEpisodes):
     line1 = ''
     line2 = ''
@@ -530,7 +503,6 @@ def ASIN_ADD(titles,asins=False,url=False,isPrime=True,isHD=False,single=False):
         else:
             contentType = title['contentType']
 
-        count+=1
         asin, isHD, isPrime, audio = common.GET_ASINS(title)
         if title['formats'][0].has_key('images'):
             try:
@@ -567,7 +539,7 @@ def ASIN_ADD(titles,asins=False,url=False,isPrime=True,isHD=False,single=False):
             if title.has_key('childTitles'):
                 seasontotal = title['childTitles'][0]['size']
             showdata = [common.cleanData(x) for x in [asin,common.checkCase(seriestitle),plot,studio,mpaa,genres,actors,premiered,year,stars,votes,seasontotal,0,audio,isHD,isPrime,None,None,None,poster,None,fanart]]
-            addShowdb(showdata)
+            count += addDB('shows', showdata)
             if single:
                 return asin,ASINLIST
         elif contentType == 'SEASON':
@@ -587,7 +559,7 @@ def ASIN_ADD(titles,asins=False,url=False,isPrime=True,isHD=False,single=False):
             if title.has_key('imdbUrl'):
                 imdburl = title['imdbUrl']
             seasondata = [common.cleanData(x) for x in [asin,seriesasin,season,common.checkCase(seriestitle),plot,actors,studio,mpaa,genres,premiered,year,stars,votes,episodetotal,audio,None,None,isHD,isPrime,imdburl,poster,None,fanart]]
-            addSeasondb(seasondata)
+            count += addDB('seasons', seasondata)
         elif contentType == 'EPISODE':
             episodetitle = title['title']
             if title.has_key('ancestorTitles'):
@@ -611,15 +583,16 @@ def ASIN_ADD(titles,asins=False,url=False,isPrime=True,isHD=False,single=False):
                     if rest['action'] == 'playback':
                         if rest['type'] == 'ageVerificationRequired': isAdult = True
             episodedata = [common.cleanData(x) for x in [asin,seasonasin,seriesasin,common.checkCase(seriestitle),season,episode,poster,mpaa,actors,genres,common.checkCase(episodetitle),studio,stars,votes,fanart,plot,premiered,year,runtime,isHD,isPrime,isAdult,audio]]
-            addEpisodedb(episodedata)
+            count += addDB('episodes', episodedata)
     return count
 
 def updateFanart():
+    if tvdb_art == '0': return
     asin = title = year = None
     seasons = False
     c = tvDB.cursor()
     sqlstring = 'select asin, seriestitle, fanart, poster from shows where fanart is null'
-    print "Amazon TV Update: Updating Fanart"
+    common.Log('TV Update: Updating Fanart')
     if tvdb_art == '2':
         sqlstring += ' or fanart like "%images-amazon.com%"'
     if tvdb_art == '3':
@@ -632,8 +605,8 @@ def updateFanart():
         if oldfanart and not fanart: fanart = oldfanart
         if oldposter and not poster: poster = oldposter
         if tvid:
-            if not fanart: fanart = 'not available'
-            if not poster: fanart = 'not available'
+            if not fanart: fanart = common.na
+            if not poster: fanart = common.na
         c.execute("update shows set fanart=? where asin = (?)", (fanart, asin))
         if tvdb_art == '3':
             c.execute("update shows set poster=? where asin = (?)", (poster, asin))
@@ -642,9 +615,8 @@ def updateFanart():
                     for singleasin in asin.split(','):
                         singleasin = '%' + singleasin + '%'
                         c.execute("update seasons set poster=? where seriesasin like (?) and season = (?)", (url, singleasin, season))
-        tvDB.commit()
-    c.close()
-    print "Amazon TV Update: Updating Fanart Finished"
+    tvDB.commit()
+    common.Log('TV Update: Updating Fanart Finished')
     
 def getIMDbID(asins,title):
     url = id = None
@@ -670,10 +642,10 @@ def getIMDbID(asins,title):
                 elif title.count('?'):
                     title = title.replace('?', '')
                 if title == oldtitle:
-                    id = 'na'
+                    id = common.na
     else:
         id = re.compile('/title/(.+?)/', re.DOTALL).findall(url)
-    print id, asins.split(',')[0]
+    common.Log(id + asins.split(',')[0])
     return id
     
 def setNewest(asins=False):
@@ -682,12 +654,12 @@ def setNewest(asins=False):
     c = tvDB.cursor()
     c.execute('update seasons set recent=null')
     count = 1
-    for asin in asins['tv_shows']:
-        asin = '%' + asin + '%'
-        c.execute("update seasons set recent=? where asin like (?)", (count, asin))
+    for asin in asins['PrimeTVRecentlyAdded']:
+        seasonasin = lookupTVdb(asin, rvalue='seasonasin')
+        if not seasonasin: seasonasin = asin
+        c.execute("update seasons set recent=? where asin like (?)", (count, '%'+seasonasin+'%'))
         count += 1
     tvDB.commit()
-    c.close()
         
 tvDBfile = os.path.join(common.dbpath, 'tv.db')
 if not os.path.exists(tvDBfile):

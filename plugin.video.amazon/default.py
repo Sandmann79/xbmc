@@ -8,11 +8,11 @@ from __future__ import unicode_literals
 import resources.lib.common as common
 sys = common.sys
 
-print "\n\n\n\n\n\n\n====================AMAZON START====================\n\n\n\n\n\n"
-print 'Unicode support: %s' % common.os.path.supports_unicode_filenames
+print '\n\n\n\n\n\n\n====================AMAZON START====================\n\n\n\n\n\n'
 
 def modes():
     if sys.argv[2]=='':
+        common.Log('Unicode support: %s' % common.os.path.supports_unicode_filenames)
         cm_watchlist = [(common.getString(30185) % 'Watchlist', 'XBMC.RunPlugin(%s?mode=<appfeed>&sitemode=<ExportWatchlist>)'  % sys.argv[0] )]
         common.addDir('Watchlist','appfeed','WatchList', cm=cm_watchlist)
         updatemovie = []

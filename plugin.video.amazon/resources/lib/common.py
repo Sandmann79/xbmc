@@ -17,6 +17,8 @@ import base64
 import demjson
 import binascii
 import hmac
+import time
+
 try:
     import hashlib.sha1 as sha1
 except:
@@ -30,12 +32,15 @@ __version__ = addon.getAddonInfo('version')
 profilpath = xbmc.translatePath('special://masterprofile/').decode('utf-8')
 pluginpath = addon.getAddonInfo('path').decode('utf-8')
 pldatapath = xbmc.translatePath('special://profile/addon_data/' + addon.getAddonInfo('id')).decode('utf-8')
-dbpath = xbmc.translatePath('special://home/addons/script.module.amazon.database/lib').decode('utf-8')
+homepath = xbmc.translatePath('special://home').decode('utf-8')
+dbpath = os.path.join(homepath, 'addons', 'script.module.amazon.database', 'lib')
 pluginhandle = int(sys.argv[1])
 tmdb = base64.b64decode('YjM0NDkwYzA1NmYwZGQ5ZTNlYzlhZjIxNjdhNzMxZjQ=')
 tvdb = base64.b64decode('MUQ2MkYyRjkwMDMwQzQ0NA==')
 COOKIEFILE = os.path.join(pldatapath, 'cookies.lwp')
 def_fanart = os.path.join(pluginpath, 'fanart.jpg')
+na = 'not available'
+logfile = False
 BASE_URL = 'https://www.amazon.de'
 #ATV_URL = 'https://atv-ps-eu.amazon.com'
 ATV_URL = 'https://atv-ext-eu.amazon.com'
@@ -44,19 +49,15 @@ UserAgent = 'Mozilla/5.0 (X11; U; Linux i686; en-US) AppleWebKit/533.4 (KHTML, l
 
 class _Info:
     def __init__( self, *args, **kwargs ):
-        print "common.args"
-        print kwargs
         self.__dict__.update( kwargs )
-exec "args = _Info(%s)" % urllib.unquote_plus(sys.argv[2][1:].replace('&', ', ')).replace('<','"').replace('>','"')
 
 def getURL( url, host=BASE_URL.split('//')[1], useCookie=False, silent=False, headers=None):
     cj = cookielib.LWPCookieJar()
     if useCookie and os.path.isfile(COOKIEFILE):
         cj.load(COOKIEFILE, ignore_discard=True, ignore_expires=True)
-    if not silent:
-        print 'getURL: '+url
-    if not headers:
-        headers = [('User-Agent', UserAgent ), ('Host', host)]
+    if not silent: Log('getURL: '+url)
+    else: WriteLog('getURL: '+url)
+    if not headers: headers = [('User-Agent', UserAgent ), ('Host', host)]
     try:
         opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cj),urllib2.HTTPRedirectHandler)
         opener.addheaders = headers
@@ -64,14 +65,14 @@ def getURL( url, host=BASE_URL.split('//')[1], useCookie=False, silent=False, he
         response = usock.read()
         usock.close()
     except urllib2.URLError, e:
-        print 'Error reason: ', e
+        Log('Error reason: %s' % e, xbmc.LOGERROR)
         return False
     return response
 
 def getATVURL( url , values = None ):
     try:
         opener = urllib2.build_opener()
-        print 'ATVURL --> url = '+url
+        Log('ATVURL --> url = '+url)
         opener.addheaders = [('x-android-sign', androidsig(url) )]
         if values == None:
             usock=opener.open(url)
@@ -81,21 +82,25 @@ def getATVURL( url , values = None ):
         response=usock.read()
         usock.close()
     except urllib2.URLError, e:
-        print 'Error reason: ', e
+        Log('Error reason: %s' % e, xbmc.LOGERROR)
         return False
     else:
         return response
 
-def WriteLog(data, path=os.path.join(profilpath, 'amazon.log')):
-    mode = 'w'
-    if os.path.isfile(path):
-        mode = 'a'
-    file = open(path, mode)
-    file.write(data.encode('ascii', 'ignore'))
+def WriteLog(data, path=os.path.join(homepath, 'amazon.log')):
+    if not logfile: return
+    if type(data) == type(unicode()): data = data.encode('utf-8')
+    file = open(path, 'a')
+    data = time.strftime('[%d/%H:%M:%S] ', time.localtime()) + data.__str__()
+    file.write(data)
+    file.write('\n')
     file.close()
     
-def Log(data):
-    print BeautifulSoup(data)
+def Log(msg, level=xbmc.LOGNOTICE):
+    if type(msg) == type(unicode()):
+        msg = msg.encode('utf-8')
+    WriteLog(msg)
+    xbmc.log('[%s] %s' % (__plugin__, msg.__str__()), level)
     
 def SaveFile(path, data):
     file = open(path,'w')
@@ -170,7 +175,7 @@ def addWatchlist(asin=False):
     url = BASE_URL + '/gp/video/watchlist/?toggleOnWatchlist=1&action=add&ASIN=' + asin
     data = getURL(url,useCookie=True)
     if asin in data:
-        print asin + " added"
+        Log(asin + ' added')
 
 def removeWatchlist(asin=False):
     if not asin:
@@ -179,7 +184,7 @@ def removeWatchlist(asin=False):
     data = getURL(url,useCookie=True)
     if asin not in data:
         xbmc.executebuiltin('Container.Refresh')
-        print asin + " removed"
+        Log(asin + ' removed')
         
 def makeGUID():
     import random
@@ -199,7 +204,7 @@ def mechanizeLogin():
     while succeeded == False:
         xbmc.sleep(1000)
         retrys += 1
-        print 'Login Retry: '+str(retrys)
+        Log('Login Retry: %s' % retrys)
         succeeded = dologin()
         if retrys >= 2:
             xbmcgui.Dialog().ok('Login Error','Failed to Login')
@@ -299,14 +304,23 @@ def GET_ASINS(content):
                     asins += ',' + newasin
         if 'STEREO' in format['audioFormatTypes']: channels = 2
         if 'AC_3_5_1' in format['audioFormatTypes']: channels = 6
+    """
+    if content['childTitles']:
+        feedurl = content['childTitles'][0]['feedUrl']
+        fasins = re.compile('[\?|&].*ASIN=([^&]*)').findall(feedurl)
+        if fasins: feedasins = fasins[0]
+        if titleId not in feedasins:
+            feedasins = titleId + ',' + feedasins
+        titleId = feedasins
+    """
     del content
     return asins, hd_key, prime_key, channels
     
-def SCRAP_ASINS():
+def SCRAP_ASINS(url):
     asins = []
-    url = BASE_URL + '/gp/video/watchlist/?show=all&sort=DATE_ADDED_DESC&_encoding=UTF8'
+    url = BASE_URL + url + '&pageSize=1000&sortBy=date'
     content = getURL(url, useCookie=True)
-    asins += re.compile('class="innerItem" id="(.+?)."', re.DOTALL).findall(content)
+    asins += re.compile('data-asin="(.+?)"', re.DOTALL).findall(content)
     return asins
     
 def getString(id, enc=False):
@@ -329,13 +343,11 @@ def getNewest():
     response = getURL(ATV_URL + '/cdp/catalog/GetCategoryList?firmware=fmw:15-app:1.1.23&deviceTypeID=A1MPSLFC7L5AFK&deviceID=%s&format=json&OfferGroups=B0043YVHMY&IncludeAll=T&version=2' % addon.getSetting("GenDeviceID"))
     data = demjson.decode(response)
     asins = {}
-    for type in data['message']['body']['categories']:
-        if type['id'] == 'movies' or type['id'] == 'tv_shows':
-            for cat in type['categories']:
-                if cat['id'] == 'prime':
-                    for subcat in cat['categories']:
-                        if subcat['title'] == 'Neuerscheinungen':
-                            asins.update({type['id']: urlparse.parse_qs(subcat['query'])['ASINList'][0].split(',')})
+    for type in data['message']['body']['categories'][0]['categories'][0]['categories']:
+        subPageType = None
+        if type.has_key('subPageType'): subPageType = type['subPageType']
+        if subPageType == 'PrimeMovieRecentlyAdded' or subPageType == 'PrimeTVRecentlyAdded':
+            asins.update({subPageType: urlparse.parse_qs(type['query'])['ASINList'][0].split(',')})
     return asins
 
 def SetView(content, view=False, updateListing=False):
@@ -349,3 +361,35 @@ def SetView(content, view=False, updateListing=False):
             viewid = int(addon.getSetting(view.replace('view', 'id')))
         xbmc.executebuiltin('Container.SetViewMode(%s)' % viewid)
     xbmcplugin.endOfDirectory(pluginhandle,updateListing=updateListing)
+    
+def compasin(list, searchstring):
+    ret = False
+    for index, array in enumerate(list):
+        if searchstring.lower() in array[0].lower():
+            list[index][1] = 1
+            ret = True
+    return ret, list
+    
+def waitforDB(database):
+    if database == 'tv':
+        import tv
+        c = tv.tvDB.cursor()
+        tbl = 'shows'
+    else:
+        import movies
+        c = movies.MovieDB.cursor()
+        tbl = 'movies'
+    error = True
+    while error:
+        error = False
+        try:
+            c.execute('select distinct * from ' + tbl).fetchone()
+        except:
+            error = True
+            xbmc.sleep(5000)
+            print 'Database locked'
+    c.close()
+            
+urlargs =  urllib.unquote_plus(sys.argv[2][1:].replace('&', ', ')).replace('<','"').replace('>','"')
+Log('Args: %s' % urlargs)
+exec "args = _Info(%s)" % urlargs

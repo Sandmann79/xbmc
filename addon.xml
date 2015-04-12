@@ -20,14 +20,14 @@
 </addon> 
 <addon id="plugin.video.amazon" 
        name="Amazon" 
-       version="1.4.0" 
+       version="1.4.1" 
        provider-name="Sandmann79 + BlueCop + Romans I XVI"> 
   <requires> 
     <import addon="xbmc.python" version="2.1.0"/> 
     <import addon="script.module.beautifulsoup" version="3.2.1"/> 
     <import addon="script.module.demjson" version="2.2.2"/> 
     <import addon="script.module.mechanize" version="0.2.6"/> 
-    <import addon="script.module.amazon.database" version="0.0.7"/> 
+    <import addon="script.module.amazon.database" version="0.0.8"/> 
   </requires> 
   <extension point="xbmc.python.pluginsource" 
              library="default.py"> 
@@ -45,7 +45,7 @@
 </addon> 
 <addon id="script.module.amazon.database" 
        name="Amazon Database" 
-       version="0.0.7" 
+       version="0.0.8" 
        provider-name="BlueCop"> 
   <requires> 
     <import addon="xbmc.python" version="2.1.0"/> 

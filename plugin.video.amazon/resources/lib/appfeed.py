@@ -68,10 +68,7 @@ def getList(ContentType,start=0,isPrime=True,NumberOfResults=MAX,OrderBy='MostPo
         BROWSE_PARAMS = '&OfferGroups=B0043YVHMY'
     BROWSE_PARAMS +='&NumberOfResults='+str(NumberOfResults)
     BROWSE_PARAMS +='&StartIndex='+str(start)
-    if ContentType == 'TVSeason':
-        BROWSE_PARAMS +='&ContentType=TVEpisode&RollupToSeason=T'
-    else:
-        BROWSE_PARAMS +='&ContentType='+ContentType
+    BROWSE_PARAMS +='&ContentType='+ContentType
     BROWSE_PARAMS +='&OrderBy='+OrderBy
     BROWSE_PARAMS +='&IncludeAll=T'
     if ContentType == 'TVEpisode':
@@ -101,7 +98,7 @@ def ASIN_LOOKUP(ASINLIST):
 def URL_LOOKUP(url):
     return demjson.decode(common.getATVURL(url+PARAMETERS.replace('?','&')))
 
-def SEARCH_DB(searchString=False,results=MAX,index=0):
+def SEARCH_DB(searchString=False):
     if not searchString:
         keyboard = xbmc.Keyboard('')
         keyboard.doModal()
@@ -110,10 +107,10 @@ def SEARCH_DB(searchString=False,results=MAX,index=0):
             searchString=keyboard.getText()
             if searchString <> '':
                 common.addText('          ----=== ' + common.getString(30104) + ' ===----')
-                if not listmovie.LIST_MOVIES(search=True, alphafilter = '%' + searchString + '%'):
+                if not listmovie.LIST_MOVIES('movietitle', searchString, search=True):
                     common.addText(common.getString(30202))
                 common.addText('          ----=== ' + common.getString(30107) + ' ===----')
-                if not listtv.LIST_TVSHOWS(search=True, alphafilter = '%' + searchString + '%'):
+                if not listtv.LIST_TVSHOWS('seriestitle', searchString, search=True):
                     common.addText(common.getString(30202))
                 common.SetView('tvshows', 'showview')
 
@@ -122,14 +119,22 @@ def ExportWatchlist():
 
 def WatchList(export=False):
     import tv
-    asins = common.SCRAP_ASINS()
+    if not os.path.isfile(common.COOKIEFILE):
+        common.mechanizeLogin()
+    tv_asins = common.SCRAP_ASINS('/gp/aw/wl/?filter=tv')
+    mov_asins = common.SCRAP_ASINS('/gp/aw/wl/?filter=movie')
 
-    for value in asins:
-        if listmovie.LIST_MOVIES(search=True, asinfilter = value, cmmode=1, export=export) == 0:
-            if listtv.LIST_TVSHOWS(search=True, asinfilter = value, cmmode=1, export=export) == 0:
-                for seasondata in tv.lookupTVdb(value, tbl='seasons', single=False):
-                    if seasondata:
-                        listtv.ADD_SEASON_ITEM(seasondata, disptitle=True, cmmode=1, export=export)
+    if not export: common.addText('          ----=== ' + common.getString(30104) + ' ===----')
+    for value in mov_asins:
+        listmovie.LIST_MOVIES('asin', value, search=True, cmmode=1, export=export)
+        
+    if not export: common.addText('          ----=== ' + common.getString(30107) + ' ===----')
+    for value in tv_asins:
+        if listtv.LIST_TVSHOWS('asin', value, search=True, cmmode=1, export=export) == 0:
+            for seasondata in tv.lookupTVdb(value, tbl='seasons', single=False):
+                if seasondata:
+                    listtv.ADD_SEASON_ITEM(seasondata, disptitle=True, cmmode=1, export=export)
+
     if not export: common.SetView('tvshows', 'showview')
 
 def getTVDBImages(title, imdb=None, id=None, seasons=False):
@@ -190,7 +195,7 @@ def getTMDBImages(title, imdb=None, content='movie', year=None):
         movie = urllib.quote_plus(title)
         result = common.getURL('http://api.themoviedb.org/3/search/%s?api_key=%s&language=de&query=%s%s' % (content, common.tmdb, movie, str_year), silent=True)
         if not result:
-            print "Amazon Fanart: Pause 5 sec..."
+            common.Log('Fanart: Pause 5 sec...')
             xbmc.sleep(5000)
             continue
         data = demjson.decode(result)
@@ -211,7 +216,7 @@ def getTMDBImages(title, imdb=None, content='movie', year=None):
             if title == oldtitle:
                 break
     if content == 'movie' and id and not fanart:
-        fanart = 'not available'
+        fanart = common.na
     return fanart
     
 def updateAll():
@@ -224,6 +229,8 @@ def updateAll():
     movies.addMoviesdb(full_update = False)
     NewAsins = common.getNewest()
     movies.setNewest(NewAsins)
+    movies.updateFanart()
     tv.setNewest(NewAsins)
+    tv.updateFanart()
     common.addon.setSetting('last_update', str(date.today()))
     Notif(common.__plugin__, common.getString(30126), sound = False)

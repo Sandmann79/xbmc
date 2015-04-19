@@ -16,15 +16,16 @@
     <category label="30038">
         <setting label="30001" type="lsep"/>
         <setting id="save_login" type="bool" label="30006" default="false" />
-        <setting id="login_name" type="text" label="30002" enable="eq(-1,true)" default="" />
-        <setting label="30003" type="action" enable="eq(-2,true)" action="RunPlugin(plugin://plugin.video.amazon/?mode=<common>&sitemode=<setLoginPW>)" />
+        <setting id="login_name" type="text" label="30002" enable="eq(-100,true)" default="" subsetting="true"/>
+        <setting id="login_pass" type="text" label="30003"enable="eq(-100,true)" option="hidden" default="" subsetting="true"/>
+        <setting id="no_cookie" type="bool" label="30014" default="false" enable="eq(-3,true)"/>
         <setting label="30007" type="action" action="RunPlugin(plugin://plugin.video.amazon/?mode=<common>&sitemode=<remLoginData>)" option="close"/>
         <setting label="30008" type="lsep"/>
         <setting id="auto_update" type="enum" lvalues="30010|30018|30019|30020|30021" label="30009" default="2"/>
+        <setting id="update_time" type="time" label="30013" enable="gt(-1,0)" default="00:00" subsetting="true"/>
         <setting id="tmdb_art" type="enum" lvalues="30050|30051|30052" label="30016" default="1"/>
         <setting id="tvdb_art" type="enum" lvalues="30050|30053|30054|30056" label="30017" default="1"/>
         <setting id="mov_perpage" type="labelenum" values="25|50|100|150|200|250" label="30039" default="250"/>
-        <setting id="tv_perpage" type="labelenum" values="25|50|100|150|200|250" label="30040" default="150"/>
     </category>
     <category label="30015">
         <setting id="viewenable" type ="bool" label="30035" default="true"/>

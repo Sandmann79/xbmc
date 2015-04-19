@@ -5,10 +5,12 @@
     <string id="30003">Passwort</string>
     <string id="30004">Stream Bitrate (0 - Fragen)</string>
     <string id="30005">Untertitel aktivieren</string>
-    <string id="30006">Zugangsdaten speichern (unsicher)?</string>
+    <string id="30006">Zugangsdaten speichern?</string>
+    <string id="30014">Keinen Cookie verwenden</string>
     <string id="30007">Zugangsdaten und Cookie entfernen</string>
     <string id="30008">Datenbankaktualisierung</string>
     <string id="30009">Datenbank automatisch aktualisieren</string>
+    <string id="30013">Uhrzeit</string>
     <string id="30010">Aus</string>
     <string id="30018">Täglich</string>
     <string id="30019">Alle 2 Tage</string>
@@ -45,8 +47,7 @@
     <string id="30032">Episoden Ansicht</string>
 
     <string id="30038">Verbindung</string>
-    <string id="30039">Elemente pro Seite (Filmsuche)</string>
-    <string id="30040">Elemente pro Seite (Seriensuche)</string>
+    <string id="30039">Elemente pro Seite</string>
 
     <string id="30041">Vollbild aktivieren</string>
     <string id="30042">Browser Kiosk Modus</string>
@@ -75,6 +76,9 @@
     <string id="30113">Sprache auswählen und wiedergeben</string>
     <string id="30114">Stream Qualität auswählen:</string>
     <string id="30115">Verfügbare Sprachen:</string>
+    
+    <string id="30116">Aktualisieren</string>
+    <string id="30117">Video-Bibliothek wird aktualisiert ...</string>
 
     <string id="30120">Erstelle Filmdatenbank</string>
     <string id="30121">Starte Filmsuche</string>
@@ -129,7 +133,7 @@
     <string id="30180">%s zur Watchlist hinzufügen</string>
     <string id="30181">%s aus Watchlist entfernen</string>
 
-    <string id="30185">%s zur Bibliothek hinzufügen</string>
+    <string id="30185">%s exportieren</string>
     <string id="30186">Bibliothek aktualisieren</string>
     <string id="30187">Amazon Video-Quellen hinzugefügt</string>
     <string id="30188">Zum Abschluß des Setups:</string>
@@ -137,7 +141,9 @@
     <string id="30190"> 2) den Inhalt der Ordner festlegen</string>
     <string id="30191">Neustart</string>
     <string id="30192">Soll der XBMC/Kodi neugestartet werden?</string>
-
+    
+    <string id="30198">Stream mit gewählter Wiedergabemethode nicht abspielbar, bitte Chrome oder Browser Launcher verwenden.</string>
+    <string id="30199">Keine Inhalte vorhanden</string>
     <string id="30200">Fehler bei der Anmeldung</string>   
     <string id="30201">E-Mail Adresse oder Passwort falsch</string>   
     <string id="30202">Keine Suchergebnisse</string>

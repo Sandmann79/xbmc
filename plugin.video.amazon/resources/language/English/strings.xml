@@ -5,10 +5,12 @@
     <string id="30003">Password</string>
     <string id="30004">Stream Bitrate (0 - Ask)</string>
     <string id="30005">Enable Subtitles</string>
-    <string id="30006">Remember Credentials (unsecure)?</string>
+    <string id="30006">Remember Credentials?</string>
+    <string id="30014">Don't save cookie</string>
     <string id="30007">Remove Credentials and Cookie</string>
     <string id="30008">Database Update</string>
     <string id="30009">Automatically Update Database</string>
+    <string id="30013">Time Of Day</string>
     <string id="30010">Off</string>
     <string id="30018">Daily</string>
     <string id="30019">Every Two Days</string>
@@ -45,9 +47,8 @@
     <string id="30032">Episode View</string>
     
     <string id="30038">Update</string>
-    <string id="30039">Items Per Page (Movie scan)</string>
-    <string id="30040">Items Per Page (TV-Show scan)</string>
-    
+    <string id="30039">Items Per Page</string>
+
     <string id="30041">Switch Fullscreen</string>
     <string id="30042">Browser Kiosk Mode</string>
     <string id="30043">Play HD If Available</string>
@@ -76,6 +77,9 @@
     <string id="30114">Choose Stream Quality:</string>
     <string id="30115">Available Languages:</string>
     
+    <string id="30116">Refresh</string>
+    <string id="30117">Refreshing Video Library...</string>
+
     <string id="30120">Building Prime Movie Database</string>
     <string id="30121">Initializing Movie Scan</string>
     <string id="30122">Scanning Page %s</string>
@@ -129,7 +133,7 @@
     <string id="30180">Add %s to Watchlist</string>
     <string id="30181">Remove %s from Watchlist</string>
     
-    <string id="30185">Export %s to Library</string>
+    <string id="30185">Export %s</string>
     <string id="30186">Update Library</string>
     <string id="30187">Source folders added</string>
     <string id="30188">To complete the setup:</string>
@@ -138,6 +142,8 @@
     <string id="30191">Restart</string>
     <string id="30192">Do you want to restart Kodi now?</string>
 
+    <string id="30198">Stream not playable with current settings, please use Chrome or Browser Launcher.</string>
+    <string id="30199">No content found</string>
     <string id="30200">Login Error</string>
     <string id="30201">Wrong Email Adress or Password</string>
     <string id="30202">No Search Results</string>

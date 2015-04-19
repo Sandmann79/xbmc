@@ -20,8 +20,7 @@ os = common.os
 urlparse = common.urlparse
 
 ################################ TV db
-MAX = int(common.addon.getSetting("tv_perpage"))
-MAX_MOV = int(common.addon.getSetting("mov_perpage"))
+MAX = int(common.addon.getSetting("mov_perpage"))
 EPI_TOTAL = common.addon.getSetting("EpisodesTotal")
 if EPI_TOTAL == '': EPI_TOTAL = '17000'
 EPI_TOTAL = int(EPI_TOTAL)
@@ -32,6 +31,9 @@ DialogPG = xbmcgui.DialogProgress()
 
 def createTVdb():
     c = tvDB.cursor()
+    c.execute('drop table if exists shows')
+    c.execute('drop table if exists seasons')
+    c.execute('drop table if exists episodes')
     c.execute('''CREATE TABLE shows(
                  asin TEXT UNIQUE,
                  seriestitle TEXT,
@@ -114,34 +116,34 @@ def createTVdb():
     tvDB.commit()
     c.close()
 
-def loadTVShowdb(filter=False,value=False,sortcol=False,isprime=True):
+def loadTVShowdb(filter=False,value=False,sortcol=False):
     common.waitforDB('tv')
     c = tvDB.cursor()
     if filter:
         value = '%' + value + '%'
-        return c.execute('select distinct * from shows where isprime = (?) and %s like (?)' % filter, (isprime,value))
+        return c.execute('select distinct * from shows where %s like (?)' % filter, (value,))
     elif sortcol:
         return c.execute('select distinct * from shows where %s is not null order by %s asc' % (sortcol,sortcol))
     else:
-        return c.execute('select distinct * from shows where isprime = (?)', (isprime,))
+        return c.execute('select distinct * from shows')
 
-def loadTVSeasonsdb(seriesasin=False,isprime=True,sortcol=False,seasonasin=False):
+def loadTVSeasonsdb(seriesasin=False,sortcol=False,seasonasin=False):
     common.waitforDB('tv')
     c = tvDB.cursor()
     if seriesasin:
-        return c.execute('select distinct * from seasons where isprime = (?) and seriesasin = (?)', (isprime,seriesasin))
+        return c.execute('select distinct * from seasons where seriesasin = (?)', (seriesasin,))
     if seasonasin:
         seasonasin = '%' + seasonasin + '%'
         return c.execute('select distinct * from seasons where asin like (?)', (seasonasin,))
     elif sortcol:
         return c.execute('select distinct * from seasons where %s is not null order by %s asc' % (sortcol,sortcol))
     else:
-        return c.execute('select distinct * from seasons where isprime = (?)', (isprime,))
+        return c.execute('select distinct * from seasons')
 
-def loadTVEpisodesdb(seriestitle,isprime=True):
+def loadTVEpisodesdb(seriestitle):
     common.waitforDB('tv')
     c = tvDB.cursor()
-    return c.execute('select distinct * from episodes where isprime = (?) and seasonasin = (?) order by episode', (isprime,seriestitle))
+    return c.execute('select distinct * from episodes where seasonasin = (?) order by episode', (seriestitle,))
 
 def getShowTypes(col):
     common.waitforDB('tv')
@@ -251,12 +253,8 @@ def addDB(table, data):
     query = '?,' * columns
     c = tvDB.cursor()
     num = c.execute('insert or ignore into %s values (%s)' % (table, query[0:-1]), data).rowcount
-    logstring = 'NOT ADDED '
     if num: 
         tvDB.commit()
-        logstring = 'Add '
-    if table == 'seasons': common.WriteLog(logstring + table + ': (%s) %s Season %s' % (data[0], data[3], data[2]))
-    if table == 'shows': common.WriteLog(logstring + table + ': (%s) %s' % (data[0], data[1]))
     c.close()
     return num
     
@@ -316,30 +314,19 @@ def deleteremoved(asins):
                 asin = '%' + seasonasin + '%'
                 delEpisodes += c.execute('delete from episodes where seriestitle = (?) and season = (?) and seasonasin like (?)', (title, season, asin)).rowcount
                 delSeasons += c.execute('delete from seasons where seriestitle = (?) and season = (?) and asin like (?)', (title, season, asin)).rowcount
-                common.WriteLog('Removed Season: (%s) %s Season %s' % (seasonasin, title, season))
                 if not lookupTVdb(title, rvalue='asin', tbl='seasons', name='seriestitle'):
                     delShows += c.execute('delete from shows where seriestitle = (?)', (title,)).rowcount
-                    common.WriteLog('Removed Show: %s' % title)
     tvDB.commit()
     c.close()
     xbmc.executebuiltin('Container.Refresh')
     return delShows, delSeasons, delEpisodes
 
-def rebuildTVdb():
-    c = tvDB.cursor()
-    c.execute('drop table if exists shows')
-    c.execute('drop table if exists seasons')
-    c.execute('drop table if exists episodes')
-    createTVdb()
-
-def getTVdbAsins(table,col=False,list=False):
+def getTVdbAsins(table, isPrime=1, list=False):
     c = tvDB.cursor()
     content = ''
     if list:
         content = []
-    sqlstring = 'select asin from ' + table
-    if col:
-         sqlstring += ' where %s = (1)' % col
+    sqlstring = 'select asin from %s where isPrime = (%s)' % (table, isPrime)
     for item in c.execute(sqlstring).fetchall():
         if list:
             content.append([','.join(item), 0])
@@ -347,7 +334,9 @@ def getTVdbAsins(table,col=False,list=False):
             content += ','.join(item) + ','
     return content
     
-def addTVdb(full_update = True):
+def addTVdb(full_update = True, libasins = False):
+    prime = True
+    new_libasins = False
     try:
         if common.args.url == 'u':
             full_update = False
@@ -359,19 +348,26 @@ def addTVdb(full_update = True):
     EPISODE_COUNT = 0
     POP_ASINS = []
     
-    if full_update:
+    if full_update and not libasins:
         if not Dialog.yesno(common.getString(30136), common.getString(30137), common.getString(30138) % '30'):
             return
         DialogPG.create(common.getString(30130))
         DialogPG.update(0,common.getString(30131))
-        rebuildTVdb()
+        createTVdb()
         ALL_SERIES_ASINS = ''
         ALL_SEASONS_ASINS = []
     else:
-        ALL_SEASONS_ASINS = getTVdbAsins('seasons',list=True)
+        ALL_SEASONS_ASINS = getTVdbAsins('seasons', list=True)
         ALL_SERIES_ASINS = getTVdbAsins('shows')
+        
+    if libasins:
+        prime = False
+        ALL_SEASONS_ASINS = []
+        new_libasins = checkLibraryAsins(libasins)
+        if not new_libasins: return
+            
     while goAhead == 1:
-        json = appfeed.getList('TVEpisode&RollupToSeason=T', endIndex, OrderBy='SalesRank', NumberOfResults=MAX)
+        json = appfeed.getList('TVEpisode&RollupToSeason=T', endIndex, isPrime=prime, OrderBy='SalesRank', NumberOfResults=MAX, AsinList=new_libasins)
         titles = json['message']['body']['titles']
         if titles:
             SERIES_ASINS = ''
@@ -397,7 +393,7 @@ def addTVdb(full_update = True):
                             ALL_SERIES_ASINS += SERIES_KEY+','
                         season_size = int(title['childTitles'][0]['size'])
                         if season_size < 1:
-                            season_size = MAX_MOV
+                            season_size = MAX
                         parsed = urlparse.urlparse(title['childTitles'][0]['feedUrl'])
                         EPISODE_ASINS.append(urlparse.parse_qs(parsed.query)['SeasonASIN'])
                         EPISODE_NUM.append(season_size)
@@ -410,12 +406,12 @@ def addTVdb(full_update = True):
             goAheadepi = 1
             episodes = 0
             AsinList = ''
-            EPISODE_NUM.append(MAX_MOV + 1)
+            EPISODE_NUM.append(MAX + 1)
             for index, item in enumerate(EPISODE_ASINS):
                 episodes += EPISODE_NUM[index]
                 AsinList += ','.join(item) + ','
-                if (episodes + EPISODE_NUM[index+1]) > MAX_MOV:
-                    json = appfeed.getList('TVEpisode', 0, NumberOfResults=MAX_MOV, AsinList=AsinList)
+                if (episodes + EPISODE_NUM[index+1]) > MAX:
+                    json = appfeed.getList('TVEpisode', 0, isPrime=prime, NumberOfResults=MAX, AsinList=AsinList)
                     titles = json['message']['body']['titles']
                     if titles:
                         EPISODE_COUNT += ASIN_ADD(titles)
@@ -432,25 +428,48 @@ def addTVdb(full_update = True):
                     del titles
         else:
             goAhead = 0
+            
     if goAhead == 0:
+        if not libasins: addTVdb(False, 'full')
+        if libasins == 'full': return 
         common.addon.setSetting("EpisodesTotal",str(countDB('episodes')))
-        updatePop()
-        removed_seasons = []
-        for item in ALL_SEASONS_ASINS:
-            if item[1] == 0: removed_seasons.append(item[0])
-        delShows, delSeasons, delEpisodes = deleteremoved(removed_seasons)
+        if not libasins: 
+            updatePop()
+            removed_seasons = []
+            for item in ALL_SEASONS_ASINS:
+                if item[1] == 0: removed_seasons.append(item[0])
+            delShows, delSeasons, delEpisodes = deleteremoved(removed_seasons)
+            UpdateDialog(SERIES_COUNT, SEASON_COUNT, EPISODE_COUNT, delShows, delSeasons, delEpisodes)
+            
         fixDBLShows()
         fixYears()
         fixStars()
         fixHDshows()
         updateEpisodes()
         fixTitles()
-        UpdateDialog(SERIES_COUNT, SEASON_COUNT, EPISODE_COUNT, delShows, delSeasons, delEpisodes)
         if full_update:
             setNewest()
             DialogPG.close()
             updateFanart()
         tvDB.commit()
+
+def checkLibraryAsins(asinlist):
+    asins = ''
+    removed_seasons = []
+    
+    if asinlist == 'full':
+        asinlist = common.SCRAP_ASINS(common.tvlib % common.lib)
+        ALL_SEASONS_ASINS = getTVdbAsins('seasons', 0, True)
+        for asin in asinlist:
+            found, ALL_SEASONS_ASINS = common.compasin(ALL_SEASONS_ASINS, asin)
+            if not found: asins += asin + ','
+            for item in ALL_SEASONS_ASINS:
+                if item[1] == 0: removed_seasons.append(item[0])
+            deleteremoved(removed_seasons)
+    else: asins = ','.join(asinlist)
+
+    if not asins: return False
+    return asins
 
 def updatePop():
     c = tvDB.cursor()
@@ -489,7 +508,7 @@ def UpdateDialog(SERIES_COUNT, SEASON_COUNT, EPISODE_COUNT, delShows, delSeasons
     common.Log('TV Shows Update:\n%s\n%s\n%s' % (line1,line2,line3))
     #Dialog.ok(common.getString(30126), line1, line2, line3)
     
-def ASIN_ADD(titles,asins=False,url=False,isPrime=True,isHD=False,single=False):
+def ASIN_ADD(titles,asins=False,url=False,single=False):
     if asins:
         titles = appfeed.ASIN_LOOKUP(asins)['message']['body']['titles']
     count = 0

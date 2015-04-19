@@ -9,6 +9,7 @@
     <string id="30007">Usuń dane logowania i cookies</string>
     <string id="30008">Aktualizacja bazy danych</string>
     <string id="30009">Automatyczna aktualizacja bazy danych</string>
+    <string id="30013">Godzina</string>
     <string id="30010">Wyłącz</string>
     <string id="30018">Codziennie</string>
     <string id="30019">Co 2 dni</string>
@@ -38,8 +39,7 @@
     <string id="30033">Zdefiniowane przez użytkownika</string>
     
     <string id="30038">Logowanie i dane</string>
-    <string id="30039">Ilość elementów na stronie (film)</string>
-    <string id="30040">Ilość elementów na stronie (serial)</string>
+    <string id="30039">Ilość elementów na stronie</string>
 
     <string id="30041">Aktywuj tryb pełnoekranowy</string>
     <string id="30042">Tryb przeglądarki Kiosk</string>
@@ -132,7 +132,7 @@
     <string id="30180">Dodaj %s do watchlist</string>
     <string id="30181">Usuń %s z watchlist</string>
 
-    <string id="30185">Dodaj %s do biblioteki</string>
+    <string id="30185">Eksportuj %s</string>
     <string id="30186">Aktualizuj bibliotekę</string>
     <string id="30187">Źródła Amazon Video dodane</string>
     <string id="30188">Po zakończeniu konfigurowania:</string>

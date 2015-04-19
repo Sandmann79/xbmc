@@ -1,26 +1,27 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <addon id="plugin.video.amazon"
        name="Amazon"
-       version="1.4.1"
+       version="1.4.3"
        provider-name="Sandmann79 + BlueCop + Romans I XVI">
   <requires>
     <import addon="xbmc.python" version="2.1.0"/>
     <import addon="script.module.beautifulsoup" version="3.2.1"/>
     <import addon="script.module.demjson" version="2.2.2"/>
     <import addon="script.module.mechanize" version="0.2.6"/>
-    <import addon="script.module.amazon.database" version="0.0.8"/>
+    <import addon="script.module.amazon.database" version="0.0.9"/>
   </requires>
   <extension point="xbmc.python.pluginsource"
              library="default.py">
 	<provides>video</provides>
   </extension>
+  <extension point="xbmc.service" library="service.py" start="startup" />
   <extension point="xbmc.addon.metadata">
     <platform>all</platform>
     <summary lang="en">Amazon Prime Video Streaming</summary>
     <summary lang="de">Amazon Prime Instant Video</summary>
     <description lang="en">Movies and Television Shows for Prime Members</description>
     <description lang="de">Filme und Serien für Amazon Prime Mitglieder</description>
-    <disclaimer lang="en">Some parts of this addon may not be legal in your country of residence - please check with your local laws before installing.</disclaimer>
-    <disclaimer lang="de">Möglicherweise sind einge Teile dieses Addons in Ihrem Land illegal, Sie sollten dies unbedingt vor der Installation überprüfen.</disclaimer>
+    <disclaimer lang="en">Some parts of this addon may not be legal in your country of residence - please check with your local laws before installing. This Plugin uses pyDes by Todd Whiteman</disclaimer>
+    <disclaimer lang="de">Möglicherweise sind einge Teile dieses Addons in Ihrem Land illegal, Sie sollten dies unbedingt vor der Installation überprüfen. Diese Plugin verwendet pyDes von Todd Whiteman</disclaimer>
   </extension>
 </addon>

@@ -161,7 +161,7 @@ def ADD_SEASON_ITEM(seasondata, mode='listtv', submode='LIST_EPISODES_DB', dispt
     if not fanart or common.na:
         fanart = poster
     if showfanart == 'true': 
-        fanart = getFanart(seriesASIN)
+        fanart, cover = getFanart(seriesASIN)
     infoLabels['TotalSeasons'] = 1
     infoLabels['Thumb'] = poster
     infoLabels['Fanart'] = fanart
@@ -219,13 +219,18 @@ def ADD_EPISODE_ITEM(episodedata, onlyinfo=False, export=False):
         infoLabels['AudioChannels'] = audio
     if not fanart or fanart == common.na:
         fanart = poster
+
+    showfanart, showposter = getFanart(seriesASIN)
     if showfanart == 'true': 
-        fanart = getFanart(seriesASIN)
+        infoLabels['Thumb'] = showposter
+        infoLabels['Fanart'] = showfanart
+    else:
+        infoLabels['Thumb'] = poster
+        infoLabels['Fanart'] = fanart
+    infoLabels['Poster'] = showposter
     displayname = str(episode) + ' - ' + episodetitle 
     displayname = displayname.replace('"','')
     infoLabels['Title'] = displayname
-    infoLabels['Thumb'] = poster
-    infoLabels['Fanart'] = fanart
     infoLabels['isHD'] = isHD
     infoLabels['isAdult'] = isAdult
     infoLabels['seriesASIN'] = seriesASIN
@@ -246,4 +251,4 @@ def getFanart(asin):
     fanart, poster = tv.lookupTVdb(asin, rvalue='fanart, poster', tbl='shows')
     if not fanart or fanart == common.na:
         fanart = poster
-    return fanart
+    return fanart, poster

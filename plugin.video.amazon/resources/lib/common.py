@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 from BeautifulSoup import BeautifulSoup
+from uuid import getnode
+from pyDes import *
 import cookielib
 import mechanize
 import sys
@@ -42,10 +44,16 @@ def_fanart = os.path.join(pluginpath, 'fanart.jpg')
 na = 'not available'
 logfile = False
 BASE_URL = 'https://www.amazon.de'
-#ATV_URL = 'https://atv-ps-eu.amazon.com'
-ATV_URL = 'https://atv-ext-eu.amazon.com'
+ATV_URL = 'https://atv-ps-eu.amazon.com'
+#ATV_URL = 'https://atv-ext-eu.amazon.com'
 #UserAgent = 'Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko'
-UserAgent = 'Mozilla/5.0 (X11; U; Linux i686; en-US) AppleWebKit/533.4 (KHTML, like Gecko) Chrome/5.0.375.127 Large Screen Safari/533.4 GoogleTV/162671'
+UserAgent = 'Mozilla/5.0 (X11; U; Linux i686; de-DE) AppleWebKit/533.4 (KHTML, like Gecko) Chrome/5.0.375.127 Large Screen Safari/533.4 GoogleTV/162671'
+#UserAgent = 'Mozilla/5.0 (X11; U; Linux i686; en-US) AppleWebKit/533.4 (KHTML, like Gecko) Chrome/5.0.375.127 Large Screen Safari/533.4 GoogleTV/b'
+movielib = '/gp/aw/%s/?filter=movie'
+tvlib = '/gp/aw/%s/?filter=tv'
+lib = 'yvl'
+wl = 'wl'
+winid = xbmcgui.getCurrentWindowId()
 
 class _Info:
     def __init__( self, *args, **kwargs ):
@@ -53,10 +61,13 @@ class _Info:
 
 def getURL( url, host=BASE_URL.split('//')[1], useCookie=False, silent=False, headers=None):
     cj = cookielib.LWPCookieJar()
-    if useCookie and os.path.isfile(COOKIEFILE):
-        cj.load(COOKIEFILE, ignore_discard=True, ignore_expires=True)
-    if not silent: Log('getURL: '+url)
-    else: WriteLog('getURL: '+url)
+    if useCookie:
+        if isinstance(useCookie, bool): cj = mechanizeLogin()
+        else: cj = useCookie
+        if isinstance(cj, bool): return False
+    dispurl = url
+    #dispurl = re.sub(tvdb+'|'+tmdb+'|&token=\w+', '', url, flags=re.IGNORECASE).strip()
+    if not silent: Log('getURL: '+dispurl)
     if not headers: headers = [('User-Agent', UserAgent ), ('Host', host)]
     try:
         opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cj),urllib2.HTTPRedirectHandler)
@@ -87,10 +98,11 @@ def getATVURL( url , values = None ):
     else:
         return response
 
-def WriteLog(data, path=os.path.join(homepath, 'amazon.log')):
+def WriteLog(data, fn='amazon.log', mode='a'):
+    path = os.path.join(homepath, fn)
     if not logfile: return
     if type(data) == type(unicode()): data = data.encode('utf-8')
-    file = open(path, 'a')
+    file = open(path, mode)
     data = time.strftime('[%d/%H:%M:%S] ', time.localtime()) + data.__str__()
     file.write(data)
     file.write('\n')
@@ -99,7 +111,7 @@ def WriteLog(data, path=os.path.join(homepath, 'amazon.log')):
 def Log(msg, level=xbmc.LOGNOTICE):
     if type(msg) == type(unicode()):
         msg = msg.encode('utf-8')
-    WriteLog(msg)
+    #WriteLog(msg)
     xbmc.log('[%s] %s' % (__plugin__, msg.__str__()), level)
     
 def SaveFile(path, data):
@@ -160,6 +172,8 @@ def addVideo(name,asin,poster=False,fanart=False,infoLabels=False,totalItems=0,c
     if trailer:
         infoLabels['Trailer'] = u + '&trailer=<1>&selbitrate=<0>'
     u += '&trailer=<0>&selbitrate=<0>'
+    if infoLabels.has_key('Poster'): liz.setArt({'tvshow.poster': infoLabels['Poster']})
+    else: liz.setArt({'poster': poster})
     liz.setInfo(type='Video', infoLabels=infoLabels)
     liz.addContextMenuItems( cm , replaceItems=False )
     xbmcplugin.addDirectoryItem(handle=pluginhandle,url=u,listitem=liz,isFolder=False,totalItems=totalItems)     
@@ -199,6 +213,11 @@ def gen_id():
         addon.setSetting("GenDeviceID",makeGUID()) 
 
 def mechanizeLogin():
+    cj = cookielib.LWPCookieJar()
+    if os.path.isfile(COOKIEFILE):
+        cj.load(COOKIEFILE, ignore_discard=True, ignore_expires=True)
+        return cj
+    Log('Login')
     succeeded = dologin()
     retrys = 0
     while succeeded == False:
@@ -209,59 +228,68 @@ def mechanizeLogin():
         if retrys >= 2:
             xbmcgui.Dialog().ok('Login Error','Failed to Login')
             succeeded=True
+    return succeeded
 
 def dologin():
-    br = mechanize.Browser()  
-    content = br.open(BASE_URL).read()
-    if '"isPrime":1' in content:
-        return True
-    del content
     email = addon.getSetting('login_name')
-    password = base64.b64decode(addon.getSetting('login_pass'))
+    password = decode(addon.getSetting('login_pass'))
+    changed = False
     
     if addon.getSetting('save_login') == 'false' or email == '' or password == '':
-        keyboard = xbmc.Keyboard('', getString(30002))
+        keyboard = xbmc.Keyboard(addon.getSetting('login_name'), getString(30002))
         keyboard.doModal()
         if keyboard.isConfirmed() and keyboard.getText():
             email = keyboard.getText()
-            password = setLoginPW(False)
-    if password:            
+            password = setLoginPW()
+            if password: changed = True
+    if password:
         if os.path.isfile(COOKIEFILE):
             os.remove(COOKIEFILE)
         cj = cookielib.LWPCookieJar()
+        br = mechanize.Browser()  
         br.set_handle_robots(False)
         br.set_cookiejar(cj)
-        br.set_debug_http(True)
-        br.set_debug_responses(True)
+        #br.set_debug_http(True)
+        #br.set_debug_responses(True)
         br.addheaders = [('User-agent', UserAgent)]  
-        sign_in = br.open(BASE_URL + "/gp/flex/sign-out.html") 
+        sign_in = br.open(BASE_URL + "/gp/aw/si.html") 
         br.select_form(name="signIn")  
         br["email"] = email
         br["password"] = password
-        logged_in = br.submit()  
-        error_str = "message_error"
+        logged_in = br.submit()
+        error_str = "message error"
         if error_str in logged_in.read():
             xbmcgui.Dialog().ok(getString(30200), getString(30201))
-            return True
+            return False
         else:
-            if addon.getSetting('save_login') == 'true':
+            if addon.getSetting('save_login') == 'true' and changed:
                 addon.setSetting('login_name', email)
-                addon.setSetting('login_pass', base64.b64encode(password))
-            cj.save(COOKIEFILE, ignore_discard=True, ignore_expires=True)
+                addon.setSetting('login_pass', encode(password))
+            if addon.getSetting('no_cookie') != 'true':
+                cj.save(COOKIEFILE, ignore_discard=True, ignore_expires=True)
             gen_id()
-            return True
-    return False
+            return cj
+    return True
     
-def setLoginPW(save=True):
+def setLoginPW():
     keyboard = xbmc.Keyboard('', getString(30003), True)
     keyboard.doModal()
     if keyboard.isConfirmed() and keyboard.getText():
         password = keyboard.getText()
-        if save:
-            addon.setSetting('login_pass', base64.b64encode(password))
         return password
     return False
         
+def encode(data):
+    k = triple_des((str(getnode())*2)[0:24], CBC, "\0\0\0\0\0\0\0\0", padmode=PAD_PKCS5)
+    d = k.encrypt(data)
+    return base64.b64encode(d)
+
+def decode(data):
+    if not data: return ''
+    k = triple_des((str(getnode())*2)[0:24], CBC, "\0\0\0\0\0\0\0\0", padmode=PAD_PKCS5)
+    d = k.decrypt(base64.b64decode(data))
+    return d
+    
 def cleanData(data):
     if type(data) == type(str()) or type(data) == type(unicode()):
         if data.replace('-','').strip() == '': data = ''
@@ -284,7 +312,7 @@ def cleanName(name, file=True):
 def GET_ASINS(content):
     asins = ''
     hd_key = False
-    prime_key = True
+    prime_key = False
     channels = 1
     if content.has_key('titleId'):
         asins += content['titleId']
@@ -320,16 +348,17 @@ def SCRAP_ASINS(url):
     asins = []
     url = BASE_URL + url + '&pageSize=1000&sortBy=date'
     content = getURL(url, useCookie=True)
-    asins += re.compile('data-asin="(.+?)"', re.DOTALL).findall(content)
-    return asins
+    if content:
+        asins += re.compile('data-asin="(.+?)"', re.DOTALL).findall(content)
+        return asins
+    return []
     
 def getString(id, enc=False):
     if enc: return addon.getLocalizedString(id).encode('utf-8')
     return addon.getLocalizedString(id)
 
 def remLoginData():
-    if os.path.isfile(COOKIEFILE):
-        os.remove(COOKIEFILE)
+    if os.path.isfile(COOKIEFILE): os.remove(COOKIEFILE)
     addon.setSetting('login_name', '')
     addon.setSetting('login_pass', '')
 
@@ -359,6 +388,7 @@ def SetView(content, view=False, updateListing=False):
         viewid = confluence_views[int(addon.getSetting(view))]
         if viewid == -1:
             viewid = int(addon.getSetting(view.replace('view', 'id')))
+        xbmc.executebuiltin('ActivateWindow(%s)' % winid)
         xbmc.executebuiltin('Container.SetViewMode(%s)' % viewid)
     xbmcplugin.endOfDirectory(pluginhandle,updateListing=updateListing)
     
@@ -386,10 +416,11 @@ def waitforDB(database):
             c.execute('select distinct * from ' + tbl).fetchone()
         except:
             error = True
-            xbmc.sleep(5000)
-            print 'Database locked'
+            xbmc.sleep(1000)
+            Log('Database locked')
     c.close()
             
 urlargs =  urllib.unquote_plus(sys.argv[2][1:].replace('&', ', ')).replace('<','"').replace('>','"')
+
 Log('Args: %s' % urlargs)
 exec "args = _Info(%s)" % urlargs

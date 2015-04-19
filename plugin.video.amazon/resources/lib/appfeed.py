@@ -64,19 +64,18 @@ def BUILD_BASE_API(MODE,HOST=common.ATV_URL + '/cdp/'):
     return HOST+MODE+PARAMETERS
 
 def getList(ContentType,start=0,isPrime=True,NumberOfResults=MAX,OrderBy='MostPopular',version=2,AsinList=False):
-    if isPrime:
-        BROWSE_PARAMS = '&OfferGroups=B0043YVHMY'
-    BROWSE_PARAMS +='&NumberOfResults='+str(NumberOfResults)
+    BROWSE_PARAMS ='&NumberOfResults='+str(NumberOfResults)
     BROWSE_PARAMS +='&StartIndex='+str(start)
     BROWSE_PARAMS +='&ContentType='+ContentType
     BROWSE_PARAMS +='&OrderBy='+OrderBy
     BROWSE_PARAMS +='&IncludeAll=T'
+    if isPrime: BROWSE_PARAMS += '&OfferGroups=B0043YVHMY'
     if ContentType == 'TVEpisode':
         BROWSE_PARAMS +='&Detailed=T'
         BROWSE_PARAMS +='&AID=T'
         BROWSE_PARAMS +='&tag=1'
-        BROWSE_PARAMS +='&SeasonASIN='+AsinList
         BROWSE_PARAMS +='&IncludeBlackList=T'
+    if AsinList: BROWSE_PARAMS +='&SeasonASIN='+AsinList
     BROWSE_PARAMS +='&version='+str(version)    
     #&HighDef=F # T or F ??
     #&playbackInformationRequired=false
@@ -114,28 +113,64 @@ def SEARCH_DB(searchString=False):
                     common.addText(common.getString(30202))
                 common.SetView('tvshows', 'showview')
 
-def ExportWatchlist():
-    WatchList(True)
+def ExportList():
+    list = common.args.url
+    ListCont(common.movielib % list)
+    ListCont(common.tvlib % list)
+    
+def ListMenu():
+    list = common.args.url
+    common.addDir(common.getString(30104), 'appfeed', 'ListCont', common.movielib % list)
+    common.addDir(common.getString(30107), 'appfeed', 'ListCont', common.tvlib % list)
+    common.xbmcplugin.endOfDirectory(common.pluginhandle)
 
-def WatchList(export=False):
+def ListCont(export=False):
     import tv
-    if not os.path.isfile(common.COOKIEFILE):
-        common.mechanizeLogin()
-    tv_asins = common.SCRAP_ASINS('/gp/aw/wl/?filter=tv')
-    mov_asins = common.SCRAP_ASINS('/gp/aw/wl/?filter=movie')
-
-    if not export: common.addText('          ----=== ' + common.getString(30104) + ' ===----')
-    for value in mov_asins:
-        listmovie.LIST_MOVIES('asin', value, search=True, cmmode=1, export=export)
-        
-    if not export: common.addText('          ----=== ' + common.getString(30107) + ' ===----')
-    for value in tv_asins:
-        if listtv.LIST_TVSHOWS('asin', value, search=True, cmmode=1, export=export) == 0:
+    mov = False
+    if export:
+        url = export
+        export = True
+    else:
+        url = common.args.url
+    if 'movie' in url: mov = True
+    asins = common.SCRAP_ASINS(url)
+    if not asins:
+        xbmcgui.Dialog().notification(common.__plugin__, common.getString(30199), sound = False)
+        return
+    
+    for value in asins:
+        ret = 0
+        if mov: ret = listmovie.LIST_MOVIES('asin', value, search=True, cmmode=1, export=export)
+        if ret == 0 and not mov: ret = listtv.LIST_TVSHOWS('asin', value, search=True, cmmode=1, export=export)
+        if ret == 0 and not mov:
             for seasondata in tv.lookupTVdb(value, tbl='seasons', single=False):
-                if seasondata:
-                    listtv.ADD_SEASON_ITEM(seasondata, disptitle=True, cmmode=1, export=export)
+                if seasondata: listtv.ADD_SEASON_ITEM(seasondata, disptitle=True, cmmode=1, export=export)
 
-    if not export: common.SetView('tvshows', 'showview')
+    if not export:
+        if mov: common.SetView('movies', 'movieview')
+        else: common.SetView('tvshows', 'showview')
+
+def RefreshList():
+    import tv
+    import movies
+    list = common.args.url
+    mvlist = []
+    tvlist = []
+    pDialog = xbmcgui.DialogProgress()
+    pDialog.create(common.__plugin__, common.getString(30117))
+    
+    for asin in common.SCRAP_ASINS(common.movielib % list):
+        if not movies.lookupMoviedb(asin): mvlist.append(asin)
+
+    for asin in common.SCRAP_ASINS(common.tvlib % list):
+        if not tv.lookupTVdb(asin, tbl='seasons'): tvlist.append(asin)
+
+    if mvlist: movies.updateLibrary(mvlist)
+    if tvlist: tv.addTVdb(False, tvlist)
+    pDialog.close()
+    
+    if mvlist: movies.updateFanart()
+    if tvlist: tv.updateFanart()
 
 def getTVDBImages(title, imdb=None, id=None, seasons=False):
     posterurl = fanarturl = None
@@ -222,7 +257,8 @@ def getTMDBImages(title, imdb=None, content='movie', year=None):
 def updateAll():
     import movies
     import tv
-    from datetime import date
+    from datetime import datetime
+    common.addon.setSetting('update_running', datetime.today().strftime('%Y-%m-%d %H:%M'))
     Notif = xbmcgui.Dialog().notification
     Notif(common.__plugin__, common.getString(30106), sound = False)
     tv.addTVdb(full_update = False)
@@ -232,5 +268,6 @@ def updateAll():
     movies.updateFanart()
     tv.setNewest(NewAsins)
     tv.updateFanart()
-    common.addon.setSetting('last_update', str(date.today()))
+    common.addon.setSetting('last_update', datetime.today().strftime('%Y-%m-%d'))
+    common.addon.setSetting('update_running', 'false')
     Notif(common.__plugin__, common.getString(30126), sound = False)

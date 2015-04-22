@@ -23,6 +23,7 @@ re = common.re
 demjson = common.demjson
 settings = common.addon
 os = common.os
+hashlib = common.hashlib
 
 userinput = os.path.join(common.pluginpath, 'tools', 'userinput.exe' )
 waitsec = int(settings.getSetting("clickwait")) * 1000
@@ -234,21 +235,37 @@ def PLAYVIDEOINT():
 def GETFLASHVARS(pageurl):
     cookie = common.mechanizeLogin()
     showpage = common.getURL(pageurl, useCookie=cookie)
+    common.WriteLog(showpage, 'flashvars', 'w')
     if not showpage:
         Dialog.notification(common.__plugin__, Error('CDP.InvalidRequest'), xbmcgui.NOTIFICATION_ERROR)
         return False
     values = {}
-    values['swfUrl'] = 'http://ecx.images-amazon.com/images/G/01/digital/video/webplayer/1.0.375.0/swf/UnboxScreeningRoomClient.swf'
-    values['asin'] = re.compile('"pageAsin":"(.*?)"',re.DOTALL).findall(showpage)[0]
-    values['sessionID'] = re.compile("ue_sid='(.*?)'",re.DOTALL).findall(showpage)[0]
-    values['marketplace'] = re.compile("ue_mid='(.*?)'",re.DOTALL).findall(showpage)[0]
-    values['customer'] = re.compile('"customerID":"(.*?)"',re.DOTALL).findall(showpage)[0]    
-    #values['deviceTypeID']  = 'AOAGZA014O5RE' #enc Flash
+    search = {'asin'       : '"pageAsin":"(.*?)"',
+              'sessionID'  : "ue_sid='(.*?)'",
+              'marketplace': "ue_mid='(.*?)'",
+              'customer'   : '"customerID":"(.*?)"'}
+    if 'var config' in showpage:
+        flashVars = re.compile('var config = (.*?);',re.DOTALL).findall(showpage)
+        flashVars = demjson.decode(unicode(flashVars[0], errors='ignore'))
+        values = flashVars['player']['fl_config']['initParams']
+        swfUrl = flashVars['player']['fl_config']['playerSwf']
+    else:
+        for key, pattern in search.items():
+            result = re.compile(pattern, re.DOTALL).findall(showpage)
+            if result: values[key] = result[0]
+        values['swfUrl'] = 'http://ecx.images-amazon.com/images/G/01/digital/video/webplayer/1.0.379.0/swf/UnboxScreeningRoomClient.swf'
+    
+    for key in values.keys():
+        if not values.has_key(key):
+            Dialog.notification(common.getString(30200), common.getString(30210), xbmcgui.NOTIFICATION_ERROR)
+            return False
+
     values['deviceTypeID']  = 'A324MFXUEZFF7B' #Sony GoogleTV unenc Flash
+    #values['deviceTypeID']  = 'A13Q6A55DBZB7M' #enc Flash
     #values['deviceTypeID']  = 'A35LWR0L7KC0TJ' #Logitech GoogleTV unenc Flash
     #values['deviceTypeID']  = 'A63V4FRV3YUP9' #enc Silverlight
     values['userAgent']     = "GoogleTV 162671"
-    values['deviceID']      = values['customer'] + str(int(time.time() * 1000)) + values['asin']
+    values['deviceID']      = common.hmac.new(common.UserAgent, common.gen_id(), hashlib.sha224).hexdigest()
     rand = 'onWebToken_' + str(random.randint(0,484))
     pltoken = common.getURL(common.BASE_URL + "/gp/video/streaming/player-token.json?callback=" + rand, useCookie=cookie)
     try:
@@ -259,7 +276,7 @@ def GETFLASHVARS(pageurl):
     return values
     
 def PLAY(rtmpurls,values,Trailer=False,title=False):
-    lbitrate = int(common.addon.getSetting("bitrate"))
+    lbitrate = int(settings.getSetting("bitrate"))
     if selbitrate == '1':
         lbitrate = -1
     mbitrate = 0
@@ -300,7 +317,7 @@ def PLAY(rtmpurls,values,Trailer=False,title=False):
     protocol = rtmpurlSplit[0]
     hostname = rtmpurlSplit[1]
     appName =  rtmpurlSplit[2]
-    stream = rtmpurlSplit[3]#.replace('$','\x5c24')
+    stream = rtmpurlSplit[3]#.replace('de$de','de')#.replace('$','\x5c24')
     auth = rtmpurlSplit[4]
     tcurl = protocol[0:-1] + '://' + hostname + '/' + appName
     #hostname = getIP(hostname) + ':1935'
@@ -312,11 +329,10 @@ def PLAY(rtmpurls,values,Trailer=False,title=False):
 
     finalUrl = '%s app=%s swfUrl=%s pageUrl=%s playpath=%s tcUrl=%s swfVfy=true' % (basertmp, appName, values['swfUrl'], amazonUrl, stream, tcurl)
     infoLabels = GetStreamInfo(common.args.asin, title)
-    common.WriteLog('Content: %s\nRTMPUrl: %s' %(title,finalUrl))
+    common.WriteLog('Content: %s\nRTMPUrl: %s' %(title,finalUrl), 'content')
     if '$' in stream:
         Dialog.notification(common.getString(30198), title, xbmcgui.NOTIFICATION_ERROR)
         return False
-    
     if Trailer:
         infoLabels['Title'] += ' (Trailer)'
     item = xbmcgui.ListItem(path=finalUrl, thumbnailImage=infoLabels['Thumb'])

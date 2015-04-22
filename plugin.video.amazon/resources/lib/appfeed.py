@@ -45,9 +45,8 @@ os = common.os
 #===============================================================================
 
 MAX = 20
-common.gen_id()
+deviceID = common.gen_id()
 
-deviceID = common.addon.getSetting("GenDeviceID")
 #Android id: A2W5AJPLW5Q6YM, A1PY8QQU9P0WJV, A1MPSLFC7L5AFK // fmw:{AndroidSDK}-app:{AppVersion}
 #deviceTypeID = 'A13Q6A55DBZB7M' #WEB Type
 #firmware = 'fmw:15-app:1.1.19' #Android
@@ -127,24 +126,38 @@ def ListMenu():
 def ListCont(export=False):
     import tv
     mov = False
+    showonly = False
+    rvalue = 'distinct *'
     if export:
         url = export
         export = True
-    else:
-        url = common.args.url
+    else: url = common.args.url
     if 'movie' in url: mov = True
+    if common.addon.getSetting('disptvshow') == 'true':
+        showonly = True
+        rvalue = 'seriesasin'
     asins = common.SCRAP_ASINS(url)
     if not asins:
         xbmcgui.Dialog().notification(common.__plugin__, common.getString(30199), sound = False)
         return
-    
+
+    asinlist = []
     for value in asins:
         ret = 0
         if mov: ret = listmovie.LIST_MOVIES('asin', value, search=True, cmmode=1, export=export)
-        if ret == 0 and not mov: ret = listtv.LIST_TVSHOWS('asin', value, search=True, cmmode=1, export=export)
         if ret == 0 and not mov:
-            for seasondata in tv.lookupTVdb(value, tbl='seasons', single=False):
-                if seasondata: listtv.ADD_SEASON_ITEM(seasondata, disptitle=True, cmmode=1, export=export)
+            for seasondata in tv.lookupTVdb(value, tbl='seasons', rvalue=rvalue, single=False):
+                if seasondata:
+                    if showonly:
+                        ret = 0
+                        value = seasondata[0]
+                        for asin in tv.lookupTVdb(value, tbl='shows', rvalue='asin').split(','):
+                            if asin in asinlist: ret = 1
+                    else:
+                        ret = 1
+                        listtv.ADD_SEASON_ITEM(seasondata, disptitle=True, cmmode=1, export=export)
+        if ret == 0 and not mov: listtv.LIST_TVSHOWS('asin', value, search=True, cmmode=1, export=export)
+        asinlist.append(value)
 
     if not export:
         if mov: common.SetView('movies', 'movieview')

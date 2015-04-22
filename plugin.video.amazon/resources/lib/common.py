@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 from BeautifulSoup import BeautifulSoup
-from uuid import getnode
 from pyDes import *
+import uuid
 import cookielib
 import mechanize
 import sys
@@ -20,11 +20,7 @@ import demjson
 import binascii
 import hmac
 import time
-
-try:
-    import hashlib.sha1 as sha1
-except:
-    import sha as sha1
+import hashlib
 
 addon = xbmcaddon.Addon()
 __plugin__ = addon.getAddonInfo('name')
@@ -42,13 +38,11 @@ tvdb = base64.b64decode('MUQ2MkYyRjkwMDMwQzQ0NA==')
 COOKIEFILE = os.path.join(pldatapath, 'cookies.lwp')
 def_fanart = os.path.join(pluginpath, 'fanart.jpg')
 na = 'not available'
-logfile = False
 BASE_URL = 'https://www.amazon.de'
 ATV_URL = 'https://atv-ps-eu.amazon.com'
 #ATV_URL = 'https://atv-ext-eu.amazon.com'
 #UserAgent = 'Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko'
 UserAgent = 'Mozilla/5.0 (X11; U; Linux i686; de-DE) AppleWebKit/533.4 (KHTML, like Gecko) Chrome/5.0.375.127 Large Screen Safari/533.4 GoogleTV/162671'
-#UserAgent = 'Mozilla/5.0 (X11; U; Linux i686; en-US) AppleWebKit/533.4 (KHTML, like Gecko) Chrome/5.0.375.127 Large Screen Safari/533.4 GoogleTV/b'
 movielib = '/gp/aw/%s/?filter=movie'
 tvlib = '/gp/aw/%s/?filter=tv'
 lib = 'yvl'
@@ -98,12 +92,14 @@ def getATVURL( url , values = None ):
     else:
         return response
 
-def WriteLog(data, fn='amazon.log', mode='a'):
+def WriteLog(data, fn='', mode='a'):
+    if addon.getSetting('logging') != 'true': return
+    if fn: fn = '-' + fn
+    fn = __plugin__ + fn + '.log'
     path = os.path.join(homepath, fn)
-    if not logfile: return
     if type(data) == type(unicode()): data = data.encode('utf-8')
     file = open(path, mode)
-    data = time.strftime('[%d/%H:%M:%S] ', time.localtime()) + data.__str__()
+    data = time.strftime('[%d.%m/%H:%M:%S] ', time.localtime()) + data.__str__()
     file.write(data)
     file.write('\n')
     file.close()
@@ -111,7 +107,7 @@ def WriteLog(data, fn='amazon.log', mode='a'):
 def Log(msg, level=xbmc.LOGNOTICE):
     if type(msg) == type(unicode()):
         msg = msg.encode('utf-8')
-    #WriteLog(msg)
+    WriteLog(msg)
     xbmc.log('[%s] %s' % (__plugin__, msg.__str__()), level)
     
 def SaveFile(path, data):
@@ -121,7 +117,7 @@ def SaveFile(path, data):
 
 def androidsig(url):
     hmac_key = binascii.unhexlify('f5b0a28b415e443810130a4bcb86e50d800508cc')
-    sig = hmac.new(hmac_key, url, sha1)
+    sig = hmac.new(hmac_key, url, hashlib.sha1)
     return base64.encodestring(sig.digest()).replace('\n','')
 
 def addDir(name, mode, sitemode, url='', thumb='', fanart='', infoLabels=False, totalItems=0, cm=False ,page=1,isHD=False, options=''):
@@ -209,8 +205,11 @@ def makeGUID():
     return guid
 
 def gen_id():
-    if not addon.getSetting("GenDeviceID"): 
-        addon.setSetting("GenDeviceID",makeGUID()) 
+    guid = addon.getSetting("GenDeviceID")
+    if not guid: 
+        guid = makeGUID()
+        addon.setSetting("GenDeviceID", guid)
+    return guid
 
 def mechanizeLogin():
     cj = cookielib.LWPCookieJar()
@@ -280,13 +279,13 @@ def setLoginPW():
     return False
         
 def encode(data):
-    k = triple_des((str(getnode())*2)[0:24], CBC, "\0\0\0\0\0\0\0\0", padmode=PAD_PKCS5)
+    k = triple_des((str(uuid.getnode())*2)[0:24], CBC, "\0\0\0\0\0\0\0\0", padmode=PAD_PKCS5)
     d = k.encrypt(data)
     return base64.b64encode(d)
 
 def decode(data):
     if not data: return ''
-    k = triple_des((str(getnode())*2)[0:24], CBC, "\0\0\0\0\0\0\0\0", padmode=PAD_PKCS5)
+    k = triple_des((str(uuid.getnode())*2)[0:24], CBC, "\0\0\0\0\0\0\0\0", padmode=PAD_PKCS5)
     d = k.decrypt(base64.b64decode(data))
     return d
     
@@ -421,6 +420,5 @@ def waitforDB(database):
     c.close()
             
 urlargs =  urllib.unquote_plus(sys.argv[2][1:].replace('&', ', ')).replace('<','"').replace('>','"')
-
 Log('Args: %s' % urlargs)
 exec "args = _Info(%s)" % urlargs

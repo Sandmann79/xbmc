@@ -11,6 +11,7 @@
     <string id="30008">Database Update</string>
     <string id="30009">Automatically Update Database</string>
     <string id="30013">Time Of Day</string>
+    <string id="30022">Start after 5 minutes of idle</string>
     <string id="30010">Off</string>
     <string id="30018">Daily</string>
     <string id="30019">Every Two Days</string>
@@ -51,16 +52,21 @@
 
     <string id="30041">Switch Fullscreen</string>
     <string id="30042">Browser Kiosk Mode</string>
-    <string id="30043">Play HD If Available</string>
     <string id="30044">Wait for Fullscreen (sec)</string>
     <string id="30045">Automatic PIN Input</string>  
     <string id="30046">PIN</string>
     <string id="30047">Wait after PIN Input</string>
+    <string id="30048">Open Browser Launcher Settings</string>
+    <string id="30049">Open Chrome Launcher Settings</string>
 
     <string id="30060">Library</string>
     <string id="30061">Custom Library Folder</string>
     <string id="30062">Path</string>
 
+    <string id="30070">Miscellaneous</string>
+    <string id="30071">Display show instead of seasons in Watchlist</string>
+    <string id="30072">Verbose logging</string>
+    
     <string id="30100">Popular</string>
     <string id="30102">Full Movie Refresh(DB)</string>
     <string id="30103">Refresh TV &amp; Movie Database</string>
@@ -154,4 +160,5 @@
     <string id="30207">This Video is unavailable in your Country</string>
     <string id="30208">Playback currently not possible, try again later</string>
     <string id="30209">Unknown</string>
+    <string id="30210">Please remove Credentials and Cookie in Settings</string>
 </strings>

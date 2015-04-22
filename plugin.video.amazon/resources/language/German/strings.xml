@@ -11,6 +11,7 @@
     <string id="30008">Datenbankaktualisierung</string>
     <string id="30009">Datenbank automatisch aktualisieren</string>
     <string id="30013">Uhrzeit</string>
+    <string id="30022">Nach 5 Minuten Leerlauf starten</string>
     <string id="30010">Aus</string>
     <string id="30018">Täglich</string>
     <string id="30019">Alle 2 Tage</string>
@@ -51,15 +52,20 @@
 
     <string id="30041">Vollbild aktivieren</string>
     <string id="30042">Browser Kiosk Modus</string>
-    <string id="30043">Wiedergabe in HD, sofern verfügbar</string>
     <string id="30044">Wartezeit für Vollbild (sek)</string>
     <string id="30045">Automatische PIN Eingabe</string>  
     <string id="30046">PIN</string>
     <string id="30047">Wartezeit nach PIN Eingabe</string>
-
+    <string id="30048">Browser Launcher konfigurieren...</string>
+    <string id="30049">Chrome Launcher konfigurieren...</string>
+    
     <string id="30060">Bibliothek</string>
     <string id="30061">Eigener Bibliothekordner</string>
     <string id="30062">Pfad</string>
+    
+    <string id="30070">Verschiedenes</string>
+    <string id="30071">Serie anstelle von Staffeln in der Watchlist anzeigen</string>
+    <string id="30072">Ausführliches Logging</string>
 
     <string id="30100">Beliebt</string>
     <string id="30102">Komplette Filmdatenbank erstellen</string>
@@ -154,4 +160,5 @@
     <string id="30207">Dieses Video ist in Ihren Land nicht verfügbar</string>
     <string id="30208">Wiedergabe momentan nicht möglich, später erneut versuchen</string>
     <string id="30209">Unbekannt</string>
+    <string id="30210">Bitte Zugangsdaten und Cookie in den Einstellungen löschen</string>
 </strings>

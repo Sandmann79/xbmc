@@ -39,8 +39,8 @@ COOKIEFILE = os.path.join(pldatapath, 'cookies.lwp')
 def_fanart = os.path.join(pluginpath, 'fanart.jpg')
 na = 'not available'
 BASE_URL = 'https://www.amazon.de'
-ATV_URL = 'https://atv-ps-eu.amazon.com'
-#ATV_URL = 'https://atv-ext-eu.amazon.com'
+#ATV_URL = 'https://atv-ps-eu.amazon.com'
+ATV_URL = 'https://atv-ext-eu.amazon.com'
 #UserAgent = 'Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko'
 UserAgent = 'Mozilla/5.0 (X11; U; Linux i686; de-DE) AppleWebKit/533.4 (KHTML, like Gecko) Chrome/5.0.375.127 Large Screen Safari/533.4 GoogleTV/162671'
 movielib = '/gp/aw/%s/?filter=movie'
@@ -48,6 +48,7 @@ tvlib = '/gp/aw/%s/?filter=tv'
 lib = 'yvl'
 wl = 'wl'
 winid = xbmcgui.getCurrentWindowId()
+kodi_mjver = int(xbmc.getInfoLabel('System.BuildVersion')[0:2])
 
 class _Info:
     def __init__( self, *args, **kwargs ):
@@ -387,7 +388,7 @@ def SetView(content, view=False, updateListing=False):
         viewid = confluence_views[int(addon.getSetting(view))]
         if viewid == -1:
             viewid = int(addon.getSetting(view.replace('view', 'id')))
-        xbmc.executebuiltin('ActivateWindow(%s)' % winid)
+        if kodi_mjver >= 14: xbmc.executebuiltin('ActivateWindow(%s)' % winid)
         xbmc.executebuiltin('Container.SetViewMode(%s)' % viewid)
     xbmcplugin.endOfDirectory(pluginhandle,updateListing=updateListing)
     

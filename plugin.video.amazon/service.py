@@ -20,8 +20,9 @@ if __name__ == '__main__':
     addon.setSetting('update_running', 'false')
     freq = addon.getSetting('auto_update')
     id = addon.getAddonInfo('id')
-    checkfreq = 30 * 60 * 1000
     checkfreq = 5000
+    idleupdate = 300
+    startidle = 0
     
     if (not freq == '') and (not freq == '0'):
         while not xbmc.abortRequested:
@@ -32,10 +33,17 @@ if __name__ == '__main__':
             update = addon.getSetting('update_running')
             if last == '': last = '1970-01-01'
             if time == '': time = '00:00'
+            if freq == '0': break
             dt = last + ' ' + time
             dtlast = datetime.strptime(dt, '%Y-%m-%d %H:%M')
             freqdays = [0, 1, 2, 5, 7][int(freq)]
-            if (dtlast + timedelta(days=freqdays)) <= today:
+            lastidle = xbmc.getGlobalIdleTime()
+            if xbmc.Player().isPlaying(): startidle = lastidle
+            if lastidle < startidle: startidle = 0
+            idletime = lastidle - startidle
+            if addon.getSetting('wait_idle') != 'true': idletime = idleupdate
+            
+            if dtlast + timedelta(days=freqdays) <= today and idletime >= idleupdate:
                 if update == 'false':
                     xbmc.log('AmazonDB: Starting DBUpdate (%s / %s)' % (dtlast, today))
                     xbmc.executebuiltin('XBMC.RunPlugin(plugin://%s/?mode=<appfeed>&sitemode=<updateAll>)' % id)

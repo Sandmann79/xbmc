@@ -75,7 +75,7 @@ def PLAYVIDEO():
         if pininput == 1:
             input(mousex=-1,mousey=350,click=2)
             xbmc.sleep(500)
-            #input(mousex=9999,mousey=0)
+            input(mousex=9999,mousey=-1)
 
 def input(mousex=0,mousey=0,click=0,keys=False,delay='200'):
     if mousex == -1: mousex = screenWidth/2
@@ -226,12 +226,7 @@ def PLAYVIDEOINT():
     if common.addon.getSetting("enable_captions")=='true':
         while not xbmc.Player().isPlaying(): xbmc.sleep(100)
         SETSUBTITLES(values['asin'])
-    """
-    print getUrldata('usage/ReportStartStreamEvent', values, extra=True)
-    while xbmc.Player().isPlaying(): xbmc.sleep(1000)
-    print getUrldata('usage/ReportStopStreamEvent', values, extra=True)
-    """
-        
+
 def GETFLASHVARS(pageurl):
     cookie = common.mechanizeLogin()
     showpage = common.getURL(pageurl, useCookie=cookie)
@@ -253,7 +248,10 @@ def GETFLASHVARS(pageurl):
         for key, pattern in search.items():
             result = re.compile(pattern, re.DOTALL).findall(showpage)
             if result: values[key] = result[0]
-        values['swfUrl'] = 'http://ecx.images-amazon.com/images/G/01/digital/video/webplayer/1.0.379.0/swf/UnboxScreeningRoomClient.swf'
+        swfver = re.compile('/webplayer/(.*?)/', re.DOTALL).findall(showpage)
+        if swfver: swfver = swfver[0]
+        else: swfver = '1.0.379.0'
+        values['swfUrl'] = 'http://ecx.images-amazon.com/images/G/01/digital/video/webplayer/%s/swf/UnboxScreeningRoomClient.swf' % swfver
     
     for key in values.keys():
         if not values.has_key(key):
@@ -264,7 +262,7 @@ def GETFLASHVARS(pageurl):
     #values['deviceTypeID']  = 'A13Q6A55DBZB7M' #enc Flash
     #values['deviceTypeID']  = 'A35LWR0L7KC0TJ' #Logitech GoogleTV unenc Flash
     #values['deviceTypeID']  = 'A63V4FRV3YUP9' #enc Silverlight
-    values['userAgent']     = "GoogleTV 162671"
+    values['userAgent']     = "GoogleTV"
     values['deviceID']      = common.hmac.new(common.UserAgent, common.gen_id(), hashlib.sha224).hexdigest()
     rand = 'onWebToken_' + str(random.randint(0,484))
     pltoken = common.getURL(common.BASE_URL + "/gp/video/streaming/player-token.json?callback=" + rand, useCookie=cookie)
@@ -313,30 +311,23 @@ def PLAY(rtmpurls,values,Trailer=False,title=False):
 
     values['streamurl'] = rtmpurl
     values['bitrate'] = str(mbitrate)
-    rtmpurlSplit = re.compile("([^:]*):\/\/([^\/]+)\/([^\/]+)\/([^\?]+)(\?.*)?").findall(rtmpurl)[0]
+    rtmpurlSplit = re.compile("([^:]*):\/\/([^\/]+)\/([^:]+):([^\?]+)(\?.*)?").findall(rtmpurl)[0]
     protocol = rtmpurlSplit[0]
     hostname = rtmpurlSplit[1]
     appName =  rtmpurlSplit[2]
-    stream = rtmpurlSplit[3]#.replace('de$de','de')#.replace('$','\x5c24')
+    stream = rtmpurlSplit[3]
     auth = rtmpurlSplit[4]
-    tcurl = protocol[0:-1] + '://' + hostname + '/' + appName
-    #hostname = getIP(hostname) + ':1935'
-    basertmp = protocol[0:-1] + '://' + hostname + '/' + appName
-    if 'edgefcs' in hostname:
-        basertmp += auth
-    else:
-        stream += auth
 
-    finalUrl = '%s app=%s swfUrl=%s pageUrl=%s playpath=%s tcUrl=%s swfVfy=true' % (basertmp, appName, values['swfUrl'], amazonUrl, stream, tcurl)
+    finalUrl = 'http://%s/%s' %(hostname, stream)
     infoLabels = GetStreamInfo(common.args.asin, title)
-    common.WriteLog('Content: %s\nRTMPUrl: %s' %(title,finalUrl), 'content')
-    if '$' in stream:
-        Dialog.notification(common.getString(30198), title, xbmcgui.NOTIFICATION_ERROR)
-        return False
     if Trailer:
         infoLabels['Title'] += ' (Trailer)'
+
+    if not infoLabels.has_key('Thumb'): infoLabels['Thumb'] = None
     item = xbmcgui.ListItem(path=finalUrl, thumbnailImage=infoLabels['Thumb'])
-    item.setProperty('fanart_image', infoLabels['Fanart'])
+    if infoLabels.has_key('Fanart'): item.setProperty('fanart_image', infoLabels['Fanart'])
+    if infoLabels.has_key('Poster'): item.setArt({'tvshow.poster': infoLabels['Poster']})
+    else: item.setArt({'poster': infoLabels['Thumb']})
     item.setInfo(type="Video", infoLabels=infoLabels)
     if Trailer or selbitrate != '0':
         item.setProperty('IsPlayable', 'true')
@@ -359,7 +350,7 @@ def GetStreamInfo(asin, finalname):
             return listtv.ADD_EPISODE_ITEM(epidata, onlyinfo=True)
     return {'Title': finalname}
     
-def getUrldata(mode, values, format='json', asinlist=False, devicetypeid=False, version=1, firmware='WIN%2017,0,0,134%20PlugIn', opt='', extra=False, useCookie=False):
+def getUrldata(mode, values, format='json', asinlist=False, devicetypeid=False, version=1, firmware='WIN%2010,2,0,0%20PlugIn', opt='', extra=False, useCookie=False):
     if not devicetypeid:
         devicetypeid = values['deviceTypeID']
     url  = common.ATV_URL + '/cdp/' + mode
@@ -372,7 +363,7 @@ def getUrldata(mode, values, format='json', asinlist=False, devicetypeid=False, 
     url += '&token=' + values['token']
     url += '&format=' + format
     url += '&version=' + str(version)
-    url += '&xws-fa-ov=false'
+    url += '&xws-fa-ov=true'
     url += opt
     if asinlist:
         url = url.replace('?asin=', '?asinlist=')

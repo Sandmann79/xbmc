@@ -42,8 +42,9 @@ def LIST_TVSHOWS_FILTERED():
 def LIST_TVSHOWS_SORTED():
     LIST_TVSHOWS(sortaz = False, sortcol = common.args.url)
     
-def LIST_TVSHOWS(filter=False,value=False,sortcol=False,sortaz=True,search=False,cmmode=0,export=False):
+def LIST_TVSHOWS(filter='',value=False,sortcol=False,sortaz=True,search=False,cmmode=0,export=False):
     import tv as tvDB
+    if 'year' in filter: value = value.replace('0 -','')
     shows = tvDB.loadTVShowdb(filter=filter,value=value,sortcol=sortcol)
     count = 0
     for showdata in shows:
@@ -51,7 +52,7 @@ def LIST_TVSHOWS(filter=False,value=False,sortcol=False,sortaz=True,search=False
         ADD_SHOW_ITEM(showdata,cmmode=cmmode,export=export)
     if not search:
         if sortaz:
-            xbmcplugin.addSortMethod(pluginhandle, xbmcplugin.SORT_METHOD_LABEL)
+            if not 'year' in filter: xbmcplugin.addSortMethod(pluginhandle, xbmcplugin.SORT_METHOD_LABEL)
             xbmcplugin.addSortMethod(pluginhandle, xbmcplugin.SORT_METHOD_VIDEO_YEAR)
             xbmcplugin.addSortMethod(pluginhandle, xbmcplugin.SORT_METHOD_VIDEO_RATING)
             xbmcplugin.addSortMethod(pluginhandle, xbmcplugin.SORT_METHOD_STUDIO_IGNORE_THE)
@@ -89,8 +90,6 @@ def ADD_SHOW_ITEM(showdata,mode='listtv',submode='LIST_TV_SEASONS',cmmode=0,only
         submode = 'LIST_TV_SEASONS'
     if poster is None:
         poster=''
-    if not fanart or fanart == common.na:
-        fanart = poster
     infoLabels['Thumb'] = poster
     infoLabels['Fanart'] = fanart
     infoLabels['Asins'] = asin
@@ -158,8 +157,6 @@ def ADD_SEASON_ITEM(seasondata, mode='listtv', submode='LIST_EPISODES_DB', dispt
     if season != 0 and len(str(season)) < 3: displayname += common.getString(30167, True) + ' ' + str(season)
     elif len(str(season)) > 2: displayname += common.getString(30168, True) + str(season)
     else: displayname += common.getString(30169, True)
-    if not fanart or common.na:
-        fanart = poster
     if showfanart == 'true': 
         fanart, cover = getFanart(seriesASIN)
     infoLabels['TotalSeasons'] = 1
@@ -217,8 +214,6 @@ def ADD_EPISODE_ITEM(episodedata, onlyinfo=False, export=False):
         infoLabels['Studio'] = network
     if audio:
         infoLabels['AudioChannels'] = audio
-    if not fanart or fanart == common.na:
-        fanart = poster
 
     displayname = str(episode) + ' - ' + episodetitle 
     displayname = displayname.replace('"','')

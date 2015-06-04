@@ -31,7 +31,8 @@ profilpath = xbmc.translatePath('special://masterprofile/').decode('utf-8')
 pluginpath = addon.getAddonInfo('path').decode('utf-8')
 pldatapath = xbmc.translatePath('special://profile/addon_data/' + addon.getAddonInfo('id')).decode('utf-8')
 homepath = xbmc.translatePath('special://home').decode('utf-8')
-dbpath = os.path.join(homepath, 'addons', 'script.module.amazon.database', 'lib')
+dbplugin = 'script.module.amazon.database'
+dbpath = os.path.join(homepath, 'addons', dbplugin, 'lib')
 pluginhandle = int(sys.argv[1])
 tmdb = base64.b64decode('YjM0NDkwYzA1NmYwZGQ5ZTNlYzlhZjIxNjdhNzMxZjQ=')
 tvdb = base64.b64decode('MUQ2MkYyRjkwMDMwQzQ0NA==')
@@ -49,7 +50,8 @@ lib = 'yvl'
 wl = 'wl'
 winid = xbmcgui.getCurrentWindowId()
 kodi_mjver = int(xbmc.getInfoLabel('System.BuildVersion')[0:2])
-
+Dialog = xbmcgui.Dialog()
+    
 class _Info:
     def __init__( self, *args, **kwargs ):
         self.__dict__.update( kwargs )
@@ -123,10 +125,10 @@ def androidsig(url):
 
 def addDir(name, mode, sitemode, url='', thumb='', fanart='', infoLabels=False, totalItems=0, cm=False ,page=1,isHD=False, options=''):
     u = '%s?url=<%s>&mode=<%s>&sitemode=<%s>&name=<%s>&page=<%s>&opt=<%s>' % (sys.argv[0], urllib.quote_plus(url), mode, sitemode, urllib.quote_plus(name), urllib.quote_plus(str(page)), options)
-    if fanart == '' or fanart == None:
-        try:fanart = args.fanart
-        except:fanart = def_fanart
-    else:u += '&fanart=<%s>' % urllib.quote_plus(fanart)
+    try:fanart = args.fanart
+    except:pass
+    if fanart == '' or fanart == None or fanart == na: fanart = def_fanart
+    else: u += '&fanart=<%s>' % urllib.quote_plus(fanart)
     if thumb == '' or thumb == None:
         try:thumb = args.thumb
         except:thumb = def_fanart
@@ -152,8 +154,8 @@ def addVideo(name,asin,poster=False,fanart=False,infoLabels=False,totalItems=0,c
         liz=xbmcgui.ListItem(name, thumbnailImage=poster)
     else:
         liz=xbmcgui.ListItem(name)
-    if fanart:
-        liz.setProperty('fanart_image',fanart)
+    if fanart == '' or fanart == None or fanart == na: fanart = def_fanart
+    liz.setProperty('fanart_image',fanart)
     liz.setProperty('IsPlayable', 'false')
     if not cm:
         cm = []
@@ -226,7 +228,7 @@ def mechanizeLogin():
         Log('Login Retry: %s' % retrys)
         succeeded = dologin()
         if retrys >= 2:
-            xbmcgui.Dialog().ok('Login Error','Failed to Login')
+            Dialog.ok('Login Error','Failed to Login')
             succeeded=True
     return succeeded
 
@@ -259,7 +261,7 @@ def dologin():
         logged_in = br.submit()
         error_str = "message error"
         if error_str in logged_in.read():
-            xbmcgui.Dialog().ok(getString(30200), getString(30201))
+            Dialog.ok(getString(30200), getString(30201))
             return False
         else:
             if addon.getSetting('save_login') == 'true' and changed:
@@ -419,7 +421,76 @@ def waitforDB(database):
             xbmc.sleep(1000)
             Log('Database locked')
     c.close()
+
+def getTypes(items, col):
+    list = []
+    lowlist = []
+    for data in items:
+        data = data[0]
+        if type(data) == type(str()):
+            if 'Rated' in data:
+                item = data.split('for')[0]
+                if item not in list and item <> '' and item <> 0 and item <> 'Inc.' and item <> 'LLC.':
+                    list.append(item)
+            else:
+                if 'genres' in col: data = data.split('/')
+                else: data = re.split(r'[,;/]', data)
+                for item in data:
+                    item = item.strip()
+                    if item.lower() not in lowlist and item <> '' and item <> 0 and item <> 'Inc.' and item <> 'LLC.':
+                        list.append(item)
+                        lowlist.append(item.lower())
+        elif data <> 0:
+            if data is not None:
+                strdata = str(data)[0:-1] + '0 -'
+                if strdata not in list:
+                    list.append(strdata)
+    return list
+    
+def updateRunning():
+    from datetime import datetime, timedelta
+    update = addon.getSetting('update_running')
+    if update != 'false':
+        starttime = datetime.strptime(update, '%Y-%m-%d %H:%M')
+        if (starttime + timedelta(hours=6)) <= datetime.today():
+            addon.setSetting('update_running', 'false')
+            Log('DB Cancel update - duration > 6 hours')
+        else:
+            Log('DB Update already running', xbmc.LOGDEBUG)
+            return True
+    return False
             
+def copyDB(ask=False):
+    import shutil
+    if ask:
+        if not Dialog.yesno(getString(30193), getString(30194)):
+            shutil.copystat(org_tvDBfile, tvDBfile)
+            shutil.copystat(org_MovieDBfile, MovieDBfile)
+            return
+    import tv, movies
+    tv.tvDB.close()
+    movies.MovieDB.close()
+    shutil.copy2(org_tvDBfile, tvDBfile)
+    shutil.copy2(org_MovieDBfile, MovieDBfile)
+    
+org_tvDBfile = os.path.join(dbpath, 'tv.db')
+org_MovieDBfile = os.path.join(dbpath, 'movies.db')
+if addon.getSetting('customdbfolder') == 'true': 
+    dbpath = xbmc.translatePath(addon.getSetting('dbfolder')).decode('utf-8')
+tvDBfile = os.path.join(dbpath, 'tv.db')
+MovieDBfile = os.path.join(dbpath, 'movies.db')
+
+if addon.getSetting('customdbfolder') == 'true':
+    if os.path.isfile(org_tvDBfile) and os.path.isfile(org_MovieDBfile):
+        if not os.path.isdir(dbpath): 
+            os.makedirs(dbpath)
+        if not os.path.isfile(tvDBfile) or not os.path.isfile(MovieDBfile):
+            copyDB()
+        org_fileacc = int(os.path.getmtime(org_tvDBfile) + os.path.getmtime(org_MovieDBfile))
+        cur_fileacc = int(os.path.getmtime(tvDBfile) + os.path.getmtime(MovieDBfile))
+        if org_fileacc > cur_fileacc:
+            copyDB(True)
+    
 urlargs =  urllib.unquote_plus(sys.argv[2][1:].replace('&', ', ')).replace('<','"').replace('>','"')
 Log('Args: %s' % urlargs)
 exec "args = _Info(%s)" % urlargs

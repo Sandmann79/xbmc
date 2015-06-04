@@ -30,8 +30,7 @@ def LIST_MOVIE_TYPES(type=False):
         type = common.args.url
     if type:
         mode = 'LIST_MOVIES_FILTERED'
-        items = moviesDB.getMovieTypes(type)
-    for item in items:
+    for item in moviesDB.getMovieTypes(type):
         common.addDir(item,'listmovie',mode,type)
     xbmcplugin.addSortMethod(pluginhandle, xbmcplugin.SORT_METHOD_LABEL)          
     xbmcplugin.endOfDirectory(pluginhandle,updateListing=False)   
@@ -42,8 +41,9 @@ def LIST_MOVIES_FILTERED():
 def LIST_MOVIES_SORTED():
     LIST_MOVIES(sortaz = False, sortcol = common.args.url)
     
-def LIST_MOVIES(filter=False,value=False,sortcol=False,sortaz=True,search=False,cmmode=0,export=False):
+def LIST_MOVIES(filter='',value=False,sortcol=False,sortaz=True,search=False,cmmode=0,export=False):
     import movies as moviesDB
+    if 'year' in filter: value = value.replace('0 -','')
     movies = moviesDB.loadMoviedb(filter=filter,value=value,sortcol=sortcol)
     count = 0
     for moviedata in movies:
@@ -51,7 +51,7 @@ def LIST_MOVIES(filter=False,value=False,sortcol=False,sortaz=True,search=False,
         ADD_MOVIE_ITEM(moviedata, cmmode=cmmode, export=export)
     if not search:
         if sortaz:
-            xbmcplugin.addSortMethod(pluginhandle, xbmcplugin.SORT_METHOD_VIDEO_TITLE)
+            if not 'year' in filter: xbmcplugin.addSortMethod(pluginhandle, xbmcplugin.SORT_METHOD_VIDEO_TITLE)
             xbmcplugin.addSortMethod(pluginhandle, xbmcplugin.SORT_METHOD_VIDEO_YEAR)
             xbmcplugin.addSortMethod(pluginhandle, xbmcplugin.SORT_METHOD_VIDEO_RUNTIME)
             xbmcplugin.addSortMethod(pluginhandle, xbmcplugin.SORT_METHOD_VIDEO_RATING)
@@ -62,9 +62,7 @@ def LIST_MOVIES(filter=False,value=False,sortcol=False,sortaz=True,search=False,
     
 def ADD_MOVIE_ITEM(moviedata, onlyinfo=False,cmmode=0, export=False):
     asin,hd_asin,movietitle,trailer,poster,plot,director,writer,runtime,year,premiered,studio,mpaa,actors,genres,stars,votes,fanart,isprime,isHD,isAdult,popularity,recent,audio = moviedata
-    if not fanart or fanart == common.na:
-        if poster:
-            fanart = poster.replace('.jpg','._BO354,0,0,0_CR177,354,708,500_.jpg')
+
     infoLabels={'Title':movietitle}
     if plot:
         infoLabels['Plot'] = plot

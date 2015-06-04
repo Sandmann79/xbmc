@@ -9,6 +9,7 @@
     <string id="30014">Don't save cookie</string>
     <string id="30007">Remove Credentials and Cookie</string>
     <string id="30008">Database Update</string>
+    <string id="30058">Change Database Location</string>
     <string id="30009">Automatically Update Database</string>
     <string id="30013">Time Of Day</string>
     <string id="30022">Start after 5 minutes of idle</string>
@@ -147,6 +148,13 @@
     <string id="30190"> 2) Set the content type of added folders</string>
     <string id="30191">Restart</string>
     <string id="30192">Do you want to restart Kodi now?</string>
+
+    <string id="30193">Database Plugin updated</string>
+    <string id="30194">Since the database is not in the default folder, 
+it must be copied into the custom folder. 
+
+Copy database files now?
+(This message will never appear again)</string>
 
     <string id="30198">Stream not playable with current settings, please use Chrome or Browser Launcher.</string>
     <string id="30199">No content found</string>

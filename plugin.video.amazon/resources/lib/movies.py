@@ -117,26 +117,7 @@ def getMovieTypes(col):
     common.waitforDB('movie')
     c = MovieDB.cursor()
     items = c.execute('select distinct %s from movies' % col)
-    list = []
-    lowlist = []
-    for data in items:
-        data = data[0]
-        if type(data) == type(str()):
-            if 'Rated' in data:
-                item = data.split('for')[0]
-                if item not in list and item <> '' and item <> 0 and item <> 'Inc.' and item <> 'LLC.':
-                    list.append(item)
-            else:
-                if 'genres' in col: data = data.split('/')
-                else: data = re.split(r'[,;/]', data)
-                for item in data:
-                    item = item.strip()
-                    if item.lower() not in lowlist and item <> '' and item <> 0 and item <> 'Inc.' and item <> 'LLC.':
-                        list.append(item)
-                        lowlist.append(item.lower())
-        elif data <> 0:
-            if data is not None:
-                list.append(str(data))
+    list = common.getTypes(items, col)
     c.close()
     return list
 
@@ -160,7 +141,8 @@ def addMoviesdb(full_update=True):
     except: pass
     dialog = xbmcgui.DialogProgress()
 
-    if full_update and not asinlist:
+    if full_update:
+        if common.updateRunning(): return
         dialog.create(common.getString(30120))
         dialog.update(0,common.getString(30121))
         createMoviedb()
@@ -215,7 +197,7 @@ def updateLibrary(asinlist=False):
         for asin in asinlist:
             found, MOVIE_ASINS = common.compasin(MOVIE_ASINS, asin)
             if not found: asins += asin + ','
-            deleteremoved(MOVIE_ASINS)
+        deleteremoved(MOVIE_ASINS)
     else: asins = ','.join(asinlist)
     
     if not asins: return
@@ -326,16 +308,15 @@ def ASIN_ADD(title):
         except: poster = None
     if title.has_key('heroUrl'):
         fanart = title['heroUrl']
-    if 'bbl test' not in movietitle.lower() or 'test movie' not in movietitle.lower():
+    if not 'bbl test' in movietitle.lower() and not 'test movie' in movietitle.lower():
         moviedata = [common.cleanData(x) for x in [asin,None,common.checkCase(movietitle),trailer,poster,plot,director,None,runtime,year,premiered,studio,mpaa,actors,genres,stars,votes,fanart,isPrime,isHD,isAdult,None,None,audio]]
         titelnum += addMoviedb(moviedata)
     return titelnum
 
-MovieDBfile = os.path.join(common.dbpath, 'movies.db')
-if not os.path.exists(MovieDBfile):
-    MovieDB = sqlite.connect(MovieDBfile)
+if not os.path.exists(common.MovieDBfile):
+    MovieDB = sqlite.connect(common.MovieDBfile)
     MovieDB.text_factory = str
     createMoviedb()
 else:
-    MovieDB = sqlite.connect(MovieDBfile)
+    MovieDB = sqlite.connect(common.MovieDBfile)
     MovieDB.text_factory = str

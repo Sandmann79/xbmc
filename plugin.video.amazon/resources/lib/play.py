@@ -17,6 +17,7 @@ pluginhandle = common.pluginhandle
 xbmc = common.xbmc
 xbmcplugin = common.xbmcplugin
 urllib = common.urllib
+urllib2 = common.urllib2
 sys = common.sys
 xbmcgui = common.xbmcgui
 re = common.re
@@ -36,11 +37,13 @@ screenWidth = int(xbmc.getInfoLabel('System.ScreenWidth'))
 screenHeight = int(xbmc.getInfoLabel('System.ScreenHeight'))
 playPlugin = ['','plugin.program.browser.launcher', 'plugin.program.chrome.launcher']
 selPlugin = playPlugin[int(settings.getSetting("playmethod"))]
+StrProt = int(settings.getSetting("protocol"))
 trailer = common.args.trailer
 selbitrate = common.args.selbitrate
 isAdult = int(common.args.adult)
 amazonUrl = common.BASE_URL + "/dp/" + common.args.asin
 Dialog = xbmcgui.Dialog()
+Player = xbmc.Player()
 
 def PLAYVIDEO():
     global amazonUrl
@@ -143,10 +146,10 @@ def CONVERTSUBTITLES(url):
 
 def SETSUBTITLES(asin):
     subtitles = os.path.join(common.pldatapath, asin+'.srt')
-    if os.path.isfile(subtitles) and xbmc.Player().isPlaying():
+    if os.path.isfile(subtitles) and Player.isPlaying():
         common.Log('Subtitles Enabled.')
-        xbmc.Player().setSubtitles(subtitles)
-    elif xbmc.Player().isPlaying():
+        Player.setSubtitles(subtitles)
+    elif Player.isPlaying():
         common.Log('No Subtitles File Available.')
     else:
         common.Log('No Media Playing. Subtitles Not Assigned.')
@@ -162,15 +165,7 @@ def GETTRAILERS(suc, rtmpdata):
         return False, False, False, rtmpdata
 
 def PLAYTRAILER():
-    values = GETFLASHVARS(amazonUrl) 
-    if not values:        
-        return
-
-    rtmpurls, streamSessionID, cdn, videoname = GETTRAILERS(*getUrldata('catalog/GetStreamingTrailerUrls', values))
-    if not rtmpurls:
-        Dialog.ok('No Trailer available','')
-    else:
-        PLAY(rtmpurls, values, Trailer=True, title=videoname)
+    PLAYVIDEOINT(True)
         
 def GETSTREAMS(suc, rtmpdata):
     if not suc:
@@ -203,29 +198,38 @@ def GETLANG(suc, rtmpdata):
         return True, '&audioTrackId=' + langid[lang]
     return False, False
         
-def PLAYVIDEOINT():
+def PLAYVIDEOINT(trailer=False):
     audioid = ''
     values = GETFLASHVARS(amazonUrl)
-    if not values:        
-        return
+    if not values: return
     values['subtitle'] = 'false'
+
     if selbitrate == 'org':
         suc, audioid = GETLANG(*getUrldata('catalog/GetASINDetails', values, devicetypeid='A1MPSLFC7L5AFK', asinlist=True, opt='&NumberOfResults=1', version=2))
-        if not suc:
-            return
-    if common.addon.getSetting("enable_captions")=='true':
+        if not suc: return
+        
+    if common.addon.getSetting("enable_captions")=='true' and not trailer:
         values['subtitle'] = GETSUBTITLES(*getUrldata('catalog/GetSubtitleUrls', values, opt='&NumberOfResults=1&videoType=content'))
+        
+    if trailer:
+        streamval = GETTRAILERS(*getUrldata('catalog/GetStreamingTrailerUrls', values))
+    else:
+        streamval = GETSTREAMS(*getUrldata('catalog/GetStreamingUrlSets', values, opt=audioid))
+    rtmpurls, values['streamSessionID'], values['cdn'], title = streamval
     
-    rtmpurls, values['streamSessionID'], values['cdn'], title = GETSTREAMS(*getUrldata('catalog/GetStreamingUrlSets', values, opt=audioid))
     if not rtmpurls:
         Dialog.notification(common.getString(30203), title, xbmcgui.NOTIFICATION_ERROR)
         return
-    values = PLAY(rtmpurls, values, title=title)
-    if not values: return
 
-    if common.addon.getSetting("enable_captions")=='true':
-        while not xbmc.Player().isPlaying(): xbmc.sleep(100)
-        SETSUBTITLES(values['asin'])
+    values = PLAY(rtmpurls, values, trailer, title=title)
+    if not values: return
+    while not Player.isPlayingVideo(): xbmc.sleep(100)
+    if common.addon.getSetting("enable_captions")=='true' and not trailer: SETSUBTITLES(values['asin'])
+    
+    common.Log('Poster: ' + xbmc.getInfoImage('Player.Art(poster)'), xbmc.LOGDEBUG)
+    common.Log('TVshow: ' + xbmc.getInfoImage('Player.Art(tvshow.poster)'), xbmc.LOGDEBUG)
+    common.Log(' Thumb: ' + xbmc.getInfoImage('Player.Art(thumb)'), xbmc.LOGDEBUG)
+    common.Log('Fanart: ' + xbmc.getInfoImage('Player.Art(fanart)'), xbmc.LOGDEBUG)
 
 def GETFLASHVARS(pageurl):
     cookie = common.mechanizeLogin()
@@ -273,10 +277,11 @@ def GETFLASHVARS(pageurl):
         return False
     return values
     
-def PLAY(rtmpurls,values,Trailer=False,title=False):
-    lbitrate = int(settings.getSetting("bitrate"))
-    if selbitrate == '1':
-        lbitrate = -1
+def PLAY(rtmpurls,values,Trailer,title):
+    bitrate = settings.getSetting("bitrate")
+    if bitrate == 'Auto': lbitrate = -2 + StrProt
+    else: lbitrate = int(bitrate)
+    if selbitrate == '1': lbitrate = -1
     mbitrate = 0
     streams = []
     for data in rtmpurls:
@@ -289,13 +294,14 @@ def PLAY(rtmpurls,values,Trailer=False,title=False):
             videoquality += ' ' + formatsplit[0][0]
             audioquality += ' ' + formatsplit[0][2]
         except: pass
-        if lbitrate <= 0:
-            streams.append([bitrate,url,videoquality,audioquality])
-        elif bitrate >= mbitrate and bitrate <= lbitrate:
+        streams.append([bitrate,url,videoquality,audioquality,getRealStream(url, values['swfUrl'])])
+        if bitrate >= mbitrate and bitrate <= lbitrate:
             mbitrate = bitrate
-            rtmpurl = url
-
-    if lbitrate <= 0:
+            quality = len(streams)-1
+     
+    if lbitrate == -2:         
+        quality = SpeedTest(streams)
+    elif lbitrate <= 0:
         streamsout = []
         for stream in streams:
             if stream[0] > 999: 
@@ -303,39 +309,58 @@ def PLAY(rtmpurls,values,Trailer=False,title=False):
             else: 
                 streamsout.append(str(int(stream[0]))+' Kbps - '+stream[2]+', '+stream[3])
         quality = Dialog.select(common.getString(30114), streamsout)
-        if quality!=-1:
-            mbitrate = streams[quality][0]
-            rtmpurl = streams[quality][1]
-        else:
-            return False
+        
+    if quality == -1: return False
+    values['streamurl'] = streams[quality][1]
+    values['bitrate'] = str(streams[quality][0])
+    finalUrl = streams[quality][4]
+    
+    infoLabels = GetStreamInfo(common.args.asin, title)
+    if Trailer: infoLabels['Title'] += ' (Trailer)'
 
-    values['streamurl'] = rtmpurl
-    values['bitrate'] = str(mbitrate)
-    rtmpurlSplit = re.compile("([^:]*):\/\/([^\/]+)\/([^:]+):([^\?]+)(\?.*)?").findall(rtmpurl)[0]
+    common.Log('Playing %s with Bitrate %s' % (infoLabels['Title'], values['bitrate']))
+    if not infoLabels.has_key('Thumb'): infoLabels['Thumb'] = None
+    item = xbmcgui.ListItem(path=finalUrl, thumbnailImage=infoLabels['Thumb'])
+    if infoLabels.has_key('Fanart'): item.setArt({'fanart': infoLabels['Fanart']})
+    if infoLabels.has_key('Poster'):
+        item.setArt({'tvshow.poster': infoLabels['Poster']})
+    else: 
+        item.setArt({'poster': infoLabels['Thumb']})
+    item.setInfo(type="Video", infoLabels=infoLabels)
+
+    if Trailer or selbitrate != '0':
+        item.setProperty('IsPlayable', 'true')
+        Player.play(finalUrl, item)
+
+    xbmcplugin.setResolvedUrl(pluginhandle, True, item)
+    return values
+    
+def getRealStream(rtmpurl, swfurl):
+    if StrProt == 1:
+        rtmpurlSplit = re.compile("([^:]*):\/\/([^\/]+)\/([^\/]+)\/([^\?]+)(\?.*)?").findall(rtmpurl)[0]
+    else:
+        rtmpurlSplit = re.compile("([^:]*):\/\/([^\/]+)\/([^:]+):([^\?]+)(\?.*)?").findall(rtmpurl)[0]
     protocol = rtmpurlSplit[0]
     hostname = rtmpurlSplit[1]
     appName =  rtmpurlSplit[2]
     stream = rtmpurlSplit[3]
     auth = rtmpurlSplit[4]
 
-    finalUrl = 'http://%s/%s' %(hostname, stream)
-    infoLabels = GetStreamInfo(common.args.asin, title)
-    if Trailer:
-        infoLabels['Title'] += ' (Trailer)'
-
-    if not infoLabels.has_key('Thumb'): infoLabels['Thumb'] = None
-    item = xbmcgui.ListItem(path=finalUrl, thumbnailImage=infoLabels['Thumb'])
-    if infoLabels.has_key('Fanart'): item.setProperty('fanart_image', infoLabels['Fanart'])
-    if infoLabels.has_key('Poster'): item.setArt({'tvshow.poster': infoLabels['Poster']})
-    else: item.setArt({'poster': infoLabels['Thumb']})
-    item.setInfo(type="Video", infoLabels=infoLabels)
-    if Trailer or selbitrate != '0':
-        item.setProperty('IsPlayable', 'true')
-        xbmc.Player().play(finalUrl, item)
+    if StrProt == 1:
+        if '$' in stream:
+            Dialog.notification(common.getString(30198), title, xbmcgui.NOTIFICATION_ERROR)
+            return -1
+        basertmp = protocol[0:-1] + '://' + hostname + '/' + appName
+        tcurl = protocol + '://' + hostname + '/' + appName
+        if 'edgefcs' in hostname:
+            basertmp += auth
+        else:
+            stream += auth
+        finalUrl = '%s app=%s swfUrl=%s pageUrl=%s playpath=%s tcUrl=%s swfVfy=true' % (basertmp, appName, swfurl, amazonUrl, stream, tcurl)
     else:
-        xbmcplugin.setResolvedUrl(pluginhandle, True, item)
-    return values
-
+        finalUrl = 'http://%s/%s' %(hostname, stream)
+    return finalUrl
+    
 def GetStreamInfo(asin, finalname):
     import movies
     import listmovie
@@ -402,6 +427,29 @@ def getIP(url):
     ip = re.compile('<fcs><ip>(.+?)</ip></fcs>').findall(ident)[0]
     return ip
 
+def SpeedTest(streams):
+    bs = 1024
+    loadtime = 0
+    bytes = 0
+    url = streams[-1][4]
+    u = urllib2.urlopen(url)
+    starttime = float(time.time()*1000)
+    while loadtime < 3000:
+        buffer = u.read(bs)
+        loadtime = float(time.time()*1000) - starttime
+        bytes += len(buffer)
+    loadtime = loadtime / 1000
+    fs_kbit = float(bytes) * 8 / 1024 - (loadtime * 128)
+    lbitrate = int((1/loadtime * fs_kbit) * .8)
+    common.Log('Speed %s kbits' % lbitrate)
+    mbitrate = 0
+    for stream in streams:
+        bitrate = stream[0]
+        if bitrate >= mbitrate and bitrate <= lbitrate:
+            mbitrate = bitrate
+            quality = streams.index(stream)
+    return quality
+    
 def Error(code):
     common.Log(code, xbmc.LOGERROR)
     if 'CDP.InvalidRequest' in code:

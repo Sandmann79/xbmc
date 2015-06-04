@@ -9,6 +9,7 @@
     <string id="30014">Keinen Cookie verwenden</string>
     <string id="30007">Zugangsdaten und Cookie entfernen</string>
     <string id="30008">Datenbankaktualisierung</string>
+    <string id="30058">Standard-Speicherort der Datenbank ändern</string>
     <string id="30009">Datenbank automatisch aktualisieren</string>
     <string id="30013">Uhrzeit</string>
     <string id="30022">Nach 5 Minuten Leerlauf starten</string>
@@ -17,7 +18,6 @@
     <string id="30019">Alle 2 Tage</string>
     <string id="30020">Alle 5 Tage</string>
     <string id="30021">Wöchentlich</string>
-
     <string id="30011">Allgemein</string>
     <string id="30012">Wiedergabemethode</string>
 
@@ -147,6 +147,12 @@
     <string id="30190"> 2) den Inhalt der Ordner festlegen</string>
     <string id="30191">Neustart</string>
     <string id="30192">Soll der XBMC/Kodi neugestartet werden?</string>
+    
+    <string id="30193">Das Datenbank Addon wurde aktualisiert</string>
+    <string id="30194">Da sich die Datenbank nicht im Standard-Ordner befindet,  
+muss diese in den Benutzerdefinierten Ordner kopiert werden.
+Soll die Datenbank jetzt kopiert werden?
+(Diese Meldung erscheint einmalig)</string>
     
     <string id="30198">Stream mit gewählter Wiedergabemethode nicht abspielbar, bitte Chrome oder Browser Launcher verwenden.</string>
     <string id="30199">Keine Inhalte vorhanden</string>

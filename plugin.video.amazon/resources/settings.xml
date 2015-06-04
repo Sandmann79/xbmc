@@ -10,8 +10,9 @@
         <setting id="waitpin" type="labelenum" values="1|2|3|4|5|6|7|8|9|10|11|12|13|14|15|16|17|18|19|20|21|22|23|24|25|26|27|28|29|30" enable="eq(-2,true) + eq(-4,true)" visible="!eq(-6,0)" label="30047" default="5" />
         <setting id="br_config" type="action" label="30048" visible="eq(-7,1)" action="Addon.OpenSettings(plugin.program.browser.launcher)"/>
         <setting id="cr_config" type="action" label="30049" visible="eq(-8,2)" action="Addon.OpenSettings(plugin.program.chrome.launcher)"/>
-        <setting id="bitrate" label="30004" type="labelenum" values="0|300|600|900|1350|2000|2500|4000|6000|10000" default="0" visible="eq(-9,0)" />
-        <setting id="enable_captions" type="bool" label="30005" visible="eq(-10,0)" />
+        <setting id="protocol" type="enum" label="Stream Protocol" values="HTTP|RTMP" visible="eq(-9,0)" default="0"/>
+        <setting id="bitrate" label="30004" type="labelenum" values="0|Auto|300|600|900|1350|2000|2500|4000|6000|10000" default="Auto" visible="eq(-10,0)" />
+        <setting id="enable_captions" type="bool" label="30005" visible="eq(-11,0)" />
     </category>
     <category label="30038">
         <setting label="30001" type="lsep"/>
@@ -21,6 +22,8 @@
         <setting id="no_cookie" type="bool" label="30014" default="false" visible="eq(-3,true)"/>
         <setting label="30007" type="action" action="RunPlugin(plugin://plugin.video.amazon/?mode=<common>&sitemode=<remLoginData>)" option="close"/>
         <setting label="30008" type="lsep"/>
+        <setting id="customdbfolder" type="bool" label="30058" default="false"/>
+        <setting id="dbfolder" type="text" label="30062" enable="eq(-1,true)" default="special://home/addons/script.module.amazon.database/lib" subsetting="true"/>
         <setting id="auto_update" type="enum" lvalues="30010|30018|30019|30020|30021" label="30009" default="2"/>
         <setting id="update_time" type="time" label="30013" visible="gt(-1,0)" default="00:00" subsetting="true"/>
         <setting id="wait_idle" type="bool" label="30022" visible="gt(-2,0)" default="false" subsetting="true"/>
@@ -42,9 +45,9 @@
     <category label="30070">
         <setting label="30060" type="lsep"/>
         <setting id="enablelibraryfolder" type="bool" label="30061" default="false" />
-        <setting id="customlibraryfolder" type="text" label="30062" enable="eq(-1,true)" default="special://profile/addon_data/plugin.video.amazon" />
+        <setting id="customlibraryfolder" type="text" label="30062" enable="eq(-1,true)" default="special://profile/addon_data/plugin.video.amazon" subsetting="true"/>
         <setting label="30070" type="lsep"/>
-        <setting id="useshowfanart" type="bool" label="30055" default="false"/>
+        <setting id="useshowfanart" type="bool" label="30055" default="true"/>
         <setting id="disptvshow" type="bool" label="30071" default="false"/>
         <setting id="logging" type="bool" label="30072" default="false"/>
     </category>

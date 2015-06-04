@@ -268,14 +268,16 @@ def getTMDBImages(title, imdb=None, content='movie', year=None):
     return fanart
     
 def updateAll():
+    if common.updateRunning(): return
     import movies
     import tv
     from datetime import datetime
     common.addon.setSetting('update_running', datetime.today().strftime('%Y-%m-%d %H:%M'))
+    common.Log('Starting DBUpdate')
     Notif = xbmcgui.Dialog().notification
     Notif(common.__plugin__, common.getString(30106), sound = False)
-    tv.addTVdb(full_update = False)
-    movies.addMoviesdb(full_update = False)
+    tv.addTVdb(False)
+    movies.addMoviesdb(False)
     NewAsins = common.getNewest()
     movies.setNewest(NewAsins)
     movies.updateFanart()
@@ -284,3 +286,4 @@ def updateAll():
     common.addon.setSetting('last_update', datetime.today().strftime('%Y-%m-%d'))
     common.addon.setSetting('update_running', 'false')
     Notif(common.__plugin__, common.getString(30126), sound = False)
+    common.Log('DBUpdate finished')

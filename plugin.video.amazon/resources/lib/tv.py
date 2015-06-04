@@ -149,21 +149,7 @@ def getShowTypes(col):
     common.waitforDB('tv')
     c = tvDB.cursor()
     items = c.execute('select distinct %s from shows' % col)
-    list = []
-    lowlist = []
-    for data in items:
-        if data and data[0] <> None:
-            data = data[0]
-            if type(data) == type(str()):
-                if 'genres' in col: data = data.split('/')
-                else: data = re.split(r'[,;/]', data)
-                for item in data:
-                    item = item.strip()
-                    if item.lower() not in lowlist and item <> '' and item <> 0 and item <> 'Inc.' and item <> 'LLC.':
-                        list.append(item)
-                        lowlist.append(item.lower())
-            else:
-                list.append(str(data))
+    list = common.getTypes(items, col)
     c.close()
     return list
 
@@ -349,6 +335,7 @@ def addTVdb(full_update = True, libasins = False):
     POP_ASINS = []
     
     if full_update and not libasins:
+        if common.updateRunning(): return
         if not Dialog.yesno(common.getString(30136), common.getString(30137), common.getString(30138) % '30'):
             return
         DialogPG.create(common.getString(30130))
@@ -430,9 +417,6 @@ def addTVdb(full_update = True, libasins = False):
             goAhead = 0
             
     if goAhead == 0:
-        if not libasins: addTVdb(False, 'full')
-        if libasins == 'full': return 
-        common.addon.setSetting("EpisodesTotal",str(countDB('episodes')))
         if not libasins: 
             updatePop()
             removed_seasons = []
@@ -440,6 +424,7 @@ def addTVdb(full_update = True, libasins = False):
                 if item[1] == 0: removed_seasons.append(item[0])
             delShows, delSeasons, delEpisodes = deleteremoved(removed_seasons)
             UpdateDialog(SERIES_COUNT, SEASON_COUNT, EPISODE_COUNT, delShows, delSeasons, delEpisodes)
+            addTVdb(False, 'full')
             
         fixDBLShows()
         fixYears()
@@ -452,6 +437,7 @@ def addTVdb(full_update = True, libasins = False):
             DialogPG.close()
             updateFanart()
         tvDB.commit()
+        common.addon.setSetting("EpisodesTotal",str(countDB('episodes')))
 
 def checkLibraryAsins(asinlist):
     asins = ''
@@ -463,9 +449,9 @@ def checkLibraryAsins(asinlist):
         for asin in asinlist:
             found, ALL_SEASONS_ASINS = common.compasin(ALL_SEASONS_ASINS, asin)
             if not found: asins += asin + ','
-            for item in ALL_SEASONS_ASINS:
-                if item[1] == 0: removed_seasons.append(item[0])
-            deleteremoved(removed_seasons)
+        for item in ALL_SEASONS_ASINS:
+            if item[1] == 0: removed_seasons.append(item[0])
+        deleteremoved(removed_seasons)
     else: asins = ','.join(asinlist)
 
     if not asins: return False
@@ -680,11 +666,10 @@ def setNewest(asins=False):
         count += 1
     tvDB.commit()
         
-tvDBfile = os.path.join(common.dbpath, 'tv.db')
-if not os.path.exists(tvDBfile):
-    tvDB = sqlite.connect(tvDBfile)
+if not os.path.exists(common.tvDBfile):
+    tvDB = sqlite.connect(common.tvDBfile)
     tvDB.text_factory = str
     createTVdb()
 else:
-    tvDB = sqlite.connect(tvDBfile)
+    tvDB = sqlite.connect(common.tvDBfile)
     tvDB.text_factory = str

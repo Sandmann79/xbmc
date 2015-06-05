@@ -16,11 +16,12 @@ import xbmcaddon
 import xbmc
 import urlparse
 import base64
-import demjson
 import binascii
 import hmac
 import time
 import hashlib
+try: from demjson import demjson
+except: import demjson
 
 addon = xbmcaddon.Addon()
 __plugin__ = addon.getAddonInfo('name')

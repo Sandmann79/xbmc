@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <addon id="script.module.demjson"
        name="demjson"
-       version="2.2.2"
+       version="2.2.3"
        provider-name="deron.meranda.us">
   <requires>
     <import addon="xbmc.python" version="2.1.0"/>

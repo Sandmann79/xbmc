@@ -120,9 +120,9 @@ r""" A JSON data encoder and decoder.
 __author__ = "Deron Meranda <http://deron.meranda.us/>"
 __homepage__ = "http://deron.meranda.us/python/demjson/"
 
-__date__ = "2014-06-25"
-__version__ = "2.2.2"
-__version_info__ = ( 2, 2, 2 )    # Will be converted into a namedtuple below
+__date__ = "2014-11-12"
+__version__ = "2.2.3"
+__version_info__ = ( 2, 2, 3 )    # Will be converted into a namedtuple below
 
 __credits__ = """Copyright (c) 2006-2014 Deron E. Meranda <http://deron.meranda.us/>
 
@@ -6000,7 +6000,7 @@ MORE INFORMATION:
                 fp.close()
             except IOError, err:
                 self.stderr.write('%s: %s\n' % (pfx, str(err)) )
-                return False
+                return self.SUCCESS_FAIL
             if verbose:
                 verbose_fp = self.stdout
     
@@ -6255,13 +6255,17 @@ the options --allow, --warn, or --forbid ; for example:
 
         for fn in args:
             try:
-                if not self._lintcheck( fn, output_filename=output_filename,
-                                        verbose=verbose,
-                                        reformat=reformat,
-                                        show_stats=show_stats,
-                                        input_encoding=input_encoding,
-                                        output_encoding=output_encoding,
-                                        jsonopts=jsonopts ):
+                rc = self._lintcheck( fn, output_filename=output_filename,
+                                      verbose=verbose,
+                                      reformat=reformat,
+                                      show_stats=show_stats,
+                                      input_encoding=input_encoding,
+                                      output_encoding=output_encoding,
+                                      jsonopts=jsonopts )
+                if rc != self.SUCCESS_OK:
+                    # Warnings or errors should result in failure.  If
+                    # checking multiple files, do not change a
+                    # previous error back to ok.
                     success = False
             except KeyboardInterrupt, err:
                 sys.stderr.write("\njsonlint interrupted!\n")

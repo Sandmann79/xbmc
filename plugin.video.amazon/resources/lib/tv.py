@@ -34,6 +34,7 @@ def createTVdb():
     c.execute('drop table if exists shows')
     c.execute('drop table if exists seasons')
     c.execute('drop table if exists episodes')
+    c.execute('drop table if exists categories')
     c.execute('''CREATE TABLE shows(
                  asin TEXT UNIQUE,
                  seriestitle TEXT,
@@ -247,6 +248,7 @@ def addDB(table, data):
 def lookupTVdb(value, rvalue='distinct *', tbl='episodes', name='asin', single=True, exact=False):
     common.waitforDB('tv')
     c = tvDB.cursor()
+    if not c.execute('SELECT count(*) FROM sqlite_master WHERE type="table" AND name=(?)', (tbl,)).fetchone()[0]: return ''
     sqlstring = 'select %s from %s where %s ' % (rvalue, tbl, name)
     retlen = len(rvalue.split(','))
     if not exact:
@@ -287,7 +289,7 @@ def delfromTVdb():
                     if item: delasins += (item)
         UpdateDialog(0, 0, 0, *deleteremoved(delasins))
         
-def deleteremoved(asins):
+def deleteremoved(asins, refresh=True):
     c = tvDB.cursor()
     delShows = 0
     delSeasons = 0
@@ -304,15 +306,28 @@ def deleteremoved(asins):
                     delShows += c.execute('delete from shows where seriestitle = (?)', (title,)).rowcount
     tvDB.commit()
     c.close()
-    xbmc.executebuiltin('Container.Refresh')
+    if refresh: xbmc.executebuiltin('Container.Refresh')
     return delShows, delSeasons, delEpisodes
+    
+def cleanDB():
+    c = tvDB.cursor()
+    episodeasins = getTVdbAsins('episodes', 2, value='seasonasin')
+    removeAsins = []
+    for asins, season in lookupTVdb('', rvalue='asin, season', tbl='seasons', name='asin', single=False):
+        foundSeason = False
+        for asin in asins.split(','):
+            if asin in episodeasins: foundSeason = True
+        if not foundSeason: removeAsins.append(asins)
+    if len(removeAsins): UpdateDialog(0, 0, 0, *deleteremoved(removeAsins, False))
+    del episodeasins#,seasonasins
 
-def getTVdbAsins(table, isPrime=1, list=False):
+def getTVdbAsins(table, isPrime=1, list=False, value='asin'):
     c = tvDB.cursor()
     content = ''
     if list:
         content = []
-    sqlstring = 'select asin from %s where isPrime = (%s)' % (table, isPrime)
+    sqlstring = 'select %s from %s' % (value,table)
+    if isPrime < 2: sqlstring += ' where isPrime = (%s)' % isPrime
     for item in c.execute(sqlstring).fetchall():
         if list:
             content.append([','.join(item), 0])
@@ -344,6 +359,7 @@ def addTVdb(full_update = True, libasins = False):
         ALL_SERIES_ASINS = ''
         ALL_SEASONS_ASINS = []
     else:
+        cleanDB()
         ALL_SEASONS_ASINS = getTVdbAsins('seasons', list=True)
         ALL_SERIES_ASINS = getTVdbAsins('shows')
         
@@ -653,17 +669,26 @@ def getIMDbID(asins,title):
     common.Log(id + asins.split(',')[0])
     return id
     
-def setNewest(asins=False):
-    if not asins:
-        asins = common.getNewest()
+def setNewest(compList=False):
+    if not compList:
+        compList = common.getCategories()
+    catList = compList['tv_shows']
     c = tvDB.cursor()
+    c.execute('drop table if exists categories')
+    c.execute('''create table categories(
+                 title TEXT,
+                 asins TEXT);''')
     c.execute('update seasons set recent=null')
     count = 1
-    for asin in asins['PrimeTVRecentlyAdded']:
-        seasonasin = lookupTVdb(asin, rvalue='seasonasin')
-        if not seasonasin: seasonasin = asin
-        c.execute("update seasons set recent=? where asin like (?)", (count, '%'+seasonasin+'%'))
-        count += 1
+    for id in catList:
+        if id == 'PrimeTVRecentlyAdded':
+            for asin in catList[id]:
+                seasonasin = lookupTVdb(asin, rvalue='seasonasin')
+                if not seasonasin: seasonasin = asin
+                c.execute("update seasons set recent=? where asin like (?)", (count, '%'+seasonasin+'%'))
+                count += 1
+        else:
+            c.execute('insert or ignore into categories values (?,?)', [id, catList[id]])
     tvDB.commit()
         
 if not os.path.exists(common.tvDBfile):

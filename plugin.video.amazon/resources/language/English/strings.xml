@@ -69,6 +69,7 @@
     <string id="30072">Verbose logging</string>
     
     <string id="30100">Popular</string>
+    <string id="30101">Toggle watched state</string>
     <string id="30102">Full Movie Refresh(DB)</string>
     <string id="30103">Refresh TV &amp; Movie Database</string>
     <string id="30104">Movies</string>
@@ -115,6 +116,7 @@
     <string id="30146">Studios</string>
     <string id="30147">MPAA Rating</string>
     <string id="30148">Directors</string>
+    <string id="30149">Editor's Picks</string>
 
     <string id="30154">Movie</string>
     <string id="30155">Remove %s</string>

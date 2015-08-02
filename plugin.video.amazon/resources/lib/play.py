@@ -262,9 +262,9 @@ def GETFLASHVARS(pageurl):
             Dialog.notification(common.getString(30200), common.getString(30210), xbmcgui.NOTIFICATION_ERROR)
             return False
 
-    values['deviceTypeID']  = 'A324MFXUEZFF7B' #Sony GoogleTV unenc Flash
+    #values['deviceTypeID']  = 'A324MFXUEZFF7B' #Sony GoogleTV unenc Flash
     #values['deviceTypeID']  = 'A13Q6A55DBZB7M' #enc Flash
-    #values['deviceTypeID']  = 'A35LWR0L7KC0TJ' #Logitech GoogleTV unenc Flash
+    values['deviceTypeID']  = 'A35LWR0L7KC0TJ' #Logitech GoogleTV unenc Flash
     #values['deviceTypeID']  = 'A63V4FRV3YUP9' #enc Silverlight
     values['userAgent']     = "GoogleTV"
     values['deviceID']      = common.hmac.new(common.UserAgent, common.gen_id(), hashlib.sha224).hexdigest()
@@ -326,6 +326,7 @@ def PLAY(rtmpurls,values,Trailer,title):
         item.setArt({'tvshow.poster': infoLabels['Poster']})
     else: 
         item.setArt({'poster': infoLabels['Thumb']})
+
     item.setInfo(type="Video", infoLabels=infoLabels)
 
     if Trailer or selbitrate != '0':

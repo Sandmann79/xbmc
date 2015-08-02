@@ -15,6 +15,7 @@ xbmcgui = common.xbmcgui
 def LIST_MOVIE_ROOT():
     common.addDir(common.getString(30100),'listmovie','LIST_MOVIES_SORTED','popularity')
     common.addDir(common.getString(30110),'listmovie','LIST_MOVIES_SORTED','recent')
+    common.addDir(common.getString(30149),'listmovie','LIST_MOVIES_CATS')
     common.addDir(common.getString(30143),'listmovie','LIST_MOVIES')
     common.addDir(common.getString(30144),'listmovie','LIST_MOVIE_TYPES','genres')
     common.addDir(common.getString(30145),'listmovie','LIST_MOVIE_TYPES','year')
@@ -24,6 +25,19 @@ def LIST_MOVIE_ROOT():
     common.addDir(common.getString(30148),'listmovie','LIST_MOVIE_TYPES','director')
     xbmcplugin.endOfDirectory(pluginhandle)
     
+def LIST_MOVIES_CATS():
+    import movies as moviesDB
+    id = common.args.url
+    if id:
+        asins = moviesDB.lookupMoviedb(id, rvalue='asins', name='title', table='categories')
+        for asin in asins.split(','):
+            LIST_MOVIES('asin',asin,search=True)
+        common.SetView('movies', 'movieview')
+    else:
+        for title in moviesDB.lookupMoviedb('', name='asins', table='categories', single=False):
+            if title: common.addDir(title[0],'listmovie','LIST_MOVIES_CATS',title[0])
+        xbmcplugin.endOfDirectory(pluginhandle,updateListing=False)   
+
 def LIST_MOVIE_TYPES(type=False):
     import movies as moviesDB
     if not type:

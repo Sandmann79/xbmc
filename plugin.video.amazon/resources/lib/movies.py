@@ -26,6 +26,7 @@ tmdb_art = common.addon.getSetting("tmdb_art")
 def createMoviedb():
     c = MovieDB.cursor()
     c.execute('drop table if exists movies')
+    c.execute('drop table if exists categories')
     c.execute('''create table movies
                 (asin UNIQUE,
                  HDasin UNIQUE,
@@ -62,10 +63,11 @@ def addMoviedb(moviedata):
         MovieDB.commit()
     return num
 
-def lookupMoviedb(value, rvalue='distinct *', name='asin', single=True, exact=False):
+def lookupMoviedb(value, rvalue='distinct *', name='asin', single=True, exact=False, table='movies'):
     common.waitforDB('movie')
     c = MovieDB.cursor()
-    sqlstring = 'select %s from movies where %s ' % (rvalue, name)
+    if not c.execute('SELECT count(*) FROM sqlite_master WHERE type="table" AND name=(?)', (table,)).fetchone()[0]: return ''
+    sqlstring = 'select %s from %s where %s ' % (rvalue, table, name)
     retlen = len(rvalue.split(','))
     if not exact:
         value = '%' + value + '%'
@@ -206,15 +208,25 @@ def updateLibrary(asinlist=False):
     for title in titles:
         ASIN_ADD(title)
     
-def setNewest(asins=False):
-    if not asins:
-        asins = common.getNewest()
+def setNewest(compList=False):
+    if not compList:
+        compList = common.getCategories()
+    catList = compList['movies']
     c = MovieDB.cursor()
+    c.execute('drop table if exists categories')
+    c.execute('''create table categories(
+                 title TEXT,
+                 asins TEXT);''')
     c.execute('update movies set recent=null')
     count = 1
-    for asin in asins['PrimeMovieRecentlyAdded']:
-        updateMoviedb(asin, 'recent', count)
-        count += 1
+    for id in catList:
+        if id == 'PrimeMovieRecentlyAdded':
+            for asin in catList[id]:
+                updateMoviedb(asin, 'recent', count)
+                count += 1
+        else:
+            c.execute('insert or ignore into categories values (?,?)', [id, catList[id]])
+    MovieDB.commit()
     
 def updateFanart():
     if tmdb_art == '0': return

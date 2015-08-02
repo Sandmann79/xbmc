@@ -162,8 +162,9 @@ def addVideo(name,asin,poster=False,fanart=False,infoLabels=False,totalItems=0,c
         cm = []
     if int(addon.getSetting("playmethod")) == 0:
         liz.setProperty('IsPlayable', 'true')
-        cm.insert(0, (getString(30109), 'XBMC.RunPlugin(%s&trailer=<0>&selbitrate=<1>)' % u) )
-        cm.insert(1, (getString(30113), 'XBMC.RunPlugin(%s&trailer=<0>&selbitrate=<org>)' % u) )
+        cm.insert(0, (getString(30109), 'RunPlugin(%s&trailer=<0>&selbitrate=<1>)' % u) )
+        cm.insert(1, (getString(30113), 'RunPlugin(%s&trailer=<0>&selbitrate=<org>)' % u) )
+    cm.insert(0, (getString(30101), 'Action(ToggleWatched)') )
     if isHD:
         liz.addStreamInfo('video', { 'width':1280 ,'height' : 720 })
     else:
@@ -370,16 +371,30 @@ def checkCase(title):
         title = title.title().replace('[Ov]', '[OV]').replace('Bc', 'BC')
     return title
     
-def getNewest():
+def getCategories():
     import urlparse
     response = getURL(ATV_URL + '/cdp/catalog/GetCategoryList?firmware=fmw:15-app:1.1.23&deviceTypeID=A1MPSLFC7L5AFK&deviceID=%s&format=json&OfferGroups=B0043YVHMY&IncludeAll=T&version=2' % addon.getSetting("GenDeviceID"))
     data = demjson.decode(response)
     asins = {}
-    for type in data['message']['body']['categories'][0]['categories'][0]['categories']:
-        subPageType = None
-        if type.has_key('subPageType'): subPageType = type['subPageType']
-        if subPageType == 'PrimeMovieRecentlyAdded' or subPageType == 'PrimeTVRecentlyAdded':
-            asins.update({subPageType: urlparse.parse_qs(type['query'])['ASINList'][0].split(',')})
+    for maincat in data['message']['body']['categories']:
+        mainCatId = maincat.get('id')
+        if mainCatId == 'movies' or mainCatId == 'tv_shows':
+            asins.update({mainCatId: {}})
+            for type in maincat['categories'][0]['categories']:
+                subPageType = type.get('subPageType')
+                subCatId = type.get('id')
+                if subPageType == 'PrimeMovieRecentlyAdded' or subPageType == 'PrimeTVRecentlyAdded':
+                    asins[mainCatId].update({subPageType: urlparse.parse_qs(type['query'])['ASINList'][0].split(',')})
+                elif 'prime_editors_picks' in subCatId:
+                    for picks in type['categories']:
+                        query = picks.get('query').upper()
+                        title = picks.get('title')
+                        if title and ('ASINLIST' in query):
+                            querylist = urlparse.parse_qs(query)
+                            alkey = None
+                            for key in querylist.keys():
+                                if 'ASINLIST' in key: alkey = key
+                            asins[mainCatId].update({title: urlparse.parse_qs(query)[alkey][0]})
     return asins
 
 def SetView(content, view=False, updateListing=False):
@@ -491,7 +506,13 @@ if addon.getSetting('customdbfolder') == 'true':
         cur_fileacc = int(os.path.getmtime(tvDBfile) + os.path.getmtime(MovieDBfile))
         if org_fileacc > cur_fileacc:
             copyDB(True)
-    
+if 1 == 0:
+    import movies
+    import tv
+    NewAsins = getCategories()
+    movies.setNewest(NewAsins)
+    tv.setNewest(NewAsins)
+    #tv.cleanDB()
 urlargs =  urllib.unquote_plus(sys.argv[2][1:].replace('&', ', ')).replace('<','"').replace('>','"')
 Log('Args: %s' % urlargs)
 exec "args = _Info(%s)" % urlargs

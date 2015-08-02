@@ -68,6 +68,7 @@
     <string id="30072">Ausführliches Logging</string>
 
     <string id="30100">Beliebt</string>
+    <string id="30101">Gesehen Status ändern</string>
     <string id="30102">Komplette Filmdatenbank erstellen</string>
     <string id="30103">Film &amp; TV-Datenbank aktualisieren</string>
     <string id="30104">Filme</string>
@@ -114,6 +115,7 @@
     <string id="30146">Studios</string>
     <string id="30147">Altersfreigabe</string>
     <string id="30148">Regisseure</string>
+    <string id="30149">Empfehlungen</string>
 
     <string id="30154">Film</string>
     <string id="30155">%s entfernen</string>

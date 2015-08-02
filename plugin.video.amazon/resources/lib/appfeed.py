@@ -278,7 +278,7 @@ def updateAll():
     Notif(common.__plugin__, common.getString(30106), sound = False)
     tv.addTVdb(False)
     movies.addMoviesdb(False)
-    NewAsins = common.getNewest()
+    NewAsins = common.getCategories()
     movies.setNewest(NewAsins)
     movies.updateFanart()
     tv.setNewest(NewAsins)

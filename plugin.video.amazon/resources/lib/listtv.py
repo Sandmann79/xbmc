@@ -16,6 +16,7 @@ showfanart = common.addon.getSetting("useshowfanart")
 def LIST_TV_ROOT():
     common.addDir(common.getString(30100),'listtv','LIST_TVSHOWS_SORTED','popularity')
     common.addDir(common.getString(30110),'listtv','LIST_TVSEASON_SORTED','recent')
+    common.addDir(common.getString(30149),'listtv','LIST_TVSHOWS_CATS')
     common.addDir(common.getString(30160),'listtv','LIST_TVSHOWS')
     common.addDir(common.getString(30144),'listtv','LIST_TVSHOWS_TYPES','genres' )
     common.addDir(common.getString(30158),'listtv','LIST_TVSHOWS_TYPES','actors')
@@ -24,6 +25,29 @@ def LIST_TV_ROOT():
     common.addDir(common.getString(30162),'listtv','LIST_TVSHOWS_TYPES','mpaa' )
     xbmcplugin.endOfDirectory(pluginhandle)
     
+def LIST_TVSHOWS_CATS():
+    import tv as tvDB
+    id = common.args.url
+    if id:
+        asins = tvDB.lookupTVdb(id, rvalue='asins', name='title', tbl='categories')
+        epidb = tvDB.lookupTVdb('', name='asin', rvalue='asin, seasonasin', tbl='episodes', single=False)
+        if not asins: return
+        for asin in asins.split(','):
+            seasonasin = None
+            for epidata in epidb:
+                if asin in str(epidata):
+                    seasonasin = epidata[1]
+                    break
+            if not seasonasin: seasonasin = asin
+            for seasondata in tvDB.loadTVSeasonsdb(seasonasin=seasonasin).fetchall():
+                ADD_SEASON_ITEM(seasondata, disptitle=True)
+        common.SetView('tvshows', 'seasonview')
+        del epidb
+    else:
+        for title in tvDB.lookupTVdb('', name='asins', tbl='categories', single=False):
+            if title: common.addDir(title[0],'listtv','LIST_TVSHOWS_CATS',title[0])
+        xbmcplugin.endOfDirectory(pluginhandle,updateListing=False)   
+        
 def LIST_TVSHOWS_TYPES(type=False):
     import tv as tvDB
     if not type:

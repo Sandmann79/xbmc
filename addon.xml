@@ -47,7 +47,7 @@
 </addon> 
 <addon id="plugin.video.amazon-test" 
        name="Amazon-Test" 
-       version="0.0.4" 
+       version="0.0.5" 
        provider-name="Sandmann79"> 
   <requires> 
     <import addon="xbmc.python" version="2.1.0"/> 

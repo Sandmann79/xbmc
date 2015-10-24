@@ -19,7 +19,7 @@
         <setting id="save_login" type="bool" label="30006" default="false" />
         <setting id="login_name" type="text" label="30002" enable="eq(-100,true)" default="" />
         <setting id="login_pass" type="text" label="30003" enable="eq(-100,true)" visible="eq(-2,true)" option="hidden" default="" subsetting="true"/>
-        <setting id="no_cookie" type="bool" label="30014" default="false" visible="eq(-3,true)"/>
+        <setting id="no_cookie" type="bool" label="30014" default="false" />
         <setting label="30007" type="action" action="RunPlugin(plugin://plugin.video.amazon-test/?mode=remLoginData)" option="close"/>
         <setting type="lsep"/>
         <setting id="items_perpage" type="labelenum" values="25|30|40|50|75|100|150|200|250" label="30039" default="50"/>

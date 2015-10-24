@@ -117,9 +117,13 @@ def setView(content, view=False, updateListing=False):
     
 def getURL( url, host=BaseUrl.split('//')[1], useCookie=False, silent=False, headers=None):
     cj = cookielib.LWPCookieJar()
-    if useCookie and os.path.isfile(CookieFile):
-        cj.load(CookieFile, ignore_discard=True, ignore_expires=True)
-    Log('getURL: '+url)
+    if useCookie:
+        if isinstance(useCookie, bool): cj = MechanizeLogin()
+        else: cj = useCookie
+        if isinstance(cj, bool): return False
+    #dispurl = re.sub(tvdb+'|'+tmdb+'|&token=\w+', '', url, flags=re.IGNORECASE).strip()
+    dispurl = url
+    if not silent: Log('getURL: '+dispurl)
     if not headers: headers = [('User-Agent', UserAgent ), ('Host', host)]
     try:
         opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cj),urllib2.HTTPRedirectHandler)
@@ -132,7 +136,7 @@ def getURL( url, host=BaseUrl.split('//')[1], useCookie=False, silent=False, hea
         return False
     return response
     
-def getATVData(mode, query='', version=2, useCookie=True):
+def getATVData(mode, query='', version=2, useCookie=False):
     if '?' in query: query = query.split('?')[1]
     if query:
         query = '&IncludeAll=T&AID=T&' + query
@@ -305,7 +309,9 @@ def listContent(catalog, url, page, parent, export=False):
             listContent(catalog, oldurl, page+1, parent, export)
         else:
             addDir(' --= %s =--' % (getString(30111) % int(page+1)), 'listContent', oldurl, page=page+1, catalog=catalog, opt=parent)
-    if not export: setView(contentType, True)
+    if not export:
+        if parent == 'search': setView('movie', True)
+        else: setView(contentType, True)
 
 def cleanTitle(title):
     if title.isupper():
@@ -420,6 +426,7 @@ def loadArtWork(asins, title, year, contentType):
     cur.close()
                     
 def getTVDBImages(title, imdb=None, id=None):
+    Log('searching fanart for %s at thetvdb.com' % title.upper())
     posterurl = fanarturl = None
     splitter = [' - ', ': ', ', ']
     if country == 0 or country == 3:
@@ -457,6 +464,7 @@ def getTVDBImages(title, imdb=None, id=None):
     return seasons, posterurl, fanarturl
 
 def getTMDBImages(title, imdb=None, content='movie', year=None):
+    Log('searching fanart for %s at tmdb.com' % title.upper())
     fanart = poster = id = None
     splitter = [' - ', ': ', ', ']
     TMDB_URL = 'http://image.tmdb.org/t/p/original'
@@ -504,11 +512,10 @@ def formatSeason(infoLabels, parent):
     
 def getList(list, export):
     extraArgs = ''
-    if not os.path.isfile(CookieFile):
-        MechanizeLogin()
     if list == watchlist or list == library:
-        asins_tv = scrapAsins('/gp/aw/%s/?filter=tv&pageSize=1000&sortBy=date' % list)
-        asins_movie = scrapAsins('/gp/aw/%s/?filter=movie&pageSize=1000&sortBy=date' % list)
+        cj = MechanizeLogin()
+        asins_tv = scrapAsins('/gp/aw/%s/?filter=tv&pageSize=1000&sortBy=date' % list, cj)
+        asins_movie = scrapAsins('/gp/aw/%s/?filter=movie&pageSize=1000&sortBy=date' % list, cj)
     else:
         asins_movie = list
         asins_tv = ''
@@ -829,10 +836,10 @@ def makeGUID():
         guid += number[1:]    
     return hmac.new(UserAgent, guid, hashlib.sha224).hexdigest()
 
-def scrapAsins(url):
+def scrapAsins(url, cj):
     asins = []
     url = BaseUrl + url
-    content = getURL(url, useCookie=True)
+    content = getURL(url, useCookie=cj)
     asins += re.compile('data-asin="(.+?)"', re.DOTALL).findall(content)
     return ','.join(asins)
     

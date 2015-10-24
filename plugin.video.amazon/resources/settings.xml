@@ -1,7 +1,7 @@
 <settings>
     <!-- General -->
     <category label="30011">
-        <setting id="playmethod" type="enum" label="30012" values="Kodi Player|Browser Launcher|Chrome Launcher" default="0" />
+        <setting id="playmethod" type="enum" label="30012" values="Browser Launcher|Chrome Launcher" default="0" />
         <setting id="kiosk" type="bool" label="30042" default="true" visible="!eq(-1,0)" />
         <setting id="fullscreen" type="bool" label="30041" default="false" visible="!eq(-2,0)" />
         <setting id="clickwait" type="labelenum" values="1|2|3|4|5|6|7|8|9|10|11|12|13|14|15|16|17|18|19|20|21|22|23|24|25|26|27|28|29|30" label="30044" default="10" enable="eq(-1,true)" visible="!eq(-3,0)" />

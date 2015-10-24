@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<strings>
+    <string id="30001">Amazon Zugangsdaten</string>
+    <string id="30002">E-Mail Adresse</string>
+    <string id="30003">Passwort</string>
+    <string id="30004">Stream Bitrate (0 - Fragen)</string>
+    <string id="30005">Untertitel aktivieren</string>
+    <string id="30006">Zugangsdaten speichern (unsicher)?</string>
+    <string id="30014">Keinen Cookie verwenden</string>
+    <string id="30007">Zugangsdaten und Cookie entfernen</string>
+    
+    <string id="30080">Land auswählen</string>
+    <string id="30081">Deutschland</string>
+    <string id="30082">Großbritannien</string>
+    <string id="30083">USA</string>
+    <string id="30084">Japan</string>
+
+    <string id="30011">Allgemein</string>
+    <string id="30012">Wiedergabemethode</string>
+
+    <string id="30015">Ansicht</string>
+    <string id="30016">Film-Fanart Quelle</string>
+    <string id="30017">Serien-Fanart Quelle</string>
+    <string id="30050">Amazon</string>
+    <string id="30051">Fehlende von TMDb</string>
+    <string id="30052">Komplett von TMDb</string>
+    <string id="30053">Fehlende von TVDb</string>
+    <string id="30054">Komplett von TVDb</string>
+    <string id="30055">Serien-Fanart in der Staffel- und Episodenliste anzeigen</string>
+    <string id="30056">TVDb inkl. Poster</string>
+
+    <string id="30023">Vorschau</string>
+    <string id="30024">Poster Wrap</string>
+    <string id="30025">Liste</string>
+    <string id="30026">Media Info 2</string>
+    <string id="30027">Media Info</string>
+    <string id="30028">Fanart</string>
+    <string id="30034">Große Liste</string>
+    <string id="30033">Benutzerdefiniert</string>
+
+    <string id="30035">Ansichten aktivieren</string>
+    <string id="30029">Film Ansicht</string>
+    <string id="30030">Serien Ansicht</string>
+    <string id="30031">Staffel Ansicht</string>
+    <string id="30032">Episoden Ansicht</string>
+
+    <string id="30038">Verbindung</string>
+    <string id="30039">Elemente pro Seite</string>
+
+    <string id="30041">Vollbild aktivieren</string>
+    <string id="30042">Browser Kiosk Modus</string>
+    <string id="30044">Wartezeit für Vollbild (sek)</string>
+    <string id="30045">Automatische PIN Eingabe</string>  
+    <string id="30046">PIN</string>
+    <string id="30047">Wartezeit nach PIN Eingabe</string>
+    <string id="30048">Browser Launcher konfigurieren...</string>
+    <string id="30049">Chrome Launcher konfigurieren...</string>
+    <string id="30057">Wartezeit bis PIN Eingabe</string>
+
+    <string id="30060">Bibliothek</string>
+    <string id="30061">Eigener Bibliothekordner</string>
+    <string id="30062">Pfad</string>
+    <string id="30070">Verschiedenes</string>
+    <string id="30071">Serie anstelle von Staffeln in der Watchlist anzeigen</string>
+    <string id="30072">Ausführliches Logging</string>
+
+
+    <string id="30101">Gesehen Status ändern</string>
+    <string id="30100">Bibliothek</string>
+    <string id="30104">Filme</string>
+    <string id="30107">Serien</string>
+    <string id="30108">Suchen</string>
+    <string id="30109">Bitrate auswählen und wiedergeben</string>
+    <string id="30111">Weiter zu Seite %s</string>
+    <string id="30112">Zurück zu Seite %s</string>
+    <string id="30113">Sprache auswählen und wiedergeben</string>
+    <string id="30114">Stream Qualität auswählen:</string>
+    <string id="30115">Verfügbare Sprachen:</string>
+
+    <string id="30127">Keine Inhalte gefunden</string>
+
+    <string id="30143">Alle Filme</string>
+    <string id="30160">Alle Serien</string>
+
+    <string id="30165">Film</string>
+    <string id="30166">Serie</string>
+    <string id="30167">Staffel</string>
+    <string id="30168">Jahr </string>
+    <string id="30169">Spezial</string>
+    <string id="30173">Episode</string>
+
+    <string id="30180">%s zur Watchlist hinzufügen</string>
+    <string id="30181">%s aus Watchlist entfernen</string>
+    <string id="30182">Zur Serie wechseln</string>
+    <string id="30185">%s exportieren</string>
+
+    <string id="30186">Bibliothek aktualisieren</string>
+    <string id="30187">Amazon Video-Quellen hinzugefügt</string>
+    <string id="30188">Zum Abschluß des Setups:</string>
+    <string id="30189"> 1) XBMC/Kodi neustarten</string>
+    <string id="30190"> 2) den Inhalt der Ordner festlegen</string>
+    <string id="30191">Neustart</string>
+    <string id="30192">Soll der XBMC/Kodi neugestartet werden?</string>
+
+    <string id="30200">Fehler bei der Anmeldung</string>   
+    <string id="30201">E-Mail Adresse oder Passwort falsch</string>   
+    <string id="30202">Keine Suchergebnisse</string>
+    <string id="30203">Wiedergabe nicht möglich</string>
+    <string id="30204">Anfrage fehlgeschlagen</string>
+    <string id="30205">Wiedergabelimit erreicht, später erneut versuchen</string>
+    <string id="30206">Produkt nicht erworben</string>
+    <string id="30207">Dieses Video ist in Ihren Land nicht verfügbar</string>
+    <string id="30208">Wiedergabe momentan nicht möglich, später erneut versuchen</string>
+    <string id="30209">Unbekannt</string>
+    <string id="30210">Bitte Zugangsdaten und Cookie in den Einstellungen löschen</string>
+</strings>

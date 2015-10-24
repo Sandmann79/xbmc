@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<addon id="script.module.pydes"
+       name="pyDes"
+       version="2.0.1"
+       provider-name="Todd Whiteman">
+  <requires>
+    <import addon="xbmc.python" version="2.1.0"/>
+  </requires>
+  <extension point="xbmc.python.module"
+             library="lib" />
+  <extension point="xbmc.addon.metadata">
+    <summary lang="en">A pure python module which implements the DES and Triple-DES encryption algorithms.</summary>
+    <website>http://twhiteman.netfirms.com/des.html</website> 
+    <license>Public Domain</license> 
+    <platform>all</platform> 
+    <source>http://sourceforge.net/projects/pydes/</source> 
+  </extension>
+</addon>

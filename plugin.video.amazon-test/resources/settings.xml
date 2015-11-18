@@ -44,6 +44,7 @@
         <setting id="tvdb_art" type="enum" lvalues="30050|30053|30054|30056" label="30017" default="1"/>
         <setting id="useshowfanart" type="bool" label="30055" default="true"/>
         <setting label="30070" type="lsep"/>
+        <setting id="paycont" type="bool" label="30073" default="false"/>
         <setting id="disptvshow" type="bool" label="30071" default="false"/>
         <setting id="logging" type="bool" label="30072" default="false"/>
     </category>

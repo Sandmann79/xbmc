@@ -43,8 +43,8 @@ na = 'not available'
 BASE_URL = 'https://www.amazon.de'
 #ATV_URL = 'https://atv-ps-eu.amazon.com'
 ATV_URL = 'https://atv-ext-eu.amazon.com'
-#UserAgent = 'Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko'
-UserAgent = 'Mozilla/5.0 (X11; U; Linux i686; de-DE) AppleWebKit/533.4 (KHTML, like Gecko) Chrome/5.0.375.127 Large Screen Safari/533.4 GoogleTV/162671'
+UserAgent = 'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/49.0.2566.0 Safari/537.36'
+#UserAgent = 'Mozilla/5.0 (X11; U; Linux i686; de-DE) AppleWebKit/533.4 (KHTML, like Gecko) Chrome/5.0.375.127 Large Screen Safari/533.4 GoogleTV/162671'
 movielib = '/gp/aw/%s/?filter=movie'
 tvlib = '/gp/aw/%s/?filter=tv'
 lib = 'yvl'
@@ -160,10 +160,6 @@ def addVideo(name,asin,poster=False,fanart=False,infoLabels=False,totalItems=0,c
     liz.setProperty('IsPlayable', 'false')
     if not cm:
         cm = []
-    if int(addon.getSetting("playmethod")) == 0:
-        liz.setProperty('IsPlayable', 'true')
-        cm.insert(0, (getString(30109), 'RunPlugin(%s&trailer=<0>&selbitrate=<1>)' % u) )
-        cm.insert(1, (getString(30113), 'RunPlugin(%s&trailer=<0>&selbitrate=<org>)' % u) )
     cm.insert(0, (getString(30101), 'Action(ToggleWatched)') )
     if isHD:
         liz.addStreamInfo('video', { 'width':1280 ,'height' : 720 })
@@ -184,23 +180,28 @@ def addText(name):
     item.setProperty('IsPlayable', 'false')
     xbmcplugin.addDirectoryItem(handle=pluginhandle,url=sys.argv[0],listitem=item)
 
-def addWatchlist(asin=False):
+def toogleWatchlist(asin=False, action='add'):
     if not asin:
         asin=args.asin
-    url = BASE_URL + '/gp/video/watchlist/?toggleOnWatchlist=1&action=add&ASIN=' + asin
-    data = getURL(url,useCookie=True)
-    if asin in data:
-        Log(asin + ' added')
-
-def removeWatchlist(asin=False):
-    if not asin:
-        asin=args.asin
-    url = BASE_URL + '/gp/video/watchlist/?toggleOnWatchlist=1&action=remove&ASIN=' + asin
-    data = getURL(url,useCookie=True)
-    if asin not in data:
-        xbmc.executebuiltin('Container.Refresh')
-        Log(asin + ' removed')
+        if args.remove == '1': action = 'remove'
+        else: action = 'add'
         
+    cookie = mechanizeLogin()
+    token = getToken(asin, cookie)
+    url = BASE_URL + '/gp/video/watchlist/ajax/addRemove.html?ASIN=%s&dataType=json&token=%s&action=%s' % (asin, token, action)
+    data = demjson.decode(getURL(url, useCookie=cookie))
+    if data['success'] == 1:
+        Log(asin + ' ' + data['status'])
+        if data['AsinStatus'] == 0: xbmc.executebuiltin('Container.Refresh')
+    else:
+        Log(data['status'] + ': ' + data['reason'])
+
+def getToken(asin, cookie):
+    url = BASE_URL + '/gp/aw/video/detail/' + asin
+    data = getURL(url, useCookie=cookie)
+    token = re.compile('"token"[^"]*"([^"]*)"').findall(data)[0]
+    return urllib.quote_plus(token)
+
 def makeGUID():
     import random
     guid = ''

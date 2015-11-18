@@ -99,7 +99,7 @@ def ADD_MOVIE_ITEM(moviedata, onlyinfo=False,cmmode=0, export=False):
     if studio:
         infoLabels['Studio'] = studio
     if runtime:
-        infoLabels['Duration'] = runtime
+        infoLabels['Duration'] = int(runtime)*60
     if audio:
         infoLabels['AudioChannels'] = audio
     if poster:
@@ -113,10 +113,7 @@ def ADD_MOVIE_ITEM(moviedata, onlyinfo=False,cmmode=0, export=False):
         xbmclibrary.EXPORT_MOVIE(asin)
         return
     cm = []
-    if cmmode == 1:
-        cm.append((common.getString(30181) % common.getString(30154), 'XBMC.RunPlugin(%s?mode=<common>&sitemode=<removeWatchlist>&asin=<%s>)' % (sys.argv[0], asin)))
-    else:
-        cm.append((common.getString(30180) % common.getString(30154), 'XBMC.RunPlugin(%s?mode=<common>&sitemode=<addWatchlist>&asin=<%s>)' % (sys.argv[0], asin)))
+    cm.append((common.getString(30180+cmmode) % common.getString(30154), 'XBMC.RunPlugin(%s?mode=<common>&sitemode=<toogleWatchlist>&asin=<%s>&remove=<%s>)' % (sys.argv[0], asin, cmmode)))
     cm.append((common.getString(30185) % common.getString(30154), 'XBMC.RunPlugin(%s?mode=<xbmclibrary>&sitemode=<EXPORT_MOVIE>&asin=<%s>)' % (sys.argv[0], asin)))
     cm.append((common.getString(30186), 'XBMC.RunPlugin(%s?mode=<xbmclibrary>&sitemode=<UpdateLibrary>)' % sys.argv[0]))
     if onlyinfo:

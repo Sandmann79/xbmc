@@ -57,6 +57,10 @@
     <string id="30060">Library</string>
     <string id="30061">Custom Library Folder</string>
     <string id="30062">Path</string>
+    <string id="30070">Miscellaneous</string>
+    <string id="30071">Display TV-Show instead of Seasons in Watchlist</string>
+    <string id="30072">Advanced Logging</string>
+    <string id="30073">Display Paid Content</string>
 
     <string id="30101">Toogle Watched State</string>
     <string id="30100">Library</string>

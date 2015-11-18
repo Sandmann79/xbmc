@@ -9,7 +9,6 @@ xbmcplugin = common.xbmcplugin
 urllib = common.urllib
 sys = common.sys
 xbmcgui = common.xbmcgui
-watch_mode = ['addWatchlist', 'removeWatchlist']
 showfanart = common.addon.getSetting("useshowfanart")
 ###################### Television
 
@@ -122,7 +121,7 @@ def ADD_SHOW_ITEM(showdata,mode='listtv',submode='LIST_TV_SEASONS',cmmode=0,only
         xbmclibrary.EXPORT_SHOW(asin)
         return
     cm = []
-    cm.append((common.getString(30180+cmmode) % common.getString(30166), 'XBMC.RunPlugin(%s?mode=<common>&sitemode=<%s>&asin=<%s>)' % (sys.argv[0], watch_mode[cmmode], asin)))
+    cm.append((common.getString(30180+cmmode) % common.getString(30166), 'XBMC.RunPlugin(%s?mode=<common>&sitemode=<toogleWatchlist>&asin=<%s>&remove=<%s>)' % (sys.argv[0], asin, cmmode)))
     cm.append((common.getString(30185) % common.getString(30166), 'XBMC.RunPlugin(%s?mode=<xbmclibrary>&sitemode=<EXPORT_SHOW>&asin=<%s>)' % (sys.argv[0], asin)))
     cm.append((common.getString(30186), 'XBMC.RunPlugin(%s?mode=<xbmclibrary>&sitemode=<UpdateLibrary>)' % sys.argv[0]))
     cm.append((common.getString(30155) % common.getString(30166), 'XBMC.RunPlugin(%s?mode=<tv>&sitemode=<delfromTVdb>&asins=<%s>&table=<shows>&title=<%s>)' % ( sys.argv[0], urllib.quote_plus(infoLabels['Asins']), urllib.quote_plus(seriestitle))))
@@ -192,7 +191,7 @@ def ADD_SEASON_ITEM(seasondata, mode='listtv', submode='LIST_EPISODES_DB', dispt
         xbmclibrary.EXPORT_SEASON(asin)
         return
     cm = []
-    cm.append((common.getString(30180+cmmode) % common.getString(30167), 'XBMC.RunPlugin(%s?mode=<common>&sitemode=<%s>&asin=<%s>)' % (sys.argv[0], watch_mode[cmmode], asin)))
+    cm.append((common.getString(30180+cmmode) % common.getString(30167), 'XBMC.RunPlugin(%s?mode=<common>&sitemode=<toogleWatchlist>&asin=<%s>&remove=<%s>)' % (sys.argv[0], asin, cmmode)))
     cm.append((common.getString(30185) % common.getString(30167), 'XBMC.RunPlugin(%s?mode=<xbmclibrary>&sitemode=<EXPORT_SEASON>&asin=<%s>)' % (sys.argv[0], asin)))
     cm.append((common.getString(30186), 'XBMC.RunPlugin(%s?mode=<xbmclibrary>&sitemode=<UpdateLibrary>)' % sys.argv[0]))
     cm.append((common.getString(30155) % common.getString(30167), 'XBMC.RunPlugin(%s?mode=<tv>&sitemode=<delfromTVdb>&asins=<%s>&table=<seasons>&title=<%s>)' % ( sys.argv[0], urllib.quote_plus(infoLabels['Asins']), urllib.quote_plus(displayname))))
@@ -223,7 +222,7 @@ def ADD_EPISODE_ITEM(episodedata, onlyinfo=False, export=False):
     if year:
         infoLabels['Year'] = year
     if runtime:
-        infoLabels['Duration'] = runtime
+        infoLabels['Duration'] = int(runtime)*60
     if mpaa:
         infoLabels['MPAA'] = mpaa
     if actors:

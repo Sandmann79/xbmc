@@ -79,7 +79,8 @@ library = 'yvl'
 TypeIDs = {'GetCategoryList': 'firmware=fmw:15-app:1.1.23&deviceTypeID=A1MPSLFC7L5AFK', 
                        'All': 'firmware=fmw:045.01E01164A-app:4.7&deviceTypeID=A3VN4E5F7BBC7S'}
 langID = {'movie':30165, 'series':30166, 'season':30167, 'episode':30173}
-OfferGroup = 'OfferGroups=B0043YVHMY'
+OfferGroup = '&OfferGroups=B0043YVHMY'
+if addon.getSetting('paycont') == 'true': OfferGroup = ''
 Dialog = xbmcgui.Dialog()
 pDialog = xbmcgui.DialogProgress()
 
@@ -158,7 +159,10 @@ def addDir(name, mode, url='', infoLabels=None, opt='', catalog='Browse', cm=Fal
     if infoLabels:
         thumb = infoLabels['Thumb']
         fanart = infoLabels['Fanart']
-    else: fanart = thumb = DefaultFanart
+    else: 
+        fanart = DefaultFanart
+        thumb = None
+
     if export:
         Export(infoLabels, u)
         return
@@ -213,7 +217,7 @@ def Search():
     if (keyboard.isConfirmed()):
         searchString=keyboard.getText().strip()
         if searchString:
-            url = '%s&searchString=%s' % (OfferGroup, urllib.quote_plus(searchString))
+            url = 'searchString=%s%s' % (urllib.quote_plus(searchString), OfferGroup)
             listContent('Search', url, 1, 'search')
 
 def loadCategories(force=False):
@@ -238,7 +242,7 @@ def listCategories(path, root=None):
     data = loadCategories()
     exec 'cat = data' + path.__str__()
     if root:
-        url = OfferGroup + '&OrderBy=Title&ContentType='
+        url = 'OrderBy=Title%s&ContentType=' % OfferGroup
         if root == '30160': url += 'TVSeason&RollupToSeries=T'
         else: url += 'Movie'
         addDir(getString(int(root)), 'listContent', url)
@@ -292,12 +296,12 @@ def listContent(catalog, url, page, parent, export=False):
         else:
             mode = 'listContent'
             url = item['childTitles'][0]['feedUrl']
+            if parent == watchlist: url += OfferGroup
             if contentType == 'season': 
                 name = formatSeason(infoLabels, parent)
                 if parent != library and parent != '':
-                    curl = 'SeriesASIN=%s&ContentType=TVEpisode&RollupToSeason=T&IncludeBlackList=T&%s' % (infoLabels['SeriesAsin'], OfferGroup)
+                    curl = 'SeriesASIN=%s&ContentType=TVEpisode&RollupToSeason=T&IncludeBlackList=T%s' % (infoLabels['SeriesAsin'], OfferGroup)
                     cm.insert(0, (getString(30182), 'XBMC.Container.Update(%s?mode=listContent&cat=Browse&url=%s&page=1)' % (sys.argv[0], urllib.quote_plus(curl))))
-
             if export:
                 url = re.sub(r'contentype=\w+', 'ContentType=TVEpisode', url, flags=re.IGNORECASE)
                 url = re.sub(r'&rollupto\w+=\w+', '', url, flags=re.IGNORECASE)
@@ -351,15 +355,24 @@ def Export(infoLabels, url):
     Log('Export: ' + filename)
     
 def WatchList(asin, remove):
-    action = 'add'
     if remove: action = 'remove'
-    url = BaseUrl + '/gp/video/watchlist/?toggleOnWatchlist=1&action=%s&ASIN=%s' % (action, asin)
-    data = getURL(url, useCookie=True)
-    if asin in data:
-        Log(asin + ' added')
+    else: action = 'add'
+    cookie = MechanizeLogin()
+    token = getToken(asin, cookie)
+    url = BaseUrl + '/gp/video/watchlist/ajax/addRemove.html?&ASIN=%s&dataType=json&token=%s&action=%s' % (asin, token, action)
+    data = demjson.decode(getURL(url, useCookie=cookie))
+    if data['success'] == 1:
+        Log(asin + ' ' + data['status'])
+        #if data['AsinStatus'] == 0:
+        #    xbmc.executebuiltin('Container.Refresh')
     else:
-        Log(asin + ' removed')
-        xbmc.executebuiltin('Container.Refresh')
+        Log(data['status'] + ': ' + data['reason'])
+        
+def getToken(asin, cookie):
+    url = BaseUrl + '/gp/aw/video/detail/' + asin
+    data = getURL(url, useCookie=cookie)
+    token = re.compile('"token"[^"]*"([^"]*)"').findall(data)[0]
+    return urllib.quote_plus(token)
 
 def getArtWork(infoLabels, contentType):
     if contentType == 'movie' and tmdb_art == '0': return
@@ -521,7 +534,7 @@ def getList(list, export):
         asins_tv = ''
     url = 'ASINList='
     if dispShowOnly == 'true': extraArgs = '&RollupToSeries=T'
-    if list == watchlist: extraArgs += '&'+OfferGroup
+    #if list == watchlist: extraArgs += OfferGroup
     if export:
         url += asins_movie + ',' + asins_tv
         SetupLibrary()

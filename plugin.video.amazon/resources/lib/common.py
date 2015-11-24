@@ -507,13 +507,7 @@ if addon.getSetting('customdbfolder') == 'true':
         cur_fileacc = int(os.path.getmtime(tvDBfile) + os.path.getmtime(MovieDBfile))
         if org_fileacc > cur_fileacc:
             copyDB(True)
-if 1 == 0:
-    import movies
-    import tv
-    NewAsins = getCategories()
-    movies.setNewest(NewAsins)
-    tv.setNewest(NewAsins)
-    #tv.cleanDB()
+
 urlargs =  urllib.unquote_plus(sys.argv[2][1:].replace('&', ', ')).replace('<','"').replace('>','"')
 Log('Args: %s' % urlargs)
 exec "args = _Info(%s)" % urlargs

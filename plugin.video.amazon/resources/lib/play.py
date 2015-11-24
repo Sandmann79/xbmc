@@ -122,7 +122,7 @@ def getStreams(suc, data):
             data = common.getURL(urlset['url'])
             fr = eval(re.compile('frameRate="([^"]*)').findall(data)[0])
             if fr < 25: fr = 24
-            return ' ' + str(fr)
+            return str(fr)
             
     return ''
     

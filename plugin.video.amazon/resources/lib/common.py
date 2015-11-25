@@ -44,7 +44,6 @@ BASE_URL = 'https://www.amazon.de'
 #ATV_URL = 'https://atv-ps-eu.amazon.com'
 ATV_URL = 'https://atv-ext-eu.amazon.com'
 UserAgent = 'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/49.0.2566.0 Safari/537.36'
-#UserAgent = 'Mozilla/5.0 (X11; U; Linux i686; de-DE) AppleWebKit/533.4 (KHTML, like Gecko) Chrome/5.0.375.127 Large Screen Safari/533.4 GoogleTV/162671'
 movielib = '/gp/aw/%s/?filter=movie'
 tvlib = '/gp/aw/%s/?filter=tv'
 lib = 'yvl'
@@ -64,7 +63,7 @@ def getURL( url, host=BASE_URL.split('//')[1], useCookie=False, silent=False, he
         else: cj = useCookie
         if isinstance(cj, bool): return False
     dispurl = url
-    #dispurl = re.sub(tvdb+'|'+tmdb+'|&token=\w+', '', url, flags=re.IGNORECASE).strip()
+    dispurl = re.sub(tvdb+'|'+tmdb+'|&token=\w+', '', url, flags=re.IGNORECASE).strip()
     if not silent: Log('getURL: '+dispurl)
     if not headers: headers = [('User-Agent', UserAgent ), ('Host', host)]
     try:

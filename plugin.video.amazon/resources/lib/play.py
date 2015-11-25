@@ -43,6 +43,7 @@ def PLAYVIDEO():
         videoUrl = amazonUrl + "/?autoplaytrailer=1"
     else:
         videoUrl = amazonUrl + "/?autoplay=1"
+    if addon.getSetting('logging') == 'true': videoUrl += '&playerDebug=true'
     
     if selPlugin == '':
         url = scr_path + ' ' + scr_param.replace('{f}', getPlaybackInfo(amazonUrl)).replace('{u}', videoUrl)
@@ -120,18 +121,19 @@ def getStreams(suc, data):
     for cdn in data['audioVideoUrls']['avCdnUrlSets']:
         for urlset in cdn['avUrlInfoList']:
             data = common.getURL(urlset['url'])
-            fr = eval(re.compile('frameRate="([^"]*)').findall(data)[0])
-            if fr < 25: fr = 24
-            return str(fr)
-            
+            fps_string = re.compile('frameRate="([^"]*)').findall(data)[0]
+            fr = round(eval(fps_string + '.0'), 3)
+            return str(fr).replace('.0','')
     return ''
     
 def getPlaybackInfo(url):
     if addon.getSetting("framerate") == 'false': return ''
+    Dialog.notification(xbmc.getLocalizedString(20186), '', xbmcgui.NOTIFICATION_INFO, 60000, False)
     values = getFlashVars(url)
     if not values: return ''
-    return getStreams(*getUrldata('catalog/GetPlaybackResources', values, extra=True))
-
+    fr = getStreams(*getUrldata('catalog/GetPlaybackResources', values, extra=True))
+    Dialog.notification(xbmc.getLocalizedString(20186), '', xbmcgui.NOTIFICATION_INFO, 10, False)
+    return fr
 
 def getFlashVars(url):
     cookie = common.mechanizeLogin()

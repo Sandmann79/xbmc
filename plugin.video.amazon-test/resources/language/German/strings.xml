@@ -49,13 +49,15 @@
 
     <string id="30041">Vollbild aktivieren</string>
     <string id="30042">Browser Kiosk Modus</string>
+    <string id="30043">Benutzerdefinierter Browserpfad</string>
+    <string id="30059">Eigenes Nutzerprofil verwenden</string>
     <string id="30044">Wartezeit für Vollbild (sek)</string>
     <string id="30045">Automatische PIN Eingabe</string>  
     <string id="30046">PIN</string>
-    <string id="30047">Wartezeit nach PIN Eingabe</string>
-    <string id="30048">Browser Launcher konfigurieren...</string>
-    <string id="30049">Chrome Launcher konfigurieren...</string>
     <string id="30057">Wartezeit bis PIN Eingabe</string>
+    <string id="30047">Wartezeit nach PIN Eingabe</string>
+    <string id="30048">Scriptpfad</string>
+    <string id="30049">Framerate ermitteln</string>
 
     <string id="30060">Bibliothek</string>
     <string id="30061">Eigener Bibliothekordner</string>
@@ -64,6 +66,7 @@
     <string id="30071">Serie anstelle von Staffeln in der Watchlist anzeigen</string>
     <string id="30072">Ausführliches Logging</string>
     <string id="30073">Bezahlinhalte anzeigen</string>
+    <string id="30074">Remote-Steuerung zulassen</string>
 
     <string id="30101">Gesehen Status ändern</string>
     <string id="30100">Bibliothek</string>
@@ -102,6 +105,7 @@
     <string id="30191">Neustart</string>
     <string id="30192">Soll der XBMC/Kodi neugestartet werden?</string>
 
+    <string id="30198">Browser oder Skript nicht gefunden. Bitte Einstellungen überprüfen.</string>
     <string id="30200">Fehler bei der Anmeldung</string>   
     <string id="30201">E-Mail Adresse oder Passwort falsch</string>   
     <string id="30202">Keine Suchergebnisse</string>

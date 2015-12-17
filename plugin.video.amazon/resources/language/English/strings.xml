@@ -51,15 +51,17 @@
     <string id="30038">Update</string>
     <string id="30039">Items Per Page</string>
 
-    <string id="30041">Switch Fullscreen (Flash/Silverlight)</string>
+    <string id="30041">Enable Fullscreen Video</string>
     <string id="30042">Browser Kiosk Mode</string>
-    <string id="30044">Wait for Fullscreen (sec)</string>
+    <string id="30043">Use custom Browser path</string>
+    <string id="30059">Use own user profile</string>
+    <string id="30044">Wait till Fullscreen (sec)</string>
     <string id="30045">Automatic PIN Input</string>  
     <string id="30046">PIN</string>
     <string id="30057">Wait till PIN Input</string>
     <string id="30047">Wait after PIN Input</string>
-    <string id="30048">Open Browser Launcher Settings</string>
-    <string id="30049">Open Chrome Launcher Settings</string>
+    <string id="30048">Script path</string>
+    <string id="30049">Detect Framerate</string>
 
     <string id="30060">Library</string>
     <string id="30061">Custom Library Folder</string>
@@ -68,6 +70,7 @@
     <string id="30070">Miscellaneous</string>
     <string id="30071">Display show instead of seasons in Watchlist</string>
     <string id="30072">Verbose logging</string>
+    <string id="30073">Enable Remote Control</string>
     
     <string id="30100">Popular</string>
     <string id="30101">Toggle watched state</string>
@@ -159,7 +162,7 @@ it must be copied into the custom folder.
 Copy database files now?
 (This message will never appear again)</string>
 
-    <string id="30198">Stream not playable with current settings, please use Chrome or Browser Launcher.</string>
+    <string id="30198">Browser or Script not found. Please check settings.</string>
     <string id="30199">No content found</string>
     <string id="30200">Login Error</string>
     <string id="30201">Wrong Email Adress or Password</string>

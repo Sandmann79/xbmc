@@ -1,12 +1,11 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <addon id="plugin.video.amazon-test"
        name="Amazon-Test"
-       version="0.0.6"
+       version="0.1.0"
        provider-name="Sandmann79">
   <requires>
     <import addon="xbmc.python" version="2.1.0"/>
     <import addon="script.module.beautifulsoup" version="3.2.1"/>
-    <import addon="script.module.demjson" version="2.2.3"/>
     <import addon="script.module.mechanize" version="0.2.6"/>
     <import addon="script.module.pydes" version="2.0.1"/>
   </requires>

@@ -47,12 +47,17 @@
     <string id="30038">Update</string>
     <string id="30039">Items Per Page</string>
     
-    <string id="30041">Switch Fullscreen</string>
+    <string id="30041">Enable Fullscreen Video</string>
     <string id="30042">Browser Kiosk Mode</string>
-    <string id="30044">Wait for Fullscreen (sec)</string>
+    <string id="30043">Use custom Browser path</string>
+    <string id="30059">Use own user profile</string>
+    <string id="30044">Wait till Fullscreen (sec)</string>
     <string id="30045">Automatic PIN Input</string>  
     <string id="30046">PIN</string>
+    <string id="30057">Wait till PIN Input</string>
     <string id="30047">Wait after PIN Input</string>
+    <string id="30048">Script path</string>
+    <string id="30049">Detect Framerate</string>
 
     <string id="30060">Library</string>
     <string id="30061">Custom Library Folder</string>
@@ -61,6 +66,7 @@
     <string id="30071">Display TV-Show instead of Seasons in Watchlist</string>
     <string id="30072">Advanced Logging</string>
     <string id="30073">Display Paid Content</string>
+    <string id="30074">Remote Control support</string>
 
     <string id="30101">Toogle Watched State</string>
     <string id="30100">Library</string>
@@ -99,6 +105,7 @@
     <string id="30191">Restart</string>
     <string id="30192">Do you want to restart Kodi now?</string>
 
+    <string id="30198">Browser or Script not found. Please check settings.</string>
     <string id="30200">Login Error</string>
     <string id="30201">Wrong Email Adress or Password</string>
     <string id="30202">No Search Results</string>

@@ -20,8 +20,7 @@ import binascii
 import hmac
 import time
 import hashlib
-try: from demjson import demjson
-except: import demjson
+import json
 
 addon = xbmcaddon.Addon()
 __plugin__ = addon.getAddonInfo('name')
@@ -63,7 +62,7 @@ def getURL( url, host=BASE_URL.split('//')[1], useCookie=False, silent=False, he
         else: cj = useCookie
         if isinstance(cj, bool): return False
     dispurl = url
-    dispurl = re.sub(tvdb+'|'+tmdb+'|&token=\w+', '', url, flags=re.IGNORECASE).strip()
+    dispurl = re.sub('(?i)%s|%s|&token=\w+' % (tvdb, tmdb), '', url).strip()
     if not silent: Log('getURL: '+dispurl)
     if not headers: headers = [('User-Agent', UserAgent ), ('Host', host)]
     try:
@@ -188,7 +187,7 @@ def toogleWatchlist(asin=False, action='add'):
     cookie = mechanizeLogin()
     token = getToken(asin, cookie)
     url = BASE_URL + '/gp/video/watchlist/ajax/addRemove.html?ASIN=%s&dataType=json&token=%s&action=%s' % (asin, token, action)
-    data = demjson.decode(getURL(url, useCookie=cookie))
+    data = json.loads(getURL(url, useCookie=cookie))
     if data['success'] == 1:
         Log(asin + ' ' + data['status'])
         if data['AsinStatus'] == 0: xbmc.executebuiltin('Container.Refresh')
@@ -374,7 +373,7 @@ def checkCase(title):
 def getCategories():
     import urlparse
     response = getURL(ATV_URL + '/cdp/catalog/GetCategoryList?firmware=fmw:15-app:1.1.23&deviceTypeID=A1MPSLFC7L5AFK&deviceID=%s&format=json&OfferGroups=B0043YVHMY&IncludeAll=T&version=2' % addon.getSetting("GenDeviceID"))
-    data = demjson.decode(response)
+    data = json.loads(response)
     asins = {}
     for maincat in data['message']['body']['categories']:
         mainCatId = maincat.get('id')

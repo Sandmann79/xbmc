@@ -15,7 +15,7 @@ xbmc = common.xbmc
 urllib = common.urllib
 xbmcgui = common.xbmcgui
 re = common.re
-demjson = common.demjson
+json = common.json
 os = common.os
 urlparse = common.urlparse
 
@@ -651,7 +651,7 @@ def getIMDbID(asins,title):
     if not url:
         while not id:
             response = common.getURL('http://www.omdbapi.com/?type=series&t=' + urllib.quote_plus(title))
-            data = demjson.decode(response)
+            data = json.loads(response)
             if data['Response'] == 'True':
                 id = data['imdbID']
             else:

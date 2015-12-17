@@ -13,7 +13,7 @@ urllib = common.urllib
 sys = common.sys
 xbmcgui = common.xbmcgui
 re = common.re
-demjson = common.demjson
+json = common.json
 os = common.os
 
 #Modes
@@ -85,16 +85,16 @@ def getList(ContentType,start=0,isPrime=True,NumberOfResults=MAX,OrderBy='MostPo
     #&AID=1
     #&IncludeNonWeb=T
     url = BUILD_BASE_API('catalog/Browse')+BROWSE_PARAMS
-    return demjson.decode(common.getATVURL(url))
+    return json.loads(common.getATVURL(url))
 
 def ASIN_LOOKUP(ASINLIST):
     results = len(ASINLIST.split(','))-1
     BROWSE_PARAMS = '&asinList='+ASINLIST+'&NumberOfResults='+str(results)+'&IncludeAll=T&playbackInformationRequired=true&version=2'
     url = BUILD_BASE_API('catalog/GetASINDetails')+BROWSE_PARAMS
-    return demjson.decode(common.getATVURL(url))
+    return json.loads(common.getATVURL(url))
 
 def URL_LOOKUP(url):
-    return demjson.decode(common.getATVURL(url+PARAMETERS.replace('?','&')))
+    return json.loads(common.getATVURL(url+PARAMETERS.replace('?','&')))
 
 def SEARCH_DB(searchString=False):
     if not searchString:
@@ -246,7 +246,7 @@ def getTMDBImages(title, imdb=None, content='movie', year=None):
             common.Log('Fanart: Pause 5 sec...')
             xbmc.sleep(5000)
             continue
-        data = demjson.decode(result)
+        data = json.loads(result)
         if data['total_results'] > 0:
             result = data['results'][0]
             if result['backdrop_path']: fanart = TMDB_URL + result['backdrop_path']

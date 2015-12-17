@@ -13,7 +13,7 @@ except:
 xbmc = common.xbmc
 xbmcgui = common.xbmcgui
 re = common.re
-demjson = common.demjson
+json = common.json
 os = common.os
 
 ################################ Movie db

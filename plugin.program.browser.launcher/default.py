@@ -25,6 +25,8 @@ priority = prio_values[int(addon.getSetting("priority"))]
 userDataFolder = xbmc.translatePath("special://profile/addon_data/"+addonID)
 profileFolder = os.path.join(userDataFolder, 'profile')
 siteFolder = os.path.join(userDataFolder, 'sites')
+avBrowsers = ['Standard', 'Internet Explorer', 'Kylo', 'Chrome', 'Firefox', 'Opera']
+Dialog = xbmcgui.Dialog()
 
 if not os.path.isdir(userDataFolder):
     os.mkdir(userDataFolder)
@@ -109,11 +111,10 @@ def addSite(site="", title=""):
                     keyboard.doModal()
                     if keyboard.isConfirmed() and keyboard.getText():
                         kiosk = keyboard.getText()
-                        keyboard = xbmc.Keyboard('', translation(30017))
-                        keyboard.doModal()
-                        if keyboard.isConfirmed() and keyboard.getText():
-                            custBrowser = keyboard.getText()
-                            content = "title="+title+"\nurl="+url+"\nthumb="+thumb+"\nstopPlayback="+stopPlayback+"\nkiosk="+kiosk+"\ncustBrowser="+custBrowser+"\nuserAgent="+userAgent
+                        custBrowser = Dialog.select(translation(30017), avBrowsers)
+                        if custBrowser > -1:
+                            content = "title=%s\nurl=%s\nthumb=DefaultFolder.png\nstopPlayback=%s\nkiosk=%s\nuserAgent=" % (title, url, stopPlayback, kiosk)
+                            if custBrowser > 0: content += "\ncustBrowser=%s" % (custBrowser-1)
                             fh = open(os.path.join(siteFolder, getFileName(title)+".link"), 'w')
                             fh.write(content)
                             fh.close()
@@ -143,13 +144,14 @@ def showSite(url, stopPlayback, kiosk, userAgent, custBrowser):
     path = bPath[selBrowser]
     fullUrl = False
     path86 = path.replace("\\Program Files\\", "\\Program Files (x86)\\")
-    if useCustomPath and os.path.exists(customPath):
+    if useCustomPath and os.path.exists(customPath) and not custBrowser:
         fullUrl = getFullPath(customPath, url, kiosk, userAgent, selBrowser)
     elif os.path.exists(path):
         fullUrl = getFullPath(path, url, kiosk, userAgent, selBrowser)
     elif os.path.exists(path86):
         fullUrl = getFullPath(path86, url, kiosk, userAgent, selBrowser)
     if fullUrl:
+        print fullUrl
         if xbmc.getCondVisibility('system.platform.windows'):
             subprocess.Popen(fullUrl, creationflags=priority)
         else:
@@ -209,11 +211,10 @@ def editSite(title):
                 keyboard.doModal()
                 if keyboard.isConfirmed() and keyboard.getText():
                     kiosk = keyboard.getText()
-                    keyboard = xbmc.Keyboard(custBrowser, translation(30017))
-                    keyboard.doModal()
-                    if keyboard.isConfirmed() and keyboard.getText():
-                        custBrowser = keyboard.getText()
-                        content = "title="+title+"\nurl="+url+"\nthumb="+thumb+"\nstopPlayback="+stopPlayback+"\nkiosk="+kiosk+"\ncustBrowser="+custBrowser+"\nuserAgent="+userAgent
+                    custBrowser = Dialog.select(translation(30017), avBrowsers)
+                    if custBrowser > -1:
+                        content = "title="+title+"\nurl="+url+"\nthumb="+thumb+"\nstopPlayback="+stopPlayback+"\nkiosk="+kiosk+"\nuserAgent="+userAgent
+                        if custBrowser > 0: content += "\ncustBrowser=%s" % (custBrowser-1)
                         fh = open(os.path.join(siteFolder, getFileName(title)+".link"), 'w')
                         fh.write(content)
                         fh.close()

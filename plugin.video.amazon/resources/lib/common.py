@@ -43,10 +43,10 @@ BASE_URL = 'https://www.amazon.de'
 #ATV_URL = 'https://atv-ps-eu.amazon.com'
 ATV_URL = 'https://atv-ext-eu.amazon.com'
 UserAgent = 'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/49.0.2566.0 Safari/537.36'
-movielib = '/gp/aw/%s/?filter=movie'
-tvlib = '/gp/aw/%s/?filter=tv'
-lib = 'yvl'
-wl = 'wl'
+movielib = '/gp/video/%s/movie/'
+tvlib = '/gp/video/%s/tv/'
+lib = 'video-library'
+wl = 'watchlist'
 winid = xbmcgui.getCurrentWindowId()
 kodi_mjver = int(xbmc.getInfoLabel('System.BuildVersion')[0:2])
 Dialog = xbmcgui.Dialog()
@@ -349,7 +349,7 @@ def GET_ASINS(content):
     
 def SCRAP_ASINS(url):
     asins = []
-    url = BASE_URL + url + '&pageSize=1000&sortBy=date'
+    url = BASE_URL + url + '?ie=UTF8&sortBy=DATE_ADDED_DESC'
     content = getURL(url, useCookie=True)
     if content:
         asins += re.compile('data-asin="(.+?)"', re.DOTALL).findall(content)

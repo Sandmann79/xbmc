@@ -68,8 +68,8 @@ menuFile = os.path.join(DataPath, 'menu-%s.db' % MarketID)
 na = 'not available'
 LogFile = True
 UserAgent = 'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/48.0.2532.0 Safari/537.36'
-watchlist = 'wl'
-library = 'yvl'
+watchlist = 'watchlist'
+library = 'video-library'
 DBVersion = 1
 
 #ids: A28RQHJKHM2A2W - ps3 / AFOQV1TK6EU6O - ps4 / A1IJNVP3L4AY8B - samsung / A2E0SNTXJVT7WK - bueller / 
@@ -583,8 +583,11 @@ def getList(list, export):
     extraArgs = ''
     if list == watchlist or list == library:
         cj = MechanizeLogin()
-        asins_tv = scrapAsins('/gp/aw/%s/?filter=tv&pageSize=1000&sortBy=date' % list, cj)
-        asins_movie = scrapAsins('/gp/aw/%s/?filter=movie&pageSize=1000&sortBy=date' % list, cj)
+        #asins_tv = scrapAsins('/gp/aw/%s/?filter=tv&pageSize=1000&sortBy=date' % list, cj)
+        #asins_movie = scrapAsins('/gp/aw/%s/?filter=movie&pageSize=1000&sortBy=date' % list, cj)
+        asins_movie = scrapAsins('/gp/video/%s/movie/?ie=UTF8&sortBy=DATE_ADDED_DESC' % list, cj)
+        asins_tv = scrapAsins('/gp/video/%s/tv/?ie=UTF8&sortBy=DATE_ADDED_DESC' % list, cj)
+        
     else:
         asins_movie = list
         asins_tv = ''
@@ -757,10 +760,7 @@ def PlayVideo(name, asin, adultstr, trailer, selbitrate):
         videoUrl = amazonUrl + "/?autoplay=1"
 
     if playMethod == 2 or platform == 4:
-        url = BaseUrl + '/piv-apk-play?asin=' + asin
-        if trailer == '1': url += '&playTrailer=T'
-        Log('Playing: %s' % url)
-        xbmc.Player().play(url)
+        AndroidPlayback(asin, trailer)
         return
     else:
         if addon.getSetting('logging') == 'true': videoUrl += '&playerDebug=true'
@@ -798,6 +798,54 @@ def PlayVideo(name, asin, adultstr, trailer, selbitrate):
     myWindow = window()
     myWindow.modal(process)
 
+def AndroidPlayback(asin, trailer):
+    manu = ''
+    if os.access('/system/bin/getprop', os.X_OK):
+        manu = subprocess.Popen(['getprop', 'ro.product.manufacturer'], stdout=subprocess.PIPE).communicate()[0].strip()
+    Log('Manufacturer: %s' % manu)
+    #Start Activity Intent { act=android.intent.action.VIEW cat=[android.intent.category.DEFAULT,android.intent.category.BROWSABLE] dat=B00UXZ61HI cmp=com.amazon.avod/.playbackclient.EdPlaybackActivity }
+    #am start -a android.intent.action.VIEW -d B00UXZ61HI -c android.intent.category.DEFAULT -c android.intent.category.BROWSABLE -n com.amazon.avod/.playbackclient.EdPlaybackActivity
+    if manu == 'Amazon':
+        cmp = 'com.amazon.avod/com.amazon.avod.playbackclient.EdPlaybackActivity'
+        pkg = 'com.fivecent.amazonvideowrapper'
+        act = ''
+        url = asin
+    else:
+        cmp = 'com.amazon.avod.thirdpartyclient/com.amazon.avod.thirdpartyclient.ThirdPartyPlaybackActivity'
+        pkg = 'com.amazon.avod.thirdpartyclient'
+        act = 'android.intent.action.VIEW'
+        url = BaseUrl + '/piv-apk-play?asin=' + asin
+        if trailer == '1': url += '&playTrailer=T'
+
+    subprocess.Popen(['log', '-p', 'v', '-t', 'Kodi-Amazon', 'Manufacturer: '+manu])
+    subprocess.Popen(['log', '-p', 'v', '-t', 'Kodi-Amazon', 'Starting App: %s Video: %s' % (pkg, url)])
+    Log('Playing: %s' % url)
+    xbmc.executebuiltin('StartAndroidActivity("%s", "%s", "", "%s")' % (pkg, act, url))
+    
+    #cmd = ['/data/local/tmp/am', 'start', '-a', 'android.intent.action.VIEW', '-c', 'android.intent.category.DEFAULT', '-c', 'android.intent.category.BROWSABLE', '-d', url, '-n', cmp] 
+    #cmd = ['sh', '-c', '"/data/local/tmp/am start -a android.intent.action.VIEW -c android.intent.category.DEFAULT -c android.intent.category.BROWSABLE -d %s -n %s"' %(url,cmp)] 
+    #cmd = ['sh', os.path.join(PluginPath, 'tools', 'startvideo.sh'), url, 'com.fivecent.amazonvideowrapper/.StartAmazonVideo']
+    #cmd = ['sh', 'shell', '"sh %s %s %s"' %(os.path.join(PluginPath, 'tools', 'startvideo.sh' ),url,cmp)]
+    #if os.access('/system/bin/am', os.X_OK):
+    #    Log('Starting: %s' % cmd[0])
+    #    ret = check_output(cmd)
+    #    subprocess.Popen(['log', '-p', 'v', '-t', 'Kodi-Amazon', ret])
+    #else:
+    #xbmc.Player().play(url)
+
+def check_output(*popenargs, **kwargs):
+    p = subprocess.Popen(stdout=subprocess.PIPE, stderr=subprocess.STDOUT, *popenargs, **kwargs)
+    out, err = p.communicate()
+    retcode = p.poll()
+    if retcode != 0:
+        c = kwargs.get("args")
+        if c is None:
+            c = popenargs[0]
+            e = subprocess.CalledProcessError(retcode, c)
+            e.output = str(out) + str(err)
+            Log(e)
+    return out
+  
 def getCmdLine(videoUrl):
     scr_path = addon.getSetting("scr_path")
     br_path = addon.getSetting("br_path").strip()

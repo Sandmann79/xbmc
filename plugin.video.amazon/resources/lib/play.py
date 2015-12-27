@@ -48,10 +48,7 @@ def PLAYVIDEO():
         videoUrl = amazonUrl + "/?autoplay=1"
 
     if playMethod == 2 or platform == 4:
-        url = common.BASE_URL + '/piv-apk-play?asin=' + common.args.asin
-        if trailer == '1': url += '&playTrailer=T'
-        common.Log('Playing: %s' % url)
-        xbmc.Player().play(url)
+        AndroidPlayback(common.args.asin, trailer)
         return
     else:
         if addon.getSetting('logging') == 'true': videoUrl += '&playerDebug=true'
@@ -88,6 +85,30 @@ def PLAYVIDEO():
     Input(mousex=9999,mousey=-1)
     myWindow = window()
     myWindow.modal(process)
+
+def AndroidPlayback(asin, trailer):
+    manu = ''
+    if os.access('/system/bin/getprop', os.X_OK):
+        manu = subprocess.Popen(['getprop', 'ro.product.manufacturer'], stdout=subprocess.PIPE).communicate()[0].strip()
+    common.Log('Manufacturer: %s' % manu)
+    #Start Activity Intent { act=android.intent.action.VIEW cat=[android.intent.category.DEFAULT,android.intent.category.BROWSABLE] dat=B00UXZ61HI cmp=com.amazon.avod/.playbackclient.EdPlaybackActivity }
+    #am start -a android.intent.action.VIEW -d B00UXZ61HI -c android.intent.category.DEFAULT -c android.intent.category.BROWSABLE -n com.amazon.avod/.playbackclient.EdPlaybackActivity
+    if manu == 'Amazon':
+        cmp = 'com.amazon.avod/com.amazon.avod.playbackclient.EdPlaybackActivity'
+        pkg = 'com.fivecent.amazonvideowrapper'
+        act = ''
+        url = asin
+    else:
+        cmp = 'com.amazon.avod.thirdpartyclient/com.amazon.avod.thirdpartyclient.ThirdPartyPlaybackActivity'
+        pkg = 'com.amazon.avod.thirdpartyclient'
+        act = 'android.intent.action.VIEW'
+        url = common.BASE_URL + '/piv-apk-play?asin=' + asin
+        if trailer == '1': url += '&playTrailer=T'
+
+    subprocess.Popen(['log', '-p', 'v', '-t', 'Kodi-Amazon', 'Manufacturer: '+manu])
+    subprocess.Popen(['log', '-p', 'v', '-t', 'Kodi-Amazon', 'Starting App: %s Video: %s' % (pkg, url)])
+    common.Log('Playing: %s' % url)
+    xbmc.executebuiltin('StartAndroidActivity("%s", "%s", "", "%s")' % (pkg, act, url))
 
 def getCmdLine(videoUrl):
     scr_path = addon.getSetting("scr_path")

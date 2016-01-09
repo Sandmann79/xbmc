@@ -20,7 +20,7 @@
 </addon> 
 <addon id="plugin.video.amazon" 
        name="Amazon" 
-       version="1.5.7" 
+       version="1.5.8" 
        provider-name="Sandmann79 + BlueCop + Romans I XVI"> 
   <requires> 
     <import addon="xbmc.python" version="2.1.0"/> 
@@ -46,7 +46,7 @@
 </addon> 
 <addon id="plugin.video.amazon-test" 
        name="Amazon-Test" 
-       version="0.1.2" 
+       version="0.1.3" 
        provider-name="Sandmann79"> 
   <requires> 
     <import addon="xbmc.python" version="2.1.0"/> 
@@ -95,19 +95,6 @@
     <summary>HTML/XML parser for quick-turnaround applications like screen-scraping</summary> 
     <description>Beautiful Soup parses arbitrarily invalid SGML and provides a variety of methods and Pythonic idioms for iterating and searching the parse tree.</description> 
     <license>BSD</license> 
-    <platform>all</platform> 
-  </extension> 
-</addon> 
-<addon id="script.module.demjson" 
-       name="demjson" 
-       version="2.2.3" 
-       provider-name="deron.meranda.us"> 
-  <requires> 
-    <import addon="xbmc.python" version="2.1.0"/> 
-  </requires> 
-  <extension point="xbmc.python.module" 
-             library="lib" /> 
-  <extension point="xbmc.addon.metadata"> 
     <platform>all</platform> 
   </extension> 
 </addon> 

@@ -145,10 +145,10 @@
     
     <string id="30180">Add %s to Watchlist</string>
     <string id="30181">Remove %s from Watchlist</string>
-    
+    <string id="30183">Get Similarities</string>
     <string id="30185">Export %s</string>
     <string id="30186">Update Library</string>
-    <string id="30187">Source folders added</string>
+    <string id="30187">Source folders added/changed</string>
     <string id="30188">To complete the setup:</string>
     <string id="30189"> 1) Restart Kodi</string>
     <string id="30190"> 2) Set the content type of added folders</string>

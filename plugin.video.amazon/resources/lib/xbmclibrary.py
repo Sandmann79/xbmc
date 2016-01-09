@@ -16,7 +16,7 @@ urllib = common.urllib
 sys = common.sys
 xbmcgui = common.xbmcgui
 os = common.os
-dialog = xbmcgui.Dialog()
+Dialog = xbmcgui.Dialog()
 
 if (common.addon.getSetting('enablelibraryfolder') == 'true'):
     MOVIE_PATH = os.path.join(xbmc.translatePath(common.addon.getSetting('customlibraryfolder')),'Movies').decode('utf-8')
@@ -76,7 +76,7 @@ def streamDetails(Info, language='ger', hasSubtitles=False):
     fileinfo += '</audio>'
     fileinfo += '<video>'
     fileinfo += '<codec>h264</codec>'
-    fileinfo += '<durationinseconds>%s</durationinseconds>' % (int(Info['Duration']) * 60)
+    fileinfo += '<durationinseconds>%s</durationinseconds>' % Info['Duration']
     if Info['isHD'] == True:
         fileinfo += '<height>720</height>'
         fileinfo += '<width>1280</width>'
@@ -84,7 +84,6 @@ def streamDetails(Info, language='ger', hasSubtitles=False):
         fileinfo += '<height>480</height>'
         fileinfo += '<width>720</width>'        
     fileinfo += '<language>%s</language>' % language
-    #fileinfo += '<longlanguage>German</longlanguage>'
     fileinfo += '<scantype>Progressive</scantype>'
     fileinfo += '</video>'
     if hasSubtitles == True:
@@ -103,7 +102,7 @@ def EXPORT_MOVIE(asin=False, makeNFO=True):
         filename = Info['Title']
         if Info['Year']:
             filename = '%s (%s)' % (Info['Title'], Info['Year'])
-        #dialog.notification('Export', filename, sound = False)
+        #Dialog.notification('Export', filename, sound = False)
         common.Log('Amazon Export: ' + filename)
         strm_file = filename + ".strm"
         u  = '%s?asin=<%s>&mode=<play>&name=<%s>&sitemode=<PLAYVIDEO>&adult=<%s>&trailer=<0>&selbitrate=<0>' % (sys.argv[0], asin, urllib.quote_plus(Info['Title']), Info['isAdult'])
@@ -156,7 +155,7 @@ def EXPORT_EPISODE(asin=False, makeNFO=True, dispnotif = True):
         if dispnotif:
             SetupLibrary()
             common.Log('Amazon Export: %s %s' %(showname, name))
-            #dialog.notification('Export', showname + ' ' + name, sound = False)
+            #Dialog.notification('Export', showname + ' ' + name, sound = False)
             dispnotif = False
         seasonpath = os.path.join(directorname,name)
         CreateDirectory(seasonpath)
@@ -176,6 +175,7 @@ def SetupAmazonLibrary():
     common.Log('Trying to add Amazon source paths...')
     source_path = os.path.join(common.profilpath, 'sources.xml')
     source_added = False
+    source = {'Amazon Movies': MOVIE_PATH, 'Amazon TV': TV_SHOWS_PATH}
     
     try:
         file = open(source_path)
@@ -192,35 +192,32 @@ def SetupAmazonLibrary():
             cat_tag.append(def_tag)
             root.append(cat_tag)
 
-    video = soup.find("video")      
-        
-    if len(soup.findAll(text="Amazon Movies")) < 1:
-        movie_source_tag = Tag(soup, "source")
-        movie_name_tag = Tag(soup, "name")
-        movie_name_tag.insert(0, "Amazon Movies")
-        movie_path_tag = Tag(soup, "path")
-        movie_path_tag['pathversion'] = 1
-        movie_path_tag.insert(0, MOVIE_PATH)
-        movie_source_tag.insert(0, movie_name_tag)
-        movie_source_tag.insert(1, movie_path_tag)
-        video.insert(2, movie_source_tag)
-        source_added = True
-
-    if len(soup.findAll(text="Amazon TV")) < 1: 
-        tvshow_source_tag = Tag(soup, "source")
-        tvshow_name_tag = Tag(soup, "name")
-        tvshow_name_tag.insert(0, "Amazon TV")
-        tvshow_path_tag = Tag(soup, "path")
-        tvshow_path_tag['pathversion'] = 1
-        tvshow_path_tag.insert(0, TV_SHOWS_PATH)
-        tvshow_source_tag.insert(0, tvshow_name_tag)
-        tvshow_source_tag.insert(1, tvshow_path_tag)
-        video.insert(2, tvshow_source_tag)
-        source_added = True
+    video = soup.find("video")
     
+    for name, path in source.items():
+        path_tag = Tag(soup, "path")
+        path_tag['pathversion'] = 1
+        path_tag.append(path)
+        source_text = soup.find(text=name)
+        if not source_text:
+            source_tag = Tag(soup, "source")
+            name_tag = Tag(soup, "name")
+            name_tag.append(name)
+            source_tag.append(name_tag)
+            source_tag.append(path_tag)
+            video.append(source_tag)
+            common.Log(name + ' source path added')
+            source_added = True
+        else:
+            source_tag = source_text.findParent('source')
+            old_path = source_tag.find('path').contents[0]
+            if path not in old_path:
+                source_tag.find('path').replaceWith(path_tag)
+                common.Log(name + ' source path changed')
+                source_added = True
+
     if source_added:
-        common.Log('Source paths added!')
         SaveFile(source_path, str(soup))
-        dialog.ok(common.getString(30187), common.getString(30188), common.getString(30189), common.getString(30190))
-        if dialog.yesno(common.getString(30191), common.getString(30192)):
+        Dialog.ok(common.getString(30187), common.getString(30188), common.getString(30189), common.getString(30190))
+        if Dialog.yesno(common.getString(30191), common.getString(30192)):
             xbmc.executebuiltin('RestartApp')

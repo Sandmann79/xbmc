@@ -17,29 +17,38 @@ json = common.json
 addon = common.addon
 os = common.os
 hashlib = common.hashlib
+time = common.time
 Dialog = xbmcgui.Dialog()
+
 platform = 0
-if xbmc.getCondVisibility('system.platform.windows'): platform = 1
-if xbmc.getCondVisibility('system.platform.linux'): platform = 2
-if xbmc.getCondVisibility('system.platform.osx'): platform = 3
-if xbmc.getCondVisibility('system.platform.android'): platform = 4
+osWindows = 1
+osLinux = 2
+osOSX = 3
+osAndroid = 4
+if xbmc.getCondVisibility('system.platform.windows'): platform = osWindows
+if xbmc.getCondVisibility('system.platform.linux'): platform = osLinux
+if xbmc.getCondVisibility('system.platform.osx'): platform = osOSX
+if xbmc.getCondVisibility('system.platform.android'): platform = osAndroid
+if xbmc.getCondVisibility('System.Platform.Linux.RaspberryPi'): platform = 0
+
+hasExtRC = xbmc.getCondVisibility('System.HasAddon(script.chromium_remotecontrol)') == True
+useIntRC = addon.getSetting("remotectrl") == 'true'
 playMethod = int(addon.getSetting("playmethod"))
-amazonUrl = common.BASE_URL + "/dp/" + common.args.asin
 browser = int(addon.getSetting("browser"))
  
 def PLAYVIDEO():
     if not platform:
         Dialog.notification(common.__plugin__, 'Betriebssytem wird von diesem Addon nicht unterstützt', xbmcgui.NOTIFICATION_ERROR)
         return
+    amazonUrl = common.BASE_URL + "/dp/" + common.args.asin
     waitsec = int(addon.getSetting("clickwait")) * 1000
     pin = addon.getSetting("pin")
     waitpin = int(addon.getSetting("waitpin")) * 1000
     waitprepin = int(addon.getSetting("waitprepin")) * 1000
     trailer = common.args.trailer
     isAdult = int(common.args.adult)
-    pininput = fullscr = False
-    if addon.getSetting("pininput") == 'true': pininput = True
-    if addon.getSetting("fullscreen") == 'true': fullscr = True
+    pininput = addon.getSetting("pininput") == 'true'
+    fullscr = addon.getSetting("fullscreen") == 'true'
     xbmc.Player().stop()
     
     if trailer == '1':
@@ -47,12 +56,12 @@ def PLAYVIDEO():
     else:
         videoUrl = amazonUrl + "/?autoplay=1"
 
-    if playMethod == 2 or platform == 4:
+    if playMethod == 2 or platform == osAndroid:
         AndroidPlayback(common.args.asin, trailer)
         return
     else:
-        if addon.getSetting('logging') == 'true': videoUrl += '&playerDebug=true'
-        url = getCmdLine(videoUrl)
+        if common.verbLog: videoUrl += '&playerDebug=true'
+        url = getCmdLine(videoUrl, amazonUrl)
         if not url:
             Dialog.notification(common.__plugin__, common.getString(30198), xbmcgui.NOTIFICATION_ERROR)
             addon.openSettings()
@@ -83,16 +92,17 @@ def PLAYVIDEO():
                 Input(mousex=9999,mousey=350)
             
     Input(mousex=9999,mousey=-1)
+    
+    if hasExtRC and not useIntRC: return
+
     myWindow = window()
-    myWindow.modal(process)
+    myWindow.wait(process)
 
 def AndroidPlayback(asin, trailer):
     manu = ''
     if os.access('/system/bin/getprop', os.X_OK):
         manu = subprocess.Popen(['getprop', 'ro.product.manufacturer'], stdout=subprocess.PIPE).communicate()[0].strip()
-    common.Log('Manufacturer: %s' % manu)
-    #Start Activity Intent { act=android.intent.action.VIEW cat=[android.intent.category.DEFAULT,android.intent.category.BROWSABLE] dat=B00UXZ61HI cmp=com.amazon.avod/.playbackclient.EdPlaybackActivity }
-    #am start -a android.intent.action.VIEW -d B00UXZ61HI -c android.intent.category.DEFAULT -c android.intent.category.BROWSABLE -n com.amazon.avod/.playbackclient.EdPlaybackActivity
+
     if manu == 'Amazon':
         cmp = 'com.amazon.avod/com.amazon.avod.playbackclient.EdPlaybackActivity'
         pkg = 'com.fivecent.amazonvideowrapper'
@@ -107,44 +117,57 @@ def AndroidPlayback(asin, trailer):
 
     subprocess.Popen(['log', '-p', 'v', '-t', 'Kodi-Amazon', 'Manufacturer: '+manu])
     subprocess.Popen(['log', '-p', 'v', '-t', 'Kodi-Amazon', 'Starting App: %s Video: %s' % (pkg, url)])
-    common.Log('Playing: %s' % url)
+    common.Log('Manufacturer: %s' % manu)
+    common.Log('Starting App: %s Video: %s' % (pkg, url))
     xbmc.executebuiltin('StartAndroidActivity("%s", "%s", "", "%s")' % (pkg, act, url))
 
-def getCmdLine(videoUrl):
+def getCmdLine(videoUrl, amazonUrl):
     scr_path = addon.getSetting("scr_path")
     br_path = addon.getSetting("br_path").strip()
     scr_param = addon.getSetting("scr_param").strip()
-    kiosk = addon.getSetting("kiosk")
-    appdata = addon.getSetting("ownappdata")
-    cust_br = addon.getSetting("cust_path")
+    kiosk = addon.getSetting("kiosk") == 'true'
+    appdata = addon.getSetting("ownappdata") == 'true'
+    cust_br = addon.getSetting("cust_path") == 'true'
     
     if playMethod == 1:
         if not os.path.exists(scr_path): return ''
         return scr_path + ' ' + scr_param.replace('{f}', getPlaybackInfo(amazonUrl)).replace('{u}', videoUrl)
 
-    os_paths = [('C:\\Program Files\\', 'C:\\Program Files (x86)\\'), ('/usr/bin/', '/usr/local/bin/'), 'open -a ']
-    # path(win,lin,osx), kiosk, profile, args
-    br_config = [[('Internet Explorer\\iexplore.exe', '', ''), '-k ', '', ''], 
-                 [('Google\\Chrome\\Application\\chrome.exe', 'google-chrome', '"Google Chrome"'), '--kiosk ', '--user-data-dir=', '--start-maximized --disable-translate --disable-new-tab-first-run --no-default-browser-check --no-first-run '],
-                 [('Mozilla Firefox\\firefox.exe', 'firefox', 'firefox'), '', '-profile ', ''],
-                 [('Safari\\Safari.exe', '', 'safari'), '', '', '']]
+    os_paths = [None, ('C:\\Program Files\\', 'C:\\Program Files (x86)\\'), ('/usr/bin/', '/usr/local/bin/'), 'open -a ']
+    # path(0,win,lin,osx), kiosk, profile, args
+
+    br_config = [[(None, ['Internet Explorer\\iexplore.exe'], '', ''), '-k ', '', ''], 
+                 [(None, ['Google\\Chrome\\Application\\chrome.exe'], ['google-chrome', 'google-chrome-stable', 'google-chrome-beta', 'chromium-browser'], '"/Applications/Google Chrome.app"'),
+                  '--kiosk ', '--user-data-dir=', '--start-maximized --disable-translate --disable-new-tab-first-run --no-default-browser-check --no-first-run '],
+                 [(None, ['Mozilla Firefox\\firefox.exe'], ['firefox'], 'firefox'), '', '-profile ', ''],
+                 [(None, ['Safari\\Safari.exe'], '', 'safari'), '', '', '']]
     
-    if platform != 3 and cust_br == 'false':
-        for path in os_paths[platform-1]:
-            path += br_config[browser][0][platform-1]
-            if os.path.exists(path): 
-                br_path = path
-                break
-    if not os.path.exists(br_path): return ''
-    if platform == 3 and cust_br == 'false': br_path = os_paths[2] + br_config[browser][0][2]
+    if not cust_br: br_path = ''
+
+    if platform != osOSX and not cust_br:
+        for path in os_paths[platform]:
+            for file in br_config[browser][0][platform]:
+                if os.path.exists(path+file): 
+                    br_path = path + file
+                    break
+                else: common.Log('Browser %s not found' % (path+file), xbmc.LOGDEBUG)
+            if br_path: break
+                
+    if not os.path.exists(br_path) and platform != osOSX: return ''
+
+    br_args = br_config[browser][3]
+    if kiosk: br_args += br_config[browser][1]
+    if appdata and br_config[browser][2]: 
+        br_args += br_config[browser][2] + '"' + os.path.join(common.pldatapath, str(browser)) + '" '
+        
+    if platform == osOSX:
+        if not cust_br: br_path = os_paths[osOSX] + br_config[browser][0][osOSX]
+        if br_args.strip(): br_args = '--args ' + br_args
+        
+    br_path += ' %s"%s"' % (br_args, videoUrl)
     
-    br_path += ' ' + br_config[browser][3]
-    if kiosk == 'true': br_path += br_config[browser][1]
-    if appdata == 'true' and br_config[browser][2]: 
-        br_path += br_config[browser][2] + '"' + os.path.join(common.pldatapath,str(browser)) + '" '
-    br_path += '"' + videoUrl + '"'
     return br_path
-    
+
 def Input(mousex=0,mousey=0,click=0,keys=False,delay='200'):
     screenWidth = int(xbmc.getInfoLabel('System.ScreenWidth'))
     screenHeight = int(xbmc.getInfoLabel('System.ScreenHeight'))
@@ -169,12 +192,12 @@ def Input(mousex=0,mousey=0,click=0,keys=False,delay='200'):
                 keys_only = keys_only.replace(sc, '').strip()
         sc_only = keys.replace(keys_only, '').strip()
 
-    if platform == 1:
+    if platform == osWindows:
         app = os.path.join(common.pluginpath, 'tools', 'userinput.exe' )
         mouse = ' mouse %s %s' % (mousex,mousey)
         mclk = ' ' + str(click)
         keybd = ' key %s %s' % (keys,delay)
-    elif platform == 2:
+    elif platform == osLinux:
         app = 'xdotool'
         mouse = ' mousemove %s %s' % (mousex,mousey)
         mclk = ' click --repeat %s 1' % click
@@ -182,7 +205,7 @@ def Input(mousex=0,mousey=0,click=0,keys=False,delay='200'):
         if sc_only: 
             if keybd: keybd += ' && ' + app
             keybd += ' key ' + sc_only
-    elif platform == 3:
+    elif platform == osOSX:
         app = 'cliclick'
         mouse = ' m:'
         if click == 1: mouse = ' c:'
@@ -310,32 +333,42 @@ class window(xbmcgui.WindowDialog):
     def __init__(self):
         xbmcgui.WindowDialog.__init__(self)
         self._stopEvent = threading.Event()
-        self._wakeUpThread = threading.Thread(target=self._wakeUpThreadProc)
-        self._wakeUpThread.start()
-        self._parentprocess = None
-        self._rc = addon.getSetting("remotectrl")
+        self._pbStart = time.time()
         
-    def _wakeUpThreadProc(self):
+    def _wakeUpThreadProc(self, process):
+        starttime = time.time()
         while not self._stopEvent.is_set():
-            xbmc.executebuiltin("playercontrol(wakeup)")
-            # bit of a hack above: wakeup is actually not a valid playercontrol argument,
-            # but there's no error printed if the argument isn't found and any playercontrol
-            # causes the DPMS/idle timeout to reset itself
-            self._stopEvent.wait(60)
+            if time.time() > starttime + 60:
+                starttime = time.time()
+                xbmc.executebuiltin("playercontrol(wakeup)")
+            if process:
+                process.poll()
+                if process.returncode != None: self.close()
+            self._stopEvent.wait(1)
 
-    def stopWakeupThread(self):
-        self._stopEvent.set()
+    def wait(self, process):
+        common.Log('Starting Thread')
+        self._wakeUpThread = threading.Thread(target=self._wakeUpThreadProc, args=(process,))
+        self._wakeUpThread.start()
+        self.doModal()
         self._wakeUpThread.join()
 
-    def modal(self, process):
-        self._parentprocess = process
-        self.doModal()
-    
     def close(self):
-        self.stopWakeupThread()
+        common.Log('Stopping Thread')
+        self._stopEvent.set()
         xbmcgui.WindowDialog.close(self)
+        vidDur = int(xbmc.getInfoLabel('ListItem.Duration')) * 60
+        watched = xbmc.getInfoLabel('Listitem.PlayCount')
+        isLast = xbmc.getInfoLabel('Container().Position') == xbmc.getInfoLabel('Container().NumItems')
+        pBTime = time.time() - self._pbStart
 
+        if pBTime > vidDur * 0.9 and not watched:
+            xbmc.executebuiltin("Action(ToggleWatched)")
+            if not isLast: xbmc.executebuiltin("Action(Up)")
+            
     def onAction(self, action):
+        if not useIntRC: return
+
         ACTION_SELECT_ITEM = 7
         ACTION_PARENT_DIR = 9
         ACTION_PREVIOUS_MENU = 10
@@ -354,20 +387,14 @@ class window(xbmcgui.WindowDialog):
         ACTION_NAV_BACK = 92
         ACTION_BUILT_IN_FUNCTION = 122
         KEY_BUTTON_BACK = 275
-        
-        exit = False
-        if self._parentprocess:
-            self._parentprocess.poll()
-            if self._parentprocess.returncode != None: exit = True
+        ACTION_BACKSPACE = 110
+        ACTION_MOUSE_MOVE = 107
 
-        if self._rc == 'false' and not exit: return
-        
         actionId = action.getId()
-        if action in [ACTION_SHOW_GUI, ACTION_STOP, ACTION_PARENT_DIR, ACTION_PREVIOUS_MENU, ACTION_NAV_BACK, KEY_BUTTON_BACK]:
-            if exit:
-                if action in [ACTION_PARENT_DIR, ACTION_PREVIOUS_MENU, ACTION_NAV_BACK, KEY_BUTTON_BACK]: Input(keys='{BACK}')
-            else: Input(keys='{EX}')
-            self.close()
+        common.Log('Action: Id:%s ButtonCode:%s' % (actionId, action.getButtonCode()))
+
+        if action in [ACTION_SHOW_GUI, ACTION_STOP, ACTION_PARENT_DIR, ACTION_PREVIOUS_MENU, ACTION_NAV_BACK, KEY_BUTTON_BACK, ACTION_MOUSE_MOVE]:
+            Input(keys='{EX}')
         elif action in [ACTION_SELECT_ITEM, ACTION_PLAYER_PLAY, ACTION_PAUSE]:
             Input(keys='{SPC}')
         elif action==ACTION_MOVE_LEFT:
@@ -386,5 +413,3 @@ class window(xbmcgui.WindowDialog):
         elif actionId > 57 and actionId < 68:
             strKey = str(actionId-58)
             Input(keys=strKey)
-
-        if exit: self.close()

@@ -95,10 +95,11 @@
     <string id="30180">%s zur Watchlist hinzufügen</string>
     <string id="30181">%s aus Watchlist entfernen</string>
     <string id="30182">Zur Serie wechseln</string>
+    <string id="30183">Ähnliche anzeigen</string>
     <string id="30185">%s exportieren</string>
 
     <string id="30186">Bibliothek aktualisieren</string>
-    <string id="30187">Amazon Video-Quellen hinzugefügt</string>
+    <string id="30187">Amazon Video-Quellen hinzugefügt/geändert</string>
     <string id="30188">Zum Abschluß des Setups:</string>
     <string id="30189"> 1) XBMC/Kodi neustarten</string>
     <string id="30190"> 2) den Inhalt der Ordner festlegen</string>

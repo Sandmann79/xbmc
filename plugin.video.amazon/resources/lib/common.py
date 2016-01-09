@@ -48,6 +48,7 @@ tvlib = '/gp/video/%s/tv/'
 lib = 'video-library'
 wl = 'watchlist'
 winid = xbmcgui.getCurrentWindowId()
+verbLog = addon.getSetting('logging') == 'true'
 kodi_mjver = int(xbmc.getInfoLabel('System.BuildVersion')[0:2])
 Dialog = xbmcgui.Dialog()
     
@@ -95,7 +96,7 @@ def getATVURL( url , values = None ):
         return response
 
 def WriteLog(data, fn='', mode='a'):
-    if addon.getSetting('logging') != 'true': return
+    if not verbLog: return
     if fn: fn = '-' + fn
     fn = __plugin__ + fn + '.log'
     path = os.path.join(homepath, fn)
@@ -107,6 +108,7 @@ def WriteLog(data, fn='', mode='a'):
     file.close()
     
 def Log(msg, level=xbmc.LOGNOTICE):
+    if level == xbmc.LOGDEBUG and verbLog: level = xbmc.LOGNOTICE
     if type(msg) == type(unicode()):
         msg = msg.encode('utf-8')
     WriteLog(msg)
@@ -368,6 +370,7 @@ def remLoginData():
 def checkCase(title):
     if title.isupper():
         title = title.title().replace('[Ov]', '[OV]').replace('Bc', 'BC')
+    title = title.replace('[dt./OV]', '')
     return title
     
 def getCategories():

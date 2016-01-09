@@ -38,10 +38,16 @@ __authors__ = addon.getAddonInfo('author')
 __credits__ = ""
 __version__ = addon.getAddonInfo('version')
 platform = 0
-if xbmc.getCondVisibility('system.platform.windows'): platform = 1
-if xbmc.getCondVisibility('system.platform.linux'): platform = 2
-if xbmc.getCondVisibility('system.platform.osx'): platform = 3
-if xbmc.getCondVisibility('system.platform.android'): platform = 4
+osWindows = 1
+osLinux = 2
+osOSX = 3
+osAndroid = 4
+if xbmc.getCondVisibility('system.platform.windows'): platform = osWindows
+if xbmc.getCondVisibility('system.platform.linux'): platform = osLinux
+if xbmc.getCondVisibility('system.platform.osx'): platform = osOSX
+if xbmc.getCondVisibility('system.platform.android'): platform = osAndroid
+if xbmc.getCondVisibility('System.Platform.Linux.RaspberryPi'): platform = 0
+hasExtRC = xbmc.getCondVisibility('System.HasAddon(script.chromium_remotecontrol)') == True
 ProfilPath = xbmc.translatePath('special://masterprofile/').decode('utf-8')
 PluginPath = addon.getAddonInfo('path').decode('utf-8')
 DataPath = xbmc.translatePath('special://profile/addon_data/' + addon.getAddonInfo('id')).decode('utf-8')
@@ -49,12 +55,14 @@ HomePath = xbmc.translatePath('special://home').decode('utf-8')
 if not os.path.exists(os.path.join(DataPath, 'settings.xml')): addon.openSettings()
 playMethod = int(addon.getSetting("playmethod"))
 browser = int(addon.getSetting("browser"))
+MaxResults = int(addon.getSetting("items_perpage")) 
 tvdb_art = addon.getSetting("tvdb_art")
 tmdb_art = addon.getSetting("tmdb_art")
-showfanart = addon.getSetting("useshowfanart")
-dispShowOnly = addon.getSetting("disptvshow")
-MaxResults = int(addon.getSetting("items_perpage")) 
-payCont = addon.getSetting('paycont')
+showfanart = addon.getSetting("useshowfanart") == 'true'
+dispShowOnly = addon.getSetting("disptvshow") == 'true'
+payCont = addon.getSetting('paycont') == 'true'
+verbLog = addon.getSetting('logging') == 'true'
+useIntRC = addon.getSetting("remotectrl") == 'true'
 tmdb = base64.b64decode('YjM0NDkwYzA1NmYwZGQ5ZTNlYzlhZjIxNjdhNzMxZjQ=')
 tvdb = base64.b64decode('MUQ2MkYyRjkwMDMwQzQ0NA==')
 CookieFile = os.path.join(DataPath, 'cookies.lwp')
@@ -66,8 +74,8 @@ MarketID = ['A1PA6795UKMFR9', 'A1F83G8C2ARO7P', 'ATVPDKIKX0DER', 'A1VC38T7YXB528
 Language = ['de', 'en', 'en', 'jp'][country]
 menuFile = os.path.join(DataPath, 'menu-%s.db' % MarketID)
 na = 'not available'
-LogFile = True
 UserAgent = 'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/48.0.2532.0 Safari/537.36'
+mUserAgent = 'Mozilla/5.0 (iPhone; U; CPU iPhone OS 4_3_2 like Mac OS X) AppleWebKit/533.17.9 (KHTML, like Gecko) Version/5.0.2 Mobile/8H7 Safari/6533.18.5'
 watchlist = 'watchlist'
 library = 'video-library'
 DBVersion = 1
@@ -75,10 +83,11 @@ DBVersion = 1
 #ids: A28RQHJKHM2A2W - ps3 / AFOQV1TK6EU6O - ps4 / A1IJNVP3L4AY8B - samsung / A2E0SNTXJVT7WK - bueller / 
 #     ADVBD696BHNV5 - montoya / A3VN4E5F7BBC7S - roku / A1MPSLFC7L5AFK - kindle
 TypeIDs = {'GetCategoryList': 'firmware=fmw:15-app:1.1.23&deviceTypeID=A1MPSLFC7L5AFK', 
+           'GetSimilarities': 'firmware=fmw:15-app:1.1.23&deviceTypeID=A1MPSLFC7L5AFK',
                        'All': 'firmware=fmw:045.01E01164A-app:4.7&deviceTypeID=A3VN4E5F7BBC7S'}
 langID = {'movie':30165, 'series':30166, 'season':30167, 'episode':30173}
 OfferGroup = '&OfferGroups=B0043YVHMY'
-if payCont == 'true': OfferGroup = ''
+if payCont: OfferGroup = ''
 Dialog = xbmcgui.Dialog()
 pDialog = xbmcgui.DialogProgress()
 
@@ -106,15 +115,15 @@ def setView(content, view=False, updateListing=False):
 
     confluence_views = [500,501,502,503,504,508,-1]
     xbmcplugin.setContent(pluginhandle, ctype)
-    viewenable = addon.getSetting("viewenable")
-    if viewenable == 'true' and view:
+    viewenable = addon.getSetting("viewenable") == 'true'
+    if viewenable and view:
         viewid = confluence_views[int(addon.getSetting(cview))]
         if viewid == -1:
             viewid = int(addon.getSetting(cview.replace('view', 'id')))
         xbmc.executebuiltin('Container.SetViewMode(%s)' % viewid)
     xbmcplugin.endOfDirectory(pluginhandle,updateListing=updateListing)
     
-def getURL(url, host=BaseUrl.split('//')[1], useCookie=False, silent=False, headers=None):
+def getURL(url, host=BaseUrl.split('//')[1], useCookie=False, silent=False, headers=None, UA=UserAgent):
     cj = cookielib.LWPCookieJar()
     if useCookie:
         if isinstance(useCookie, bool): cj = MechanizeLogin()
@@ -123,7 +132,7 @@ def getURL(url, host=BaseUrl.split('//')[1], useCookie=False, silent=False, head
     dispurl = url
     dispurl = re.sub('(?i)%s|%s|&token=\w+' % (tvdb, tmdb), '', url).strip()
     if not silent: Log('getURL: '+dispurl)
-    if not headers: headers = [('User-Agent', UserAgent ), ('Host', host)]
+    if not headers: headers = [('User-Agent', UA), ('Host', host)]
     try:
         opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cj),urllib2.HTTPRedirectHandler)
         opener.addheaders = headers
@@ -156,6 +165,10 @@ def getATVData(mode, query='', version=2, useCookie=False, id=None):
 def addDir(name, mode, url='', infoLabels=None, opt='', catalog='Browse', cm=False, page=1, export=False):
     if type(url) == type(unicode()): url = url.encode('utf-8')
     u = u'%s?mode=%s&url=%s&page=%s&opt=%s&cat=%s' % (sys.argv[0], mode, urllib.quote_plus(url), page, opt, catalog)
+
+    if export:
+        Export(infoLabels, u)
+        return
     if infoLabels:
         thumb = infoLabels['Thumb']
         fanart = infoLabels['Fanart']
@@ -163,9 +176,6 @@ def addDir(name, mode, url='', infoLabels=None, opt='', catalog='Browse', cm=Fal
         fanart = DefaultFanart
         thumb = fanart
 
-    if export:
-        Export(infoLabels, u)
-        return
     item=xbmcgui.ListItem(name, iconImage="DefaultFolder.png", thumbnailImage=thumb)
     item.setProperty('fanart_image',fanart)
     item.setProperty('IsPlayable', 'false')
@@ -249,7 +259,7 @@ def getNodeId(mainid):
     c = menuDb.cursor()
     id = c.execute('select content from menu where id = (?)', (mainid,)).fetchone()
     if id:
-        if payCont == "true": st = 'all'
+        if payCont: st = 'all'
         else: st = 'prime'
         result = c.execute('select content from menu where node = (?) and id = (?)', (id[0], st)).fetchone()
     c.close()
@@ -269,7 +279,6 @@ def parseNodes(data, id=''):
             category = 'query'
         if category and entry.has_key('title'): 
             wMenuDB([id, entry['title'], category, content, entry['id']])
-            count += 1
 
 def wMenuDB(menudata):
     c = menuDb.cursor()
@@ -316,7 +325,8 @@ def listContent(catalog, url, page, parent, export=False):
         addDir(' --= %s =--' % (getString(30112) % int(page-1)), 'listContent', oldurl, page=page-1, catalog=catalog, opt=parent)
     titles = getATVData(catalog, url)
     if not titles or not len(titles['titles']):
-        if parent == 'search': Dialog.ok(__plugin__, getString(30202))
+        if 'search' in parent: Dialog.ok(__plugin__, getString(30202))
+        elif 'rem_' in parent: xbmcplugin.endOfDirectory(pluginhandle)
         else: Dialog.ok(__plugin__, getString(30127))
         return
     titles = titles['titles']
@@ -327,27 +337,28 @@ def listContent(catalog, url, page, parent, export=False):
         name = infoLabels['Title']
         if infoLabels.has_key('DisplayTitle'): name = infoLabels['DisplayTitle']
         asin = item['titleId']
-        cm = []
         wlmode = 0
-        if parent == watchlist: wlmode = 1
-        cm.append((getString(wlmode+30180) % getString(langID[contentType]), 'XBMC.RunPlugin(%s?mode=WatchList&url=%s&opt=%s)'  % (sys.argv[0], asin, wlmode )))
-        cm.append((getString(30185) % getString(langID[contentType]), 'XBMC.RunPlugin(%s?mode=getList&url=%s&export=1)'  % (sys.argv[0], asin)))
-        cm.append((getString(30186), 'XBMC.RunPlugin(%s?mode=UpdateLibrary)' % sys.argv[0]))
-        name = cleanTitle(name)
+        if watchlist in parent: wlmode = 1
+        simiUrl = urllib.quote_plus('ASIN='+asin+OfferGroup)
+        cm = [(getString(30183), 'XBMC.Container.Update(%s?mode=listContent&cat=GetSimilarities&url=%s&page=1&opt=gs)' %(sys.argv[0], simiUrl)), 
+              (getString(wlmode+30180) % getString(langID[contentType]), 'XBMC.RunPlugin(%s?mode=WatchList&url=%s&opt=%s)'  % (sys.argv[0], asin, wlmode )),
+              (getString(30185) % getString(langID[contentType]), 'XBMC.RunPlugin(%s?mode=getList&url=%s&export=1)'  % (sys.argv[0], asin)),
+              (getString(30186), 'XBMC.UpdateLibrary(video)')]
+
         if contentType == 'movie' or contentType == 'episode':
             addVideo(name, asin, infoLabels, cm, export)
         else:
             mode = 'listContent'
             url = item['childTitles'][0]['feedUrl']
-            if parent == watchlist: url += OfferGroup
+            if watchlist in parent: url += OfferGroup
             if contentType == 'season': 
                 name = formatSeason(infoLabels, parent)
-                if parent != library and parent != '':
+                if library not in parent and parent != '':
                     curl = 'SeriesASIN=%s&ContentType=TVEpisode&RollupToSeason=T&IncludeBlackList=T%s' % (infoLabels['SeriesAsin'], OfferGroup)
                     cm.insert(0, (getString(30182), 'XBMC.Container.Update(%s?mode=listContent&cat=Browse&url=%s&page=1)' % (sys.argv[0], urllib.quote_plus(curl))))
             if export:
-                url = re.sub(r'contentype=\w+', 'ContentType=TVEpisode', url, flags=re.IGNORECASE)
-                url = re.sub(r'&rollupto\w+=\w+', '', url, flags=re.IGNORECASE)
+                url = re.sub(r'(?i)contentype=\w+', 'ContentType=TVEpisode', url)
+                url = re.sub(r'(?i)&rollupto\w+=\w+', '', url)
                 listContent('Browse', url, 1, '', export)
             else:
                 addDir(name, mode, url, infoLabels, cm=cm, export=export)
@@ -359,7 +370,7 @@ def listContent(catalog, url, page, parent, export=False):
     if not export:
         db.commit()
         xbmc.executebuiltin('RunPlugin(%s?mode=checkMissing)' % sys.argv[0])
-        if parent == 'search': setView('movie', True)
+        if 'search' in parent: setView('movie', True)
         else: setView(contentType, True)
 
 def cleanTitle(title):
@@ -384,7 +395,7 @@ def Export(infoLabels, url):
         
     tl = title.lower()
     if '[omu]' in tl or '[ov]' in tl or ' omu' in tl: language = ''
-    filename = re.sub(r'\[.*| omu| ov', '', title, flags=re.IGNORECASE).strip()
+    filename = re.sub(r'(?i)\[.*| omu| ov', '', title).strip()
     
     if isEpisode:
         infoLabels['TVShowTitle'] = filename
@@ -406,10 +417,12 @@ def WatchList(asin, remove):
     token = getToken(asin, cookie)
     url = BaseUrl + '/gp/video/watchlist/ajax/addRemove.html?&ASIN=%s&dataType=json&token=%s&action=%s' % (asin, token, action)
     data = json.loads(getURL(url, useCookie=cookie))
+
     if data['success'] == 1:
         Log(asin + ' ' + data['status'])
-        #if data['AsinStatus'] == 0:
-        #    xbmc.executebuiltin('Container.Refresh')
+        if remove:
+            cPath = xbmc.getInfoLabel('Container.FolderPath').replace(asin, '').replace('opt='+watchlist, 'opt=rem_%s' % watchlist)
+            xbmc.executebuiltin('Container.Update("%s", replace)' % cPath)
     else:
         Log(data['status'] + ': ' + data['reason'])
         
@@ -442,9 +455,9 @@ def getArtWork(infoLabels, contentType):
                 result = c.execute('select poster, fanart from art where asin like (?) and season = -1', ('%' + asin + '%',)).fetchone()
                 if result:
                     if result[0] and result[0] != na and contentType == 'episode' : infoLabels['Poster'] = result[0]
-                    if result[1] and result[1] != na and showfanart == 'true': infoLabels['Fanart'] = result[1]
+                    if result[1] and result[1] != na and showfanart: infoLabels['Fanart'] = result[1]
             return infoLabels
-        elif season > -1 and showfanart == 'true':
+        elif season > -1 and showfanart:
             result = c.execute('select poster,fanart from art where asin like (?) and season = -1', ('%' + asin + '%',)).fetchone()
             if result:
                 if result[0] and result[0] != na and contentType == 'episode' : infoLabels['Poster'] = result[0]
@@ -574,26 +587,24 @@ def formatSeason(infoLabels, parent):
     season = infoLabels['Season']
     if parent:
         name = infoLabels['TVShowTitle'] + ' - '
-    if season != 0 and len(str(season)) < 3: name += getString(30167, True) + ' ' + str(season)
-    elif len(str(season)) > 2: name += getString(30168, True) + str(season)
-    else: name += getString(30169, True)
-    return cleanTitle(name)
+    if season != 0 and len(str(season)) < 3: name += getString(30167) + ' ' + str(season)
+    elif len(str(season)) > 2: name += getString(30168) + str(season)
+    else: name += getString(30169)
+    return name
     
 def getList(list, export):
     extraArgs = ''
     if list == watchlist or list == library:
         cj = MechanizeLogin()
-        #asins_tv = scrapAsins('/gp/aw/%s/?filter=tv&pageSize=1000&sortBy=date' % list, cj)
-        #asins_movie = scrapAsins('/gp/aw/%s/?filter=movie&pageSize=1000&sortBy=date' % list, cj)
         asins_movie = scrapAsins('/gp/video/%s/movie/?ie=UTF8&sortBy=DATE_ADDED_DESC' % list, cj)
         asins_tv = scrapAsins('/gp/video/%s/tv/?ie=UTF8&sortBy=DATE_ADDED_DESC' % list, cj)
-        
     else:
         asins_movie = list
         asins_tv = ''
+
     url = 'ASINList='
-    if dispShowOnly == 'true': extraArgs = '&RollupToSeries=T'
-    #if list == watchlist: extraArgs += OfferGroup
+    if dispShowOnly: extraArgs = '&RollupToSeries=T'
+
     if export:
         url += asins_movie + ',' + asins_tv
         SetupLibrary()
@@ -604,14 +615,15 @@ def getList(list, export):
         xbmcplugin.endOfDirectory(pluginhandle, updateListing=False)
     
 def Log(msg, level=xbmc.LOGNOTICE):
+    if level == xbmc.LOGDEBUG and verbLog: level = xbmc.LOGNOTICE
     if type(msg) == type(unicode()):
         msg = msg.encode('utf-8')
-    #WriteLog(msg)
+    WriteLog(msg)
     xbmc.log('[%s] %s' % (__plugin__, msg), level)
 
 def WriteLog(data, name='amazon-test.log', mode='a'):
+    if not verbLog: return
     path = os.path.join(HomePath, name)
-    if not LogFile: return
     if type(data) == type(unicode()): data = data.encode('utf-8')
     file = open(path, mode)
     if mode == 'a': data = time.strftime('[%d/%H:%M:%S] ', time.localtime()) + data.__str__()
@@ -620,9 +632,10 @@ def WriteLog(data, name='amazon-test.log', mode='a'):
     file.write('\n')
     file.close()
     
-def getString(id, enc=False):
-    if enc: return addon.getLocalizedString(id).encode('utf-8')
-    return addon.getLocalizedString(id)
+def getString(id):
+    locString = addon.getLocalizedString(id)
+    if type(locString) == type(unicode()): locString = locString.encode('utf-8')
+    return locString
     
 def getAsins(content, crIL=True):
     if crIL:
@@ -657,7 +670,7 @@ def getAsins(content, crIL=True):
     
 def getInfos(item, export):
     infoLabels = getAsins(item)
-    infoLabels['Title'] = item['title']
+    infoLabels['Title'] = cleanTitle(item['title'])
     infoLabels['contentType'] = contentType = item['contentType'].lower()
     
     if item['formats'][0].has_key('images'):
@@ -735,23 +748,22 @@ def getInfos(item, export):
         if item.has_key('number'):
             infoLabels['Episode'] = item['number']
             infoLabels['DisplayTitle'] = '%s - %s' %(item['number'], infoLabels['Title'])
+    if infoLabels.has_key('TVShowTitle'): infoLabels['TVShowTitle'] = cleanTitle(infoLabels['TVShowTitle'])
+    infoLabels = getArtWork(infoLabels, contentType)
     if not export: 
-        infoLabels = getArtWork(infoLabels, contentType)
         if not infoLabels['Thumb']: infoLabels['Thumb'] = DefaultFanart
         if not infoLabels['Fanart']: infoLabels['Fanart'] = DefaultFanart
     return contentType, infoLabels
 
 def PlayVideo(name, asin, adultstr, trailer, selbitrate):
-    global amazonUrl
     amazonUrl = BaseUrl + "/dp/" + asin
     waitsec = int(addon.getSetting("clickwait")) * 1000
     waitprepin = int(addon.getSetting("waitprepin")) * 1000
     pin = addon.getSetting("pin")
     waitpin = int(addon.getSetting("waitpin")) * 1000
     isAdult = int(adultstr)
-    pininput = fullscr = False
-    if addon.getSetting("pininput") == 'true': pininput = True
-    if addon.getSetting("fullscreen") == 'true': fullscr = True
+    pininput = addon.getSetting("pininput") == 'true'
+    fullscr = addon.getSetting("fullscreen") == 'true'
     xbmc.Player().stop()
     
     if trailer == '1':
@@ -759,18 +771,18 @@ def PlayVideo(name, asin, adultstr, trailer, selbitrate):
     else:
         videoUrl = amazonUrl + "/?autoplay=1"
 
-    if playMethod == 2 or platform == 4:
+    if playMethod == 2 or platform == osAndroid:
         AndroidPlayback(asin, trailer)
         return
     else:
-        if addon.getSetting('logging') == 'true': videoUrl += '&playerDebug=true'
-        url = getCmdLine(videoUrl)
+        if verbLog: videoUrl += '&playerDebug=true'
+        url = getCmdLine(videoUrl, amazonUrl)
         if not url:
             Dialog.notification(__plugin__, getString(30198), xbmcgui.NOTIFICATION_ERROR)
             addon.openSettings()
             return
         Log('Executing: %s' % url)
-        if platform == 1:
+        if platform == osWindows:
             process = subprocess.Popen(url, startupinfo=getStartupInfo())
         else:
             process = subprocess.Popen(url, shell=True)
@@ -795,16 +807,17 @@ def PlayVideo(name, asin, adultstr, trailer, selbitrate):
                 Input(mousex=9999,mousey=350)
             
     Input(mousex=9999,mousey=-1)
+
+    if hasExtRC and not useIntRC: return
+    
     myWindow = window()
-    myWindow.modal(process)
+    myWindow.wait(process)
 
 def AndroidPlayback(asin, trailer):
     manu = ''
     if os.access('/system/bin/getprop', os.X_OK):
         manu = subprocess.Popen(['getprop', 'ro.product.manufacturer'], stdout=subprocess.PIPE).communicate()[0].strip()
-    Log('Manufacturer: %s' % manu)
-    #Start Activity Intent { act=android.intent.action.VIEW cat=[android.intent.category.DEFAULT,android.intent.category.BROWSABLE] dat=B00UXZ61HI cmp=com.amazon.avod/.playbackclient.EdPlaybackActivity }
-    #am start -a android.intent.action.VIEW -d B00UXZ61HI -c android.intent.category.DEFAULT -c android.intent.category.BROWSABLE -n com.amazon.avod/.playbackclient.EdPlaybackActivity
+
     if manu == 'Amazon':
         cmp = 'com.amazon.avod/com.amazon.avod.playbackclient.EdPlaybackActivity'
         pkg = 'com.fivecent.amazonvideowrapper'
@@ -819,19 +832,9 @@ def AndroidPlayback(asin, trailer):
 
     subprocess.Popen(['log', '-p', 'v', '-t', 'Kodi-Amazon', 'Manufacturer: '+manu])
     subprocess.Popen(['log', '-p', 'v', '-t', 'Kodi-Amazon', 'Starting App: %s Video: %s' % (pkg, url)])
-    Log('Playing: %s' % url)
+    Log('Manufacturer: %s' % manu)
+    Log('Starting App: %s Video: %s' % (pkg, url))
     xbmc.executebuiltin('StartAndroidActivity("%s", "%s", "", "%s")' % (pkg, act, url))
-    
-    #cmd = ['/data/local/tmp/am', 'start', '-a', 'android.intent.action.VIEW', '-c', 'android.intent.category.DEFAULT', '-c', 'android.intent.category.BROWSABLE', '-d', url, '-n', cmp] 
-    #cmd = ['sh', '-c', '"/data/local/tmp/am start -a android.intent.action.VIEW -c android.intent.category.DEFAULT -c android.intent.category.BROWSABLE -d %s -n %s"' %(url,cmp)] 
-    #cmd = ['sh', os.path.join(PluginPath, 'tools', 'startvideo.sh'), url, 'com.fivecent.amazonvideowrapper/.StartAmazonVideo']
-    #cmd = ['sh', 'shell', '"sh %s %s %s"' %(os.path.join(PluginPath, 'tools', 'startvideo.sh' ),url,cmp)]
-    #if os.access('/system/bin/am', os.X_OK):
-    #    Log('Starting: %s' % cmd[0])
-    #    ret = check_output(cmd)
-    #    subprocess.Popen(['log', '-p', 'v', '-t', 'Kodi-Amazon', ret])
-    #else:
-    #xbmc.Player().play(url)
 
 def check_output(*popenargs, **kwargs):
     p = subprocess.Popen(stdout=subprocess.PIPE, stderr=subprocess.STDOUT, *popenargs, **kwargs)
@@ -846,39 +849,51 @@ def check_output(*popenargs, **kwargs):
             Log(e)
     return out
   
-def getCmdLine(videoUrl):
+def getCmdLine(videoUrl, amazonUrl):
     scr_path = addon.getSetting("scr_path")
     br_path = addon.getSetting("br_path").strip()
     scr_param = addon.getSetting("scr_param").strip()
-    kiosk = addon.getSetting("kiosk")
-    appdata = addon.getSetting("ownappdata")
-    cust_br = addon.getSetting("cust_path")
+    kiosk = addon.getSetting("kiosk") == 'true'
+    appdata = addon.getSetting("ownappdata") == 'true'
+    cust_br = addon.getSetting("cust_path") == 'true'
     
     if playMethod == 1:
         if not os.path.exists(scr_path): return ''
         return scr_path + ' ' + scr_param.replace('{f}', getPlaybackInfo(amazonUrl)).replace('{u}', videoUrl)
 
-    os_paths = [('C:\\Program Files\\', 'C:\\Program Files (x86)\\'), ('/usr/bin/', '/usr/local/bin/'), 'open -a ']
-    # path(win,lin,osx), kiosk, profile, args
-    br_config = [[('Internet Explorer\\iexplore.exe', '', ''), '-k ', '', ''], 
-                 [('Google\\Chrome\\Application\\chrome.exe', 'google-chrome', '"Google Chrome"'), '--kiosk ', '--user-data-dir=', '--start-maximized --disable-translate --disable-new-tab-first-run --no-default-browser-check --no-first-run '],
-                 [('Mozilla Firefox\\firefox.exe', 'firefox', 'firefox'), '', '-profile ', ''],
-                 [('Safari\\Safari.exe', '', 'safari'), '', '', '']]
+    os_paths = [None, ('C:\\Program Files\\', 'C:\\Program Files (x86)\\'), ('/usr/bin/', '/usr/local/bin/'), 'open -a ']
+    # path(0,win,lin,osx), kiosk, profile, args
+
+    br_config = [[(None, ['Internet Explorer\\iexplore.exe'], '', ''), '-k ', '', ''], 
+                 [(None, ['Google\\Chrome\\Application\\chrome.exe'], ['google-chrome', 'google-chrome-stable', 'google-chrome-beta', 'chromium-browser'], '"/Applications/Google Chrome.app"'),
+                  '--kiosk ', '--user-data-dir=', '--start-maximized --disable-translate --disable-new-tab-first-run --no-default-browser-check --no-first-run '],
+                 [(None, ['Mozilla Firefox\\firefox.exe'], ['firefox'], 'firefox'), '', '-profile ', ''],
+                 [(None, ['Safari\\Safari.exe'], '', 'safari'), '', '', '']]
     
-    if platform != 3 and cust_br == 'false':
-        for path in os_paths[platform-1]:
-            path += br_config[browser][0][platform-1]
-            if os.path.exists(path): 
-                br_path = path
-                break
-    if not os.path.exists(br_path): return ''
-    if platform == 3 and cust_br == 'false': br_path = os_paths[2] + br_config[browser][0][2]
+    if not cust_br: br_path = ''
+
+    if platform != osOSX and not cust_br:
+        for path in os_paths[platform]:
+            for file in br_config[browser][0][platform]:
+                if os.path.exists(path+file): 
+                    br_path = path + file
+                    break
+                else: Log('Browser %s not found' % (path+file), xbmc.LOGDEBUG)
+            if br_path: break
+
+    if not os.path.exists(br_path) and platform != osOSX: return ''
+
+    br_args = br_config[browser][3]
+    if kiosk: br_args += br_config[browser][1]
+    if appdata and br_config[browser][2]: 
+        br_args += br_config[browser][2] + '"' + os.path.join(DataPath, str(browser)) + '" '
+        
+    if platform == osOSX:
+        if not cust_br: br_path = os_paths[osOSX] + br_config[browser][0][osOSX]
+        if br_args.strip(): br_args = '--args ' + br_args
+        
+    br_path += ' %s"%s"' % (br_args, videoUrl)
     
-    br_path += ' ' + br_config[browser][3]
-    if kiosk == 'true': br_path += br_config[browser][1]
-    if appdata == 'true' and br_config[browser][2]: 
-        br_path += br_config[browser][2] + '"' + os.path.join(DataPath, str(browser)) + '" '
-    br_path += '"' + videoUrl + '"'
     return br_path
     
 def Input(mousex=0,mousey=0,click=0,keys=False,delay='200'):
@@ -905,12 +920,12 @@ def Input(mousex=0,mousey=0,click=0,keys=False,delay='200'):
                 keys_only = keys_only.replace(sc, '').strip()
         sc_only = keys.replace(keys_only, '').strip()
 
-    if platform == 1:
+    if platform == osWindows:
         app = os.path.join(PluginPath, 'tools', 'userinput.exe' )
         mouse = ' mouse %s %s' % (mousex,mousey)
         mclk = ' ' + str(click)
         keybd = ' key %s %s' % (keys,delay)
-    elif platform == 2:
+    elif platform == osLinux:
         app = 'xdotool'
         mouse = ' mousemove %s %s' % (mousex,mousey)
         mclk = ' click --repeat %s 1' % click
@@ -918,7 +933,7 @@ def Input(mousex=0,mousey=0,click=0,keys=False,delay='200'):
         if sc_only: 
             if keybd: keybd += ' && ' + app
             keybd += ' key ' + sc_only
-    elif platform == 3:
+    elif platform == osOSX:
         app = 'cliclick'
         mouse = ' m:'
         if click == 1: mouse = ' c:'
@@ -1064,16 +1079,17 @@ def MechanizeLogin():
         succeeded = LogIn()
         if retrys >= 2:
             Dialog.ok('Login Error','Failed to Login')
-            succeeded=True
+            succeeded = True
     return succeeded
 
 def LogIn():
     email = addon.getSetting('login_name')
     password = decode(addon.getSetting('login_pass'))
+    savelogin = addon.getSetting('save_login') == 'true'
     changed = False
     
-    if addon.getSetting('save_login') == 'false' or email == '' or password == '':
-        keyboard = xbmc.Keyboard(addon.getSetting('login_name'), getString(30002))
+    if not savelogin or email == '' or password == '':
+        keyboard = xbmc.Keyboard(email, getString(30002))
         keyboard.doModal()
         if keyboard.isConfirmed() and keyboard.getText():
             email = keyboard.getText()
@@ -1097,7 +1113,7 @@ def LogIn():
             Dialog.ok(getString(30200), getString(30201))
             return False
         else:
-            if addon.getSetting('save_login') == 'true' and changed:
+            if savelogin and changed:
                 addon.setSetting('login_name', email)
                 addon.setSetting('login_pass', encode(password))
             if addon.getSetting('no_cookie') != 'true':
@@ -1142,8 +1158,9 @@ def makeGUID():
 def scrapAsins(url, cj):
     asins = []
     url = BaseUrl + url
-    content = getURL(url, useCookie=cj)
-    asins += re.compile('data-asin="(.+?)"', re.DOTALL).findall(content)
+    content = getURL(url, useCookie=cj, UA=mUserAgent)
+    #asins += re.compile('data-asin="(.+?)"', re.DOTALL).findall(content)
+    asins += re.compile('gp/product/(.+?)/', re.DOTALL).findall(content)
     return ','.join(asins)
     
 def createDB(menu=False):
@@ -1188,9 +1205,6 @@ def cleanName(name, file=True):
         name = name.replace(c,'')
     return name
 
-def UpdateLibrary():
-    xbmc.executebuiltin('UpdateLibrary(video)')
-    
 def SaveFile(filename, data, dir=False, mode='w'):
     if type(data) == type(unicode()): data = data.encode('utf-8')
     if dir:
@@ -1247,7 +1261,7 @@ def CreateInfoFile(file, path, content, Info, language, hasSubtitles = False):
         fileinfo += '</audio>'
         fileinfo += '<video>'
         fileinfo += '<codec>h264</codec>'
-        fileinfo += '<durationinseconds>%s</durationinseconds>' % (int(Info['Duration']) * 60)
+        fileinfo += '<durationinseconds>%s</durationinseconds>' % Info['Duration']
         if Info['isHD'] == True:
             fileinfo += '<height>720</height>'
             fileinfo += '<width>1280</width>'
@@ -1269,9 +1283,9 @@ def CreateInfoFile(file, path, content, Info, language, hasSubtitles = False):
     return
     
 def SetupAmazonLibrary():
-    Log('Trying to add Amazon source paths...')
     source_path = os.path.join(ProfilPath, 'sources.xml')
     source_added = False
+    source = {'Amazon Movies': MOVIE_PATH, 'Amazon TV': TV_SHOWS_PATH}
     
     try:
         file = open(source_path)
@@ -1288,69 +1302,76 @@ def SetupAmazonLibrary():
             cat_tag.append(def_tag)
             root.append(cat_tag)
 
-    video = soup.find("video")      
-        
-    if len(soup.findAll(text="Amazon Movies")) < 1:
-        movie_source_tag = Tag(soup, "source")
-        movie_name_tag = Tag(soup, "name")
-        movie_name_tag.insert(0, "Amazon Movies")
-        movie_path_tag = Tag(soup, "path")
-        movie_path_tag['pathversion'] = 1
-        movie_path_tag.insert(0, MOVIE_PATH)
-        movie_source_tag.insert(0, movie_name_tag)
-        movie_source_tag.insert(1, movie_path_tag)
-        video.insert(2, movie_source_tag)
-        source_added = True
-
-    if len(soup.findAll(text="Amazon TV")) < 1: 
-        tvshow_source_tag = Tag(soup, "source")
-        tvshow_name_tag = Tag(soup, "name")
-        tvshow_name_tag.insert(0, "Amazon TV")
-        tvshow_path_tag = Tag(soup, "path")
-        tvshow_path_tag['pathversion'] = 1
-        tvshow_path_tag.insert(0, TV_SHOWS_PATH)
-        tvshow_source_tag.insert(0, tvshow_name_tag)
-        tvshow_source_tag.insert(1, tvshow_path_tag)
-        video.insert(2, tvshow_source_tag)
-        source_added = True
+    video = soup.find("video")
     
+    for name, path in source.items():
+        path_tag = Tag(soup, "path")
+        path_tag['pathversion'] = 1
+        path_tag.append(path)
+        source_text = soup.find(text=name)
+        if not source_text:
+            source_tag = Tag(soup, "source")
+            name_tag = Tag(soup, "name")
+            name_tag.append(name)
+            source_tag.append(name_tag)
+            source_tag.append(path_tag)
+            video.append(source_tag)
+            Log(name + ' source path added!')
+            source_added = True
+        else:
+            source_tag = source_text.findParent('source')
+            old_path = source_tag.find('path').contents[0]
+            if path not in old_path:
+                source_tag.find('path').replaceWith(path_tag)
+                Log(name + ' source path changed!')
+                source_added = True
+
     if source_added:
-        Log('Source paths added!')
         SaveFile(source_path, str(soup))
-        dialog.ok(getString(30187), getString(30188), getString(30189), getString(30190))
-        if dialog.yesno(getString(30191), getString(30192)):
+        Dialog.ok(getString(30187), getString(30188), getString(30189), getString(30190))
+        if Dialog.yesno(getString(30191), getString(30192)):
             xbmc.executebuiltin('RestartApp')
 
 class window(xbmcgui.WindowDialog):
     def __init__(self):
         xbmcgui.WindowDialog.__init__(self)
         self._stopEvent = threading.Event()
-        self._wakeUpThread = threading.Thread(target=self._wakeUpThreadProc)
-        self._wakeUpThread.start()
-        self._parentprocess = None
-        self._rc = addon.getSetting("remotectrl")
+        self._pbStart = time.time()
         
-    def _wakeUpThreadProc(self):
+    def _wakeUpThreadProc(self, process):
+        starttime = time.time()
         while not self._stopEvent.is_set():
-            xbmc.executebuiltin("playercontrol(wakeup)")
-            # bit of a hack above: wakeup is actually not a valid playercontrol argument,
-            # but there's no error printed if the argument isn't found and any playercontrol
-            # causes the DPMS/idle timeout to reset itself
-            self._stopEvent.wait(60)
+            if time.time() > starttime + 60:
+                starttime = time.time()
+                xbmc.executebuiltin("playercontrol(wakeup)")
+            if process:
+                process.poll()
+                if process.returncode != None: self.close()
+            self._stopEvent.wait(1)
 
-    def stopWakeupThread(self):
-        self._stopEvent.set()
+    def wait(self, process):
+        Log('Starting Thread')
+        self._wakeUpThread = threading.Thread(target=self._wakeUpThreadProc, args=(process,))
+        self._wakeUpThread.start()
+        self.doModal()
         self._wakeUpThread.join()
 
-    def modal(self, process):
-        self._parentprocess = process
-        self.doModal()
-    
     def close(self):
-        self.stopWakeupThread()
+        Log('Stopping Thread')
+        self._stopEvent.set()
         xbmcgui.WindowDialog.close(self)
+        vidDur = int(xbmc.getInfoLabel('ListItem.Duration')) * 60
+        watched = xbmc.getInfoLabel('Listitem.PlayCount')
+        isLast = xbmc.getInfoLabel('Container().Position') == xbmc.getInfoLabel('Container().NumItems')
+        pBTime = time.time() - self._pbStart
 
+        if pBTime > vidDur * 0.9 and not watched:
+            xbmc.executebuiltin("Action(ToggleWatched)")
+            if not isLast: xbmc.executebuiltin("Action(Up)")
+            
     def onAction(self, action):
+        if not useIntRC: return
+
         ACTION_SELECT_ITEM = 7
         ACTION_PARENT_DIR = 9
         ACTION_PREVIOUS_MENU = 10
@@ -1369,20 +1390,14 @@ class window(xbmcgui.WindowDialog):
         ACTION_NAV_BACK = 92
         ACTION_BUILT_IN_FUNCTION = 122
         KEY_BUTTON_BACK = 275
-        
-        exit = False
-        if self._parentprocess:
-            self._parentprocess.poll()
-            if self._parentprocess.returncode != None: exit = True
+        ACTION_BACKSPACE = 110
+        ACTION_MOUSE_MOVE = 107
 
-        if self._rc == 'false' and not exit: return
-        
         actionId = action.getId()
-        if action in [ACTION_SHOW_GUI, ACTION_STOP, ACTION_PARENT_DIR, ACTION_PREVIOUS_MENU, ACTION_NAV_BACK, KEY_BUTTON_BACK]:
-            if exit:
-                if action in [ACTION_PARENT_DIR, ACTION_PREVIOUS_MENU, ACTION_NAV_BACK, KEY_BUTTON_BACK]: Input(keys='{BACK}')
-            else: Input(keys='{EX}')
-            self.close()
+        Log('Action: Id:%s ButtonCode:%s' % (actionId, action.getButtonCode()))
+
+        if action in [ACTION_SHOW_GUI, ACTION_STOP, ACTION_PARENT_DIR, ACTION_PREVIOUS_MENU, ACTION_NAV_BACK, KEY_BUTTON_BACK, ACTION_MOUSE_MOVE]:
+            Input(keys='{EX}')
         elif action in [ACTION_SELECT_ITEM, ACTION_PLAYER_PLAY, ACTION_PAUSE]:
             Input(keys='{SPC}')
         elif action==ACTION_MOVE_LEFT:
@@ -1402,8 +1417,6 @@ class window(xbmcgui.WindowDialog):
             strKey = str(actionId-58)
             Input(keys=strKey)
 
-        if exit: self.close()
-        
 deviceID = genID()
 dbFile = os.path.join(DataPath, 'art.db')
 db = sqlite.connect(dbFile)

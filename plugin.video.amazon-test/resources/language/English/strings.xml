@@ -64,7 +64,7 @@
     <string id="30062">Path</string>
     <string id="30070">Miscellaneous</string>
     <string id="30071">Display TV-Show instead of Seasons in Watchlist</string>
-    <string id="30072">Advanced Logging</string>
+    <string id="30072">Verbose Logging</string>
     <string id="30073">Display Paid Content</string>
     <string id="30074">Remote Control support</string>
 
@@ -95,10 +95,11 @@
     <string id="30180">Add %s to Watchlist</string>
     <string id="30181">Remove %s from Watchlist</string>
     <string id="30182">Go to TV-Show</string>
+    <string id="30183">Get Similarities</string>
     <string id="30185">Export %s</string>
 
     <string id="30186">Update Library</string>
-    <string id="30187">Source folders added</string>
+    <string id="30187">Source folders added/changed</string>
     <string id="30188">To complete the setup:</string>
     <string id="30189"> 1) Restart Kodi</string>
     <string id="30190"> 2) Set the content type of added folders</string>

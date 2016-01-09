@@ -57,16 +57,21 @@ firmware = 'fmw:045.01E01164A-app:4.7'
 #firmware = '1'
 format = 'json'
 
-PARAMETERS = '?firmware='+firmware+'&deviceTypeID='+deviceTypeID+'&deviceID='+deviceID+'&format='+format
+PARAMETERS_STD = '?firmware='+firmware+'&deviceTypeID='+deviceTypeID+'&deviceID='+deviceID+'&format='+format
+PARAMETERS_CAT = '?firmware=fmw:15-app:1.1.23&deviceTypeID=A1MPSLFC7L5AFK&deviceID='+deviceID+'&format='+format
+
 
 def BUILD_BASE_API(MODE,HOST=common.ATV_URL + '/cdp/'):
-    return HOST+MODE+PARAMETERS
+    if 'GetCategoryList' in MODE:
+        return HOST+MODE+PARAMETERS_CAT
+    return HOST+MODE+PARAMETERS_STD
 
-def getList(ContentType,start=0,isPrime=True,NumberOfResults=MAX,OrderBy='MostPopular',version=2,AsinList=False):
+def getList(ContentType=False,start=0,isPrime=True,NumberOfResults=MAX,OrderBy='MostPopular',version=2,AsinList=False,catalog='Browse',asin=False):
     BROWSE_PARAMS ='&NumberOfResults='+str(NumberOfResults)
     BROWSE_PARAMS +='&StartIndex='+str(start)
-    BROWSE_PARAMS +='&ContentType='+ContentType
-    BROWSE_PARAMS +='&OrderBy='+OrderBy
+    if ContentType: 
+        BROWSE_PARAMS +='&ContentType='+ContentType
+        BROWSE_PARAMS +='&OrderBy='+OrderBy
     BROWSE_PARAMS +='&IncludeAll=T'
     if isPrime: BROWSE_PARAMS += '&OfferGroups=B0043YVHMY'
     if ContentType == 'TVEpisode':
@@ -75,6 +80,7 @@ def getList(ContentType,start=0,isPrime=True,NumberOfResults=MAX,OrderBy='MostPo
         BROWSE_PARAMS +='&tag=1'
         BROWSE_PARAMS +='&IncludeBlackList=T'
     if AsinList: BROWSE_PARAMS +='&SeasonASIN='+AsinList
+    if asin: BROWSE_PARAMS +='&asin='+asin
     BROWSE_PARAMS +='&version='+str(version)    
     #&HighDef=F # T or F ??
     #&playbackInformationRequired=false
@@ -84,7 +90,7 @@ def getList(ContentType,start=0,isPrime=True,NumberOfResults=MAX,OrderBy='MostPo
     #&Detailed=T
     #&AID=1
     #&IncludeNonWeb=T
-    url = BUILD_BASE_API('catalog/Browse')+BROWSE_PARAMS
+    url = BUILD_BASE_API('catalog/%s' % catalog)+BROWSE_PARAMS
     return json.loads(common.getATVURL(url))
 
 def ASIN_LOOKUP(ASINLIST):
@@ -117,6 +123,16 @@ def ExportList():
     ListCont(common.movielib % list)
     ListCont(common.tvlib % list)
     
+def getSimilarities():
+    import tv
+    data = getList(NumberOfResults=250,catalog='GetSimilarities',asin=common.args.asin)
+    for title in data['message']['body']['titles']:
+        asin = title['titleId']
+        if not listmovie.LIST_MOVIES('asin', asin, search=True):
+            for seasondata in tv.lookupTVdb(asin, tbl='seasons', single=False):
+                if seasondata: listtv.ADD_SEASON_ITEM(seasondata, disptitle=True)
+    common.SetView('tvshows', 'showview')
+
 def ListMenu():
     list = common.args.url
     common.addDir(common.getString(30104), 'appfeed', 'ListCont', common.movielib % list)

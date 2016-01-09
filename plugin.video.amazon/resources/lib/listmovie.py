@@ -76,7 +76,6 @@ def LIST_MOVIES(filter='',value=False,sortcol=False,sortaz=True,search=False,cmm
     
 def ADD_MOVIE_ITEM(moviedata, onlyinfo=False,cmmode=0, export=False):
     asin,hd_asin,movietitle,trailer,poster,plot,director,writer,runtime,year,premiered,studio,mpaa,actors,genres,stars,votes,fanart,isprime,isHD,isAdult,popularity,recent,audio = moviedata
-
     infoLabels={'Title':movietitle}
     if plot:
         infoLabels['Plot'] = plot
@@ -115,6 +114,7 @@ def ADD_MOVIE_ITEM(moviedata, onlyinfo=False,cmmode=0, export=False):
     cm = []
     cm.append((common.getString(30180+cmmode) % common.getString(30154), 'XBMC.RunPlugin(%s?mode=<common>&sitemode=<toogleWatchlist>&asin=<%s>&remove=<%s>)' % (sys.argv[0], asin, cmmode)))
     cm.append((common.getString(30185) % common.getString(30154), 'XBMC.RunPlugin(%s?mode=<xbmclibrary>&sitemode=<EXPORT_MOVIE>&asin=<%s>)' % (sys.argv[0], asin)))
+    cm.append((common.getString(30183), 'Container.Update(%s?mode=<appfeed>&sitemode=<getSimilarities>&asin=<%s>)' % (sys.argv[0], asin)))
     cm.append((common.getString(30186), 'XBMC.RunPlugin(%s?mode=<xbmclibrary>&sitemode=<UpdateLibrary>)' % sys.argv[0]))
     if onlyinfo:
         return infoLabels

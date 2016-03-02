@@ -35,6 +35,7 @@ hasExtRC = xbmc.getCondVisibility('System.HasAddon(script.chromium_remotecontrol
 useIntRC = addon.getSetting("remotectrl") == 'true'
 playMethod = int(addon.getSetting("playmethod"))
 browser = int(addon.getSetting("browser"))
+verbLog = addon.getSetting('logging') == 'true'
  
 def PLAYVIDEO():
     if not platform:
@@ -101,7 +102,7 @@ def PLAYVIDEO():
 def AndroidPlayback(asin, trailer):
     manu = ''
     if os.access('/system/bin/getprop', os.X_OK):
-        manu = subprocess.Popen(['getprop', 'ro.product.manufacturer'], stdout=subprocess.PIPE).communicate()[0].strip()
+        manu = check_output(['getprop', 'ro.product.manufacturer'])
 
     if manu == 'Amazon':
         cmp = 'com.amazon.avod/com.amazon.avod.playbackclient.EdPlaybackActivity'
@@ -119,7 +120,24 @@ def AndroidPlayback(asin, trailer):
     subprocess.Popen(['log', '-p', 'v', '-t', 'Kodi-Amazon', 'Starting App: %s Video: %s' % (pkg, url)])
     common.Log('Manufacturer: %s' % manu)
     common.Log('Starting App: %s Video: %s' % (pkg, url))
+    if verbLog:
+        if os.access('/system/xbin/su', os.X_OK) or os.access('/system/bin/su', os.X_OK):
+            common.Log('Logcat:\n' + check_output(['su', '-c', 'logcat -d | grep -i com.amazon.avod']))
+        common.Log('Properties:\n' + check_output(['sh', '-c', 'getprop | grep -iE "(ro.product|ro.build|google)"']))
     xbmc.executebuiltin('StartAndroidActivity("%s", "%s", "", "%s")' % (pkg, act, url))
+
+def check_output(*popenargs, **kwargs):
+    p = subprocess.Popen(stdout=subprocess.PIPE, stderr=subprocess.STDOUT, *popenargs, **kwargs)
+    out, err = p.communicate()
+    retcode = p.poll()
+    if retcode != 0:
+        c = kwargs.get("args")
+        if c is None:
+            c = popenargs[0]
+            e = subprocess.CalledProcessError(retcode, c)
+            e.output = str(out) + str(err)
+            common.Log(e)
+    return out
 
 def getCmdLine(videoUrl, amazonUrl):
     scr_path = addon.getSetting("scr_path")
@@ -258,8 +276,7 @@ def getFlashVars(url):
         Dialog.notification(common.__plugin__, Error('CDP.InvalidRequest'), xbmcgui.NOTIFICATION_ERROR)
         return False
     values = {}
-    search = {'asin'       : '"pageAsin":"(.*?)"',
-              'sessionID'  : "ue_sid='(.*?)'",
+    search = {'sessionID'  : "ue_sid='(.*?)'",
               'marketplace': "ue_mid='(.*?)'",
               'customer'   : '"customerID":"(.*?)"'}
     if 'var config' in showpage:
@@ -277,6 +294,7 @@ def getFlashVars(url):
             return False
 
     values['deviceTypeID']  = 'AOAGZA014O5RE'
+    values['asin']          = common.args.asin
     values['userAgent']     = common.UserAgent
     values['deviceID']      = common.hmac.new(common.UserAgent, common.gen_id(), hashlib.sha224).hexdigest()
     rand = 'onWebToken_' + str(random.randint(0,484))

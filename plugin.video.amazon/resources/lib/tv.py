@@ -370,7 +370,7 @@ def addTVdb(full_update = True, libasins = False):
         if not new_libasins: return
             
     while goAhead == 1:
-        json = appfeed.getList('TVEpisode&RollupToSeason=T', endIndex, isPrime=prime, OrderBy='SalesRank', NumberOfResults=MAX, AsinList=new_libasins)
+        json = appfeed.getList('tvepisode,tvseason,tvseries&RollupToSeason=T', endIndex, isPrime=prime, OrderBy='Title', NumberOfResults=MAX, AsinList=new_libasins)
         titles = json['message']['body']['titles']
         if titles:
             SERIES_ASINS = ''
@@ -479,7 +479,7 @@ def updatePop():
     Index = 0
     
     while Index != -1:
-        json = appfeed.getList('TVEpisode&RollupToSeries=T', Index, NumberOfResults=MAX)
+        json = appfeed.getList('tvepisode,tvseason,tvseries&RollupToSeries=T', Index, NumberOfResults=MAX)
         titles = json['message']['body']['titles']
         for title in titles:
             Index += 1

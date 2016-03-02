@@ -163,6 +163,8 @@ def getATVData(mode, query='', version=2, useCookie=False, id=None):
     return jsondata['message']['body']
     
 def addDir(name, mode, url='', infoLabels=None, opt='', catalog='Browse', cm=False, page=1, export=False):
+    #if OfferGroup in url and 'RollUpToSeries' in url:
+    #    url = url.replace(OfferGroup, '')
     if type(url) == type(unicode()): url = url.encode('utf-8')
     u = u'%s?mode=%s&url=%s&page=%s&opt=%s&cat=%s' % (sys.argv[0], mode, urllib.quote_plus(url), page, opt, catalog)
 
@@ -296,9 +298,9 @@ def listCategories(node, root=None):
     cat = getNode(node)
 
     if root:
-        url = 'OrderBy=Title%s&ContentType=' % OfferGroup
-        if root == '30160': url += 'TVSeason&RollupToSeries=T'
-        else: url += 'Movie'
+        url = 'OrderBy=Title%s&contentType=' % OfferGroup
+        if root == '30160': url += 'tvseason,tvepisodes&RollUpToSeries=T'
+        else: url += 'movie'
         addDir(getString(int(root)), 'listContent', url)
     for node, title, category, content, id  in cat:
         mode = None
@@ -309,7 +311,7 @@ def listCategories(node, root=None):
         elif category == 'query':
             mode = 'listContent'
             opt = 'listcat'
-            url = content.replace('RollupToSeason', 'RollupToSeries').replace('\n','').replace("\n",'')
+            url = content.replace('\n','').replace("\n",'')
         if mode:
             addDir(title, mode, url, opt=opt)
     xbmcplugin.endOfDirectory(pluginhandle)
@@ -326,8 +328,7 @@ def listContent(catalog, url, page, parent, export=False):
     titles = getATVData(catalog, url)
     if not titles or not len(titles['titles']):
         if 'search' in parent: Dialog.ok(__plugin__, getString(30202))
-        elif 'rem_' in parent: xbmcplugin.endOfDirectory(pluginhandle)
-        else: Dialog.ok(__plugin__, getString(30127))
+        else: xbmcplugin.endOfDirectory(pluginhandle)
         return
     titles = titles['titles']
     for item in titles[0:ResPage]:
@@ -354,7 +355,7 @@ def listContent(catalog, url, page, parent, export=False):
             if contentType == 'season': 
                 name = formatSeason(infoLabels, parent)
                 if library not in parent and parent != '':
-                    curl = 'SeriesASIN=%s&ContentType=TVEpisode&RollupToSeason=T&IncludeBlackList=T%s' % (infoLabels['SeriesAsin'], OfferGroup)
+                    curl = 'SeriesASIN=%s&ContentType=TVEpisode&RollUpToSeason=T&IncludeBlackList=T%s' % (infoLabels['SeriesAsin'], OfferGroup)
                     cm.insert(0, (getString(30182), 'XBMC.Container.Update(%s?mode=listContent&cat=Browse&url=%s&page=1)' % (sys.argv[0], urllib.quote_plus(curl))))
             if export:
                 url = re.sub(r'(?i)contentype=\w+', 'ContentType=TVEpisode', url)
@@ -429,12 +430,12 @@ def WatchList(asin, remove):
 def getToken(asin, cookie):
     url = BaseUrl + '/gp/aw/video/detail/' + asin
     data = getURL(url, useCookie=cookie)
-    token = re.compile('"token"[^"]*"([^"]*)"').findall(data)[0]
+    token = re.compile('token[^"]*"([^"]*)"').findall(data)[0]
     return urllib.quote_plus(token)
 
 def getArtWork(infoLabels, contentType):
-    if contentType == 'movie' and tmdb_art == '0': return
-    if contentType != 'movie' and tvdb_art == '0': return
+    if contentType == 'movie' and tmdb_art == '0': return infoLabels
+    if contentType != 'movie' and tvdb_art == '0': return infoLabels
     c = db.cursor()
     extra = ''
     season = -2
@@ -603,7 +604,7 @@ def getList(list, export):
         asins_tv = ''
 
     url = 'ASINList='
-    if dispShowOnly: extraArgs = '&RollupToSeries=T'
+    if dispShowOnly: extraArgs = '&RollUpToSeries=T'
 
     if export:
         url += asins_movie + ',' + asins_tv
@@ -816,7 +817,7 @@ def PlayVideo(name, asin, adultstr, trailer, selbitrate):
 def AndroidPlayback(asin, trailer):
     manu = ''
     if os.access('/system/bin/getprop', os.X_OK):
-        manu = subprocess.Popen(['getprop', 'ro.product.manufacturer'], stdout=subprocess.PIPE).communicate()[0].strip()
+        manu = check_output(['getprop', 'ro.product.manufacturer'])
 
     if manu == 'Amazon':
         cmp = 'com.amazon.avod/com.amazon.avod.playbackclient.EdPlaybackActivity'
@@ -834,6 +835,10 @@ def AndroidPlayback(asin, trailer):
     subprocess.Popen(['log', '-p', 'v', '-t', 'Kodi-Amazon', 'Starting App: %s Video: %s' % (pkg, url)])
     Log('Manufacturer: %s' % manu)
     Log('Starting App: %s Video: %s' % (pkg, url))
+    if verbLog:
+        if os.access('/system/xbin/su', os.X_OK) or os.access('/system/bin/su', os.X_OK):
+            Log('Logcat:\n' + check_output(['su', '-c', 'logcat -d | grep -i com.amazon.avod']))
+        Log('Properties:\n' + check_output(['sh', '-c', 'getprop | grep -iE "(ro.product|ro.build|google)"']))
     xbmc.executebuiltin('StartAndroidActivity("%s", "%s", "", "%s")' % (pkg, act, url))
 
 def check_output(*popenargs, **kwargs):
@@ -986,8 +991,7 @@ def getFlashVars(url):
         Dialog.notification(__plugin__, Error('CDP.InvalidRequest'), xbmcgui.NOTIFICATION_ERROR)
         return False
     values = {}
-    search = {'asin'       : '"pageAsin":"(.*?)"',
-              'sessionID'  : "ue_sid='(.*?)'",
+    search = {'sessionID'  : "ue_sid='(.*?)'",
               'marketplace': "ue_mid='(.*?)'",
               'customer'   : '"customerID":"(.*?)"'}
     if 'var config' in showpage:
@@ -1004,6 +1008,7 @@ def getFlashVars(url):
             Dialog.notification(getString(30200), getString(30210), xbmcgui.NOTIFICATION_ERROR)
             return False
 
+    values['asin']          = url.split('/')[-1]
     values['deviceTypeID']  = 'AOAGZA014O5RE'
     values['userAgent']     = UserAgent
     values['deviceID']      = hmac.new(UserAgent, genID(), hashlib.sha224).hexdigest()

@@ -154,7 +154,7 @@ def ListCont(export=False):
         rvalue = 'seriesasin'
     asins = common.SCRAP_ASINS(url)
     if not asins:
-        xbmcgui.Dialog().notification(common.__plugin__, common.getString(30199), sound = False)
+        common.SetView('movies', 'movieview')
         return
 
     asinlist = []

@@ -199,7 +199,7 @@ def toogleWatchlist(asin=False, action='add'):
 def getToken(asin, cookie):
     url = BASE_URL + '/gp/aw/video/detail/' + asin
     data = getURL(url, useCookie=cookie)
-    token = re.compile('"token"[^"]*"([^"]*)"').findall(data)[0]
+    token = re.compile('token[^"]*"([^"]*)"').findall(data)[0]
     return urllib.quote_plus(token)
 
 def makeGUID():

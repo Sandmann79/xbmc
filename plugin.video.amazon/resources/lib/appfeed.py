@@ -44,31 +44,25 @@ os = common.os
 # 'usage/GetServerConfig'
 #===============================================================================
 
-MAX = 20
 deviceID = common.gen_id()
 
 #Android id: A2W5AJPLW5Q6YM, A1PY8QQU9P0WJV, A1MPSLFC7L5AFK // fmw:{AndroidSDK}-app:{AppVersion}
 #deviceTypeID = 'A13Q6A55DBZB7M' #WEB Type
-#firmware = 'fmw:15-app:1.1.19' #Android
+firmware = 'fmw:15-app:1.1.19' #Android
 #firmware = 'fmw:10-app:1.1.23'
-deviceTypeID = 'A3VN4E5F7BBC7S' #Roku
-firmware = 'fmw:045.01E01164A-app:4.7'
-#deviceTypeID = 'A63V4FRV3YUP9'
-#firmware = '1'
+#deviceTypeID = 'A3VN4E5F7BBC7S' #Roku
+#firmware = 'fmw:045.01E01164A-app:4.7'
+deviceTypeID = 'A1MPSLFC7L5AFK'
 format = 'json'
 
-PARAMETERS_STD = '?firmware='+firmware+'&deviceTypeID='+deviceTypeID+'&deviceID='+deviceID+'&format='+format
-PARAMETERS_CAT = '?firmware=fmw:15-app:1.1.23&deviceTypeID=A1MPSLFC7L5AFK&deviceID='+deviceID+'&format='+format
-
+PARAMETERS = '?firmware='+firmware+'&deviceTypeID='+deviceTypeID+'&deviceID='+deviceID+'&format='+format
 
 def BUILD_BASE_API(MODE,HOST=common.ATV_URL + '/cdp/'):
-    if 'GetCategoryList' in MODE:
-        return HOST+MODE+PARAMETERS_CAT
-    return HOST+MODE+PARAMETERS_STD
+    return HOST+MODE+PARAMETERS
 
-def getList(ContentType=False,start=0,isPrime=True,NumberOfResults=MAX,OrderBy='MostPopular',version=2,AsinList=False,catalog='Browse',asin=False):
-    BROWSE_PARAMS ='&NumberOfResults='+str(NumberOfResults)
-    BROWSE_PARAMS +='&StartIndex='+str(start)
+def getList(ContentType=False,start=0,isPrime=True,NumberOfResults=False,OrderBy='MostPopular',version=2,AsinList=False,catalog='Browse',asin=False):
+    BROWSE_PARAMS ='&StartIndex='+str(start)
+    if NumberOfResults: BROWSE_PARAMS +='&NumberOfResults='+str(NumberOfResults)
     if ContentType: 
         BROWSE_PARAMS +='&ContentType='+ContentType
         BROWSE_PARAMS +='&OrderBy='+OrderBy

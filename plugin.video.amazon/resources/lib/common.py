@@ -40,8 +40,8 @@ COOKIEFILE = os.path.join(pldatapath, 'cookies.lwp')
 def_fanart = os.path.join(pluginpath, 'fanart.jpg')
 na = 'not available'
 BASE_URL = 'https://www.amazon.de'
-#ATV_URL = 'https://atv-ps-eu.amazon.com'
-ATV_URL = 'https://atv-ext-eu.amazon.com'
+ATV_URL = 'https://atv-eu.amazon.com'
+#ATV_URL = 'https://atv-ext-eu.amazon.com'
 UserAgent = 'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/49.0.2566.0 Safari/537.36'
 movielib = '/gp/video/%s/movie/'
 tvlib = '/gp/video/%s/tv/'
@@ -202,18 +202,10 @@ def getToken(asin, cookie):
     token = re.compile('token[^"]*"([^"]*)"').findall(data)[0]
     return urllib.quote_plus(token)
 
-def makeGUID():
-    import random
-    guid = ''
-    for i in range(3):
-        number = "%X" % (int( ( 1.0 + random.random() ) * 0x10000) | 0)
-        guid += number[1:]
-    return guid
-
 def gen_id():
     guid = addon.getSetting("GenDeviceID")
-    if not guid: 
-        guid = makeGUID()
+    if not guid or len(guid) != 56: 
+        guid = hmac.new(UserAgent, uuid.uuid4().bytes, hashlib.sha224).hexdigest()
         addon.setSetting("GenDeviceID", guid)
     return guid
 
@@ -469,7 +461,7 @@ def updateRunning():
     from datetime import datetime, timedelta
     update = addon.getSetting('update_running')
     if update != 'false':
-        starttime = datetime.strptime(update, '%Y-%m-%d %H:%M')
+        starttime = datetime(*(time.strptime(update, '%Y-%m-%d %H:%M')[0:6]))
         if (starttime + timedelta(hours=6)) <= datetime.today():
             addon.setSetting('update_running', 'false')
             Log('DB Cancel update - duration > 6 hours')

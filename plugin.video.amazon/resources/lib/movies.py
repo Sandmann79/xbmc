@@ -17,7 +17,7 @@ json = common.json
 os = common.os
 
 ################################ Movie db
-MAX = int(common.addon.getSetting("mov_perpage"))
+#MAX = int(common.addon.getSetting("mov_perpage"))
 MOV_TOTAL = common.addon.getSetting("MoviesTotal")
 if MOV_TOTAL == '' or MOV_TOTAL == '0': MOV_TOTAL = '2400'
 MOV_TOTAL = int(MOV_TOTAL)
@@ -157,33 +157,37 @@ def addMoviesdb(full_update=True):
     goAhead = 1
     endIndex = 0
     new_mov = 0
+    tot_mov = 0
+    MAX = 120
     
     while goAhead == 1:
-        page+=1
-        json = appfeed.getList('Movie', endIndex, NumberOfResults=MAX)
-        titles = json['message']['body']['titles']
+        json = appfeed.getList('Movie', endIndex, NumberOfResults=MAX)['message']['body']
+        titles = json['titles']
+        if json['approximateSize'] == 0:
+            MAX = MAX - 20
+            if MAX < 1: MAX = 120
+            continue
+        endIndex = json['endIndex']
         if titles:
             for title in titles:
                 if full_update and dialog.iscanceled():
                     goAhead = -1
                     break
                 if title.has_key('titleId'):
-                    endIndex += 1
                     asin = title['titleId']
-                    found, MOVIE_ASINS = common.compasin(MOVIE_ASINS, asin)
-                    if not found:
-                        new_mov += ASIN_ADD(title)
-                    updateMoviedb(asin, 'popularity', endIndex)
-            if len(titles) < MAX: goAhead = 0
-            else: endIndex = endIndex - int(MAX/4)
-        else:
-            goAhead = 0
-        if full_update: dialog.update(int((endIndex)*100.0/MOV_TOTAL), common.getString(30122) % page, common.getString(30123) % new_mov)
+                    if not '_duplicate_' in title['title']:
+                        found, MOVIE_ASINS = common.compasin(MOVIE_ASINS, asin)
+                        if not found: new_mov += ASIN_ADD(title)
+                        tot_mov += 1
+                        updateMoviedb(asin, 'popularity', tot_mov)
+        if endIndex == 0: goAhead = 0
+        page+=1
+        if full_update: dialog.update(int((tot_mov)*100.0/MOV_TOTAL), common.getString(30122) % page, common.getString(30123) % new_mov)
         if full_update and dialog.iscanceled(): goAhead = -1
     if goAhead == 0:
         updateLibrary()
-        common.addon.setSetting("MoviesTotal",str(endIndex))
-        common.Log('Movie Update: New %s Deleted %s Total %s' % (new_mov, deleteremoved(MOVIE_ASINS), endIndex))
+        common.addon.setSetting("MoviesTotal",str(tot_mov))
+        common.Log('Movie Update: New %s Deleted %s Total %s' % (new_mov, deleteremoved(MOVIE_ASINS), tot_mov))
         if full_update: 
             setNewest()
             dialog.close()

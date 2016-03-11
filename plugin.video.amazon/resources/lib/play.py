@@ -94,7 +94,7 @@ def PLAYVIDEO():
             
     Input(mousex=9999,mousey=-1)
     
-    if hasExtRC and not useIntRC: return
+    if hasExtRC: return
 
     myWindow = window()
     myWindow.wait(process)
@@ -136,8 +136,8 @@ def check_output(*popenargs, **kwargs):
             c = popenargs[0]
             e = subprocess.CalledProcessError(retcode, c)
             e.output = str(out) + str(err)
-            common.Log(e)
-    return out
+            Log(e, xbmc.LOGERROR)
+    return out.strip()
 
 def getCmdLine(videoUrl, amazonUrl):
     scr_path = addon.getSetting("scr_path")
@@ -296,7 +296,7 @@ def getFlashVars(url):
     values['deviceTypeID']  = 'AOAGZA014O5RE'
     values['asin']          = common.args.asin
     values['userAgent']     = common.UserAgent
-    values['deviceID']      = common.hmac.new(common.UserAgent, common.gen_id(), hashlib.sha224).hexdigest()
+    values['deviceID']      = common.gen_id()
     rand = 'onWebToken_' + str(random.randint(0,484))
     pltoken = common.getURL(common.BASE_URL + "/gp/video/streaming/player-token.json?callback=" + rand, useCookie=cookie)
     try:

@@ -18,7 +18,6 @@ import xbmcaddon
 import xbmc
 import urlparse
 import base64
-import binascii
 import hmac
 import time
 import random
@@ -27,11 +26,14 @@ import hashlib
 import hmac
 import threading
 import json
+from platform import node
 
 try: from sqlite3 import dbapi2 as sqlite
 except: from pysqlite2 import dbapi2 as sqlite
     
 addon = xbmcaddon.Addon()
+Dialog = xbmcgui.Dialog()
+pDialog = xbmcgui.DialogProgress()
 pluginhandle = int(sys.argv[1])
 __plugin__ = addon.getAddonInfo('name')
 __authors__ = addon.getAddonInfo('author')
@@ -82,14 +84,15 @@ DBVersion = 1
 
 #ids: A28RQHJKHM2A2W - ps3 / AFOQV1TK6EU6O - ps4 / A1IJNVP3L4AY8B - samsung / A2E0SNTXJVT7WK - bueller / 
 #     ADVBD696BHNV5 - montoya / A3VN4E5F7BBC7S - roku / A1MPSLFC7L5AFK - kindle
-TypeIDs = {'GetCategoryList': 'firmware=fmw:15-app:1.1.23&deviceTypeID=A1MPSLFC7L5AFK', 
-           'GetSimilarities': 'firmware=fmw:15-app:1.1.23&deviceTypeID=A1MPSLFC7L5AFK',
-                       'All': 'firmware=fmw:045.01E01164A-app:4.7&deviceTypeID=A3VN4E5F7BBC7S'}
+#TypeIDs = {'GetCategoryList': 'firmware=fmw:15-app:1.1.23&deviceTypeID=A1MPSLFC7L5AFK', 
+#           'GetSimilarities': 'firmware=fmw:15-app:1.1.23&deviceTypeID=A1MPSLFC7L5AFK',
+#                       'All': 'firmware=fmw:17-app:1.0.1433.3&deviceTypeID=A43PXU4ZN2AL1'}
+#                       'All': 'firmware=fmw:045.01E01164A-app:4.7&deviceTypeID=A3VN4E5F7BBC7S'}
+TypeIDs = {'All': 'firmware=fmw:17-app:2.0.45.1210&deviceTypeID=A2RJLFEH0UEKI9'}
+
 langID = {'movie':30165, 'series':30166, 'season':30167, 'episode':30173}
 OfferGroup = '&OfferGroups=B0043YVHMY'
 if payCont: OfferGroup = ''
-Dialog = xbmcgui.Dialog()
-pDialog = xbmcgui.DialogProgress()
 
 if (addon.getSetting('enablelibraryfolder') == 'true'):
     MOVIE_PATH = os.path.join(xbmc.translatePath(addon.getSetting('customlibraryfolder')),'Movies').decode('utf-8')
@@ -242,11 +245,11 @@ def loadCategories(force=False):
     parseStart = time.time()
     createDB(1)
     data = getATVData('GetCategoryList')
-    Log('Download MenuTime: %s' %(time.time()-parseStart))
+    Log('Download MenuTime: %s' %(time.time()-parseStart), 0)
     parseNodes(data)
     updateTime()
     menuDb.commit()
-    Log('Parse MenuTime: %s' %(time.time()-parseStart))
+    Log('Parse MenuTime: %s' %(time.time()-parseStart), 0)
 
 def updateTime(set=True):
     c = menuDb.cursor()
@@ -271,6 +274,7 @@ def getNodeId(mainid):
 def parseNodes(data, id=''):
     if type(data) != list: data = [data]
     for count, entry in enumerate(data):
+        #print id, entry['title'], entry['id']
         category = None
         if entry.has_key('categories'):
             parseNodes(entry['categories'], '%s%s' % (id, count))
@@ -279,8 +283,8 @@ def parseNodes(data, id=''):
         elif entry.has_key('query'): 
             content =  entry['query']
             category = 'query'
-        if category and entry.has_key('title'): 
-            wMenuDB([id, entry['title'], category, content, entry['id']])
+        if category and entry.has_key('title') and entry.has_key('id'): 
+            wMenuDB([id, entry['title'], category, content, entry['id'].lower()])
 
 def wMenuDB(menudata):
     c = menuDb.cursor()
@@ -312,6 +316,8 @@ def listCategories(node, root=None):
             mode = 'listContent'
             opt = 'listcat'
             url = content.replace('\n','').replace("\n",'')
+            if '=tvepisode&' in url.lower() and 'rolluptoseason' in url.lower():
+                url = re.sub('(?i)ContentType=\w+', 'ContentType=tvepisode,tvseason', url)
         if mode:
             addDir(title, mode, url, opt=opt)
     xbmcplugin.endOfDirectory(pluginhandle)
@@ -355,10 +361,10 @@ def listContent(catalog, url, page, parent, export=False):
             if contentType == 'season': 
                 name = formatSeason(infoLabels, parent)
                 if library not in parent and parent != '':
-                    curl = 'SeriesASIN=%s&ContentType=TVEpisode&RollUpToSeason=T&IncludeBlackList=T%s' % (infoLabels['SeriesAsin'], OfferGroup)
+                    curl = 'SeriesASIN=%s&ContentType=TVEpisode,TVSeason&RollUpToSeason=T&IncludeBlackList=T%s' % (infoLabels['SeriesAsin'], OfferGroup)
                     cm.insert(0, (getString(30182), 'XBMC.Container.Update(%s?mode=listContent&cat=Browse&url=%s&page=1)' % (sys.argv[0], urllib.quote_plus(curl))))
             if export:
-                url = re.sub(r'(?i)contentype=\w+', 'ContentType=TVEpisode', url)
+                url = re.sub(r'(?i)contenttype=\w+', 'ContentType=TVEpisode', url)
                 url = re.sub(r'(?i)&rollupto\w+=\w+', '', url)
                 listContent('Browse', url, 1, '', export)
             else:
@@ -793,23 +799,20 @@ def PlayVideo(name, asin, adultstr, trailer, selbitrate):
         else: waitsec = waitprepin
         xbmc.sleep(int(waitsec))
         Input(keys=pin)
-        waitsec = 0
-        if fullscr: xbmc.sleep(waitpin)
+        waitsec = waitpin
     
     if fullscr:
         xbmc.sleep(int(waitsec))
-        if isAdult == 0: pininput = True
-        if pininput:
-            if browser != 0:
-                Input(keys='f')
-            else:
-                Input(mousex=-1,mousey=350,click=2)
-                xbmc.sleep(500)
-                Input(mousex=9999,mousey=350)
+        if browser != 0:
+            Input(keys='f')
+        else:
+            Input(mousex=-1,mousey=350,click=2)
+            xbmc.sleep(500)
+            Input(mousex=9999,mousey=350)
             
     Input(mousex=9999,mousey=-1)
 
-    if hasExtRC and not useIntRC: return
+    if hasExtRC: return
     
     myWindow = window()
     myWindow.wait(process)
@@ -851,8 +854,8 @@ def check_output(*popenargs, **kwargs):
             c = popenargs[0]
             e = subprocess.CalledProcessError(retcode, c)
             e.output = str(out) + str(err)
-            Log(e)
-    return out
+            Log(e, xbmc.LOGERROR)
+    return out.strip()
   
 def getCmdLine(videoUrl, amazonUrl):
     scr_path = addon.getSetting("scr_path")
@@ -1011,7 +1014,7 @@ def getFlashVars(url):
     values['asin']          = url.split('/')[-1]
     values['deviceTypeID']  = 'AOAGZA014O5RE'
     values['userAgent']     = UserAgent
-    values['deviceID']      = hmac.new(UserAgent, genID(), hashlib.sha224).hexdigest()
+    values['deviceID']      = genID()
     rand = 'onWebToken_' + str(random.randint(0,484))
     pltoken = getURL(BaseUrl + "/gp/video/streaming/player-token.json?callback=" + rand, useCookie=cookie)
     try:
@@ -1063,11 +1066,11 @@ def Error(data):
         return '%s (%s) ' %(data['message'], code)
         
 def genID():
-    id = addon.getSetting("GenDeviceID")
-    if not id:
-        id = makeGUID()
-        addon.setSetting("GenDeviceID", id)
-    return id
+    guid = addon.getSetting("GenDeviceID")
+    if not guid or len(guid) != 56: 
+        guid = hmac.new(UserAgent, uuid.uuid4().bytes, hashlib.sha224).hexdigest()
+        addon.setSetting("GenDeviceID", guid)
+    return guid
 
 def MechanizeLogin():
     cj = cookielib.LWPCookieJar()
@@ -1136,35 +1139,32 @@ def setLoginPW():
     return False
         
 def encode(data):
-    k = triple_des((str(uuid.getnode())*2)[0:24], CBC, "\0\0\0\0\0\0\0\0", padmode=PAD_PKCS5)
+    k = triple_des(uuid.uuid5(uuid.NAMESPACE_DNS, getmac()).bytes, CBC, "\0\0\0\0\0\0\0\0", padmode=PAD_PKCS5)
     d = k.encrypt(data)
     return base64.b64encode(d)
 
 def decode(data):
     if not data: return ''
-    k = triple_des((str(uuid.getnode())*2)[0:24], CBC, "\0\0\0\0\0\0\0\0", padmode=PAD_PKCS5)
+    k = triple_des(uuid.uuid5(uuid.NAMESPACE_DNS, getmac()).bytes, CBC, "\0\0\0\0\0\0\0\0", padmode=PAD_PKCS5)
     d = k.decrypt(base64.b64decode(data))
     return d
-
+    
+def getmac():
+    mac = uuid.getnode()
+    if (mac >> 40)%2:
+        return node()
+    return str(mac)
+    
 def remLoginData():
     if os.path.isfile(CookieFile):
         os.remove(CookieFile)
     addon.setSetting('login_name', '')
     addon.setSetting('login_pass', '')
     
-def makeGUID():
-    import random
-    guid = ''
-    for i in range(3):
-        number = "%X" % (int( ( 1.0 + random.random() ) * 0x10000) | 0)
-        guid += number[1:]    
-    return hmac.new(UserAgent, guid, hashlib.sha224).hexdigest()
-
 def scrapAsins(url, cj):
     asins = []
     url = BaseUrl + url
     content = getURL(url, useCookie=cj, UA=mUserAgent)
-    #asins += re.compile('data-asin="(.+?)"', re.DOTALL).findall(content)
     asins += re.compile('gp/product/(.+?)/', re.DOTALL).findall(content)
     return ','.join(asins)
     

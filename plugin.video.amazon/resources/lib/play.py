@@ -59,7 +59,8 @@ def PLAYVIDEO():
 
     if playMethod == 2 or platform == osAndroid:
         AndroidPlayback(common.args.asin, trailer)
-        return
+    elif playMethod == 3:
+        IStreamPlayback(amazonUrl, common.args.asin, trailer)
     else:
         if common.verbLog: videoUrl += '&playerDebug=true'
         url = getCmdLine(videoUrl, amazonUrl)
@@ -73,18 +74,15 @@ def PLAYVIDEO():
         else:
             process = subprocess.Popen(url, shell=True)
         
-    if isAdult == 1 and pininput:
-        if fullscr: waitsec = waitsec*0.75
-        else: waitsec = waitprepin
-        xbmc.sleep(int(waitsec))
-        Input(keys=pin)
-        waitsec = 0
-        if fullscr: xbmc.sleep(waitpin)
+        if isAdult == 1 and pininput:
+            if fullscr: waitsec = waitsec*0.75
+            else: waitsec = waitprepin
+            xbmc.sleep(int(waitsec))
+            Input(keys=pin)
+            waitsec = waitpin
     
-    if fullscr:
-        xbmc.sleep(int(waitsec))
-        if isAdult == 0: pininput = True
-        if pininput:
+        if fullscr:
+            xbmc.sleep(int(waitsec))
             if browser != 0:
                 Input(keys='f')
             else:
@@ -92,12 +90,12 @@ def PLAYVIDEO():
                 xbmc.sleep(500)
                 Input(mousex=9999,mousey=350)
             
-    Input(mousex=9999,mousey=-1)
+        Input(mousex=9999,mousey=-1)
     
-    if hasExtRC: return
+        if hasExtRC: return
 
-    myWindow = window()
-    myWindow.wait(process)
+        myWindow = window()
+        myWindow.wait(process)
 
 def AndroidPlayback(asin, trailer):
     manu = ''
@@ -126,6 +124,27 @@ def AndroidPlayback(asin, trailer):
         common.Log('Properties:\n' + check_output(['sh', '-c', 'getprop | grep -iE "(ro.product|ro.build|google)"']))
     xbmc.executebuiltin('StartAndroidActivity("%s", "%s", "", "%s")' % (pkg, act, url))
 
+def IStreamPlayback(url, asin, trailer):
+    values = getFlashVars(url)
+    if not values:
+        return
+
+    vMT = 'Feature'
+    if trailer == '1':
+        vMT = 'Trailer'
+        
+    title, plot, mpd = getStreams(*getUrldata('catalog/GetPlaybackResources', values, extra=True, vMT=vMT, opt='&titleDecorationScheme=primary-content'), retmpd=True)
+    licURL = getUrldata('catalog/GetPlaybackResources', values, extra=True, vMT=vMT, dRes='Widevine2License', retURL=True)
+    common.Log(mpd)
+    listitem = xbmcgui.ListItem(path=mpd)
+    
+    if trailer == '1':
+        if title: listitem.setInfo('video', { 'Title': title + ' (Trailer)' })
+        if plot: listitem.setInfo('video', { 'Plot': plot })
+    listitem.setProperty('inputstream.mpd.license_type', 'com.widevine.alpha')
+    listitem.setProperty('inputstream.mpd.license_key', licURL)
+    xbmcplugin.setResolvedUrl(pluginhandle, True, listitem=listitem)
+
 def check_output(*popenargs, **kwargs):
     p = subprocess.Popen(stdout=subprocess.PIPE, stderr=subprocess.STDOUT, *popenargs, **kwargs)
     out, err = p.communicate()
@@ -136,7 +155,7 @@ def check_output(*popenargs, **kwargs):
             c = popenargs[0]
             e = subprocess.CalledProcessError(retcode, c)
             e.output = str(out) + str(err)
-            Log(e, xbmc.LOGERROR)
+            common.Log(e, xbmc.LOGERROR)
     return out.strip()
 
 def getCmdLine(videoUrl, amazonUrl):
@@ -247,12 +266,18 @@ def getStartupInfo():
     si.dwFlags = subprocess.STARTF_USESHOWWINDOW
     return si
     
-def getStreams(suc, data):
+def getStreams(suc, data, retmpd=False):
     if not suc:
         return ''
+
+    title = plot = False
+    if data.has_key('catalogMetadata'):
+        title = data['catalogMetadata']['catalog']['title']
+        plot = data['catalogMetadata']['catalog']['synopsis']
         
     for cdn in data['audioVideoUrls']['avCdnUrlSets']:
         for urlset in cdn['avUrlInfoList']:
+            if retmpd: return title, plot, urlset['url']
             data = common.getURL(urlset['url'])
             fps_string = re.compile('frameRate="([^"]*)').findall(data)[0]
             fr = round(eval(fps_string + '.0'), 3)
@@ -306,7 +331,7 @@ def getFlashVars(url):
         return False
     return values
     
-def getUrldata(mode, values, format='json', devicetypeid=False, version=1, firmware='1', opt='', extra=False, useCookie=False):
+def getUrldata(mode, values, format='json', devicetypeid=False, version=1, firmware='1', opt='', extra=False, useCookie=False, retURL=False, vMT='Feature', dRes='AudioVideoUrls%2CCatalogMetadata'):
     if not devicetypeid:
         devicetypeid = values['deviceTypeID']
     url  = common.ATV_URL + '/cdp/' + mode
@@ -321,7 +346,11 @@ def getUrldata(mode, values, format='json', devicetypeid=False, version=1, firmw
     url += '&version=' + str(version)
     url += opt
     if extra:
-        url += '&resourceUsage=ImmediateConsumption&videoMaterialType=Feature&consumptionType=Streaming&desiredResources=AudioVideoUrls&deviceDrmOverride=CENC&deviceStreamingTechnologyOverride=DASH&deviceProtocolOverride=Http&deviceBitrateAdaptationsOverride=CVBR%2CCBR&audioTrackId=all'
+        url += '&resourceUsage=ImmediateConsumption&consumptionType=Streaming&deviceDrmOverride=CENC&deviceStreamingTechnologyOverride=DASH&deviceProtocolOverride=Http&audioTrackId=all'
+        url += '&videoMaterialType=' + vMT
+        url += '&desiredResources=' + dRes
+    if retURL:
+        return url
     data = common.getURL(url, common.ATV_URL.split('//')[1], useCookie=useCookie)
     if data:
         jsondata = json.loads(data)
@@ -330,7 +359,7 @@ def getUrldata(mode, values, format='json', devicetypeid=False, version=1, firmw
             return False, Error(jsondata['error'])
         return True, jsondata
     return False, 'HTTP Fehler'
-    
+
 def Error(data):
     code = data['errorCode']
     common.Log('%s (%s) ' %(data['message'], code), xbmc.LOGERROR)

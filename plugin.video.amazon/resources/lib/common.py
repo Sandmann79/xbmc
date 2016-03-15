@@ -157,12 +157,16 @@ def addVideo(name,asin,poster=False,fanart=False,infoLabels=False,totalItems=0,c
         liz=xbmcgui.ListItem(name)
     if fanart == '' or fanart == None or fanart == na: fanart = def_fanart
     liz.setProperty('fanart_image',fanart)
-    liz.setProperty('IsPlayable', 'false')
+    
+    if int(addon.getSetting("playmethod")) == 3: liz.setProperty('IsPlayable', 'true')
+    else: liz.setProperty('IsPlayable', 'false')
+    
     if not cm:
         cm = []
     cm.insert(0, (getString(30101), 'Action(ToggleWatched)') )
+    
     if isHD:
-        liz.addStreamInfo('video', { 'width':1280 ,'height' : 720 })
+        liz.addStreamInfo('video', { 'width':1920 ,'height' : 1080 })
     else:
         liz.addStreamInfo('video', { 'width':720 ,'height' : 480 })
     if infoLabels['AudioChannels']: liz.addStreamInfo('audio', { 'codec': 'ac3' ,'channels': int(infoLabels['AudioChannels']) })

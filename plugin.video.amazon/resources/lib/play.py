@@ -29,7 +29,7 @@ if xbmc.getCondVisibility('system.platform.windows'): platform = osWindows
 if xbmc.getCondVisibility('system.platform.linux'): platform = osLinux
 if xbmc.getCondVisibility('system.platform.osx'): platform = osOSX
 if xbmc.getCondVisibility('system.platform.android'): platform = osAndroid
-if xbmc.getCondVisibility('System.Platform.Linux.RaspberryPi'): platform = 0
+#if xbmc.getCondVisibility('System.Platform.Linux.RaspberryPi'): platform = 0
 
 hasExtRC = xbmc.getCondVisibility('System.HasAddon(script.chromium_remotecontrol)') == True
 useIntRC = addon.getSetting("remotectrl") == 'true'
@@ -38,9 +38,6 @@ browser = int(addon.getSetting("browser"))
 verbLog = addon.getSetting('logging') == 'true'
  
 def PLAYVIDEO():
-    if not platform:
-        Dialog.notification(common.__plugin__, 'Betriebssytem wird von diesem Addon nicht unterstützt', xbmcgui.NOTIFICATION_ERROR)
-        return
     amazonUrl = common.BASE_URL + "/dp/" + common.args.asin
     waitsec = int(addon.getSetting("clickwait")) * 1000
     pin = addon.getSetting("pin")

@@ -20,7 +20,7 @@
 </addon> 
 <addon id="plugin.video.amazon" 
        name="Amazon" 
-       version="1.6.2" 
+       version="1.6.3" 
        provider-name="Sandmann79 + BlueCop + Romans I XVI"> 
   <requires> 
     <import addon="xbmc.python" version="2.1.0"/> 
@@ -46,7 +46,7 @@
 </addon> 
 <addon id="plugin.video.amazon-test" 
        name="Amazon VOD" 
-       version="0.1.6" 
+       version="0.1.7" 
        provider-name="Sandmann79"> 
   <requires> 
     <import addon="xbmc.python" version="2.1.0"/> 

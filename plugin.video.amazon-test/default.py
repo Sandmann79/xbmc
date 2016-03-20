@@ -48,11 +48,11 @@ if xbmc.getCondVisibility('system.platform.windows'): platform = osWindows
 if xbmc.getCondVisibility('system.platform.linux'): platform = osLinux
 if xbmc.getCondVisibility('system.platform.osx'): platform = osOSX
 if xbmc.getCondVisibility('system.platform.android'): platform = osAndroid
-if xbmc.getCondVisibility('System.Platform.Linux.RaspberryPi'): platform = 0
+#if xbmc.getCondVisibility('System.Platform.Linux.RaspberryPi'): platform = 0
 hasExtRC = xbmc.getCondVisibility('System.HasAddon(script.chromium_remotecontrol)') == True
 ProfilPath = xbmc.translatePath('special://masterprofile/').decode('utf-8')
 PluginPath = addon.getAddonInfo('path').decode('utf-8')
-DataPath = xbmc.translatePath('special://profile/addon_data/' + addon.getAddonInfo('id')).decode('utf-8')
+DataPath = xbmc.translatePath(addon.getAddonInfo('profile')).decode('utf-8')
 HomePath = xbmc.translatePath('special://home').decode('utf-8')
 if not os.path.exists(os.path.join(DataPath, 'settings.xml')): addon.openSettings()
 playMethod = int(addon.getSetting("playmethod"))
@@ -319,8 +319,6 @@ def listCategories(node, root=None):
             mode = 'listContent'
             opt = 'listcat'
             url = content.replace('\n','').replace("\n",'')
-            if '=tvepisode&' in url.lower() and 'rolluptoseason' in url.lower():
-                url = re.sub('(?i)ContentType=\w+', 'ContentType=tvepisode,tvseason', url)
         if mode:
             addDir(title, mode, url, opt=opt)
     xbmcplugin.endOfDirectory(pluginhandle)
@@ -329,8 +327,8 @@ def listContent(catalog, url, page, parent, export=False):
     oldurl = url
     page = int(page)
     ResPage = MaxResults
-    if export: ResPage = 250
-    url += '&NumberOfResults=%s&StartIndex=%s' % (ResPage+1, (page-1)*ResPage)
+    if export: ResPage = 240
+    url += '&NumberOfResults=%s&StartIndex=%s' % (ResPage, (page-1)*ResPage)
     
     if page != 1 and not export:
         addDir(' --= %s =--' % (getString(30112) % int(page-1)), 'listContent', oldurl, page=page-1, catalog=catalog, opt=parent)
@@ -339,8 +337,16 @@ def listContent(catalog, url, page, parent, export=False):
         if 'search' in parent: Dialog.ok(__plugin__, getString(30202))
         else: xbmcplugin.endOfDirectory(pluginhandle)
         return
-    titles = titles['titles']
-    for item in titles[0:ResPage]:
+    endIndex = titles['endIndex']
+    numItems = len(titles['titles'])
+    if not titles.has_key('approximateSize'):
+        endIndex = 0
+        if numItems >= MaxResults: endIndex = 1
+    else:
+        if endIndex == 0:
+            if (page*ResPage) <= titles['approximateSize']: endIndex = 1
+
+    for item in titles['titles']:
         mode = None
         if not item.has_key('title'): continue
         contentType, infoLabels = getInfos(item, export)
@@ -372,7 +378,7 @@ def listContent(catalog, url, page, parent, export=False):
                 listContent('Browse', url, 1, '', export)
             else:
                 addDir(name, mode, url, infoLabels, cm=cm, export=export)
-    if len(titles) > ResPage:
+    if endIndex > 0:
         if export:
             listContent(catalog, oldurl, page+1, parent, export)
         else:
@@ -857,17 +863,39 @@ def IStreamPlayback(url, asin, trailer):
     if trailer == '1':
         vMT = 'Trailer'
         
-    title, plot, mpd = getStreams(*getUrldata('catalog/GetPlaybackResources', values, extra=True, vMT=vMT, opt='&titleDecorationScheme=primary-content'), retmpd=True)
+    title, plot, mpd, subs = getStreams(*getUrldata('catalog/GetPlaybackResources', values, extra=True, vMT=vMT, opt='&titleDecorationScheme=primary-content'), retmpd=True)
     licURL = getUrldata('catalog/GetPlaybackResources', values, extra=True, vMT=vMT, dRes='Widevine2License', retURL=True)
     Log(mpd)
     listitem = xbmcgui.ListItem(path=mpd)
-    
+   
     if trailer == '1':
         if title: listitem.setInfo('video', { 'Title': title + ' (Trailer)' })
         if plot: listitem.setInfo('video', { 'Plot': plot })
+    listitem.setSubtitles(subs)
     listitem.setProperty('inputstream.mpd.license_type', 'com.widevine.alpha')
     listitem.setProperty('inputstream.mpd.license_key', licURL)
     xbmcplugin.setResolvedUrl(pluginhandle, True, listitem=listitem)
+    
+def parseSubs(data):
+    subs = []
+    if addon.getSetting('subtitles') == 'false': return subs
+    
+    import codecs
+    for sub in data:
+        lang = sub['displayName'].split('(')[0].strip()
+        Log('Convert %s Subtitle' % lang)
+        file = xbmc.translatePath('special://temp/%s.srt' % lang).decode('utf-8')
+        srt = codecs.open(file, 'w', encoding='utf-8')
+        soup = BeautifulSoup(getURL(sub['url']))
+        enc = soup.originalEncoding
+        num = 0
+        for caption in soup.findAll('tt:p'):
+            num += 1
+            subtext = caption.renderContents().decode(enc).replace('<tt:br>', '\n').replace('</tt:br>', '')
+            srt.write(u'%s\n%s --> %s\n%s\n\n' % (num, caption['begin'], caption['end'], subtext))
+        srt.close()
+        subs.append(file)
+    return subs
 
 def check_output(*popenargs, **kwargs):
     p = subprocess.Popen(stdout=subprocess.PIPE, stderr=subprocess.STDOUT, *popenargs, **kwargs)
@@ -994,6 +1022,7 @@ def getStreams(suc, data, retmpd=False):
     if not suc:
         return ''
 
+    subUrls = parseSubs(data['subtitleUrls'])
     title = plot = False
     if data.has_key('catalogMetadata'):
         title = data['catalogMetadata']['catalog']['title']
@@ -1001,7 +1030,7 @@ def getStreams(suc, data, retmpd=False):
         
     for cdn in data['audioVideoUrls']['avCdnUrlSets']:
         for urlset in cdn['avUrlInfoList']:
-            if retmpd: return title, plot, urlset['url']
+            if retmpd: return title, plot, urlset['url'], subUrls
             data = getURL(urlset['url'])
             fps_string = re.compile('frameRate="([^"]*)').findall(data)[0]
             fr = round(eval(fps_string + '.0'), 3)
@@ -1055,7 +1084,7 @@ def getFlashVars(url):
         return False
     return values
     
-def getUrldata(mode, values, format='json', devicetypeid=False, version=1, firmware='1', opt='', extra=False, useCookie=False, retURL=False, vMT='Feature', dRes='AudioVideoUrls%2CCatalogMetadata'):
+def getUrldata(mode, values, format='json', devicetypeid=False, version=1, firmware='1', opt='', extra=False, useCookie=False, retURL=False, vMT='Feature', dRes='AudioVideoUrls%2CCatalogMetadata%2CSubtitleUrls'):
     if not devicetypeid:
         devicetypeid = values['deviceTypeID']
     url  = ATVUrl + '/cdp/' + mode
@@ -1462,6 +1491,7 @@ dbFile = os.path.join(DataPath, 'art.db')
 db = sqlite.connect(dbFile)
 db.text_factory = str
 createDB()
+
 if not os.path.exists(menuFile):
     menuDb = sqlite.connect(menuFile)
     menuDb.text_factory = str

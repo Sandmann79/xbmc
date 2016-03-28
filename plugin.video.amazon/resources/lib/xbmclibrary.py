@@ -5,6 +5,7 @@ import movies as moviesDB
 import tv as tvDB
 import listtv
 import listmovie
+import xbmcvfs
 
 from BeautifulSoup import BeautifulStoneSoup
 from BeautifulSoup import BeautifulSoup , Tag, NavigableString
@@ -16,6 +17,7 @@ urllib = common.urllib
 sys = common.sys
 xbmcgui = common.xbmcgui
 os = common.os
+xbmcvfs = common.xbmcvfs
 Dialog = xbmcgui.Dialog()
 
 if (common.addon.getSetting('enablelibraryfolder') == 'true'):
@@ -33,15 +35,14 @@ def SaveFile(filename, data, dir=False):
         filename = common.cleanName(filename)
         filename = os.path.join(dir, filename)
     filename = common.cleanName(filename, file=False)
-    file = open(filename, 'w')
+    file = xbmcvfs.File(filename, 'w')
     file.write(data)
     file.close()
 
 def CreateDirectory(dir_path):
     dir_path = common.cleanName(dir_path.strip(), file=False)
-    if not os.path.exists(dir_path):
-        os.makedirs(dir_path)
-        return True
+    if not xbmcvfs.exists(dir_path):
+        return xbmcvfs.mkdir(dir_path)
     return False
 
 def SetupLibrary():
@@ -78,8 +79,8 @@ def streamDetails(Info, language='ger', hasSubtitles=False):
     fileinfo += '<codec>h264</codec>'
     fileinfo += '<durationinseconds>%s</durationinseconds>' % Info['Duration']
     if Info['isHD'] == True:
-        fileinfo += '<height>720</height>'
-        fileinfo += '<width>1280</width>'
+        fileinfo += '<height>1080</height>'
+        fileinfo += '<width>1920</width>'
     else:
         fileinfo += '<height>480</height>'
         fileinfo += '<width>720</width>'        
@@ -172,16 +173,15 @@ def EXPORT_EPISODE(asin=False, makeNFO=True, dispnotif = True):
             SaveFile(nfo_file, nfo, seasonpath)
 
 def SetupAmazonLibrary():
-    common.Log('Trying to add Amazon source paths...')
-    source_path = os.path.join(common.profilpath, 'sources.xml')
+    source_path = xbmc.translatePath('special://profile/sources.xml').decode('utf-8')
     source_added = False
     source = {'Amazon Movies': MOVIE_PATH, 'Amazon TV': TV_SHOWS_PATH}
     
-    try:
-        file = open(source_path)
+    if xbmcvfs.exists(source_path):
+        file = xbmcvfs.File(source_path)
         soup = BeautifulSoup(file)
         file.close()
-    except:
+    else:
         subtags = ['programs', 'video', 'music', 'pictures', 'files']
         soup = BeautifulSoup('<sources></sources>')
         root = soup.sources

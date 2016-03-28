@@ -14,8 +14,7 @@ xbmc = common.xbmc
 xbmcgui = common.xbmcgui
 re = common.re
 json = common.json
-os = common.os
-
+xbmcvfs = common.xbmcvfs
 ################################ Movie db
 #MAX = int(common.addon.getSetting("mov_perpage"))
 MOV_TOTAL = common.addon.getSetting("MoviesTotal")
@@ -329,10 +328,11 @@ def ASIN_ADD(title):
         titelnum += addMoviedb(moviedata)
     return titelnum
 
-if not os.path.exists(common.MovieDBfile):
-    MovieDB = sqlite.connect(common.MovieDBfile)
+MovieDBfile = common.getDBlocation('movie')
+if not xbmcvfs.exists(MovieDBfile):
+    MovieDB = sqlite.connect(MovieDBfile)
     MovieDB.text_factory = str
     createMoviedb()
 else:
-    MovieDB = sqlite.connect(common.MovieDBfile)
+    MovieDB = sqlite.connect(MovieDBfile)
     MovieDB.text_factory = str

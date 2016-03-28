@@ -45,7 +45,7 @@
     <category label="30070">
         <setting label="30060" type="lsep"/>
         <setting id="enablelibraryfolder" type="bool" label="30061" default="false" />
-        <setting id="customlibraryfolder" type="text" label="30062" enable="eq(-1,true)" default="special://profile/addon_data/plugin.video.amazon" subsetting="true" />
+        <setting id="customlibraryfolder" type="folder" label="30062" enable="eq(-1,true)" default="special://profile/addon_data/plugin.video.amazon" source="auto" option="writeable" subsetting="true" />
         <setting label="Fanart" type="lsep"/>
         <setting id="tmdb_art" type="enum" lvalues="30050|30051|30052" label="30016" default="1"/>
         <setting id="tvdb_art" type="enum" lvalues="30050|30053|30054|30056" label="30017" default="1"/>

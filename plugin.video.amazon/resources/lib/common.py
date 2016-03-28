@@ -21,15 +21,15 @@ import hmac
 import time
 import hashlib
 import json
+import xbmcvfs
 
 addon = xbmcaddon.Addon()
 __plugin__ = addon.getAddonInfo('name')
 __authors__ = addon.getAddonInfo('author')
 __credits__ = ""
 __version__ = addon.getAddonInfo('version')
-profilpath = xbmc.translatePath('special://masterprofile/').decode('utf-8')
 pluginpath = addon.getAddonInfo('path').decode('utf-8')
-pldatapath = xbmc.translatePath('special://profile/addon_data/' + addon.getAddonInfo('id')).decode('utf-8')
+pldatapath = xbmc.translatePath(addon.getAddonInfo('profile')).decode('utf-8')
 homepath = xbmc.translatePath('special://home').decode('utf-8')
 dbplugin = 'script.module.amazon.database'
 dbpath = os.path.join(homepath, 'addons', dbplugin, 'lib')
@@ -101,7 +101,7 @@ def WriteLog(data, fn='', mode='a'):
     fn = __plugin__ + fn + '.log'
     path = os.path.join(homepath, fn)
     if type(data) == type(unicode()): data = data.encode('utf-8')
-    file = open(path, mode)
+    file = xbmcvfs.File(path, mode)
     data = time.strftime('[%d.%m/%H:%M:%S] ', time.localtime()) + data.__str__()
     file.write(data)
     file.write('\n')
@@ -115,7 +115,7 @@ def Log(msg, level=xbmc.LOGNOTICE):
     xbmc.log('[%s] %s' % (__plugin__, msg.__str__()), level)
     
 def SaveFile(path, data):
-    file = open(path,'w')
+    file = xbmcvfs.File(path,'w')
     file.write(data)
     file.close()
 
@@ -126,58 +126,53 @@ def androidsig(url):
 
 def addDir(name, mode, sitemode, url='', thumb='', fanart='', infoLabels=False, totalItems=0, cm=False ,page=1,isHD=False, options=''):
     u = '%s?url=<%s>&mode=<%s>&sitemode=<%s>&name=<%s>&page=<%s>&opt=<%s>' % (sys.argv[0], urllib.quote_plus(url), mode, sitemode, urllib.quote_plus(name), urllib.quote_plus(str(page)), options)
-    try:fanart = args.fanart
-    except:pass
+
     if fanart == '' or fanart == None or fanart == na: fanart = def_fanart
-    else: u += '&fanart=<%s>' % urllib.quote_plus(fanart)
-    if thumb == '' or thumb == None:
-        try:thumb = args.thumb
-        except:thumb = def_fanart
-    else:
-        u += '&thumb=<%s>' % urllib.quote_plus(thumb)
-    item=xbmcgui.ListItem(name, iconImage="DefaultFolder.png", thumbnailImage=thumb)
+    if thumb == '' or thumb == None: thumb = def_fanart
+
+    item=xbmcgui.ListItem(name, thumbnailImage=thumb)
     item.setProperty('fanart_image',fanart)
     item.setProperty('IsPlayable', 'false')
-    try: 
-        item.setProperty('TotalSeasons', str(infoLabels['TotalSeasons']))
-    except: pass
+    item.setArt({'Poster': thumb})
+    
     if infoLabels:
         item.setInfo(type='Video', infoLabels=infoLabels)
+        if infoLabels.has_key('TotalSeasons'): item.setProperty('TotalSeasons', str(infoLabels['TotalSeasons']))
     if cm:
         item.addContextMenuItems( cm, replaceItems=False  )
     xbmcplugin.addDirectoryItem(handle=pluginhandle,url=u,listitem=item,isFolder=True,totalItems=totalItems)
 
-def addVideo(name,asin,poster=False,fanart=False,infoLabels=False,totalItems=0,cm=False,trailer=False,isAdult=False,isHD=False):
-    if not infoLabels:
-        infoLabels={ "Title": name}
+def addVideo(name,asin,poster=None,fanart=None,infoLabels=False,totalItems=0,cm=False,trailer=False,isAdult=False,isHD=False):
     u  = '%s?asin=<%s>&mode=<play>&name=<%s>&sitemode=<PLAYVIDEO>&adult=<%s>' % (sys.argv[0], asin, urllib.quote_plus(name), str(isAdult))
-    if poster:
-        liz=xbmcgui.ListItem(name, thumbnailImage=poster)
-    else:
-        liz=xbmcgui.ListItem(name)
-    if fanart == '' or fanart == None or fanart == na: fanart = def_fanart
-    liz.setProperty('fanart_image',fanart)
-    
-    if int(addon.getSetting("playmethod")) == 3: liz.setProperty('IsPlayable', 'true')
-    else: liz.setProperty('IsPlayable', 'false')
-    
-    if not cm:
+    if not infoLabels:
+        infoLabels={"Title": name}
+    if fanart == '' or fanart == None or fanart == na:
+        fanart = def_fanart
+    if not cm: 
         cm = []
+
+    item=xbmcgui.ListItem(name, thumbnailImage=poster)
+    item.setProperty('fanart_image',fanart)
     cm.insert(0, (getString(30101), 'Action(ToggleWatched)') )
     
+    if int(addon.getSetting("playmethod")) == 3:
+        item.setProperty('IsPlayable', 'true')
+    else: 
+        item.setProperty('IsPlayable', 'false')
+   
     if isHD:
-        liz.addStreamInfo('video', { 'width':1920 ,'height' : 1080 })
+        item.addStreamInfo('video', { 'width':1920 ,'height' : 1080 })
     else:
-        liz.addStreamInfo('video', { 'width':720 ,'height' : 480 })
-    if infoLabels['AudioChannels']: liz.addStreamInfo('audio', { 'codec': 'ac3' ,'channels': int(infoLabels['AudioChannels']) })
+        item.addStreamInfo('video', { 'width':720 ,'height' : 480 })
+    if infoLabels['AudioChannels']: item.addStreamInfo('audio', { 'codec': 'ac3' ,'channels': int(infoLabels['AudioChannels']) })
     if trailer:
         infoLabels['Trailer'] = u + '&trailer=<1>&selbitrate=<0>'
     u += '&trailer=<0>&selbitrate=<0>'
-    if infoLabels.has_key('Poster'): liz.setArt({'tvshow.poster': infoLabels['Poster']})
-    else: liz.setArt({'poster': poster})
-    liz.setInfo(type='Video', infoLabels=infoLabels)
-    liz.addContextMenuItems( cm , replaceItems=False )
-    xbmcplugin.addDirectoryItem(handle=pluginhandle,url=u,listitem=liz,isFolder=False,totalItems=totalItems)     
+    if infoLabels.has_key('Poster'): item.setArt({'tvshow.poster': infoLabels['Poster']})
+    else: item.setArt({'Poster': poster})
+    item.addContextMenuItems(cm, replaceItems=False)
+    item.setInfo(type='Video', infoLabels=infoLabels)
+    xbmcplugin.addDirectoryItem(handle=pluginhandle,url=u,listitem=item,isFolder=False,totalItems=totalItems)     
 
 def addText(name):
     item = xbmcgui.ListItem(name)
@@ -215,7 +210,7 @@ def gen_id():
 
 def mechanizeLogin():
     cj = cookielib.LWPCookieJar()
-    if os.path.isfile(COOKIEFILE):
+    if xbmcvfs.exists(COOKIEFILE):
         cj.load(COOKIEFILE, ignore_discard=True, ignore_expires=True)
         return cj
     Log('Login')
@@ -244,14 +239,12 @@ def dologin():
             password = setLoginPW()
             if password: changed = True
     if password:
-        if os.path.isfile(COOKIEFILE):
-            os.remove(COOKIEFILE)
+        if xbmcvfs.exists(COOKIEFILE):
+            xbmcvfs.delete(COOKIEFILE)
         cj = cookielib.LWPCookieJar()
         br = mechanize.Browser()  
         br.set_handle_robots(False)
         br.set_cookiejar(cj)
-        #br.set_debug_http(True)
-        #br.set_debug_responses(True)
         br.addheaders = [('User-agent', UserAgent)]  
         sign_in = br.open(BASE_URL + "/gp/aw/si.html") 
         br.select_form(name="signIn")  
@@ -359,7 +352,7 @@ def getString(id, enc=False):
     return addon.getLocalizedString(id)
 
 def remLoginData():
-    if os.path.isfile(COOKIEFILE): os.remove(COOKIEFILE)
+    if xbmcvfs.exists(COOKIEFILE): xbmcvfs.delete(COOKIEFILE)
     addon.setSetting('login_name', '')
     addon.setSetting('login_pass', '')
 
@@ -474,36 +467,48 @@ def updateRunning():
             return True
     return False
             
-def copyDB(ask=False):
+def copyDB(source,dest,ask=False):
     import shutil
     if ask:
         if not Dialog.yesno(getString(30193), getString(30194)):
-            shutil.copystat(org_tvDBfile, tvDBfile)
-            shutil.copystat(org_MovieDBfile, MovieDBfile)
+            shutil.copystat(source['tv'], dest['tv'])
+            shutil.copystat(source['movie'], dest['movie'])
             return
-    import tv, movies
-    tv.tvDB.close()
-    movies.MovieDB.close()
-    shutil.copy2(org_tvDBfile, tvDBfile)
-    shutil.copy2(org_MovieDBfile, MovieDBfile)
-    
-org_tvDBfile = os.path.join(dbpath, 'tv.db')
-org_MovieDBfile = os.path.join(dbpath, 'movies.db')
-if addon.getSetting('customdbfolder') == 'true': 
-    dbpath = xbmc.translatePath(addon.getSetting('dbfolder')).decode('utf-8')
-tvDBfile = os.path.join(dbpath, 'tv.db')
-MovieDBfile = os.path.join(dbpath, 'movies.db')
+    shutil.copy2(source['tv'], dest['tv'])
+    shutil.copy2(source['movie'], dest['movie'])
 
-if addon.getSetting('customdbfolder') == 'true':
-    if os.path.isfile(org_tvDBfile) and os.path.isfile(org_MovieDBfile):
-        if not os.path.isdir(dbpath): 
-            os.makedirs(dbpath)
-        if not os.path.isfile(tvDBfile) or not os.path.isfile(MovieDBfile):
-            copyDB()
-        org_fileacc = int(os.path.getmtime(org_tvDBfile) + os.path.getmtime(org_MovieDBfile))
-        cur_fileacc = int(os.path.getmtime(tvDBfile) + os.path.getmtime(MovieDBfile))
+def getDBlocation(retvar):
+    custdb = addon.getSetting('customdbfolder') == 'true'
+    old_dbpath = xbmc.translatePath(addon.getSetting('old_dbfolder')).decode('utf-8')
+    cur_dbpath = dbpath
+    
+    if not old_dbpath: 
+        old_dbpath = cur_dbpath
+    if custdb: 
+        cur_dbpath = xbmc.translatePath(addon.getSetting('dbfolder')).decode('utf-8')
+    else:
+        addon.setSetting('dbfolder', dbpath)
+        
+    orgDBfile={'tv':os.path.join(dbpath, 'tv.db'), 'movie':os.path.join(dbpath, 'movies.db')}
+    oldDBfile={'tv':os.path.join(old_dbpath, 'tv.db'), 'movie':os.path.join(old_dbpath, 'movies.db')}
+    DBfile={'tv':os.path.join(cur_dbpath, 'tv.db'), 'movie':os.path.join(cur_dbpath, 'movies.db')}
+
+    if old_dbpath != cur_dbpath:
+        Log('DBPath changed')
+        if xbmcvfs.exists(oldDBfile['tv']) and xbmcvfs.exists(oldDBfile['movie']):
+            if not xbmcvfs.exists(cur_dbpath): 
+                xbmcvfs.mkdir(cur_dbpath)
+            if not xbmcvfs.exists(DBfile['tv']) or not xbmcvfs.exists(DBfile['movie']):
+                copyDB(oldDBfile, DBfile)
+        addon.setSetting('old_dbfolder', cur_dbpath)
+    
+    if custdb:
+        org_fileacc = int(xbmcvfs.Stat(orgDBfile['tv']).st_mtime() + xbmcvfs.Stat(orgDBfile['movie']).st_mtime())
+        cur_fileacc = int(xbmcvfs.Stat(DBfile['tv']).st_mtime() + xbmcvfs.Stat(DBfile['movie']).st_mtime())
         if org_fileacc > cur_fileacc:
-            copyDB(True)
+            copyDB(orgDBfile, DBfile, True)
+    
+    return DBfile[retvar]
 
 urlargs =  urllib.unquote_plus(sys.argv[2][1:].replace('&', ', ')).replace('<','"').replace('>','"')
 Log('Args: %s' % urlargs)

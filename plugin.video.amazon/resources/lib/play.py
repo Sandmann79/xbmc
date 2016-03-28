@@ -18,6 +18,7 @@ addon = common.addon
 os = common.os
 hashlib = common.hashlib
 time = common.time
+xbmcvfs = common.xbmcvfs
 Dialog = xbmcgui.Dialog()
 
 platform = 0
@@ -133,14 +134,15 @@ def IStreamPlayback(url, asin, trailer):
     title, plot, mpd, subs = getStreams(*getUrldata('catalog/GetPlaybackResources', values, extra=True, vMT=vMT, opt='&titleDecorationScheme=primary-content'), retmpd=True)
     licURL = getUrldata('catalog/GetPlaybackResources', values, extra=True, vMT=vMT, dRes='Widevine2License', retURL=True)
     common.Log(mpd)
-    listitem = xbmcgui.ListItem(path=mpd)
     
+    listitem = xbmcgui.ListItem(path=mpd)
     if trailer == '1':
         if title: listitem.setInfo('video', { 'Title': title + ' (Trailer)' })
         if plot: listitem.setInfo('video', { 'Plot': plot })
     listitem.setSubtitles(subs)
     listitem.setProperty('inputstream.mpd.license_type', 'com.widevine.alpha')
     listitem.setProperty('inputstream.mpd.license_key', licURL)
+    listitem.setProperty('inputstreamaddon', 'inputstream.mpd')
     xbmcplugin.setResolvedUrl(pluginhandle, True, listitem=listitem)
 
 def parseSubs(data):
@@ -188,7 +190,7 @@ def getCmdLine(videoUrl, amazonUrl):
     cust_br = addon.getSetting("cust_path") == 'true'
     
     if playMethod == 1:
-        if not os.path.exists(scr_path): return ''
+        if not xbmcvfs.exists(scr_path): return ''
         return scr_path + ' ' + scr_param.replace('{f}', getPlaybackInfo(amazonUrl)).replace('{u}', videoUrl)
 
     os_paths = [None, ('C:\\Program Files\\', 'C:\\Program Files (x86)\\'), ('/usr/bin/', '/usr/local/bin/'), 'open -a ']
@@ -205,13 +207,13 @@ def getCmdLine(videoUrl, amazonUrl):
     if platform != osOSX and not cust_br:
         for path in os_paths[platform]:
             for file in br_config[browser][0][platform]:
-                if os.path.exists(path+file): 
+                if xbmcvfs.exists(os.path.join(path, file)):
                     br_path = path + file
                     break
                 else: common.Log('Browser %s not found' % (path+file), xbmc.LOGDEBUG)
             if br_path: break
                 
-    if not os.path.exists(br_path) and platform != osOSX: return ''
+    if not xbmcvfs.exists(br_path) and platform != osOSX: return ''
 
     br_args = br_config[browser][3]
     if kiosk: br_args += br_config[browser][1]

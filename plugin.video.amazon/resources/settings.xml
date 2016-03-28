@@ -29,7 +29,7 @@
         <setting label="30007" type="action" action="RunPlugin(plugin://plugin.video.amazon/?mode=<common>&sitemode=<remLoginData>)" option="close"/>
         <setting label="30008" type="lsep"/>
         <setting id="customdbfolder" type="bool" label="30058" default="false"/>
-        <setting id="dbfolder" type="text" label="30062" enable="eq(-1,true)" default="special://home/addons/script.module.amazon.database/lib" subsetting="true"/>
+        <setting id="dbfolder" type="folder" label="30062" enable="eq(-1,true)" default="special://home/addons/script.module.amazon.database/lib" source="auto" option="writeable" subsetting="true"/>
         <setting id="auto_update" type="enum" lvalues="30010|30018|30019|30020|30021" label="30009" default="2"/>
         <setting id="update_time" type="time" label="30013" visible="gt(-1,0)" default="00:00" subsetting="true"/>
         <setting id="wait_idle" type="bool" label="30022" visible="gt(-2,0)" default="false" subsetting="true"/>
@@ -51,7 +51,7 @@
     <category label="30070">
         <setting label="30060" type="lsep"/>
         <setting id="enablelibraryfolder" type="bool" label="30061" default="false" />
-        <setting id="customlibraryfolder" type="text" label="30062" enable="eq(-1,true)" default="special://profile/addon_data/plugin.video.amazon" subsetting="true"/>
+        <setting id="customlibraryfolder" type="folder" label="30062" enable="eq(-1,true)" default="special://profile/addon_data/plugin.video.amazon" source="auto" option="writeable" subsetting="true"/>
         <setting label="30070" type="lsep"/>
         <setting id="useshowfanart" type="bool" label="30055" default="true"/>
         <setting id="disptvshow" type="bool" label="30071" default="false"/>

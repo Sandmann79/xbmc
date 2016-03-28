@@ -265,9 +265,9 @@ def ADD_EPISODE_ITEM(episodedata, onlyinfo=False, export=False):
     else:
         common.addVideo(displayname,asin,poster,fanart,infoLabels=infoLabels,isAdult=isAdult,isHD=isHD,cm=cm)
         
-def getFanart(asin):
+def getFanart(asin, tbl='shows'):
     import tv
-    fanart, poster = tv.lookupTVdb(asin, rvalue='fanart, poster', tbl='shows')
+    fanart, poster = tv.lookupTVdb(asin, rvalue='fanart, poster', tbl=tbl)
     if not fanart or fanart == common.na:
         fanart = poster
     return fanart, poster

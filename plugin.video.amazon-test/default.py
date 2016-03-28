@@ -26,6 +26,7 @@ import hashlib
 import hmac
 import threading
 import json
+import xbmcvfs
 from platform import node
 
 try: from sqlite3 import dbapi2 as sqlite
@@ -50,11 +51,10 @@ if xbmc.getCondVisibility('system.platform.osx'): platform = osOSX
 if xbmc.getCondVisibility('system.platform.android'): platform = osAndroid
 #if xbmc.getCondVisibility('System.Platform.Linux.RaspberryPi'): platform = 0
 hasExtRC = xbmc.getCondVisibility('System.HasAddon(script.chromium_remotecontrol)') == True
-ProfilPath = xbmc.translatePath('special://masterprofile/').decode('utf-8')
 PluginPath = addon.getAddonInfo('path').decode('utf-8')
 DataPath = xbmc.translatePath(addon.getAddonInfo('profile')).decode('utf-8')
 HomePath = xbmc.translatePath('special://home').decode('utf-8')
-if not os.path.exists(os.path.join(DataPath, 'settings.xml')): addon.openSettings()
+if not xbmcvfs.exists(os.path.join(DataPath, 'settings.xml')): addon.openSettings()
 playMethod = int(addon.getSetting("playmethod"))
 browser = int(addon.getSetting("browser"))
 MaxResults = int(addon.getSetting("items_perpage")) 
@@ -166,8 +166,6 @@ def getATVData(mode, query='', version=2, useCookie=False, id=None):
     return jsondata['message']['body']
     
 def addDir(name, mode, url='', infoLabels=None, opt='', catalog='Browse', cm=False, page=1, export=False):
-    #if OfferGroup in url and 'RollUpToSeries' in url:
-    #    url = url.replace(OfferGroup, '')
     if type(url) == type(unicode()): url = url.encode('utf-8')
     u = u'%s?mode=%s&url=%s&page=%s&opt=%s&cat=%s' % (sys.argv[0], mode, urllib.quote_plus(url), page, opt, catalog)
 
@@ -184,9 +182,12 @@ def addDir(name, mode, url='', infoLabels=None, opt='', catalog='Browse', cm=Fal
     item=xbmcgui.ListItem(name, iconImage="DefaultFolder.png", thumbnailImage=thumb)
     item.setProperty('fanart_image',fanart)
     item.setProperty('IsPlayable', 'false')
-    if infoLabels and infoLabels.has_key('TotalSeasons'):
-        item.setProperty('TotalSeasons', str(infoLabels['TotalSeasons']))
-    if infoLabels: item.setInfo(type='Video', infoLabels=infoLabels)
+    item.setArt({'Poster': thumb})
+    
+    if infoLabels:
+        item.setInfo(type='Video', infoLabels=infoLabels)
+        if infoLabels.has_key('TotalSeasons'): item.setProperty('TotalSeasons', str(infoLabels['TotalSeasons']))
+        if infoLabels.has_key('Poster'): item.setArt({'tvshow.poster': infoLabels['Poster']})
     if cm: item.addContextMenuItems(cm, replaceItems=False)
     xbmcplugin.addDirectoryItem(pluginhandle, u, item, isFolder=True)
 
@@ -196,7 +197,7 @@ def addVideo(name, asin, infoLabels, cm=[], export=False):
     item = xbmcgui.ListItem(name, thumbnailImage=infoLabels['Thumb'])
     item.setProperty('fanart_image', infoLabels['Fanart'])
     if infoLabels.has_key('Poster'): item.setArt({'tvshow.poster': infoLabels['Poster']})
-    else: item.setArt({'poster': infoLabels['Thumb']})
+    item.setArt({'poster': infoLabels['Thumb']})
 
     if playMethod == 3: item.setProperty('IsPlayable', 'true')
     else: item.setProperty('IsPlayable', 'false')
@@ -239,7 +240,7 @@ def Search():
             listContent('Search', url, 1, 'search')
 
 def loadCategories(force=False):
-    if os.path.exists(menuFile) and not force:
+    if xbmcvfs.exists(menuFile) and not force:
         ftime = updateTime(False)
         ctime = time.time()
         if ctime - ftime < 8 * 3600:
@@ -641,7 +642,7 @@ def WriteLog(data, name='amazon-test.log', mode='a'):
     if not verbLog: return
     path = os.path.join(HomePath, name)
     if type(data) == type(unicode()): data = data.encode('utf-8')
-    file = open(path, mode)
+    file = xbmcvfs.File(path, mode)
     if mode == 'a': data = time.strftime('[%d/%H:%M:%S] ', time.localtime()) + data.__str__()
     else: data = data.__str__()
     file.write(data)
@@ -749,7 +750,7 @@ def getInfos(item, export):
             infoLabels['Episode'] = item['childTitles'][0]['size']
 
     elif contentType == 'episode':
-        if item.has_key('ancestorTitles'):
+        if item['ancestorTitles']:
             for content in item['ancestorTitles']:
                 if content['contentType'] == 'SERIES':
                     if content.has_key('titleId'): infoLabels['SeriesAsin'] = content['titleId']
@@ -758,9 +759,13 @@ def getInfos(item, export):
                     if content.has_key('number'): infoLabels['Season'] = content['number']
                     if content.has_key('titleId'): infoLabels['SeasonAsin'] = content['titleId']
                     if content.has_key('title'): seasontitle = content['title']
-            if not infoLabels['SeriesAsin']:
-                infoLabels['SeriesAsin'] = infoLabels['SeasonAsin']
-                infoLabels['TVShowTitle'] = seasontitle            
+            if not infoLabels.has_key('SeriesAsin'):
+                if infoLabels.has_key('SeasonAsin'):
+                    infoLabels['SeriesAsin'] = infoLabels['SeasonAsin']
+                    infoLabels['TVShowTitle'] = seasontitle
+        else:
+            infoLabels['SeriesAsin'] = ''
+                
         if item.has_key('number'):
             infoLabels['Episode'] = item['number']
             infoLabels['DisplayTitle'] = '%s - %s' %(item['number'], infoLabels['Title'])
@@ -866,15 +871,16 @@ def IStreamPlayback(url, asin, trailer):
     title, plot, mpd, subs = getStreams(*getUrldata('catalog/GetPlaybackResources', values, extra=True, vMT=vMT, opt='&titleDecorationScheme=primary-content'), retmpd=True)
     licURL = getUrldata('catalog/GetPlaybackResources', values, extra=True, vMT=vMT, dRes='Widevine2License', retURL=True)
     Log(mpd)
+    
     listitem = xbmcgui.ListItem(path=mpd)
-   
     if trailer == '1':
         if title: listitem.setInfo('video', { 'Title': title + ' (Trailer)' })
         if plot: listitem.setInfo('video', { 'Plot': plot })
     listitem.setSubtitles(subs)
     listitem.setProperty('inputstream.mpd.license_type', 'com.widevine.alpha')
     listitem.setProperty('inputstream.mpd.license_key', licURL)
-    xbmcplugin.setResolvedUrl(pluginhandle, True, listitem=listitem)
+    listitem.setProperty('inputstreamaddon', 'inputstream.mpd')
+    xbmcplugin.setResolvedUrl(pluginhandle, True, listitem)
     
 def parseSubs(data):
     subs = []
@@ -919,7 +925,7 @@ def getCmdLine(videoUrl, amazonUrl):
     cust_br = addon.getSetting("cust_path") == 'true'
     
     if playMethod == 1:
-        if not os.path.exists(scr_path): return ''
+        if not xbmcvfs.exists(scr_path): return ''
         return scr_path + ' ' + scr_param.replace('{f}', getPlaybackInfo(amazonUrl)).replace('{u}', videoUrl)
 
     os_paths = [None, ('C:\\Program Files\\', 'C:\\Program Files (x86)\\'), ('/usr/bin/', '/usr/local/bin/'), 'open -a ']
@@ -936,13 +942,13 @@ def getCmdLine(videoUrl, amazonUrl):
     if platform != osOSX and not cust_br:
         for path in os_paths[platform]:
             for file in br_config[browser][0][platform]:
-                if os.path.exists(path+file): 
+                if xbmcvfs.exists(os.path.join(path, file)): 
                     br_path = path + file
                     break
                 else: Log('Browser %s not found' % (path+file), xbmc.LOGDEBUG)
             if br_path: break
 
-    if not os.path.exists(br_path) and platform != osOSX: return ''
+    if not xbmcvfs.exists(br_path) and platform != osOSX: return ''
 
     br_args = br_config[browser][3]
     if kiosk: br_args += br_config[browser][1]
@@ -1138,7 +1144,7 @@ def genID():
 
 def MechanizeLogin():
     cj = cookielib.LWPCookieJar()
-    if os.path.isfile(CookieFile):
+    if xbmcvfs.exists(CookieFile):
         cj.load(CookieFile, ignore_discard=True, ignore_expires=True)
         return cj
     Log('Login')
@@ -1168,8 +1174,8 @@ def LogIn():
             password = setLoginPW()
             if password: changed = True
     if password:
-        if os.path.isfile(CookieFile):
-            os.remove(CookieFile)
+        if xbmcvfs.exists(CookieFile):
+            xbmcvfs.delete(CookieFile)
         cj = cookielib.LWPCookieJar()
         br = mechanize.Browser()  
         br.set_handle_robots(False)
@@ -1220,8 +1226,8 @@ def getmac():
     return str(mac)
     
 def remLoginData():
-    if os.path.isfile(CookieFile):
-        os.remove(CookieFile)
+    if xbmcvfs.exists(CookieFile):
+        xbmcvfs.delete(CookieFile)
     addon.setSetting('login_name', '')
     addon.setSetting('login_pass', '')
     
@@ -1280,15 +1286,14 @@ def SaveFile(filename, data, dir=False, mode='w'):
         filename = cleanName(filename)
         filename = os.path.join(dir, filename)
     filename = cleanName(filename, file=False)
-    file = open(filename, mode)
+    file = xbmcvfs.File(filename, mode)
     file.write(data)
     file.close()
 
 def CreateDirectory(dir_path):
     dir_path = cleanName(dir_path.strip(), file=False)
-    if not os.path.exists(dir_path):
-        os.makedirs(dir_path)
-        return True
+    if not xbmcvfs.exists(dir_path):
+        return xbmcvfs.mkdir(dir_path)
     return False
 
 def SetupLibrary():
@@ -1332,8 +1337,8 @@ def CreateInfoFile(file, path, content, Info, language, hasSubtitles = False):
         fileinfo += '<codec>h264</codec>'
         fileinfo += '<durationinseconds>%s</durationinseconds>' % Info['Duration']
         if Info['isHD'] == True:
-            fileinfo += '<height>720</height>'
-            fileinfo += '<width>1280</width>'
+            fileinfo += '<height>1080</height>'
+            fileinfo += '<width>1920</width>'
         else:
             fileinfo += '<height>480</height>'
             fileinfo += '<width>720</width>'        
@@ -1352,15 +1357,15 @@ def CreateInfoFile(file, path, content, Info, language, hasSubtitles = False):
     return
     
 def SetupAmazonLibrary():
-    source_path = os.path.join(ProfilPath, 'sources.xml')
+    source_path = xbmc.translatePath('special://profile/sources.xml').decode('utf-8')
     source_added = False
     source = {'Amazon Movies': MOVIE_PATH, 'Amazon TV': TV_SHOWS_PATH}
-    
-    try:
-        file = open(source_path)
+
+    if xbmcvfs.exists(source_path):
+        file = xbmcvfs.File(source_path)
         soup = BeautifulSoup(file)
         file.close()
-    except:
+    else:
         subtags = ['programs', 'video', 'music', 'pictures', 'files']
         soup = BeautifulSoup('<sources></sources>')
         root = soup.sources
@@ -1492,7 +1497,7 @@ db = sqlite.connect(dbFile)
 db.text_factory = str
 createDB()
 
-if not os.path.exists(menuFile):
+if not xbmcvfs.exists(menuFile):
     menuDb = sqlite.connect(menuFile)
     menuDb.text_factory = str
     loadCategories(True)

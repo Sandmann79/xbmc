@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <addon id="plugin.video.amazon"
        name="Amazon"
-       version="1.6.3"
+       version="1.6.4"
        provider-name="Sandmann79 + BlueCop + Romans I XVI">
   <requires>
     <import addon="xbmc.python" version="2.1.0"/>
@@ -21,7 +21,12 @@
     <summary lang="de">Amazon Prime Instant Video</summary>
     <description lang="en">Movies and Television Shows for Prime Members</description>
     <description lang="de">Filme und Serien für Amazon Prime Mitglieder</description>
-    <disclaimer lang="en">Some parts of this addon may not be legal in your country of residence - please check with your local laws before installing. This Plugin uses pyDes by Todd Whiteman</disclaimer>
-    <disclaimer lang="de">Möglicherweise sind einge Teile dieses Addons in Ihrem Land illegal, Sie sollten dies unbedingt vor der Installation überprüfen. Diese Plugin verwendet pyDes von Todd Whiteman</disclaimer>
+    <disclaimer lang="en">Some parts of this addon may not be legal in your country of residence - please check with your local laws before installing.
+This Addon uses pyDes by Todd Whiteman</disclaimer>
+    <disclaimer lang="de">Möglicherweise sind einge Teile dieses Addons in Ihrem Land illegal, Sie sollten dies unbedingt vor der Installation überprüfen.
+Diese Addon verwendet pyDes von Todd Whiteman</disclaimer>
+    <license>GNU GENERAL PUBLIC LICENSE. Version 2, June 1991</license>
+    <forum>http://www.kodinerds.net/index.php/Thread/44211-Release-Amazon-Prime-Instant-Video</forum>
+    <source>https://github.com/Sandmann79/xbmc</source>    
   </extension>
 </addon>

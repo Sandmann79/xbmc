@@ -16,8 +16,8 @@ urllib = common.urllib
 xbmcgui = common.xbmcgui
 re = common.re
 json = common.json
-os = common.os
 urlparse = common.urlparse
+xbmcvfs = common.xbmcvfs
 
 ################################ TV db
 MAX = int(common.addon.getSetting("mov_perpage"))
@@ -690,11 +690,12 @@ def setNewest(compList=False):
         else:
             c.execute('insert or ignore into categories values (?,?)', [id, catList[id]])
     tvDB.commit()
-        
-if not os.path.exists(common.tvDBfile):
-    tvDB = sqlite.connect(common.tvDBfile)
+
+tvDBfile = common.getDBlocation('tv')
+if not xbmcvfs.exists(tvDBfile):
+    tvDB = sqlite.connect(tvDBfile)
     tvDB.text_factory = str
     createTVdb()
 else:
-    tvDB = sqlite.connect(common.tvDBfile)
+    tvDB = sqlite.connect(tvDBfile)
     tvDB.text_factory = str

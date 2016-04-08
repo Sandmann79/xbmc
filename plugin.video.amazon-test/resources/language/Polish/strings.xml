@@ -74,6 +74,8 @@
     <string id="30167">Sezon</string>
     <string id="30168">Rok </string>
     <string id="30169">Specjalne</string>
+    <string id="30170">Dozwolone od lat </string>
+    <string id="30171">Nie sprawdzone</string>
     <string id="30173">Epizod</string>
 
     <string id="30180">Dodaj %s do watchlist</string>

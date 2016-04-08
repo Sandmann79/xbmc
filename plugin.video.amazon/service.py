@@ -1,6 +1,5 @@
 import xbmc
 import xbmcaddon
-import os
 
 import_suc = False
 while not import_suc:

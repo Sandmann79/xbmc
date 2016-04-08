@@ -111,7 +111,7 @@ def Log(msg, level=xbmc.LOGNOTICE):
     if level == xbmc.LOGDEBUG and verbLog: level = xbmc.LOGNOTICE
     if type(msg) == type(unicode()):
         msg = msg.encode('utf-8')
-    WriteLog(msg)
+    #WriteLog(msg)
     xbmc.log('[%s] %s' % (__plugin__, msg.__str__()), level)
     
 def SaveFile(path, data):
@@ -510,6 +510,13 @@ def getDBlocation(retvar):
     
     return DBfile[retvar]
 
+if addon.getSetting('save_login') == 'false':
+    addon.setSetting('login_name', '')
+    addon.setSetting('login_pass', '')
+    addon.setSetting('no_cookie', '')
+if xbmcvfs.exists(COOKIEFILE) and addon.getSetting('no_cookie') == 'true':
+    xbmcvfs.delete(COOKIEFILE)
+    
 urlargs =  urllib.unquote_plus(sys.argv[2][1:].replace('&', ', ')).replace('<','"').replace('>','"')
 Log('Args: %s' % urlargs)
 exec "args = _Info(%s)" % urlargs

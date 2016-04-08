@@ -44,13 +44,13 @@ def PLAYVIDEO():
     pin = addon.getSetting("pin")
     waitpin = int(addon.getSetting("waitpin")) * 1000
     waitprepin = int(addon.getSetting("waitprepin")) * 1000
-    trailer = common.args.trailer
+    trailer = common.args.trailer == '1'
     isAdult = int(common.args.adult)
     pininput = addon.getSetting("pininput") == 'true'
     fullscr = addon.getSetting("fullscreen") == 'true'
     xbmc.Player().stop()
     
-    if trailer == '1':
+    if trailer:
         videoUrl = amazonUrl + "/?autoplaytrailer=1"
     else:
         videoUrl = amazonUrl + "/?autoplay=1"
@@ -110,7 +110,7 @@ def AndroidPlayback(asin, trailer):
         pkg = 'com.amazon.avod.thirdpartyclient'
         act = 'android.intent.action.VIEW'
         url = common.BASE_URL + '/piv-apk-play?asin=' + asin
-        if trailer == '1': url += '&playTrailer=T'
+        if trailer: url += '&playTrailer=T'
 
     subprocess.Popen(['log', '-p', 'v', '-t', 'Kodi-Amazon', 'Manufacturer: '+manu])
     subprocess.Popen(['log', '-p', 'v', '-t', 'Kodi-Amazon', 'Starting App: %s Video: %s' % (pkg, url)])
@@ -122,23 +122,49 @@ def AndroidPlayback(asin, trailer):
         common.Log('Properties:\n' + check_output(['sh', '-c', 'getprop | grep -iE "(ro.product|ro.build|google)"']))
     xbmc.executebuiltin('StartAndroidActivity("%s", "%s", "", "%s")' % (pkg, act, url))
 
+def check_output(*popenargs, **kwargs):
+    p = subprocess.Popen(stdout=subprocess.PIPE, stderr=subprocess.STDOUT, *popenargs, **kwargs)
+    out, err = p.communicate()
+    retcode = p.poll()
+    if retcode != 0:
+        c = kwargs.get("args")
+        if c is None:
+            c = popenargs[0]
+            e = subprocess.CalledProcessError(retcode, c)
+            e.output = str(out) + str(err)
+            common.Log(e, xbmc.LOGERROR)
+    return out.strip()
+
 def IStreamPlayback(url, asin, trailer):
     values = getFlashVars(url)
     if not values:
         return
 
     vMT = 'Feature'
-    if trailer == '1':
+    if trailer:
         vMT = 'Trailer'
         
-    title, plot, mpd, subs = getStreams(*getUrldata('catalog/GetPlaybackResources', values, extra=True, vMT=vMT, opt='&titleDecorationScheme=primary-content'), retmpd=True)
+    mpd, subs = getStreams(*getUrldata('catalog/GetPlaybackResources', values, extra=True, vMT=vMT, opt='&titleDecorationScheme=primary-content'), retmpd=True)
     licURL = getUrldata('catalog/GetPlaybackResources', values, extra=True, vMT=vMT, dRes='Widevine2License', retURL=True)
     common.Log(mpd)
+    if not mpd:
+        Dialog.notification(common.getString(30203), subs, xbmcgui.NOTIFICATION_ERROR)
+        return
+        
+    infoLabels = GetStreamInfo(common.args.asin)
     
     listitem = xbmcgui.ListItem(path=mpd)
-    if trailer == '1':
-        if title: listitem.setInfo('video', { 'Title': title + ' (Trailer)' })
-        if plot: listitem.setInfo('video', { 'Plot': plot })
+    if trailer: infoLabels['Title'] += ' (Trailer)'
+    if not infoLabels.has_key('Thumb'): 
+        infoLabels['Thumb'] = None
+    if infoLabels.has_key('Fanart'): listitem.setArt({'fanart': infoLabels['Fanart']})
+    if infoLabels.has_key('Poster'): 
+        listitem.setArt({'tvshow.poster': infoLabels['Poster']})
+    else: 
+        listitem.setArt({'poster': infoLabels['Thumb']})
+    
+    listitem.setArt({'thumb': infoLabels['Thumb']})
+    listitem.setInfo('video', infoLabels)
     listitem.setSubtitles(subs)
     listitem.setProperty('inputstream.mpd.license_type', 'com.widevine.alpha')
     listitem.setProperty('inputstream.mpd.license_key', licURL)
@@ -168,19 +194,20 @@ def parseSubs(data):
         subs.append(file)
     return subs
 
-def check_output(*popenargs, **kwargs):
-    p = subprocess.Popen(stdout=subprocess.PIPE, stderr=subprocess.STDOUT, *popenargs, **kwargs)
-    out, err = p.communicate()
-    retcode = p.poll()
-    if retcode != 0:
-        c = kwargs.get("args")
-        if c is None:
-            c = popenargs[0]
-            e = subprocess.CalledProcessError(retcode, c)
-            e.output = str(out) + str(err)
-            common.Log(e, xbmc.LOGERROR)
-    return out.strip()
-
+def GetStreamInfo(asin):
+    import movies
+    import listmovie
+    import tv
+    import listtv
+    moviedata = movies.lookupMoviedb(asin)
+    if moviedata:
+        return listmovie.ADD_MOVIE_ITEM(moviedata, onlyinfo=True)
+    else:
+        epidata = tv.lookupTVdb(asin)
+        if epidata:
+            return listtv.ADD_EPISODE_ITEM(epidata, onlyinfo=True)
+    return {'Title': ''}
+    
 def getCmdLine(videoUrl, amazonUrl):
     scr_path = addon.getSetting("scr_path")
     br_path = addon.getSetting("br_path").strip()
@@ -291,17 +318,16 @@ def getStartupInfo():
     
 def getStreams(suc, data, retmpd=False):
     if not suc:
+        if retmpd:
+            return False, data
         return ''
 
     subUrls = parseSubs(data['subtitleUrls'])
-    title = plot = False
-    if data.has_key('catalogMetadata'):
-        title = data['catalogMetadata']['catalog']['title']
-        plot = data['catalogMetadata']['catalog']['synopsis']
         
     for cdn in data['audioVideoUrls']['avCdnUrlSets']:
         for urlset in cdn['avUrlInfoList']:
-            if retmpd: return title, plot, urlset['url'], subUrls
+            if retmpd:
+                return urlset['url'], subUrls
             data = common.getURL(urlset['url'])
             fps_string = re.compile('frameRate="([^"]*)').findall(data)[0]
             fr = round(eval(fps_string + '.0'), 3)
@@ -379,23 +405,24 @@ def getUrldata(mode, values, format='json', devicetypeid=False, version=1, firmw
     if data:
         jsondata = json.loads(data)
         del data
-        if jsondata.has_key('error'):
-            return False, Error(jsondata['error'])
+        if jsondata.has_key('errorsByResource'):
+            for field in jsondata['errorsByResource']:
+                return False, Error(jsondata['errorsByResource'][field])
         return True, jsondata
     return False, 'HTTP Fehler'
 
 def Error(data):
-    code = data['errorCode']
+    code = data['errorCode'].lower()
     common.Log('%s (%s) ' %(data['message'], code), xbmc.LOGERROR)
-    if 'CDP.InvalidRequest' in code:
+    if 'invalidrequest' in code:
         return common.getString(30204)
-    elif 'CDP.Playback.NoAvailableStreams' in code:
+    elif 'noavailablestreams' in code:
         return common.getString(30205)
-    elif 'CDP.Playback.NotOwned' in code:
+    elif 'notowned' in code:
         return common.getString(30206)
-    elif 'CDP.Authorization.InvalidGeoIP' in code:
+    elif 'invalidgeoip' in code:
         return common.getString(30207)
-    elif 'CDP.Playback.TemporarilyUnavailable' in code:
+    elif 'temporarilyunavailable' in code:
         return common.getString(30208)
     else:
         return '%s (%s) ' %(data['message'], code)

@@ -74,6 +74,7 @@ BaseUrl = 'https://www.amazon.' + ['de', 'co.uk', 'com', 'co.jp'][country]
 ATVUrl = 'https://atv-ps%s.amazon.com' % ['-eu', '-eu', '', '-fe'][country]
 MarketID = ['A1PA6795UKMFR9', 'A1F83G8C2ARO7P', 'ATVPDKIKX0DER', 'A1VC38T7YXB528'][country]
 Language = ['de', 'en', 'en', 'jp'][country]
+AgeRating = ['FSK ', '', '', ''][country]
 menuFile = os.path.join(DataPath, 'menu-%s.db' % MarketID)
 na = 'not available'
 UserAgent = 'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/48.0.2532.0 Safari/537.36'
@@ -206,8 +207,8 @@ def addVideo(name, asin, infoLabels, cm=[], export=False):
         item.addStreamInfo('video', { 'width':1920 ,'height' : 1080 })
     else:
         item.addStreamInfo('video', { 'width':720 ,'height' : 480 })
-
-    if infoLabels['AudioChannels']: item.addStreamInfo('audio', { 'codec': 'ac3' ,'channels': int(infoLabels['AudioChannels']) })
+    
+    item.addStreamInfo('audio', {'codec': 'ac3', 'channels': int(infoLabels['AudioChannels'])})
     if infoLabels['TrailerAvailable']:
         infoLabels['Trailer'] = u + '&trailer=1&selbitrate=0'
     u += '&trailer=0&selbitrate=0'
@@ -329,7 +330,7 @@ def listContent(catalog, url, page, parent, export=False):
     page = int(page)
     ResPage = MaxResults
     if export: ResPage = 240
-    url += '&NumberOfResults=%s&StartIndex=%s' % (ResPage, (page-1)*ResPage)
+    url += '&NumberOfResults=%s&StartIndex=%s&Detailed=T' % (ResPage, (page-1)*ResPage)
     
     if page != 1 and not export:
         addDir(' --= %s =--' % (getString(30112) % int(page-1)), 'listContent', oldurl, page=page-1, catalog=catalog, opt=parent)
@@ -635,7 +636,7 @@ def Log(msg, level=xbmc.LOGNOTICE):
     if level == xbmc.LOGDEBUG and verbLog: level = xbmc.LOGNOTICE
     if type(msg) == type(unicode()):
         msg = msg.encode('utf-8')
-    WriteLog(msg)
+    #WriteLog(msg)
     xbmc.log('[%s] %s' % (__plugin__, msg), level)
 
 def WriteLog(data, name='amazon-test.log', mode='a'):
@@ -706,7 +707,7 @@ def getInfos(item, export):
         infoLabels['Studio'] = item['studioOrNetwork']
     if item.has_key('regulatoryRating'):
         if item['regulatoryRating'] == 'not_checked': infoLabels['MPAA'] = getString(30171)
-        else: infoLabels['MPAA'] = getString(30170) + item['regulatoryRating']
+        else: infoLabels['MPAA'] = AgeRating + item['regulatoryRating']
     if item.has_key('starringCast'):
         infoLabels['Cast'] = item['starringCast'].split(',')
     if item.has_key('director'):
@@ -864,22 +865,35 @@ def IStreamPlayback(url, asin, trailer):
     if not values:
         return
 
+    thumb = xbmc.getInfoLabel('ListItem.Art(season.poster)')
+    if not thumb:
+        thumb = xbmc.getInfoLabel('ListItem.Art(tvshow.poster)')
+        if not thumb:
+            thumb = xbmc.getInfoLabel('ListItem.Art(thumb)')
+
     vMT = 'Feature'
+    title = xbmc.getInfoLabel('ListItem.Title')
     if trailer == '1':
         vMT = 'Trailer'
-        
-    title, plot, mpd, subs = getStreams(*getUrldata('catalog/GetPlaybackResources', values, extra=True, vMT=vMT, opt='&titleDecorationScheme=primary-content'), retmpd=True)
+        title += ' (Trailer)'
+    
+    mpd, subs = getStreams(*getUrldata('catalog/GetPlaybackResources', values, extra=True, vMT=vMT, opt='&titleDecorationScheme=primary-content'), retmpd=True)
     licURL = getUrldata('catalog/GetPlaybackResources', values, extra=True, vMT=vMT, dRes='Widevine2License', retURL=True)
     Log(mpd)
-    
-    listitem = xbmcgui.ListItem(path=mpd)
-    if trailer == '1':
-        if title: listitem.setInfo('video', { 'Title': title + ' (Trailer)' })
-        if plot: listitem.setInfo('video', { 'Plot': plot })
+    if not mpd:
+        Dialog.notification(getString(30203), subs, xbmcgui.NOTIFICATION_ERROR)
+        return
+
+    listitem = xbmcgui.ListItem(label=title, path=mpd)
+    listitem.setArt({'thumb': thumb})
+    if not 'plugin.video.amazon'in xbmc.getInfoLabel('Container.PluginName') or trailer == '1':
+        Log('external', 0)
+        listitem.setInfo('video', {'Plot': xbmc.getInfoLabel('ListItem.Plot')})
     listitem.setSubtitles(subs)
     listitem.setProperty('inputstream.mpd.license_type', 'com.widevine.alpha')
     listitem.setProperty('inputstream.mpd.license_key', licURL)
     listitem.setProperty('inputstreamaddon', 'inputstream.mpd')
+    
     xbmcplugin.setResolvedUrl(pluginhandle, True, listitem)
     
 def parseSubs(data):
@@ -1026,17 +1040,16 @@ def getStartupInfo():
     
 def getStreams(suc, data, retmpd=False):
     if not suc:
+        if retmpd:
+            return False, data
         return ''
 
     subUrls = parseSubs(data['subtitleUrls'])
-    title = plot = False
-    if data.has_key('catalogMetadata'):
-        title = data['catalogMetadata']['catalog']['title']
-        plot = data['catalogMetadata']['catalog']['synopsis']
         
     for cdn in data['audioVideoUrls']['avCdnUrlSets']:
         for urlset in cdn['avUrlInfoList']:
-            if retmpd: return title, plot, urlset['url'], subUrls
+            if retmpd:
+                return urlset['url'], subUrls
             data = getURL(urlset['url'])
             fps_string = re.compile('frameRate="([^"]*)').findall(data)[0]
             fr = round(eval(fps_string + '.0'), 3)
@@ -1114,23 +1127,24 @@ def getUrldata(mode, values, format='json', devicetypeid=False, version=1, firmw
     if data:
         jsondata = json.loads(data)
         del data
-        if jsondata.has_key('error'):
-            return False, Error(jsondata['error'])
+        if jsondata.has_key('errorsByResource'):
+            for field in jsondata['errorsByResource']:
+                return False, Error(jsondata['errorsByResource'][field])
         return True, jsondata
     return False, 'HTTP Fehler'
     
 def Error(data):
-    code = data['errorCode']
+    code = data['errorCode'].lower()
     Log('%s (%s) ' %(data['message'], code), xbmc.LOGERROR)
-    if 'CDP.InvalidRequest' in code:
+    if 'invalidrequest' in code:
         return getString(30204)
-    elif 'CDP.Playback.NoAvailableStreams' in code:
+    elif 'noavailablestreams' in code:
         return getString(30205)
-    elif 'CDP.Playback.NotOwned' in code:
+    elif 'notowned' in code:
         return getString(30206)
-    elif 'CDP.Authorization.InvalidGeoIP' in code:
+    elif 'invalidgeoip' in code:
         return getString(30207)
-    elif 'CDP.Playback.TemporarilyUnavailable' in code:
+    elif 'temporarilyunavailable' in code:
         return getString(30208)
     else:
         return '%s (%s) ' %(data['message'], code)

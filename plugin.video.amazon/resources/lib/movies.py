@@ -162,11 +162,7 @@ def addMoviesdb(full_update=True):
     while goAhead == 1:
         json = appfeed.getList('Movie', endIndex, NumberOfResults=MAX)['message']['body']
         titles = json['titles']
-        if json['approximateSize'] == 0:
-            MAX = MAX - 20
-            if MAX < 1: MAX = 120
-            continue
-        endIndex = json['endIndex']
+        endIndex += len(titles)
         if titles:
             for title in titles:
                 if full_update and dialog.iscanceled():
@@ -179,7 +175,7 @@ def addMoviesdb(full_update=True):
                         if not found: new_mov += ASIN_ADD(title)
                         tot_mov += 1
                         updateMoviedb(asin, 'popularity', tot_mov)
-        if endIndex == 0: goAhead = 0
+        if len(titles) == 0: goAhead = 0
         page+=1
         if full_update: dialog.update(int((tot_mov)*100.0/MOV_TOTAL), common.getString(30122) % page, common.getString(30123) % new_mov)
         if full_update and dialog.iscanceled(): goAhead = -1

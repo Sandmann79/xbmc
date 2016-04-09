@@ -799,10 +799,9 @@ def PlayVideo(name, asin, adultstr, trailer, selbitrate):
         IStreamPlayback(amazonUrl, asin, trailer)
     else:
         if verbLog: videoUrl += '&playerDebug=true'
-        url = getCmdLine(videoUrl, amazonUrl)
+        url, err = getCmdLine(videoUrl, amazonUrl)
         if not url:
-            Dialog.notification(__plugin__, getString(30198), xbmcgui.NOTIFICATION_ERROR)
-            addon.openSettings()
+            Dialog.notification(getString(30203), err, xbmcgui.NOTIFICATION_ERROR)
             return
         Log('Executing: %s' % url)
         if platform == osWindows:
@@ -896,27 +895,6 @@ def IStreamPlayback(url, asin, trailer):
     
     xbmcplugin.setResolvedUrl(pluginhandle, True, listitem)
     
-def parseSubs(data):
-    subs = []
-    if addon.getSetting('subtitles') == 'false': return subs
-    
-    import codecs
-    for sub in data:
-        lang = sub['displayName'].split('(')[0].strip()
-        Log('Convert %s Subtitle' % lang)
-        file = xbmc.translatePath('special://temp/%s.srt' % lang).decode('utf-8')
-        srt = codecs.open(file, 'w', encoding='utf-8')
-        soup = BeautifulSoup(getURL(sub['url']))
-        enc = soup.originalEncoding
-        num = 0
-        for caption in soup.findAll('tt:p'):
-            num += 1
-            subtext = caption.renderContents().decode(enc).replace('<tt:br>', '\n').replace('</tt:br>', '')
-            srt.write(u'%s\n%s --> %s\n%s\n\n' % (num, caption['begin'], caption['end'], subtext))
-        srt.close()
-        subs.append(file)
-    return subs
-
 def check_output(*popenargs, **kwargs):
     p = subprocess.Popen(stdout=subprocess.PIPE, stderr=subprocess.STDOUT, *popenargs, **kwargs)
     out, err = p.communicate()
@@ -937,10 +915,17 @@ def getCmdLine(videoUrl, amazonUrl):
     kiosk = addon.getSetting("kiosk") == 'true'
     appdata = addon.getSetting("ownappdata") == 'true'
     cust_br = addon.getSetting("cust_path") == 'true'
-    
+    nobr_str = getString(30198)
+
     if playMethod == 1:
-        if not xbmcvfs.exists(scr_path): return ''
-        return scr_path + ' ' + scr_param.replace('{f}', getPlaybackInfo(amazonUrl)).replace('{u}', videoUrl)
+        if not xbmcvfs.exists(scr_path): 
+            return False, nobr_str
+
+        fr, err = getPlaybackInfo(amazonUrl)
+        if fr == False:
+            return False, err
+
+        return scr_path + ' ' + scr_param.replace('{f}', fr).replace('{u}', videoUrl), False
 
     os_paths = [None, ('C:\\Program Files\\', 'C:\\Program Files (x86)\\'), ('/usr/bin/', '/usr/local/bin/'), 'open -a ']
     # path(0,win,lin,osx), kiosk, profile, args
@@ -962,7 +947,7 @@ def getCmdLine(videoUrl, amazonUrl):
                 else: Log('Browser %s not found' % (path+file), xbmc.LOGDEBUG)
             if br_path: break
 
-    if not xbmcvfs.exists(br_path) and platform != osOSX: return ''
+    if not xbmcvfs.exists(br_path) and platform != osOSX: return False, nobr_str
 
     br_args = br_config[browser][3]
     if kiosk: br_args += br_config[browser][1]
@@ -975,8 +960,148 @@ def getCmdLine(videoUrl, amazonUrl):
         
     br_path += ' %s"%s"' % (br_args, videoUrl)
     
-    return br_path
+    return br_path, nobr_str
     
+def getStartupInfo():
+    si = subprocess.STARTUPINFO()
+    si.dwFlags = subprocess.STARTF_USESHOWWINDOW
+    return si
+    
+def getStreams(suc, data, retmpd=False):
+    if not suc:
+        return False, data
+
+    if retmpd:
+        subUrls = parseSubs(data)
+        
+    for cdn in data['audioVideoUrls']['avCdnUrlSets']:
+        for urlset in cdn['avUrlInfoList']:
+            if retmpd:
+                return urlset['url'], subUrls
+            data = getURL(urlset['url'])
+            fps_string = re.compile('frameRate="([^"]*)').findall(data)[0]
+            fr = round(eval(fps_string + '.0'), 3)
+            return str(fr).replace('.0',''), True
+    return '', False
+    
+def parseSubs(data):
+    subs = []
+    if addon.getSetting('subtitles') == 'false' or not 'subtitleUrls' in data:
+        return subs
+    
+    import codecs
+    for sub in data['subtitleUrls']:
+        lang = sub['displayName'].split('(')[0].strip()
+        Log('Convert %s Subtitle' % lang)
+        file = xbmc.translatePath('special://temp/%s.srt' % lang).decode('utf-8')
+        srt = codecs.open(file, 'w', encoding='utf-8')
+        soup = BeautifulSoup(getURL(sub['url']))
+        enc = soup.originalEncoding
+        num = 0
+        for caption in soup.findAll('tt:p'):
+            num += 1
+            subtext = caption.renderContents().decode(enc).replace('<tt:br>', '\n').replace('</tt:br>', '')
+            srt.write(u'%s\n%s --> %s\n%s\n\n' % (num, caption['begin'], caption['end'], subtext))
+        srt.close()
+        subs.append(file)
+    return subs
+
+def getPlaybackInfo(url):
+    if addon.getSetting("framerate") == 'false':
+        return '', False
+    Dialog.notification(xbmc.getLocalizedString(20186), '', xbmcgui.NOTIFICATION_INFO, 60000, False)
+    values = getFlashVars(url)
+    if not values:
+        return '', False
+    fr, err = getStreams(*getUrldata('catalog/GetPlaybackResources', values, extra=True))
+    Dialog.notification(xbmc.getLocalizedString(20186), '', xbmcgui.NOTIFICATION_INFO, 10, False)
+    return fr, err
+
+def getFlashVars(url):
+    cookie = MechanizeLogin()
+    showpage = getURL(url, useCookie=cookie)
+
+    if not showpage:
+        Dialog.notification(__plugin__, Error({'errorCode':'invalidrequest', 'message':'getFlashVars'}), xbmcgui.NOTIFICATION_ERROR)
+        return False
+    values = {}
+    search = {'sessionID'  : "ue_sid='(.*?)'",
+              'marketplace': "ue_mid='(.*?)'",
+              'customer'   : '"customerID":"(.*?)"'}
+    if 'var config' in showpage:
+        flashVars = re.compile('var config = (.*?);',re.DOTALL).findall(showpage)
+        flashVars = json.loads(unicode(flashVars[0], errors='ignore'))
+        values = flashVars['player']['fl_config']['initParams']
+    else:
+        for key, pattern in search.items():
+            result = re.compile(pattern, re.DOTALL).findall(showpage)
+            if result: values[key] = result[0]
+    
+    for key in values.keys():
+        if not values.has_key(key):
+            Dialog.notification(getString(30200), getString(30210), xbmcgui.NOTIFICATION_ERROR)
+            return False
+
+    values['asin']          = url.split('/')[-1]
+    values['deviceTypeID']  = 'AOAGZA014O5RE'
+    values['userAgent']     = UserAgent
+    values['deviceID']      = genID()
+    rand = 'onWebToken_' + str(random.randint(0,484))
+    pltoken = getURL(BaseUrl + "/gp/video/streaming/player-token.json?callback=" + rand, useCookie=cookie)
+    try:
+        values['token']  = re.compile('"([^"]*).*"([^"]*)"').findall(pltoken)[0][1]
+    except:
+        Dialog.notification(getString(30200), getString(30201), xbmcgui.NOTIFICATION_ERROR)
+        return False
+    return values
+    
+def getUrldata(mode, values, format='json', devicetypeid=False, version=1, firmware='1', opt='', extra=False, useCookie=False, retURL=False, vMT='Feature', dRes='AudioVideoUrls%2CSubtitleUrls'):
+    if not devicetypeid:
+        devicetypeid = values['deviceTypeID']
+    url  = ATVUrl + '/cdp/' + mode
+    url += '?asin=' + values['asin']
+    url += '&deviceTypeID=' + devicetypeid
+    url += '&firmware=' + firmware
+    url += '&customerID=' + values['customer']
+    url += '&deviceID=' + values['deviceID']
+    url += '&marketplaceID=' + values['marketplace']
+    url += '&token=' + values['token']
+    url += '&format=' + format
+    url += '&version=' + str(version)
+    url += opt
+    if extra:
+        url += '&resourceUsage=ImmediateConsumption&consumptionType=Streaming&deviceDrmOverride=CENC&deviceStreamingTechnologyOverride=DASH&deviceProtocolOverride=Http&audioTrackId=all'
+        url += '&videoMaterialType=' + vMT
+        url += '&desiredResources=' + dRes
+    if retURL:
+        return url
+    data = getURL(url, ATVUrl.split('//')[1], useCookie=useCookie)
+    if data:
+        jsondata = json.loads(data)
+        del data
+        if jsondata.has_key('errorsByResource'):
+            for field in jsondata['errorsByResource']:
+                if 'AudioVideoUrls' in field:
+                    return False, Error(jsondata['errorsByResource'][field])
+        return True, jsondata
+    return False, 'HTTP Fehler'
+    
+def Error(data):
+    code = data['errorCode'].lower()
+    Log('%s (%s) ' %(data['message'], code), xbmc.LOGERROR)
+    if 'invalidrequest' in code:
+        return getString(30204)
+    elif 'noavailablestreams' in code:
+        return getString(30205)
+    elif 'notowned' in code:
+        return getString(30206)
+    elif 'invalidgeoip' in code:
+        return getString(30207)
+    elif 'temporarilyunavailable' in code:
+        return getString(30208)
+    else:
+        return '%s (%s) ' %(data['message'], code)
+        
 def Input(mousex=0,mousey=0,click=0,keys=False,delay='200'):
     screenWidth = int(xbmc.getInfoLabel('System.ScreenWidth'))
     screenHeight = int(xbmc.getInfoLabel('System.ScreenHeight'))
@@ -1033,122 +1158,6 @@ def Input(mousex=0,mousey=0,click=0,keys=False,delay='200'):
     Log('Run command: %s' % cmd)
     subprocess.call(cmd, shell=True)
 
-def getStartupInfo():
-    si = subprocess.STARTUPINFO()
-    si.dwFlags = subprocess.STARTF_USESHOWWINDOW
-    return si
-    
-def getStreams(suc, data, retmpd=False):
-    if not suc:
-        if retmpd:
-            return False, data
-        return ''
-
-    subUrls = parseSubs(data['subtitleUrls'])
-        
-    for cdn in data['audioVideoUrls']['avCdnUrlSets']:
-        for urlset in cdn['avUrlInfoList']:
-            if retmpd:
-                return urlset['url'], subUrls
-            data = getURL(urlset['url'])
-            fps_string = re.compile('frameRate="([^"]*)').findall(data)[0]
-            fr = round(eval(fps_string + '.0'), 3)
-            return str(fr).replace('.0','')
-    return ''
-    
-def getPlaybackInfo(url):
-    if addon.getSetting("framerate") == 'false': return ''
-    Dialog.notification(xbmc.getLocalizedString(20186), '', xbmcgui.NOTIFICATION_INFO, 60000, False)
-    values = getFlashVars(url)
-    if not values: return ''
-    fr = getStreams(*getUrldata('catalog/GetPlaybackResources', values, extra=True))
-    Dialog.notification(xbmc.getLocalizedString(20186), '', xbmcgui.NOTIFICATION_INFO, 10, False)
-    return fr
-
-def getFlashVars(url):
-    cookie = MechanizeLogin()
-    showpage = getURL(url, useCookie=cookie)
-
-    if not showpage:
-        Dialog.notification(__plugin__, Error('CDP.InvalidRequest'), xbmcgui.NOTIFICATION_ERROR)
-        return False
-    values = {}
-    search = {'sessionID'  : "ue_sid='(.*?)'",
-              'marketplace': "ue_mid='(.*?)'",
-              'customer'   : '"customerID":"(.*?)"'}
-    if 'var config' in showpage:
-        flashVars = re.compile('var config = (.*?);',re.DOTALL).findall(showpage)
-        flashVars = json.loads(unicode(flashVars[0], errors='ignore'))
-        values = flashVars['player']['fl_config']['initParams']
-    else:
-        for key, pattern in search.items():
-            result = re.compile(pattern, re.DOTALL).findall(showpage)
-            if result: values[key] = result[0]
-    
-    for key in values.keys():
-        if not values.has_key(key):
-            Dialog.notification(getString(30200), getString(30210), xbmcgui.NOTIFICATION_ERROR)
-            return False
-
-    values['asin']          = url.split('/')[-1]
-    values['deviceTypeID']  = 'AOAGZA014O5RE'
-    values['userAgent']     = UserAgent
-    values['deviceID']      = genID()
-    rand = 'onWebToken_' + str(random.randint(0,484))
-    pltoken = getURL(BaseUrl + "/gp/video/streaming/player-token.json?callback=" + rand, useCookie=cookie)
-    try:
-        values['token']  = re.compile('"([^"]*).*"([^"]*)"').findall(pltoken)[0][1]
-    except:
-        Dialog.notification(getString(30200), getString(30201), xbmcgui.NOTIFICATION_ERROR)
-        return False
-    return values
-    
-def getUrldata(mode, values, format='json', devicetypeid=False, version=1, firmware='1', opt='', extra=False, useCookie=False, retURL=False, vMT='Feature', dRes='AudioVideoUrls%2CCatalogMetadata%2CSubtitleUrls'):
-    if not devicetypeid:
-        devicetypeid = values['deviceTypeID']
-    url  = ATVUrl + '/cdp/' + mode
-    url += '?asin=' + values['asin']
-    url += '&deviceTypeID=' + devicetypeid
-    url += '&firmware=' + firmware
-    url += '&customerID=' + values['customer']
-    url += '&deviceID=' + values['deviceID']
-    url += '&marketplaceID=' + values['marketplace']
-    url += '&token=' + values['token']
-    url += '&format=' + format
-    url += '&version=' + str(version)
-    url += opt
-    if extra:
-        url += '&resourceUsage=ImmediateConsumption&consumptionType=Streaming&deviceDrmOverride=CENC&deviceStreamingTechnologyOverride=DASH&deviceProtocolOverride=Http&audioTrackId=all'
-        url += '&videoMaterialType=' + vMT
-        url += '&desiredResources=' + dRes
-    if retURL:
-        return url
-    data = getURL(url, ATVUrl.split('//')[1], useCookie=useCookie)
-    if data:
-        jsondata = json.loads(data)
-        del data
-        if jsondata.has_key('errorsByResource'):
-            for field in jsondata['errorsByResource']:
-                return False, Error(jsondata['errorsByResource'][field])
-        return True, jsondata
-    return False, 'HTTP Fehler'
-    
-def Error(data):
-    code = data['errorCode'].lower()
-    Log('%s (%s) ' %(data['message'], code), xbmc.LOGERROR)
-    if 'invalidrequest' in code:
-        return getString(30204)
-    elif 'noavailablestreams' in code:
-        return getString(30205)
-    elif 'notowned' in code:
-        return getString(30206)
-    elif 'invalidgeoip' in code:
-        return getString(30207)
-    elif 'temporarilyunavailable' in code:
-        return getString(30208)
-    else:
-        return '%s (%s) ' %(data['message'], code)
-        
 def genID():
     guid = addon.getSetting("GenDeviceID")
     if not guid or len(guid) != 56: 

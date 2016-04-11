@@ -196,9 +196,11 @@ def toogleWatchlist(asin=False, action='add'):
         Log(data['status'] + ': ' + data['reason'])
 
 def getToken(asin, cookie):
-    url = BASE_URL + '/gp/aw/video/detail/' + asin
+    url = BASE_URL + '/gp/video/watchlist/ajax/hoverbubble.html?ASIN=' + asin
     data = getURL(url, useCookie=cookie)
-    token = re.compile('token[^"]*"([^"]*)"').findall(data)[0]
+    tree = BeautifulSoup(data, convertEntities=BeautifulSoup.HTML_ENTITIES)
+    form = tree.find('form',attrs={'id':'watchlistForm'})
+    token = form.find('input',attrs={'id':'token'})['value']
     return urllib.quote_plus(token)
 
 def gen_id():
@@ -352,9 +354,11 @@ def getString(id, enc=False):
     return addon.getLocalizedString(id)
 
 def remLoginData():
-    if xbmcvfs.exists(COOKIEFILE): xbmcvfs.delete(COOKIEFILE)
+    if xbmcvfs.exists(COOKIEFILE):
+        xbmcvfs.delete(COOKIEFILE)
     addon.setSetting('login_name', '')
     addon.setSetting('login_pass', '')
+    Dialog.notification(__plugin__, getString(30211), xbmcgui.NOTIFICATION_INFO)
 
 def checkCase(title):
     if title.isupper():

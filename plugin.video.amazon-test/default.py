@@ -67,7 +67,6 @@ verbLog = addon.getSetting('logging') == 'true'
 useIntRC = addon.getSetting("remotectrl") == 'true'
 tmdb = base64.b64decode('YjM0NDkwYzA1NmYwZGQ5ZTNlYzlhZjIxNjdhNzMxZjQ=')
 tvdb = base64.b64decode('MUQ2MkYyRjkwMDMwQzQ0NA==')
-CookieFile = os.path.join(DataPath, 'cookies.lwp')
 DefaultFanart = os.path.join(PluginPath, 'fanart.jpg')
 country = int(addon.getSetting("country"))
 BaseUrl = 'https://www.amazon.' + ['de', 'co.uk', 'com', 'co.jp'][country]
@@ -76,6 +75,7 @@ MarketID = ['A1PA6795UKMFR9', 'A1F83G8C2ARO7P', 'ATVPDKIKX0DER', 'A1VC38T7YXB528
 Language = ['de', 'en', 'en', 'jp'][country]
 AgeRating = ['FSK ', '', '', ''][country]
 menuFile = os.path.join(DataPath, 'menu-%s.db' % MarketID)
+CookieFile = os.path.join(DataPath, 'cookie-%s.lwp' % MarketID)
 na = 'not available'
 UserAgent = 'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/48.0.2532.0 Safari/537.36'
 mUserAgent = 'Mozilla/5.0 (iPhone; U; CPU iPhone OS 4_3_2 like Mac OS X) AppleWebKit/533.17.9 (KHTML, like Gecko) Version/5.0.2 Mobile/8H7 Safari/6533.18.5'
@@ -388,7 +388,7 @@ def listContent(catalog, url, page, parent, export=False):
     if not export:
         db.commit()
         xbmc.executebuiltin('RunPlugin(%s?mode=checkMissing)' % sys.argv[0])
-        if 'search' in parent: setView('movie', True)
+        if 'search' in parent: setView('season', True)
         else: setView(contentType, True)
 
 def cleanTitle(title):
@@ -445,9 +445,11 @@ def WatchList(asin, remove):
         Log(data['status'] + ': ' + data['reason'])
         
 def getToken(asin, cookie):
-    url = BaseUrl + '/gp/aw/video/detail/' + asin
+    url = BaseUrl + '/gp/video/watchlist/ajax/hoverbubble.html?ASIN=' + asin
     data = getURL(url, useCookie=cookie)
-    token = re.compile('token[^"]*"([^"]*)"').findall(data)[0]
+    tree = BeautifulSoup(data, convertEntities=BeautifulSoup.HTML_ENTITIES)
+    form = tree.find('form',attrs={'id':'watchlistForm'})
+    token = form.find('input',attrs={'id':'token'})['value']
     return urllib.quote_plus(token)
 
 def getArtWork(infoLabels, contentType):
@@ -636,7 +638,6 @@ def Log(msg, level=xbmc.LOGNOTICE):
     if level == xbmc.LOGDEBUG and verbLog: level = xbmc.LOGNOTICE
     if type(msg) == type(unicode()):
         msg = msg.encode('utf-8')
-    #WriteLog(msg)
     xbmc.log('[%s] %s' % (__plugin__, msg), level)
 
 def WriteLog(data, name='amazon-test.log', mode='a'):
@@ -769,7 +770,13 @@ def getInfos(item, export):
                 
         if item.has_key('number'):
             infoLabels['Episode'] = item['number']
-            infoLabels['DisplayTitle'] = '%s - %s' %(item['number'], infoLabels['Title'])
+            if item['number'] > 0:
+                infoLabels['DisplayTitle'] = '%s - %s' %(item['number'], infoLabels['Title'])
+            else:
+                try:
+                    infoLabels['DisplayTitle'] = infoLabels['Title'].split(':')[1].strip()
+                except: pass
+
     if infoLabels.has_key('TVShowTitle'): infoLabels['TVShowTitle'] = cleanTitle(infoLabels['TVShowTitle'])
     infoLabels = getArtWork(infoLabels, contentType)
     if not export: 
@@ -796,7 +803,7 @@ def PlayVideo(name, asin, adultstr, trailer, selbitrate):
     if playMethod == 2 or platform == osAndroid:
         AndroidPlayback(asin, trailer)
     elif playMethod == 3:
-        IStreamPlayback(amazonUrl, asin, trailer)
+        xbmcplugin.setResolvedUrl(pluginhandle, True, IStreamPlayback(amazonUrl, asin, trailer))
     else:
         if verbLog: videoUrl += '&playerDebug=true'
         url, err = getCmdLine(videoUrl, amazonUrl)
@@ -860,9 +867,11 @@ def AndroidPlayback(asin, trailer):
     xbmc.executebuiltin('StartAndroidActivity("%s", "%s", "", "%s")' % (pkg, act, url))
 
 def IStreamPlayback(url, asin, trailer):
+    fakeLI = xbmcgui.ListItem(path='')
+    extern = not xbmc.getInfoLabel('Container.PluginName').startswith('plugin.video.amazon')
     values = getFlashVars(url)
     if not values:
-        return
+        return fakeLI
 
     thumb = xbmc.getInfoLabel('ListItem.Art(season.poster)')
     if not thumb:
@@ -870,8 +879,12 @@ def IStreamPlayback(url, asin, trailer):
         if not thumb:
             thumb = xbmc.getInfoLabel('ListItem.Art(thumb)')
 
+
     vMT = 'Feature'
     title = xbmc.getInfoLabel('ListItem.Title')
+    number = xbmc.getInfoLabel('ListItem.Episode')
+    if number and not extern:
+        title = '%s - %s' % (number, title)
     if trailer == '1':
         vMT = 'Trailer'
         title += ' (Trailer)'
@@ -881,11 +894,11 @@ def IStreamPlayback(url, asin, trailer):
     Log(mpd)
     if not mpd:
         Dialog.notification(getString(30203), subs, xbmcgui.NOTIFICATION_ERROR)
-        return
+        return fakeLI
 
     listitem = xbmcgui.ListItem(label=title, path=mpd)
     listitem.setArt({'thumb': thumb})
-    if not 'plugin.video.amazon'in xbmc.getInfoLabel('Container.PluginName') or trailer == '1':
+    if extern or trailer == '1':
         Log('external', 0)
         listitem.setInfo('video', {'Plot': xbmc.getInfoLabel('ListItem.Plot')})
     listitem.setSubtitles(subs)
@@ -893,7 +906,7 @@ def IStreamPlayback(url, asin, trailer):
     listitem.setProperty('inputstream.mpd.license_key', licURL)
     listitem.setProperty('inputstreamaddon', 'inputstream.mpd')
     
-    xbmcplugin.setResolvedUrl(pluginhandle, True, listitem)
+    return listitem
     
 def check_output(*popenargs, **kwargs):
     p = subprocess.Popen(stdout=subprocess.PIPE, stderr=subprocess.STDOUT, *popenargs, **kwargs)
@@ -995,7 +1008,7 @@ def parseSubs(data):
         Log('Convert %s Subtitle' % lang)
         file = xbmc.translatePath('special://temp/%s.srt' % lang).decode('utf-8')
         srt = codecs.open(file, 'w', encoding='utf-8')
-        soup = BeautifulSoup(getURL(sub['url']))
+        soup = BeautifulStoneSoup(getURL(sub['url']), convertEntities=BeautifulStoneSoup.XML_ENTITIES)
         enc = soup.originalEncoding
         num = 0
         for caption in soup.findAll('tt:p'):
@@ -1037,7 +1050,7 @@ def getFlashVars(url):
             result = re.compile(pattern, re.DOTALL).findall(showpage)
             if result: values[key] = result[0]
     
-    for key in values.keys():
+    for key in search.keys():
         if not values.has_key(key):
             Dialog.notification(getString(30200), getString(30210), xbmcgui.NOTIFICATION_ERROR)
             return False
@@ -1249,10 +1262,12 @@ def getmac():
     return str(mac)
     
 def remLoginData():
-    if xbmcvfs.exists(CookieFile):
-        xbmcvfs.delete(CookieFile)
+    for fn in xbmcvfs.listdir(DataPath)[1]:
+        if fn.startswith('cookie'):
+            xbmcvfs.delete(os.path.join(DataPath, fn))
     addon.setSetting('login_name', '')
     addon.setSetting('login_pass', '')
+    Dialog.notification(__plugin__, getString(30211), xbmcgui.NOTIFICATION_INFO)
     
 def scrapAsins(url, cj):
     asins = []

@@ -156,7 +156,8 @@ def IStreamPlayback(url, asin, trailer):
     if trailer: infoLabels['Title'] += ' (Trailer)'
     if not infoLabels.has_key('Thumb'): 
         infoLabels['Thumb'] = None
-    if infoLabels.has_key('Fanart'): listitem.setArt({'fanart': infoLabels['Fanart']})
+    if infoLabels.has_key('Fanart'):
+        listitem.setArt({'fanart': infoLabels['Fanart']})
     if infoLabels.has_key('Poster'): 
         listitem.setArt({'tvshow.poster': infoLabels['Poster']})
     else: 
@@ -176,14 +177,14 @@ def parseSubs(data):
         return subs
     
     import codecs
-    from BeautifulSoup import BeautifulSoup
+    from BeautifulSoup import BeautifulStoneSoup
     
     for sub in data['subtitleUrls']:
         lang = sub['displayName'].split('(')[0].strip()
         common.Log('Convert %s Subtitle' % lang)
         file = xbmc.translatePath('special://temp/%s.srt' % lang).decode('utf-8')
         srt = codecs.open(file, 'w', encoding='utf-8')
-        soup = BeautifulSoup(common.getURL(sub['url']))
+        soup = BeautifulStoneSoup(common.getURL(sub['url']), convertEntities=BeautifulStoneSoup.XML_ENTITIES)
         enc = soup.originalEncoding
         num = 0
         for caption in soup.findAll('tt:p'):
@@ -299,7 +300,7 @@ def getPlaybackInfo(url):
 def getFlashVars(url):
     cookie = common.mechanizeLogin()
     showpage = common.getURL(url, useCookie=cookie)
-    #common.WriteLog(showpage, 'flashvars', 'w')
+
     if not showpage:
         Dialog.notification(common.__plugin__, Error({'errorCode':'invalidrequest', 'message':'getFlashVars'}), xbmcgui.NOTIFICATION_ERROR)
         return False
@@ -316,7 +317,7 @@ def getFlashVars(url):
             result = re.compile(pattern, re.DOTALL).findall(showpage)
             if result: values[key] = result[0]
     
-    for key in values.keys():
+    for key in search.keys():
         if not values.has_key(key):
             Dialog.notification(common.getString(30200), common.getString(30210), xbmcgui.NOTIFICATION_ERROR)
             return False
@@ -328,7 +329,7 @@ def getFlashVars(url):
     rand = 'onWebToken_' + str(random.randint(0,484))
     pltoken = common.getURL(common.BASE_URL + "/gp/video/streaming/player-token.json?callback=" + rand, useCookie=cookie)
     try:
-        values['token']  = re.compile('"([^"]*).*"([^"]*)"').findall(pltoken)[0][1]
+        values['token'] = re.compile('"([^"]*).*"([^"]*)"').findall(pltoken)[0][1]
     except:
         Dialog.notification(common.getString(30200), common.getString(30201), xbmcgui.NOTIFICATION_ERROR)
         return False

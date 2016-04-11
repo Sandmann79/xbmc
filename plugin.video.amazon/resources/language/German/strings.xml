@@ -173,4 +173,5 @@ Soll die Datenbank jetzt kopiert werden?
     <string id="30208">Wiedergabe momentan nicht möglich, später erneut versuchen</string>
     <string id="30209">Unbekannt</string>
     <string id="30210">Bitte Zugangsdaten und Cookie in den Einstellungen löschen</string>
+    <string id="30211">Zugangsdaten und Cookie(s) entfernt</string>
 </strings>

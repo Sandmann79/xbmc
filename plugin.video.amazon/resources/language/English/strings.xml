@@ -175,4 +175,5 @@ Copy database files now?
     <string id="30208">Playback currently not possible, try again later</string>
     <string id="30209">Unknown</string>
     <string id="30210">Please remove Credentials and Cookie in Settings</string>
+    <string id="30211">Credentials and Cookie(s) removed</string>
 </strings>

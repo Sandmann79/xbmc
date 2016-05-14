@@ -21,7 +21,8 @@
     
     <string id="30011">General</string>
     <string id="30012">Playback with</string>
-
+    <string id="30036">Inputstream Addon Settings...</string>
+    
 ​    <string id="30015">Views</string>
     <string id="30016">Movie Fanart Source</string>
     <string id="30017">TV Show Fanart Source</string>
@@ -48,7 +49,7 @@
     <string id="30031">Season View</string>
     <string id="30032">Episode View</string>
     
-    <string id="30038">Update</string>
+    <string id="30038">Connection</string>
     <string id="30039">Items Per Page</string>
 
     <string id="30041">Enable Fullscreen Video</string>

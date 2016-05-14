@@ -19,6 +19,7 @@
         <setting id="waitprepin" type="labelenum" values="1|2|3|4|5|6|7|8|9|10|11|12|13|14|15|16|17|18|19|20|21|22|23|24|25|26|27|28|29|30" label="30057" default="10" visible="eq(-4,false) + lt(-15,2)" enable="eq(-2,true) + eq(-4,false)"/>
         <setting id="waitpin" type="labelenum" values="1|2|3|4|5|6|7|8|9|10|11|12|13|14|15|16|17|18|19|20|21|22|23|24|25|26|27|28|29|30" enable="eq(-3,true) + eq(-5,true)" label="30047" default="5" visible="eq(-5,true) + lt(-16,2)"/>
         <setting id="subtitles" type="bool" label="30005" visible="eq(-17,3)" default="true" />
+        <setting id="is_settings" type="action" label="30036" visible="eq(-18,3)" action="RunPlugin(plugin://plugin.video.amazon/?mode=<common>&sitemode=<openSettings>&url=<inputstream.mpd>)" option="close"/>
     </category>
     <category label="30038">
         <setting label="30001" type="lsep"/>

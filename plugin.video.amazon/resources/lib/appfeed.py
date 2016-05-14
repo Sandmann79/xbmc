@@ -200,9 +200,13 @@ def getTVDBImages(title, imdb=None, id=None, seasons=False):
     splitter = [' - ', ': ', ', ']
     langcodes = ['de', 'en']
     TVDB_URL = 'http://www.thetvdb.com/banners/'
-    while not id:
+    while not id and title:
         tv = urllib.quote_plus(title)
         result = common.getURL('http://www.thetvdb.com/api/GetSeries.php?seriesname=%s&language=de' % (tv), silent=True)
+        if not result:
+            common.Log('Fanart: Pause 20 sec...')
+            xbmc.sleep(20000)
+            continue
         soup = BeautifulSoup(result)
         id = soup.find('seriesid')
         if id:
@@ -217,28 +221,31 @@ def getTVDBImages(title, imdb=None, id=None, seasons=False):
                 break
     if not id: return None, None, None
     if seasons:
-        soup = BeautifulSoup(common.getURL('http://www.thetvdb.com/api/%s/series/%s/banners.xml' % (common.tvdb, id), silent=True))
         seasons = {}
-        for lang in langcodes:
-            for datalang in soup.findAll('language'):
-                if datalang.string == lang:
-                    data = datalang.parent
-                    if data.bannertype.string == 'fanart' and not fanarturl: fanarturl = TVDB_URL + data.bannerpath.string
-                    if data.bannertype.string == 'poster' and not posterurl: posterurl = TVDB_URL + data.bannerpath.string
-                    if data.bannertype.string == data.bannertype2.string == 'season':
-                        snr = data.season.string
-                        if not seasons.has_key(snr):
-                            seasons[snr] = TVDB_URL + data.bannerpath.string
+        result = common.getURL('http://www.thetvdb.com/api/%s/series/%s/banners.xml' % (common.tvdb, id), silent=True)
+        if result:
+            soup = BeautifulSoup(result)
+            for lang in langcodes:
+                for datalang in soup.findAll('language'):
+                    if datalang.string == lang:
+                        data = datalang.parent
+                        if data.bannertype.string == 'fanart' and not fanarturl: fanarturl = TVDB_URL + data.bannerpath.string
+                        if data.bannertype.string == 'poster' and not posterurl: posterurl = TVDB_URL + data.bannerpath.string
+                        if data.bannertype.string == data.bannertype2.string == 'season':
+                            snr = data.season.string
+                            if not seasons.has_key(snr):
+                                seasons[snr] = TVDB_URL + data.bannerpath.string
         return seasons, posterurl, fanarturl
     else:
         for lang in langcodes:
             result = common.getURL('http://www.thetvdb.com/api/%s/series/%s/%s.xml' % (common.tvdb, id, lang), silent=True)
-            soup = BeautifulSoup(result)
-            fanart = soup.find('fanart')
-            poster = soup.find('poster')
-            if len(fanart) and not fanarturl: fanarturl = TVDB_URL + fanart.string
-            if len(poster) and not posterurl : posterurl = TVDB_URL + poster.string
-            if posterurl and fanarturl: return id, posterurl, fanarturl
+            if result:
+                soup = BeautifulSoup(result)
+                fanart = soup.find('fanart')
+                poster = soup.find('poster')
+                if len(fanart) and not fanarturl: fanarturl = TVDB_URL + fanart.string
+                if len(poster) and not posterurl : posterurl = TVDB_URL + poster.string
+                if posterurl and fanarturl: return id, posterurl, fanarturl
         return id, posterurl, fanarturl
 
 def getTMDBImages(title, imdb=None, content='movie', year=None):
@@ -247,14 +254,14 @@ def getTMDBImages(title, imdb=None, content='movie', year=None):
     TMDB_URL = 'http://image.tmdb.org/t/p/original'
     yearorg = year
 
-    while not id:
+    while not id and title:
         str_year = ''
         if year: str_year = '&year=' + str(year)
         movie = urllib.quote_plus(title)
         result = common.getURL('http://api.themoviedb.org/3/search/%s?api_key=%s&language=de&query=%s%s' % (content, common.tmdb, movie, str_year), silent=True)
         if not result:
-            common.Log('Fanart: Pause 5 sec...')
-            xbmc.sleep(5000)
+            common.Log('Fanart: Pause 20 sec...')
+            xbmc.sleep(20000)
             continue
         data = json.loads(result)
         if data['total_results'] > 0:

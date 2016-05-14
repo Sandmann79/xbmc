@@ -17,6 +17,7 @@
 
     <string id="30011">Allgemein</string>
     <string id="30012">Wiedergabemethode</string>
+    <string id="30013">Inputstream Addon Einstellungen...</string>
 
     <string id="30015">Ansicht</string>
     <string id="30016">Film-Fanart Quelle</string>
@@ -75,7 +76,7 @@
     <string id="30108">Suchen</string>
     <string id="30109">Bitrate auswählen und wiedergeben</string>
     <string id="30111">Weiter zu Seite %s</string>
-    <string id="30112">Zurück zu Seite %s</string>
+    <string id="30112">Zurück zum Hauptmenü</string>
     <string id="30113">Sprache auswählen und wiedergeben</string>
     <string id="30114">Stream Qualität auswählen:</string>
     <string id="30115">Verfügbare Sprachen:</string>

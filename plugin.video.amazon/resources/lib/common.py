@@ -56,7 +56,7 @@ class _Info:
     def __init__( self, *args, **kwargs ):
         self.__dict__.update( kwargs )
 
-def getURL( url, host=BASE_URL.split('//')[1], useCookie=False, silent=False, headers=None):
+def getURL(url, host=BASE_URL.split('//')[1], useCookie=False, silent=False, headers=None):
     cj = cookielib.LWPCookieJar()
     if useCookie:
         if isinstance(useCookie, bool): cj = mechanizeLogin()
@@ -64,7 +64,7 @@ def getURL( url, host=BASE_URL.split('//')[1], useCookie=False, silent=False, he
         if isinstance(cj, bool): return False
     dispurl = url
     dispurl = re.sub('(?i)%s|%s|&token=\w+' % (tvdb, tmdb), '', url).strip()
-    if not silent: Log('getURL: '+dispurl)
+    if not silent or verbLog: Log('getURL: '+dispurl)
     if not headers: headers = [('User-Agent', UserAgent ), ('Host', host)]
     try:
         opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cj),urllib2.HTTPRedirectHandler)
@@ -77,7 +77,7 @@ def getURL( url, host=BASE_URL.split('//')[1], useCookie=False, silent=False, he
         return False
     return response
 
-def getATVURL( url , values = None ):
+def getATVURL(url , values = None):
     try:
         opener = urllib2.build_opener()
         Log('ATVURL --> url = '+url)
@@ -101,7 +101,7 @@ def WriteLog(data, fn='', mode='a'):
     fn = __plugin__ + fn + '.log'
     path = os.path.join(homepath, fn)
     if type(data) == type(unicode()): data = data.encode('utf-8')
-    file = xbmcvfs.File(path, mode)
+    file = xbmcvfs.File(path, 'w')
     data = time.strftime('[%d.%m/%H:%M:%S] ', time.localtime()) + data.__str__()
     file.write(data)
     file.write('\n')
@@ -314,29 +314,18 @@ def GET_ASINS(content):
         asins += content['titleId']
         titleId = content['titleId']
     for format in content['formats']:
-        hasprime = False
         for offer in format['offers']:
+            if format['videoFormatType'] == 'HD' and format['hasEncode']:
+                hd_key = True
             if offer['offerType'] == 'SUBSCRIPTION':
-                hasprime = True
                 prime_key = True
             elif offer.has_key('asin'):
                 newasin = offer['asin']
-                if format['videoFormatType'] == 'HD':
-                    if (newasin == titleId) and (hasprime):
-                        hd_key = True
                 if newasin not in asins:
                     asins += ',' + newasin
         if 'STEREO' in format['audioFormatTypes']: channels = 2
         if 'AC_3_5_1' in format['audioFormatTypes']: channels = 6
-    """
-    if content['childTitles']:
-        feedurl = content['childTitles'][0]['feedUrl']
-        fasins = re.compile('[\?|&].*ASIN=([^&]*)').findall(feedurl)
-        if fasins: feedasins = fasins[0]
-        if titleId not in feedasins:
-            feedasins = titleId + ',' + feedasins
-        titleId = feedasins
-    """
+
     del content
     return asins, hd_key, prime_key, channels
     
@@ -514,6 +503,9 @@ def getDBlocation(retvar):
     
     return DBfile[retvar]
 
+def openSettings():
+    xbmcaddon.Addon(args.url).openSettings()
+    
 if addon.getSetting('save_login') == 'false':
     addon.setSetting('login_name', '')
     addon.setSetting('login_pass', '')

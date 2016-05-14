@@ -135,7 +135,7 @@ def check_output(*popenargs, **kwargs):
     return out.strip()
 
 def IStreamPlayback(url, asin, trailer):
-    values = getFlashVars(url)
+    values = getFlashVars()
     if not values:
         return
 
@@ -290,41 +290,31 @@ def getPlaybackInfo(url):
     if addon.getSetting("framerate") == 'false':
         return '', False
     Dialog.notification(xbmc.getLocalizedString(20186), '', xbmcgui.NOTIFICATION_INFO, 60000, False)
-    values = getFlashVars(url)
+    values = getFlashVars()
     if not values:
         return '', False
     fr, err = getStreams(*getUrldata('catalog/GetPlaybackResources', values, extra=True))
     Dialog.notification(xbmc.getLocalizedString(20186), '', xbmcgui.NOTIFICATION_INFO, 10, False)
     return fr, err
 
-def getFlashVars(url):
+def getFlashVars():
     cookie = common.mechanizeLogin()
-    showpage = common.getURL(url, useCookie=cookie)
+    url = common.BASE_URL + '/gp/deal/ajax/getNotifierResources.html'
+    showpage = json.loads(common.getURL(url, useCookie=cookie))
 
     if not showpage:
         Dialog.notification(common.__plugin__, Error({'errorCode':'invalidrequest', 'message':'getFlashVars'}), xbmcgui.NOTIFICATION_ERROR)
         return False
-    values = {}
-    search = {'sessionID'  : "ue_sid='(.*?)'",
-              'marketplace': "ue_mid='(.*?)'",
-              'customer'   : '"customerID":"(.*?)"'}
-    if 'var config' in showpage:
-        flashVars = re.compile('var config = (.*?);',re.DOTALL).findall(showpage)
-        flashVars = json.loads(unicode(flashVars[0], errors='ignore'))
-        values = flashVars['player']['fl_config']['initParams']
-    else:
-        for key, pattern in search.items():
-            result = re.compile(pattern, re.DOTALL).findall(showpage)
-            if result: values[key] = result[0]
-    
-    for key in search.keys():
-        if not values.has_key(key):
-            Dialog.notification(common.getString(30200), common.getString(30210), xbmcgui.NOTIFICATION_ERROR)
-            return False
 
-    values['deviceTypeID']  = 'AOAGZA014O5RE'
-    values['asin']          = common.args.asin
-    values['userAgent']     = common.UserAgent
+    values = {'asin'        : common.args.asin,
+              'deviceTypeID': 'AOAGZA014O5RE',
+              'userAgent'   : common.UserAgent}
+    values.update(showpage['resourceData']['GBCustomerData'])
+
+    if 'customerId' not in values:
+        Dialog.notification(common.getString(30200), common.getString(30210), xbmcgui.NOTIFICATION_ERROR)
+        return False
+
     values['deviceID']      = common.gen_id()
     rand = 'onWebToken_' + str(random.randint(0,484))
     pltoken = common.getURL(common.BASE_URL + "/gp/video/streaming/player-token.json?callback=" + rand, useCookie=cookie)
@@ -342,9 +332,9 @@ def getUrldata(mode, values, format='json', devicetypeid=False, version=1, firmw
     url += '?asin=' + values['asin']
     url += '&deviceTypeID=' + devicetypeid
     url += '&firmware=' + firmware
-    url += '&customerID=' + values['customer']
+    url += '&customerID=' + values['customerId']
     url += '&deviceID=' + values['deviceID']
-    url += '&marketplaceID=' + values['marketplace']
+    url += '&marketplaceID=' + values['marketplaceId']
     url += '&token=' + values['token']
     url += '&format=' + format
     url += '&version=' + str(version)
@@ -436,7 +426,8 @@ def Input(mousex=0,mousey=0,click=0,keys=False,delay='200'):
         cmd = app + mouse
         if click: cmd += mclk
     common.Log('Run command: %s' % cmd)
-    subprocess.call(cmd, shell=True)
+    rcode = subprocess.call(cmd, shell=True)
+    if rcode: common.Log('Returncode: %s' % rcode)
 
 class window(xbmcgui.WindowDialog):
     def __init__(self):

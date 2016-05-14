@@ -17,6 +17,7 @@
 
     <string id="30011">General</string>
     <string id="30012">Playback with</string>
+    <string id="30013">Inputstream Addon Settings...</string>
 
 ​    <string id="30015">Views</string>
     <string id="30016">Movie Fanart Source</string>
@@ -44,7 +45,7 @@
     <string id="30031">Season View</string>
     <string id="30032">Episode View</string>
     
-    <string id="30038">Update</string>
+    <string id="30038">Connection</string>
     <string id="30039">Items Per Page</string>
     
     <string id="30041">Enable Fullscreen Video</string>
@@ -75,7 +76,7 @@
     <string id="30108">Search</string>
     <string id="30109">Choose Bitrate for Playback</string>
     <string id="30111">Continue to Page %s</string>
-    <string id="30112">Back to Page %s</string>
+    <string id="30112">Back to Main Menu</string>
     <string id="30113">Choose Language for Playback</string>
     <string id="30114">Choose Stream Quality:</string>
     <string id="30115">Available Languages:</string>

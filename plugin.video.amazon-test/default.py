@@ -854,10 +854,10 @@ def PlayVideo(name, asin, adultstr, trailer, selbitrate):
     if playMethod == 2 or platform == osAndroid:
         AndroidPlayback(asin, trailer)
     elif playMethod == 3:
-        xbmcplugin.setResolvedUrl(pluginhandle, True, IStreamPlayback(amazonUrl, asin, trailer))
+        xbmcplugin.setResolvedUrl(pluginhandle, True, IStreamPlayback(asin, trailer))
     else:
         if verbLog: videoUrl += '&playerDebug=true'
-        url, err = getCmdLine(videoUrl, amazonUrl)
+        url, err = getCmdLine(videoUrl, asin)
         if not url:
             Dialog.notification(getString(30203), err, xbmcgui.NOTIFICATION_ERROR)
             return
@@ -917,7 +917,7 @@ def AndroidPlayback(asin, trailer):
         Log('Properties:\n' + check_output(['sh', '-c', 'getprop | grep -iE "(ro.product|ro.build|google)"']))
     xbmc.executebuiltin('StartAndroidActivity("%s", "%s", "", "%s")' % (pkg, act, url))
 
-def IStreamPlayback(url, asin, trailer):
+def IStreamPlayback(asin, trailer):
     fakeLI = xbmcgui.ListItem(path='')
     extern = not xbmc.getInfoLabel('Container.PluginName').startswith('plugin.video.amazon')
     values = getFlashVars(asin)
@@ -972,7 +972,7 @@ def check_output(*popenargs, **kwargs):
             Log(e, xbmc.LOGERROR)
     return out.strip()
   
-def getCmdLine(videoUrl, amazonUrl):
+def getCmdLine(videoUrl, asin):
     scr_path = addon.getSetting("scr_path")
     br_path = addon.getSetting("br_path").strip()
     scr_param = addon.getSetting("scr_param").strip()
@@ -985,7 +985,7 @@ def getCmdLine(videoUrl, amazonUrl):
         if not xbmcvfs.exists(scr_path): 
             return False, nobr_str
 
-        fr, err = getPlaybackInfo(amazonUrl)
+        fr, err = getPlaybackInfo(asin)
         if fr == False:
             return False, err
 

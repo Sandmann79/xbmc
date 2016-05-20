@@ -177,4 +177,6 @@ Copy database files now?
     <string id="30209">Unknown</string>
     <string id="30210">Please remove Credentials and Cookie in Settings</string>
     <string id="30211">Credentials and Cookie(s) removed</string>
+    <string id="30212">Captcha Request, please change IP or try again later</string>
+    <string id="30213">Unknown Error, please check amazon-login.log</string>
 </strings>

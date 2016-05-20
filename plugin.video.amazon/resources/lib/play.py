@@ -299,6 +299,8 @@ def getPlaybackInfo(url):
 
 def getFlashVars():
     cookie = common.mechanizeLogin()
+    if not cookie:
+        return False
     url = common.BASE_URL + '/gp/deal/ajax/getNotifierResources.html'
     showpage = json.loads(common.getURL(url, useCookie=cookie))
 

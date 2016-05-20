@@ -102,8 +102,8 @@ def WriteLog(data, fn='', mode='a'):
     path = os.path.join(homepath, fn)
     if type(data) == type(unicode()): data = data.encode('utf-8')
     file = xbmcvfs.File(path, 'w')
-    data = time.strftime('[%d.%m/%H:%M:%S] ', time.localtime()) + data.__str__()
-    file.write(data)
+    #data = time.strftime('[%d.%m/%H:%M:%S] ', time.localtime()) + data.__str__()
+    file.write(data.__str__())
     file.write('\n')
     file.close()
     
@@ -186,6 +186,8 @@ def toogleWatchlist(asin=False, action='add'):
         else: action = 'add'
         
     cookie = mechanizeLogin()
+    if not cookie:
+       return
     token = getToken(asin, cookie)
     url = BASE_URL + '/gp/video/watchlist/ajax/addRemove.html?ASIN=%s&dataType=json&token=%s&action=%s' % (asin, token, action)
     data = json.loads(getURL(url, useCookie=cookie))
@@ -224,16 +226,19 @@ def mechanizeLogin():
         Log('Login Retry: %s' % retrys)
         succeeded = dologin()
         if retrys >= 2:
-            Dialog.ok('Login Error','Failed to Login')
             succeeded=True
+
+    if isinstance(succeeded, bool):
+        return False
     return succeeded
 
 def dologin():
     email = addon.getSetting('login_name')
     password = decode(addon.getSetting('login_pass'))
+    savelogin = addon.getSetting('save_login') == 'true'
     changed = False
     
-    if addon.getSetting('save_login') == 'false' or email == '' or password == '':
+    if not savelogin or email == '' or password == '':
         keyboard = xbmc.Keyboard(addon.getSetting('login_name'), getString(30002))
         keyboard.doModal()
         if keyboard.isConfirmed() and keyboard.getText():
@@ -247,24 +252,33 @@ def dologin():
         br = mechanize.Browser()  
         br.set_handle_robots(False)
         br.set_cookiejar(cj)
+        br.set_handle_gzip(True)
         br.addheaders = [('User-agent', UserAgent)]  
-        sign_in = br.open(BASE_URL + "/gp/aw/si.html") 
+        br.open(BASE_URL + "/gp/aw/si.html") 
         br.select_form(name="signIn")  
         br["email"] = email
         br["password"] = password
-        logged_in = br.submit()
-        error_str = "message error"
-        if error_str in logged_in.read():
-            Dialog.ok(getString(30200), getString(30201))
-            return False
-        else:
-            if addon.getSetting('save_login') == 'true' and changed:
+        br.addheaders = [('Accept-Encoding', 'gzip, deflate')]
+        response = br.submit().read()
+        if 'action=sign-out' in response:
+            if savelogin and changed:
                 addon.setSetting('login_name', email)
                 addon.setSetting('login_pass', encode(password))
             if addon.getSetting('no_cookie') != 'true':
                 cj.save(COOKIEFILE, ignore_discard=True, ignore_expires=True)
             gen_id()
             return cj
+        elif 'message_error' in response:
+            Dialog.ok(getString(30200), getString(30201))
+            addon.setSetting('login_pass', '')
+            return False
+        elif 'message_warning' in response:
+            Dialog.ok(getString(30200), getString(30212))
+            return True
+        else:
+            Dialog.ok(getString(30200), getString(30213))
+            WriteLog(response, 'amazon-login.log')
+            return True
     return True
     
 def setLoginPW():

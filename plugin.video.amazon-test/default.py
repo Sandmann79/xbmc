@@ -79,7 +79,7 @@ AgeRating = ['FSK ', '', '', ''][country]
 menuFile = os.path.join(DataPath, 'menu-%s.db' % MarketID)
 CookieFile = os.path.join(DataPath, 'cookie-%s.lwp' % MarketID)
 na = 'not available'
-UserAgent = 'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/48.0.2532.0 Safari/537.36'
+UserAgent = 'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/49.0.2566.0 Safari/537.36'
 mUserAgent = 'Mozilla/5.0 (iPhone; U; CPU iPhone OS 4_3_2 like Mac OS X) AppleWebKit/533.17.9 (KHTML, like Gecko) Version/5.0.2 Mobile/8H7 Safari/6533.18.5'
 watchlist = 'watchlist'
 library = 'video-library'
@@ -132,7 +132,7 @@ def setView(content, view=False, updateListing=False):
         xbmc.executebuiltin('Container.SetViewMode(%s)' % viewid)
     xbmcplugin.endOfDirectory(pluginhandle,updateListing=updateListing)
     
-def getURL(url, host=BaseUrl.split('//')[1], useCookie=False, silent=False, headers=None, UA=UserAgent):
+def getURL(url, host=BaseUrl.split('//')[1], useCookie=False, silent=False, headers=[], UA=UserAgent):
     cj = cookielib.LWPCookieJar()
     if useCookie:
         if isinstance(useCookie, bool): cj = MechanizeLogin()
@@ -141,7 +141,8 @@ def getURL(url, host=BaseUrl.split('//')[1], useCookie=False, silent=False, head
     dispurl = url
     dispurl = re.sub('(?i)%s|%s|&token=\w+' % (tvdb, tmdb), '', url).strip()
     if not silent or verbLog: Log('getURL: '+dispurl)
-    if not headers: headers = [('User-Agent', UA), ('Host', host)]
+    headers.append(('User-Agent', UA))
+    headers.append(('Host', host))
     try:
         opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cj),urllib2.HTTPRedirectHandler)
         opener.addheaders = headers
@@ -464,6 +465,8 @@ def WatchList(asin, remove):
     if remove: action = 'remove'
     else: action = 'add'
     cookie = MechanizeLogin()
+    if not cookie:
+        return
     token = getToken(asin, cookie)
     url = BaseUrl + '/gp/video/watchlist/ajax/addRemove.html?&ASIN=%s&dataType=json&token=%s&action=%s' % (asin, token, action)
     data = json.loads(getURL(url, useCookie=cookie))
@@ -664,6 +667,8 @@ def getList(list, export):
     extraArgs = ''
     if list == watchlist or list == library:
         cj = MechanizeLogin()
+        if not cj:
+            return
         asins_movie = scrapAsins('/gp/video/%s/movie/?ie=UTF8&sortBy=DATE_ADDED_DESC' % list, cj)
         asins_tv = scrapAsins('/gp/video/%s/tv/?ie=UTF8&sortBy=DATE_ADDED_DESC' % list, cj)
     else:
@@ -688,7 +693,7 @@ def Log(msg, level=xbmc.LOGNOTICE):
         msg = msg.encode('utf-8')
     xbmc.log('[%s] %s' % (__plugin__, msg), level)
 
-def WriteLog(data, name='amazon-test.log', mode='a'):
+def WriteLog(data, name='amazon-test.log', mode='w'):
     if not verbLog: return
     path = os.path.join(HomePath, name)
     if type(data) == type(unicode()): data = data.encode('utf-8')
@@ -1083,6 +1088,8 @@ def getPlaybackInfo(asin):
 
 def getFlashVars(asin):
     cookie = MechanizeLogin()
+    if not cookie:
+        return False
     url = BaseUrl + '/gp/deal/ajax/getNotifierResources.html'
     showpage = json.loads(getURL(url, useCookie=cookie))
     #WriteLog(showpage)
@@ -1234,8 +1241,10 @@ def MechanizeLogin():
         Log('Login Retry: %s' % retrys)
         succeeded = LogIn()
         if retrys >= 2:
-            Dialog.ok('Login Error','Failed to Login')
             succeeded = True
+    
+    if isinstance(succeeded, bool):
+        return False
     return succeeded
 
 def LogIn():
@@ -1258,17 +1267,16 @@ def LogIn():
         br = mechanize.Browser()  
         br.set_handle_robots(False)
         br.set_cookiejar(cj)
-        br.addheaders = [('User-agent', UserAgent)]  
-        sign_in = br.open(BaseUrl + "/gp/aw/si.html") 
-        br.select_form(name="signIn")  
-        br["email"] = email
-        br["password"] = password
-        logged_in = br.submit()
-        error_str = "message error"
-        if error_str in logged_in.read():
-            Dialog.ok(getString(30200), getString(30201))
-            return False
-        else:
+        br.set_handle_gzip(True)
+        br.addheaders = [('User-agent', UserAgent)]
+        br.open(BaseUrl + '/gp/aw/si.html')
+        br.select_form(name='signIn')
+        br['email'] = email
+        br['password'] = password
+        br.addheaders = [('Accept-Encoding', 'gzip, deflate')]
+        br.submit()
+        response = br.response().read()
+        if 'action=sign-out' in response:
             if savelogin and changed:
                 addon.setSetting('login_name', email)
                 addon.setSetting('login_pass', encode(password))
@@ -1276,6 +1284,17 @@ def LogIn():
                 cj.save(CookieFile, ignore_discard=True, ignore_expires=True)
             genID()
             return cj
+        elif 'message_error' in response:
+            Dialog.ok(getString(30200), getString(30201))
+            addon.setSetting('login_pass', '')
+            return False
+        elif 'message_warning' in response:
+            Dialog.ok(getString(30200), getString(30212))
+            return True
+        else:
+            Dialog.ok(getString(30200), getString(30213))
+            WriteLog(response, 'amazon-vod-login.log')
+            return True
     return True
     
 def setLoginPW():

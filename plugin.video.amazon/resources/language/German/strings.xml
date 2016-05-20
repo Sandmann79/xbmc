@@ -175,4 +175,6 @@ Soll die Datenbank jetzt kopiert werden?
     <string id="30209">Unbekannt</string>
     <string id="30210">Bitte Zugangsdaten und Cookie in den Einstellungen löschen</string>
     <string id="30211">Zugangsdaten und Cookie(s) entfernt</string>
+    <string id="30212">Captcha Abfrage, bitte IP ändern oder später erneut versuchen</string>
+    <string id="30213">Unbekannter Fehler, bitte amazon-login.log prüfen</string>
 </strings>

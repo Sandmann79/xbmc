@@ -1252,7 +1252,7 @@ def LogIn():
     password = decode(addon.getSetting('login_pass'))
     savelogin = addon.getSetting('save_login') == 'true'
     changed = False
-    
+
     if not savelogin or email == '' or password == '':
         keyboard = xbmc.Keyboard(email, getString(30002))
         keyboard.doModal()
@@ -1264,18 +1264,29 @@ def LogIn():
         if xbmcvfs.exists(CookieFile):
             xbmcvfs.delete(CookieFile)
         cj = cookielib.LWPCookieJar()
-        br = mechanize.Browser()  
+        br = mechanize.Browser()
         br.set_handle_robots(False)
         br.set_cookiejar(cj)
         br.set_handle_gzip(True)
-        br.addheaders = [('User-agent', UserAgent)]
+        br.addheaders = [('User-Agent', UserAgent)]
         br.open(BaseUrl + '/gp/aw/si.html')
         br.select_form(name='signIn')
         br['email'] = email
         br['password'] = password
-        br.addheaders = [('Accept-Encoding', 'gzip, deflate')]
+        br.addheaders = [('Accept', 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8'),
+                         ('Accept-Encoding', 'gzip, deflate'),
+                         ('Accept-Language', 'de,en-US;q=0.8,en;q=0.6'),
+                         ('Cache-Control', 'max-age=0'),
+                         ('Connection', 'keep-alive'),
+                         ('Content-Type', 'application/x-www-form-urlencoded'),
+                         ('Host', BaseUrl.split('//')[1]),
+                         ('Origin', BaseUrl),
+                         ('User-Agent', UserAgent),
+                         ('Upgrade-Insecure-Requests', '1')]
         br.submit()
         response = br.response().read()
+        soup = BeautifulSoup(response, convertEntities=BeautifulSoup.HTML_ENTITIES)
+        WriteLog(response, 'amazon-vod-login.log')
         if 'action=sign-out' in response:
             if savelogin and changed:
                 addon.setSetting('login_name', email)
@@ -1286,14 +1297,17 @@ def LogIn():
             return cj
         elif 'message_error' in response:
             Dialog.ok(getString(30200), getString(30201))
+            msg = soup.find('div', attrs={'id': 'message_error'})
+            Log('Login Error: %s' % msg.p.renderContents().strip())
             addon.setSetting('login_pass', '')
             return False
         elif 'message_warning' in response:
             Dialog.ok(getString(30200), getString(30212))
+            msg = soup.find('div', attrs={'id': 'message_warning'})
+            Log('Login Warning: %s' % msg.p.renderContents().strip())
             return True
         else:
             Dialog.ok(getString(30200), getString(30213))
-            WriteLog(response, 'amazon-vod-login.log')
             return True
     return True
     

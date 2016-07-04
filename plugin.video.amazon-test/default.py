@@ -1347,8 +1347,8 @@ def remLoginData():
 def scrapAsins(url, cj):
     asins = []
     url = BaseUrl + url
-    content = getURL(url, useCookie=cj, UA=mUserAgent)
-    asins += re.compile('gp/product/(.+?)/', re.DOTALL).findall(content)
+    content = getURL(url, useCookie=cj)
+    asins += re.compile('data-asin="(.+?)"', re.DOTALL).findall(content)
     return ','.join(asins)
     
 def createDB(menu=False):

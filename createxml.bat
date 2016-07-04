@@ -10,6 +10,7 @@ if exist plugin.video.amazon\resources\cache rd /s /q plugin.video.amazon\resour
 for /f %%f in ('dir /b /a:d') do if exist %%f\addon.xml (
     del /q /s %%f\*.pyo >nul 2>&1
     del /q /s %%f\*.pyc >nul 2>&1
+    if exist %%f\.idea rd /q /s %%f\.idea >nul 2>&1
     set add=
     for /f "delims=" %%a in (%%f\addon.xml) do (
         set line=%%a

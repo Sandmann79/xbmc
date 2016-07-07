@@ -1,0 +1,502 @@
+# XBMC Media Center language file
+# Addon Name: Amazon VOD
+# Addon id: plugin.video.amazon-test
+# Addon version: 0.2.6
+# Addon Provider: Sandmann79
+msgid ""
+msgstr ""
+"Project-Id-Version: XBMC-Addons\n"
+"Report-Msgid-Bugs-To: alanwww1@xbmc.org\n"
+"POT-Creation-Date: 2016-07-07 19:46+0000\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Language: pl\n"
+"Plural-Forms: nplurals=3; plural=(n==1 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2)\n"
+
+msgctxt "Addon Summary"
+msgid "Amazon Prime Video Streaming"
+msgstr ""
+
+msgctxt "Addon Description"
+msgid "Movies and Television Shows for Prime Members"
+msgstr ""
+
+msgctxt "Addon Disclaimer"
+msgid "Some parts of this addon may not be legal in your country of residence - please check with your local laws before installing.\nThis Addon uses pyDes by Todd Whiteman"
+msgstr ""
+
+msgctxt "#30001"
+msgid "Amazon Account"
+msgstr "Logowanie do Amazon Prime Instant Video"
+
+msgctxt "#30002"
+msgid "Email Adress"
+msgstr "Email"
+
+msgctxt "#30003"
+msgid "Password"
+msgstr "Hasło"
+
+msgctxt "#30004"
+msgid "Stream Bitrate (0 - Ask)"
+msgstr "Stream bitrate (0 - pytanie)"
+
+msgctxt "#30005"
+msgid "Enable Subtitles"
+msgstr "Aktywuj napisy"
+
+msgctxt "#30006"
+msgid "Store Credentials instead of using the Cookie?"
+msgstr "Zapisać dane logowania?"
+
+msgctxt "#30007"
+msgid "Remove Credentials and Cookie"
+msgstr "Usuń dane logowania i cookies"
+
+msgctxt "#30008"
+msgid "Sign In..."
+msgstr ""
+
+msgctxt "#30011"
+msgid "General"
+msgstr "Ogólne"
+
+msgctxt "#30012"
+msgid "Playback with"
+msgstr "Odtwarzanie"
+
+msgctxt "#30013"
+msgid "Inputstream Addon Settings..."
+msgstr ""
+
+msgctxt "#30014"
+msgid "Logged in as"
+msgstr ""
+
+msgctxt "#30015"
+msgid "Views"
+msgstr "Wyświetlanie"
+
+msgctxt "#30016"
+msgid "Movie Fanart Source"
+msgstr "Pobieraj brakujący Fanart przez TMDB (w tle)"
+
+msgctxt "#30017"
+msgid "TV Show Fanart Source"
+msgstr "Pobieraj brakujący Fanart TV przez TVDB (w tle)"
+
+msgctxt "#30018"
+msgid "Age restrictions..."
+msgstr ""
+
+msgctxt "#30019"
+msgid "Prefered Host"
+msgstr ""
+
+msgctxt "#30023"
+msgid "Thumbnail"
+msgstr "Podgląd"
+
+msgctxt "#30024"
+msgid "Poster Wrap"
+msgstr "Plakat"
+
+msgctxt "#30025"
+msgid "List"
+msgstr "Lista"
+
+msgctxt "#30026"
+msgid "Media Info 2"
+msgstr "Tablica info 2"
+
+msgctxt "#30027"
+msgid "Media Info"
+msgstr "Tablica info"
+
+msgctxt "#30028"
+msgid "Fanart"
+msgstr "Fanart"
+
+msgctxt "#30029"
+msgid "Movie View"
+msgstr "Wyświetlaj filmy"
+
+msgctxt "#30030"
+msgid "Show View"
+msgstr "Wyświetlaj seriale"
+
+msgctxt "#30031"
+msgid "Season View"
+msgstr "Wyświetlaj sezony"
+
+msgctxt "#30032"
+msgid "Episode View"
+msgstr "Wyświetlaj epizody"
+
+msgctxt "#30033"
+msgid "Custom"
+msgstr "Zdefiniowane przez użytkownika"
+
+msgctxt "#30034"
+msgid "Big List"
+msgstr "Duża lista"
+
+msgctxt "#30035"
+msgid "Enable Views"
+msgstr "Aktywuj zasady wyświetlania mediów"
+
+msgctxt "#30038"
+msgid "Connection"
+msgstr "Logowanie i dane"
+
+msgctxt "#30039"
+msgid "Items Per Page"
+msgstr "Ilość elementów na stronie"
+
+msgctxt "#30041"
+msgid "Enable Fullscreen Video"
+msgstr "Aktywuj tryb pełnoekranowy"
+
+msgctxt "#30042"
+msgid "Browser Kiosk Mode"
+msgstr "Tryb przeglądarki Kiosk"
+
+msgctxt "#30043"
+msgid "Use custom Browser path"
+msgstr "Jeśli możliwe, to odtwarzaj w jakości HD"
+
+msgctxt "#30044"
+msgid "Wait till Fullscreen (sec)"
+msgstr "Oczekiwanie na tryb pełnoekranowy (w sek.)"
+
+msgctxt "#30045"
+msgid "Automatic PIN Input"
+msgstr "Automatyczne wpisanie PIN"
+
+msgctxt "#30046"
+msgid "PIN"
+msgstr "PIN"
+
+msgctxt "#30047"
+msgid "Wait after PIN Input"
+msgstr "Oczekiwanie po wpisaniu PIN"
+
+msgctxt "#30048"
+msgid "Script path"
+msgstr ""
+
+msgctxt "#30049"
+msgid "Detect Framerate"
+msgstr ""
+
+msgctxt "#30050"
+msgid "Amazon"
+msgstr "Amazon"
+
+msgctxt "#30051"
+msgid "Load missing from TMDb"
+msgstr "Brakujące z TMDb"
+
+msgctxt "#30052"
+msgid "TMDb"
+msgstr "Kompletne z TMDb"
+
+msgctxt "#30053"
+msgid "Load missing from TVDb"
+msgstr "Brakujące z TVDb"
+
+msgctxt "#30054"
+msgid "TVDb"
+msgstr "Kompletne z TVDb"
+
+msgctxt "#30055"
+msgid "Show TV Show Fanart in Season and Episode Lists"
+msgstr "Pokazuj Fanart serialu w liście sezonów i epizodów"
+
+msgctxt "#30056"
+msgid "TVDb incl. Poster"
+msgstr "TVDb w tym Plakat"
+
+msgctxt "#30057"
+msgid "Wait till PIN Input"
+msgstr ""
+
+msgctxt "#30059"
+msgid "Use own user profile"
+msgstr ""
+
+msgctxt "#30060"
+msgid "Library"
+msgstr "Biblioteka"
+
+msgctxt "#30061"
+msgid "Custom Library Folder"
+msgstr "Własny folder biblioteki"
+
+msgctxt "#30062"
+msgid "Path"
+msgstr "Ścieżka"
+
+msgctxt "#30070"
+msgid "Miscellaneous"
+msgstr ""
+
+msgctxt "#30071"
+msgid "Display TV-Show instead of Seasons in Watchlist"
+msgstr ""
+
+msgctxt "#30072"
+msgid "Verbose Logging"
+msgstr ""
+
+msgctxt "#30073"
+msgid "Display Paid Content"
+msgstr ""
+
+msgctxt "#30074"
+msgid "Remote Control support"
+msgstr ""
+
+msgctxt "#30080"
+msgid "Choose Country"
+msgstr ""
+
+msgctxt "#30081"
+msgid "Germany"
+msgstr ""
+
+msgctxt "#30082"
+msgid "United Kingdom"
+msgstr ""
+
+msgctxt "#30083"
+msgid "USA"
+msgstr ""
+
+msgctxt "#30084"
+msgid "Japan"
+msgstr ""
+
+msgctxt "#30100"
+msgid "Library"
+msgstr "Biblioteka"
+
+msgctxt "#30101"
+msgid "Toogle Watched State"
+msgstr ""
+
+msgctxt "#30104"
+msgid "Movies"
+msgstr "Filmy"
+
+msgctxt "#30107"
+msgid "Television"
+msgstr "Seriale"
+
+msgctxt "#30108"
+msgid "Search"
+msgstr "Szukaj"
+
+msgctxt "#30109"
+msgid "Choose Bitrate for Playback"
+msgstr "Wybierz jakość i odtwarzaj"
+
+msgctxt "#30111"
+msgid "Continue to Page %s"
+msgstr "Dalej %s"
+
+msgctxt "#30112"
+msgid "Back to Main Menu"
+msgstr "Wróć %s"
+
+msgctxt "#30113"
+msgid "Choose Language for Playback"
+msgstr "Wybierz język i odtwarzaj"
+
+msgctxt "#30114"
+msgid "Choose Stream Quality:"
+msgstr "Wybierz jakość streamu:"
+
+msgctxt "#30115"
+msgid "Available Languages:"
+msgstr "Dostępne języki:"
+
+msgctxt "#30120"
+msgid "PIN (empty for no restriction)"
+msgstr ""
+
+msgctxt "#30121"
+msgid "PIN Request at"
+msgstr ""
+
+msgctxt "#30122"
+msgid "Apply"
+msgstr ""
+
+msgctxt "#30123"
+msgid "Cancel"
+msgstr ""
+
+msgctxt "#30127"
+msgid "No content found"
+msgstr "Brak nowych danych"
+
+msgctxt "#30143"
+msgid "All Movies"
+msgstr "Wszystkie"
+
+msgctxt "#30160"
+msgid "All Shows"
+msgstr "Wszystkie"
+
+msgctxt "#30165"
+msgid "Movie"
+msgstr "Film"
+
+msgctxt "#30166"
+msgid "Show"
+msgstr "Serial"
+
+msgctxt "#30167"
+msgid "Season"
+msgstr "Sezon"
+
+msgctxt "#30168"
+msgid "Year "
+msgstr "Rok "
+
+msgctxt "#30169"
+msgid "Specials"
+msgstr "Specjalne"
+
+msgctxt "#30171"
+msgid "Unrated"
+msgstr "Nie sprawdzone"
+
+msgctxt "#30173"
+msgid "Episode"
+msgstr "Epizod"
+
+msgctxt "#30180"
+msgid "Add %s to Watchlist"
+msgstr "Dodaj %s do watchlist"
+
+msgctxt "#30181"
+msgid "Remove %s from Watchlist"
+msgstr "Usuń %s z watchlist"
+
+msgctxt "#30182"
+msgid "Go to TV-Show"
+msgstr ""
+
+msgctxt "#30183"
+msgid "Get Similarities"
+msgstr ""
+
+msgctxt "#30185"
+msgid "Export %s"
+msgstr "Dodaj %s do biblioteki"
+
+msgctxt "#30186"
+msgid "Update Library"
+msgstr "Aktualizuj bibliotekę"
+
+msgctxt "#30187"
+msgid "Source folders added/changed"
+msgstr "Źródła Amazon Video dodane"
+
+msgctxt "#30188"
+msgid "To complete the setup:"
+msgstr "Po zakończeniu konfigurowania:"
+
+msgctxt "#30189"
+msgid " 1) Restart Kodi"
+msgstr " 1) Uruchom ponownie XBMC/Kodi"
+
+msgctxt "#30190"
+msgid " 2) Set the content type of added folders"
+msgstr " 2) Ustal zawartość katalogów"
+
+msgctxt "#30191"
+msgid "Restart"
+msgstr "Uruchom ponownie"
+
+msgctxt "#30192"
+msgid "Do you want to restart Kodi now?"
+msgstr "Uruchomić ponownie XBMC/Kodi?"
+
+msgctxt "#30198"
+msgid "Browser or Script not found. Please check settings."
+msgstr ""
+
+msgctxt "#30200"
+msgid "Login Error"
+msgstr "Błąd w trakcie logowania"
+
+msgctxt "#30201"
+msgid "Wrong Email Adress or Password"
+msgstr "Błędny adres email lub hasło"
+
+msgctxt "#30202"
+msgid "No Search Results"
+msgstr "Brak wyników wyszukiwania"
+
+msgctxt "#30203"
+msgid "Unable to Play"
+msgstr "Odtwarzanie niemożliwe"
+
+msgctxt "#30204"
+msgid "Invalid Request"
+msgstr "Zapytanie zakończone niepowodzeniem"
+
+msgctxt "#30205"
+msgid "Playback Limit reached, try again later"
+msgstr "Osiągnięto limit odtwarzania, proszę spróbować później"
+
+msgctxt "#30206"
+msgid "Product not purchased"
+msgstr "Produkt nie został nabyty"
+
+msgctxt "#30207"
+msgid "This Video is unavailable in your Country"
+msgstr "To wideo nie jest dostępne w Twoim kraju"
+
+msgctxt "#30208"
+msgid "Playback currently not possible, try again later"
+msgstr "Odtwarzanie jest teraz niemożliwe, spróbuj ponownie później"
+
+msgctxt "#30209"
+msgid "Unknown"
+msgstr "Nieznane: "
+
+msgctxt "#30210"
+msgid "Please remove Credentials and Cookie in Settings"
+msgstr ""
+
+msgctxt "#30211"
+msgid "Credentials and Cookie(s) removed"
+msgstr ""
+
+msgctxt "#30212"
+msgid "Captcha Request, please change IP or try again later"
+msgstr ""
+
+msgctxt "#30213"
+msgid "Unknown Error, please check amazon-vod-login.log"
+msgstr ""
+
+msgctxt "#30214"
+msgid "Wrong Code"
+msgstr ""
+
+msgctxt "#30215"
+msgid "Login successful"
+msgstr ""
+
+msgctxt "#30216"
+msgid "No credentials present, please go to Settings-Connection and sign in"
+msgstr ""

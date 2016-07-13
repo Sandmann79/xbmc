@@ -117,7 +117,7 @@ def getURL(url, host=BASE_URL.split('//')[1], useCookie=False, silent=False, hea
             return False
     if not silent or verbLog:
         dispurl = url
-        dispurl = re.sub('(?i)%s|%s|&token=\w+' % (tvdb, tmdb), '', url).strip()
+        dispurl = re.sub('(?i)%s|%s|&token=\w+|&customerId=\w+' % (tvdb, tmdb), '', url).strip()
         Log('getURL: ' + dispurl)
     if not headers:
         headers = [('User-Agent', UserAgent), ('Host', host)]
@@ -326,10 +326,11 @@ def LogIn(ask=True):
     else:
         if not email or not password:
             Dialog.notification(getString(30200), getString(30216))
-            addon.openSettings()
+            xbmc.executebuiltin('Addon.OpenSettings(%s)' % addon.getAddonInfo('id'))
             return False
 
     if password:
+        xbmc.executebuiltin('ActivateWindow(busydialog)')
         if xbmcvfs.exists(COOKIEFILE):
             xbmcvfs.delete(COOKIEFILE)
         cj = cookielib.LWPCookieJar()
@@ -355,6 +356,7 @@ def LogIn(ask=True):
         br.submit()
         response = br.response().read()
         soup = BeautifulSoup(response, convertEntities=BeautifulSoup.HTML_ENTITIES)
+        xbmc.executebuiltin('Dialog.Close(busydialog)')
 
         if 'auth-mfa-form' in response:
             msg = soup.find('form', attrs={'id': 'auth-mfa-form'})
@@ -362,12 +364,14 @@ def LogIn(ask=True):
             kb = xbmc.Keyboard('', msgtxt)
             kb.doModal()
             if kb.isConfirmed() and kb.getText():
+                xbmc.executebuiltin('ActivateWindow(busydialog)')
                 br.select_form(nr=0)
                 br['otpCode'] = kb.getText()
                 br.submit()
                 response = br.response().read()
                 soup = BeautifulSoup(response, convertEntities=BeautifulSoup.HTML_ENTITIES)
                 useMFA = True
+                xbmc.executebuiltin('Dialog.Close(busydialog)')
             else:
                 return False
 

@@ -171,7 +171,6 @@ def ListCont(export=False):
 
     cj = common.mechanizeLogin()
     if not cj:
-        xbmc.executebuiltin('Action(Close)')
         return False
 
     asins = common.SCRAP_ASINS(url, cj)
@@ -208,6 +207,10 @@ def ListCont(export=False):
 
 
 def RefreshList():
+    cj = common.mechanizeLogin()
+    if not cj:
+        return
+
     import tv
     import movies
     l = common.args.url
@@ -216,11 +219,11 @@ def RefreshList():
     pDialog = xbmcgui.DialogProgress()
     pDialog.create(common.__plugin__, common.getString(30117))
 
-    for asin in common.SCRAP_ASINS(common.movielib % l):
+    for asin in common.SCRAP_ASINS(common.movielib % l, cj):
         if not movies.lookupMoviedb(asin):
             mvlist.append(asin)
 
-    for asin in common.SCRAP_ASINS(common.tvlib % l):
+    for asin in common.SCRAP_ASINS(common.tvlib % l, cj):
         if not tv.lookupTVdb(asin, tbl='seasons'):
             tvlist.append(asin)
 
@@ -228,7 +231,7 @@ def RefreshList():
         movies.updateLibrary(mvlist)
 
     if tvlist:
-        tv.addTVdb(False, tvlist)
+        tv.addTVdb(False, tvlist, None)
 
     pDialog.close()
 
@@ -350,19 +353,24 @@ def updateAll():
     if common.updateRunning():
         return
 
+    cj = common.mechanizeLogin()
+    if not cj:
+        return
+
     import movies
     import tv
     from datetime import datetime
+
     common.addon.setSetting('update_running', datetime.today().strftime('%Y-%m-%d %H:%M'))
     common.Log('Starting DBUpdate')
     Notif = xbmcgui.Dialog().notification
     Notif(common.__plugin__, common.getString(30106), sound=False)
-    tv.addTVdb(False)
-    movies.addMoviesdb(False)
+    tv.addTVdb(False, cj=cj)
+    movies.addMoviesdb(False, cj=cj)
     NewAsins = common.getCategories()
     movies.setNewest(NewAsins)
-    movies.updateFanart()
     tv.setNewest(NewAsins)
+    movies.updateFanart()
     tv.updateFanart()
     common.addon.setSetting('last_update', datetime.today().strftime('%Y-%m-%d'))
     common.addon.setSetting('update_running', 'false')

@@ -54,7 +54,6 @@ def PLAYVIDEO():
     isAdult = int(common.args.adult) == '1'
     pininput = addon.getSetting("pininput") == 'true'
     fullscr = addon.getSetting("fullscreen") == 'true'
-    xbmc.Player().stop()
 
     if trailer:
         videoUrl = amazonUrl + "/?autoplaytrailer=1"
@@ -331,12 +330,12 @@ def getStreams(suc, data, retmpd=False):
 def getPlaybackInfo():
     if addon.getSetting("framerate") == 'false':
         return '', False
-    Dialog.notification(common.getString(20186), '', xbmcgui.NOTIFICATION_INFO, 60000, False)
+    xbmc.executebuiltin('ActivateWindow(busydialog)')
     values = getFlashVars()
     if not values:
         return '', False
     fr, err = getStreams(*getUrldata('catalog/GetPlaybackResources', values, extra=True))
-    Dialog.notification(common.getString(20186), '', xbmcgui.NOTIFICATION_INFO, 10, False)
+    xbmc.executebuiltin('Dialog.Close(busydialog)')
     return fr, err
 
 

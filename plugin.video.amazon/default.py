@@ -35,4 +35,3 @@ def modes():
 
 
 modes()
-sys.modules.clear()

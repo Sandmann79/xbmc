@@ -101,7 +101,7 @@ def ADD_MOVIE_ITEM(moviedata, onlyinfo=False, cmmode=0, export=False):
                   'Genre': genres,
                   'MPAA': mpaa if mpaa else common.getString(30171),
                   'Studio': studio,
-                  'Duration': int(runtime) * 60,
+                  'Duration': int(runtime) * 60 if runtime else None,
                   'AudioChannels': audio,
                   'Thumb': poster,
                   'Fanart': fanart,

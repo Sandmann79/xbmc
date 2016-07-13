@@ -83,8 +83,8 @@ def createTVdb():
                  poster TEXT,
                  banner TEXT,
                  fanart TEXT,
-                 PRIMARY KEY(asin,seriestitle,season,isHD),
-                 FOREIGN KEY(seriestitle) REFERENCES shows(seriestitle)
+                 forceupdate BOOLEAN,
+                 PRIMARY KEY(asin,seriestitle,season)
     );''')
     c.execute('''create table episodes(
                  asin TEXT UNIQUE,
@@ -110,8 +110,7 @@ def createTVdb():
                  isprime BOOLEAN,
                  isAdult BOOLEAN,
                  audio INTEGER,
-                 PRIMARY KEY(asin,seriestitle,season,episode,episodetitle,isHD),
-                 FOREIGN KEY(seriestitle,season) REFERENCES seasons(seriestitle,season)
+                 PRIMARY KEY(asin,season,episode,episodetitle)
     );''')
     tvDB.commit()
     c.close()
@@ -255,7 +254,7 @@ def addDB(table, data):
     if table == 'shows':
         columns = 22
     elif table == 'seasons':
-        columns = 23
+        columns = 24
     elif table == 'episodes':
         columns = 23
     else:
@@ -272,9 +271,8 @@ def addDB(table, data):
 def lookupTVdb(value, rvalue='distinct *', tbl='episodes', name='asin', single=True, exact=False):
     common.waitforDB('tv')
     c = tvDB.cursor()
-    if not c.execute('SELECT count(*) FROM sqlite_master WHERE type="table" AND name=(?)', (tbl,)).fetchone()[
-            0]:
-            return ''
+    if not c.execute('SELECT count(*) FROM sqlite_master WHERE type="table" AND name=(?)', (tbl,)).fetchone()[0]:
+        return '' if single else []
 
     sqlstring = 'select %s from %s where %s ' % (rvalue, tbl, name)
     retlen = len(rvalue.split(','))
@@ -364,7 +362,7 @@ def cleanDB():
     if len(removeAsins):
         UpdateDialog(0, 0, 0, *deleteremoved(removeAsins, False))
 
-    del episodeasins  # ,seasonasins
+    del episodeasins
 
 
 def getTVdbAsins(table, isPrime=1, retlist=False, value='asin'):
@@ -384,14 +382,14 @@ def getTVdbAsins(table, isPrime=1, retlist=False, value='asin'):
     return content
 
 
-def addTVdb(full_update=True, libasins=None):
+def addTVdb(full_update=True, libasins=None, cj=True):
+    if isinstance(cj, bool):
+        cj = common.mechanizeLogin()
+        if not cj:
+            return
+
     prime = True
     new_libasins = False
-    try:
-        if common.args.url == 'u':
-            full_update = False
-    except:
-        pass
     endIndex = 0
     goAhead = 1
     SERIES_COUNT = 0
@@ -417,7 +415,7 @@ def addTVdb(full_update=True, libasins=None):
     if libasins:
         prime = False
         ALL_SEASONS_ASINS = []
-        new_libasins = checkLibraryAsins(libasins)
+        new_libasins = checkLibraryAsins(libasins, cj)
         if not new_libasins:
             return
 
@@ -497,7 +495,7 @@ def addTVdb(full_update=True, libasins=None):
 
             delShows, delSeasons, delEpisodes = deleteremoved(removed_seasons)
             UpdateDialog(SERIES_COUNT, SEASON_COUNT, EPISODE_COUNT, delShows, delSeasons, delEpisodes)
-            addTVdb(False, 'full')
+            addTVdb(False, 'full', cj)
 
         fixDBLShows()
         fixYears()
@@ -513,12 +511,12 @@ def addTVdb(full_update=True, libasins=None):
         common.addon.setSetting("EpisodesTotal", str(countDB('episodes')))
 
 
-def checkLibraryAsins(asinlist):
+def checkLibraryAsins(asinlist, cj):
     asins = ''
     removed_seasons = []
 
     if asinlist == 'full':
-        asinlist = common.SCRAP_ASINS(common.tvlib % common.lib)
+        asinlist = common.SCRAP_ASINS(common.tvlib % common.lib, cj)
         ALL_SEASONS_ASINS = getTVdbAsins('seasons', 0, True)
         for asin in asinlist:
             found, ALL_SEASONS_ASINS = common.compasin(ALL_SEASONS_ASINS, asin)
@@ -661,19 +659,20 @@ def ASIN_ADD(titles, asins=None):
             seasondata = [common.cleanData(x) for x in
                           [asin, seriesasin, season, common.checkCase(seriestitle), plot, actors, studio, mpaa, genres,
                            premiered, year, stars, votes, episodetotal, audio, None, None, isHD, isPrime, imdburl,
-                           poster, None, fanart]]
+                           poster, None, fanart, False]]
             count += addDB('seasons', seasondata)
         elif contentType == 'EPISODE':
             episodetitle = title['title']
+            seasontitle = ''
             if 'ancestorTitles' in title:
                 for content in title['ancestorTitles']:
                     if content['contentType'] == 'SERIES':
                         seriesasin = content.get('titleId')
-                        seriestitle = content.get('title')
+                        seriestitle = content.get('title', '')
                     elif content['contentType'] == 'SEASON':
                         season = content.get('number')
                         seasonasin = content.get('titleId')
-                        seasontitle = content.get('title')
+                        seasontitle = content.get('title', '')
                 if not seriesasin:
                     seriesasin = seasonasin
                     seriestitle = seasontitle
@@ -777,9 +776,7 @@ def setNewest(compList=False):
     catList = compList['tv_shows']
     c = tvDB.cursor()
     c.execute('drop table if exists categories')
-    c.execute('''create table categories(
-                 title TEXT,
-    asins TEXT);''')
+    c.execute('create table categories(title TEXT, asins TEXT)')
     c.execute('update seasons set recent=null')
     count = 1
     for catid in catList:

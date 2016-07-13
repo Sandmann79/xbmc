@@ -18,15 +18,16 @@
         <website></website> 
     </extension> 
 </addon> 
+﻿<?xml version="1.0" encoding="UTF-8" standalone="yes"?> 
 <addon id="plugin.video.amazon" 
        name="Amazon" 
-       version="1.7.1" 
+       version="1.7.2" 
        provider-name="Sandmann79 + BlueCop + Romans I XVI"> 
   <requires> 
     <import addon="xbmc.python" version="2.1.0"/> 
     <import addon="script.module.beautifulsoup" version="3.2.1"/> 
     <import addon="script.module.mechanize" version="0.2.6"/> 
-    <import addon="script.module.amazon.database" version="0.0.9"/> 
+    <import addon="script.module.amazon.database" version="0.1.0"/> 
     <import addon="script.module.pydes" version="2.0.1"/> 
     <import addon="script.module.pyxbmct" version="1.1.7"/> 
   </requires> 
@@ -52,7 +53,7 @@ Diese Addon verwendet pyDes von Todd Whiteman</disclaimer>
 </addon> 
 <addon id="plugin.video.amazon-test" 
        name="Amazon VOD" 
-       version="0.2.6" 
+       version="0.2.7" 
        provider-name="Sandmann79"> 
   <requires> 
     <import addon="xbmc.python" version="2.1.0"/> 
@@ -82,7 +83,7 @@ Diese Addon verwendet pyDes von Todd Whiteman</disclaimer>
 </addon> 
 <addon id="script.module.amazon.database" 
        name="Amazon Database" 
-       version="0.0.9" 
+       version="0.1.0" 
        provider-name="BlueCop"> 
   <requires> 
     <import addon="xbmc.python" version="2.1.0"/> 

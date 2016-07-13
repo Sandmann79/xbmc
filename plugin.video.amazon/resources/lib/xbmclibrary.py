@@ -169,7 +169,6 @@ def EXPORT_EPISODE(asin=None, makeNFO=True, dispnotif=True):
         if dispnotif:
             SetupLibrary()
             common.Log('Amazon Export: %s %s' % (showname, name))
-            # Dialog.notification('Export', showname + ' ' + name, sound = False)
             dispnotif = False
         seasonpath = os.path.join(directorname, name)
         CreateDirectory(seasonpath)

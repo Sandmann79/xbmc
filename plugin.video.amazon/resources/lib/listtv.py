@@ -107,7 +107,7 @@ def ADD_SHOW_ITEM(showdata, mode='listtv', submode='LIST_TV_SEASONS', cmmode=0, 
                   'Plot': plot,
                   'mediatype': 'tvshow',
                   'MPAA': mpaa,
-                  'Cast': actors.split(',') if actors else None,
+                  'Cast': actors.split(',') if actors else [],
                   'Year': year,
                   'Premiered': premiered,
                   'Rating': stars,
@@ -121,7 +121,6 @@ def ADD_SHOW_ITEM(showdata, mode='listtv', submode='LIST_TV_SEASONS', cmmode=0, 
                   'Fanart': fanart,
                   'Asins': asin
                   }
-    infoLabels = {k: v for k, v in infoLabels.items() if v}
     asin = asin.split(',')[0]
 
     if export:
@@ -165,14 +164,14 @@ def LIST_TVSEASON_SORTED(seasons=False, cmmode=0):
 
 def ADD_SEASON_ITEM(seasondata, mode='listtv', submode='LIST_EPISODES_DB', disptitle=False, cmmode=0, onlyinfo=False, export=False):
     asin, seriesASIN, season, seriestitle, plot, actors, network, mpaa, genres, premiered, year, stars, votes, \
-        episodetotal, audio, empty, empty, isHD, isprime, empty, poster, banner, fanart = seasondata
+        episodetotal, audio, empty, empty, isHD, isprime, empty, poster, banner, fanart, forceupd = seasondata
     fanart, cover = getFanart(seriesASIN) if showfanart else None
     infoLabels = {'Title': seriestitle,
                   'TVShowTitle': seriestitle,
                   'Plot': plot,
                   'mediatype': 'season',
                   'MPAA': mpaa,
-                  'Cast': actors.split(',') if actors else None,
+                  'Cast': actors.split(',') if actors else [],
                   'Year': year,
                   'Premiered': premiered,
                   'Rating': stars,
@@ -187,15 +186,16 @@ def ADD_SEASON_ITEM(seasondata, mode='listtv', submode='LIST_EPISODES_DB', dispt
                   'Fanart': fanart,
                   'Asins': asin
                   }
-    infoLabels = {k: v for k, v in infoLabels.items() if v}
-    asin = asin.split(',')[0]
 
+    asin = asin.split(',')[0]
     displayname = seriestitle + ' - ' if disptitle else ''
 
-    if season != 0 and len(str(season)) < 3:
+    if season != 0 and season < 99:
         displayname += common.getString(30167) + ' ' + str(season)
-    elif len(str(season)) > 2:
+    elif season > 1900:
         displayname += common.getString(30168) + str(season)
+    elif season > 99:
+        displayname += common.getString(30167) + ' ' + str(season).replace('0', '.')
     else:
         displayname += common.getString(30169)
 
@@ -236,6 +236,9 @@ def ADD_EPISODE_ITEM(episodedata, onlyinfo=False, export=False):
     tvfanart, tvposter = getFanart(seriesASIN)
     fanart = tvfanart if showfanart else fanart
     displayname = "{} - {}".format(episode, episodetitle).replace('"', '')
+    if episode == 0 and ':' in episodetitle:
+        displayname = '- ' + episodetitle.split(':')[1].strip() + ' -'
+
     infoLabels = {'Title': displayname,
                   'TVShowTitle': seriestitle,
                   'Episode': episode,
@@ -245,8 +248,8 @@ def ADD_EPISODE_ITEM(episodedata, onlyinfo=False, export=False):
                   'Premiered': airdate,
                   'Year': year,
                   'Duration': int(runtime) * 60 if runtime else None,
-                  'MPAA': mpaa,
-                  'Cast': actors.split(',') if actors else None,
+                  'MPAA': mpaa if mpaa else common.getString(30171),
+                  'Cast': actors.split(',') if actors else [],
                   'Rating': stars,
                   'Votes': votes,
                   'Genre': genres,
@@ -259,7 +262,6 @@ def ADD_EPISODE_ITEM(episodedata, onlyinfo=False, export=False):
                   'seriesASIN': seriesASIN,
                   'Poster': tvposter
                   }
-    infoLabels = {k: v for k, v in infoLabels.items() if v}
     asin = asin.split(',')[0]
 
     if export:

@@ -156,7 +156,7 @@ def getURL(url, host=BaseUrl.split('//')[1], useCookie=False, silent=False, head
             return False
     if not silent or verbLog:
         dispurl = url
-        dispurl = re.sub('(?i)%s|%s|&token=\w+' % (tvdb, tmdb), '', url).strip()
+        dispurl = re.sub('(?i)%s|%s|&token=\w+|&customerId=\w+' % (tvdb, tmdb), '', url).strip()
         Log('getURL: ' + dispurl)
     headers.append(('User-Agent', UA))
     headers.append(('Host', host))
@@ -409,7 +409,6 @@ def listContent(catalog, url, page, parent, export=False):
     ResPage = 240 if export else MaxResults
     url += '&NumberOfResults=%s&StartIndex=%s&Detailed=T' % (ResPage, (page - 1) * ResPage)
     titles = getATVData(catalog, url)
-    Log(titles)
 
     if page != 1 and not export:
         addDir(' --= %s =--' % getString(30112), thumb=HomeIcon)
@@ -632,7 +631,6 @@ def loadArtWork(asins, title, year, contentType):
     poster = None
     fanart = None
     title = title.lower().replace('?', '').replace('omu', '').split('(')[0].split('[')[0].strip()
-    Log("\nAsin:%s\nTitle:%s" % (asins, title), 0)
     if not title:
         return
     if contentType == 'movie':
@@ -772,7 +770,6 @@ def getList(listing, export):
     if listing == watchlist or listing == library:
         cj = MechanizeLogin()
         if not cj:
-            xbmc.executebuiltin('Action(Close)')
             return
         asins_movie = scrapAsins('/gp/video/%s/movie/?ie=UTF8&sortBy=DATE_ADDED_DESC' % listing, cj)
         asins_tv = scrapAsins('/gp/video/%s/tv/?ie=UTF8&sortBy=DATE_ADDED_DESC' % listing, cj)
@@ -942,10 +939,8 @@ def getInfos(item, export):
             if item['number'] > 0:
                 infoLabels['DisplayTitle'] = '%s - %s' % (item['number'], infoLabels['Title'])
             else:
-                try:
+                if ':' in infoLabels['Title']:
                     infoLabels['DisplayTitle'] = infoLabels['Title'].split(':')[1].strip()
-                except:
-                    pass
 
     if 'TVShowTitle' in infoLabels:
         infoLabels['TVShowTitle'] = cleanTitle(infoLabels['TVShowTitle'])
@@ -967,7 +962,6 @@ def getInfos(item, export):
 def PlayVideo(name, asin, adultstr, trailer, selbitrate):
     isAdult = adultstr == '1'
     amazonUrl = BaseUrl + "/dp/" + asin
-    xbmc.Player().stop()
 
     if trailer == '1':
         videoUrl = amazonUrl + "/?autoplaytrailer=1"
@@ -1251,12 +1245,12 @@ def parseSubs(data):
 def getPlaybackInfo(asin):
     if addon.getSetting("framerate") == 'false':
         return '', False
-    Dialog.notification(getString(20186), '', xbmcgui.NOTIFICATION_INFO, 60000, False)
+    xbmc.executebuiltin('ActivateWindow(busydialog)')
     values = getFlashVars(asin)
     if not values:
         return '', False
     fr, err = getStreams(*getUrldata('catalog/GetPlaybackResources', values, extra=True))
-    Dialog.notification(getString(20186), '', xbmcgui.NOTIFICATION_INFO, 10, False)
+    xbmc.executebuiltin('Dialog.Close(busydialog)')
     return fr, err
 
 
@@ -1445,10 +1439,11 @@ def LogIn(ask=True):
     else:
         if not email or not password:
             Dialog.notification(getString(30200), getString(30216))
-            addon.openSettings()
+            xbmc.executebuiltin('Addon.OpenSettings(%s)' % addon.getAddonInfo('id'))
             return False
 
     if password:
+        xbmc.executebuiltin('ActivateWindow(busydialog)')
         if xbmcvfs.exists(CookieFile):
             xbmcvfs.delete(CookieFile)
         cj = cookielib.LWPCookieJar()
@@ -1474,6 +1469,7 @@ def LogIn(ask=True):
         br.submit()
         response = br.response().read()
         soup = BeautifulSoup(response, convertEntities=BeautifulSoup.HTML_ENTITIES)
+        xbmc.executebuiltin('Dialog.Close(busydialog)')
 
         if 'auth-mfa-form' in response:
             msg = soup.find('form', attrs={'id': 'auth-mfa-form'})
@@ -1481,12 +1477,14 @@ def LogIn(ask=True):
             kb = xbmc.Keyboard('', msgtxt)
             kb.doModal()
             if kb.isConfirmed() and kb.getText():
+                xbmc.executebuiltin('ActivateWindow(busydialog)')
                 br.select_form(nr=0)
                 br['otpCode'] = kb.getText()
                 br.submit()
                 response = br.response().read()
                 soup = BeautifulSoup(response, convertEntities=BeautifulSoup.HTML_ENTITIES)
                 useMFA = True
+                xbmc.executebuiltin('Dialog.Close(busydialog)')
             else:
                 return False
 

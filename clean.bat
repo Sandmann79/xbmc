@@ -1,0 +1,1 @@
+@%~dp0createxml.bat clean

@@ -31,7 +31,6 @@ for /f %%f in ('dir %~dp0 /b /a:d') do if exist %~dp0%%f\addon.xml (
         )
         findstr /v /c:"<?xml" %~dp0%%f\addon.xml >> %arc_dir%\addons.xml
         if not exist %arc_dir%\%%f\%%f-!version!.zip (
-            if exist %~dp0%%f\%%f*.zip* del /q %~dp0%%f\%%f*.zip* >nul 2>&1
             if exist %arc_dir%\%%f rd /q /s %arc_dir%\%%f >nul 2>&1
             md %arc_dir%\%%f
             echo Erstelle %%f v!version!
@@ -45,15 +44,6 @@ for /f %%f in ('dir %~dp0 /b /a:d') do if exist %~dp0%%f\addon.xml (
             echo %%f v!version! bereits vorhanden
         )
     )
-)
-
-if not exist %~dp0%repo%\%repo%*.zip (
-    echo ^<?xml version="1.0" encoding="UTF-8" standalone="yes"?^>> %~dp0addon.xml
-    echo ^<addons^>>> %~dp0addon.xml
-    copy %arc_dir%\%repo%\*.zip*  %~dp0%repo% >nul 2>&1
-    findstr /v /c:"<?xml" %~dp0%repo%\addon.xml >> %~dp0addon.xml
-    echo ^</addons^>>> %~dp0addon.xml
-    %tools_dir%\md5 -l -n %~dp0addon.xml > %~dp0addon.xml.md5
 )
 
 echo ^</addons^>>> %arc_dir%\addons.xml

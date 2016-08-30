@@ -431,7 +431,7 @@ msgid "%s Episodes"
 msgstr ""
 
 msgctxt "#30135"
-msgid "Updating TV Database"
+msgid "Updating Database..."
 msgstr ""
 
 msgctxt "#30136"
@@ -701,8 +701,6 @@ msgstr ""
 msgctxt "#30216"
 msgid "No credentials present, please go to Settings-Connection and sign in"
 msgstr ""
-
-#empty strings from id 30217 to 30219
 
 msgctxt "#30220"
 msgid "PIN (empty for no restriction)"

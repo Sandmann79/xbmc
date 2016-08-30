@@ -418,8 +418,8 @@ msgid "%s Episodes"
 msgstr "%s Episoden"
 
 msgctxt "#30135"
-msgid "Updating TV Database"
-msgstr "Aktualisiere Seriendatenbank"
+msgid "Updating Database..."
+msgstr "Datenbank wird aktualisiert..."
 
 msgctxt "#30136"
 msgid "Building Database"
@@ -575,7 +575,7 @@ msgstr "Zum Abschluß des Setups:"
 
 msgctxt "#30189"
 msgid " 1) Restart Kodi"
-msgstr " 1) XBMC/Kodi neustarten"
+msgstr " 1) Kodi neustarten"
 
 msgctxt "#30190"
 msgid " 2) Set the content type of added folders"
@@ -587,7 +587,7 @@ msgstr "Neustart"
 
 msgctxt "#30192"
 msgid "Do you want to restart Kodi now?"
-msgstr "Soll der XBMC/Kodi neugestartet werden?"
+msgstr "Soll Kodi neugestartet werden?"
 
 msgctxt "#30193"
 msgid "Database Plugin updated"

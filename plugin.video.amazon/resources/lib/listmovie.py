@@ -1,43 +1,35 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-import common
+from common import *
 import xbmclibrary
-
-pluginhandle = common.pluginhandle
-xbmc = common.xbmc
-xbmcplugin = common.xbmcplugin
-xbmcaddon = common.xbmcaddon
-urllib = common.urllib
-sys = common.sys
-xbmcgui = common.xbmcgui
 
 
 def LIST_MOVIE_ROOT():
-    common.addDir(common.getString(30100), 'listmovie', 'LIST_MOVIES_SORTED', 'popularity')
-    common.addDir(common.getString(30110), 'listmovie', 'LIST_MOVIES_SORTED', 'recent')
-    common.addDir(common.getString(30149), 'listmovie', 'LIST_MOVIES_CATS')
-    common.addDir(common.getString(30143), 'listmovie', 'LIST_MOVIES')
-    common.addDir(common.getString(30144), 'listmovie', 'LIST_MOVIE_TYPES', 'genres')
-    common.addDir(common.getString(30145), 'listmovie', 'LIST_MOVIE_TYPES', 'year')
-    common.addDir(common.getString(30146), 'listmovie', 'LIST_MOVIE_TYPES', 'studio')
-    common.addDir(common.getString(30158), 'listmovie', 'LIST_MOVIE_TYPES', 'actors')
-    common.addDir(common.getString(30147), 'listmovie', 'LIST_MOVIE_TYPES', 'mpaa')
-    common.addDir(common.getString(30148), 'listmovie', 'LIST_MOVIE_TYPES', 'director')
+    addDir(getString(30100), 'listmovie', 'LIST_MOVIES_SORTED', 'popularity')
+    addDir(getString(30110), 'listmovie', 'LIST_MOVIES_SORTED', 'recent')
+    addDir(getString(30149), 'listmovie', 'LIST_MOVIES_CATS')
+    addDir(getString(30143), 'listmovie', 'LIST_MOVIES')
+    addDir(getString(30144), 'listmovie', 'LIST_MOVIE_TYPES', 'genres')
+    addDir(getString(30145), 'listmovie', 'LIST_MOVIE_TYPES', 'year')
+    addDir(getString(30146), 'listmovie', 'LIST_MOVIE_TYPES', 'studio')
+    addDir(getString(30158), 'listmovie', 'LIST_MOVIE_TYPES', 'actors')
+    addDir(getString(30147), 'listmovie', 'LIST_MOVIE_TYPES', 'mpaa')
+    addDir(getString(30148), 'listmovie', 'LIST_MOVIE_TYPES', 'director')
     xbmcplugin.endOfDirectory(pluginhandle)
 
 
 def LIST_MOVIES_CATS():
     import movies as moviesDB
-    catid = common.args.url
+    catid = args.get('url')
     if catid:
         asins = moviesDB.lookupMoviedb(catid, rvalue='asins', name='title', table='categories')
         for asin in asins.split(','):
             LIST_MOVIES('asin', asin, search=True)
-        common.SetView('movies', 'movieview')
+        SetView('movies', 'movieview')
     else:
         for title in moviesDB.lookupMoviedb('', name='asins', table='categories', single=False):
             if title:
-                common.addDir(title[0], 'listmovie', 'LIST_MOVIES_CATS', title[0])
+                addDir(title[0], 'listmovie', 'LIST_MOVIES_CATS', title[0])
 
         xbmcplugin.endOfDirectory(pluginhandle, updateListing=False)
 
@@ -45,21 +37,20 @@ def LIST_MOVIES_CATS():
 def LIST_MOVIE_TYPES(movtype=None):
     import movies as moviesDB
     if not movtype:
-        movtype = common.args.url
+        movtype = args.get('url')
     if movtype:
-        mode = 'LIST_MOVIES_FILTERED'
         for item in moviesDB.getMovieTypes(movtype):
-            common.addDir(item, 'listmovie', mode, movtype)
+            addDir(item, 'listmovie', 'LIST_MOVIES_FILTERED', movtype)
         xbmcplugin.addSortMethod(pluginhandle, xbmcplugin.SORT_METHOD_LABEL)
         xbmcplugin.endOfDirectory(pluginhandle, updateListing=False)
 
 
 def LIST_MOVIES_FILTERED():
-    LIST_MOVIES(common.args.url, common.args.name)
+    LIST_MOVIES(args.get('url'), args.get('name'))
 
 
 def LIST_MOVIES_SORTED():
-    LIST_MOVIES(sortaz=False, sortcol=common.args.url)
+    LIST_MOVIES(sortaz=False, sortcol=args.get('url'))
 
 
 def LIST_MOVIES(filterobj='', value=None, sortcol=False, sortaz=True, search=False, cmmode=0, export=False):
@@ -82,16 +73,16 @@ def LIST_MOVIES(filterobj='', value=None, sortcol=False, sortaz=True, search=Fal
             xbmcplugin.addSortMethod(pluginhandle, xbmcplugin.SORT_METHOD_VIDEO_RATING)
             xbmcplugin.addSortMethod(pluginhandle, xbmcplugin.SORT_METHOD_DURATION)
             xbmcplugin.addSortMethod(pluginhandle, xbmcplugin.SORT_METHOD_STUDIO_IGNORE_THE)
-        common.SetView('movies', 'movieview')
+        SetView('movies', 'movieview')
     return count
 
 
 def ADD_MOVIE_ITEM(moviedata, onlyinfo=False, cmmode=0, export=False):
-    asin, hd_asin, movietitle, trailer, poster, plot, director, writer, runtime, year, premiered, studio, mpaa, actors,\
+    asin, movietitle, trailer, poster, plot, director, writer, runtime, year, premiered, studio, mpaa, actors,\
      genres, stars, votes, fanart, isprime, isHD, isAdult, popularity, recent, audio = moviedata
     infoLabels = {'Title': movietitle,
                   'Plot': plot,
-                  'mediatype': "movie",
+                  'mediatype': 'movie',
                   'Cast': actors.split(',') if actors else [],
                   'Director': director,
                   'Year': year,
@@ -99,9 +90,9 @@ def ADD_MOVIE_ITEM(moviedata, onlyinfo=False, cmmode=0, export=False):
                   'Rating': stars,
                   'Votes': votes,
                   'Genre': genres,
-                  'MPAA': mpaa if mpaa else common.getString(30171),
+                  'MPAA': mpaa if mpaa else getString(30171),
                   'Studio': studio,
-                  'Duration': int(runtime) * 60 if runtime else None,
+                  'Duration': runtime,
                   'AudioChannels': audio,
                   'Thumb': poster,
                   'Fanart': fanart,
@@ -111,13 +102,13 @@ def ADD_MOVIE_ITEM(moviedata, onlyinfo=False, cmmode=0, export=False):
     if export:
         xbmclibrary.EXPORT_MOVIE(asin)
         return
-    cm = [(common.getString(30180 + cmmode) % common.getString(30154),
-          'RunPlugin(%s?mode=<common>&sitemode=<toogleWatchlist>&asin=<%s>&remove=<%s>)' % (sys.argv[0], asin, cmmode)),
-          (common.getString(30185) % common.getString(30154),
-          'RunPlugin(%s?mode=<xbmclibrary>&sitemode=<EXPORT_MOVIE>&asin=<%s>)' % (sys.argv[0], asin)),
-          (common.getString(30183), 'Container.Update(%s?mode=<appfeed>&sitemode=<getSimilarities>&asin=<%s>)' % (sys.argv[0], asin)),
-          (common.getString(30186), 'RunPlugin(%s?mode=<xbmclibrary>&sitemode=<UpdateLibrary>)' % sys.argv[0])]
+    cm = [(getString(30180 + cmmode) % getString(30154),
+          'RunPlugin(%s?mode=common&sitemode=toogleWatchlist&asin=%s&remove=%s)' % (sys.argv[0], asin, cmmode)),
+          (getString(30185) % getString(30154),
+          'RunPlugin(%s?mode=xbmclibrary&sitemode=EXPORT_MOVIE&asin=%s)' % (sys.argv[0], asin)),
+          (getString(30183), 'Container.Update(%s?mode=appfeed&sitemode=getSimilarities&asin=%s)' % (sys.argv[0], asin)),
+          (getString(30186), 'RunPlugin(%s?mode=xbmclibrary&sitemode=UpdateLibrary)' % sys.argv[0])]
     if onlyinfo:
         return infoLabels
     else:
-        common.addVideo(movietitle, asin, poster, fanart, infoLabels=infoLabels, cm=cm, trailer=trailer, isAdult=isAdult, isHD=isHD)
+        addVideo(movietitle, asin, poster, fanart, infoLabels=infoLabels, cm=cm, trailer=trailer, isAdult=isAdult, isHD=isHD)

@@ -575,7 +575,7 @@ msgstr "Po zakończeniu konfigurowania:"
 
 msgctxt "#30189"
 msgid " 1) Restart Kodi"
-msgstr " 1) Uruchom ponownie XBMC/Kodi"
+msgstr " 1) Uruchom ponownie Kodi"
 
 msgctxt "#30190"
 msgid " 2) Set the content type of added folders"
@@ -587,7 +587,7 @@ msgstr "Uruchom ponownie"
 
 msgctxt "#30192"
 msgid "Do you want to restart Kodi now?"
-msgstr "Uruchomić ponownie XBMC/Kodi?"
+msgstr "Uruchomić ponownie Kodi?"
 
 msgctxt "#30193"
 msgid "Database Plugin updated"

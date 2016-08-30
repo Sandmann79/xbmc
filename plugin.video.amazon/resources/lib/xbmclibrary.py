@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-import common
+from common import *
 import movies as moviesDB
 import tv as tvDB
 import listtv
@@ -8,40 +8,20 @@ import listmovie
 
 from BeautifulSoup import BeautifulSoup, Tag
 
-pluginhandle = common.pluginhandle
-xbmc = common.xbmc
-xbmcplugin = common.xbmcplugin
-urllib = common.urllib
-sys = common.sys
-xbmcgui = common.xbmcgui
-os = common.os
-xbmcvfs = common.xbmcvfs
-Dialog = xbmcgui.Dialog()
-
-if common.addon.getSetting('enablelibraryfolder') == 'true':
-    MOVIE_PATH = os.path.join(xbmc.translatePath(common.addon.getSetting('customlibraryfolder')), 'Movies').decode('utf-8')
-    TV_SHOWS_PATH = os.path.join(xbmc.translatePath(common.addon.getSetting('customlibraryfolder')), 'TV').decode('utf-8')
+if addon.getSetting('enablelibraryfolder') == 'true':
+    MOVIE_PATH = os.path.join(xbmc.translatePath(addon.getSetting('customlibraryfolder')), 'Movies').decode('utf-8')
+    TV_SHOWS_PATH = os.path.join(xbmc.translatePath(addon.getSetting('customlibraryfolder')), 'TV').decode('utf-8')
 else:
-    MOVIE_PATH = os.path.join(common.pldatapath, 'Movies')
-    TV_SHOWS_PATH = os.path.join(common.pldatapath, 'TV')
+    MOVIE_PATH = os.path.join(pldatapath, 'Movies')
+    TV_SHOWS_PATH = os.path.join(pldatapath, 'TV')
 
 
 def UpdateLibrary():
     xbmc.executebuiltin('UpdateLibrary(video)')
 
 
-def SaveFile(filename, data, dirname=None):
-    if dirname:
-        filename = common.cleanName(filename)
-        filename = os.path.join(dirname, filename)
-    filename = common.cleanName(filename, isfile=False)
-    f = xbmcvfs.File(filename, 'w')
-    f.write(data)
-    f.close()
-
-
 def CreateDirectory(dir_path):
-    dir_path = common.cleanName(dir_path.strip(), isfile=False)
+    dir_path = cleanName(dir_path.strip(), isfile=False)
     if not xbmcvfs.exists(dir_path):
         return xbmcvfs.mkdir(dir_path)
     return False
@@ -102,17 +82,20 @@ def streamDetails(Info, language='ger', hasSubtitles=False):
 def EXPORT_MOVIE(asin=False, makeNFO=True):
     SetupLibrary()
     if not asin:
-        asin = common.args.asin
+        asin = args.get('asin')
     for moviedata in moviesDB.lookupMoviedb(asin, single=False):
         Info = listmovie.ADD_MOVIE_ITEM(moviedata, onlyinfo=True)
         filename = Info['Title']
-        if Info['Year']:
-            filename = '%s (%s)' % (Info['Title'], Info['Year'])
         # Dialog.notification('Export', filename, sound = False)
-        common.Log('Amazon Export: ' + filename)
+        Log('Amazon Export: ' + filename)
         strm_file = filename + ".strm"
-        u = '%s?asin=<%s>&mode=<play>&name=<%s>&sitemode=<PLAYVIDEO>&adult=<%s>&trailer=<0>&selbitrate=<0>' % (
-            sys.argv[0], asin, urllib.quote_plus(Info['Title']), Info['isAdult'])
+        u = '%s?%s' % (sys.argv[0], urllib.urlencode({'asin': asin,
+                                                      'mode': 'play',
+                                                      'name': Info['Title'],
+                                                      'sitemode': 'PLAYVIDEO',
+                                                      'adult': Info['isAdult'],
+                                                      'trailer': 0,
+                                                      'selbitrate': 0}))
         SaveFile(strm_file, u, MOVIE_PATH)
 
         if makeNFO:
@@ -126,10 +109,10 @@ def EXPORT_MOVIE(asin=False, makeNFO=True):
 def EXPORT_SHOW(asin=None):
     SetupLibrary()
     if not asin:
-        asin = common.args.asin
+        asin = args.get('asin')
     for data in tvDB.lookupTVdb(asin, tbl='shows', single=False):
         Info = listtv.ADD_SHOW_ITEM(data, onlyinfo=True)
-        directorname = os.path.join(TV_SHOWS_PATH, common.cleanName(Info['Title']))
+        directorname = os.path.join(TV_SHOWS_PATH, cleanName(Info['Title']))
         CreateDirectory(directorname)
         for showasin in Info['Asins'].split(','):
             asins = tvDB.lookupTVdb(showasin, rvalue='asin', tbl='seasons', name='seriesasin', single=False)
@@ -141,10 +124,10 @@ def EXPORT_SHOW(asin=None):
 def EXPORT_SEASON(asin=None, dispnotif=True):
     SetupLibrary()
     if not asin:
-        asin = common.args.asin
+        asin = args.get('asin')
     for data in tvDB.lookupTVdb(asin, tbl='seasons', single=False):
         Info = listtv.ADD_SEASON_ITEM(data, onlyinfo=True)
-        directorname = os.path.join(TV_SHOWS_PATH, common.cleanName(Info['Title']))
+        directorname = os.path.join(TV_SHOWS_PATH, cleanName(Info['Title']))
         CreateDirectory(directorname)
         name = 'Season ' + str(Info['Season'])
         seasonpath = os.path.join(directorname, name)
@@ -159,23 +142,29 @@ def EXPORT_SEASON(asin=None, dispnotif=True):
 
 def EXPORT_EPISODE(asin=None, makeNFO=True, dispnotif=True):
     if not asin:
-        asin = common.args.asin
+        asin = args.get('asin')
     for data in tvDB.lookupTVdb(asin, single=False):
         Info = listtv.ADD_EPISODE_ITEM(data, onlyinfo=True)
-        showname = common.cleanName(Info['TVShowTitle'])
+        Info['Title'] = Info['EpisodeName']
+        showname = cleanName(Info['TVShowTitle'])
         directorname = os.path.join(TV_SHOWS_PATH, showname)
         CreateDirectory(directorname)
         name = 'Season ' + str(Info['Season'])
         if dispnotif:
             SetupLibrary()
-            common.Log('Amazon Export: %s %s' % (showname, name))
+            Log('Amazon Export: %s %s' % (showname, name))
             dispnotif = False
         seasonpath = os.path.join(directorname, name)
         CreateDirectory(seasonpath)
         filename = 'S%02dE%02d - %s' % (Info['Season'], Info['Episode'], Info['Title'])
         strm_file = filename + ".strm"
-        u = '%s?asin=<%s>&mode=<play>&name=<%s>&sitemode=<PLAYVIDEO>&adult=<%s>&trailer=<0>&selbitrate=<0>' % (
-            sys.argv[0], asin, urllib.quote_plus(Info['Title']), Info['isAdult'])
+        u = '%s?%s' % (sys.argv[0], urllib.urlencode({'asin': asin,
+                                                      'mode': 'play',
+                                                      'name': Info['Title'],
+                                                      'sitemode': 'PLAYVIDEO',
+                                                      'adult': Info['isAdult'],
+                                                      'trailer': 0,
+                                                      'selbitrate': 0}))
         SaveFile(strm_file, u, seasonpath)
 
         if makeNFO:
@@ -220,18 +209,18 @@ def SetupAmazonLibrary():
             source_tag.append(name_tag)
             source_tag.append(path_tag)
             video.append(source_tag)
-            common.Log(name + ' source path added')
+            Log(name + ' source path added')
             source_added = True
         else:
             source_tag = source_text.findParent('source')
             old_path = source_tag.find('path').contents[0]
             if path not in old_path:
                 source_tag.find('path').replaceWith(path_tag)
-                common.Log(name + ' source path changed')
+                Log(name + ' source path changed')
                 source_added = True
 
     if source_added:
         SaveFile(source_path, str(soup))
-        Dialog.ok(common.getString(30187), common.getString(30188), common.getString(30189), common.getString(30190))
-        if Dialog.yesno(common.getString(30191), common.getString(30192)):
+        Dialog.ok(getString(30187), getString(30188), getString(30189), getString(30190))
+        if Dialog.yesno(getString(30191), getString(30192)):
             xbmc.executebuiltin('RestartApp')

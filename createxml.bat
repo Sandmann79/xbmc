@@ -46,6 +46,8 @@ for /f %%f in ('dir %~dp0 /b /a:d') do if exist %~dp0%%f\addon.xml (
     )
 )
 
-echo ^</addons^>>> %arc_dir%\addons.xml
-%tools_dir%\md5 -l -n %arc_dir%\addons.xml > %arc_dir%\addons.xml.md5
+if not "%1"=="clean" (
+    echo ^</addons^>>> %arc_dir%\addons.xml
+    %tools_dir%\md5 -l -n %arc_dir%\addons.xml > %arc_dir%\addons.xml.md5
+)
 pause

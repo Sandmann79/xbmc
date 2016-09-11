@@ -22,7 +22,7 @@ msgid "Amazon Prime Video Streaming"
 msgstr ""
 
 msgctxt "Addon Description"
-msgid "Movies and Television Shows for Prime Members"
+msgid "Movies and Television Shows for German Prime Members.\nThis Addon works only with German Amazon Accounts. For Non-German Accounts use Amazon VOD Addon from my repo."
 msgstr ""
 
 msgctxt "Addon Disclaimer"
@@ -174,7 +174,9 @@ msgctxt "#30036"
 msgid "Inputstream Addon Settings..."
 msgstr ""
 
-#empty string with id 30037
+msgctxt "#30037"
+msgid "Disable SSL Certificate Verification"
+msgstr ""
 
 msgctxt "#30038"
 msgid "Connection"
@@ -184,7 +186,9 @@ msgctxt "#30039"
 msgid "Items Per Page"
 msgstr ""
 
-#empty string with id 30040
+msgctxt "#30040"
+msgid "Ignore non-German Content (beta)"
+msgstr ""
 
 msgctxt "#30041"
 msgid "Enable Fullscreen Video"
@@ -300,7 +304,11 @@ msgctxt "#30073"
 msgid "Enable Remote Control"
 msgstr ""
 
-#empty strings from id 30074 to 30099
+msgctxt "#30074"
+msgid "Create Video Information File"
+msgstr ""
+
+#empty strings from id 30075 to 30099
 
 msgctxt "#30100"
 msgid "Popular"
@@ -700,6 +708,10 @@ msgstr ""
 
 msgctxt "#30216"
 msgid "No credentials present, please go to Settings-Connection and sign in"
+msgstr ""
+
+msgctxt "#30217"
+msgid "No stream hoster reachable"
 msgstr ""
 
 msgctxt "#30220"

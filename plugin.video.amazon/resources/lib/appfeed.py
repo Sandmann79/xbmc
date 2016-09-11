@@ -40,7 +40,6 @@ firmware = 'fmw:17-app:2.0.45.1210'  # Android
 deviceTypeID = 'A2M4YX06LWP8WI'
 
 PARAMETERS = '?firmware=' + firmware + '&deviceTypeID=' + deviceTypeID + '&deviceID=' + deviceID + '&format=json'
-ContentFilter = '&ContractID=UX*' if onlyGer else ''
 
 
 def BUILD_BASE_API(MODE, HOST=ATV_URL + '/cdp/'):
@@ -48,7 +47,9 @@ def BUILD_BASE_API(MODE, HOST=ATV_URL + '/cdp/'):
 
 
 def getList(ContentType=None, start=0, isPrime=True, NumberOfResults=0, OrderBy='MostPopular', version=2,
-            AsinList=None, catalog='Browse', asin=None):
+            AsinList=None, catalog='Browse', asin=None, enablefilter=False):
+
+    ContentFilter = '&ContractID=UX*' if onlyGer or enablefilter else ''
     BROWSE_PARAMS = '&StartIndex=' + str(start)
     if NumberOfResults:
         BROWSE_PARAMS += '&NumberOfResults=' + str(NumberOfResults)
@@ -66,7 +67,7 @@ def getList(ContentType=None, start=0, isPrime=True, NumberOfResults=0, OrderBy=
         BROWSE_PARAMS += '&tag=1'
         BROWSE_PARAMS += '&IncludeBlackList=T'
 
-    if ('Movie' in ContentType) and 'RollupToSeries' not in ContentType:
+    if 'Movie' in ContentType:
         BROWSE_PARAMS += ContentFilter
 
     if AsinList:
@@ -280,10 +281,10 @@ def getTVDBImages(title, tvdbid=None, seasons=False):
                 soup = BeautifulSoup(result)
                 fanart = soup.find('fanart')
                 poster = soup.find('poster')
-                if fanart and not fanarturl:
+                if fanart and fanart.string and not fanarturl:
                     fanarturl = TVDB_URL + fanart.string
 
-                if poster and not posterurl:
+                if poster and poster.string and not posterurl:
                     posterurl = TVDB_URL + poster.string
 
                 if posterurl and fanarturl:
@@ -331,7 +332,7 @@ def getTMDBImages(title, content='movie', year=None):
 
 
 def updateAll():
-    Notif = xbmcgui.Dialog().notification
+    from service import updateRunning
     if updateRunning():
         return
 
@@ -345,7 +346,7 @@ def updateAll():
 
     writeConfig('update_running', datetime.today().strftime('%Y-%m-%d %H:%M'))
     Log('Starting DBUpdate')
-    Notif(pluginname, getString(30106), sound=False)
+    Notif(getString(30106))
     xbmc.executebuiltin('Container.Refresh')
 
     tvresult = tv.addTVdb(False, cj=cj)
@@ -354,7 +355,6 @@ def updateAll():
 
     if tvresult and mvresult:
         writeConfig('last_update', datetime.today().strftime('%Y-%m-%d'))
-        writeConfig('update_running', 'false')
 
     if mvresult:
         movies.setNewest(NewAsins)
@@ -363,5 +363,6 @@ def updateAll():
         tv.setNewest(NewAsins)
         tv.updateFanart()
 
-    Notif(pluginname, getString(30126), sound=False)
+    writeConfig('update_running', 'false')
+    Notif(getString(30126))
     Log('DBUpdate finished')

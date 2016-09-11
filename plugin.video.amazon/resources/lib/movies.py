@@ -1,10 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+from service import updateRunning
 from common import *
 from sqlite3 import dbapi2 as sqlite
 import appfeed
 
-MAX = 120
+MAX = 140  # int(addon.getSetting('mov_perpage'))
 tmdb_art = addon.getSetting("tmdb_art")
 
 
@@ -134,7 +135,7 @@ def getMoviedbAsins(isPrime=1, retlist=False):
 
 
 def addMoviesdb(full_update=True, cj=True):
-    MOV_TOTAL = int(getConfig('MoviesTotal', '0'))
+    MOV_TOTAL = int(getConfig('MoviesTotal', '6000'))
     dialog = xbmcgui.DialogProgress()
 
     if isinstance(cj, bool):
@@ -157,10 +158,11 @@ def addMoviesdb(full_update=True, cj=True):
     goAhead = 1
     endIndex = 0
     new_mov = 0
-    approx = 0
+    approx = appfeed.getList('Movie', 0, NumberOfResults=1)['message']['body'].get('approximateSize', 0)
+    filter_mov = approx > 8000
 
     while goAhead == 1:
-        jsondata = appfeed.getList('Movie', endIndex, NumberOfResults=MAX, OrderBy='Title')
+        jsondata = appfeed.getList('Movie', endIndex, NumberOfResults=MAX, OrderBy='Title', enablefilter=filter_mov)
         if not jsondata:
             goAhead = -1
             break
@@ -169,8 +171,7 @@ def addMoviesdb(full_update=True, cj=True):
         del jsondata
 
         if titles:
-            for pos, title in enumerate(titles):
-
+            for title in titles:
                 if full_update and dialog.iscanceled():
                     goAhead = -1
                     break
@@ -178,33 +179,35 @@ def addMoviesdb(full_update=True, cj=True):
                     asin = title['titleId']
                     if '_duplicate_' not in title['title']:
                         if onlyGer and re.compile('(?i)\[(ov|omu)[(\W|omu|ov)]*\]').search(title['title']):
-                            Log('Movie Out: %s' % title['title'])
+                            Log('Movie Ignored: %s' % title['title'], xbmc.LOGDEBUG)
                             found = True
                         else:
                             found, MOVIE_ASINS = compasin(MOVIE_ASINS, asin)
+
                         if not found:
                             new_mov += ASIN_ADD(title)
 
         endIndex += len(titles)
-
-        if (approx and endIndex + 1 >= approx) or (not approx and len(titles) < 1):
+        if (approx and endIndex + 1 >= approx) or (not approx and len(titles) == 10):
             goAhead = 0
 
         page += 1
         if full_update:
             if approx:
                 MOV_TOTAL = approx
-            if not MOV_TOTAL:
-                MOV_TOTAL = 6000
             dialog.update(int(endIndex * 100.0 / MOV_TOTAL), getString(30122) % page, getString(30123) % new_mov)
         if full_update and dialog.iscanceled():
             goAhead = -1
 
+        if len(titles) > 9:
+            endIndex -= 10
+
     if goAhead == 0:
+        endIndex += 10
         updateLibrary(cj=cj)
         updatePop()
-        writeConfig("MoviesTotal", str(endIndex + 20))
-        Log('Movie Update: New %s Deleted %s Total %s' % (new_mov, deleteremoved(MOVIE_ASINS), endIndex + 20))
+        writeConfig("MoviesTotal", endIndex)
+        Log('Movie Update: New %s Deleted %s Total %s' % (new_mov, deleteremoved(MOVIE_ASINS), endIndex))
         if full_update:
             setNewest()
             dialog.close()

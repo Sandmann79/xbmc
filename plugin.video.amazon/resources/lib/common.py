@@ -47,7 +47,6 @@ tvlib = '/gp/video/%s/tv/'
 lib = 'video-library'
 wl = 'watchlist'
 Ages = [('FSK 0', 'FSK 0'), ('FSK 6', 'FSK 6'), ('FSK 12', 'FSK 12'), ('FSK 16', 'FSK 16'), ('FSK 18', 'FSK 18')]
-winid = xbmcgui.getCurrentWindowId()
 verbLog = addon.getSetting('logging') == 'true'
 playMethod = int(addon.getSetting("playmethod"))
 onlyGer = addon.getSetting('content_filter') == 'true'
@@ -62,6 +61,9 @@ except IndexError:
     pluginhandle = -1
     params = ''
 args = dict(urlparse.parse_qsl(urlparse.urlparse(params).query))
+
+if addon.getSetting('ssl_verif') == 'true' and hasattr(ssl, '_create_unverified_context'):
+    ssl._create_default_https_context = ssl._create_unverified_context
 
 
 class AgeSettings(pyxbmct.AddonDialogWindow):
@@ -111,7 +113,7 @@ class AgeSettings(pyxbmct.AddonDialogWindow):
             self.btn_ages.setLabel(self.age_list[self.pin_req])
 
 
-def getURL(url, useCookie=False, silent=False, headers=None, attempt=0, retjson=True):
+def getURL(url, useCookie=False, silent=False, headers=None, attempt=0, retjson=True, check=False):
     cj = cookielib.LWPCookieJar()
     falseval = [] if retjson else ''
     if useCookie:
@@ -128,12 +130,12 @@ def getURL(url, useCookie=False, silent=False, headers=None, attempt=0, retjson=
         opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cj), urllib2.HTTPRedirectHandler)
         opener.addheaders = headers
         usock = opener.open(url)
-        response = usock.read()
+        response = usock.read() if not check else 'OK'
         usock.close()
     except (socket.timeout, ssl.SSLError, urllib2.URLError), e:
         Log('Error reason: %s' % e, xbmc.LOGERROR)
         if '429' or 'timed out' in e:
-            attempt += 1
+            attempt += 1 if not check else 10
             logout = 'Attempt #%s' % attempt
             if '429' in e:
                 logout += '. Too many requests - Pause 10 sec'
@@ -143,9 +145,7 @@ def getURL(url, useCookie=False, silent=False, headers=None, attempt=0, retjson=
                 return getURL(url, useCookie, silent, headers, attempt, retjson)
         return falseval
 
-    if retjson:
-        return json.loads(response)
-    return response
+    return json.loads(response) if retjson else response
 
 
 def WriteLog(data, fn=''):
@@ -176,6 +176,8 @@ def SaveFile(filename, data, dirname=None):
     if dirname:
         filename = cleanName(filename)
         filename = os.path.join(dirname, filename)
+        if not xbmcvfs.exists(dirname):
+            xbmcvfs.mkdirs(cleanName(dirname.strip(), isfile=False))
     filename = cleanName(filename, isfile=False)
     f = xbmcvfs.File(filename, 'w')
     f.write(data)
@@ -622,20 +624,6 @@ def getTypes(items, col):
     return studiolist
 
 
-def updateRunning():
-    datetime, timedelta = import_dt()
-    update = getConfig('update_running', 'false')
-    if update != 'false':
-        starttime = datetime.strptime(update, '%Y-%m-%d %H:%M')
-        if (starttime + timedelta(hours=6)) <= datetime.today():
-            writeConfig('update_running', 'false')
-            Log('DB Cancel update - duration > 6 hours')
-        else:
-            Log('DB Update already running', xbmc.LOGDEBUG)
-            return True
-    return False
-
-
 def copyDB(source, dest, ask=False):
     import shutil
     if ask:
@@ -731,29 +719,19 @@ def writeConfig(cfile, value):
             l = xbmcvfs.File(cfglockfile)
             modified = float(l.read())
             l.close()
-            Log('Locktest: m:%s t:%s d:%s' % (modified, time.time(), time.time() - modified))
             if time.time() - modified > 0.1:
                 xbmcvfs.delete(cfglockfile)
 
     return False
 
 
-def import_dt():
-    monitor = xbmc.Monitor()
-    while True:
-        try:
-            from datetime import datetime, timedelta
-            datetime.today()
-            datetime.strptime('1970-01-01', '%Y-%m-%d')
-            timedelta()
-            return datetime, timedelta
-        except:
-            if monitor.waitForAbort(1):
-                break
+def Notif(message):
+    if not xbmc.Player().isPlaying():
+        Dialog.notification(pluginname, message, sound=False)
 
 
 AgePin = getConfig('age_pin')
-PinReq = int('0' + getConfig('pin_req'))
+PinReq = int(getConfig('pin_req', '0'))
 RestrAges = ','.join(a[1] for a in Ages[PinReq:]) if AgePin else ''
 
 remLoginData(addon.getSetting('save_login') == 'true', False)

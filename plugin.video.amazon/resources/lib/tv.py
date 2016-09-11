@@ -2,6 +2,7 @@
 # !/usr/bin/env python
 # -*- coding: utf-8 -*-
 from common import *
+from service import updateRunning
 from sqlite3 import dbapi2 as sqlite
 import appfeed
 
@@ -429,7 +430,7 @@ def addTVdb(full_update=True, libasins=None, cj=True):
                     break
                 SEASONS_ASIN = title['titleId']
                 if onlyGer and re.compile('(?i)\[(ov|omu)[(\W|omu|ov)]*\]').search(title['title']):
-                    Log('Season Out: %s' % title['title'])
+                    Log('Season Ignored: %s' % title['title'], xbmc.LOGDEBUG)
                     found = True
                 else:
                     found, ALL_SEASONS_ASINS = compasin(ALL_SEASONS_ASINS, SEASONS_ASIN)

@@ -173,6 +173,10 @@ msgctxt "#30036"
 msgid "Inputstream Addon Settings..."
 msgstr "Inputstream Addon Einstellungen..."
 
+msgctxt "#30037"
+msgid "Disable SSL Certificate Verification"
+msgstr "SSL-Zertifikatsüberprüfung deaktivieren"
+
 msgctxt "#30038"
 msgid "Connection"
 msgstr "Verbindung"
@@ -180,6 +184,10 @@ msgstr "Verbindung"
 msgctxt "#30039"
 msgid "Items Per Page"
 msgstr "Elemente pro Seite"
+
+msgctxt "#30040"
+msgid "Ignore non-German Content (beta)"
+msgstr "OV Titel ignorieren (experimentell)"
 
 msgctxt "#30041"
 msgid "Enable Fullscreen Video"
@@ -292,6 +300,10 @@ msgstr "Ausführliches Logging"
 msgctxt "#30073"
 msgid "Enable Remote Control"
 msgstr "Remote-Steuerung zulassen"
+
+msgctxt "#30074"
+msgid "Create Video Information File"
+msgstr "Videoinfo-Datei erstellen"
 
 msgctxt "#30100"
 msgid "Popular"
@@ -672,6 +684,10 @@ msgstr "Anmeldung erfolgreich"
 msgctxt "#30216"
 msgid "No credentials present, please go to Settings-Connection and sign in"
 msgstr "Keine Zugangsdaten, bitte unter Einstellungen-Verbindung anmelden"
+
+msgctxt "#30217"
+msgid "No stream hoster reachable"
+msgstr "Kein Stream Hoster verfügbar"
 
 msgctxt "#30220"
 msgid "PIN (empty for no restriction)"

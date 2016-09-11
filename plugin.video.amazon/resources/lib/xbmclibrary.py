@@ -8,6 +8,8 @@ import listmovie
 
 from BeautifulSoup import BeautifulSoup, Tag
 
+cr_nfo = addon.getSetting('cr_nfo') == 'true'
+
 if addon.getSetting('enablelibraryfolder') == 'true':
     MOVIE_PATH = os.path.join(xbmc.translatePath(addon.getSetting('customlibraryfolder')), 'Movies').decode('utf-8')
     TV_SHOWS_PATH = os.path.join(xbmc.translatePath(addon.getSetting('customlibraryfolder')), 'TV').decode('utf-8')
@@ -23,7 +25,7 @@ def UpdateLibrary():
 def CreateDirectory(dir_path):
     dir_path = cleanName(dir_path.strip(), isfile=False)
     if not xbmcvfs.exists(dir_path):
-        return xbmcvfs.mkdir(dir_path)
+        return xbmcvfs.mkdirs(dir_path)
     return False
 
 
@@ -36,7 +38,7 @@ def SetupLibrary():
 def streamDetails(Info, language='ger', hasSubtitles=False):
     skip_keys = ('ishd', 'isadult', 'audiochannels', 'genre', 'cast', 'duration', 'trailer', 'asins')
     fileinfo = '<runtime>%s</runtime>' % Info['Duration']
-    if 'Genre' in Info.keys():
+    if 'Genre' in Info.keys() and Info['Genre']:
         for genre in Info['Genre'].split('/'):
             fileinfo += '<genre>%s</genre>' % genre.strip()
     if 'Cast' in Info.keys():
@@ -79,14 +81,14 @@ def streamDetails(Info, language='ger', hasSubtitles=False):
     return fileinfo
 
 
-def EXPORT_MOVIE(asin=False, makeNFO=True):
+def EXPORT_MOVIE(asin=False, makeNFO=cr_nfo):
     SetupLibrary()
     if not asin:
         asin = args.get('asin')
     for moviedata in moviesDB.lookupMoviedb(asin, single=False):
         Info = listmovie.ADD_MOVIE_ITEM(moviedata, onlyinfo=True)
         filename = Info['Title']
-        # Dialog.notification('Export', filename, sound = False)
+        folder = os.path.join(MOVIE_PATH, cleanName(filename))
         Log('Amazon Export: ' + filename)
         strm_file = filename + ".strm"
         u = '%s?%s' % (sys.argv[0], urllib.urlencode({'asin': asin,
@@ -96,24 +98,21 @@ def EXPORT_MOVIE(asin=False, makeNFO=True):
                                                       'adult': Info['isAdult'],
                                                       'trailer': 0,
                                                       'selbitrate': 0}))
-        SaveFile(strm_file, u, MOVIE_PATH)
+        SaveFile(strm_file, u, folder)
 
         if makeNFO:
             nfo_file = filename + ".nfo"
             nfo = '<movie>'
             nfo += streamDetails(Info)
             nfo += '</movie>'
-            SaveFile(nfo_file, nfo, MOVIE_PATH)
+            SaveFile(nfo_file, nfo, folder)
 
 
 def EXPORT_SHOW(asin=None):
-    SetupLibrary()
     if not asin:
         asin = args.get('asin')
     for data in tvDB.lookupTVdb(asin, tbl='shows', single=False):
         Info = listtv.ADD_SHOW_ITEM(data, onlyinfo=True)
-        directorname = os.path.join(TV_SHOWS_PATH, cleanName(Info['Title']))
-        CreateDirectory(directorname)
         for showasin in Info['Asins'].split(','):
             asins = tvDB.lookupTVdb(showasin, rvalue='asin', tbl='seasons', name='seriesasin', single=False)
             for asin in asins:
@@ -122,16 +121,10 @@ def EXPORT_SHOW(asin=None):
 
 
 def EXPORT_SEASON(asin=None, dispnotif=True):
-    SetupLibrary()
     if not asin:
         asin = args.get('asin')
     for data in tvDB.lookupTVdb(asin, tbl='seasons', single=False):
         Info = listtv.ADD_SEASON_ITEM(data, onlyinfo=True)
-        directorname = os.path.join(TV_SHOWS_PATH, cleanName(Info['Title']))
-        CreateDirectory(directorname)
-        name = 'Season ' + str(Info['Season'])
-        seasonpath = os.path.join(directorname, name)
-        CreateDirectory(seasonpath)
         for seasonasin in Info['Asins'].split(','):
             asins = tvDB.lookupTVdb(seasonasin, rvalue='asin', name='seasonasin', single=False)
             for asin in asins:
@@ -140,7 +133,7 @@ def EXPORT_SEASON(asin=None, dispnotif=True):
                     dispnotif = False
 
 
-def EXPORT_EPISODE(asin=None, makeNFO=True, dispnotif=True):
+def EXPORT_EPISODE(asin=None, makeNFO=cr_nfo, dispnotif=True):
     if not asin:
         asin = args.get('asin')
     for data in tvDB.lookupTVdb(asin, single=False):
@@ -148,14 +141,11 @@ def EXPORT_EPISODE(asin=None, makeNFO=True, dispnotif=True):
         Info['Title'] = Info['EpisodeName']
         showname = cleanName(Info['TVShowTitle'])
         directorname = os.path.join(TV_SHOWS_PATH, showname)
-        CreateDirectory(directorname)
         name = 'Season ' + str(Info['Season'])
         if dispnotif:
             SetupLibrary()
             Log('Amazon Export: %s %s' % (showname, name))
-            dispnotif = False
         seasonpath = os.path.join(directorname, name)
-        CreateDirectory(seasonpath)
         filename = 'S%02dE%02d - %s' % (Info['Season'], Info['Episode'], Info['Title'])
         strm_file = filename + ".strm"
         u = '%s?%s' % (sys.argv[0], urllib.urlencode({'asin': asin,

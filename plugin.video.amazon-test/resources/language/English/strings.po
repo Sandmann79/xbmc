@@ -154,7 +154,11 @@ msgctxt "#30035"
 msgid "Enable Views"
 msgstr ""
 
-#empty strings from id 30036 to 30037
+#empty strings id 30036
+
+msgctxt "#30037"
+msgid "Disable SSL Certificate Verification"
+msgstr ""
 
 msgctxt "#30038"
 msgid "Connection"
@@ -252,7 +256,11 @@ msgctxt "#30062"
 msgid "Path"
 msgstr ""
 
-#empty strings from id 30063 to 30069
+msgctxt "#30063"
+msgid "Create Video Information File"
+msgstr ""
+
+#empty strings from id 30064 to 30069
 
 msgctxt "#30070"
 msgid "Miscellaneous"
@@ -544,4 +552,8 @@ msgstr ""
 
 msgctxt "#30216"
 msgid "No credentials present, please go to Settings-Connection and sign in"
+msgstr ""
+
+msgctxt "#30217"
+msgid "No stream hoster reachable"
 msgstr ""

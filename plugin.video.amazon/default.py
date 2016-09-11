@@ -4,6 +4,7 @@
 # main imports
 # from __future__ import unicode_literals
 from resources.lib.common import *
+from service import updateRunning
 
 
 def modes():

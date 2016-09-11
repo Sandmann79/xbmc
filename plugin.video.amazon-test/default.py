@@ -53,9 +53,10 @@ if xbmc.getCondVisibility('system.platform.osx'):
 if xbmc.getCondVisibility('system.platform.android'):
     platform = osAndroid
 hasExtRC = xbmc.getCondVisibility('System.HasAddon(script.chromium_remotecontrol)')
-PluginPath = addon.getAddonInfo('path').decode('utf-8')
 DataPath = xbmc.translatePath(addon.getAddonInfo('profile')).decode('utf-8')
 HomePath = xbmc.translatePath('special://home').decode('utf-8')
+PluginPath = addon.getAddonInfo('path').decode('utf-8')
+ConfigPath = os.path.join(DataPath, 'config')
 if not xbmcvfs.exists(os.path.join(DataPath, 'settings.xml')):
     addon.openSettings()
 playMethod = int(addon.getSetting("playmethod"))
@@ -79,8 +80,6 @@ ATVUrl = 'https://atv-%s.amazon.com' % ['eu', 'eu', 'ext', 'ext-fe'][country]
 MarketID = ['A1PA6795UKMFR9', 'A1F83G8C2ARO7P', 'ATVPDKIKX0DER', 'A1VC38T7YXB528'][country]
 Language = ['de', 'en', 'en', 'jp'][country]
 AgeRating = ['FSK ', '', '', ''][country]
-AgePin = addon.getSetting('age_pin')
-PinReq = int('0' + addon.getSetting('pin_req'))
 menuFile = os.path.join(DataPath, 'menu-%s.db' % MarketID)
 CookieFile = os.path.join(DataPath, 'cookie-%s.lwp' % MarketID)
 na = 'not available'
@@ -95,7 +94,6 @@ Ages = [[('FSK 0', 'FSK 0'), ('FSK 6', 'FSK 6'), ('FSK 12', 'FSK 12'), ('FSK 16'
         [('General Audiences', 'G,TV-G,TV-Y'), ('Family', 'PG,NR,TV-Y7,TV-Y7-FV,TV-PG'),
          ('Teen', 'PG-13,TV-14'), ('Mature', 'R,NC-17,TV-MA,Unrated,Not rated')],
         [('全ての観客', 'g'), ('親の指導・助言', 'pg12'), ('R-15指定', 'r15+'), ('成人映画', 'r18+,nr')]]
-RestrAges = ','.join(a[1] for a in Ages[country][PinReq:]) if AgePin else ''
 
 # ids: A28RQHJKHM2A2W - ps3 / AFOQV1TK6EU6O - ps4 / A1IJNVP3L4AY8B - samsung / A2E0SNTXJVT7WK - firetv1 /
 #      ADVBD696BHNV5 - montoya / A3VN4E5F7BBC7S - roku / A1MPSLFC7L5AFK - kindle / A2M4YX06LWP8WI - firetv2 /
@@ -111,6 +109,9 @@ TypeIDs = {'All': 'firmware=fmw:17-app:2.0.45.1210&deviceTypeID=A2M4YX06LWP8WI',
 langID = {'movie': 30165, 'series': 30166, 'season': 30167, 'episode': 30173}
 OfferGroup = '' if payCont else '&OfferGroups=B0043YVHMY'
 socket.setdefaulttimeout(30)
+
+if addon.getSetting('ssl_verif') == 'true' and hasattr(ssl, '_create_unverified_context'):
+    ssl._create_default_https_context = ssl._create_unverified_context
 
 if addon.getSetting('enablelibraryfolder') == 'true':
     MOVIE_PATH = os.path.join(xbmc.translatePath(addon.getSetting('customlibraryfolder')), 'Movies').decode('utf-8')
@@ -146,7 +147,7 @@ def setView(content, view=False, updateListing=False):
     xbmcplugin.endOfDirectory(pluginhandle, updateListing=updateListing)
 
 
-def getURL(url, useCookie=False, silent=False, headers=[], UA=UserAgent, rjson=True, attempt=1):
+def getURL(url, useCookie=False, silent=False, headers=[], UA=UserAgent, rjson=True, attempt=1, check=False):
     cj = cookielib.LWPCookieJar()
     retval = [] if rjson else ''
     if useCookie:
@@ -163,12 +164,12 @@ def getURL(url, useCookie=False, silent=False, headers=[], UA=UserAgent, rjson=T
         opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cj), urllib2.HTTPRedirectHandler)
         opener.addheaders = headers
         usock = opener.open(url)
-        response = usock.read()
+        response = usock.read() if not check else 'OK'
         usock.close()
     except (socket.timeout, ssl.SSLError, urllib2.URLError), e:
         Log('Error reason: %s' % e, xbmc.LOGERROR)
         if '429' or 'timed out' in e:
-            attempt += 1
+            attempt += 1 if not check else 10
             logout = 'Attempt #%s' % attempt
             if '429' in e:
                 logout += '. Too many requests - Pause 10 sec'
@@ -502,22 +503,22 @@ def Export(infoLabels, url):
 
     if isEpisode:
         ExportPath = TV_SHOWS_PATH
-        isEpisode = True
         title = infoLabels['TVShowTitle']
 
     tl = title.lower()
     if '[omu]' in tl or '[ov]' in tl or ' omu' in tl:
         language = ''
     filename = re.sub(r'(?i)\[.*| omu| ov', '', title).strip()
+    ExportPath = os.path.join(ExportPath, cleanName(filename))
 
     if isEpisode:
         infoLabels['TVShowTitle'] = filename
-        ExportPath = os.path.join(ExportPath, cleanName(filename))
         nfoType = 'episodedetails'
-        CreateDirectory(ExportPath)
         filename = 'S%02dE%02d - %s' % (infoLabels['Season'], infoLabels['Episode'], infoLabels['Title'])
 
-    CreateInfoFile(filename, ExportPath, nfoType, infoLabels, language)
+    if addon.getSetting('cr_nfo') == 'true':
+        CreateInfoFile(filename, ExportPath, nfoType, infoLabels, language)
+
     SaveFile(filename + '.strm', url, ExportPath)
     Log('Export: ' + filename)
 
@@ -750,13 +751,16 @@ def getTMDBImages(title, content='movie', year=None):
 def formatSeason(infoLabels, parent):
     name = ''
     season = infoLabels['Season']
+    Log(parent)
     if parent:
         return infoLabels['DisplayTitle']
         # name = infoLabels['TVShowTitle'] + ' - '
-    if season != 0 and len(str(season)) < 3:
+    if season != 0 and season < 100:
         name += getString(30167) + ' ' + str(season)
-    elif len(str(season)) > 3:
+    elif season > 1900:
         name += getString(30168) + str(season)
+    elif season > 99:
+        name += getString(30167) + ' ' + str(season).replace('0', '.')
     else:
         name += getString(30169)
     if not infoLabels['isPrime']:
@@ -1053,21 +1057,30 @@ def AndroidPlayback(asin, trailer):
 def IStreamPlayback(asin, name, trailer, isAdult):
     extern = not xbmc.getInfoLabel('Container.PluginName').startswith('plugin.video.amazon')
     mpaa_str = RestrAges + getString(30171)
-    mpaa_check = xbmc.getInfoLabel('ListItem.MPAA') in mpaa_str or isAdult
-    thumb = xbmc.getInfoLabel('ListItem.Art(season.poster)')
-    title = xbmc.getInfoLabel('ListItem.Title')
-    number = xbmc.getInfoLabel('ListItem.Episode')
+
+    if not extern:
+        mpaa_check = xbmc.getInfoLabel('ListItem.MPAA') in mpaa_str or isAdult
+        number = xbmc.getInfoLabel('ListItem.Episode')
+        title = xbmc.getInfoLabel('ListItem.Title')
+        thumb = xbmc.getInfoLabel('ListItem.Art(season.poster)')
+        if not thumb:
+            thumb = xbmc.getInfoLabel('ListItem.Art(tvshow.poster)')
+            if not thumb:
+                thumb = xbmc.getInfoLabel('ListItem.Art(thumb)')
+    else:
+        content = getATVData('GetASINDetails', 'ASINList=' + asin)['titles'][0]
+        ct, Info = getInfos(content, False)
+        title = Info['DisplayTitle']
+        thumb = Info.get('Poster', Info['Thumb'])
+        number = Info.get('Episode', False)
+        mpaa_check = str(Info.get('MPAA', mpaa_str)) in mpaa_str or isAdult
+
     vMT = 'Feature'
     values = getFlashVars(asin)
 
     if not values:
         xbmcplugin.setResolvedUrl(pluginhandle, False, xbmcgui.ListItem())
         return
-
-    if not thumb:
-        thumb = xbmc.getInfoLabel('ListItem.Art(tvshow.poster)')
-        if not thumb:
-            thumb = xbmc.getInfoLabel('ListItem.Art(thumb)')
 
     if number and not extern:
         title = '%s - %s' % (number, title)
@@ -1076,6 +1089,7 @@ def IStreamPlayback(asin, name, trailer, isAdult):
     if trailer == '1':
         vMT = 'Trailer'
         title += ' (Trailer)'
+        Info = {'Plot': xbmc.getInfoLabel('ListItem.Plot')}
 
     mpd, subs = getStreams(*getUrldata('catalog/GetPlaybackResources', values, extra=True, vMT=vMT,
                                        opt='&titleDecorationScheme=primary-content'), retmpd=True)
@@ -1095,7 +1109,7 @@ def IStreamPlayback(asin, name, trailer, isAdult):
 
     if extern or trailer == '1':
         Log('external', 0)
-        listitem.setInfo('video', {'Plot': xbmc.getInfoLabel('ListItem.Plot')})
+        listitem.setInfo('video', Info)
 
     listitem.setArt({'thumb': thumb})
     listitem.setSubtitles(subs)
@@ -1198,7 +1212,8 @@ def getStartupInfo():
 
 
 def getStreams(suc, data, retmpd=False):
-    prefHost = addon.getSetting("pref_host")
+    HostSet = addon.getSetting("pref_host")
+    subUrls = []
 
     if not suc:
         return False, data
@@ -1206,24 +1221,29 @@ def getStreams(suc, data, retmpd=False):
     if retmpd:
         subUrls = parseSubs(data)
 
-    if prefHost not in str(data) or prefHost == 'Auto':
-        prefHost = False
+    hosts = data['audioVideoUrls']['avCdnUrlSets']
 
-    for cdn in data['audioVideoUrls']['avCdnUrlSets']:
-        if prefHost and prefHost not in cdn['cdn']:
-            continue
+    while hosts:
+        for cdn in hosts:
+            prefHost = False if HostSet not in str(hosts) or HostSet == 'Auto' else HostSet
+            if prefHost and prefHost not in cdn['cdn']:
+                continue
+            Log('Using Host: ' + cdn['cdn'])
 
-        Log('Using Host: ' + cdn['cdn'])
+            for urlset in cdn['avUrlInfoList']:
+                data = getURL(urlset['url'], rjson=False, check=retmpd)
+                if not data or 'Cloudfront' in cdn['cdn']:
+                    hosts.remove(cdn)
+                    Log('Host not reachable: ' + cdn['cdn'])
+                    break
+                if retmpd:
+                    return urlset['url'], subUrls
+                else:
+                    fps_string = re.compile('frameRate="([^"]*)').findall(data)[0]
+                    fr = round(eval(fps_string + '.0'), 3)
+                    return True, str(fr).replace('.0', '')
 
-        for urlset in cdn['avUrlInfoList']:
-            if retmpd:
-                return urlset['url'], subUrls
-            data = getURL(urlset['url'], rjson=False)
-            fps_string = re.compile('frameRate="([^"]*)').findall(data)[0]
-            fr = round(eval(fps_string + '.0'), 3)
-            return True, str(fr).replace('.0', '')
-
-    return False, getString(30205)
+    return False, getString(30217)
 
 
 def parseSubs(data):
@@ -1408,11 +1428,11 @@ def Input(mousex=0, mousey=0, click=0, keys=None, delay='200'):
         Log('Returncode: %s' % rcode)
 
 
-def genID():
-    guid = addon.getSetting("GenDeviceID")
+def genID(renew=False):
+    guid = getConfig("GenDeviceID") if not renew else False
     if not guid or len(guid) != 56:
         guid = hmac.new(UserAgent, uuid.uuid4().bytes, hashlib.sha224).hexdigest()
-        addon.setSetting("GenDeviceID", guid)
+        writeConfig("GenDeviceID", guid)
     return guid
 
 
@@ -1430,8 +1450,8 @@ def MechanizeLogin():
 def LogIn(ask=True):
     addon.setSetting('login_acc', '')
     addon.setSetting('use_mfa', 'false')
-    email = addon.getSetting('login_name')
-    password = decode(addon.getSetting('login_pass'))
+    email = getConfig('login_name')
+    password = decode(getConfig('login_pass'))
     savelogin = addon.getSetting('save_login') == 'true'
     useMFA = False
 
@@ -1503,8 +1523,8 @@ def LogIn(ask=True):
                 addon.setSetting('save_login', 'false')
                 savelogin = False
             if savelogin:
-                addon.setSetting('login_name', email)
-                addon.setSetting('login_pass', encode(password))
+                writeConfig('login_name', email)
+                writeConfig('login_pass', encode(password))
             else:
                 cj.save(CookieFile, ignore_discard=True, ignore_expires=True)
             if ask:
@@ -1512,9 +1532,9 @@ def LogIn(ask=True):
             genID()
             return cj
         elif 'message_error' in response:
+            writeConfig('login_pass', '')
             msg = soup.find('div', attrs={'id': 'message_error'})
             Log('Login Error: %s' % msg.p.renderContents().strip())
-            addon.setSetting('login_pass', '')
             Dialog.ok(getString(30200), getString(30201))
         elif 'message_warning' in response:
             msg = soup.find('div', attrs={'id': 'message_warning'})
@@ -1568,8 +1588,8 @@ def remLoginData(savelogin=False, info=True):
                 xbmcvfs.delete(os.path.join(DataPath, fn))
 
     if not savelogin or info:
-        addon.setSetting('login_name', '')
-        addon.setSetting('login_pass', '')
+        writeConfig('login_name', '')
+        writeConfig('login_pass', '')
 
     if info:
         addon.setSetting('login_acc', '')
@@ -1632,12 +1652,14 @@ def cleanName(name, isfile=True):
     return name
 
 
-def SaveFile(filename, data, isdir=False, mode='w'):
+def SaveFile(filename, data, isdir=None, mode='w'):
     if isinstance(data, unicode):
         data = data.encode('utf-8')
     if isdir:
         filename = cleanName(filename)
         filename = os.path.join(isdir, filename)
+        if not xbmcvfs.exists(isdir):
+            xbmcvfs.mkdirs(cleanName(isdir.strip(), isfile=False))
     filename = cleanName(filename, isfile=False)
     outfile = xbmcvfs.File(filename, mode)
     outfile.write(data)
@@ -1647,7 +1669,7 @@ def SaveFile(filename, data, isdir=False, mode='w'):
 def CreateDirectory(dir_path):
     dir_path = cleanName(dir_path.strip(), isfile=False)
     if not xbmcvfs.exists(dir_path):
-        return xbmcvfs.mkdir(dir_path)
+        return xbmcvfs.mkdirs(dir_path)
     return False
 
 
@@ -1772,6 +1794,44 @@ def RequestPin():
     return True
 
 
+def getConfig(cfile, value=''):
+    cfgfile = os.path.join(ConfigPath, cfile)
+
+    if xbmcvfs.exists(cfgfile):
+        f = xbmcvfs.File(cfgfile, 'r')
+        value = f.read()
+        f.close()
+
+    return value
+
+
+def writeConfig(cfile, value):
+    cfgfile = os.path.join(ConfigPath, cfile)
+    cfglockfile = os.path.join(ConfigPath, cfile + '.lock')
+
+    if not xbmcvfs.exists(ConfigPath):
+        xbmcvfs.mkdirs(ConfigPath)
+
+    while True:
+        if not xbmcvfs.exists(cfglockfile):
+            l = xbmcvfs.File(cfglockfile, 'w')
+            l.write(str(time.time()))
+            l.close()
+            f = xbmcvfs.File(cfgfile, 'w')
+            f.write(value.__str__())
+            f.close()
+            xbmcvfs.delete(cfglockfile)
+            return True
+        else:
+            l = xbmcvfs.File(cfglockfile)
+            modified = float(l.read())
+            l.close()
+            if time.time() - modified > 0.1:
+                xbmcvfs.delete(cfglockfile)
+
+    return False
+
+
 class window(xbmcgui.WindowDialog):
     def __init__(self, process):
         xbmcgui.WindowDialog.__init__(self)
@@ -1893,8 +1953,8 @@ class AgeSettings(pyxbmct.AddonDialogWindow):
         self.setFocus(self.pin)
 
     def save_settings(self):
-        addon.setSetting('age_pin', self.pin.getText().strip())
-        addon.setSetting('pin_req', str(self.pin_req))
+        writeConfig('age_pin', self.pin.getText().strip())
+        writeConfig('pin_req', self.pin_req)
         self.close()
 
     def select_age(self):
@@ -1905,6 +1965,9 @@ class AgeSettings(pyxbmct.AddonDialogWindow):
 
 
 remLoginData(addon.getSetting('save_login') == 'true', False)
+AgePin = getConfig('age_pin')
+PinReq = int(getConfig('pin_req', '0'))
+RestrAges = ','.join(a[1] for a in Ages[country][PinReq:]) if AgePin else ''
 
 deviceID = genID()
 dbFile = os.path.join(DataPath, 'art.db')

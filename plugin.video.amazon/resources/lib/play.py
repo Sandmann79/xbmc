@@ -298,7 +298,7 @@ def getStartupInfo():
 
 
 def getStreams(suc, data, retmpd=False):
-    prefHost = addon.getSetting("pref_host")
+    HostSet = addon.getSetting("pref_host")
     subUrls = []
 
     if not suc:
@@ -307,23 +307,29 @@ def getStreams(suc, data, retmpd=False):
     if retmpd:
         subUrls = parseSubs(data)
 
-    if prefHost not in str(data) or prefHost == 'Auto':
-        prefHost = False
+    hosts = data['audioVideoUrls']['avCdnUrlSets']
 
-    for cdn in data['audioVideoUrls']['avCdnUrlSets']:
-        if prefHost and prefHost not in cdn['cdn']:
-            continue
+    while hosts:
+        for cdn in hosts:
+            prefHost = False if HostSet not in str(hosts) or HostSet == 'Auto' else HostSet
+            if prefHost and prefHost not in cdn['cdn']:
+                continue
+            Log('Using Host: ' + cdn['cdn'])
 
-        Log('Using Host: ' + cdn['cdn'])
+            for urlset in cdn['avUrlInfoList']:
+                data = getURL(urlset['url'], retjson=False, check=retmpd)
+                if not data or 'Cloudfront' in cdn['cdn']:
+                    hosts.remove(cdn)
+                    Log('Host not reachable: ' + cdn['cdn'])
+                    break
+                if retmpd:
+                    return urlset['url'], subUrls
+                else:
+                    fps_string = re.compile('frameRate="([^"]*)').findall(data)[0]
+                    fr = round(eval(fps_string + '.0'), 3)
+                    return True, str(fr).replace('.0', '')
 
-        for urlset in cdn['avUrlInfoList']:
-            if retmpd:
-                return urlset['url'], subUrls
-            data = getURL(urlset['url'], retjson=False)
-            fps_string = re.compile('frameRate="([^"]*)').findall(data)[0]
-            fr = round(eval(fps_string + '.0'), 3)
-            return True, str(fr).replace('.0', '')
-    return False, getString(30205)
+    return False, getString(30217)
 
 
 def getPlaybackInfo():

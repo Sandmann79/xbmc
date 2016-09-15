@@ -514,7 +514,8 @@ def Export(infoLabels, url):
     if isEpisode:
         infoLabels['TVShowTitle'] = filename
         nfoType = 'episodedetails'
-        filename = 'S%02dE%02d - %s' % (infoLabels['Season'], infoLabels['Episode'], infoLabels['Title'])
+        filename = '%s - S%02dE%02d - %s' % (infoLabels['TVShowTitle'], infoLabels['Season'],
+                                             infoLabels['Episode'], infoLabels['Title'])
 
     if addon.getSetting('cr_nfo') == 'true':
         CreateInfoFile(filename, ExportPath, nfoType, infoLabels, language)

@@ -146,7 +146,7 @@ def EXPORT_EPISODE(asin=None, makeNFO=cr_nfo, dispnotif=True):
             SetupLibrary()
             Log('Amazon Export: %s %s' % (showname, name))
         seasonpath = os.path.join(directorname, name)
-        filename = 'S%02dE%02d - %s' % (Info['Season'], Info['Episode'], Info['Title'])
+        filename = '%s - S%02dE%02d - %s' % (showname, Info['Season'], Info['Episode'], Info['Title'])
         strm_file = filename + ".strm"
         u = '%s?%s' % (sys.argv[0], urllib.urlencode({'asin': asin,
                                                       'mode': 'play',

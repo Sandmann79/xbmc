@@ -238,17 +238,15 @@ def cleanTitle(content):
 
 
 def addDB(table, data):
-    if table == 'shows':
-        columns = 22
-    elif table == 'seasons':
-        columns = 24
-    elif table == 'episodes':
-        columns = 23
-    else:
-        return
-    query = '?,' * columns
     c = tvDB.cursor()
+    columns = {'shows': 22, 'seasons': 24, 'episodes': 23}
+    query = '?,' * columns[table]
     num = c.execute('insert or ignore into %s values (%s)' % (table, query[0:-1]), data).rowcount
+
+    if not num and table == 'seasons':
+        Log('Updating show %s season %s' % (data[3], data[2]), xbmc.LOGDEBUG)
+        num = c.execute('update seasons set episodetotal=(?) where asin=(?)', (data[13], data[0])).rowcount
+
     if num:
         tvDB.commit()
     c.close()
@@ -349,17 +347,16 @@ def cleanDB():
 
 def getTVdbAsins(table, isPrime=1, retlist=False, value='asin'):
     c = tvDB.cursor()
-    content = ''
-    if retlist:
-        content = []
+    content = [] if retlist else ''
     sqlstring = 'select %s from %s' % (value, table)
+
     if isPrime < 2:
         sqlstring += ' where isPrime = (%s)' % isPrime
 
     for item in c.execute(sqlstring).fetchall():
         if str(item[0]) not in str(content):
             if retlist:
-                content.append([','.join(item), 0])
+                content.append(list(item)+[0, ])
             else:
                 content += ','.join(item) + ','
 
@@ -394,7 +391,7 @@ def addTVdb(full_update=True, libasins=None, cj=True):
         ALL_SEASONS_ASINS = []
     else:
         cleanDB()
-        ALL_SEASONS_ASINS = getTVdbAsins('seasons', retlist=True)
+        ALL_SEASONS_ASINS = getTVdbAsins('seasons', retlist=True, value='asin,episodetotal')
         ALL_SERIES_ASINS = getTVdbAsins('shows')
 
     if libasins:
@@ -429,11 +426,13 @@ def addTVdb(full_update=True, libasins=None, cj=True):
                     goAhead = -1
                     break
                 SEASONS_ASIN = title['titleId']
+
                 if onlyGer and re.compile('(?i)\[(ov|omu)[(\W|omu|ov)]*\]').search(title['title']):
                     Log('Season Ignored: %s' % title['title'], xbmc.LOGDEBUG)
                     found = True
                 else:
-                    found, ALL_SEASONS_ASINS = compasin(ALL_SEASONS_ASINS, SEASONS_ASIN)
+                    season_size = int(title['childTitles'][0]['size'])
+                    found, ALL_SEASONS_ASINS = compasin(ALL_SEASONS_ASINS, SEASONS_ASIN, season_size)
 
                 if not found:
                     if ASIN_ADD([title]):
@@ -446,7 +445,6 @@ def addTVdb(full_update=True, libasins=None, cj=True):
                             SERIES_COUNT += 1
                             SERIES_ASINS += SERIES_KEY + ','
                             ALL_SERIES_ASINS += SERIES_KEY + ','
-                        season_size = int(title['childTitles'][0]['size'])
                         if season_size < 1:
                             season_size = MAX
                         parsed = urlparse.urlparse(title['childTitles'][0]['feedUrl'])

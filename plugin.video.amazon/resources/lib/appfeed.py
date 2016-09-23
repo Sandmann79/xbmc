@@ -364,5 +364,7 @@ def updateAll():
         tv.updateFanart()
 
     writeConfig('update_running', 'false')
+    if xbmc.getInfoLabel('Container.FolderPath') == 'plugin://plugin.video.amazon/':
+        xbmc.executebuiltin('Container.Refresh')
     Notif(getString(30126))
     Log('DBUpdate finished')

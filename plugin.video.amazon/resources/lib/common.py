@@ -557,12 +557,14 @@ def SetView(content, view=None, updateListing=False):
     xbmcplugin.endOfDirectory(pluginhandle, updateListing=updateListing)
 
 
-def compasin(asinlist, searchstring):
+def compasin(asinlist, searchstring, season=False):
     ret = False
     for index, array in enumerate(asinlist):
+        season = False if len(array) < 3 else season
         for asin in searchstring.lower().split(','):
-            if asin and asin in array[0].lower():
-                asinlist[index][1] = 1
+            if (not season and asin and asin in array[0].lower()) or \
+               (season and asin and asin in array[0].lower() and season == array[1]):
+                asinlist[index][-1] = 1
                 ret = True
     return ret, asinlist
 

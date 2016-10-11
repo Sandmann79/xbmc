@@ -306,18 +306,22 @@ def LogIn(ask=True):
     useMFA = False
 
     if ask:
+        writeConfig('login', 'true')
         keyboard = xbmc.Keyboard(email, getString(30002))
         keyboard.doModal()
         if keyboard.isConfirmed() and keyboard.getText():
             email = keyboard.getText()
             password = setLoginPW()
+        writeConfig('login', 'false')
     else:
         if not email or not password:
-            Dialog.notification(getString(30200), getString(30216))
-            xbmc.executebuiltin('Addon.OpenSettings(%s)' % addon.getAddonInfo('id'))
+            if getConfig('login', 'false') == 'false':
+                Dialog.notification(getString(30200), getString(30216))
+                xbmc.executebuiltin('Addon.OpenSettings(%s)' % addon.getAddonInfo('id'))
             return False
 
     if password:
+        writeConfig('login', 'true')
         xbmc.executebuiltin('ActivateWindow(busydialog)')
         if xbmcvfs.exists(COOKIEFILE):
             xbmcvfs.delete(COOKIEFILE)
@@ -361,6 +365,7 @@ def LogIn(ask=True):
                 useMFA = True
                 xbmc.executebuiltin('Dialog.Close(busydialog)')
             else:
+                writeConfig('login', 'false')
                 return False
 
         if 'action=sign-out' in response:
@@ -380,6 +385,7 @@ def LogIn(ask=True):
                 addon.setSetting('use_mfa', str(useMFA).lower())
                 Dialog.ok(getString(30215), wlc)
             gen_id()
+            writeConfig('login', 'false')
             return cj
         elif 'message_error' in response:
             writeConfig('login_pass', '')
@@ -397,6 +403,7 @@ def LogIn(ask=True):
         else:
             WriteLog(response, 'login')
             Dialog.ok(getString(30200), getString(30213))
+        writeConfig('login', 'false')
     return False
 
 

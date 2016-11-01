@@ -111,7 +111,6 @@ def SEARCH_DB(searchString=None):
                 if not listtv.LIST_TVSHOWS('seriestitle', searchString, search=True):
                     addText(getString(30202))
                 SetView('tvshows', 'showview')
-        xbmc.executebuiltin('Action(Close)')
 
 
 def ExportList():

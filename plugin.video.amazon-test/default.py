@@ -1329,6 +1329,7 @@ def getUrldata(mode, values, retformat='json', devicetypeid=False, version=1, fi
     url += '&version=' + str(version)
     url += opt
     if extra:
+        #url += '&deviceProtocolOverride=Http&consumptionType=Streaming&deviceID=8f136444de035779a4288ebae654f71b4f726d610755e4d2ac43ce55&deviceTypeID=AOAGZA014O5RE&firmware=1&marketplaceID=A1PA6795UKMFR9&resourceUsage=CacheResources&videoMaterialType=Feature&xrayToken=ELECTRON&operatingSystemName=Windows&operatingSystemVersion=6.1&deviceDrmOverride=CENC&deviceStreamingTechnologyOverride=DASH&deviceProtocolOverride=Https&audioTrackId=all&deviceBitrateAdaptationsOverride=CVBR%2CCBR&titleDecorationScheme=primary-content&playbackSettingsFormatVersion=1.0.0&subtitleFormat=TTMLv2&languageFeature=MLFv2'
         url += '&resourceUsage=ImmediateConsumption&consumptionType=Streaming&deviceDrmOverride=CENC' \
                '&deviceStreamingTechnologyOverride=DASH&deviceProtocolOverride=Http&audioTrackId=all'
         url += '&videoMaterialType=' + vMT
@@ -1494,25 +1495,55 @@ def LogIn(ask=True):
                          ('Upgrade-Insecure-Requests', '1')]
         br.submit()
         response = br.response().read()
-        soup = BeautifulSoup(response, convertEntities=BeautifulSoup.HTML_ENTITIES)
+        soup = parseHTML(response)
         xbmc.executebuiltin('Dialog.Close(busydialog)')
+        WriteLog(response, 'login')
 
-        if 'auth-mfa-form' in response:
-            msg = soup.find('form', attrs={'id': 'auth-mfa-form'})
-            msgtxt = msg.p.renderContents().strip()
-            kb = xbmc.Keyboard('', msgtxt)
-            kb.doModal()
-            if kb.isConfirmed() and kb.getText():
-                xbmc.executebuiltin('ActivateWindow(busydialog)')
-                br.select_form(nr=0)
-                br['otpCode'] = kb.getText()
-                br.submit()
-                response = br.response().read()
-                soup = BeautifulSoup(response, convertEntities=BeautifulSoup.HTML_ENTITIES)
-                useMFA = True
-                xbmc.executebuiltin('Dialog.Close(busydialog)')
-            else:
-                return False
+        while 'auth-mfa-form' in response or 'ap_dcq_form' in response:
+            Log('MFA or DCQ form')
+            if 'auth-mfa-form' in response:
+                msg = soup.find('form', attrs={'id': 'auth-mfa-form'})
+                msgtxt = msg.p.renderContents().strip()
+                kb = xbmc.Keyboard('', msgtxt)
+                kb.doModal()
+                if kb.isConfirmed() and kb.getText():
+                    xbmc.executebuiltin('ActivateWindow(busydialog)')
+                    br.select_form(nr=0)
+                    br['otpCode'] = kb.getText()
+                else:
+                    return False
+            elif 'ap_dcq_form' in response:
+                msg = soup.find('div', attrs={'id': 'message_warning'})
+                Dialog.ok(__plugin__, msg.p.contents[0].strip())
+                dcq = soup.find('div', attrs={'id': 'ap_dcq1a_pagelet'})
+                dcq_title = dcq.find('div', attrs={'id': 'ap_dcq1a_pagelet_title'}).h1.contents[0].strip()
+                q_title = []
+                q_id = []
+                for q in dcq.findAll('div', attrs={'class': 'dcq_question'}):
+                    if q.span.label:
+                        label = q.span.label.renderContents().strip().replace('  ', '').replace('\n', '')
+                        if q.span.label.span:
+                            label = label.replace(str(q.span.label.span), q.span.label.span.text)
+                        q_title.append(insertLF(label))
+                        q_id.append(q.input['id'])
+
+                sel = Dialog.select(insertLF(dcq_title, 60), q_title) if len(q_title) > 1 else 0
+                if sel < 0:
+                    return False
+
+                ret = Dialog.input(q_title[sel])
+                if ret:
+                    xbmc.executebuiltin('ActivateWindow(busydialog)')
+                    br.select_form(nr=0)
+                    br[q_id[sel]] = ret
+                else:
+                    return False
+
+            br.submit()
+            response = br.response().read()
+            soup = parseHTML(response)
+            WriteLog(response, 'login-mfa')
+            xbmc.executebuiltin('Dialog.Close(busydialog)')
 
         if 'action=sign-out' in response:
             msg = soup.body.findAll('center')
@@ -1831,6 +1862,17 @@ def writeConfig(cfile, value):
                 xbmcvfs.delete(cfglockfile)
 
     return False
+
+
+def insertLF(string, begin=70):
+    spc = string.find(' ', begin)
+    return string[:spc] + '\n' + string[spc + 1:] if spc > 0 else string
+
+
+def parseHTML(response):
+    response = re.sub(r'(?i)(<!doctype \w+).*>', r'\1>', response)
+    soup = BeautifulSoup(response, convertEntities=BeautifulSoup.HTML_ENTITIES)
+    return soup
 
 
 class window(xbmcgui.WindowDialog):

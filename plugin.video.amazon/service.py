@@ -54,6 +54,7 @@ if __name__ == '__main__':
 
     if freq:
         while not monitor.abortRequested():
+            addon = xbmcaddon.Addon()
             today = datetime.today()
             freq = addon.getSetting('auto_update')
             time = addon.getSetting('update_time')

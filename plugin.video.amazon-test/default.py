@@ -287,7 +287,6 @@ def Search():
     if searchString:
         url = 'searchString=%s%s' % (urllib.quote_plus(searchString), OfferGroup)
         listContent('Search', url, 1, 'search')
-    xbmc.executebuiltin('Action(Close)')
 
 
 def swapDB():

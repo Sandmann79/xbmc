@@ -1230,7 +1230,7 @@ def getStreams(suc, data, retmpd=False):
 
             for urlset in cdn['avUrlInfoList']:
                 data = getURL(urlset['url'], rjson=False, check=retmpd)
-                if not data or 'Cloudfront' in cdn['cdn']:
+                if not data:
                     hosts.remove(cdn)
                     Log('Host not reachable: ' + cdn['cdn'])
                     break

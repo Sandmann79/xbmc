@@ -512,3 +512,7 @@ msgstr "Keine Zugangsdaten, bitte unter Einstellungen-Verbindung anmelden"
 msgctxt "#30217"
 msgid "No stream hoster reachable"
 msgstr "Kein Stream Hoster verfügbar"
+
+msgctxt "#30218"
+msgid "Due changes at Amazon's DRM encryption, it's not possible to use Inputstream for this video.\nPlease configure the fallback option in Settings, to use another Playback method."
+msgstr "Wegen Änderung von Amazon's DRM Verschlüsselung, ist es nicht möglich dieses Video mittels Inputstream wiederzugeben.\nBitte eine alternative Wiedergabemethode in den Einstellungen unter Fallback konfigurieren."

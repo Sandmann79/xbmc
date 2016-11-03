@@ -22,6 +22,7 @@
         <setting id="pref_host" type="labelenum" label="30019" visible="eq(-18,3)" values="Auto|Akamai|Level3|Limelight" default="Auto"/>
         <setting id="is_settings" type="action" label="30013" visible="eq(-19,3)" action="RunPlugin(plugin://plugin.video.amazon-test/?mode=openSettings&url=inputstream.mpd)" option="close"/>
         <setting id="age_settings" type="action" label="30018" visible="eq(-20,3)" action="RunPlugin(plugin://plugin.video.amazon-test/?mode=ageSettings)" option="close"/>
+        <setting id="fallback_method" type="enum" label="Fallback" values="None|Browser|Script/Batch|Android" default="0" visible="eq(-21,3)"/>
     </category>
     <category label="30038">
         <setting id="country" type="enum" label="30080" lvalues="30081|30082|30083|30084" default="0"/>

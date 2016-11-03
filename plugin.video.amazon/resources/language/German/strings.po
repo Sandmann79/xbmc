@@ -689,6 +689,10 @@ msgctxt "#30217"
 msgid "No stream hoster reachable"
 msgstr "Kein Stream Hoster verfügbar"
 
+msgctxt "#30218"
+msgid "Due changes at Amazon's DRM encryption, it's not possible to use Inputstream for this video.\nPlease configure the fallback option in Settings, to use another Playback method."
+msgstr "Wegen Änderung der DRM Verschlüsselung bei Amazon, ist es nicht möglich dieses Video mittels Inputstream wiederzugeben.\nBitte eine alternative Wiedergabemethode in den Einstellungen unter Fallback konfigurieren."
+
 msgctxt "#30220"
 msgid "PIN (empty for no restriction)"
 msgstr "PIN (leer für keine Abfrage)"
@@ -704,3 +708,4 @@ msgstr "Anwenden"
 msgctxt "#30223"
 msgid "Cancel"
 msgstr "Abbrechen"
+

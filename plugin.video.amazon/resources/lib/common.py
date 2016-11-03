@@ -220,7 +220,7 @@ def addVideo(name, asin, poster=None, fanart=None, infoLabels=None, totalItems=0
 
     item = xbmcgui.ListItem(name, thumbnailImage=poster)
     item.setProperty('fanart_image', fanart)
-    item.setProperty('IsPlayable', 'true' if playMethod == 3 else 'false')
+    item.setProperty('IsPlayable', str(playMethod == 3).lower())
     cm.insert(0, (getString(30101), 'Action(ToggleWatched)'))
 
     item.addStreamInfo('video', {'width': 1920, 'height': 1080} if isHD else {'width': 720, 'height': 480})

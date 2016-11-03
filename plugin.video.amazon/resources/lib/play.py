@@ -30,21 +30,31 @@ def PLAYVIDEO():
     amazonUrl = BASE_URL + "/dp/" + args.get('asin')
     trailer = args.get('trailer') == '1'
     isAdult = args.get('adult') == '1'
+    playable = False
+    fallback = int(addon.getSetting("fallback_method"))
+    methodOW = playMethod
+    videoUrl = "%s/?autoplay%s=1" % (amazonUrl, ('trailer' if trailer == '1' else ''))
 
-    if trailer:
-        videoUrl = amazonUrl + "/?autoplaytrailer=1"
-    else:
-        videoUrl = amazonUrl + "/?autoplay=1"
+    while not playable:
+        playable = True
 
-    if playMethod == 2 or platform == osAndroid:
-        AndroidPlayback(args.get('asin'), trailer)
-    elif playMethod == 3:
-        IStreamPlayback(trailer, isAdult)
-    else:
-        ExtPlayback(videoUrl, isAdult)
+        if methodOW == 2 or platform == osAndroid:
+            AndroidPlayback(args.get('asin'), trailer)
+        elif methodOW == 3:
+            playable = IStreamPlayback(trailer, isAdult)
+        else:
+            ExtPlayback(videoUrl, isAdult, methodOW)
+
+        if not playable:
+            if fallback:
+                methodOW = fallback - 1
+            else:
+                xbmc.sleep(500)
+                Dialog.ok(getString(30203), getString(30218))
+                playable = True
 
 
-def ExtPlayback(videoUrl, isAdult):
+def ExtPlayback(videoUrl, isAdult, method):
     waitsec = int(addon.getSetting("clickwait")) * 1000
     pin = addon.getSetting("pin")
     waitpin = int(addon.getSetting("waitpin")) * 1000
@@ -55,7 +65,7 @@ def ExtPlayback(videoUrl, isAdult):
     if verbLog:
         videoUrl += '&playerDebug=true'
 
-    suc, url = getCmdLine(videoUrl)
+    suc, url = getCmdLine(videoUrl, method)
     if not suc:
         Dialog.notification(getString(30203), url, xbmcgui.NOTIFICATION_ERROR)
         return
@@ -136,7 +146,7 @@ def check_output(*popenargs, **kwargs):
 def IStreamPlayback(trailer, isAdult):
     values = getFlashVars()
     if not values:
-        return
+        return True
 
     extern = not xbmc.getInfoLabel('Container.PluginName').startswith('plugin.video.amazon')
     infoLabels = GetStreamInfo(args.get('asin'))
@@ -151,10 +161,16 @@ def IStreamPlayback(trailer, isAdult):
     Log(mpd)
     if not mpd:
         Dialog.notification(getString(30203), subs, xbmcgui.NOTIFICATION_ERROR)
-        return
+        return True
+
+    mpdcontent = getURL(mpd, retjson=False)
+    if len(re.compile(r'(?i)edef8ba9-79d6-4ace-a3c8-27dcd51d21ed').findall(mpdcontent)) < 2:
+        xbmcplugin.setResolvedUrl(pluginhandle, False, xbmcgui.ListItem())
+        xbmc.executebuiltin('Dialog.Close(okdialog, true)')
+        return False
 
     if mpaa_check and not RequestPin():
-        return
+        return True
 
     listitem = xbmcgui.ListItem(path=mpd)
     if extern:
@@ -185,6 +201,7 @@ def IStreamPlayback(trailer, isAdult):
     Log('Playback startet...', 0)
     Log('Video ContentType Movie? %s' % xbmc.getCondVisibility('VideoPlayer.Content(movies)'), 0)
     Log('Video ContentType Episode? %s' % xbmc.getCondVisibility('VideoPlayer.Content(episodes)'), 0)
+    return True
 
 
 def parseSubs(data):
@@ -224,7 +241,7 @@ def GetStreamInfo(asin):
     return {'Title': ''}
 
 
-def getCmdLine(videoUrl):
+def getCmdLine(videoUrl, method):
     scr_path = addon.getSetting("scr_path")
     br_path = addon.getSetting("br_path").strip()
     scr_param = addon.getSetting("scr_param").strip()
@@ -233,7 +250,7 @@ def getCmdLine(videoUrl):
     cust_br = addon.getSetting("cust_path") == 'true'
     nobr_str = getString(30198)
 
-    if playMethod == 1:
+    if method == 1:
         if not xbmcvfs.exists(scr_path):
             return False, nobr_str
 

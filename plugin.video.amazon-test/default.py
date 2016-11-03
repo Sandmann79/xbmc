@@ -242,14 +242,11 @@ def addVideo(name, asin, infoLabels, cm=[], export=False):
 
     item = xbmcgui.ListItem(name, thumbnailImage=infoLabels['Thumb'])
     item.setArt({'fanart': infoLabels['Fanart'], 'poster': infoLabels['Thumb']})
-    item.setProperty('IsPlayable', 'false')
     item.addStreamInfo('audio', {'codec': 'ac3', 'channels': int(infoLabels['AudioChannels'])})
+    item.setProperty('IsPlayable', str(playMethod == 3).lower())
 
     if 'Poster' in infoLabels.keys():
         item.setArt({'tvshow.poster': infoLabels['Poster']})
-
-    if playMethod == 3:
-        item.setProperty('IsPlayable', 'true')
 
     if infoLabels['isHD']:
         item.addStreamInfo('video', {'width': 1920, 'height': 1080})
@@ -289,18 +286,6 @@ def Search():
         listContent('Search', url, 1, 'search')
 
 
-def swapDB():
-    data = getATVData('GetCategoryList_ftv', site_id='hm-merch-2')
-    parseNodes(data, '99')
-    c = menuDb.cursor()
-    result = c.execute('select category, content from menu where id = ("hm-merch-2")').fetchone()
-    if result:
-        cat, cont = result
-        cont = re.sub('(?i)movie,', '', cont)
-        c.execute('update menu set category = (?), content = (?) where reftag = ("tv_radd")', (cat, cont,))
-    c.close()
-
-
 def loadCategories(force=False):
     if xbmcvfs.exists(menuFile) and not force:
         ftime = updateTime(False)
@@ -313,7 +298,6 @@ def loadCategories(force=False):
     data = getATVData('GetCategoryList')
     Log('Download MenuTime: %s' % (time.time() - parseStart), 0)
     parseNodes(data)
-    # swapDB()
     updateTime()
     menuDb.commit()
     Log('Parse MenuTime: %s' % (time.time() - parseStart), 0)
@@ -751,7 +735,6 @@ def getTMDBImages(title, content='movie', year=None):
 def formatSeason(infoLabels, parent):
     name = ''
     season = infoLabels['Season']
-    Log(parent)
     if parent:
         return infoLabels['DisplayTitle']
         # name = infoLabels['TVShowTitle'] + ' - '
@@ -963,21 +946,31 @@ def getInfos(item, export):
 def PlayVideo(name, asin, adultstr, trailer):
     isAdult = adultstr == '1'
     amazonUrl = BaseUrl + "/dp/" + asin
+    playable = False
+    fallback = int(addon.getSetting("fallback_method"))
+    methodOW = playMethod
+    videoUrl = "%s/?autoplay%s=1" % (amazonUrl, ('trailer' if trailer == '1' else ''))
 
-    if trailer == '1':
-        videoUrl = amazonUrl + "/?autoplaytrailer=1"
-    else:
-        videoUrl = amazonUrl + "/?autoplay=1"
+    while not playable:
+        playable = True
 
-    if playMethod == 2 or platform == osAndroid:
-        AndroidPlayback(asin, trailer)
-    elif playMethod == 3:
-        IStreamPlayback(asin, name, trailer, isAdult)
-    else:
-        ExtPlayback(videoUrl, asin, isAdult)
+        if methodOW == 2 or platform == osAndroid:
+            AndroidPlayback(asin, trailer)
+        elif methodOW == 3:
+            playable = IStreamPlayback(asin, name, trailer, isAdult)
+        else:
+            ExtPlayback(videoUrl, asin, isAdult, methodOW)
+
+        if not playable:
+            if fallback:
+                methodOW = fallback - 1
+            else:
+                xbmc.sleep(500)
+                Dialog.ok(getString(30203), getString(30218))
+                playable = True
 
 
-def ExtPlayback(videoUrl, asin, isAdult):
+def ExtPlayback(videoUrl, asin, isAdult, playMethod):
     waitsec = int(addon.getSetting("clickwait")) * 1000
     waitprepin = int(addon.getSetting("waitprepin")) * 1000
     pin = addon.getSetting("pin")
@@ -988,7 +981,7 @@ def ExtPlayback(videoUrl, asin, isAdult):
     if verbLog:
         videoUrl += '&playerDebug=true'
 
-    suc, url = getCmdLine(videoUrl, asin)
+    suc, url = getCmdLine(videoUrl, asin, playMethod)
     if not url:
         Dialog.notification(getString(30203), url, xbmcgui.NOTIFICATION_ERROR)
         return
@@ -1080,7 +1073,7 @@ def IStreamPlayback(asin, name, trailer, isAdult):
 
     if not values:
         xbmcplugin.setResolvedUrl(pluginhandle, False, xbmcgui.ListItem())
-        return
+        return True
 
     if number and not extern:
         title = '%s - %s' % (number, title)
@@ -1098,12 +1091,16 @@ def IStreamPlayback(asin, name, trailer, isAdult):
     Log(mpd)
     if not mpd:
         Dialog.notification(getString(30203), subs, xbmcgui.NOTIFICATION_ERROR)
+        return True
+
+    mpdcontent = getURL(mpd, rjson=False)
+    if len(re.compile(r'(?i)edef8ba9-79d6-4ace-a3c8-27dcd51d21ed').findall(mpdcontent)) < 2:
         xbmcplugin.setResolvedUrl(pluginhandle, False, xbmcgui.ListItem())
-        return
+        xbmc.executebuiltin('Dialog.Close(okdialog, true)')
+        return False
 
     if mpaa_check and not RequestPin():
-        xbmcplugin.setResolvedUrl(pluginhandle, False, xbmcgui.ListItem())
-        return
+        return True
 
     listitem = xbmcgui.ListItem(label=title, path=mpd)
 
@@ -1124,6 +1121,7 @@ def IStreamPlayback(asin, name, trailer, isAdult):
     Log('Playback started...', 0)
     Log('Video ContentType Movie? %s' % xbmc.getCondVisibility('VideoPlayer.Content(movies)'), 0)
     Log('Video ContentType Episode? %s' % xbmc.getCondVisibility('VideoPlayer.Content(episodes)'), 0)
+    return True
 
 
 def check_output(*popenargs, **kwargs):
@@ -1140,7 +1138,7 @@ def check_output(*popenargs, **kwargs):
     return out.strip()
 
 
-def getCmdLine(videoUrl, asin):
+def getCmdLine(videoUrl, asin, playMethod):
     scr_path = addon.getSetting("scr_path")
     br_path = addon.getSetting("br_path").strip()
     scr_param = addon.getSetting("scr_param").strip()

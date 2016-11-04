@@ -34,6 +34,10 @@ def PLAYVIDEO():
     fallback = int(addon.getSetting("fallback_method"))
     methodOW = playMethod
     videoUrl = "%s/?autoplay%s=1" % (amazonUrl, ('trailer' if trailer == '1' else ''))
+    extern = not xbmc.getInfoLabel('Container.PluginName').startswith('plugin.video.amazon')
+
+    if extern:
+        Log('External Call', xbmc.LOGDEBUG)
 
     while not playable:
         playable = True
@@ -41,7 +45,7 @@ def PLAYVIDEO():
         if methodOW == 2 or platform == osAndroid:
             AndroidPlayback(args.get('asin'), trailer)
         elif methodOW == 3:
-            playable = IStreamPlayback(trailer, isAdult)
+            playable = IStreamPlayback(trailer, isAdult, extern)
         else:
             ExtPlayback(videoUrl, isAdult, methodOW)
 
@@ -52,6 +56,9 @@ def PLAYVIDEO():
                 xbmc.sleep(500)
                 Dialog.ok(getString(30203), getString(30218))
                 playable = True
+        else:
+            if methodOW != 3 and extern:
+                closeErrWin()
 
 
 def ExtPlayback(videoUrl, isAdult, method):
@@ -61,9 +68,7 @@ def ExtPlayback(videoUrl, isAdult, method):
     waitprepin = int(addon.getSetting("waitprepin")) * 1000
     pininput = addon.getSetting("pininput") == 'true'
     fullscr = addon.getSetting("fullscreen") == 'true'
-
-    if verbLog:
-        videoUrl += '&playerDebug=true'
+    videoUrl += '&playerDebug=true' if verbLog else ''
 
     suc, url = getCmdLine(videoUrl, method)
     if not suc:
@@ -71,7 +76,7 @@ def ExtPlayback(videoUrl, isAdult, method):
         return
 
     Log('Executing: %s' % url)
-    if platform == 1:
+    if platform == osWindows:
         process = subprocess.Popen(url, startupinfo=getStartupInfo())
     else:
         process = subprocess.Popen(url, shell=True)
@@ -143,12 +148,11 @@ def check_output(*popenargs, **kwargs):
     return out.strip()
 
 
-def IStreamPlayback(trailer, isAdult):
+def IStreamPlayback(trailer, isAdult, extern):
     values = getFlashVars()
     if not values:
         return True
 
-    extern = not xbmc.getInfoLabel('Container.PluginName').startswith('plugin.video.amazon')
     infoLabels = GetStreamInfo(args.get('asin'))
     mpaa_str = RestrAges + getString(30171)
     mpaa_check = infoLabels.get('MPAA', mpaa_str) in mpaa_str or isAdult
@@ -165,8 +169,7 @@ def IStreamPlayback(trailer, isAdult):
 
     mpdcontent = getURL(mpd, retjson=False)
     if len(re.compile(r'(?i)edef8ba9-79d6-4ace-a3c8-27dcd51d21ed').findall(mpdcontent)) < 2:
-        xbmcplugin.setResolvedUrl(pluginhandle, False, xbmcgui.ListItem())
-        xbmc.executebuiltin('Dialog.Close(okdialog, true)')
+        closeErrWin()
         return False
 
     if mpaa_check and not RequestPin():
@@ -513,6 +516,17 @@ def Input(mousex=0, mousey=0, click=0, keys=None, delay='200'):
         Log('Returncode: %s' % rcode)
 
 
+def closeErrWin(waittime=0.1):
+    xbmcplugin.setResolvedUrl(pluginhandle, False, xbmcgui.ListItem())
+    finaltime = time.time() + waittime
+    while time.time() < finaltime:
+        if xbmc.getCondVisibility('Window.IsVisible(okdialog)'):
+            Log('Closing Window '+str(waittime-(finaltime-time.time())), xbmc.LOGDEBUG)
+            xbmc.executebuiltin('Dialog.Close(okdialog, true)')
+            break
+    return
+
+
 class window(xbmcgui.WindowDialog):
     def __init__(self):
         xbmcgui.WindowDialog.__init__(self)
@@ -543,15 +557,16 @@ class window(xbmcgui.WindowDialog):
         Log('Stopping Thread')
         self._stopEvent.set()
         xbmcgui.WindowDialog.close(self)
-        vidDur = int(xbmc.getInfoLabel('ListItem.Duration')) * 60
-        watched = xbmc.getInfoLabel('Listitem.PlayCount')
-        isLast = xbmc.getInfoLabel('Container().Position') == xbmc.getInfoLabel('Container().NumItems')
-        pBTime = time.time() - self._pbStart
+        if xbmc.getInfoLabel('ListItem.Duration'):
+            vidDur = int(xbmc.getInfoLabel('ListItem.Duration')) * 60
+            watched = xbmc.getInfoLabel('Listitem.PlayCount')
+            isLast = xbmc.getInfoLabel('Container().Position') == xbmc.getInfoLabel('Container().NumItems')
+            pBTime = time.time() - self._pbStart
 
-        if pBTime > vidDur * 0.9 and not watched:
-            xbmc.executebuiltin("Action(ToggleWatched)")
-            if not isLast:
-                xbmc.executebuiltin("Action(Up)")
+            if pBTime > vidDur * 0.9 and not watched:
+                xbmc.executebuiltin("Action(ToggleWatched)")
+                if not isLast:
+                    xbmc.executebuiltin("Action(Up)")
 
     def onAction(self, action):
         if not useIntRC:

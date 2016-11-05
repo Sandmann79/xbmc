@@ -179,8 +179,7 @@ def updateEpisodes():
 
 def fixYears():
     c = tvDB.cursor()
-    seasons = c.execute(
-        'select seasonasin,year,season from episodes where year is not null order by year desc').fetchall()
+    seasons = c.execute('select seasonasin,year,season from episodes where year is not null order by year desc').fetchall()
     for asin, year, season in seasons:
         asin = '%' + asin + '%'
         c.execute("update seasons set year=? where season=? and asin like ?", (year, season, asin))
@@ -216,9 +215,7 @@ def fixStars():
     series = c.execute('select seriestitle from shows where votes is 0').fetchall()
     for title in series:
         title = title[0]
-        stars = \
-            c.execute('select avg(stars) from seasons where seriestitle like ? and votes is not 0',
-                      (title,)).fetchone()[0]
+        stars = c.execute('select avg(stars) from seasons where seriestitle like ? and votes is not 0', (title,)).fetchone()[0]
         if stars:
             c.execute('update shows set stars = (?) where seriestitle = (?)', (stars, title))
 
@@ -244,7 +241,8 @@ def addDB(table, data):
     num = c.execute('insert or ignore into %s values (%s)' % (table, query[0:-1]), data).rowcount
 
     if not num and table == 'seasons':
-        Log('Updating show %s season %s' % (data[3], data[2]), xbmc.LOGDEBUG)
+        oldepi = c.execute('select episodetotal from seasons where asin=(?)', (data[0],)).fetchall()[0][0]
+        Log('Updating show %s season %s (O:%s N:%s)' % (data[3], data[2], oldepi, data[13]), xbmc.LOGDEBUG)
         num = c.execute('update seasons set episodetotal=(?) where asin=(?)', (data[13], data[0])).rowcount
 
     if num:

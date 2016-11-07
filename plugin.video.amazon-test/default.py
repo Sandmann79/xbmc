@@ -958,11 +958,11 @@ def PlayVideo(name, asin, adultstr, trailer):
     while not playable:
         playable = True
 
-        if methodOW == 2 or platform == osAndroid:
+        if methodOW == 2 and platform == osAndroid:
             AndroidPlayback(asin, trailer)
         elif methodOW == 3:
             playable = IStreamPlayback(asin, name, trailer, isAdult, extern)
-        else:
+        elif platform != osAndroid:
             ExtPlayback(videoUrl, asin, isAdult, methodOW)
 
         if not playable:
@@ -973,7 +973,7 @@ def PlayVideo(name, asin, adultstr, trailer):
                 Dialog.ok(getString(30203), getString(30218))
                 playable = True
         else:
-            if methodOW != 3 and extern:
+            if methodOW != 3:
                 closeErrWin()
 
 
@@ -984,11 +984,11 @@ def ExtPlayback(videoUrl, asin, isAdult, playMethod):
     waitpin = int(addon.getSetting("waitpin")) * 1000
     pininput = addon.getSetting("pininput") == 'true'
     fullscr = addon.getSetting("fullscreen") == 'true'
+    videoUrl += '&playerDebug=true' if verbLog else ''
 
-    if verbLog:
-        videoUrl += '&playerDebug=true'
-
+    xbmc.executebuiltin('ActivateWindow(busydialog)')
     suc, url = getCmdLine(videoUrl, asin, playMethod)
+    xbmc.executebuiltin('Dialog.Close(busydialog)')
     if not url:
         Dialog.notification(getString(30203), url, xbmcgui.NOTIFICATION_ERROR)
         return
@@ -1285,12 +1285,10 @@ def parseSubs(data):
 def getPlaybackInfo(asin):
     if addon.getSetting("framerate") == 'false':
         return True, ''
-    xbmc.executebuiltin('ActivateWindow(busydialog)')
     values = getFlashVars(asin)
     if not values:
         return False, 'getFlashVars'
     suc, fr = getStreams(*getUrldata('catalog/GetPlaybackResources', values, extra=True))
-    xbmc.executebuiltin('Dialog.Close(busydialog)')
     return suc, fr
 
 

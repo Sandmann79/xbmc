@@ -308,7 +308,11 @@ msgctxt "#30074"
 msgid "Create Video Information File"
 msgstr ""
 
-#empty strings from id 30075 to 30099
+msgctxt "#30075"
+msgid "UP/DOWN controls Kodi Volume"
+msgstr ""
+
+#empty strings from id 30076 to 30099
 
 msgctxt "#30100"
 msgid "Popular"

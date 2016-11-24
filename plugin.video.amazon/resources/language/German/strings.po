@@ -305,6 +305,10 @@ msgctxt "#30074"
 msgid "Create Video Information File"
 msgstr "Videoinfo-Datei erstellen"
 
+msgctxt "#30075"
+msgid "UP/DOWN controls Kodi Volume"
+msgstr "HOCH/RUNTER regelt Kodi Lautstärke"
+
 msgctxt "#30100"
 msgid "Popular"
 msgstr "Beliebt"

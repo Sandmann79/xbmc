@@ -282,7 +282,11 @@ msgctxt "#30074"
 msgid "Remote Control support"
 msgstr ""
 
-#empty strings from id 30075 to 30079
+msgctxt "#30075"
+msgid "UP/DOWN controls Kodi Volume"
+msgstr ""
+
+#empty strings from id 30076 to 30079
 
 msgctxt "#30080"
 msgid "Choose Country"

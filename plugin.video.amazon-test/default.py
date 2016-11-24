@@ -69,6 +69,7 @@ dispShowOnly = addon.getSetting("disptvshow") == 'true'
 payCont = addon.getSetting('paycont') == 'true'
 verbLog = addon.getSetting('logging') == 'true'
 useIntRC = addon.getSetting("remotectrl") == 'true'
+RMC_vol = addon.getSetting("remote_vol") == 'true'
 tmdb = base64.b64decode('YjM0NDkwYzA1NmYwZGQ5ZTNlYzlhZjIxNjdhNzMxZjQ=')
 tvdb = base64.b64decode('MUQ2MkYyRjkwMDMwQzQ0NA==')
 DefaultFanart = os.path.join(PluginPath, 'fanart.jpg')
@@ -973,11 +974,11 @@ def PlayVideo(name, asin, adultstr, trailer):
                 Dialog.ok(getString(30203), getString(30218))
                 playable = True
         else:
-            if methodOW != 3:
-                closeErrWin()
+            if playMethod != 3:
+                playDummyVid()
 
 
-def ExtPlayback(videoUrl, asin, isAdult, playMethod):
+def ExtPlayback(videoUrl, asin, isAdult, method):
     waitsec = int(addon.getSetting("clickwait")) * 1000
     waitprepin = int(addon.getSetting("waitprepin")) * 1000
     pin = addon.getSetting("pin")
@@ -986,8 +987,9 @@ def ExtPlayback(videoUrl, asin, isAdult, playMethod):
     fullscr = addon.getSetting("fullscreen") == 'true'
     videoUrl += '&playerDebug=true' if verbLog else ''
 
+    xbmc.Player().stop()
     xbmc.executebuiltin('ActivateWindow(busydialog)')
-    suc, url = getCmdLine(videoUrl, asin, playMethod)
+    suc, url = getCmdLine(videoUrl, asin, method)
     xbmc.executebuiltin('Dialog.Close(busydialog)')
     if not url:
         Dialog.notification(getString(30203), url, xbmcgui.NOTIFICATION_ERROR)
@@ -1094,6 +1096,8 @@ def IStreamPlayback(asin, name, trailer, isAdult, extern):
                                        opt='&titleDecorationScheme=primary-content'), retmpd=True)
     licURL = getUrldata('catalog/GetPlaybackResources', values, extra=True, vMT=vMT, dRes='Widevine2License',
                         retURL=True)
+
+    mpd = re.sub(r'/[1-9][$].*?/', '/', mpd)
     Log(mpd)
     if not mpd:
         Dialog.notification(getString(30203), subs, xbmcgui.NOTIFICATION_ERROR)
@@ -1101,7 +1105,7 @@ def IStreamPlayback(asin, name, trailer, isAdult, extern):
 
     mpdcontent = getURL(mpd, rjson=False)
     if len(re.compile(r'(?i)edef8ba9-79d6-4ace-a3c8-27dcd51d21ed').findall(mpdcontent)) < 2:
-        closeErrWin()
+        playDummyVid()
         return False
 
     if mpaa_check and not RequestPin():
@@ -1112,11 +1116,19 @@ def IStreamPlayback(asin, name, trailer, isAdult, extern):
     if extern or trailer == '1':
         listitem.setInfo('video', Info)
 
+    if not is_addon:
+        Log('No Inputstream Addon found or activated')
+        return True
+
+    if 'adaptive' in is_addon:
+        listitem.setProperty('inputstream.adaptive.manifest_type', 'mpd')
+
+    Log('Using %s Version:%s' %(is_addon, xbmcaddon.Addon(is_addon).getAddonInfo('version')))
     listitem.setArt({'thumb': thumb})
     listitem.setSubtitles(subs)
-    listitem.setProperty('inputstream.mpd.license_type', 'com.widevine.alpha')
-    listitem.setProperty('inputstream.mpd.license_key', licURL)
-    listitem.setProperty('inputstreamaddon', 'inputstream.mpd')
+    listitem.setProperty('%s.license_type' % is_addon, 'com.widevine.alpha')
+    listitem.setProperty('%s.license_key' % is_addon, licURL)
+    listitem.setProperty('inputstreamaddon', is_addon)
     xbmcplugin.setResolvedUrl(pluginhandle, True, listitem=listitem)
 
     while not xbmc.Player().isPlayingVideo():
@@ -1128,14 +1140,15 @@ def IStreamPlayback(asin, name, trailer, isAdult, extern):
     return True
 
 
-def closeErrWin(waittime=0.1):
-    xbmcplugin.setResolvedUrl(pluginhandle, False, xbmcgui.ListItem())
-    finaltime = time.time() + waittime
-    while time.time() < finaltime:
-        if xbmc.getCondVisibility('Window.IsVisible(okdialog)'):
-            Log('Closing Window ' + str(waittime - (finaltime - time.time())), xbmc.LOGDEBUG)
-            xbmc.executebuiltin('Dialog.Close(okdialog, true)')
-            break
+def AddonEnabled(addon_id):
+    result = xbmc.executeJSONRPC('{"jsonrpc":"2.0","method":"Addons.GetAddonDetails","id":1,\
+                                   "params":{"addonid":"%s", "properties": ["enabled"]}}' % addon_id)
+    return False if '"error":' in result or '"enabled":false' in result else True
+
+
+def playDummyVid():
+    dummy_video = os.path.join(PluginPath, 'resources', 'dummy.avi')
+    xbmcplugin.setResolvedUrl(pluginhandle, True, xbmcgui.ListItem(path=dummy_video))
     return
 
 
@@ -1153,7 +1166,7 @@ def check_output(*popenargs, **kwargs):
     return out.strip()
 
 
-def getCmdLine(videoUrl, asin, playMethod):
+def getCmdLine(videoUrl, asin, method):
     scr_path = addon.getSetting("scr_path")
     br_path = addon.getSetting("br_path").strip()
     scr_param = addon.getSetting("scr_param").strip()
@@ -1162,7 +1175,7 @@ def getCmdLine(videoUrl, asin, playMethod):
     cust_br = addon.getSetting("cust_path") == 'true'
     nobr_str = getString(30198)
 
-    if playMethod == 1:
+    if method == 1:
         if not xbmcvfs.exists(scr_path):
             return False, nobr_str
 
@@ -1885,6 +1898,12 @@ def parseHTML(response):
     return soup
 
 
+def SetVol(step):
+    rpc = '{"jsonrpc": "2.0", "method": "Application.GetProperties", "params": {"properties": ["volume"]}, "id": 1}'
+    vol = json.loads(xbmc.executeJSONRPC(rpc))["result"]["volume"]
+    xbmc.executebuiltin('SetVolume(%d,showVolumeBar)' % (vol + step))
+
+
 class window(xbmcgui.WindowDialog):
     def __init__(self, process):
         xbmcgui.WindowDialog.__init__(self)
@@ -1946,6 +1965,7 @@ class window(xbmcgui.WindowDialog):
         ACTION_MOUSE_MOVE = 107
 
         actionId = action.getId()
+        showinfo = action == ACTION_SHOW_INFO
         Log('Action: Id:%s ButtonCode:%s' % (actionId, action.getButtonCode()))
 
         if action in [ACTION_SHOW_GUI, ACTION_STOP, ACTION_PARENT_DIR, ACTION_PREVIOUS_MENU, ACTION_NAV_BACK,
@@ -1953,22 +1973,26 @@ class window(xbmcgui.WindowDialog):
             Input(keys='{EX}')
         elif action in [ACTION_SELECT_ITEM, ACTION_PLAYER_PLAY, ACTION_PAUSE]:
             Input(keys='{SPC}')
+            showinfo = True
         elif action == ACTION_MOVE_LEFT:
             Input(keys='{LFT}')
+            showinfo = True
         elif action == ACTION_MOVE_RIGHT:
             Input(keys='{RGT}')
+            showinfo = True
         elif action == ACTION_MOVE_UP:
-            Input(keys='{U}')
+            SetVol(+2) if RMC_vol else Input(keys='{U}')
         elif action == ACTION_MOVE_DOWN:
-            Input(keys='{DWN}')
-        elif action == ACTION_SHOW_INFO:
-            Input(9999, 0)
-            xbmc.sleep(800)
-            Input(9999, -1)
+            SetVol(-2) if RMC_vol else Input(keys='{DWN}')
         # numkeys for pin input
         elif 57 < actionId < 68:
             strKey = str(actionId - 58)
             Input(keys=strKey)
+
+        if showinfo:
+            Input(9999, 0)
+            xbmc.sleep(500)
+            Input(9999, -1)
 
 
 class AgeSettings(pyxbmct.AddonDialogWindow):
@@ -2018,6 +2042,13 @@ class AgeSettings(pyxbmct.AddonDialogWindow):
             self.btn_ages.setLabel(self.age_list[self.pin_req])
 
 
+if AddonEnabled('inputstream.adaptive'):
+    is_addon = 'inputstream.adaptive'
+elif AddonEnabled('inputstream.mpd'):
+    is_addon = 'inputstream.mpd'
+else:
+    is_addon = None
+
 remLoginData(addon.getSetting('save_login') == 'true', False)
 AgePin = getConfig('age_pin')
 PinReq = int(getConfig('pin_req', '0'))
@@ -2047,7 +2078,9 @@ elif mode == 'getList':
 elif mode == 'WatchList':
     WatchList(args.get('url', ''), int(args.get('opt', '0')))
 elif mode == 'openSettings':
-    xbmcaddon.Addon(args.get('url')).openSettings()
+    aid = args.get('url')
+    aid = is_addon if aid == 'is' else aid
+    xbmcaddon.Addon(aid).openSettings()
 elif mode == 'ageSettings':
     if RequestPin():
         wnd = AgeSettings(getString(30018).split('.')[0])

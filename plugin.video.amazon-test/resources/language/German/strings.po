@@ -269,6 +269,10 @@ msgctxt "#30074"
 msgid "Remote Control support"
 msgstr "Remote-Steuerung zulassen"
 
+msgctxt "#30075"
+msgid "UP/DOWN controls Kodi Volume"
+msgstr "HOCH/RUNTER regelt Kodi Lautstärke"
+
 msgctxt "#30080"
 msgid "Choose Country"
 msgstr "Land auswählen"

@@ -708,7 +708,9 @@ def getDBlocation(retvar):
 
 
 def openSettings():
-    xbmcaddon.Addon(args.get('url')).openSettings()
+    aid = args.get('url')
+    aid = is_addon if aid == 'is' else aid
+    xbmcaddon.Addon(aid).openSettings()
 
 
 def RequestPin():
@@ -778,6 +780,19 @@ def parseHTML(response):
     soup = BeautifulSoup(response, convertEntities=BeautifulSoup.HTML_ENTITIES)
     return soup
 
+
+def AddonEnabled(addon_id):
+    result = xbmc.executeJSONRPC('{"jsonrpc":"2.0","method":"Addons.GetAddonDetails","id":1,\
+                                   "params":{"addonid":"%s", "properties": ["enabled"]}}' % addon_id)
+    return False if '"error":' in result or '"enabled":false' in result else True
+
+
+if AddonEnabled('inputstream.adaptive'):
+    is_addon = 'inputstream.adaptive'
+elif AddonEnabled('inputstream.mpd'):
+    is_addon = 'inputstream.mpd'
+else:
+    is_addon = None
 
 AgePin = getConfig('age_pin')
 PinReq = int(getConfig('pin_req', '0'))

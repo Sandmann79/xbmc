@@ -20,21 +20,20 @@
         <setting id="waitpin" type="labelenum" values="1|2|3|4|5|6|7|8|9|10|11|12|13|14|15|16|17|18|19|20|21|22|23|24|25|26|27|28|29|30" enable="eq(-3,true) + eq(-5,true)" label="30047" default="5" visible="eq(-5,true) + lt(-16,2)"/>
         <setting id="subtitles" type="bool" label="30005" visible="eq(-17,3)" default="true"/>
         <setting id="pref_host" type="labelenum" label="30019" visible="eq(-18,3)" values="Auto|Akamai|Level3|Limelight" default="Auto"/>
-        <setting id="is_settings" type="action" label="30013" visible="eq(-19,3)" action="RunPlugin(plugin://plugin.video.amazon-test/?mode=openSettings&url=inputstream.mpd)" option="close"/>
+        <setting id="is_settings" type="action" label="30013" visible="eq(-19,3)" action="RunPlugin(plugin://plugin.video.amazon-test/?mode=openSettings&url=is)" option="close"/>
         <setting id="age_settings" type="action" label="30018" visible="eq(-20,3)" action="RunPlugin(plugin://plugin.video.amazon-test/?mode=ageSettings)" option="close"/>
         <setting id="fallback_method" type="enum" label="Fallback" values="None|Browser|Script/Batch|Android" default="0" visible="eq(-21,3)"/>
     </category>
     <category label="30038">
         <setting id="country" type="enum" label="30080" lvalues="30081|30082|30083|30084" default="0"/>
         <setting id="ssl_verif" type="bool" label="30037" default="false"/>
+        <setting id="items_perpage" type="labelenum" values="20|30|40|60|80|100|140|180|220|250" label="30039" default="40"/>
         <setting label="30001" type="lsep"/>
         <setting id="set_login" type="action" label="30008" action="RunPlugin(plugin://plugin.video.amazon-test/?mode=LogIn)" option="close"/>
         <setting id="login_acc" type="text" label="30014" enable="eq(-100,true)" default="" subsetting="true"/>
         <setting id="use_mfa" type="bool" label="MFA" visible="eq(-100,true)" default="false"/>
         <setting id="save_login" type="bool" label="30006" enable="eq(-1,false)" default="false"/>
         <setting label="30007" type="action" action="RunPlugin(plugin://plugin.video.amazon-test/?mode=remLoginData)" option="close"/>
-        <setting type="lsep"/>
-        <setting id="items_perpage" type="labelenum" values="20|30|40|60|80|100|140|180|220|250" label="30039" default="40"/>
     </category>
     <category label="30015">
         <setting id="viewenable" type ="bool" label="30035" default="false"/>
@@ -60,6 +59,7 @@
         <setting id="paycont" type="bool" label="30073" default="false"/>
         <setting id="disptvshow" type="bool" label="30071" default="false"/>
         <setting id="remotectrl" type="bool" label="30074" default="false"/>
+        <setting id="remote_vol" type="bool" label="30075" default="false" subsetting="true" enable="eq(-1,true)"/>
         <setting id="logging" type="bool" label="30072" default="false"/>
     </category>
 </settings>

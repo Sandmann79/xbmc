@@ -24,6 +24,7 @@ if xbmc.getCondVisibility('system.platform.android'):
 hasExtRC = xbmc.getCondVisibility('System.HasAddon(script.chromium_remotecontrol)')
 useIntRC = addon.getSetting("remotectrl") == 'true'
 browser = int(addon.getSetting("browser"))
+RMC_vol = addon.getSetting("remote_vol") == 'true'
 
 
 def PLAYVIDEO():
@@ -58,7 +59,7 @@ def PLAYVIDEO():
                 playable = True
         else:
             if methodOW != 3:
-                closeErrWin()
+                playDummyVid()
 
 
 def ExtPlayback(videoUrl, isAdult, method):
@@ -70,6 +71,7 @@ def ExtPlayback(videoUrl, isAdult, method):
     fullscr = addon.getSetting("fullscreen") == 'true'
     videoUrl += '&playerDebug=true' if verbLog else ''
 
+    xbmc.Player().stop()
     xbmc.executebuiltin('ActivateWindow(busydialog)')
     suc, url = getCmdLine(videoUrl, method)
     xbmc.executebuiltin('Dialog.Close(busydialog)')
@@ -162,8 +164,11 @@ def IStreamPlayback(trailer, isAdult, extern):
 
     mpd, subs = getStreams(*getUrldata('catalog/GetPlaybackResources', values, extra=True, vMT=vMT,
                                        opt='&titleDecorationScheme=primary-content'), retmpd=True)
+
     licURL = getUrldata('catalog/GetPlaybackResources', values, extra=True, vMT=vMT, dRes='Widevine2License',
                         retURL=True)
+
+    mpd = re.sub(r'/[1-9][$].*?/', '/', mpd)
     Log(mpd)
     if not mpd:
         Dialog.notification(getString(30203), subs, xbmcgui.NOTIFICATION_ERROR)
@@ -171,7 +176,7 @@ def IStreamPlayback(trailer, isAdult, extern):
 
     mpdcontent = getURL(mpd, retjson=False)
     if len(re.compile(r'(?i)edef8ba9-79d6-4ace-a3c8-27dcd51d21ed').findall(mpdcontent)) < 2:
-        closeErrWin()
+        playDummyVid()
         return False
 
     if mpaa_check and not RequestPin():
@@ -191,12 +196,20 @@ def IStreamPlayback(trailer, isAdult, extern):
     else:
         listitem.setArt({'poster': infoLabels['Thumb']})
 
+    if not is_addon:
+        Log('No Inputstream Addon found or activated')
+        return True
+
+    if 'adaptive' in is_addon:
+        listitem.setProperty('inputstream.adaptive.manifest_type', 'mpd')
+
+    Log('Using %s Version:%s' %(is_addon, xbmcaddon.Addon(is_addon).getAddonInfo('version')))
     listitem.setArt({'thumb': infoLabels['Thumb']})
     listitem.setInfo('video', infoLabels)
     listitem.setSubtitles(subs)
-    listitem.setProperty('inputstream.mpd.license_type', 'com.widevine.alpha')
-    listitem.setProperty('inputstream.mpd.license_key', licURL)
-    listitem.setProperty('inputstreamaddon', 'inputstream.mpd')
+    listitem.setProperty('%s.license_type' % is_addon, 'com.widevine.alpha')
+    listitem.setProperty('%s.license_key' % is_addon, licURL)
+    listitem.setProperty('inputstreamaddon', is_addon)
     xbmcplugin.setResolvedUrl(pluginhandle, True, listitem=listitem)
 
     while not xbmc.Player().isPlaying():
@@ -378,7 +391,7 @@ def getFlashVars():
 
     values = {'asin': args.get('asin'),
               'deviceTypeID': 'AOAGZA014O5RE',
-              'userAgent': UserAgent}
+              'userAgent': 'com.amazon.sics/TabletSICS 2.5.38 (brcm) (AFTM; Android 22; Amazon)'}
     values.update(showpage['resourceData']['GBCustomerData'])
 
     if 'customerId' not in values:
@@ -402,7 +415,7 @@ def getUrldata(mode, values, devicetypeid=False, version=1, firmware='1', opt=''
     if not devicetypeid:
         devicetypeid = values['deviceTypeID']
     url = ATV_URL + '/cdp/' + mode
-    url += '?asin=' + values['asin']
+    url += '?titleId=' + values['asin']
     url += '&deviceTypeID=' + devicetypeid
     url += '&firmware=' + firmware
     url += '&customerID=' + values['customerId']
@@ -516,15 +529,16 @@ def Input(mousex=0, mousey=0, click=0, keys=None, delay='200'):
         Log('Returncode: %s' % rcode)
 
 
-def closeErrWin(waittime=0.1):
-    xbmcplugin.setResolvedUrl(pluginhandle, False, xbmcgui.ListItem())
-    finaltime = time.time() + waittime
-    while time.time() < finaltime:
-        if xbmc.getCondVisibility('Window.IsVisible(okdialog)'):
-            Log('Closing Window '+str(waittime-(finaltime-time.time())), xbmc.LOGDEBUG)
-            xbmc.executebuiltin('Dialog.Close(okdialog, true)')
-            break
+def playDummyVid():
+    dummy_video = os.path.join(pluginpath, 'resources', 'dummy.avi')
+    xbmcplugin.setResolvedUrl(pluginhandle, True, xbmcgui.ListItem(path=dummy_video))
     return
+
+
+def SetVol(step):
+    rpc = '{"jsonrpc": "2.0", "method": "Application.GetProperties", "params": {"properties": ["volume"]}, "id": 1}'
+    vol = json.loads(xbmc.executeJSONRPC(rpc))["result"]["volume"]
+    xbmc.executebuiltin('SetVolume(%d,showVolumeBar)' % (vol + step))
 
 
 class window(xbmcgui.WindowDialog):
@@ -532,6 +546,7 @@ class window(xbmcgui.WindowDialog):
         xbmcgui.WindowDialog.__init__(self)
         self._stopEvent = threading.Event()
         self._pbStart = time.time()
+        self._wakeUpThread = None
 
     def _wakeUpThreadProc(self, process):
         starttime = time.time()
@@ -594,6 +609,7 @@ class window(xbmcgui.WindowDialog):
         ACTION_MOUSE_MOVE = 107
 
         actionId = action.getId()
+        showinfo = action == ACTION_SHOW_INFO
         Log('Action: Id:%s ButtonCode:%s' % (actionId, action.getButtonCode()))
 
         if action in [ACTION_SHOW_GUI, ACTION_STOP, ACTION_PARENT_DIR, ACTION_PREVIOUS_MENU, ACTION_NAV_BACK,
@@ -601,19 +617,23 @@ class window(xbmcgui.WindowDialog):
             Input(keys='{EX}')
         elif action in [ACTION_SELECT_ITEM, ACTION_PLAYER_PLAY, ACTION_PAUSE]:
             Input(keys='{SPC}')
+            showinfo = True
         elif action == ACTION_MOVE_LEFT:
             Input(keys='{LFT}')
+            showinfo = True
         elif action == ACTION_MOVE_RIGHT:
             Input(keys='{RGT}')
+            showinfo = True
         elif action == ACTION_MOVE_UP:
-            Input(keys='{U}')
+            SetVol(+2) if RMC_vol else Input(keys='{U}')
         elif action == ACTION_MOVE_DOWN:
-            Input(keys='{DWN}')
-        elif action == ACTION_SHOW_INFO:
-            Input(9999, 0)
-            xbmc.sleep(800)
-            Input(9999, -1)
+            SetVol(-2) if RMC_vol else Input(keys='{DWN}')
         # numkeys for pin input
         elif 57 < actionId < 68:
             strKey = str(actionId - 58)
             Input(keys=strKey)
+
+        if showinfo:
+            Input(9999, 0)
+            xbmc.sleep(500)
+            Input(9999, -1)

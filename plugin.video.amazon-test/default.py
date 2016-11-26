@@ -990,7 +990,6 @@ def ExtPlayback(videoUrl, asin, isAdult, method):
     xbmc.Player().stop()
     xbmc.executebuiltin('ActivateWindow(busydialog)')
     suc, url = getCmdLine(videoUrl, asin, method)
-    xbmc.executebuiltin('Dialog.Close(busydialog)')
     if not url:
         Dialog.notification(getString(30203), url, xbmcgui.NOTIFICATION_ERROR)
         return
@@ -1021,10 +1020,11 @@ def ExtPlayback(videoUrl, asin, isAdult, method):
 
     Input(mousex=9999, mousey=-1)
 
+    xbmc.executebuiltin('Dialog.Close(busydialog)')
     if hasExtRC:
         return
 
-    myWindow = window(process)
+    myWindow = window(process, asin)
     myWindow.wait()
 
 
@@ -1058,6 +1058,32 @@ def AndroidPlayback(asin, trailer):
 
 def IStreamPlayback(asin, name, trailer, isAdult, extern):
     mpaa_str = RestrAges + getString(30171)
+    vMT = 'Feature' if trailer == '1' else 'Trailer'
+
+    if not is_addon:
+        Log('No Inputstream Addon found or activated')
+        Dialog.notification(getString(30203), 'No Inputstream Addon found or activated', xbmcgui.NOTIFICATION_ERROR)
+        return True
+
+    values = getFlashVars(asin)
+    if not values:
+        return True
+
+    mpd, subs = getStreams(*getUrldata('catalog/GetPlaybackResources', values, extra=True, vMT=vMT,
+                                       opt='&titleDecorationScheme=primary-content'), retmpd=True)
+    licURL = getUrldata('catalog/GetPlaybackResources', values, extra=True, vMT=vMT, dRes='Widevine2License',
+                        retURL=True)
+
+    mpd = re.sub(r'/[1-9][$].*?/', '/', mpd)
+    Log(mpd)
+    if not mpd:
+        Dialog.notification(getString(30203), subs, xbmcgui.NOTIFICATION_ERROR)
+        return True
+
+    mpdcontent = getURL(mpd, rjson=False)
+    if len(re.compile(r'(?i)edef8ba9-79d6-4ace-a3c8-27dcd51d21ed').findall(mpdcontent)) < 2:
+        playDummyVid()
+        return False
 
     if not extern:
         mpaa_check = xbmc.getInfoLabel('ListItem.MPAA') in mpaa_str or isAdult
@@ -1076,37 +1102,13 @@ def IStreamPlayback(asin, name, trailer, isAdult, extern):
         number = Info.get('Episode', False)
         mpaa_check = str(Info.get('MPAA', mpaa_str)) in mpaa_str or isAdult
 
-    vMT = 'Feature'
-    values = getFlashVars(asin)
-
-    if not values:
-        xbmcplugin.setResolvedUrl(pluginhandle, False, xbmcgui.ListItem())
-        return True
-
+    if trailer == '1':
+        title += ' (Trailer)'
+        Info = {'Plot': xbmc.getInfoLabel('ListItem.Plot')}
     if number and not extern:
         title = '%s - %s' % (number, title)
     if not title:
         title = name
-    if trailer == '1':
-        vMT = 'Trailer'
-        title += ' (Trailer)'
-        Info = {'Plot': xbmc.getInfoLabel('ListItem.Plot')}
-
-    mpd, subs = getStreams(*getUrldata('catalog/GetPlaybackResources', values, extra=True, vMT=vMT,
-                                       opt='&titleDecorationScheme=primary-content'), retmpd=True)
-    licURL = getUrldata('catalog/GetPlaybackResources', values, extra=True, vMT=vMT, dRes='Widevine2License',
-                        retURL=True)
-
-    mpd = re.sub(r'/[1-9][$].*?/', '/', mpd)
-    Log(mpd)
-    if not mpd:
-        Dialog.notification(getString(30203), subs, xbmcgui.NOTIFICATION_ERROR)
-        return True
-
-    mpdcontent = getURL(mpd, rjson=False)
-    if len(re.compile(r'(?i)edef8ba9-79d6-4ace-a3c8-27dcd51d21ed').findall(mpdcontent)) < 2:
-        playDummyVid()
-        return False
 
     if mpaa_check and not RequestPin():
         return True
@@ -1115,10 +1117,6 @@ def IStreamPlayback(asin, name, trailer, isAdult, extern):
 
     if extern or trailer == '1':
         listitem.setInfo('video', Info)
-
-    if not is_addon:
-        Log('No Inputstream Addon found or activated')
-        return True
 
     if 'adaptive' in is_addon:
         listitem.setProperty('inputstream.adaptive.manifest_type', 'mpd')
@@ -1905,11 +1903,12 @@ def SetVol(step):
 
 
 class window(xbmcgui.WindowDialog):
-    def __init__(self, process):
+    def __init__(self, process, asin):
         xbmcgui.WindowDialog.__init__(self)
         self._stopEvent = threading.Event()
         self._pbStart = time.time()
         self._wakeUpThread = threading.Thread(target=self._wakeUpThreadProc, args=(process,))
+        self._vidDur = self.getDuration(asin)
 
     def _wakeUpThreadProc(self, process):
         starttime = time.time()
@@ -1929,20 +1928,25 @@ class window(xbmcgui.WindowDialog):
         self.doModal()
         self._wakeUpThread.join()
 
+    @staticmethod
+    def getDuration(asin):
+        if xbmc.getInfoLabel('ListItem.Duration'):
+            return int(xbmc.getInfoLabel('ListItem.Duration')) * 60
+        else:
+            content = getATVData('GetASINDetails', 'ASINList=' + asin)['titles'][0]
+            ct, Info = getInfos(content, False)
+            return int(Info.get('Duration', 0))
+
     def close(self):
         Log('Stopping Thread')
         self._stopEvent.set()
         xbmcgui.WindowDialog.close(self)
-        if xbmc.getInfoLabel('ListItem.Duration'):
-            vidDur = int(xbmc.getInfoLabel('ListItem.Duration')) * 60
-            watched = xbmc.getInfoLabel('Listitem.PlayCount')
-            isLast = xbmc.getInfoLabel('Container().Position') == xbmc.getInfoLabel('Container().NumItems')
-            pBTime = time.time() - self._pbStart
+        watched = xbmc.getInfoLabel('Listitem.PlayCount')
+        pBTime = time.time() - self._pbStart
+        Log('Dur:%s State:%s PlbTm:%s' % (self._vidDur, watched, pBTime), xbmc.LOGDEBUG)
 
-            if pBTime > vidDur * 0.9 and not watched:
-                xbmc.executebuiltin("Action(ToggleWatched)")
-                if not isLast:
-                    xbmc.executebuiltin("Action(Up)")
+        if pBTime > self._vidDur * 0.9 and not watched:
+            xbmc.executebuiltin("Action(ToggleWatched)")
 
     def onAction(self, action):
         if not useIntRC:

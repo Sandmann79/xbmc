@@ -58,7 +58,7 @@ def PLAYVIDEO():
                 Dialog.ok(getString(30203), getString(30218))
                 playable = True
         else:
-            if methodOW != 3:
+            if playMethod != 3:
                 playDummyVid()
 
 
@@ -176,10 +176,11 @@ def IStreamPlayback(trailer, isAdult, extern):
         Dialog.notification(getString(30203), subs, xbmcgui.NOTIFICATION_ERROR)
         return True
 
-    mpdcontent = getURL(mpd, retjson=False)
-    if len(re.compile(r'(?i)edef8ba9-79d6-4ace-a3c8-27dcd51d21ed').findall(mpdcontent)) < 2:
-        playDummyVid()
-        return False
+    if platform != osAndroid:
+        mpdcontent = getURL(mpd, retjson=False)
+        if len(re.compile(r'(?i)edef8ba9-79d6-4ace-a3c8-27dcd51d21ed').findall(mpdcontent)) < 2:
+            playDummyVid()
+            return False
 
     infoLabels = GetStreamInfo(args.get('asin'))
     mpaa_str = RestrAges + getString(30171)
@@ -392,7 +393,7 @@ def getFlashVars():
 
     values = {'asin': args.get('asin'),
               'deviceTypeID': 'AOAGZA014O5RE',
-              'userAgent': 'com.amazon.sics/TabletSICS 2.5.38 (brcm) (AFTM; Android 22; Amazon)'}
+              'userAgent': UserAgent}
     values.update(showpage['resourceData']['GBCustomerData'])
 
     if 'customerId' not in values:
@@ -428,7 +429,8 @@ def getUrldata(mode, values, devicetypeid=False, version=1, firmware='1', opt=''
     url += opt
     if extra:
         url += '&resourceUsage=ImmediateConsumption&consumptionType=Streaming&deviceDrmOverride=CENC' \
-               '&deviceStreamingTechnologyOverride=DASH&deviceProtocolOverride=Http&audioTrackId=all'
+               '&deviceStreamingTechnologyOverride=DASH&deviceProtocolOverride=Http&audioTrackId=all' \
+               '&deviceBitrateAdaptationsOverride=CVBR%2CCBR'
         url += '&videoMaterialType=' + vMT
         url += '&desiredResources=' + dRes
     if retURL:

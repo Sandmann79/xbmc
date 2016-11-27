@@ -1058,7 +1058,7 @@ def AndroidPlayback(asin, trailer):
 
 def IStreamPlayback(asin, name, trailer, isAdult, extern):
     mpaa_str = RestrAges + getString(30171)
-    vMT = 'Feature' if trailer == '1' else 'Trailer'
+    vMT = 'Trailer' if trailer == '1' else 'Feature'
 
     if not is_addon:
         Log('No Inputstream Addon found or activated')
@@ -1080,10 +1080,11 @@ def IStreamPlayback(asin, name, trailer, isAdult, extern):
         Dialog.notification(getString(30203), subs, xbmcgui.NOTIFICATION_ERROR)
         return True
 
-    mpdcontent = getURL(mpd, rjson=False)
-    if len(re.compile(r'(?i)edef8ba9-79d6-4ace-a3c8-27dcd51d21ed').findall(mpdcontent)) < 2:
-        playDummyVid()
-        return False
+    if platform != osAndroid:
+        mpdcontent = getURL(mpd, rjson=False)
+        if len(re.compile(r'(?i)edef8ba9-79d6-4ace-a3c8-27dcd51d21ed').findall(mpdcontent)) < 2:
+            playDummyVid()
+            return False
 
     if not extern:
         mpaa_check = xbmc.getInfoLabel('ListItem.MPAA') in mpaa_str or isAdult
@@ -1350,9 +1351,9 @@ def getUrldata(mode, values, retformat='json', devicetypeid=False, version=1, fi
     url += '&version=' + str(version)
     url += opt
     if extra:
-        #url += '&deviceProtocolOverride=Http&consumptionType=Streaming&deviceID=8f136444de035779a4288ebae654f71b4f726d610755e4d2ac43ce55&deviceTypeID=AOAGZA014O5RE&firmware=1&marketplaceID=A1PA6795UKMFR9&resourceUsage=CacheResources&videoMaterialType=Feature&xrayToken=ELECTRON&operatingSystemName=Windows&operatingSystemVersion=6.1&deviceDrmOverride=CENC&deviceStreamingTechnologyOverride=DASH&deviceProtocolOverride=Https&audioTrackId=all&deviceBitrateAdaptationsOverride=CVBR%2CCBR&titleDecorationScheme=primary-content&playbackSettingsFormatVersion=1.0.0&subtitleFormat=TTMLv2&languageFeature=MLFv2'
         url += '&resourceUsage=ImmediateConsumption&consumptionType=Streaming&deviceDrmOverride=CENC' \
-               '&deviceStreamingTechnologyOverride=DASH&deviceProtocolOverride=Http&audioTrackId=all'
+               '&deviceStreamingTechnologyOverride=DASH&deviceProtocolOverride=Http&audioTrackId=all' \
+               '&deviceBitrateAdaptationsOverride=CVBR%2CCBR'
         url += '&videoMaterialType=' + vMT
         url += '&desiredResources=' + dRes
     if retURL:

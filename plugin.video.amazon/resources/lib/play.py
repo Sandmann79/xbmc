@@ -6,6 +6,7 @@ import subprocess
 import random
 import threading
 import codecs
+import shlex
 
 platform = 0
 osWindows = 1
@@ -57,9 +58,9 @@ def PLAYVIDEO():
                 xbmc.sleep(500)
                 Dialog.ok(getString(30203), getString(30218))
                 playable = True
-        else:
-            if playMethod != 3:
-                playDummyVid()
+
+    if methodOW !=3:
+        playDummyVid()
 
 
 def ExtPlayback(videoUrl, isAdult, method):
@@ -82,7 +83,10 @@ def ExtPlayback(videoUrl, isAdult, method):
     if platform == osWindows:
         process = subprocess.Popen(url, startupinfo=getStartupInfo())
     else:
-        process = subprocess.Popen(url, shell=True)
+        param = shlex.split(url)
+        process = subprocess.Popen(param, stdout=subprocess.PIPE)
+        result = process.communicate()[0]
+        Log(result)
 
     if isAdult and pininput:
         if fullscr:
@@ -167,19 +171,19 @@ def IStreamPlayback(trailer, isAdult, extern):
     mpd, subs = getStreams(*getUrldata('catalog/GetPlaybackResources', values, extra=True, vMT=vMT,
                                        opt='&titleDecorationScheme=primary-content'), retmpd=True)
 
-    licURL = getUrldata('catalog/GetPlaybackResources', values, extra=True, vMT=vMT, dRes='Widevine2License',
-                        retURL=True)
+    licURL = getUrldata('catalog/GetPlaybackResources', values, extra=True, vMT=vMT, dRes='Widevine2License', retURL=True)
 
-    mpd = re.sub(r'/[1-9][$].*?/', '/', mpd)
-    Log(mpd)
     if not mpd:
         Dialog.notification(getString(30203), subs, xbmcgui.NOTIFICATION_ERROR)
         return True
 
+    mpd = re.sub(r'~', '', mpd) if mpd != re.sub(r'~', '', mpd) else re.sub(r'/[1-9][$].*?/', '/', mpd)
+    Log(mpd)
+
     if platform != osAndroid:
         mpdcontent = getURL(mpd, retjson=False)
         if len(re.compile(r'(?i)edef8ba9-79d6-4ace-a3c8-27dcd51d21ed').findall(mpdcontent)) < 2:
-            playDummyVid()
+            xbmc.executebuiltin('ActivateWindow(busydialog)')
             return False
 
     infoLabels = GetStreamInfo(args.get('asin'))
@@ -535,6 +539,8 @@ def Input(mousex=0, mousey=0, click=0, keys=None, delay='200'):
 def playDummyVid():
     dummy_video = os.path.join(pluginpath, 'resources', 'dummy.avi')
     xbmcplugin.setResolvedUrl(pluginhandle, True, xbmcgui.ListItem(path=dummy_video))
+    Log('Playing Dummy Video', xbmc.LOGDEBUG)
+    xbmc.Player().stop()
     return
 
 

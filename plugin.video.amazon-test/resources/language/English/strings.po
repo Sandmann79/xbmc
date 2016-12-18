@@ -308,7 +308,11 @@ msgctxt "#30084"
 msgid "Japan"
 msgstr ""
 
-#empty strings from id 30085 to 30099
+msgctxt "#30085"
+msgid "Other (primevideo.com)"
+msgstr ""
+
+#empty strings from id 30086 to 30099
 
 msgctxt "#30100"
 msgid "Library"

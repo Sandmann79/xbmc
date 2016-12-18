@@ -30,6 +30,7 @@ import xbmcvfs
 import pyxbmct
 import socket
 import ssl
+import shlex
 
 addon = xbmcaddon.Addon()
 Dialog = xbmcgui.Dialog()
@@ -76,11 +77,11 @@ DefaultFanart = os.path.join(PluginPath, 'fanart.jpg')
 NextIcon = os.path.join(PluginPath, 'resources', 'next.png')
 HomeIcon = os.path.join(PluginPath, 'resources', 'home.png')
 country = int(addon.getSetting('country'))
-BaseUrl = 'https://www.amazon.' + ['de', 'co.uk', 'com', 'co.jp'][country]
-ATVUrl = 'https://atv-%s.amazon.com' % ['eu', 'eu', 'ext', 'ext-fe'][country]
-MarketID = ['A1PA6795UKMFR9', 'A1F83G8C2ARO7P', 'ATVPDKIKX0DER', 'A1VC38T7YXB528'][country]
-Language = ['de', 'en', 'en', 'jp'][country]
-AgeRating = ['FSK ', '', '', ''][country]
+BaseUrl = 'https://www.amazon.' + ['de', 'co.uk', 'com', 'co.jp', ''][country]
+ATVUrl = 'https://atv-%s.amazon.com' % ['eu', 'eu', 'ext', 'ext-fe', 'ext'][country]
+MarketID = ['A1PA6795UKMFR9', 'A1F83G8C2ARO7P', 'ATVPDKIKX0DER', 'A1VC38T7YXB528', 'ART4WZ8MWBX2Y'][country]
+Language = ['de', 'en', 'en', 'jp', ''][country]
+AgeRating = ['FSK ', '', '', '', ''][country]
 menuFile = os.path.join(DataPath, 'menu-%s.db' % MarketID)
 CookieFile = os.path.join(DataPath, 'cookie-%s.lwp' % MarketID)
 na = 'not available'
@@ -94,6 +95,7 @@ Ages = [[('FSK 0', 'FSK 0'), ('FSK 6', 'FSK 6'), ('FSK 12', 'FSK 12'), ('FSK 16'
          ('18 and older', '18')],
         [('General Audiences', 'G,TV-G,TV-Y'), ('Family', 'PG,NR,TV-Y7,TV-Y7-FV,TV-PG'),
          ('Teen', 'PG-13,TV-14'), ('Mature', 'R,NC-17,TV-MA,Unrated,Not rated')],
+        [('全ての観客', 'g'), ('親の指導・助言', 'pg12'), ('R-15指定', 'r15+'), ('成人映画', 'r18+,nr')],
         [('全ての観客', 'g'), ('親の指導・助言', 'pg12'), ('R-15指定', 'r15+'), ('成人映画', 'r18+,nr')]]
 
 # ids: A28RQHJKHM2A2W - ps3 / AFOQV1TK6EU6O - ps4 / A1IJNVP3L4AY8B - samsung / A2E0SNTXJVT7WK - firetv1 /
@@ -110,6 +112,9 @@ TypeIDs = {'All': 'firmware=fmw:17-app:2.0.45.1210&deviceTypeID=A2M4YX06LWP8WI',
 langID = {'movie': 30165, 'series': 30166, 'season': 30167, 'episode': 30173}
 OfferGroup = '' if payCont else '&OfferGroups=B0043YVHMY'
 socket.setdefaulttimeout(30)
+
+if not BaseUrl:
+    BaseUrl = 'https://www.primevideo.com'
 
 if addon.getSetting('ssl_verif') == 'true' and hasattr(ssl, '_create_unverified_context'):
     ssl._create_default_https_context = ssl._create_unverified_context
@@ -973,9 +978,9 @@ def PlayVideo(name, asin, adultstr, trailer):
                 xbmc.sleep(500)
                 Dialog.ok(getString(30203), getString(30218))
                 playable = True
-        else:
-            if playMethod != 3:
-                playDummyVid()
+
+    if methodOW !=3:
+        playDummyVid()
 
 
 def ExtPlayback(videoUrl, asin, isAdult, method):
@@ -998,7 +1003,10 @@ def ExtPlayback(videoUrl, asin, isAdult, method):
     if platform == osWindows:
         process = subprocess.Popen(url, startupinfo=getStartupInfo())
     else:
-        process = subprocess.Popen(url, shell=True)
+        args = shlex.split(url)
+        process = subprocess.Popen(args, stdout=subprocess.PIPE)
+        result = process.communicate()[0]
+        Log(result)
 
     if isAdult and pininput:
         if fullscr:
@@ -1074,16 +1082,17 @@ def IStreamPlayback(asin, name, trailer, isAdult, extern):
     licURL = getUrldata('catalog/GetPlaybackResources', values, extra=True, vMT=vMT, dRes='Widevine2License',
                         retURL=True)
 
-    mpd = re.sub(r'/[1-9][$].*?/', '/', mpd)
-    Log(mpd)
     if not mpd:
         Dialog.notification(getString(30203), subs, xbmcgui.NOTIFICATION_ERROR)
         return True
 
+    mpd = re.sub(r'~', '', mpd) if mpd != re.sub(r'~', '', mpd) else re.sub(r'/[1-9][$].*?/', '/', mpd)
+    Log(mpd)
+
     if platform != osAndroid:
         mpdcontent = getURL(mpd, rjson=False)
         if len(re.compile(r'(?i)edef8ba9-79d6-4ace-a3c8-27dcd51d21ed').findall(mpdcontent)) < 2:
-            playDummyVid()
+            xbmc.executebuiltin('ActivateWindow(busydialog)')
             return False
 
     if not extern:
@@ -1148,6 +1157,8 @@ def AddonEnabled(addon_id):
 def playDummyVid():
     dummy_video = os.path.join(PluginPath, 'resources', 'dummy.avi')
     xbmcplugin.setResolvedUrl(pluginhandle, True, xbmcgui.ListItem(path=dummy_video))
+    Log('Playing Dummy Video', xbmc.LOGDEBUG)
+    xbmc.Player().stop()
     return
 
 

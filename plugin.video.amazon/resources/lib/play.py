@@ -22,6 +22,7 @@ if xbmc.getCondVisibility('system.platform.osx'):
 if xbmc.getCondVisibility('system.platform.android'):
     platform = osAndroid
 
+osLE = socket.gethostname() == 'LibreELEC'
 hasExtRC = xbmc.getCondVisibility('System.HasAddon(script.chromium_remotecontrol)')
 useIntRC = addon.getSetting("remotectrl") == 'true'
 browser = int(addon.getSetting("browser"))
@@ -84,9 +85,13 @@ def ExtPlayback(videoUrl, isAdult, method):
         process = subprocess.Popen(url, startupinfo=getStartupInfo())
     else:
         param = shlex.split(url)
-        process = subprocess.Popen(param, stdout=subprocess.PIPE)
-        result = process.communicate()[0]
-        Log(result)
+        process = subprocess.Popen(param)
+        if osLE:
+            result = 1
+            while result != 0:
+                p = subprocess.Popen('pgrep chrome > /dev/null', shell=True)
+                p.wait()
+                result = p.returncode
 
     if isAdult and pininput:
         if fullscr:

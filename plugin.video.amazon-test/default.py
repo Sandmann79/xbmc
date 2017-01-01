@@ -53,6 +53,7 @@ if xbmc.getCondVisibility('system.platform.osx'):
     platform = osOSX
 if xbmc.getCondVisibility('system.platform.android'):
     platform = osAndroid
+osLE = socket.gethostname() == 'LibreELEC'
 hasExtRC = xbmc.getCondVisibility('System.HasAddon(script.chromium_remotecontrol)')
 DataPath = xbmc.translatePath(addon.getAddonInfo('profile')).decode('utf-8')
 HomePath = xbmc.translatePath('special://home').decode('utf-8')
@@ -995,7 +996,7 @@ def ExtPlayback(videoUrl, asin, isAdult, method):
     xbmc.Player().stop()
     xbmc.executebuiltin('ActivateWindow(busydialog)')
     suc, url = getCmdLine(videoUrl, asin, method)
-    if not url:
+    if not suc:
         Dialog.notification(getString(30203), url, xbmcgui.NOTIFICATION_ERROR)
         return
 
@@ -1004,9 +1005,13 @@ def ExtPlayback(videoUrl, asin, isAdult, method):
         process = subprocess.Popen(url, startupinfo=getStartupInfo())
     else:
         args = shlex.split(url)
-        process = subprocess.Popen(args, stdout=subprocess.PIPE)
-        result = process.communicate()[0]
-        Log(result)
+        process = subprocess.Popen(args)
+        if osLE:
+            result = 1
+            while result != 0:
+                p = subprocess.Popen('pgrep chrome > /dev/null', shell=True)
+                p.wait()
+                result = p.returncode
 
     if isAdult and pininput:
         if fullscr:

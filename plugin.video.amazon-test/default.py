@@ -1084,21 +1084,24 @@ def IStreamPlayback(asin, name, trailer, isAdult, extern):
 
     mpd, subs = getStreams(*getUrldata('catalog/GetPlaybackResources', values, extra=True, vMT=vMT,
                                        opt='&titleDecorationScheme=primary-content'), retmpd=True)
-    licURL = getUrldata('catalog/GetPlaybackResources', values, extra=True, vMT=vMT, dRes='Widevine2License',
-                        retURL=True)
+    licURL = getUrldata('catalog/GetPlaybackResources', values, extra=True, vMT=vMT, dRes='Widevine2License', retURL=True)
 
     if not mpd:
         Dialog.notification(getString(30203), subs, xbmcgui.NOTIFICATION_ERROR)
         return True
 
+    orgmpd = mpd
     mpd = re.sub(r'~', '', mpd) if mpd != re.sub(r'~', '', mpd) else re.sub(r'/[1-9][$].*?/', '/', mpd)
-    Log(mpd)
+    mpdcontent = getURL(mpd, rjson=False)
 
-    if platform != osAndroid:
-        mpdcontent = getURL(mpd, rjson=False)
-        if len(re.compile(r'(?i)edef8ba9-79d6-4ace-a3c8-27dcd51d21ed').findall(mpdcontent)) < 2:
+    if len(re.compile(r'(?i)edef8ba9-79d6-4ace-a3c8-27dcd51d21ed').findall(mpdcontent)) < 2:
+        if platform != osAndroid:
             xbmc.executebuiltin('ActivateWindow(busydialog)')
             return False
+    elif platform == osAndroid:
+        mpd = orgmpd
+
+    Log(mpd)
 
     if not extern:
         mpaa_check = xbmc.getInfoLabel('ListItem.MPAA') in mpaa_str or isAdult

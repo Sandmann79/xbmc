@@ -182,14 +182,18 @@ def IStreamPlayback(trailer, isAdult, extern):
         Dialog.notification(getString(30203), subs, xbmcgui.NOTIFICATION_ERROR)
         return True
 
+    orgmpd = mpd
     mpd = re.sub(r'~', '', mpd) if mpd != re.sub(r'~', '', mpd) else re.sub(r'/[1-9][$].*?/', '/', mpd)
-    Log(mpd)
+    mpdcontent = getURL(mpd, retjson=False)
 
-    if platform != osAndroid:
-        mpdcontent = getURL(mpd, retjson=False)
-        if len(re.compile(r'(?i)edef8ba9-79d6-4ace-a3c8-27dcd51d21ed').findall(mpdcontent)) < 2:
+    if len(re.compile(r'(?i)edef8ba9-79d6-4ace-a3c8-27dcd51d21ed').findall(mpdcontent)) < 2:
+        if platform != osAndroid:
             xbmc.executebuiltin('ActivateWindow(busydialog)')
             return False
+    elif platform == osAndroid:
+        mpd = orgmpd
+
+    Log(mpd)
 
     infoLabels = GetStreamInfo(args.get('asin'))
     mpaa_str = RestrAges + getString(30171)

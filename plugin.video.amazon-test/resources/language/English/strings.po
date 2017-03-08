@@ -286,7 +286,21 @@ msgctxt "#30075"
 msgid "UP/DOWN controls Kodi Volume"
 msgstr ""
 
-#empty strings from id 30076 to 30079
+msgctxt "#30076"
+msgid "Watchlist/Library Order"
+msgstr ""
+
+msgctxt "#30077"
+msgid "Recently Added"
+msgstr ""
+
+msgctxt "#30078"
+msgid "Title Ascending"
+msgstr ""
+
+msgctxt "#30079"
+msgid "Title Descending"
+msgstr ""
 
 msgctxt "#30080"
 msgid "Choose Country"
@@ -311,6 +325,7 @@ msgstr ""
 msgctxt "#30085"
 msgid "Other (primevideo.com)"
 msgstr ""
+
 
 #empty strings from id 30086 to 30099
 

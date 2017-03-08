@@ -273,6 +273,22 @@ msgctxt "#30075"
 msgid "UP/DOWN controls Kodi Volume"
 msgstr "HOCH/RUNTER regelt Kodi Lautstärke"
 
+msgctxt "#30076"
+msgid "Watchlist/Library Order"
+msgstr "Watchlist/Bibliothek Sortierung"
+
+msgctxt "#30077"
+msgid "Recently Added"
+msgstr "Zuletzt hinzugefügt"
+
+msgctxt "#30078"
+msgid "Title Ascending"
+msgstr "Titel aufsteigend"
+
+msgctxt "#30079"
+msgid "Title Descending"
+msgstr "Titel absteigend"
+
 msgctxt "#30080"
 msgid "Choose Country"
 msgstr "Land auswählen"

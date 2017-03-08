@@ -58,6 +58,7 @@
         <setting label="30070" type="lsep"/>
         <setting id="paycont" type="bool" label="30073" default="false"/>
         <setting id="disptvshow" type="bool" label="30071" default="false"/>
+        <setting id="wl_order" type="enum" label="30076" lvalues="30077|30079|30078" default="0"/>
         <setting id="remotectrl" type="bool" label="30074" default="false"/>
         <setting id="remote_vol" type="bool" label="30075" default="false" subsetting="true" enable="eq(-1,true)"/>
         <setting id="logging" type="bool" label="30072" default="false"/>

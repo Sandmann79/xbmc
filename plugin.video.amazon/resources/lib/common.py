@@ -349,7 +349,6 @@ def LogIn(ask=True):
         response = br.response().read()
         soup = parseHTML(response)
         xbmc.executebuiltin('Dialog.Close(busydialog)')
-        WriteLog(response, 'login')
 
         while 'auth-mfa-form' in response or 'ap_dcq_form' in response:
             Log('MFA or DCQ form')
@@ -514,8 +513,9 @@ def GET_ASINS(content):
 
 
 def SCRAP_ASINS(url, cj=True):
+    wl_order = ['DATE_ADDED_DESC', 'TITLE_DESC', 'TITLE_ASC'][int('0'+addon.getSetting("wl_order"))]
     asins = []
-    url = BASE_URL + url + '?ie=UTF8&sortBy=DATE_ADDED_DESC'
+    url = BASE_URL + url + '?ie=UTF8&sort=' + wl_order
     content = getURL(url, useCookie=cj, retjson=False)
     if content:
         asins += re.compile('data-asin="(.+?)"', re.DOTALL).findall(content)

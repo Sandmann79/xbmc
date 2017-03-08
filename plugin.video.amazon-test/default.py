@@ -80,6 +80,7 @@ HomeIcon = os.path.join(PluginPath, 'resources', 'home.png')
 country = int(addon.getSetting('country'))
 BaseUrl = 'https://www.amazon.' + ['de', 'co.uk', 'com', 'co.jp', ''][country]
 ATVUrl = 'https://atv-%s.amazon.com' % ['eu', 'eu', 'ext', 'ext-fe', 'ext'][country]
+wl_order = ['DATE_ADDED_DESC', 'TITLE_DESC', 'TITLE_ASC'][int('0'+addon.getSetting("wl_order"))]
 MarketID = ['A1PA6795UKMFR9', 'A1F83G8C2ARO7P', 'ATVPDKIKX0DER', 'A1VC38T7YXB528', 'ART4WZ8MWBX2Y'][country]
 Language = ['de', 'en', 'en', 'jp', ''][country]
 AgeRating = ['FSK ', '', '', '', ''][country]
@@ -108,7 +109,7 @@ Ages = [[('FSK 0', 'FSK 0'), ('FSK 6', 'FSK 6'), ('FSK 12', 'FSK 12'), ('FSK 16'
 # TypeIDs = {'All': 'firmware=fmw:17-app:2.0.45.1210&deviceTypeID=A2RJLFEH0UEKI9'}
 
 TypeIDs = {'All': 'firmware=fmw:17-app:2.0.45.1210&deviceTypeID=A2M4YX06LWP8WI',
-           'GetCategoryList_ftv': 'firmware=fmw:17-app:2.0.45.1210&deviceTypeID=A12GXV8XMS007S'}
+           'GetCategoryList_ftv': 'firmware=fmw:17-app:2.0.45.1210&deviceTypeID=ADVBD696BHNV5'}
 
 langID = {'movie': 30165, 'series': 30166, 'season': 30167, 'episode': 30173}
 OfferGroup = '' if payCont else '&OfferGroups=B0043YVHMY'
@@ -293,6 +294,11 @@ def Search():
         listContent('Search', url, 1, 'search')
 
 
+def swapDB():
+    data = getATVData('GetCategoryList_ftv')
+    parseNodes(data, '99')
+
+
 def loadCategories(force=False):
     if xbmcvfs.exists(menuFile) and not force:
         ftime = updateTime(False)
@@ -306,8 +312,21 @@ def loadCategories(force=False):
     Log('Download MenuTime: %s' % (time.time() - parseStart), 0)
     parseNodes(data)
     updateTime()
+    '''
+    replCat('hm-merch-16', 'prime-movie-2', '&OfferGroups=B0043YVHMY')
+    replCat('hm-merch-16', 'all-movie-2')
+    replCat('hm-merch-17', 'prime-tv-2', '&OfferGroups=B0043YVHMY')
+    replCat('hm-merch-17', 'all-tv-2')
+    '''
     menuDb.commit()
     Log('Parse MenuTime: %s' % (time.time() - parseStart), 0)
+
+
+def replCat(src, dest, extra=''):
+    c = menuDb.cursor()
+    result = c.execute('select content from menu where id = (?)', (src,)).fetchone()
+    if result:
+        c.execute('update menu set content = (?) where id = (?)', (result[0]+extra, dest))
 
 
 def updateTime(savetime=True):
@@ -763,8 +782,8 @@ def getList(listing, export):
         cj = MechanizeLogin()
         if not cj:
             return
-        asins_movie = scrapAsins('/gp/video/%s/movie/?ie=UTF8&sortBy=DATE_ADDED_DESC' % listing, cj)
-        asins_tv = scrapAsins('/gp/video/%s/tv/?ie=UTF8&sortBy=DATE_ADDED_DESC' % listing, cj)
+        asins_movie = scrapAsins('/gp/video/%s/movie/?ie=UTF8&sort=%s' % (listing, wl_order), cj)
+        asins_tv = scrapAsins('/gp/video/%s/tv/?ie=UTF8&sort=%s' % (listing, wl_order), cj)
     else:
         asins_movie = listing
         asins_tv = ''
@@ -1538,7 +1557,6 @@ def LogIn(ask=True):
         response = br.response().read()
         soup = parseHTML(response)
         xbmc.executebuiltin('Dialog.Close(busydialog)')
-        WriteLog(response, 'login')
 
         while 'auth-mfa-form' in response or 'ap_dcq_form' in response:
             Log('MFA or DCQ form')

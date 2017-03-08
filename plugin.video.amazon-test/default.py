@@ -1643,7 +1643,7 @@ def LogIn(ask=True):
 
 
 def setLoginPW():
-    keyboard = xbmc.Keyboard('', getString(30003), True)
+    keyboard = xbmc.Keyboard('', getString(30003))
     keyboard.doModal(60000)
     if keyboard.isConfirmed() and keyboard.getText():
         password = keyboard.getText()

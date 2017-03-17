@@ -2,12 +2,9 @@
 # -*- coding: utf-8 -*-
 from BeautifulSoup import BeautifulSoup, BeautifulStoneSoup, Tag
 from datetime import date
-from pyDes import *
-from platform import node
 from sqlite3 import dbapi2 as sqlite
+from StringIO import StringIO
 import uuid
-import cookielib
-import mechanize
 import sys
 import urllib
 import urllib2
@@ -20,7 +17,6 @@ import xbmc
 import urlparse
 import base64
 import time
-import random
 import subprocess
 import hashlib
 import hmac
@@ -31,6 +27,8 @@ import pyxbmct
 import socket
 import ssl
 import shlex
+import gzip
+
 
 addon = xbmcaddon.Addon()
 Dialog = xbmcgui.Dialog()
@@ -79,8 +77,8 @@ NextIcon = os.path.join(PluginPath, 'resources', 'next.png')
 HomeIcon = os.path.join(PluginPath, 'resources', 'home.png')
 country = int(addon.getSetting('country'))
 BaseUrl = 'https://www.amazon.' + ['de', 'co.uk', 'com', 'co.jp', ''][country]
+APIUrl = 'https://api.amazon.' + ['de', 'co.uk', 'com', 'co.jp', ''][country]
 ATVUrl = 'https://atv-%s.amazon.com' % ['eu', 'eu', 'ext', 'ext-fe', 'ext'][country]
-wl_order = ['DATE_ADDED_DESC', 'TITLE_DESC', 'TITLE_ASC'][int('0'+addon.getSetting("wl_order"))]
 MarketID = ['A1PA6795UKMFR9', 'A1F83G8C2ARO7P', 'ATVPDKIKX0DER', 'A1VC38T7YXB528', 'ART4WZ8MWBX2Y'][country]
 Language = ['de', 'en', 'en', 'jp', ''][country]
 AgeRating = ['FSK ', '', '', '', ''][country]
@@ -92,6 +90,9 @@ watchlist = 'watchlist'
 library = 'video-library'
 DBVersion = 1.1
 PayCol = 'FFE95E01'
+devData = {"domain": "Device", "app_name": "AIV", "app_version": "3.5.0", "device_model": "default", "os_version": "Ruby",
+           "device_type": "AR8DE21S8PINM", "device_serial": "default", "device_name": "%FIRST_NAME%'s%DUPE_STRATEGY_1ST% Kodi Media Center",
+           "software_version": "999"}
 Ages = [[('FSK 0', 'FSK 0'), ('FSK 6', 'FSK 6'), ('FSK 12', 'FSK 12'), ('FSK 16', 'FSK 16'), ('FSK 18', 'FSK 18')],
         [('Universal', 'U'), ('Parental Guidance', 'PG'), ('12 and older', '12,12A'), ('15 and older', '15'),
          ('18 and older', '18')],
@@ -108,8 +109,8 @@ Ages = [[('FSK 0', 'FSK 0'), ('FSK 6', 'FSK 6'), ('FSK 12', 'FSK 12'), ('FSK 16'
 #                        'All': 'firmware=fmw:045.01E01164A-app:4.7&deviceTypeID=A3VN4E5F7BBC7S'}
 # TypeIDs = {'All': 'firmware=fmw:17-app:2.0.45.1210&deviceTypeID=A2RJLFEH0UEKI9'}
 
-TypeIDs = {'All': 'firmware=fmw:17-app:2.0.45.1210&deviceTypeID=A2M4YX06LWP8WI',
-           'GetCategoryList_ftv': 'firmware=fmw:17-app:2.0.45.1210&deviceTypeID=ADVBD696BHNV5'}
+TypeIDs = {'All': 'firmware=default&deviceTypeID=AR8DE21S8PINM',
+           'GetCategoryList': 'firmware=fmw:17-app:2.0.45.1210&deviceTypeID=A2M4YX06LWP8WI'}
 
 langID = {'movie': 30165, 'series': 30166, 'season': 30167, 'episode': 30173}
 OfferGroup = '' if payCont else '&OfferGroups=B0043YVHMY'
@@ -155,28 +156,63 @@ def setView(content, view=False, updateListing=False):
     xbmcplugin.endOfDirectory(pluginhandle, updateListing=updateListing)
 
 
-def getURL(url, useCookie=False, silent=False, headers=[], UA=UserAgent, rjson=True, attempt=1, check=False):
-    cj = cookielib.LWPCookieJar()
+def getAccesToken():
+    token = json.loads(getConfig('token', '{}'))
+    if not token:
+        token = TVPair()
+
+    if time.time() > token['expires']:
+        postdata = devData
+        # postdata['device_name'] = '%FIRST_NAME%\'s%DUPE_STRATEGY_1ST% undefined'
+        postdata['requested_token_type'] = 'access_token'
+        postdata['source_token_type'] = 'refresh_token'
+        postdata['source_token'] = str(token['refresh_token'])
+        Log(postdata)
+        response = getURL(APIUrl + '/auth/token', postdata=json.dumps(postdata), headers={'Content-Type': 'application/json'})
+        if 'access_token' in str(response):
+            token['access_token'] = response['access_token']
+            token['expires'] = int(time.time() + int(response['expires_in']))
+            writeConfig('token', json.dumps(token))
+        else:
+            Log('Token not renewed', xbmc.LOGERROR)
+            return ''
+        Log('Token renewed')
+    return token['access_token']
+
+
+def getURL(url, auth=False, silent=False, headers=None, UA=UserAgent, rjson=True, attempt=1, check=False, postdata=None):
     retval = [] if rjson else ''
-    if useCookie:
-        cj = MechanizeLogin() if isinstance(useCookie, bool) else useCookie
-        if isinstance(cj, bool):
-            return retval
+
     if not silent or verbLog:
         dispurl = url
         dispurl = re.sub('(?i)%s|%s|&token=\w+|&customerId=\w+' % (tvdb, tmdb), '', url).strip()
         Log('getURL: ' + dispurl)
-    headers.append(('User-Agent', UA))
-    headers.append(('Host', BaseUrl.split('//')[1]))
+
+    if not headers:
+        headers = {}
+    if 'amazon' in url:
+        headers['Host'] = BaseUrl.split('//')[1]
+        headers['Accept-Encoding'] = 'gzip, deflate'
+        Log('amazon')
+    if auth:
+        Log('Token needed')
+        accesstoken = getAccesToken()
+        if not accesstoken:
+            return retval
+        headers['Authorization'] = 'Bearer ' + getAccesToken()
+    headers['User-Agent'] = UA
+    Log(headers)
     try:
-        opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cj), urllib2.HTTPRedirectHandler)
-        opener.addheaders = headers
-        usock = opener.open(url)
-        response = usock.read() if not check else 'OK'
-        usock.close()
+        req = urllib2.Request(url, postdata, headers)
+        f = urllib2.urlopen(req)
+        if f.info().get('Content-Encoding') == 'gzip' and not check:
+            buf = StringIO(f.read())
+            f = gzip.GzipFile(fileobj=buf)
+        response = f.read() if not check else 'OK'
+        f.close()
     except (socket.timeout, ssl.SSLError, urllib2.URLError), e:
         Log('Error reason: %s' % e, xbmc.LOGERROR)
-        if '429' or 'timed out' in e:
+        if '429' in e or 'timed out' in e:
             attempt += 1 if not check else 10
             logout = 'Attempt #%s' % attempt
             if '429' in e:
@@ -184,25 +220,24 @@ def getURL(url, useCookie=False, silent=False, headers=[], UA=UserAgent, rjson=T
                 xbmc.sleep(10000)
             Log(logout)
             if attempt < 3:
-                return getURL(url, useCookie, silent, headers, UA, rjson, attempt)
+                return getURL(url, auth, silent, headers, UA, rjson, attempt, postdata)
+        else:
+            return e
         return retval
     return json.loads(response) if rjson else response
 
 
-def getATVData(pg_mode, query='', version=2, useCookie=False, site_id=None):
-    if '?' in query:
-        query = query.split('?')[1]
-    if query:
-        query = '&IncludeAll=T&AID=T&' + query
+def getATVData(pg_mode, query='', version=2, auth=False, site_id=None):
+    query = query.split('?')[1] if '?' in query else query
+    query = '&IncludeAll=T&' + query if query else query
     deviceTypeID = TypeIDs[pg_mode] if pg_mode in TypeIDs else TypeIDs['All']
     pg_mode = pg_mode.split('_')[0]
-    if '/' not in pg_mode:
-        pg_mode = 'catalog/' + pg_mode
-    parameter = '%s&deviceID=%s&format=json&version=%s&formatVersion=3&marketplaceId=%s' % (
+    pg_mode = 'catalog/' + pg_mode if '/' not in pg_mode else pg_mode
+    parameter = '%s&deviceID=%s&format=json&version=%s&marketplaceId=%s' % (
         deviceTypeID, deviceID, version, MarketID)
-    if site_id:
-        parameter += '&id=' + site_id
-    jsondata = getURL('%s/cdp/%s?%s%s' % (ATVUrl, pg_mode, parameter, query), useCookie=useCookie)
+    parameter += '&id=' + site_id if site_id else ''
+    jsondata = getURL('%s/cdp/%s?%s%s' % (ATVUrl, pg_mode, parameter, query), auth=auth)
+
     if not jsondata:
         return False
 
@@ -313,18 +348,19 @@ def loadCategories(force=False):
     parseNodes(data)
     updateTime()
     '''
-    replCat('hm-merch-16', 'prime-movie-2', '&OfferGroups=B0043YVHMY')
-    replCat('hm-merch-16', 'all-movie-2')
-    replCat('hm-merch-17', 'prime-tv-2', '&OfferGroups=B0043YVHMY')
-    replCat('hm-merch-17', 'all-tv-2')
+    replCat('ContentType=Movie&OrderBy=AvailabilityDate&MinAmazonRatingCount=40&Preorder=F', 'prime-movie-2', '&OfferGroups=B0043YVHMY')
+    replCat('ContentType=Movie&OrderBy=AvailabilityDate&MinAmazonRatingCount=40&Preorder=F', 'all-movie-2')
+    replCat('ContentType=TVEpisode&RollUpToSeason=T&OrderBy=AvailabilityDate&MinAmazonRatingCount=40&ExcludeStudio=Phoenix%20Film,ARD,Jonathan%20M.%20Shiff%20Productions%20Pty.%20Ltd.%20&BlackList=B00IKEO09K,B00IKEQNOA', 'prime-tv-2', '&OfferGroups=B0043YVHMY')
+    replCat('ContentType=TVEpisode&RollUpToSeason=T&OrderBy=AvailabilityDate&MinAmazonRatingCount=40&ExcludeStudio=Phoenix%20Film,ARD,Jonathan%20M.%20Shiff%20Productions%20Pty.%20Ltd.%20&BlackList=B00IKEO09K,B00IKEQNOA', 'all-tv-2')
     '''
     menuDb.commit()
     Log('Parse MenuTime: %s' % (time.time() - parseStart), 0)
 
 
-def replCat(src, dest, extra=''):
+def replCat(src, dest, extra='', strrepl=True):
     c = menuDb.cursor()
-    result = c.execute('select content from menu where id = (?)', (src,)).fetchone()
+    result = [src] if strrepl else c.execute('select content from menu where id = (?)', (src,)).fetchone()
+
     if result:
         c.execute('update menu set content = (?) where id = (?)', (result[0]+extra, dest))
 
@@ -367,12 +403,11 @@ def parseNodes(data, node_id=''):
         data = [data]
 
     for count, entry in enumerate(data):
-        category = None
         if 'categories' in entry.keys():
             parseNodes(entry['categories'], '%s%s' % (node_id, count))
             content = '%s%s' % (node_id, count)
             category = 'node'
-        elif 'query' in entry.keys():
+        else:
             content = entry['query']
             category = 'query'
         if category and 'title' in entry.keys() and 'id' in entry.keys():
@@ -422,8 +457,10 @@ def listCategories(node, root=None):
 def listContent(catalog, url, page, parent, export=False):
     oldurl = url
     ResPage = 240 if export else MaxResults
-    url += '&NumberOfResults=%s&StartIndex=%s&Detailed=T' % (ResPage, (page - 1) * ResPage)
-    titles = getATVData(catalog, url)
+    url += '&NumberOfResults=%s&StartIndex=%s' % (ResPage, (page - 1) * ResPage)
+    url = url.replace('NumberOfResults=', 'pageSize=') if parent == watchlist else url
+    auth = True if parent in [library, watchlist] else False
+    titles = getATVData(catalog, url, auth=auth)
 
     if page != 1 and not export:
         addDir(' --= %s =--' % getString(30112), thumb=HomeIcon)
@@ -439,9 +476,12 @@ def listContent(catalog, url, page, parent, export=False):
     if 'approximateSize' not in titles.keys():
         endIndex = 1 if numItems >= MaxResults else 0
     else:
+        approxItems = titles['approximateSize']
         if endIndex == 0:
-            if (page * ResPage) <= titles['approximateSize']:
+            if (page * ResPage) <= approxItems:
                 endIndex = 1
+        elif endIndex == approxItems:
+            endIndex = 0
 
     for item in titles['titles']:
         if 'title' not in item:
@@ -535,15 +575,9 @@ def Export(infoLabels, url):
 
 def WatchList(asin, remove):
     action = 'remove' if remove else 'add'
-    cookie = MechanizeLogin()
 
-    if not cookie:
-        return
-
-    token = getToken(asin, cookie)
-    url = BaseUrl + '/gp/video/watchlist/ajax/addRemove.html?&ASIN=%s&dataType=json&token=%s&action=%s' % (
-        asin, token, action)
-    data = getURL(url, useCookie=cookie)
+    url = ''
+    data = getURL(url)
 
     if data['success'] == 1:
         Log(asin + ' ' + data['status'])
@@ -553,17 +587,6 @@ def WatchList(asin, remove):
             xbmc.executebuiltin('Container.Update("%s", replace)' % cPath)
     else:
         Log(data['status'] + ': ' + data['reason'])
-
-
-def getToken(asin, cookie):
-    url = BaseUrl + '/gp/video/watchlist/ajax/hoverbubble.html?ASIN=' + asin
-    data = getURL(url, useCookie=cookie, rjson=False)
-    if data:
-        tree = BeautifulSoup(data, convertEntities=BeautifulSoup.HTML_ENTITIES)
-        form = tree.find('form', attrs={'id': 'watchlistForm'})
-        token = form.find('input', attrs={'id': 'token'})['value']
-        return urllib.quote_plus(token)
-    return ''
 
 
 def getArtWork(infoLabels, contentType):
@@ -655,8 +678,11 @@ def loadArtWork(asins, title, year, contentType):
         if not fanart:
             fanart = getTMDBImages(title, content='tv')
         season_number = -1
-        content = getATVData('GetASINDetails', 'ASINList=' + asins)['titles'][0]
-        asins = getAsins(content, False)
+        content = getATVData('GetASINDetails', 'ASINList=' + asins)['titles']
+        if content:
+            asins = getAsins(content[0], False)
+        else:
+            return
         del content
 
     cur = db.cursor()
@@ -778,27 +804,20 @@ def formatSeason(infoLabels, parent):
 
 
 def getList(listing, export):
-    if listing == watchlist or listing == library:
-        cj = MechanizeLogin()
-        if not cj:
-            return
-        asins_movie = scrapAsins('/gp/video/%s/movie/?ie=UTF8&sort=%s' % (listing, wl_order), cj)
-        asins_tv = scrapAsins('/gp/video/%s/tv/?ie=UTF8&sort=%s' % (listing, wl_order), cj)
+    wl_order = int('0' + addon.getSetting("wl_order"))
+    order = ['DESC&sortBy=date_added', 'DESC&sortBy=title', 'ASC&sortBy=title'][wl_order]
+    if listing == watchlist:
+        url = 'listType=AIV:Watchlist&sortDirection=%s&ContentType=' % order
+        cat = 'discovery/GetListContents'
     else:
-        asins_movie = listing
-        asins_tv = ''
+        url = 'sortDirection=%s&ContentType=' % order
+        cat = 'library/GetLibrary'
 
-    url = 'ASINList='
-    extraArgs = '&RollUpToSeries=T' if dispShowOnly else ''
-
-    if export:
-        url += asins_movie + ',' + asins_tv
-        SetupLibrary()
-        listContent('GetASINDetails', url, 1, listing, export)
-    else:
-        addDir(getString(30104), 'listContent', url + asins_movie, catalog='GetASINDetails', opt=listing)
-        addDir(getString(30107), 'listContent', url + asins_tv + extraArgs, catalog='GetASINDetails', opt=listing)
-        xbmcplugin.endOfDirectory(pluginhandle, updateListing=False)
+    addDir(getString(30104), 'listContent', url+'Movie', catalog=cat, opt=listing, export=export)
+    url += 'TV' if listing == watchlist else 'TVSeason'
+    url += '&RollUpToSeries=T' if dispShowOnly else ''
+    addDir(getString(30107), 'listContent', url, catalog=cat, opt=listing, export=export)
+    xbmcplugin.endOfDirectory(pluginhandle, updateListing=False)
 
 
 def Log(msg, level=xbmc.LOGNOTICE):
@@ -1343,48 +1362,20 @@ def getPlaybackInfo(asin):
 
 
 def getFlashVars(asin):
-    cookie = MechanizeLogin()
-    if not cookie:
-        return False
-    url = BaseUrl + '/gp/deal/ajax/getNotifierResources.html'
-    showpage = getURL(url, useCookie=cookie)
-
-    if not showpage:
-        Dialog.notification(__plugin__, Error({'errorCode': 'invalidrequest', 'message': 'getFlashVars'}),
-                            xbmcgui.NOTIFICATION_ERROR)
-        return False
-
     values = {'asin': asin,
-              'deviceTypeID': 'AOAGZA014O5RE',
+              'deviceTypeID': devData['device_type'],
               'userAgent': UserAgent}
-    values.update(showpage['resourceData']['GBCustomerData'])
-
-    if 'customerId' not in values:
-        Dialog.notification(getString(30200), getString(30210), xbmcgui.NOTIFICATION_ERROR)
-        return False
-
-    rand = 'onWebToken_' + str(random.randint(0, 484))
-    pltoken = getURL(BaseUrl + "/gp/video/streaming/player-token.json?callback=" + rand, useCookie=cookie, rjson=False)
-    try:
-        values['token'] = re.compile('"([^"]*).*"([^"]*)"').findall(pltoken)[0][1]
-    except IndexError:
-        Dialog.notification(getString(30200), getString(30201), xbmcgui.NOTIFICATION_ERROR)
-        return False
     return values
 
 
-def getUrldata(mode, values, retformat='json', devicetypeid=False, version=1, firmware='1', opt='', extra=False,
-               useCookie=False, retURL=False, vMT='Feature', dRes='AudioVideoUrls%2CSubtitleUrls'):
-    if not devicetypeid:
-        devicetypeid = values['deviceTypeID']
-    url = ATVUrl + '/cdp/' + mode
+def getUrldata(catalog, values, retformat='json', devicetypeid=devData['device_type'], version=1, firmware='1', opt='', extra=False,
+               retURL=False, vMT='Feature', dRes='AudioVideoUrls%2CSubtitleUrls'):
+    url = ATVUrl + '/cdp/' + catalog
     url += '?asin=' + values['asin']
     url += '&deviceTypeID=' + devicetypeid
     url += '&firmware=' + firmware
-    url += '&customerID=' + values['customerId']
     url += '&deviceID=' + deviceID
     url += '&marketplaceID=' + MarketID
-    url += '&token=' + values['token']
     url += '&format=' + retformat
     url += '&version=' + str(version)
     url += opt
@@ -1396,7 +1387,9 @@ def getUrldata(mode, values, retformat='json', devicetypeid=False, version=1, fi
         url += '&desiredResources=' + dRes
     if retURL:
         return url
-    data = getURL(url, useCookie=useCookie, rjson=False)
+    data = getURL(url, auth=True, rjson=False)
+    Log(data)
+
     if data:
         error = re.findall('{[^"]*"errorCode[^}]*}', data)
         if error:
@@ -1495,205 +1488,7 @@ def genID(renew=False):
     if not guid or len(guid) != 56:
         guid = hmac.new(UserAgent, uuid.uuid4().bytes, hashlib.sha224).hexdigest()
         writeConfig("GenDeviceID", guid)
-    return guid
-
-
-def MechanizeLogin():
-    cj = cookielib.LWPCookieJar()
-    if xbmcvfs.exists(CookieFile):
-        cj.load(CookieFile, ignore_discard=True, ignore_expires=True)
-        return cj
-
-    Log('Login')
-
-    return LogIn(False)
-
-
-def LogIn(ask=True):
-    addon.setSetting('login_acc', '')
-    addon.setSetting('use_mfa', 'false')
-    email = getConfig('login_name')
-    password = decode(getConfig('login_pass'))
-    savelogin = addon.getSetting('save_login') == 'true'
-    useMFA = False
-
-    if ask:
-        keyboard = xbmc.Keyboard(email, getString(30002))
-        keyboard.doModal()
-        if keyboard.isConfirmed() and keyboard.getText():
-            email = keyboard.getText()
-            password = setLoginPW()
-    else:
-        if not email or not password:
-            Dialog.notification(getString(30200), getString(30216))
-            xbmc.executebuiltin('Addon.OpenSettings(%s)' % addon.getAddonInfo('id'))
-            return False
-
-    if password:
-        xbmc.executebuiltin('ActivateWindow(busydialog)')
-        if xbmcvfs.exists(CookieFile):
-            xbmcvfs.delete(CookieFile)
-        cj = cookielib.LWPCookieJar()
-        br = mechanize.Browser()
-        br.set_handle_robots(False)
-        br.set_cookiejar(cj)
-        br.set_handle_gzip(True)
-        br.addheaders = [('User-Agent', UserAgent)]
-        br.open(BaseUrl + '/gp/aw/si.html')
-        br.select_form(name='signIn')
-        br['email'] = email
-        br['password'] = password
-        br.addheaders = [('Accept', 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8'),
-                         ('Accept-Encoding', 'gzip, deflate'),
-                         ('Accept-Language', 'de,en-US;q=0.8,en;q=0.6'),
-                         ('Cache-Control', 'max-age=0'),
-                         ('Connection', 'keep-alive'),
-                         ('Content-Type', 'application/x-www-form-urlencoded'),
-                         ('Host', BaseUrl.split('//')[1]),
-                         ('Origin', BaseUrl),
-                         ('User-Agent', UserAgent),
-                         ('Upgrade-Insecure-Requests', '1')]
-        br.submit()
-        response = br.response().read()
-        soup = parseHTML(response)
-        xbmc.executebuiltin('Dialog.Close(busydialog)')
-
-        while 'auth-mfa-form' in response or 'ap_dcq_form' in response:
-            Log('MFA or DCQ form')
-            if 'auth-mfa-form' in response:
-                msg = soup.find('form', attrs={'id': 'auth-mfa-form'})
-                msgtxt = msg.p.renderContents().strip()
-                kb = xbmc.Keyboard('', msgtxt)
-                kb.doModal()
-                if kb.isConfirmed() and kb.getText():
-                    xbmc.executebuiltin('ActivateWindow(busydialog)')
-                    br.select_form(nr=0)
-                    br['otpCode'] = kb.getText()
-                else:
-                    return False
-            elif 'ap_dcq_form' in response:
-                msg = soup.find('div', attrs={'id': 'message_warning'})
-                Dialog.ok(__plugin__, msg.p.contents[0].strip())
-                dcq = soup.find('div', attrs={'id': 'ap_dcq1a_pagelet'})
-                dcq_title = dcq.find('div', attrs={'id': 'ap_dcq1a_pagelet_title'}).h1.contents[0].strip()
-                q_title = []
-                q_id = []
-                for q in dcq.findAll('div', attrs={'class': 'dcq_question'}):
-                    if q.span.label:
-                        label = q.span.label.renderContents().strip().replace('  ', '').replace('\n', '')
-                        if q.span.label.span:
-                            label = label.replace(str(q.span.label.span), q.span.label.span.text)
-                        q_title.append(insertLF(label))
-                        q_id.append(q.input['id'])
-
-                sel = Dialog.select(insertLF(dcq_title, 60), q_title) if len(q_title) > 1 else 0
-                if sel < 0:
-                    return False
-
-                ret = Dialog.input(q_title[sel])
-                if ret:
-                    xbmc.executebuiltin('ActivateWindow(busydialog)')
-                    br.select_form(nr=0)
-                    br[q_id[sel]] = ret
-                else:
-                    return False
-
-            br.submit()
-            response = br.response().read()
-            soup = parseHTML(response)
-            WriteLog(response, 'login-mfa')
-            xbmc.executebuiltin('Dialog.Close(busydialog)')
-
-        if 'action=sign-out' in response:
-            msg = soup.body.findAll('center')
-            wlc = msg[1].renderContents().strip()
-            usr = wlc.split(',', 1)[1][:-1].strip()
-            addon.setSetting('login_acc', usr)
-            addon.setSetting('use_mfa', str(useMFA).lower())
-            if useMFA:
-                addon.setSetting('save_login', 'false')
-                savelogin = False
-            if savelogin:
-                writeConfig('login_name', email)
-                writeConfig('login_pass', encode(password))
-            else:
-                cj.save(CookieFile, ignore_discard=True, ignore_expires=True)
-            if ask:
-                Dialog.ok(getString(30215), wlc)
-            genID()
-            return cj
-        elif 'message_error' in response:
-            writeConfig('login_pass', '')
-            msg = soup.find('div', attrs={'id': 'message_error'})
-            Log('Login Error: %s' % msg.p.renderContents().strip())
-            Dialog.ok(getString(30200), getString(30201))
-        elif 'message_warning' in response:
-            msg = soup.find('div', attrs={'id': 'message_warning'})
-            Log('Login Warning: %s' % msg.p.renderContents().strip())
-            Dialog.ok(getString(30200), getString(30212))
-        elif 'auth-error-message-box' in response:
-            msg = soup.find('div', attrs={'class': 'a-alert-content'})
-            Log('Login MFA: %s' % msg.ul.li.span.renderContents().strip())
-            Dialog.ok(getString(30200), getString(30214))
-        else:
-            WriteLog(response, 'login')
-            Dialog.ok(getString(30200), getString(30213))
-
-    return False
-
-
-def setLoginPW():
-    keyboard = xbmc.Keyboard('', getString(30003))
-    keyboard.doModal(60000)
-    if keyboard.isConfirmed() and keyboard.getText():
-        password = keyboard.getText()
-        return password
-    return False
-
-
-def encode(data):
-    k = triple_des(getmac(), CBC, "\0\0\0\0\0\0\0\0", padmode=PAD_PKCS5)
-    d = k.encrypt(data)
-    return base64.b64encode(d)
-
-
-def decode(data):
-    if not data:
-        return ''
-    k = triple_des(getmac(), CBC, "\0\0\0\0\0\0\0\0", padmode=PAD_PKCS5)
-    d = k.decrypt(base64.b64decode(data))
-    return d
-
-
-def getmac():
-    mac = uuid.getnode()
-    if (mac >> 40) % 2:
-        mac = node()
-    return uuid.uuid5(uuid.NAMESPACE_DNS, str(mac)).bytes
-
-
-def remLoginData(savelogin=False, info=True):
-    if savelogin or info:
-        for fn in xbmcvfs.listdir(DataPath)[1]:
-            if fn.startswith('cookie'):
-                xbmcvfs.delete(os.path.join(DataPath, fn))
-
-    if not savelogin or info:
-        writeConfig('login_name', '')
-        writeConfig('login_pass', '')
-
-    if info:
-        addon.setSetting('login_acc', '')
-        addon.setSetting('use_mfa', 'false')
-        Dialog.notification(__plugin__, getString(30211), xbmcgui.NOTIFICATION_INFO)
-
-
-def scrapAsins(url, cj):
-    asins = []
-    url = BaseUrl + url
-    content = getURL(url, useCookie=cj, rjson=False)
-    asins += re.compile('data-asin="(.+?)"', re.DOTALL).findall(content)
-    return ','.join(asins)
+    return 'default' # guid
 
 
 def createDB(menu=False):
@@ -1940,6 +1735,42 @@ def SetVol(step):
     xbmc.executebuiltin('SetVolume(%d,showVolumeBar)' % (vol + step))
 
 
+def TVPair():
+    Log('Start pairing')
+    pairdata = {"code_data": devData}
+    Log(pairdata['code_data'])
+    response = getURL(APIUrl + '/auth/create/codepair', postdata=json.dumps(pairdata), headers={'Content-Type': 'application/json'})
+    if response:
+        Log(response['public_code'])
+        starttm = time.time()
+        timeout = starttm + response['expires_in']
+        polling = response['polling_interval_in_seconds']
+        lastchk = 0
+        regdata = json.dumps({"auth_data": {"code_pair": {"public_code": response['public_code'], "private_code": response['private_code']}},
+                              "registration_data": devData, "requested_token_type": ["bearer"]})
+        pDialog.create('Register Device', 'Please browse to [B]%s/mytv[/B] and enter the following Code: [B]%s[/B]' % (BaseUrl, response['public_code']), None,
+                       'Time left: %ss' % response['expires_in'])
+        while time.time() < timeout:
+            if time.time() - lastchk >= polling:
+                lastchk = time.time()
+                response = getURL(APIUrl + '/auth/register', postdata=regdata, headers={'Content-Type': 'application/json'})
+                if 'success' in str(response):
+                    result = response['response']['success']['tokens']['bearer']
+                    result[u'expires'] = int(time.time() + int(result['expires_in']))
+                    writeConfig('token', json.dumps(result))
+                    Log('Got token')
+                    return result
+                Log(response)
+                Log('No response, time left: %ss' % int(timeout - time.time()))
+
+            pDialog.update(int((time.time()-starttm)*100/(timeout-starttm)), None, None, 'Time left: %ss' % int(timeout - time.time()))
+            xbmc.sleep(1000)
+            if pDialog.iscanceled():
+                break
+        pDialog.close()
+    return False
+
+
 class window(xbmcgui.WindowDialog):
     def __init__(self, process, asin):
         xbmcgui.WindowDialog.__init__(self)
@@ -2091,7 +1922,6 @@ elif AddonEnabled('inputstream.mpd'):
 else:
     is_addon = None
 
-remLoginData(addon.getSetting('save_login') == 'true', False)
 AgePin = getConfig('age_pin')
 PinReq = int(getConfig('pin_req', '0'))
 RestrAges = ','.join(a[1] for a in Ages[country][PinReq:]) if AgePin else ''

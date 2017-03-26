@@ -90,9 +90,6 @@ watchlist = 'watchlist'
 library = 'video-library'
 DBVersion = 1.1
 PayCol = 'FFE95E01'
-devData = {"domain": "Device", "app_name": "AIV", "app_version": "3.5.0", "device_model": "default", "os_version": "Ruby",
-           "device_type": "AR8DE21S8PINM", "device_serial": "default", "device_name": "%FIRST_NAME%'s%DUPE_STRATEGY_1ST% Kodi Media Center",
-           "software_version": "999"}
 Ages = [[('FSK 0', 'FSK 0'), ('FSK 6', 'FSK 6'), ('FSK 12', 'FSK 12'), ('FSK 16', 'FSK 16'), ('FSK 18', 'FSK 18')],
         [('Universal', 'U'), ('Parental Guidance', 'PG'), ('12 and older', '12,12A'), ('15 and older', '15'),
          ('18 and older', '18')],
@@ -108,9 +105,6 @@ Ages = [[('FSK 0', 'FSK 0'), ('FSK 6', 'FSK 6'), ('FSK 12', 'FSK 12'), ('FSK 16'
 #                        'All': 'firmware=fmw:17-app:1.0.1433.3&deviceTypeID=A43PXU4ZN2AL1'}
 #                        'All': 'firmware=fmw:045.01E01164A-app:4.7&deviceTypeID=A3VN4E5F7BBC7S'}
 # TypeIDs = {'All': 'firmware=fmw:17-app:2.0.45.1210&deviceTypeID=A2RJLFEH0UEKI9'}
-
-TypeIDs = {'All': 'firmware=default&deviceTypeID=AR8DE21S8PINM',
-           'GetCategoryList': 'firmware=fmw:17-app:2.0.45.1210&deviceTypeID=A2M4YX06LWP8WI'}
 
 langID = {'movie': 30165, 'series': 30166, 'season': 30167, 'episode': 30173}
 OfferGroup = '' if payCont else '&OfferGroups=B0043YVHMY'
@@ -163,12 +157,11 @@ def getAccesToken():
 
     if time.time() > token['expires']:
         postdata = devData
-        # postdata['device_name'] = '%FIRST_NAME%\'s%DUPE_STRATEGY_1ST% undefined'
         postdata['requested_token_type'] = 'access_token'
         postdata['source_token_type'] = 'refresh_token'
-        postdata['source_token'] = str(token['refresh_token'])
-        Log(postdata)
+        postdata['source_token'] = token['refresh_token']
         response = getURL(APIUrl + '/auth/token', postdata=json.dumps(postdata), headers={'Content-Type': 'application/json'})
+        Log(response)
         if 'access_token' in str(response):
             token['access_token'] = response['access_token']
             token['expires'] = int(time.time() + int(response['expires_in']))
@@ -193,7 +186,6 @@ def getURL(url, auth=False, silent=False, headers=None, UA=UserAgent, rjson=True
     if 'amazon' in url:
         headers['Host'] = BaseUrl.split('//')[1]
         headers['Accept-Encoding'] = 'gzip, deflate'
-        Log('amazon')
     if auth:
         Log('Token needed')
         accesstoken = getAccesToken()
@@ -201,7 +193,6 @@ def getURL(url, auth=False, silent=False, headers=None, UA=UserAgent, rjson=True
             return retval
         headers['Authorization'] = 'Bearer ' + getAccesToken()
     headers['User-Agent'] = UA
-    Log(headers)
     try:
         req = urllib2.Request(url, postdata, headers)
         f = urllib2.urlopen(req)
@@ -403,11 +394,12 @@ def parseNodes(data, node_id=''):
         data = [data]
 
     for count, entry in enumerate(data):
+        category = None
         if 'categories' in entry.keys():
             parseNodes(entry['categories'], '%s%s' % (node_id, count))
             content = '%s%s' % (node_id, count)
             category = 'node'
-        else:
+        elif 'query' in entry.keys():
             content = entry['query']
             category = 'query'
         if category and 'title' in entry.keys() and 'id' in entry.keys():
@@ -806,12 +798,8 @@ def formatSeason(infoLabels, parent):
 def getList(listing, export):
     wl_order = int('0' + addon.getSetting("wl_order"))
     order = ['DESC&sortBy=date_added', 'DESC&sortBy=title', 'ASC&sortBy=title'][wl_order]
-    if listing == watchlist:
-        url = 'listType=AIV:Watchlist&sortDirection=%s&ContentType=' % order
-        cat = 'discovery/GetListContents'
-    else:
-        url = 'sortDirection=%s&ContentType=' % order
-        cat = 'library/GetLibrary'
+    url = 'sortDirection=%s&ContentType=' % order
+    cat = 'discovery/GetListContents' if listing == watchlist else 'library/GetLibrary'
 
     addDir(getString(30104), 'listContent', url+'Movie', catalog=cat, opt=listing, export=export)
     url += 'TV' if listing == watchlist else 'TVSeason'
@@ -823,6 +811,8 @@ def getList(listing, export):
 def Log(msg, level=xbmc.LOGNOTICE):
     if level == xbmc.LOGDEBUG and verbLog:
         level = xbmc.LOGNOTICE
+    if isinstance(msg, dict):
+        msg = json.dumps(msg)
     if isinstance(msg, unicode):
         msg = msg.encode('utf-8')
     xbmc.log('[%s] %s' % (__plugin__, msg.__str__()), level)
@@ -835,6 +825,8 @@ def WriteLog(data, fn=''):
     fn = '-' + fn if fn else ''
     fn = 'amazon%s.log' % fn
     path = os.path.join(HomePath, fn)
+    if isinstance(data, dict):
+        data = json.dumps(data)
     if isinstance(data, unicode):
         data = data.encode('utf-8')
     logfile = xbmcvfs.File(path, 'w')
@@ -1140,7 +1132,7 @@ def IStreamPlayback(asin, name, trailer, isAdult, extern):
         mpd = orgmpd
 
     Log(mpd)
-
+    mpd = orgmpd
     if not extern:
         mpaa_check = xbmc.getInfoLabel('ListItem.MPAA') in mpaa_str or isAdult
         number = xbmc.getInfoLabel('ListItem.Episode')
@@ -1368,16 +1360,15 @@ def getFlashVars(asin):
     return values
 
 
-def getUrldata(catalog, values, retformat='json', devicetypeid=devData['device_type'], version=1, firmware='1', opt='', extra=False,
-               retURL=False, vMT='Feature', dRes='AudioVideoUrls%2CSubtitleUrls'):
+def getUrldata(catalog, values, opt='', extra=False, retURL=False, vMT='Feature', dRes='AudioVideoUrls,SubtitleUrls'):
+    #  AudioVideoUrls,CatalogMetadata,ForcedNarratives,SubtitlePresets,SubtitleUrls,TransitionTimecodes,TrickplayUrls,CuepointPlaylist,XRayMetadata,PlaybackSettings
     url = ATVUrl + '/cdp/' + catalog
     url += '?asin=' + values['asin']
-    url += '&deviceTypeID=' + devicetypeid
-    url += '&firmware=' + firmware
+    url += '&deviceTypeID=' + devData['device_type']
+    url += '&firmware=default'
     url += '&deviceID=' + deviceID
-    url += '&marketplaceID=' + MarketID
-    url += '&format=' + retformat
-    url += '&version=' + str(version)
+    url += '&format=json'
+    url += '&version=1'
     url += opt
     if extra:
         url += '&resourceUsage=ImmediateConsumption&consumptionType=Streaming&deviceDrmOverride=CENC' \
@@ -1387,19 +1378,21 @@ def getUrldata(catalog, values, retformat='json', devicetypeid=devData['device_t
         url += '&desiredResources=' + dRes
     if retURL:
         return url
-    data = getURL(url, auth=True, rjson=False)
+    data = getURL(url, auth=True)
     Log(data)
 
     if data:
-        error = re.findall('{[^"]*"errorCode[^}]*}', data)
-        if error:
-            return False, Error(json.loads(error[0]))
-        return True, json.loads(data)
+        error = data.get('message', {})
+        if error.get('statusCode') == 'ERROR':
+            if 'Device type id' in str(error):
+                writeConfig('token', '{}')
+            return False, Error(error['body'])
+        return True, data
     return False, 'HTTP Error'
 
 
 def Error(data):
-    code = data['errorCode'].lower()
+    code = data.get('errorCode', data['code']).lower()
     Log('%s (%s) ' % (data['message'], code), xbmc.LOGERROR)
     if 'invalidrequest' in code:
         return getString(30204)
@@ -1407,7 +1400,7 @@ def Error(data):
         return getString(30205)
     elif 'notowned' in code:
         return getString(30206)
-    elif 'invalidgeoip' or 'dependency' in code:
+    elif 'invalidgeoip' in code or 'dependency' in code:
         return getString(30207)
     elif 'temporarilyunavailable' in code:
         return getString(30208)
@@ -1488,7 +1481,7 @@ def genID(renew=False):
     if not guid or len(guid) != 56:
         guid = hmac.new(UserAgent, uuid.uuid4().bytes, hashlib.sha224).hexdigest()
         writeConfig("GenDeviceID", guid)
-    return 'default' # guid
+    return guid
 
 
 def createDB(menu=False):
@@ -1756,9 +1749,10 @@ def TVPair():
                 response = getURL(APIUrl + '/auth/register', postdata=regdata, headers={'Content-Type': 'application/json'})
                 if 'success' in str(response):
                     result = response['response']['success']['tokens']['bearer']
-                    result[u'expires'] = int(time.time() + int(result['expires_in']))
+                    result['expires'] = int(time.time() + int(result['expires_in']))
                     writeConfig('token', json.dumps(result))
                     Log('Got token')
+                    pDialog.close()
                     return result
                 Log(response)
                 Log('No response, time left: %ss' % int(timeout - time.time()))
@@ -1926,7 +1920,13 @@ AgePin = getConfig('age_pin')
 PinReq = int(getConfig('pin_req', '0'))
 RestrAges = ','.join(a[1] for a in Ages[country][PinReq:]) if AgePin else ''
 
-deviceID = genID()
+deviceID = 'default' # genID()
+devData = {"domain": "Device", "app_name": "AIV", "app_version": "3.5.0", "device_model": "default", "os_version": "Ruby",
+           "device_type": "AR8DE21S8PINM", "device_serial": deviceID, "device_name": "%FIRST_NAME%'s%DUPE_STRATEGY_1ST% Kodi Media Center",
+           "software_version": "999"}
+TypeIDs = {'All': 'firmware=default&deviceTypeID=%s' % (devData['device_type']),
+           'GetCategoryList': 'firmware=fmw:17-app:2.0.45.1210&deviceTypeID=A2M4YX06LWP8WI'}
+
 dbFile = os.path.join(DataPath, 'art.db')
 db = sqlite.connect(dbFile)
 db.text_factory = str

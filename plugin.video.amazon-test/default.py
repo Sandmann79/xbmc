@@ -161,7 +161,6 @@ def getAccesToken():
         postdata['source_token_type'] = 'refresh_token'
         postdata['source_token'] = token['refresh_token']
         response = getURL(APIUrl + '/auth/token', postdata=json.dumps(postdata), headers={'Content-Type': 'application/json'})
-        Log(response)
         if 'access_token' in str(response):
             token['access_token'] = response['access_token']
             token['expires'] = int(time.time() + int(response['expires_in']))
@@ -1115,6 +1114,9 @@ def IStreamPlayback(asin, name, trailer, isAdult, extern):
     mpd, subs = getStreams(*getUrldata('catalog/GetPlaybackResources', values, extra=True, vMT=vMT,
                                        opt='&titleDecorationScheme=primary-content'), retmpd=True)
     licURL = getUrldata('catalog/GetPlaybackResources', values, extra=True, vMT=vMT, dRes='Widevine2License', retURL=True)
+    licURL += '|Content-Type=application%2Fx-www-form-urlencoded&Authorization=' + urllib.quote_plus('Bearer ' + getAccesToken())
+    licURL += '|widevine2Challenge=B{SSM}&includeHdcpTestKeyInLicense=false'
+    licURL += '|JBlicense'
 
     if not mpd:
         Dialog.notification(getString(30203), subs, xbmcgui.NOTIFICATION_ERROR)
@@ -1369,18 +1371,18 @@ def getUrldata(catalog, values, opt='', extra=False, retURL=False, vMT='Feature'
     url += '&deviceID=' + deviceID
     url += '&format=json'
     url += '&version=1'
-    url += opt
     if extra:
         url += '&resourceUsage=ImmediateConsumption&consumptionType=Streaming&deviceDrmOverride=CENC' \
                '&deviceStreamingTechnologyOverride=DASH&deviceProtocolOverride=Http&audioTrackId=all' \
                '&deviceBitrateAdaptationsOverride=CVBR%2CCBR'
         url += '&videoMaterialType=' + vMT
         url += '&desiredResources=' + dRes
+    url += opt
+
     if retURL:
         return url
-    data = getURL(url, auth=True)
-    Log(data)
 
+    data = getURL(url, auth=True)
     if data:
         error = data.get('message', {})
         if error.get('statusCode') == 'ERROR':
@@ -1922,7 +1924,7 @@ RestrAges = ','.join(a[1] for a in Ages[country][PinReq:]) if AgePin else ''
 
 deviceID = 'default' # genID()
 devData = {"domain": "Device", "app_name": "AIV", "app_version": "3.5.0", "device_model": "default", "os_version": "Ruby",
-           "device_type": "AR8DE21S8PINM", "device_serial": deviceID, "device_name": "%FIRST_NAME%'s%DUPE_STRATEGY_1ST% Kodi Media Center",
+           "device_type": "AOAGZA014O5RE", "device_serial": deviceID, "device_name": "%FIRST_NAME%'s%DUPE_STRATEGY_1ST% Kodi Media Center",
            "software_version": "999"}
 TypeIDs = {'All': 'firmware=default&deviceTypeID=%s' % (devData['device_type']),
            'GetCategoryList': 'firmware=fmw:17-app:2.0.45.1210&deviceTypeID=A2M4YX06LWP8WI'}

@@ -153,7 +153,7 @@ def setView(content, view=False, updateListing=False):
 def getAccesToken():
     token = json.loads(getConfig('token', '{}'))
     if not token:
-        token = TVPair()
+        token = PairDevice()
 
     if time.time() > token['expires']:
         postdata = devData
@@ -565,19 +565,15 @@ def Export(infoLabels, url):
 
 
 def WatchList(asin, remove):
-    action = 'remove' if remove else 'add'
+    cat = 'RemoveTitleFromList' if remove else 'AddTitleToList'
+    suc, data = getUrldata('discovery/'+cat, asin, version='2')
 
-    url = ''
-    data = getURL(url)
-
-    if data['success'] == 1:
-        Log(asin + ' ' + data['status'])
+    if suc:
+        Log(asin + ' ' + data['message']['body']['message'])
         if remove:
-            cPath = xbmc.getInfoLabel('Container.FolderPath').replace(asin, '').replace('opt=' + watchlist,
-                                                                                        'opt=rem_%s' % watchlist)
-            xbmc.executebuiltin('Container.Update("%s", replace)' % cPath)
+            xbmc.executebuiltin('Container.Refresh()')
     else:
-        Log(data['status'] + ': ' + data['reason'])
+        Log(data)
 
 
 def getArtWork(infoLabels, contentType):
@@ -1107,13 +1103,9 @@ def IStreamPlayback(asin, name, trailer, isAdult, extern):
         Dialog.notification(getString(30203), 'No Inputstream Addon found or activated', xbmcgui.NOTIFICATION_ERROR)
         return True
 
-    values = getFlashVars(asin)
-    if not values:
-        return True
-
-    mpd, subs = getStreams(*getUrldata('catalog/GetPlaybackResources', values, extra=True, vMT=vMT,
+    mpd, subs = getStreams(*getUrldata('catalog/GetPlaybackResources', asin, extra=True, vMT=vMT,
                                        opt='&titleDecorationScheme=primary-content'), retmpd=True)
-    licURL = getUrldata('catalog/GetPlaybackResources', values, extra=True, vMT=vMT, dRes='Widevine2License', retURL=True)
+    licURL = getUrldata('catalog/GetPlaybackResources', asin, extra=True, vMT=vMT, dRes='Widevine2License', retURL=True)
     licURL += '|Content-Type=application%2Fx-www-form-urlencoded&Authorization=' + urllib.quote_plus('Bearer ' + getAccesToken())
     licURL += '|widevine2Challenge=B{SSM}&includeHdcpTestKeyInLicense=false'
     licURL += '|JBlicense'
@@ -1133,8 +1125,6 @@ def IStreamPlayback(asin, name, trailer, isAdult, extern):
     elif platform == osAndroid:
         mpd = orgmpd
 
-    Log(mpd)
-    mpd = orgmpd
     if not extern:
         mpaa_check = xbmc.getInfoLabel('ListItem.MPAA') in mpaa_str or isAdult
         number = xbmc.getInfoLabel('ListItem.Episode')
@@ -1348,36 +1338,27 @@ def parseSubs(data):
 def getPlaybackInfo(asin):
     if addon.getSetting("framerate") == 'false':
         return True, ''
-    values = getFlashVars(asin)
-    if not values:
-        return False, 'getFlashVars'
-    suc, fr = getStreams(*getUrldata('catalog/GetPlaybackResources', values, extra=True))
+    suc, fr = getStreams(*getUrldata('catalog/GetPlaybackResources', asin, extra=True))
     return suc, fr
 
 
-def getFlashVars(asin):
-    values = {'asin': asin,
-              'deviceTypeID': devData['device_type'],
-              'userAgent': UserAgent}
-    return values
-
-
-def getUrldata(catalog, values, opt='', extra=False, retURL=False, vMT='Feature', dRes='AudioVideoUrls,SubtitleUrls'):
+def getUrldata(catalog, asin, extra=False, retURL=False, version='1', opt='', vMT='Feature', dRes='AudioVideoUrls,SubtitleUrls'):
     #  AudioVideoUrls,CatalogMetadata,ForcedNarratives,SubtitlePresets,SubtitleUrls,TransitionTimecodes,TrickplayUrls,CuepointPlaylist,XRayMetadata,PlaybackSettings
     url = ATVUrl + '/cdp/' + catalog
-    url += '?asin=' + values['asin']
+    url += '?titleId=' + asin
     url += '&deviceTypeID=' + devData['device_type']
     url += '&firmware=default'
     url += '&deviceID=' + deviceID
     url += '&format=json'
-    url += '&version=1'
+    url += '&version=' + version
+    url += opt
+
     if extra:
         url += '&resourceUsage=ImmediateConsumption&consumptionType=Streaming&deviceDrmOverride=CENC' \
                '&deviceStreamingTechnologyOverride=DASH&deviceProtocolOverride=Http&audioTrackId=all' \
                '&deviceBitrateAdaptationsOverride=CVBR%2CCBR'
         url += '&videoMaterialType=' + vMT
         url += '&desiredResources=' + dRes
-    url += opt
 
     if retURL:
         return url
@@ -1730,11 +1711,11 @@ def SetVol(step):
     xbmc.executebuiltin('SetVolume(%d,showVolumeBar)' % (vol + step))
 
 
-def TVPair():
+def PairDevice():
     Log('Start pairing')
     pairdata = {"code_data": devData}
-    Log(pairdata['code_data'])
     response = getURL(APIUrl + '/auth/create/codepair', postdata=json.dumps(pairdata), headers={'Content-Type': 'application/json'})
+
     if response:
         Log(response['public_code'])
         starttm = time.time()
@@ -1922,10 +1903,12 @@ AgePin = getConfig('age_pin')
 PinReq = int(getConfig('pin_req', '0'))
 RestrAges = ','.join(a[1] for a in Ages[country][PinReq:]) if AgePin else ''
 
-deviceID = 'default' # genID()
+deviceID = 'default'  # genID()
+# AOAGZA014O5RE, AR8DE21S8PINM, A28RQHJKHM2A2W
 devData = {"domain": "Device", "app_name": "AIV", "app_version": "3.5.0", "device_model": "default", "os_version": "Ruby",
-           "device_type": "AOAGZA014O5RE", "device_serial": deviceID, "device_name": "%FIRST_NAME%'s%DUPE_STRATEGY_1ST% Kodi Media Center",
+           "device_type": "AOAGZA014O5RE", "device_serial": deviceID, "device_name": "%FIRST_NAME%'s%DUPE_STRATEGY_1ST% undefined",
            "software_version": "999"}
+
 TypeIDs = {'All': 'firmware=default&deviceTypeID=%s' % (devData['device_type']),
            'GetCategoryList': 'firmware=fmw:17-app:2.0.45.1210&deviceTypeID=A2M4YX06LWP8WI'}
 

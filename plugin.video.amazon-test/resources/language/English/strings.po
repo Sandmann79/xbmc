@@ -34,24 +34,8 @@ msgctxt "#30001"
 msgid "Amazon Account"
 msgstr ""
 
-msgctxt "#30002"
-msgid "Email Adress"
-msgstr ""
-
-msgctxt "#30003"
-msgid "Password"
-msgstr ""
-
-msgctxt "#30004"
-msgid "Stream Bitrate (0 - Ask)"
-msgstr ""
-
 msgctxt "#30005"
 msgid "Enable Subtitles"
-msgstr ""
-
-msgctxt "#30006"
-msgid "Store Credentials instead of using the Cookie?"
 msgstr ""
 
 msgctxt "#30007"
@@ -59,7 +43,7 @@ msgid "Remove Credentials and Cookie"
 msgstr ""
 
 msgctxt "#30008"
-msgid "Sign In..."
+msgid "Register Device..."
 msgstr ""
 
 #empty strings from id 30009 to 30010
@@ -74,10 +58,6 @@ msgstr ""
 
 msgctxt "#30013"
 msgid "Inputstream Addon Settings..."
-msgstr ""
-
-msgctxt "#30014"
-msgid "Logged in as"
 msgstr ""
 
 msgctxt "#30015"
@@ -558,23 +538,11 @@ msgid "Credentials and Cookie(s) removed"
 msgstr ""
 
 msgctxt "#30212"
-msgid "Captcha Request, please change IP or try again later"
+msgid "Please browse to [B]%s/mytv[/B] and enter the following Code: [B]%s[/B]"
 msgstr ""
 
 msgctxt "#30213"
-msgid "Unknown Error, please check amazon-vod-login.log"
-msgstr ""
-
-msgctxt "#30214"
-msgid "Wrong Code"
-msgstr ""
-
-msgctxt "#30215"
-msgid "Login successful"
-msgstr ""
-
-msgctxt "#30216"
-msgid "No credentials present, please go to Settings-Connection and sign in"
+msgid "Time left: %ss"
 msgstr ""
 
 msgctxt "#30217"

@@ -29,10 +29,7 @@
         <setting id="ssl_verif" type="bool" label="30037" default="false"/>
         <setting id="items_perpage" type="labelenum" values="20|30|40|60|80|100|140|180|220|250" label="30039" default="40"/>
         <setting label="30001" type="lsep"/>
-        <setting id="set_login" type="action" label="30008" action="RunPlugin(plugin://plugin.video.amazon-test/?mode=LogIn)" option="close"/>
-        <setting id="login_acc" type="text" label="30014" enable="eq(-100,true)" default="" subsetting="true"/>
-        <setting id="use_mfa" type="bool" label="MFA" visible="eq(-100,true)" default="false"/>
-        <setting id="save_login" type="bool" label="30006" enable="eq(-1,false)" default="false"/>
+        <setting id="set_login" type="action" label="30008" action="RunPlugin(plugin://plugin.video.amazon-test/?mode=PairDevice)" option="close"/>
         <setting label="30007" type="action" action="RunPlugin(plugin://plugin.video.amazon-test/?mode=remLoginData)" option="close"/>
     </category>
     <category label="30015">
@@ -57,7 +54,7 @@
         <setting id="useshowfanart" type="bool" label="30055" default="true"/>
         <setting label="30070" type="lsep"/>
         <setting id="paycont" type="bool" label="30073" default="false"/>
-        <setting id="disptvshow" type="bool" label="30071" default="false"/>
+        <setting id="disptvshow" type="bool" label="30071" default="false" visible="false" />
         <setting id="wl_order" type="enum" label="30076" lvalues="30077|30079|30078" default="0"/>
         <setting id="remotectrl" type="bool" label="30074" default="false"/>
         <setting id="remote_vol" type="bool" label="30075" default="false" subsetting="true" enable="eq(-1,true)"/>

@@ -110,9 +110,6 @@ langID = {'movie': 30165, 'series': 30166, 'season': 30167, 'episode': 30173}
 OfferGroup = '' if payCont else '&OfferGroups=B0043YVHMY'
 socket.setdefaulttimeout(30)
 
-if not BaseUrl:
-    BaseUrl = 'https://www.primevideo.com'
-
 if addon.getSetting('ssl_verif') == 'true' and hasattr(ssl, '_create_unverified_context'):
     ssl._create_default_https_context = ssl._create_unverified_context
 
@@ -180,18 +177,20 @@ def getURL(url, auth=False, silent=False, headers=None, UA=UserAgent, rjson=True
         dispurl = re.sub('(?i)%s|%s|&token=\w+|&customerId=\w+' % (tvdb, tmdb), '', url).strip()
         Log('getURL: ' + dispurl)
 
-    if not headers:
-        headers = {}
+    headers = {} if not headers else headers
+    headers['User-Agent'] = UA
+
     if 'amazon' in url:
         headers['Host'] = BaseUrl.split('//')[1]
         headers['Accept-Encoding'] = 'gzip, deflate'
+
     if auth:
         Log('Token needed')
         accesstoken = getAccesToken()
         if not accesstoken:
             return retval
         headers['Authorization'] = 'Bearer ' + getAccesToken()
-    headers['User-Agent'] = UA
+
     try:
         req = urllib2.Request(url, postdata, headers)
         f = urllib2.urlopen(req)
@@ -337,12 +336,12 @@ def loadCategories(force=False):
     Log('Download MenuTime: %s' % (time.time() - parseStart), 0)
     parseNodes(data)
     updateTime()
-    '''
-    replCat('ContentType=Movie&OrderBy=AvailabilityDate&MinAmazonRatingCount=40&Preorder=F', 'prime-movie-2', '&OfferGroups=B0043YVHMY')
-    replCat('ContentType=Movie&OrderBy=AvailabilityDate&MinAmazonRatingCount=40&Preorder=F', 'all-movie-2')
-    replCat('ContentType=TVEpisode&RollUpToSeason=T&OrderBy=AvailabilityDate&MinAmazonRatingCount=40&ExcludeStudio=Phoenix%20Film,ARD,Jonathan%20M.%20Shiff%20Productions%20Pty.%20Ltd.%20&BlackList=B00IKEO09K,B00IKEQNOA', 'prime-tv-2', '&OfferGroups=B0043YVHMY')
-    replCat('ContentType=TVEpisode&RollUpToSeason=T&OrderBy=AvailabilityDate&MinAmazonRatingCount=40&ExcludeStudio=Phoenix%20Film,ARD,Jonathan%20M.%20Shiff%20Productions%20Pty.%20Ltd.%20&BlackList=B00IKEO09K,B00IKEQNOA', 'all-tv-2')
-    '''
+
+    replCat('ContentType=Movie&OrderBy=AvailabilityDate&MinAmazonRatingCount=80&Preorder=F', 'prime-movie-2', '&OfferGroups=B0043YVHMY')
+    replCat('ContentType=Movie&OrderBy=AvailabilityDate&MinAmazonRatingCount=80&Preorder=F', 'all-movie-2')
+    replCat('ContentType=TVEpisode&RollUpToSeason=T&OrderBy=AvailabilityDate&MinAmazonRatingCount=80&ExcludeStudio=Phoenix%20Film,ARD,Jonathan%20M.%20Shiff%20Productions%20Pty.%20Ltd.%20&BlackList=B00IKEO09K,B00IKEQNOA', 'prime-tv-2', '&OfferGroups=B0043YVHMY')
+    replCat('ContentType=TVEpisode&RollUpToSeason=T&OrderBy=AvailabilityDate&MinAmazonRatingCount=80&ExcludeStudio=Phoenix%20Film,ARD,Jonathan%20M.%20Shiff%20Productions%20Pty.%20Ltd.%20&BlackList=B00IKEO09K,B00IKEQNOA', 'all-tv-2')
+
     menuDb.commit()
     Log('Parse MenuTime: %s' % (time.time() - parseStart), 0)
 
@@ -477,7 +476,7 @@ def listContent(catalog, url, page, parent, export=False):
     for item in titles['titles']:
         if 'title' not in item:
             continue
-        contentType, infoLabels = getInfos(item, export)
+        contentType, infoLabels = getInfos(item, export, parent)
         name = infoLabels['DisplayTitle']
         asin = item['titleId']
         wlmode = 1 if watchlist in parent else 0
@@ -510,7 +509,7 @@ def listContent(catalog, url, page, parent, export=False):
                 url = re.sub(r'(?i)&rollupto\w+=\w+', '', url)
                 listContent('Browse', url, 1, '', export)
             else:
-                addDir(name, mode, url, infoLabels, cm=cm, export=export)
+                addDir(name, mode, url, infoLabels, cm=cm, export=export, opt=parent)
 
     if endIndex > 0:
         if export:
@@ -785,7 +784,7 @@ def formatSeason(infoLabels, parent):
         name += getString(30167) + ' ' + str(season).replace('0', '.')
     else:
         name += getString(30169)
-    if not infoLabels['isPrime']:
+    if not infoLabels['isPrime'] and parent != library:
         name = '[COLOR %s]%s[/COLOR]' % (PayCol, name)
     return name
 
@@ -798,7 +797,7 @@ def getList(listing, export):
 
     addDir(getString(30104), 'listContent', url+'Movie', catalog=cat, opt=listing, export=export)
     url += 'TV' if listing == watchlist else 'TVSeason'
-    url += '&RollUpToSeries=T' if dispShowOnly else ''
+    # url += '&RollUpToSeries=T' if dispShowOnly else ''
     addDir(getString(30107), 'listContent', url, catalog=cat, opt=listing, export=export)
     xbmcplugin.endOfDirectory(pluginhandle, updateListing=False)
 
@@ -871,7 +870,7 @@ def getAsins(content, crIL=True):
     return asins
 
 
-def getInfos(item, export):
+def getInfos(item, export, parent=None):
     infoLabels = getAsins(item)
     infoLabels['DisplayTitle'] = infoLabels['Title'] = cleanTitle(item['title'])
     infoLabels['contentType'] = contentType = item['contentType'].lower()
@@ -970,7 +969,8 @@ def getInfos(item, export):
         if not infoLabels['Fanart']:
             infoLabels['Fanart'] = DefaultFanart
         if not infoLabels['isPrime'] and not contentType == 'series':
-            infoLabels['DisplayTitle'] = '[COLOR %s]%s[/COLOR]' % (PayCol, infoLabels['DisplayTitle'])
+            if parent != library:
+                infoLabels['DisplayTitle'] = '[COLOR %s]%s[/COLOR]' % (PayCol, infoLabels['DisplayTitle'])
 
     return contentType, infoLabels
 
@@ -1694,17 +1694,6 @@ def writeConfig(cfile, value):
     return False
 
 
-def insertLF(string, begin=70):
-    spc = string.find(' ', begin)
-    return string[:spc] + '\n' + string[spc + 1:] if spc > 0 else string
-
-
-def parseHTML(response):
-    response = re.sub(r'(?i)(<!doctype \w+).*>', r'\1>', response)
-    soup = BeautifulSoup(response, convertEntities=BeautifulSoup.HTML_ENTITIES)
-    return soup
-
-
 def SetVol(step):
     rpc = '{"jsonrpc": "2.0", "method": "Application.GetProperties", "params": {"properties": ["volume"]}, "id": 1}'
     vol = json.loads(xbmc.executeJSONRPC(rpc))["result"]["volume"]
@@ -1724,8 +1713,8 @@ def PairDevice():
         lastchk = 0
         regdata = json.dumps({"auth_data": {"code_pair": {"public_code": response['public_code'], "private_code": response['private_code']}},
                               "registration_data": devData, "requested_token_type": ["bearer"]})
-        pDialog.create('Register Device', 'Please browse to [B]%s/mytv[/B] and enter the following Code: [B]%s[/B]' % (BaseUrl, response['public_code']), None,
-                       'Time left: %ss' % response['expires_in'])
+        pDialog.create(getString(30008).replace('.', ''), getString(30212) % (BaseUrl, response['public_code']), None,
+                       getString(30213) % response['expires_in'])
         while time.time() < timeout:
             if time.time() - lastchk >= polling:
                 lastchk = time.time()
@@ -1740,12 +1729,24 @@ def PairDevice():
                 Log(response)
                 Log('No response, time left: %ss' % int(timeout - time.time()))
 
-            pDialog.update(int((time.time()-starttm)*100/(timeout-starttm)), None, None, 'Time left: %ss' % int(timeout - time.time()))
+            pDialog.update(int((time.time()-starttm)*100/(timeout-starttm)), None, None, getString(30213) % int(timeout - time.time()))
             xbmc.sleep(1000)
             if pDialog.iscanceled():
                 break
         pDialog.close()
     return False
+
+
+def remLoginData():
+    for fn in xbmcvfs.listdir(DataPath)[1]:
+        if fn.startswith('cookie'):
+                xbmcvfs.delete(os.path.join(DataPath, fn))
+
+    xbmcvfs.delete(os.path.join(ConfigPath, 'login_name'))
+    xbmcvfs.delete(os.path.join(ConfigPath, 'login_pass'))
+    xbmcvfs.delete(os.path.join(ConfigPath, 'token'))
+
+    Dialog.notification(__plugin__, getString(30211), xbmcgui.NOTIFICATION_INFO)
 
 
 class window(xbmcgui.WindowDialog):

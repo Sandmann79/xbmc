@@ -49,7 +49,7 @@ def BUILD_BASE_API(MODE, HOST=ATV_URL + '/cdp/'):
 def getList(ContentType=None, start=0, isPrime=True, NumberOfResults=0, OrderBy='MostPopular', version=2,
             AsinList=None, catalog='Browse', asin=None, enablefilter=False):
 
-    ContentFilter = '&ContractID=UX*' if onlyGer or enablefilter else ''
+    ContentFilter = '&ContractID=UX*' if onlyGer else ''
     BROWSE_PARAMS = '&StartIndex=' + str(start)
     if NumberOfResults:
         BROWSE_PARAMS += '&NumberOfResults=' + str(NumberOfResults)
@@ -63,9 +63,6 @@ def getList(ContentType=None, start=0, isPrime=True, NumberOfResults=0, OrderBy=
 
     if ContentType == 'TVEpisode':
         BROWSE_PARAMS += '&Detailed=T'
-        BROWSE_PARAMS += '&AID=T'
-        BROWSE_PARAMS += '&tag=1'
-        BROWSE_PARAMS += '&IncludeBlackList=T'
 
     if 'Movie' in ContentType:
         BROWSE_PARAMS += ContentFilter
@@ -76,7 +73,12 @@ def getList(ContentType=None, start=0, isPrime=True, NumberOfResults=0, OrderBy=
     if asin:
         BROWSE_PARAMS += '&asin=' + asin
 
-    BROWSE_PARAMS += '&IncludeAll=T&version=' + str(version)
+    BROWSE_PARAMS += '&IncludeBlackList=T'
+    BROWSE_PARAMS += '&HideNum=T'
+    BROWSE_PARAMS += '&AID=1'
+    BROWSE_PARAMS += "&IncludeNonWeb=T"
+    BROWSE_PARAMS += '&IncludeAll=T'
+    BROWSE_PARAMS += '&version=' + str(version)
     # &HighDef=F # T or F ??
     # &playbackInformationRequired=false
     # &OrderBy=SalesRank
@@ -84,7 +86,6 @@ def getList(ContentType=None, start=0, isPrime=True, NumberOfResults=0, OrderBy=
     # &HideNum=T
     # &Detailed=T
     # &AID=1
-    # &IncludeNonWeb=T
     url = BUILD_BASE_API('catalog/%s' % catalog) + BROWSE_PARAMS
     return getURL(url)
 

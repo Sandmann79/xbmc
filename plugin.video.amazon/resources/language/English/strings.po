@@ -402,7 +402,11 @@ msgctxt "#30117"
 msgid "Refreshing Video Library..."
 msgstr ""
 
-#empty strings from id 30118 to 30119
+msgctxt "#30118"
+msgid "Force Fallback"
+msgstr ""
+
+#empty string 30119
 
 msgctxt "#30120"
 msgid "Building Prime Movie Database"

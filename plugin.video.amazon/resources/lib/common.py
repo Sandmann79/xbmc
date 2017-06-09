@@ -236,6 +236,8 @@ def addVideo(name, asin, poster=None, fanart=None, infoLabels=None, totalItems=0
         item.setArt({'tvshow.poster': infoLabels['Poster']})
     else:
         item.setArt({'Poster': poster})
+
+    cm.insert(1, (getString(30118), 'RunPlugin(%s)' % (url + '&forcefb=1')))
     item.addContextMenuItems(cm)
     item.setInfo(type='Video', infoLabels=infoLabels)
     xbmcplugin.addDirectoryItem(handle=pluginhandle, url=url, listitem=item, isFolder=False, totalItems=totalItems)

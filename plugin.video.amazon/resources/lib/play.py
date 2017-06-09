@@ -35,7 +35,7 @@ def PLAYVIDEO():
     isAdult = args.get('adult') == '1'
     playable = False
     fallback = int(addon.getSetting("fallback_method"))
-    methodOW = playMethod
+    methodOW = fallback - 1 if args.get('forcefb') and fallback else playMethod
     videoUrl = "%s/?autoplay%s=1" % (amazonUrl, ('trailer' if trailer == '1' else ''))
     extern = not xbmc.getInfoLabel('Container.PluginName').startswith('plugin.video.amazon')
 
@@ -446,6 +446,7 @@ def getUrldata(mode, values, devicetypeid=False, version=1, firmware='1', opt=''
                '&deviceBitrateAdaptationsOverride=CVBR%2CCBR'
         url += '&videoMaterialType=' + vMT
         url += '&desiredResources=' + dRes
+        url += '&supportedDRMKeyScheme=DUAL_KEY' if platform != osAndroid and 'AudioVideoUrls' in dRes else ''
     if retURL:
         return url
     data = getURL(url, useCookie=useCookie, retjson=False)

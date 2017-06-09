@@ -397,6 +397,10 @@ msgctxt "#30117"
 msgid "Refreshing Video Library..."
 msgstr "Video-Bibliothek wird aktualisiert ..."
 
+msgctxt "#30118"
+msgid "Force Fallback"
+msgstr "Fallback erzwingen"
+
 msgctxt "#30120"
 msgid "Building Prime Movie Database"
 msgstr "Erstelle Filmdatenbank"

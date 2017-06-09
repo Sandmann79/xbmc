@@ -337,10 +337,11 @@ def loadCategories(force=False):
     parseNodes(data)
     updateTime()
 
-    replCat('ContentType=Movie&OrderBy=AvailabilityDate&MinAmazonRatingCount=80&Preorder=F', 'prime-movie-2', '&OfferGroups=B0043YVHMY')
-    replCat('ContentType=Movie&OrderBy=AvailabilityDate&MinAmazonRatingCount=80&Preorder=F', 'all-movie-2')
-    replCat('ContentType=TVEpisode&RollUpToSeason=T&OrderBy=AvailabilityDate&MinAmazonRatingCount=80&ExcludeStudio=Phoenix%20Film,ARD,Jonathan%20M.%20Shiff%20Productions%20Pty.%20Ltd.%20&BlackList=B00IKEO09K,B00IKEQNOA', 'prime-tv-2', '&OfferGroups=B0043YVHMY')
-    replCat('ContentType=TVEpisode&RollUpToSeason=T&OrderBy=AvailabilityDate&MinAmazonRatingCount=80&ExcludeStudio=Phoenix%20Film,ARD,Jonathan%20M.%20Shiff%20Productions%20Pty.%20Ltd.%20&BlackList=B00IKEO09K,B00IKEQNOA', 'all-tv-2')
+    newcat = '&OrderBy=AvailabilityDate&MinAmazonRatingCount=80&HideNum=T&Preorder=F' #  &HideNum=T (w/o UHD)
+    replCat('ContentType=Movie'+newcat, 'prime-movie-2', '&OfferGroups=B0043YVHMY')
+    replCat('ContentType=Movie'+newcat, 'all-movie-2')
+    replCat('ContentType=TVEpisode&RollupToSeason=T'+newcat, 'prime-tv-2', '&OfferGroups=B0043YVHMY')
+    replCat('ContentType=TVEpisode&RollupToSeason=T'+newcat, 'all-tv-2')
 
     menuDb.commit()
     Log('Parse MenuTime: %s' % (time.time() - parseStart), 0)
@@ -1370,12 +1371,16 @@ def getUrldata(catalog, asin, extra=False, retURL=False, version='1', opt='', vM
             if 'Device type id' in str(error):
                 writeConfig('token', '{}')
             return False, Error(error['body'])
+
+        error = re.findall('{[^"]*\"errorCode\"[^}]*}', json.dumps(data))
+        if error:
+            return False, Error(json.loads(error[0]))
         return True, data
     return False, 'HTTP Error'
 
 
 def Error(data):
-    code = data.get('errorCode', data['code']).lower()
+    code = data.get('errorCode', data.get('code')).lower()
     Log('%s (%s) ' % (data['message'], code), xbmc.LOGERROR)
     if 'invalidrequest' in code:
         return getString(30204)

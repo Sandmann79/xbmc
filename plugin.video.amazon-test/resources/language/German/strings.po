@@ -293,6 +293,10 @@ msgctxt "#30101"
 msgid "Toogle Watched State"
 msgstr "Gesehen Status ändern"
 
+msgctxt "#30102"
+msgid "Force Fallback"
+msgstr "Fallback erzwingen"
+
 msgctxt "#30104"
 msgid "Movies"
 msgstr "Filme"

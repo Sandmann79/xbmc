@@ -293,6 +293,7 @@ def addVideo(name, asin, infoLabels, cm=[], export=False):
         Export(infoLabels, url)
     else:
         cm.insert(0, (getString(30101), 'Action(ToggleWatched)'))
+        cm.insert(1, (getString(30102), 'RunPlugin(%s)' % url.replace('selbitrate=0', 'selbitrate=1')))
         item.setInfo(type='Video', infoLabels=infoLabels)
         item.addContextMenuItems(cm)
         xbmcplugin.addDirectoryItem(pluginhandle, url, item, isFolder=False)
@@ -976,12 +977,12 @@ def getInfos(item, export, parent=None):
     return contentType, infoLabels
 
 
-def PlayVideo(name, asin, adultstr, trailer):
+def PlayVideo(name, asin, adultstr, trailer, forcefb):
     isAdult = adultstr == '1'
     amazonUrl = BaseUrl + "/dp/" + asin
     playable = False
     fallback = int(addon.getSetting("fallback_method"))
-    methodOW = playMethod
+    methodOW = fallback - 1 if forcefb and fallback else playMethod
     videoUrl = "%s/?autoplay%s=1" % (amazonUrl, ('trailer' if trailer == '1' else ''))
     extern = not xbmc.getInfoLabel('Container.PluginName').startswith('plugin.video.amazon')
 
@@ -1360,6 +1361,7 @@ def getUrldata(catalog, asin, extra=False, retURL=False, version='1', opt='', vM
                '&deviceBitrateAdaptationsOverride=CVBR%2CCBR'
         url += '&videoMaterialType=' + vMT
         url += '&desiredResources=' + dRes
+        url += '&supportedDRMKeyScheme=DUAL_KEY' if platform != osAndroid and 'AudioVideoUrls' in dRes else ''
 
     if retURL:
         return url
@@ -1935,7 +1937,7 @@ if mode == 'listCategories':
 elif mode == 'listContent':
     listContent(args.get('cat'), args.get('url', ''), int(args.get('page', '1')), args.get('opt', ''))
 elif mode == 'PlayVideo':
-    PlayVideo(args.get('name'), args.get('asin'), args.get('adult'), args.get('trailer'))
+    PlayVideo(args.get('name'), args.get('asin'), args.get('adult'), args.get('trailer'), int(args.get('selbitrate')))
 elif mode == 'getList':
     getList(args.get('url', ''), int(args.get('export', '0')))
 elif mode == 'WatchList':

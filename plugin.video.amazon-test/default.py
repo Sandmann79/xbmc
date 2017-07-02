@@ -343,6 +343,7 @@ def loadCategories(force=False):
     replCat('ContentType=Movie'+newcat, 'all-movie-2')
     replCat('ContentType=TVEpisode&RollupToSeason=T'+newcat, 'prime-tv-2', '&OfferGroups=B0043YVHMY')
     replCat('ContentType=TVEpisode&RollupToSeason=T'+newcat, 'all-tv-2')
+    replCat('ContentType=Movie&Preorder=F&OrderBy=SalesRank,Rating&Preorder=F&OfferGroups=B0043YVHMY', 'prime-movie-1')
 
     menuDb.commit()
     Log('Parse MenuTime: %s' % (time.time() - parseStart), 0)
@@ -1110,7 +1111,7 @@ def IStreamPlayback(asin, name, trailer, isAdult, extern):
     licURL = getUrldata('catalog/GetPlaybackResources', asin, extra=True, vMT=vMT, dRes='Widevine2License', retURL=True)
     licURL += '|Content-Type=application%2Fx-www-form-urlencoded&Authorization=' + urllib.quote_plus('Bearer ' + getAccesToken())
     licURL += '|widevine2Challenge=B{SSM}&includeHdcpTestKeyInLicense=false'
-    licURL += '|JBlicense'
+    licURL += '|JBlicense;hdcpEnforcementResolutionPixels'
 
     if not mpd:
         Dialog.notification(getString(30203), subs, xbmcgui.NOTIFICATION_ERROR)
@@ -1119,12 +1120,13 @@ def IStreamPlayback(asin, name, trailer, isAdult, extern):
     orgmpd = mpd
     mpd = re.sub(r'~', '', mpd) if mpd != re.sub(r'~', '', mpd) else re.sub(r'/[1-9][$].*?/', '/', mpd)
     mpdcontent = getURL(mpd, rjson=False)
+    is_version = xbmcaddon.Addon(is_addon).getAddonInfo('version') if is_addon else '0'
 
     if len(re.compile(r'(?i)edef8ba9-79d6-4ace-a3c8-27dcd51d21ed').findall(mpdcontent)) < 2:
-        if platform != osAndroid:
+        if platform != osAndroid and int(is_version[0:1]) < 2:
             xbmc.executebuiltin('ActivateWindow(busydialog)')
             return False
-    elif platform == osAndroid:
+    elif platform == osAndroid or int(is_version[0:1]) >= 2:
         mpd = orgmpd
 
     if not extern:
@@ -1163,7 +1165,7 @@ def IStreamPlayback(asin, name, trailer, isAdult, extern):
     if 'adaptive' in is_addon:
         listitem.setProperty('inputstream.adaptive.manifest_type', 'mpd')
 
-    Log('Using %s Version:%s' %(is_addon, xbmcaddon.Addon(is_addon).getAddonInfo('version')))
+    Log('Using %s Version:%s' % (is_addon, is_version))
     listitem.setArt({'thumb': thumb})
     listitem.setSubtitles(subs)
     listitem.setProperty('%s.license_type' % is_addon, 'com.widevine.alpha')

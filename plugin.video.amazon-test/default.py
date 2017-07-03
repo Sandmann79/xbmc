@@ -315,19 +315,20 @@ def loadCategories(force=False):
     Log('Download MenuTime: %s' % (time.time() - parseStart), 0)
     parseNodes(data)
     updateTime()
-    '''
-    replCat('hm-merch-16', 'prime-movie-2', '&OfferGroups=B0043YVHMY')
-    replCat('hm-merch-16', 'all-movie-2')
-    replCat('hm-merch-17', 'prime-tv-2', '&OfferGroups=B0043YVHMY')
-    replCat('hm-merch-17', 'all-tv-2')
-    '''
+
+    newcat = '&OrderBy=AvailabilityDate&MinAmazonRatingCount=80&HideNum=T&Preorder=F'  # &HideNum=T (w/o UHD)
+    replCat('ContentType=TVEpisode&RollupToSeason=T'+newcat, 'prime-tv-2', '&OfferGroups=B0043YVHMY')
+    replCat('ContentType=TVEpisode&RollupToSeason=T'+newcat, 'all-tv-2')
+    replCat('ContentType=Movie&Preorder=F&OrderBy=SalesRank,Rating&Preorder=F&OfferGroups=B0043YVHMY', 'prime-movie-1')
+
     menuDb.commit()
     Log('Parse MenuTime: %s' % (time.time() - parseStart), 0)
 
 
-def replCat(src, dest, extra=''):
+def replCat(src, dest, extra='', strrepl=True):
     c = menuDb.cursor()
-    result = c.execute('select content from menu where id = (?)', (src,)).fetchone()
+    result = [src] if strrepl else c.execute('select content from menu where id = (?)', (src,)).fetchone()
+
     if result:
         c.execute('update menu set content = (?) where id = (?)', (result[0]+extra, dest))
 
@@ -1115,12 +1116,13 @@ def IStreamPlayback(asin, name, trailer, isAdult, extern):
     orgmpd = mpd
     mpd = re.sub(r'~', '', mpd) if mpd != re.sub(r'~', '', mpd) else re.sub(r'/[1-9][$].*?/', '/', mpd)
     mpdcontent = getURL(mpd, rjson=False)
+    is_version = xbmcaddon.Addon(is_addon).getAddonInfo('version') if is_addon else '0'
 
     if len(re.compile(r'(?i)edef8ba9-79d6-4ace-a3c8-27dcd51d21ed').findall(mpdcontent)) < 2:
-        if platform != osAndroid:
+        if platform != osAndroid and int(is_version[0:1]) < 2:
             xbmc.executebuiltin('ActivateWindow(busydialog)')
             return False
-    elif platform == osAndroid:
+    elif platform == osAndroid or int(is_version[0:1]) >= 2:
         mpd = orgmpd
 
     Log(mpd)
@@ -1161,7 +1163,7 @@ def IStreamPlayback(asin, name, trailer, isAdult, extern):
     if 'adaptive' in is_addon:
         listitem.setProperty('inputstream.adaptive.manifest_type', 'mpd')
 
-    Log('Using %s Version:%s' %(is_addon, xbmcaddon.Addon(is_addon).getAddonInfo('version')))
+    Log('Using %s Version:%s' %(is_addon, is_version))
     listitem.setArt({'thumb': thumb})
     listitem.setSubtitles(subs)
     listitem.setProperty('%s.license_type' % is_addon, 'com.widevine.alpha')
@@ -1377,7 +1379,7 @@ def getFlashVars(asin):
 
 
 def getUrldata(mode, values, retformat='json', devicetypeid=False, version=1, firmware='1', opt='', extra=False,
-               useCookie=False, retURL=False, vMT='Feature', dRes='AudioVideoUrls%2CSubtitleUrls'):
+               useCookie=False, retURL=False, vMT='Feature', dRes='AudioVideoUrls,SubtitleUrls'):
     if not devicetypeid:
         devicetypeid = values['deviceTypeID']
     url = ATVUrl + '/cdp/' + mode

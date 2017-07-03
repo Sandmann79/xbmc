@@ -185,12 +185,13 @@ def IStreamPlayback(trailer, isAdult, extern):
     orgmpd = mpd
     mpd = re.sub(r'~', '', mpd) if mpd != re.sub(r'~', '', mpd) else re.sub(r'/[1-9][$].*?/', '/', mpd)
     mpdcontent = getURL(mpd, retjson=False)
+    is_version = xbmcaddon.Addon(is_addon).getAddonInfo('version') if is_addon else '0'
 
     if len(re.compile(r'(?i)edef8ba9-79d6-4ace-a3c8-27dcd51d21ed').findall(mpdcontent)) < 2:
-        if platform != osAndroid:
+        if platform != osAndroid and int(is_version[0:1]) < 2:
             xbmc.executebuiltin('ActivateWindow(busydialog)')
             return False
-    elif platform == osAndroid:
+    elif platform == osAndroid or int(is_version[0:1]) >= 2:
         mpd = orgmpd
 
     Log(mpd)
@@ -218,7 +219,7 @@ def IStreamPlayback(trailer, isAdult, extern):
     if 'adaptive' in is_addon:
         listitem.setProperty('inputstream.adaptive.manifest_type', 'mpd')
 
-    Log('Using %s Version:%s' %(is_addon, xbmcaddon.Addon(is_addon).getAddonInfo('version')))
+    Log('Using %s Version:%s' %(is_addon, is_version))
     listitem.setArt({'thumb': infoLabels['Thumb']})
     listitem.setInfo('video', infoLabels)
     listitem.setSubtitles(subs)
@@ -426,7 +427,7 @@ def getFlashVars():
 
 
 def getUrldata(mode, values, devicetypeid=False, version=1, firmware='1', opt='', extra=False,
-               useCookie=False, retURL=False, vMT='Feature', dRes='AudioVideoUrls%2CSubtitleUrls'):
+               useCookie=False, retURL=False, vMT='Feature', dRes='AudioVideoUrls,SubtitleUrls'):
     if not devicetypeid:
         devicetypeid = values['deviceTypeID']
     url = ATV_URL + '/cdp/' + mode

@@ -1782,9 +1782,14 @@ def SetupLibrary():
     SetupAmazonLibrary()
 
 
-def CreateInfoFile(nfofile, path, content, Info, language, hasSubtitles=False):
-    skip_keys = ('ishd', 'isadult', 'audiochannels', 'genre', 'cast', 'duration', 'asins', 'contentType')
+def CreateInfoFile(nfofile, path, content, Infol, language, hasSubtitles=False):
+    Info = {}
+    for k,v in Infol.items():
+        if isinstance(v, unicode):
+            v = v.encode('utf8')
+        Info.update({k: v})
 
+    skip_keys = ('ishd', 'isadult', 'audiochannels', 'genre', 'cast', 'duration', 'asins', 'contentType')
     fileinfo = '<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>'
     fileinfo += '<%s>' % content
     if 'Duration' in Info.keys():

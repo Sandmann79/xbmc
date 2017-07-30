@@ -35,7 +35,13 @@ def SetupLibrary():
     SetupAmazonLibrary()
 
 
-def streamDetails(Info, language='ger', hasSubtitles=False):
+def streamDetails(Infol, language='ger', hasSubtitles=False):
+    Info = {}
+    for k,v in Infol.items():
+        if isinstance(v, unicode):
+            v = v.encode('utf8')
+        Info.update({k: v})
+
     skip_keys = ('ishd', 'isadult', 'audiochannels', 'genre', 'cast', 'duration', 'trailer', 'asins')
     fileinfo = '<runtime>%s</runtime>' % Info['Duration']
     if 'Genre' in Info.keys() and Info['Genre']:

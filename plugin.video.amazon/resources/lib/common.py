@@ -25,6 +25,7 @@ import pyxbmct
 import socket
 import ssl
 import time
+import random
 
 addon = xbmcaddon.Addon()
 pluginname = addon.getAddonInfo('name')
@@ -41,11 +42,11 @@ def_fanart = os.path.join(pluginpath, 'fanart.jpg')
 na = 'not available'
 BASE_URL = 'https://www.amazon.de'
 ATV_URL = 'https://atv-eu.amazon.com'
-UserAgent = 'Mozilla/5.0 (Windows NT 10.0; WOW64; Trident/7.0; Avant Browser; rv:11.0) like Gecko'
 movielib = '/gp/video/%s/movie/'
 tvlib = '/gp/video/%s/tv/'
 lib = 'video-library'
 wl = 'watchlist'
+def_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/59.0.3071.115 Safari/537.36'
 Ages = [('FSK 0', 'FSK 0'), ('FSK 6', 'FSK 6'), ('FSK 12', 'FSK 12'), ('FSK 16', 'FSK 16'), ('FSK 18', 'FSK 18')]
 verbLog = addon.getSetting('logging') == 'true'
 playMethod = int(addon.getSetting("playmethod"))
@@ -125,7 +126,7 @@ def getURL(url, useCookie=False, silent=False, headers=None, attempt=0, retjson=
         dispurl = re.sub('(?i)%s|%s|&token=\w+|&customerId=\w+' % (tvdb, tmdb), '', url).strip()
         Log('getURL: ' + dispurl)
     if not headers:
-        headers = [('User-Agent', UserAgent), ('Host', BASE_URL.split('//')[1])]
+        headers = [('User-Agent', getConfig('UserAgent', def_UA)), ('Host', BASE_URL.split('//')[1])]
     try:
         opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cj), urllib2.HTTPRedirectHandler)
         opener.addheaders = headers
@@ -285,7 +286,7 @@ def getToken(asin, cookie):
 def gen_id(renew=False):
     guid = getConfig("GenDeviceID") if not renew else False
     if not guid or len(guid) != 56:
-        guid = hmac.new(UserAgent, uuid.uuid4().bytes, hashlib.sha224).hexdigest()
+        guid = hmac.new(getConfig('UserAgent', def_UA), uuid.uuid4().bytes, hashlib.sha224).hexdigest()
         writeConfig("GenDeviceID", guid)
     return guid
 
@@ -300,10 +301,11 @@ def mechanizeLogin():
     return LogIn(False)
 
 
-def LogIn(ask=True):
+def LogIn(ask=True, ue=None, up=None, attempt=1):
+    Log('Login attempt #%s' % attempt)
     addon.setSetting('login_acc', '')
-    email = getConfig('login_name')
-    password = decode(getConfig('login_pass'))
+    email = getConfig('login_name') if not ue else ue
+    password = decode(getConfig('login_pass')) if not up else up
     savelogin = addon.getSetting('save_login') == 'true'
     useMFA = False
 
@@ -332,7 +334,7 @@ def LogIn(ask=True):
         br.set_handle_robots(False)
         br.set_cookiejar(cj)
         br.set_handle_gzip(True)
-        br.addheaders = [('User-Agent', UserAgent)]
+        br.addheaders = [('User-Agent', getConfig('UserAgent', def_UA))]
         br.open(BASE_URL + "/gp/aw/si.html")
         br.select_form(name="signIn")
         br["email"] = email
@@ -345,7 +347,7 @@ def LogIn(ask=True):
                          ('Content-Type', 'application/x-www-form-urlencoded'),
                          ('Host', BASE_URL.split('//')[1]),
                          ('Origin', BASE_URL),
-                         ('User-Agent', UserAgent),
+                         ('User-Agent', getConfig('UserAgent', def_UA)),
                          ('Upgrade-Insecure-Requests', '1')]
         br.submit()
         response = br.response().read()
@@ -425,7 +427,11 @@ def LogIn(ask=True):
         elif 'message_warning' in response:
             msg = soup.find('div', attrs={'id': 'message_warning'})
             Log('Login Warning: %s' % msg.p.renderContents().strip())
-            Dialog.ok(getString(30200), getString(30212))
+            if attempt > 3:
+                Dialog.ok(getString(30200), getString(30212))
+            else:
+                getUA(True)
+                return LogIn(False, email, password, attempt + 1)
         elif 'auth-error-message-box' in response:
             msg = soup.find('div', attrs={'class': 'a-alert-content'})
             Log('Login MFA: %s' % msg.ul.li.span.renderContents().strip())
@@ -789,6 +795,33 @@ def AddonEnabled(addon_id):
     return False if '"error":' in result or '"enabled":false' in result else True
 
 
+def getUA(blacklist=False):
+    Log('Switching UserAgent')
+    UAlist = json.loads(getConfig('UAlist', json.dumps([])))
+    UAblist = json.loads(getConfig('UABlacklist', json.dumps([])))
+
+    if blacklist:
+        UAcur = getConfig('UserAgent', UserAgent)
+        UAblist.append(UAcur)
+        writeConfig('UABlacklist', json.dumps(UAblist))
+        Log('UA: %s blacklisted' % UAcur)
+
+    UAwlist = [i for i in UAlist if i not in UAblist]
+    if not UAlist or len(UAwlist) < 5:
+        Log('Loading list of common UserAgents')
+        html = getURL('https://techblog.willshouse.com/2012/01/03/most-common-user-agents/', retjson=False)
+        soup = BeautifulSoup(html, convertEntities=BeautifulSoup.HTML_ENTITIES)
+        text = soup.find('textarea')
+        UAlist = text.string.split('\n')
+        writeConfig('UAlist', json.dumps(UAlist[0:len(UAlist) - 1]))
+        UAwlist = [i for i in UAlist if i not in UAblist]
+
+    UAnew = UAwlist[random.randint(0, len(UAwlist) - 1)]
+    writeConfig('UserAgent', UAnew)
+    Log('Using UserAgent: ' + UAnew)
+    return
+
+
 if AddonEnabled('inputstream.adaptive'):
     is_addon = 'inputstream.adaptive'
 elif AddonEnabled('inputstream.mpd'):
@@ -796,6 +829,10 @@ elif AddonEnabled('inputstream.mpd'):
 else:
     is_addon = None
 
+if not getConfig('UserAgent'):
+    getUA()
+
+UserAgent = getConfig('UserAgent', def_UA)
 AgePin = getConfig('age_pin')
 PinReq = int(getConfig('pin_req', '0'))
 RestrAges = ','.join(a[1] for a in Ages[PinReq:]) if AgePin else ''

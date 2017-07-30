@@ -3,7 +3,6 @@
 from BeautifulSoup import BeautifulStoneSoup
 from common import *
 import subprocess
-import random
 import threading
 import codecs
 import shlex
@@ -225,6 +224,7 @@ def IStreamPlayback(trailer, isAdult, extern):
     listitem.setSubtitles(subs)
     listitem.setProperty('%s.license_type' % is_addon, 'com.widevine.alpha')
     listitem.setProperty('%s.license_key' % is_addon, licURL)
+    listitem.setProperty('%s.stream_headers' % is_addon, 'user-agent=' + UserAgent)
     listitem.setProperty('inputstreamaddon', is_addon)
     xbmcplugin.setResolvedUrl(pluginhandle, True, listitem=listitem)
 

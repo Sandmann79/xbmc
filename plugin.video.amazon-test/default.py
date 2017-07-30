@@ -84,10 +84,10 @@ wl_order = ['DATE_ADDED_DESC', 'TITLE_DESC', 'TITLE_ASC'][int('0'+addon.getSetti
 MarketID = ['A1PA6795UKMFR9', 'A1F83G8C2ARO7P', 'ATVPDKIKX0DER', 'A1VC38T7YXB528', 'ART4WZ8MWBX2Y'][country]
 Language = ['de', 'en', 'en', 'jp', ''][country]
 AgeRating = ['FSK ', '', '', '', ''][country]
+UserAgent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/59.0.3071.115 Safari/537.36'
 menuFile = os.path.join(DataPath, 'menu-%s.db' % MarketID)
 CookieFile = os.path.join(DataPath, 'cookie-%s.lwp' % MarketID)
 na = 'not available'
-UserAgent = 'Mozilla/5.0 (Windows NT 10.0; WOW64; Trident/7.0; Avant Browser; rv:11.0) like Gecko'
 watchlist = 'watchlist'
 library = 'video-library'
 DBVersion = 1.1
@@ -155,7 +155,7 @@ def setView(content, view=False, updateListing=False):
     xbmcplugin.endOfDirectory(pluginhandle, updateListing=updateListing)
 
 
-def getURL(url, useCookie=False, silent=False, headers=[], UA=UserAgent, rjson=True, attempt=1, check=False):
+def getURL(url, useCookie=False, silent=False, headers=[], rjson=True, attempt=1, check=False):
     cj = cookielib.LWPCookieJar()
     retval = [] if rjson else ''
     if useCookie:
@@ -166,7 +166,7 @@ def getURL(url, useCookie=False, silent=False, headers=[], UA=UserAgent, rjson=T
         dispurl = url
         dispurl = re.sub('(?i)%s|%s|&token=\w+|&customerId=\w+' % (tvdb, tmdb), '', url).strip()
         Log('getURL: ' + dispurl)
-    headers.append(('User-Agent', UA))
+    headers.append(('User-Agent', getConfig('UserAgent', UserAgent)))
     headers.append(('Host', BaseUrl.split('//')[1]))
     try:
         opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cj), urllib2.HTTPRedirectHandler)
@@ -184,7 +184,7 @@ def getURL(url, useCookie=False, silent=False, headers=[], UA=UserAgent, rjson=T
                 xbmc.sleep(10000)
             Log(logout)
             if attempt < 3:
-                return getURL(url, useCookie, silent, headers, UA, rjson, attempt)
+                return getURL(url, useCookie, silent, headers, rjson, attempt)
         return retval
     return json.loads(response) if rjson else response
 
@@ -1113,10 +1113,10 @@ def IStreamPlayback(asin, name, trailer, isAdult, extern):
         Dialog.notification(getString(30203), subs, xbmcgui.NOTIFICATION_ERROR)
         return True
 
+    is_version = xbmcaddon.Addon(is_addon).getAddonInfo('version') if is_addon else '0'
     orgmpd = mpd
     mpd = re.sub(r'~', '', mpd) if mpd != re.sub(r'~', '', mpd) else re.sub(r'/[1-9][$].*?/', '/', mpd)
     mpdcontent = getURL(mpd, rjson=False)
-    is_version = xbmcaddon.Addon(is_addon).getAddonInfo('version') if is_addon else '0'
 
     if len(re.compile(r'(?i)edef8ba9-79d6-4ace-a3c8-27dcd51d21ed').findall(mpdcontent)) < 2:
         if platform != osAndroid and int(is_version[0:1]) < 2:
@@ -1168,6 +1168,7 @@ def IStreamPlayback(asin, name, trailer, isAdult, extern):
     listitem.setSubtitles(subs)
     listitem.setProperty('%s.license_type' % is_addon, 'com.widevine.alpha')
     listitem.setProperty('%s.license_key' % is_addon, licURL)
+    listitem.setProperty('%s.stream_headers' % is_addon, 'user-agent=' + getConfig('UserAgent', UserAgent))
     listitem.setProperty('inputstreamaddon', is_addon)
     xbmcplugin.setResolvedUrl(pluginhandle, True, listitem=listitem)
 
@@ -1361,7 +1362,7 @@ def getFlashVars(asin):
 
     values = {'asin': asin,
               'deviceTypeID': 'AOAGZA014O5RE',
-              'userAgent': UserAgent}
+              'userAgent': getConfig('UserAgent', UserAgent)}
     values.update(showpage['resourceData']['GBCustomerData'])
 
     if 'customerId' not in values:
@@ -1499,7 +1500,7 @@ def Input(mousex=0, mousey=0, click=0, keys=None, delay='200'):
 def genID(renew=False):
     guid = getConfig("GenDeviceID") if not renew else False
     if not guid or len(guid) != 56:
-        guid = hmac.new(UserAgent, uuid.uuid4().bytes, hashlib.sha224).hexdigest()
+        guid = hmac.new(getConfig('UserAgent', UserAgent), uuid.uuid4().bytes, hashlib.sha224).hexdigest()
         writeConfig("GenDeviceID", guid)
     return guid
 
@@ -1515,11 +1516,12 @@ def MechanizeLogin():
     return LogIn(False)
 
 
-def LogIn(ask=True):
+def LogIn(ask=True, ue=None, up=None, attempt=1):
+    Log('Login attempt #%s' % attempt)
     addon.setSetting('login_acc', '')
     addon.setSetting('use_mfa', 'false')
-    email = getConfig('login_name')
-    password = decode(getConfig('login_pass'))
+    email = getConfig('login_name') if not ue else ue
+    password = decode(getConfig('login_pass')) if not up else up
     savelogin = addon.getSetting('save_login') == 'true'
     useMFA = False
 
@@ -1544,7 +1546,7 @@ def LogIn(ask=True):
         br.set_handle_robots(False)
         br.set_cookiejar(cj)
         br.set_handle_gzip(True)
-        br.addheaders = [('User-Agent', UserAgent)]
+        br.addheaders = [('User-Agent', getConfig('UserAgent', UserAgent))]
         br.open(BaseUrl + '/gp/aw/si.html')
         br.select_form(name='signIn')
         br['email'] = email
@@ -1557,7 +1559,7 @@ def LogIn(ask=True):
                          ('Content-Type', 'application/x-www-form-urlencoded'),
                          ('Host', BaseUrl.split('//')[1]),
                          ('Origin', BaseUrl),
-                         ('User-Agent', UserAgent),
+                         ('User-Agent', getConfig('UserAgent', UserAgent)),
                          ('Upgrade-Insecure-Requests', '1')]
         br.submit()
         response = br.response().read()
@@ -1636,7 +1638,11 @@ def LogIn(ask=True):
         elif 'message_warning' in response:
             msg = soup.find('div', attrs={'id': 'message_warning'})
             Log('Login Warning: %s' % msg.p.renderContents().strip())
-            Dialog.ok(getString(30200), getString(30212))
+            if attempt > 3:
+                Dialog.ok(getString(30200), getString(30212))
+            else:
+                getUA(True)
+                return LogIn(False, email, password, attempt + 1)
         elif 'auth-error-message-box' in response:
             msg = soup.find('div', attrs={'class': 'a-alert-content'})
             Log('Login MFA: %s' % msg.ul.li.span.renderContents().strip())
@@ -1946,6 +1952,33 @@ def SetVol(step):
     xbmc.executebuiltin('SetVolume(%d,showVolumeBar)' % (vol + step))
 
 
+def getUA(blacklist=False):
+    Log('Switching UserAgent')
+    UAlist = json.loads(getConfig('UAlist', json.dumps([])))
+    UAblist = json.loads(getConfig('UABlacklist', json.dumps([])))
+
+    if blacklist:
+        UAcur = getConfig('UserAgent', UserAgent)
+        UAblist.append(UAcur)
+        writeConfig('UABlacklist', json.dumps(UAblist))
+        Log('UA: %s blacklisted' % UAcur)
+
+    UAwlist = [i for i in UAlist if i not in UAblist]
+    if not UAlist or len(UAwlist) < 5:
+        Log('Loading list of common UserAgents')
+        html = getURL('https://techblog.willshouse.com/2012/01/03/most-common-user-agents/', rjson=False)
+        soup = BeautifulSoup(html, convertEntities=BeautifulSoup.HTML_ENTITIES)
+        text = soup.find('textarea')
+        UAlist = text.string.split('\n')
+        writeConfig('UAlist', json.dumps(UAlist[0:len(UAlist)-1]))
+        UAwlist = [i for i in UAlist if i not in UAblist]
+
+    UAnew = UAwlist[random.randint(0, len(UAwlist)-1)]
+    writeConfig('UserAgent', UAnew)
+    Log('Using UserAgent: ' + UAnew)
+    return
+
+
 class window(xbmcgui.WindowDialog):
     def __init__(self, process, asin):
         xbmcgui.WindowDialog.__init__(self)
@@ -2096,6 +2129,9 @@ elif AddonEnabled('inputstream.mpd'):
     is_addon = 'inputstream.mpd'
 else:
     is_addon = None
+
+if not getConfig('UserAgent'):
+    getUA()
 
 remLoginData(addon.getSetting('save_login') == 'true', False)
 AgePin = getConfig('age_pin')

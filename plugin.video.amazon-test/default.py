@@ -1785,60 +1785,62 @@ def SetupLibrary():
 def CreateInfoFile(nfofile, path, content, Infol, language, hasSubtitles=False):
     Info = {}
     for k,v in Infol.items():
-        if isinstance(v, unicode):
-            v = v.encode('utf8')
+        if isinstance(v, str):
+            v = unicode(v.decode('utf-8'))
+        if isinstance(v, list):
+            v = [i.decode('utf-8') for i in v if isinstance(i, str)]
         Info.update({k: v})
 
     skip_keys = ('ishd', 'isadult', 'audiochannels', 'genre', 'cast', 'duration', 'asins', 'contentType')
-    fileinfo = '<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>'
-    fileinfo += '<%s>' % content
+    fileinfo = u'<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>'
+    fileinfo += u'<%s>' % content
     if 'Duration' in Info.keys():
-        fileinfo += '<runtime>%s</runtime>' % Info['Duration']
+        fileinfo += u'<runtime>%s</runtime>' % Info['Duration']
     if 'Genre' in Info.keys():
         for genre in Info['Genre'].split('/'):
-            fileinfo += '<genre>%s</genre>' % genre.strip()
+            fileinfo += u'<genre>%s</genre>' % genre.strip()
     if 'Cast' in Info.keys():
         for actor in Info['Cast']:
-            fileinfo += '<actor>'
-            fileinfo += '<name>%s</name>' % actor.strip()
-            fileinfo += '</actor>'
+            fileinfo += u'<actor>'
+            fileinfo += u'<name>%s</name>' % actor.strip()
+            fileinfo += u'</actor>'
     for key, value in Info.items():
         lkey = key.lower()
         if lkey == 'tvshowtitle':
-            fileinfo += '<showtitle>%s</showtitle>' % value
+            fileinfo += u'<showtitle>%s</showtitle>' % value
         elif lkey == 'premiered' and 'TVShowTitle' in Info:
-            fileinfo += '<aired>%s</aired>' % value
+            fileinfo += u'<aired>%s</aired>' % value
         elif lkey == 'fanart':
-            fileinfo += '<%s><thumb>%s</thumb></%s>' % (lkey, value, lkey)
+            fileinfo += u'<%s><thumb>%s</thumb></%s>' % (lkey, value, lkey)
         elif lkey not in skip_keys:
-            fileinfo += '<%s>%s</%s>' % (lkey, value, lkey)
+            fileinfo += u'<%s>%s</%s>' % (lkey, value, lkey)
     if content != 'tvshow':
-        fileinfo += '<fileinfo>'
-        fileinfo += '<streamdetails>'
-        fileinfo += '<audio>'
-        fileinfo += '<channels>%s</channels>' % Info['AudioChannels']
-        fileinfo += '<codec>aac</codec>'
-        fileinfo += '</audio>'
-        fileinfo += '<video>'
-        fileinfo += '<codec>h264</codec>'
-        fileinfo += '<durationinseconds>%s</durationinseconds>' % Info['Duration']
+        fileinfo += u'<fileinfo>'
+        fileinfo += u'<streamdetails>'
+        fileinfo += u'<audio>'
+        fileinfo += u'<channels>%s</channels>' % Info['AudioChannels']
+        fileinfo += u'<codec>aac</codec>'
+        fileinfo += u'</audio>'
+        fileinfo += u'<video>'
+        fileinfo += u'<codec>h264</codec>'
+        fileinfo += u'<durationinseconds>%s</durationinseconds>' % Info['Duration']
         if Info['isHD']:
-            fileinfo += '<height>1080</height>'
-            fileinfo += '<width>1920</width>'
+            fileinfo += u'<height>1080</height>'
+            fileinfo += u'<width>1920</width>'
         else:
-            fileinfo += '<height>480</height>'
-            fileinfo += '<width>720</width>'
+            fileinfo += u'<height>480</height>'
+            fileinfo += u'<width>720</width>'
         if language:
-            fileinfo += '<language>%s</language>' % language
-        fileinfo += '<scantype>Progressive</scantype>'
-        fileinfo += '</video>'
+            fileinfo += u'<language>%s</language>' % language
+        fileinfo += u'<scantype>Progressive</scantype>'
+        fileinfo += u'</video>'
         if hasSubtitles:
-            fileinfo += '<subtitle>'
-            fileinfo += '<language>ger</language>'
-            fileinfo += '</subtitle>'
-        fileinfo += '</streamdetails>'
-        fileinfo += '</fileinfo>'
-    fileinfo += '</%s>' % content
+            fileinfo += u'<subtitle>'
+            fileinfo += u'<language>ger</language>'
+            fileinfo += u'</subtitle>'
+        fileinfo += u'</streamdetails>'
+        fileinfo += u'</fileinfo>'
+    fileinfo += u'</%s>' % content
 
     SaveFile(nfofile + '.nfo', fileinfo, path)
     return

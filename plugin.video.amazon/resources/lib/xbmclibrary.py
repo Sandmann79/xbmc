@@ -38,52 +38,54 @@ def SetupLibrary():
 def streamDetails(Infol, language='ger', hasSubtitles=False):
     Info = {}
     for k,v in Infol.items():
-        if isinstance(v, unicode):
-            v = v.encode('utf8')
+        if isinstance(v, str):
+            v = unicode(v.decode('utf-8'))
+        if isinstance(v, list):
+            v = [i.decode('utf-8') for i in v if isinstance(i, str)]
         Info.update({k: v})
 
     skip_keys = ('ishd', 'isadult', 'audiochannels', 'genre', 'cast', 'duration', 'trailer', 'asins')
-    fileinfo = '<runtime>%s</runtime>' % Info['Duration']
+    fileinfo = u'<runtime>%s</runtime>' % Info['Duration']
     if 'Genre' in Info.keys() and Info['Genre']:
         for genre in Info['Genre'].split('/'):
-            fileinfo += '<genre>%s</genre>' % genre.strip()
+            fileinfo += u'<genre>%s</genre>' % genre.strip()
     if 'Cast' in Info.keys():
         for actor in Info['Cast']:
-            fileinfo += '<actor>'
-            fileinfo += '<name>%s</name>' % actor.strip()
-            fileinfo += '</actor>'
+            fileinfo += u'<actor>'
+            fileinfo += u'<name>%s</name>' % actor.strip()
+            fileinfo += u'</actor>'
     for key, value in Info.items():
         lkey = key.lower()
         if lkey == 'premiered' and 'TVShowTitle' in Info.keys():
-            fileinfo += '<aired>%s</aired>' % value
+            fileinfo += u'<aired>%s</aired>' % value
         elif lkey == 'fanart':
-            fileinfo += '<%s><thumb>%s</thumb></%s>' % (lkey, value, lkey)
+            fileinfo += u'<%s><thumb>%s</thumb></%s>' % (lkey, value, lkey)
         elif lkey not in skip_keys:
-            fileinfo += '<%s>%s</%s>' % (lkey, value, lkey)
-    fileinfo += '<fileinfo>'
-    fileinfo += '<streamdetails>'
-    fileinfo += '<audio>'
-    fileinfo += '<channels>%s</channels>' % Info['AudioChannels']
-    fileinfo += '<codec>aac</codec>'
-    fileinfo += '</audio>'
-    fileinfo += '<video>'
-    fileinfo += '<codec>h264</codec>'
-    fileinfo += '<durationinseconds>%s</durationinseconds>' % Info['Duration']
+            fileinfo += u'<%s>%s</%s>' % (lkey, value, lkey)
+    fileinfo += u'<fileinfo>'
+    fileinfo += u'<streamdetails>'
+    fileinfo += u'<audio>'
+    fileinfo += u'<channels>%s</channels>' % Info['AudioChannels']
+    fileinfo += u'<codec>aac</codec>'
+    fileinfo += u'</audio>'
+    fileinfo += u'<video>'
+    fileinfo += u'<codec>h264</codec>'
+    fileinfo += u'<durationinseconds>%s</durationinseconds>' % Info['Duration']
     if Info['isHD']:
-        fileinfo += '<height>1080</height>'
-        fileinfo += '<width>1920</width>'
+        fileinfo += u'<height>1080</height>'
+        fileinfo += u'<width>1920</width>'
     else:
-        fileinfo += '<height>480</height>'
-        fileinfo += '<width>720</width>'
-    fileinfo += '<language>%s</language>' % language
-    fileinfo += '<scantype>Progressive</scantype>'
-    fileinfo += '</video>'
+        fileinfo += u'<height>480</height>'
+        fileinfo += u'<width>720</width>'
+    fileinfo += u'<language>%s</language>' % language
+    fileinfo += u'<scantype>Progressive</scantype>'
+    fileinfo += u'</video>'
     if hasSubtitles:
-        fileinfo += '<subtitle>'
-        fileinfo += '<language>ger</language>'
-        fileinfo += '</subtitle>'
-    fileinfo += '</streamdetails>'
-    fileinfo += '</fileinfo>'
+        fileinfo += u'<subtitle>'
+        fileinfo += u'<language>ger</language>'
+        fileinfo += u'</subtitle>'
+    fileinfo += u'</streamdetails>'
+    fileinfo += u'</fileinfo>'
     return fileinfo
 
 
@@ -144,7 +146,7 @@ def EXPORT_EPISODE(asin=None, makeNFO=cr_nfo, dispnotif=True):
         asin = args.get('asin')
     for data in tvDB.lookupTVdb(asin, single=False):
         Info = listtv.ADD_EPISODE_ITEM(data, onlyinfo=True)
-        Info['Title'] = Info['EpisodeName']
+        Info['Title'] = cleanName(Info['EpisodeName'])
         showname = cleanName(Info['TVShowTitle'])
         directorname = os.path.join(TV_SHOWS_PATH, showname)
         name = 'Season ' + str(Info['Season'])
@@ -156,7 +158,7 @@ def EXPORT_EPISODE(asin=None, makeNFO=cr_nfo, dispnotif=True):
         strm_file = filename + ".strm"
         u = '%s?%s' % (sys.argv[0], urllib.urlencode({'asin': asin,
                                                       'mode': 'play',
-                                                      'name': Info['Title'],
+                                                      'name': '',
                                                       'sitemode': 'PLAYVIDEO',
                                                       'adult': Info['isAdult'],
                                                       'trailer': 0,
@@ -164,10 +166,10 @@ def EXPORT_EPISODE(asin=None, makeNFO=cr_nfo, dispnotif=True):
         SaveFile(strm_file, u, seasonpath)
 
         if makeNFO:
-            nfo_file = filename + ".nfo"
-            nfo = '<episodedetails>'
+            nfo_file = filename + u".nfo"
+            nfo = u'<episodedetails>'
             nfo += streamDetails(Info)
-            nfo += '</episodedetails>'
+            nfo += u'</episodedetails>'
             SaveFile(nfo_file, nfo, seasonpath)
 
 

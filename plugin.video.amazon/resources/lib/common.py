@@ -174,6 +174,8 @@ def Log(msg, level=xbmc.LOGNOTICE):
 
 
 def SaveFile(filename, data, dirname=None):
+    if isinstance(data, unicode):
+        data = data.encode('utf-8')
     if dirname:
         filename = cleanName(filename)
         filename = os.path.join(dirname, filename)
@@ -486,10 +488,11 @@ def cleanData(data):
 def cleanName(name, isfile=True):
     if isfile:
         notallowed = ['<', '>', ':', '"', '\\', '/', '|', '*', '?']
-        name = name.decode('utf-8')
+        if isinstance(name, str):
+            name = name.decode('utf-8')
     else:
         notallowed = ['<', '>', '"', '|', '*', '?']
-        if not os.path.supports_unicode_filenames:
+        if not os.path.supports_unicode_filenames and isinstance(name, unicode):
             name = name.encode('utf-8')
     for c in notallowed:
         name = name.replace(c, '')

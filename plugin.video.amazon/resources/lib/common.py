@@ -356,6 +356,10 @@ def LogIn(ask=True, ue=None, up=None, attempt=1):
         soup = parseHTML(response)
         xbmc.executebuiltin('Dialog.Close(busydialog)')
 
+        if 'a-no-js' in response and attempt < 3:
+            getUA(True)
+            return LogIn(False, email, password, attempt + 1)
+
         while 'auth-mfa-form' in response or 'ap_dcq_form' in response:
             Log('MFA or DCQ form')
             if 'auth-mfa-form' in response:
@@ -407,6 +411,7 @@ def LogIn(ask=True, ue=None, up=None, attempt=1):
             wlc = msg[1].renderContents().strip()
             usr = wlc.split(',', 1)[1][:-1].strip()
             addon.setSetting('login_acc', usr)
+            addon.setSetting('use_mfa', str(useMFA).lower())
             if useMFA:
                 addon.setSetting('save_login', 'false')
                 savelogin = False
@@ -415,8 +420,7 @@ def LogIn(ask=True, ue=None, up=None, attempt=1):
                 writeConfig('login_pass', encode(password))
             else:
                 cj.save(COOKIEFILE, ignore_discard=True, ignore_expires=True)
-            if ask:
-                addon.setSetting('use_mfa', str(useMFA).lower())
+            if ask or (ue and up):
                 Dialog.ok(getString(30215), wlc)
             gen_id()
             writeConfig('login', 'false')
@@ -529,7 +533,9 @@ def SCRAP_ASINS(url, cj=True):
     url = BASE_URL + url + '?ie=UTF8&sort=' + wl_order
     content = getURL(url, useCookie=cj, retjson=False)
     if content:
-        asins += re.compile('data-asin="(.+?)"', re.DOTALL).findall(content)
+        asins += re.compile('data-asin[^=]*="(.+?)"', re.DOTALL).findall(content)
+        if 'data-asinlist=' in content:
+            getUA(True)
     return asins
 
 
@@ -805,9 +811,10 @@ def getUA(blacklist=False):
 
     if blacklist:
         UAcur = getConfig('UserAgent', UserAgent)
-        UAblist.append(UAcur)
-        writeConfig('UABlacklist', json.dumps(UAblist))
-        Log('UA: %s blacklisted' % UAcur)
+        if UAcur not in UAblist:
+            UAblist.append(UAcur)
+            writeConfig('UABlacklist', json.dumps(UAblist))
+            Log('UA: %s blacklisted' % UAcur)
 
     UAwlist = [i for i in UAlist if i not in UAblist]
     if not UAlist or len(UAwlist) < 5:

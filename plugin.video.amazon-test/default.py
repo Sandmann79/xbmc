@@ -152,7 +152,7 @@ def setView(content, view=False, updateListing=False):
     xbmcplugin.endOfDirectory(pluginhandle, updateListing=updateListing)
 
 
-def getURL(url, useCookie=False, silent=False, headers=[], rjson=True, attempt=1, check=False):
+def getURL(url, useCookie=False, silent=False, headers=None, rjson=True, attempt=1, check=False):
     cj = cookielib.LWPCookieJar()
     retval = [] if rjson else ''
     if useCookie:
@@ -163,6 +163,7 @@ def getURL(url, useCookie=False, silent=False, headers=[], rjson=True, attempt=1
         dispurl = url
         dispurl = re.sub('(?i)%s|%s|&token=\w+|&customerId=\w+' % (tvdb, tmdb), '', url).strip()
         Log('getURL: ' + dispurl)
+    headers = [] if not headers else headers
     headers.append(('User-Agent', getConfig('UserAgent', UserAgent)))
     headers.append(('Host', BaseUrl.split('//')[1]))
     try:
@@ -1566,7 +1567,7 @@ def LogIn(ask=True, ue=None, up=None, attempt=1):
         soup = parseHTML(response)
         xbmc.executebuiltin('Dialog.Close(busydialog)')
 
-        if 'a-no-js' in response and attempt < 3:
+        if mobileUA(response) and attempt < 4:
             getUA(True)
             return LogIn(False, email, password, attempt + 1)
 
@@ -1704,13 +1705,14 @@ def remLoginData(savelogin=False, info=True):
         Dialog.notification(__plugin__, getString(30211), xbmcgui.NOTIFICATION_INFO)
 
 
-def scrapAsins(url, cj):
+def scrapAsins(aurl, cj, attempt=1):
     asins = []
-    url = BaseUrl + url
+    url = BaseUrl + aurl
     content = getURL(url, useCookie=cj, rjson=False)
-    asins += re.compile('data-asin[^=]*="(.+?)"', re.DOTALL).findall(content)
-    if 'data-asinlist=' in content:
+    if mobileUA(content) and attempt < 4:
         getUA(True)
+        return scrapAsins(aurl, cj, attempt+1)
+    asins += re.compile('data-asin="(.+?)"', re.DOTALL).findall(content)
     return ','.join(asins)
 
 
@@ -1945,8 +1947,6 @@ def writeConfig(cfile, value):
             if time.time() - modified > 0.1:
                 xbmcvfs.delete(cfglockfile)
 
-    return False
-
 
 def insertLF(string, begin=70):
     spc = string.find(' ', begin)
@@ -1991,6 +1991,12 @@ def getUA(blacklist=False):
     writeConfig('UserAgent', UAnew)
     Log('Using UserAgent: ' + UAnew)
     return
+
+
+def mobileUA(content):
+    soup = BeautifulSoup(content, convertEntities=BeautifulSoup.HTML_ENTITIES)
+    res = soup.find('html')['class']
+    return True if 'a-mobile' in res or 'a-tablet' in res else False
 
 
 class window(xbmcgui.WindowDialog):

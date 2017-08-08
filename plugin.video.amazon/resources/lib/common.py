@@ -356,7 +356,7 @@ def LogIn(ask=True, ue=None, up=None, attempt=1):
         soup = parseHTML(response)
         xbmc.executebuiltin('Dialog.Close(busydialog)')
 
-        if 'a-no-js' in response and attempt < 3:
+        if mobileUA(response) and attempt < 4:
             getUA(True)
             return LogIn(False, email, password, attempt + 1)
 
@@ -527,15 +527,16 @@ def GET_ASINS(content):
     return asins, hd_key, prime_key, channels
 
 
-def SCRAP_ASINS(url, cj=True):
+def SCRAP_ASINS(aurl, cj=True, attempt = 1):
     wl_order = ['DATE_ADDED_DESC', 'TITLE_DESC', 'TITLE_ASC'][int('0'+addon.getSetting("wl_order"))]
     asins = []
-    url = BASE_URL + url + '?ie=UTF8&sort=' + wl_order
+    url = BASE_URL + aurl + '?ie=UTF8&sort=' + wl_order
     content = getURL(url, useCookie=cj, retjson=False)
     if content:
-        asins += re.compile('data-asin[^=]*="(.+?)"', re.DOTALL).findall(content)
-        if 'data-asinlist=' in content:
+        if mobileUA(content) and attempt < 4:
             getUA(True)
+            return SCRAP_ASINS(aurl, cj, attempt + 1)
+        asins += re.compile('data-asin="(.+?)"', re.DOTALL).findall(content)
     return asins
 
 
@@ -779,8 +780,6 @@ def writeConfig(cfile, value):
             if time.time() - modified > 0.1:
                 xbmcvfs.delete(cfglockfile)
 
-    return False
-
 
 def Notif(message):
     if not xbmc.Player().isPlaying():
@@ -810,7 +809,7 @@ def getUA(blacklist=False):
     UAblist = json.loads(getConfig('UABlacklist', json.dumps([])))
 
     if blacklist:
-        UAcur = getConfig('UserAgent', UserAgent)
+        UAcur = getConfig('UserAgent', def_UA)
         if UAcur not in UAblist:
             UAblist.append(UAcur)
             writeConfig('UABlacklist', json.dumps(UAblist))
@@ -830,6 +829,12 @@ def getUA(blacklist=False):
     writeConfig('UserAgent', UAnew)
     Log('Using UserAgent: ' + UAnew)
     return
+
+
+def mobileUA(content):
+    soup = BeautifulSoup(content, convertEntities=BeautifulSoup.HTML_ENTITIES)
+    res = soup.find('html')['class']
+    return True if 'a-mobile' in res or 'a-tablet' in res else False
 
 
 if AddonEnabled('inputstream.adaptive'):

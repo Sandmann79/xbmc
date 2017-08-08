@@ -115,18 +115,15 @@ langID = {'movie': 30165, 'series': 30166, 'season': 30167, 'episode': 30173}
 OfferGroup = '' if payCont else '&OfferGroups=B0043YVHMY'
 socket.setdefaulttimeout(30)
 
-if not BaseUrl:
-    BaseUrl = 'https://www.primevideo.com'
-
 if addon.getSetting('ssl_verif') == 'true' and hasattr(ssl, '_create_unverified_context'):
     ssl._create_default_https_context = ssl._create_unverified_context
 
+EXPORT_PATH = DataPath
 if addon.getSetting('enablelibraryfolder') == 'true':
-    MOVIE_PATH = os.path.join(xbmc.translatePath(addon.getSetting('customlibraryfolder')), 'Movies').decode('utf-8')
-    TV_SHOWS_PATH = os.path.join(xbmc.translatePath(addon.getSetting('customlibraryfolder')), 'TV').decode('utf-8')
-else:
-    MOVIE_PATH = os.path.join(DataPath, 'Movies')
-    TV_SHOWS_PATH = os.path.join(DataPath, 'TV')
+    EXPORT_PATH = xbmc.translatePath(addon.getSetting('customlibraryfolder')).decode('utf-8')
+
+MOVIE_PATH = os.path.join(EXPORT_PATH, 'Movies')
+TV_SHOWS_PATH = os.path.join(EXPORT_PATH, 'TV')
 
 
 def setView(content, view=False, updateListing=False):
@@ -316,9 +313,12 @@ def loadCategories(force=False):
     parseNodes(data)
     updateTime()
 
-    newcat = '&OrderBy=AvailabilityDate&MinAmazonRatingCount=80&HideNum=T&Preorder=F'  # &HideNum=T (w/o UHD)
+    newcat = '&OrderBy=AvailabilityDate&MinAmazonRating=4&MinAmazonRatingCount=20&HideNum=T&Preorder=F'  # &HideNum=T (w/o UHD)
+    #newcat = '&OrderBy=-ReleaseDate&ReleaseDateStart=28&HideNum=T&Detailed=T&AID=1&Preorder=F'
     replCat('ContentType=TVEpisode&RollupToSeason=T'+newcat, 'prime-tv-2', '&OfferGroups=B0043YVHMY')
     replCat('ContentType=TVEpisode&RollupToSeason=T'+newcat, 'all-tv-2')
+    replCat('ContentType=Movie'+newcat, 'prime-movie-2', '&OfferGroups=B0043YVHMY')
+    replCat('ContentType=Movie'+newcat, 'all-movie-2')
     replCat('ContentType=Movie&Preorder=F&OrderBy=SalesRank,Rating&Preorder=F&OfferGroups=B0043YVHMY', 'prime-movie-1')
 
     menuDb.commit()
@@ -1566,6 +1566,10 @@ def LogIn(ask=True, ue=None, up=None, attempt=1):
         soup = parseHTML(response)
         xbmc.executebuiltin('Dialog.Close(busydialog)')
 
+        if 'a-no-js' in response and attempt < 3:
+            getUA(True)
+            return LogIn(False, email, password, attempt + 1)
+
         while 'auth-mfa-form' in response or 'ap_dcq_form' in response:
             Log('MFA or DCQ form')
             if 'auth-mfa-form' in response:
@@ -1626,7 +1630,7 @@ def LogIn(ask=True, ue=None, up=None, attempt=1):
                 writeConfig('login_pass', encode(password))
             else:
                 cj.save(CookieFile, ignore_discard=True, ignore_expires=True)
-            if ask:
+            if ask or (ue and up):
                 Dialog.ok(getString(30215), wlc)
             genID()
             return cj
@@ -1704,7 +1708,9 @@ def scrapAsins(url, cj):
     asins = []
     url = BaseUrl + url
     content = getURL(url, useCookie=cj, rjson=False)
-    asins += re.compile('data-asin="(.+?)"', re.DOTALL).findall(content)
+    asins += re.compile('data-asin[^=]*="(.+?)"', re.DOTALL).findall(content)
+    if 'data-asinlist=' in content:
+        getUA(True)
     return ','.join(asins)
 
 
@@ -1966,9 +1972,10 @@ def getUA(blacklist=False):
 
     if blacklist:
         UAcur = getConfig('UserAgent', UserAgent)
-        UAblist.append(UAcur)
-        writeConfig('UABlacklist', json.dumps(UAblist))
-        Log('UA: %s blacklisted' % UAcur)
+        if UAcur not in UAblist:
+            UAblist.append(UAcur)
+            writeConfig('UABlacklist', json.dumps(UAblist))
+            Log('UA: %s blacklisted' % UAcur)
 
     UAwlist = [i for i in UAlist if i not in UAblist]
     if not UAlist or len(UAwlist) < 5:

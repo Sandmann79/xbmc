@@ -546,8 +546,7 @@ def WatchList(asin, remove):
         return
 
     token = getToken(asin, cookie)
-    url = BaseUrl + '/gp/video/watchlist/ajax/addRemove.html?&ASIN=%s&dataType=json&token=%s&action=%s' % (
-        asin, token, action)
+    url = BaseUrl + '/gp/video/watchlist/ajax/addRemove.html?&ASIN=%s&dataType=json&csrfToken=%s&action=%s' % (asin, token, action)
     data = getURL(url, useCookie=cookie)
 
     if data['success'] == 1:
@@ -561,12 +560,12 @@ def WatchList(asin, remove):
 
 
 def getToken(asin, cookie):
-    url = BaseUrl + '/gp/video/watchlist/ajax/hoverbubble.html?ASIN=' + asin
+    url = BaseUrl + '/dp/video/' + asin
     data = getURL(url, useCookie=cookie, rjson=False)
     if data:
         tree = BeautifulSoup(data, convertEntities=BeautifulSoup.HTML_ENTITIES)
-        form = tree.find('form', attrs={'id': 'watchlistForm'})
-        token = form.find('input', attrs={'id': 'token'})['value']
+        form = tree.find('form', attrs={'class': 'dv-watchlist-toggle'})
+        token = form.find('input', attrs={'name': 'csrfToken'})['value']
         return urllib.quote_plus(token)
     return ''
 

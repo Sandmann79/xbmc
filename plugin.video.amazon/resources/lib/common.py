@@ -262,7 +262,7 @@ def toogleWatchlist(asin=None, action='add'):
         return
 
     token = getToken(asin, cookie)
-    url = BASE_URL + '/gp/video/watchlist/ajax/addRemove.html?ASIN=%s&dataType=json&token=%s&action=%s' % (
+    url = BASE_URL + '/gp/video/watchlist/ajax/addRemove.html?ASIN=%s&dataType=json&csrfToken=%s&action=%s' % (
         asin, token, action)
     data = getURL(url, useCookie=cookie)
 
@@ -275,12 +275,12 @@ def toogleWatchlist(asin=None, action='add'):
 
 
 def getToken(asin, cookie):
-    url = BASE_URL + '/gp/video/watchlist/ajax/hoverbubble.html?ASIN=' + asin
+    url = BASE_URL + '/dp/video/' + asin
     data = getURL(url, useCookie=cookie, retjson=False)
     if data:
         tree = BeautifulSoup(data, convertEntities=BeautifulSoup.HTML_ENTITIES)
-        form = tree.find('form', attrs={'id': 'watchlistForm'})
-        token = form.find('input', attrs={'id': 'token'})['value']
+        form = tree.find('form', attrs={'class': 'dv-watchlist-toggle'})
+        token = form.find('input', attrs={'name': 'csrfToken'})['value']
         return urllib.quote_plus(token)
     return ''
 

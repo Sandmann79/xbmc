@@ -1983,6 +1983,8 @@ def getUA(blacklist=False):
         soup = BeautifulSoup(html, convertEntities=BeautifulSoup.HTML_ENTITIES)
         text = soup.find('textarea')
         UAlist = text.string.split('\n')
+        UAblist = []
+        writeConfig('UABlacklist', json.dumps(UAblist))
         writeConfig('UAlist', json.dumps(UAlist[0:len(UAlist)-1]))
         UAwlist = [i for i in UAlist if i not in UAblist]
 

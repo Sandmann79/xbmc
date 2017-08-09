@@ -835,7 +835,7 @@ def getUA(blacklist=False):
 
 def mobileUA(content):
     soup = BeautifulSoup(content, convertEntities=BeautifulSoup.HTML_ENTITIES)
-    res = soup.find('html')['class']
+    res = soup.find('html').get('class', '')
     return True if 'a-mobile' in res or 'a-tablet' in res else False
 
 

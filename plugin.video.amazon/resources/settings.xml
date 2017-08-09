@@ -28,8 +28,8 @@
         <setting id="ssl_verif" type="bool" label="30037" default="false"/>
         <setting label="30001" type="lsep"/>
         <setting id="set_login" type="action" label="30004" action="RunPlugin(plugin://plugin.video.amazon/?mode=common&sitemode=LogIn)" option="close"/>
-        <setting id="login_acc" type="text" label="30014" enable="eq(-100,true)" default="" subsetting="true"/>
-        <setting id="use_mfa" type="bool" label="MFA" visible="eq(-100,true)" default="false"/>
+        <setting id="login_acc" type="text" label="30014" enable="false" default="" subsetting="true"/>
+        <setting id="use_mfa" type="bool" label="MFA" visible="false" default="false"/>
         <setting id="save_login" type="bool" label="30006" enable="eq(-1,false)" default="false"/>
         <setting label="30007" type="action" action="RunPlugin(plugin://plugin.video.amazon/?mode=common&sitemode=remLoginData)" option="close"/>
         <setting label="30008" type="lsep"/>

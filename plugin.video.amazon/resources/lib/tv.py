@@ -6,7 +6,7 @@ from service import updateRunning
 from sqlite3 import dbapi2 as sqlite
 import appfeed
 
-MAX = int(addon.getSetting('mov_perpage'))
+MAX = 140  # int(addon.getSetting('mov_perpage'))
 EPI_TOTAL = int(getConfig('EpisodesTotal', '17000'))
 
 tvdb_art = addon.getSetting("tvdb_art")
@@ -375,6 +375,7 @@ def addTVdb(full_update=True, libasins=None, cj=True):
     SEASON_COUNT = 0
     EPISODE_COUNT = 0
     approx = 0
+    retrycount = 0
 
     if full_update and not libasins:
         if updateRunning():
@@ -453,6 +454,7 @@ def addTVdb(full_update=True, libasins=None, cj=True):
                 goAhead = 0
 
             del titles
+
             if SERIES_ASINS:
                 ASIN_ADD(0, asins=SERIES_ASINS)
             if full_update:
@@ -479,7 +481,17 @@ def addTVdb(full_update=True, libasins=None, cj=True):
                                         getString(30133) % SEASON_COUNT, getString(30134) % EPISODE_COUNT)
                     del titles
         else:
+            retrycount += 1
+
+        if (approx and endIndex + 1 >= approx) or (not approx):
             goAhead = 0
+
+        if retrycount > 3:
+            Log('Waiting 5min')
+            sleep(300)
+            appfeed.getList('TVEpisode&RollUpToSeason=T', endIndex-randint(1, MAX-1), isPrime=prime,
+                            NumberOfResults=randint(1, 10), AsinList=new_libasins)
+            retrycount = 0
 
     if goAhead == 0:
         if not libasins:
@@ -535,8 +547,9 @@ def updatePop():
     c = tvDB.cursor()
     c.execute("update shows set popularity=null")
     Index = 0
+    maxIndex = MAX * 3
 
-    while Index != -1:
+    while -1 < Index < maxIndex:
         jsondata = appfeed.getList('tvepisode,tvseason,tvseries&RollupToSeries=T', Index, NumberOfResults=MAX)
         titles = jsondata['message']['body']['titles']
         for title in titles:

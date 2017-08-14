@@ -158,6 +158,7 @@ def addMoviesdb(full_update=True, cj=True):
     goAhead = 1
     endIndex = 0
     new_mov = 0
+    retrycount = 0
     approx = appfeed.getList('Movie', 0, NumberOfResults=1)['message']['body'].get('approximateSize', 0)
     filter_mov = approx > 8000
 
@@ -186,6 +187,14 @@ def addMoviesdb(full_update=True, cj=True):
 
                         if not found:
                             new_mov += ASIN_ADD(title)
+        else:
+            retrycount += 1
+
+        if retrycount > 3:
+            Log('Waiting 5min')
+            sleep(300)
+            appfeed.getList('Movie', endIndex-randint(1, MAX-1), NumberOfResults=randint(1, 10), enablefilter=filter_mov)
+            retrycount = 0
 
         endIndex += len(titles)
         if (approx and endIndex + 1 >= approx) or (not approx and len(titles) == 10):
@@ -224,8 +233,9 @@ def updatePop():
     c = MovieDB.cursor()
     c.execute("update movies set popularity=null")
     Index = 0
+    maxIndex = MAX * 3
 
-    while -1 < Index < 240:
+    while -1 < Index < maxIndex:
         jsondata = appfeed.getList('Movie', Index, NumberOfResults=MAX)
         titles = jsondata['message']['body']['titles']
         for title in titles:

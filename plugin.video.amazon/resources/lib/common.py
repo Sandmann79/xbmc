@@ -3,6 +3,7 @@
 from BeautifulSoup import BeautifulSoup
 from pyDes import *
 from platform import node
+from random import randint
 import uuid
 import cookielib
 import mechanize
@@ -25,7 +26,7 @@ import pyxbmct
 import socket
 import ssl
 import time
-import random
+
 
 addon = xbmcaddon.Addon()
 pluginname = addon.getAddonInfo('name')
@@ -337,7 +338,17 @@ def LogIn(ask=True, ue=None, up=None, attempt=1):
         br.set_cookiejar(cj)
         br.set_handle_gzip(True)
         br.addheaders = [('User-Agent', getConfig('UserAgent', def_UA))]
-        br.open(BASE_URL + "/gp/aw/si.html")
+        caperr = -5
+        while caperr:
+            Log('Connect to SignIn Page %s attempts left' % -caperr)
+            br.open(BASE_URL + "/gp/aw/si.html")
+            if 'signIn' not in [i.name for i in br.forms()]:
+                caperr = caperr + 1
+                WriteLog(br.response().read(), 'si')
+                xbmc.sleep(randint(750, 1500))
+            else:
+                caperr = 0
+
         br.select_form(name="signIn")
         br["email"] = email
         br["password"] = password
@@ -355,6 +366,7 @@ def LogIn(ask=True, ue=None, up=None, attempt=1):
         response = br.response().read()
         soup = parseHTML(response)
         xbmc.executebuiltin('Dialog.Close(busydialog)')
+        WriteLog(response, 'login')
 
         if mobileUA(response) and attempt < 4:
             getUA(True)
@@ -443,7 +455,6 @@ def LogIn(ask=True, ue=None, up=None, attempt=1):
             Log('Login MFA: %s' % msg.ul.li.span.renderContents().strip())
             Dialog.ok(getString(30200), getString(30214))
         else:
-            WriteLog(response, 'login')
             Dialog.ok(getString(30200), getString(30213))
         writeConfig('login', 'false')
     return False
@@ -527,16 +538,16 @@ def GET_ASINS(content):
     return asins, hd_key, prime_key, channels
 
 
-def SCRAP_ASINS(aurl, cj=True, attempt = 1):
+def SCRAP_ASINS(aurl, cj=True):
     wl_order = ['DATE_ADDED_DESC', 'TITLE_DESC', 'TITLE_ASC'][int('0'+addon.getSetting("wl_order"))]
     asins = []
     url = BASE_URL + aurl + '?ie=UTF8&sort=' + wl_order
     content = getURL(url, useCookie=cj, retjson=False)
+    WriteLog(content, 'watchlist')
     if content:
-        if mobileUA(content) and attempt < 4:
+        if mobileUA(content):
             getUA(True)
-            return SCRAP_ASINS(aurl, cj, attempt + 1)
-        asins += re.compile('data-asin="(.+?)"', re.DOTALL).findall(content)
+        asins += re.compile('data-asinlist="(.+?)"', re.DOTALL).findall(content)
     return asins
 
 
@@ -827,7 +838,7 @@ def getUA(blacklist=False):
         writeConfig('UAlist', json.dumps(UAlist[0:len(UAlist) - 1]))
         UAwlist = [i for i in UAlist if i not in UAblist]
 
-    UAnew = UAwlist[random.randint(0, len(UAwlist) - 1)]
+    UAnew = UAwlist[randint(0, len(UAwlist) - 1)]
     writeConfig('UserAgent', UAnew)
     Log('Using UserAgent: ' + UAnew)
     return
@@ -837,6 +848,11 @@ def mobileUA(content):
     soup = BeautifulSoup(content, convertEntities=BeautifulSoup.HTML_ENTITIES)
     res = soup.find('html').get('class', '')
     return True if 'a-mobile' in res or 'a-tablet' in res else False
+
+
+def sleep(sec):
+    if xbmc.Monitor().waitForAbort(sec):
+        return
 
 
 if AddonEnabled('inputstream.adaptive'):

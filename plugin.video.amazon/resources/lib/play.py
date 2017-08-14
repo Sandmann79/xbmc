@@ -415,7 +415,7 @@ def getFlashVars():
         return False
 
     values['deviceID'] = gen_id()
-    rand = 'onWebToken_' + str(random.randint(0, 484))
+    rand = 'onWebToken_' + str(randint(0, 484))
     pltoken = getURL(BASE_URL + "/gp/video/streaming/player-token.json?callback=" + rand,
                      useCookie=cookie, retjson=False)
     try:

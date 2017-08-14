@@ -5,6 +5,7 @@ from datetime import date
 from pyDes import *
 from platform import node
 from sqlite3 import dbapi2 as sqlite
+from random import randint
 import uuid
 import cookielib
 import mechanize
@@ -20,7 +21,6 @@ import xbmc
 import urlparse
 import base64
 import time
-import random
 import subprocess
 import hashlib
 import hmac
@@ -179,7 +179,7 @@ def getURL(url, useCookie=False, silent=False, headers=None, rjson=True, attempt
             logout = 'Attempt #%s' % attempt
             if '429' in e:
                 logout += '. Too many requests - Pause 10 sec'
-                xbmc.sleep(10000)
+                sleep(10)
             Log(logout)
             if attempt < 3:
                 return getURL(url, useCookie, silent, headers, rjson, attempt)
@@ -276,6 +276,8 @@ def addVideo(name, asin, infoLabels, cm=[], export=False):
 
 
 def MainMenu():
+    Log('Version: %s' % __version__)
+    Log('Unicode support: %s' % os.path.supports_unicode_filenames)
     loadCategories()
     cm_wl = [(getString(30185) % 'Watchlist', 'RunPlugin(%s?mode=getList&url=%s&export=1)' % (sys.argv[0], watchlist))]
     cm_lb = [(getString(30185) % getString(30100),
@@ -314,8 +316,7 @@ def loadCategories(force=False):
     parseNodes(data)
     updateTime()
 
-    newcat = '&OrderBy=AvailabilityDate&MinAmazonRating=4&MinAmazonRatingCount=20&HideNum=T&Preorder=F'  # &HideNum=T (w/o UHD)
-    #newcat = '&OrderBy=-ReleaseDate&ReleaseDateStart=28&HideNum=T&Detailed=T&AID=1&Preorder=F'
+    newcat = '&OrderBy=AvailabilityDate&MinAmazonRatingCount=40&HideNum=T&Preorder=F&Detailed=T&AID=1&ContractID=UX*'  # &HideNum=T (w/o UHD)
     replCat('ContentType=TVEpisode&RollupToSeason=T'+newcat, 'prime-tv-2', '&OfferGroups=B0043YVHMY')
     replCat('ContentType=TVEpisode&RollupToSeason=T'+newcat, 'all-tv-2')
     replCat('ContentType=Movie'+newcat, 'prime-movie-2', '&OfferGroups=B0043YVHMY')
@@ -659,17 +660,17 @@ def loadArtWork(asins, title, year, contentType):
         if not fanart:
             fanart = getTMDBImages(title, content='tv')
         season_number = -1
-        content = getATVData('GetASINDetails', 'ASINList=' + asins)['titles'][0]
-        asins = getAsins(content, False)
-        del content
+        content = getATVData('GetASINDetails', 'ASINList=' + asins)['titles']
+        if content:
+            asins = getAsins(content[0], False)
+            del content
 
     cur = db.cursor()
     if fanart:
         cur.execute('insert or ignore into art values (?,?,?,?,?,?)', (asins, season_number, poster, None, fanart, date.today()))
     if seasons:
         for season, url in seasons.items():
-            cur.execute('insert or ignore into art values (?,?,?,?,?,?)',
-                        (asins, season, url, None, None, date.today()))
+            cur.execute('insert or ignore into art values (?,?,?,?,?,?)', (asins, season, url, None, None, date.today()))
     db.commit()
     cur.close()
 
@@ -818,7 +819,7 @@ def WriteLog(data, fn=''):
         return
 
     fn = '-' + fn if fn else ''
-    fn = 'amazon%s.log' % fn
+    fn = 'avod%s.log' % fn
     path = os.path.join(HomePath, fn)
     if isinstance(data, unicode):
         data = data.encode('utf-8')
@@ -1173,7 +1174,7 @@ def IStreamPlayback(asin, name, trailer, isAdult, extern):
     xbmcplugin.setResolvedUrl(pluginhandle, True, listitem=listitem)
 
     while not xbmc.Player().isPlayingVideo():
-        xbmc.sleep(2000)
+        sleep(2)
 
     Log('Playback started...', 0)
     Log('Video ContentType Movie? %s' % xbmc.getCondVisibility('VideoPlayer.Content(movies)'), 0)
@@ -1369,7 +1370,7 @@ def getFlashVars(asin):
         Dialog.notification(getString(30200), getString(30210), xbmcgui.NOTIFICATION_ERROR)
         return False
 
-    rand = 'onWebToken_' + str(random.randint(0, 484))
+    rand = 'onWebToken_' + str(randint(0, 484))
     pltoken = getURL(BaseUrl + "/gp/video/streaming/player-token.json?callback=" + rand, useCookie=cookie, rjson=False)
     try:
         values['token'] = re.compile('"([^"]*).*"([^"]*)"').findall(pltoken)[0][1]
@@ -1547,7 +1548,17 @@ def LogIn(ask=True, ue=None, up=None, attempt=1):
         br.set_cookiejar(cj)
         br.set_handle_gzip(True)
         br.addheaders = [('User-Agent', getConfig('UserAgent', UserAgent))]
-        br.open(BaseUrl + '/gp/aw/si.html')
+        caperr = -5
+        while caperr:
+            Log('Connect to SignIn Page %s attempts left' % -caperr)
+            br.open(BaseUrl + '/gp/aw/si.html')
+            if 'signIn' not in [i.name for i in br.forms()]:
+                caperr = caperr + 1
+                WriteLog(br.response().read(), 'si')
+                xbmc.sleep(randint(750, 1500))
+            else:
+                caperr = 0
+
         br.select_form(name='signIn')
         br['email'] = email
         br['password'] = password
@@ -1565,6 +1576,7 @@ def LogIn(ask=True, ue=None, up=None, attempt=1):
         response = br.response().read()
         soup = parseHTML(response)
         xbmc.executebuiltin('Dialog.Close(busydialog)')
+        WriteLog(response, 'login')
 
         if mobileUA(response) and attempt < 4:
             getUA(True)
@@ -1652,7 +1664,6 @@ def LogIn(ask=True, ue=None, up=None, attempt=1):
             Log('Login MFA: %s' % msg.ul.li.span.renderContents().strip())
             Dialog.ok(getString(30200), getString(30214))
         else:
-            WriteLog(response, 'login')
             Dialog.ok(getString(30200), getString(30213))
 
     return False
@@ -1704,14 +1715,14 @@ def remLoginData(savelogin=False, info=True):
         Dialog.notification(__plugin__, getString(30211), xbmcgui.NOTIFICATION_INFO)
 
 
-def scrapAsins(aurl, cj, attempt=1):
+def scrapAsins(aurl, cj):
     asins = []
     url = BaseUrl + aurl
     content = getURL(url, useCookie=cj, rjson=False)
-    if mobileUA(content) and attempt < 4:
+    WriteLog(content, 'watchlist')
+    if mobileUA(content):
         getUA(True)
-        return scrapAsins(aurl, cj, attempt+1)
-    asins += re.compile('data-asin="(.+?)"', re.DOTALL).findall(content)
+    asins += re.compile('data-asinlist="(.+?)"', re.DOTALL).findall(content)
     return ','.join(asins)
 
 
@@ -1986,9 +1997,9 @@ def getUA(blacklist=False):
         UAblist = []
         writeConfig('UABlacklist', json.dumps(UAblist))
         writeConfig('UAlist', json.dumps(UAlist[0:len(UAlist)-1]))
-        UAwlist = [i for i in UAlist if i not in UAblist]
+        UAwlist = UAlist
 
-    UAnew = UAwlist[random.randint(0, len(UAwlist)-1)]
+    UAnew = UAwlist[randint(0, len(UAwlist)-1)]
     writeConfig('UserAgent', UAnew)
     Log('Using UserAgent: ' + UAnew)
     return
@@ -1998,6 +2009,11 @@ def mobileUA(content):
     soup = BeautifulSoup(content, convertEntities=BeautifulSoup.HTML_ENTITIES)
     res = soup.find('html').get('class', '')
     return True if 'a-mobile' in res or 'a-tablet' in res else False
+
+
+def sleep(sec):
+    if xbmc.Monitor().waitForAbort(sec):
+        return
 
 
 class window(xbmcgui.WindowDialog):
@@ -2188,9 +2204,7 @@ elif mode == 'openSettings':
     xbmcaddon.Addon(aid).openSettings()
 elif mode == 'ageSettings':
     if RequestPin():
-        wnd = AgeSettings(getString(30018).split('.')[0])
-        wnd.doModal()
-        del wnd
+        AgeSettings(getString(30018).split('.')[0]).doModal()
 elif mode == '':
     MainMenu()
 else:

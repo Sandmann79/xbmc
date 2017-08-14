@@ -115,6 +115,78 @@ class AgeSettings(pyxbmct.AddonDialogWindow):
             self.btn_ages.setLabel(self.age_list[self.pin_req])
 
 
+class Captcha(pyxbmct.AddonDialogWindow):
+
+    def __init__(self, title='', soup=None, email=None):
+        super(Captcha, self).__init__(title)
+        head = soup.find('div', attrs={'id': 'message_warning'})
+        if not head:
+            head = soup.find('div', attrs={'id': 'message_error'})
+        title = soup.find('div', attrs={'id': 'ap_captcha_guess_alert'})
+        url = soup.find('div', attrs={'id': 'ap_captcha_img'}).img.get('src')
+        pic = xbmc.translatePath('special://temp/captcha%s.jpg' % randint(0, 99999999999999)).decode('utf-8')
+        SaveFile(pic, getURL(url, retjson=False))
+        self.setGeometry(500, 550, 9, 2)
+        self.email = email
+        self.pwd = ''
+        self.cap = ''
+        self.head = head.p.renderContents().strip()
+        self.head = re.sub('(?i)<[^>]*>', '', self.head)
+        self.title = title.renderContents().strip()
+        self.image = pyxbmct.Image(pic, aspectRatio=2)
+        self.tb_head = pyxbmct.TextBox()
+        self.fl_title = pyxbmct.FadeLabel(_alignment=pyxbmct.ALIGN_CENTER)
+        self.username = pyxbmct.Edit('', _alignment=pyxbmct.ALIGN_LEFT | pyxbmct.ALIGN_CENTER_Y)
+        self.password = pyxbmct.Edit('', _alignment=pyxbmct.ALIGN_LEFT | pyxbmct.ALIGN_CENTER_Y)
+        self.captcha = pyxbmct.Edit('', _alignment=pyxbmct.ALIGN_LEFT | pyxbmct.ALIGN_CENTER_Y)
+        self.btn_submit = pyxbmct.Button(getString(30008).split('.')[0])
+        self.btn_cancel = pyxbmct.Button(getString(30123))
+        self.set_controls()
+        self.set_navigation()
+        xbmcvfs.delete(pic)
+
+    def set_controls(self):
+        self.placeControl(self.tb_head, 0, 0, columnspan=2, rowspan=3)
+        self.placeControl(pyxbmct.Label(getString(30002), alignment=pyxbmct.ALIGN_CENTER_Y | pyxbmct.ALIGN_CENTER), 2, 0)
+        self.placeControl(pyxbmct.Label(getString(30003), alignment=pyxbmct.ALIGN_CENTER_Y | pyxbmct.ALIGN_CENTER), 3, 0)
+        self.placeControl(self.username, 2, 1, pad_y=8)
+        self.placeControl(self.password, 3, 1, pad_y=8)
+        self.placeControl(self.image, 4, 0, rowspan=2, columnspan=2)
+        self.placeControl(self.fl_title, 6, 0, columnspan=2)
+        self.placeControl(self.captcha, 7, 0, columnspan=2, pad_y=8)
+        self.placeControl(self.btn_submit, 8, 0)
+        self.placeControl(self.btn_cancel, 8, 1)
+        self.connect(self.btn_cancel, self.close)
+        self.connect(self.btn_submit, self.submit)
+        self.connect(pyxbmct.ACTION_NAV_BACK, self.close)
+        self.username.setText(self.email)
+        self.tb_head.setText(self.head)
+        self.fl_title.addLabel(self.title)
+
+    def set_navigation(self):
+        self.username.controlUp(self.btn_submit)
+        self.username.controlDown(self.password)
+        self.password.controlUp(self.username)
+        self.password.controlDown(self.captcha)
+        self.captcha.controlUp(self.password)
+        self.captcha.controlDown(self.btn_submit)
+        self.btn_submit.controlUp(self.captcha)
+        self.btn_submit.controlDown(self.username)
+        self.btn_cancel.controlUp(self.captcha)
+        self.btn_cancel.controlDown(self.username)
+        self.btn_submit.controlRight(self.btn_cancel)
+        self.btn_submit.controlLeft(self.btn_cancel)
+        self.btn_cancel.controlRight(self.btn_submit)
+        self.btn_cancel.controlLeft(self.btn_submit)
+        self.setFocus(self.password)
+
+    def submit(self):
+        self.pwd = self.password.getText()
+        self.cap = self.captcha.getText()
+        self.email = self.username.getText()
+        self.close()
+
+
 def getURL(url, useCookie=False, silent=False, headers=None, attempt=0, retjson=True, check=False):
     cj = cookielib.LWPCookieJar()
     falseval = [] if retjson else ''
@@ -372,7 +444,7 @@ def LogIn(ask=True, ue=None, up=None, attempt=1):
             getUA(True)
             return LogIn(False, email, password, attempt + 1)
 
-        while 'auth-mfa-form' in response or 'ap_dcq_form' in response:
+        while 'auth-mfa-form' in response or 'ap_dcq_form' in response or 'ap_captcha_img_label' in response:
             Log('MFA or DCQ form')
             if 'auth-mfa-form' in response:
                 msg = soup.find('form', attrs={'id': 'auth-mfa-form'})
@@ -411,6 +483,18 @@ def LogIn(ask=True, ue=None, up=None, attempt=1):
                     br[q_id[sel]] = ret
                 else:
                     return False
+            elif 'ap_captcha_img_label' in response:
+                wnd = Captcha((getString(30008).split('.')[0]), soup, email)
+                wnd.doModal()
+                if wnd.email and wnd.cap and wnd.pwd:
+                    xbmc.executebuiltin('ActivateWindow(busydialog)')
+                    br.select_form(nr=0)
+                    br['email'] = wnd.email
+                    br['password'] = wnd.pwd
+                    br['guess'] = wnd.cap
+                else:
+                    return False
+                del wnd
 
             br.submit()
             response = br.response().read()
@@ -445,11 +529,6 @@ def LogIn(ask=True, ue=None, up=None, attempt=1):
         elif 'message_warning' in response:
             msg = soup.find('div', attrs={'id': 'message_warning'})
             Log('Login Warning: %s' % msg.p.renderContents().strip())
-            if attempt > 3:
-                Dialog.ok(getString(30200), getString(30212))
-            else:
-                getUA(True)
-                return LogIn(False, email, password, attempt + 1)
         elif 'auth-error-message-box' in response:
             msg = soup.find('div', attrs={'class': 'a-alert-content'})
             Log('Login MFA: %s' % msg.ul.li.span.renderContents().strip())
@@ -836,7 +915,7 @@ def getUA(blacklist=False):
         UAblist = []
         writeConfig('UABlacklist', json.dumps(UAblist))
         writeConfig('UAlist', json.dumps(UAlist[0:len(UAlist) - 1]))
-        UAwlist = [i for i in UAlist if i not in UAblist]
+        UAwlist = UAlist
 
     UAnew = UAwlist[randint(0, len(UAwlist) - 1)]
     writeConfig('UserAgent', UAnew)

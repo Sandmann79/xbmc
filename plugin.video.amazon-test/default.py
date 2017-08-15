@@ -270,7 +270,7 @@ def addVideo(name, asin, infoLabels, cm=[], export=False):
         cm.insert(0, (getString(30101), 'Action(ToggleWatched)'))
         cm.insert(1, (getString(30102), 'RunPlugin(%s)' % (url+'&selbitrate=1')))
         url += '&selbitrate=0'
-        item.setInfo(type='Video', infoLabels=infoLabels)
+        item.setInfo(type='Video', infoLabels=getInfolabels(infoLabels))
         item.addContextMenuItems(cm)
         xbmcplugin.addDirectoryItem(pluginhandle, url, item, isFolder=False)
 
@@ -2021,6 +2021,14 @@ def mobileUA(content):
 def sleep(sec):
     if xbmc.Monitor().waitForAbort(sec):
         return
+
+
+def getInfolabels(Infos):
+    rem_keys = ['ishd', 'isprime', 'asins', 'audiochannels', 'banner', 'displaytitle', 'fanart',
+                'thumb', 'traileravailable', 'contenttype', 'isadult']
+    if not Infos:
+        return
+    return {k: v for k, v in Infos.items() if k.lower() not in rem_keys}
 
 
 class window(xbmcgui.WindowDialog):

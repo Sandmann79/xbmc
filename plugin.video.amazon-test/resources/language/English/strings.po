@@ -566,7 +566,7 @@ msgid "Captcha Request, please change IP or try again later"
 msgstr ""
 
 msgctxt "#30213"
-msgid "Unknown Error, please check amazon-vod-login.log"
+msgid "Unknown Error, please check avod-login.log"
 msgstr ""
 
 msgctxt "#30214"

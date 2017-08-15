@@ -64,7 +64,7 @@ if __name__ == '__main__':
 
             if freq == '0':
                 break
-            dt = last + ' ' + time
+            dt = last + ' ' + time[0:5]
             dtlast = strp(dt, '%Y-%m-%d %H:%M')
             freqdays = [0, 1, 2, 5, 7][int(freq)]
             lastidle = xbmc.getGlobalIdleTime()

@@ -518,8 +518,8 @@ msgid "Captcha Request, please change IP or try again later"
 msgstr "Captcha Abfrage, bitte IP ändern oder später erneut versuchen"
 
 msgctxt "#30213"
-msgid "Unknown Error, please check amazon-vod-login.log"
-msgstr "Unbekannter Fehler, bitte amazon-vod-login.log prüfen"
+msgid "Unknown Error, please check avod-login.log"
+msgstr "Unbekannter Fehler, bitte avod-login.log prüfen"
 
 msgctxt "#30214"
 msgid "Wrong Code"

@@ -315,7 +315,7 @@ def addVideo(name, asin, poster=None, fanart=None, infoLabels=None, totalItems=0
 
     cm.insert(1, (getString(30118), 'RunPlugin(%s)' % (url + '&forcefb=1')))
     item.addContextMenuItems(cm)
-    item.setInfo(type='Video', infoLabels=infoLabels)
+    item.setInfo(type='Video', infoLabels=getInfolabels(infoLabels))
     xbmcplugin.addDirectoryItem(handle=pluginhandle, url=url, listitem=item, isFolder=False, totalItems=totalItems)
 
 
@@ -932,6 +932,14 @@ def mobileUA(content):
 def sleep(sec):
     if xbmc.Monitor().waitForAbort(sec):
         return
+
+
+def getInfolabels(Infos):
+    rem_keys = ['ishd', 'isprime', 'asins', 'audiochannels', 'banner', 'displaytitle', 'fanart',
+                'thumb', 'traileravailable', 'contenttype', 'isadult']
+    if not Infos:
+        return
+    return {k: v for k, v in Infos.items() if k.lower() not in rem_keys}
 
 
 if AddonEnabled('inputstream.adaptive'):

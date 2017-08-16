@@ -285,6 +285,10 @@ msgctxt "#30064"
 msgid "Prefered Host"
 msgstr "Bevorzugter Host"
 
+msgctxt "#30065"
+msgid "Enable DRM check"
+msgstr "DRM Check aktivieren"
+
 msgctxt "#30070"
 msgid "Miscellaneous"
 msgstr "Verschiedenes"

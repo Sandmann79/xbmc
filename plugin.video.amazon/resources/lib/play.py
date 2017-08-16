@@ -182,16 +182,17 @@ def IStreamPlayback(trailer, isAdult, extern):
         return True
 
     orgmpd = mpd
-    mpd = re.sub(r'~', '', mpd) if mpd != re.sub(r'~', '', mpd) else re.sub(r'/[1-9][$].*?/', '/', mpd)
-    mpdcontent = getURL(mpd, retjson=False)
     is_version = xbmcaddon.Addon(is_addon).getAddonInfo('version') if is_addon else '0'
+    mpd = re.sub(r'~', '', mpd) if mpd != re.sub(r'~', '', mpd) else re.sub(r'/[1-9][$].*?/', '/', mpd)
 
-    if len(re.compile(r'(?i)edef8ba9-79d6-4ace-a3c8-27dcd51d21ed').findall(mpdcontent)) < 2:
-        if platform != osAndroid and int(is_version[0:1]) < 2:
-            xbmc.executebuiltin('ActivateWindow(busydialog)')
-            return False
-    elif platform == osAndroid or int(is_version[0:1]) >= 2:
-        mpd = orgmpd
+    if addon.getSetting("drm_check") == 'true':
+        mpdcontent = getURL(mpd, retjson=False)
+        if len(re.compile(r'(?i)edef8ba9-79d6-4ace-a3c8-27dcd51d21ed').findall(mpdcontent)) < 2:
+            if platform != osAndroid and int(is_version[0:1]) < 2:
+                xbmc.executebuiltin('ActivateWindow(busydialog)')
+                return False
+        elif platform == osAndroid or int(is_version[0:1]) >= 2:
+            mpd = orgmpd
 
     Log(mpd)
 

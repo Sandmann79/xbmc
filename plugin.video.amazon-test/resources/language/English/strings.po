@@ -100,7 +100,11 @@ msgctxt "#30019"
 msgid "Prefered Host"
 msgstr ""
 
-#empty strings from id 30020 to 30022
+msgctxt "#30020"
+msgid "Enable DRM check"
+msgstr ""
+
+#empty strings from id 30021 to 30022
 
 msgctxt "#30023"
 msgid "Thumbnail"

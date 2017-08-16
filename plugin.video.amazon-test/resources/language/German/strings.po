@@ -97,6 +97,10 @@ msgctxt "#30019"
 msgid "Prefered Host"
 msgstr "Bevorzugter Host"
 
+msgctxt "#30020"
+msgid "Enable DRM check"
+msgstr "DRM Check aktivieren"
+
 msgctxt "#30023"
 msgid "Thumbnail"
 msgstr "Vorschau"

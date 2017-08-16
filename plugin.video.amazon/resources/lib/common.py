@@ -275,7 +275,7 @@ def addDir(name, mode, sitemode, url='', thumb='', fanart='', infoLabels=None, t
     item.setArt({'Poster': thumb})
 
     if infoLabels:
-        item.setInfo(type='Video', infoLabels=infoLabels)
+        item.setInfo(type='Video', infoLabels=getInfolabels(infoLabels))
         if 'TotalSeasons' in infoLabels.keys():
             item.setProperty('TotalSeasons', str(infoLabels['TotalSeasons']))
     if cm:
@@ -935,8 +935,8 @@ def sleep(sec):
 
 
 def getInfolabels(Infos):
-    rem_keys = ['ishd', 'isprime', 'asins', 'audiochannels', 'banner', 'displaytitle', 'fanart',
-                'thumb', 'traileravailable', 'contenttype', 'isadult']
+    rem_keys = 'ishd isprime asins audiochannels banner displaytitle fanart poster' \
+               'thumb traileravailable contenttype isadult totalseasons seriesasin'
     if not Infos:
         return
     return {k: v for k, v in Infos.items() if k.lower() not in rem_keys}

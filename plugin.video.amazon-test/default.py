@@ -90,7 +90,7 @@ CookieFile = os.path.join(DataPath, 'cookie-%s.lwp' % MarketID)
 na = 'not available'
 watchlist = 'watchlist'
 library = 'video-library'
-DBVersion = 1.1
+DBVersion = 1.2
 PayCol = 'FFE95E01'
 Ages = [[('FSK 0', 'FSK 0'), ('FSK 6', 'FSK 6'), ('FSK 12', 'FSK 12'), ('FSK 16', 'FSK 16'), ('FSK 18', 'FSK 18')],
         [('Universal', 'U'), ('Parental Guidance', 'PG'), ('12 and older', '12,12A'), ('15 and older', '15'),
@@ -231,7 +231,7 @@ def addDir(name, mode='', url='', infoLabels=None, opt='', catalog='Browse', cm=
     item.setArt({'fanart': fanart, 'poster': thumb})
 
     if infoLabels:
-        item.setInfo(type='Video', infoLabels=infoLabels)
+        item.setInfo(type='Video', infoLabels=getInfolabels(infoLabels))
         if 'TotalSeasons' in infoLabels:
             item.setProperty('TotalSeasons', str(infoLabels['TotalSeasons']))
         if 'Poster' in infoLabels.keys():
@@ -297,60 +297,31 @@ def Search():
         listContent('Search', url, 1, 'search')
 
 
-def swapDB():
-    data = getATVData('GetCategoryList_ftv')
-    parseNodes(data, '99')
-
-
 def loadCategories(force=False):
     if xbmcvfs.exists(menuFile) and not force:
-        ftime = updateTime(False)
-        ctime = time.time()
-        if ctime - ftime < 8 * 3600:
+        if updateTime(False):
             return
 
-    parseStart = time.time()
+    Log('Parse Menufile', xbmc.LOGDEBUG)
     createDB(True)
-    data = getATVData('GetCategoryList')
-    Log('Download MenuTime: %s' % (time.time() - parseStart), 0)
+    data = json.load(open(os.path.join(PluginPath, 'resources', 'menu', MarketID + '.json')))
     parseNodes(data)
     updateTime()
-
-    newcat = '&OrderBy=AvailabilityDate&MinAmazonRatingCount=40&HideNum=T&Preorder=F&Detailed=T&AID=1&ContractID=UX*'  # &HideNum=T (w/o UHD)
-    replCat('ContentType=TVEpisode&RollupToSeason=T'+newcat, 'prime-tv-2', '&OfferGroups=B0043YVHMY')
-    replCat('ContentType=TVEpisode&RollupToSeason=T'+newcat, 'all-tv-2')
-    replCat('ContentType=Movie'+newcat, 'prime-movie-2', '&OfferGroups=B0043YVHMY')
-    replCat('ContentType=Movie'+newcat, 'all-movie-2')
-    replCat('ContentType=Movie&Preorder=F&OrderBy=SalesRank,Rating&Preorder=F&OfferGroups=B0043YVHMY', 'prime-movie-1')
-
     menuDb.commit()
-    Log('Parse MenuTime: %s' % (time.time() - parseStart), 0)
-
-
-def replCat(src, dest, extra='', strrepl=True):
-    c = menuDb.cursor()
-    result = [src] if strrepl else c.execute('select content from menu where id = (?)', (src,)).fetchone()
-
-    if result:
-        c.execute('update menu set content = (?) where id = (?)', (result[0]+extra, dest))
 
 
 def updateTime(savetime=True):
     c = menuDb.cursor()
+    result = False
     if savetime:
         wMenuDB(['last_update', '', '', str(time.time()), str(DBVersion), ''])
     else:
         try:
             result = c.execute('select content, id from menu where node = ("last_update")').fetchone()
-        except:
-            result = 0
-        c.close()
-        if result:
-            if DBVersion > float(result[1]):
-                return 0
-            return float(result[0])
-        return 0
+            result = True if DBVersion == float(result[1]) else False
+        except: pass
     c.close()
+    return result
 
 
 def getNodeId(mainid):
@@ -1626,7 +1597,7 @@ def LogIn(ask=True, ue=None, up=None, attempt=1):
                 wnd.doModal()
                 if wnd.email and wnd.cap and wnd.pwd:
                     xbmc.executebuiltin('ActivateWindow(busydialog)')
-                    br.select_form(nr=0)
+                    br.select_form('signIn')
                     br['email'] = wnd.email
                     br['password'] = wnd.pwd
                     br['guess'] = wnd.cap
@@ -2024,8 +1995,8 @@ def sleep(sec):
 
 
 def getInfolabels(Infos):
-    rem_keys = ['ishd', 'isprime', 'asins', 'audiochannels', 'banner', 'displaytitle', 'fanart',
-                'thumb', 'traileravailable', 'contenttype', 'isadult']
+    rem_keys = 'ishd isprime asins audiochannels banner displaytitle fanart poster' \
+               'thumb traileravailable contenttype isadult totalseasons seriesasin'
     if not Infos:
         return
     return {k: v for k, v in Infos.items() if k.lower() not in rem_keys}

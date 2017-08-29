@@ -55,12 +55,14 @@
         <setting id="episodeview" type="enum" lvalues="30023|30024|30025|30026|30027|30034|30033" label="30032" default="3" enable="eq(-7,true)"/>
         <setting id="episodeid" type="number" label="View ID" enable="eq(-1,6) + eq(-8,true)" subsetting="true" />
     </category>
-    <category label="30070">
-        <setting label="30060" type="lsep"/>
+    <category label="30060">
         <setting id="enablelibraryfolder" type="bool" label="30061" default="false" />
         <setting id="customlibraryfolder" type="folder" label="30062" enable="eq(-1,true)" default="special://profile/addon_data/plugin.video.amazon" source="auto" option="writeable" subsetting="true"/>
         <setting id="cr_nfo" type="bool" label="30074" default="true" />
-        <setting label="30070" type="lsep"/>
+        <setting id="mediasource_movie" type="text" label="30081" default="Amazon Movies" />
+        <setting id="mediasource_tv" type="text" label="30082" default="Amazon TV" />
+    </category>
+    <category label="30070">
         <setting id="useshowfanart" type="bool" label="30055" default="true"/>
         <setting id="disptvshow" type="bool" label="30071" default="false"/>
         <setting id="wl_order" type="enum" label="30076" lvalues="30077|30079|30078" default="0"/>

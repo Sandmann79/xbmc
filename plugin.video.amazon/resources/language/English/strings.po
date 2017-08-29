@@ -328,11 +328,19 @@ msgctxt "#30078"
 msgid "Title Ascending"
 msgstr ""
 
-msgctxt "#30079"
+msgctxt "#30080"
 msgid "Title Descending"
 msgstr ""
 
-#empty strings from id 30080 to 30099
+msgctxt "#30081"
+msgid "Mediasource Movie Title"
+msgstr ""
+
+msgctxt "#30082"
+msgid "Mediasource TV Title"
+msgstr ""
+
+#empty strings from id 30082 to 30099
 
 msgctxt "#30100"
 msgid "Popular"

@@ -72,6 +72,8 @@ payCont = addon.getSetting('paycont') == 'true'
 verbLog = addon.getSetting('logging') == 'true'
 useIntRC = addon.getSetting("remotectrl") == 'true'
 RMC_vol = addon.getSetting("remote_vol") == 'true'
+ms_mov = addon.getSetting('mediasource_movie')
+ms_tv = addon.getSetting('mediasource_tv')
 tmdb = base64.b64decode('YjM0NDkwYzA1NmYwZGQ5ZTNlYzlhZjIxNjdhNzMxZjQ=')
 tvdb = base64.b64decode('MUQ2MkYyRjkwMDMwQzQ0NA==')
 DefaultFanart = os.path.join(PluginPath, 'fanart.jpg')
@@ -1845,7 +1847,7 @@ def CreateInfoFile(nfofile, path, content, Infol, language, hasSubtitles=False):
 def SetupAmazonLibrary():
     source_path = xbmc.translatePath('special://profile/sources.xml').decode('utf-8')
     source_added = False
-    source = {'Amazon Movies': MOVIE_PATH, 'Amazon TV': TV_SHOWS_PATH}
+    source = {ms_mov: MOVIE_PATH, ms_tv: TV_SHOWS_PATH}
 
     if xbmcvfs.exists(source_path):
         srcfile = xbmcvfs.File(source_path)

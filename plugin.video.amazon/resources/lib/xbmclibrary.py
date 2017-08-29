@@ -9,6 +9,8 @@ import listmovie
 from BeautifulSoup import BeautifulSoup, Tag
 
 cr_nfo = addon.getSetting('cr_nfo') == 'true'
+ms_mov = addon.getSetting('mediasource_movie')
+ms_tv = addon.getSetting('mediasource_tv')
 
 if addon.getSetting('enablelibraryfolder') == 'true':
     MOVIE_PATH = os.path.join(xbmc.translatePath(addon.getSetting('customlibraryfolder')), 'Movies').decode('utf-8')
@@ -176,7 +178,7 @@ def EXPORT_EPISODE(asin=None, makeNFO=cr_nfo, dispnotif=True):
 def SetupAmazonLibrary():
     source_path = xbmc.translatePath('special://profile/sources.xml').decode('utf-8')
     source_added = False
-    source = {'Amazon Movies': MOVIE_PATH, 'Amazon TV': TV_SHOWS_PATH}
+    source = {ms_mov: MOVIE_PATH, ms_tv: TV_SHOWS_PATH}
 
     if xbmcvfs.exists(source_path):
         srcfile = xbmcvfs.File(source_path)

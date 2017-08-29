@@ -47,7 +47,6 @@ movielib = '/gp/video/%s/movie/'
 tvlib = '/gp/video/%s/tv/'
 lib = 'video-library'
 wl = 'watchlist'
-def_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/59.0.3071.115 Safari/537.36'
 Ages = [('FSK 0', 'FSK 0'), ('FSK 6', 'FSK 6'), ('FSK 12', 'FSK 12'), ('FSK 16', 'FSK 16'), ('FSK 18', 'FSK 18')]
 verbLog = addon.getSetting('logging') == 'true'
 playMethod = int(addon.getSetting("playmethod"))
@@ -198,8 +197,11 @@ def getURL(url, useCookie=False, silent=False, headers=None, attempt=0, retjson=
         dispurl = url
         dispurl = re.sub('(?i)%s|%s|&token=\w+|&customerId=\w+' % (tvdb, tmdb), '', url).strip()
         Log('getURL: ' + dispurl)
-    if not headers:
-        headers = [('User-Agent', getConfig('UserAgent', def_UA)), ('Host', BASE_URL.split('//')[1])]
+
+    headers = [] if not headers else headers
+    headers += [('User-Agent', getConfig('UserAgent'))] if 'User-Agent' not in headers.__str__() else []
+    headers += [('Host', BASE_URL.split('//')[1])] if 'Host' not in headers.__str__() else []
+
     try:
         opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cj), urllib2.HTTPRedirectHandler)
         opener.addheaders = headers
@@ -232,7 +234,6 @@ def WriteLog(data, fn=''):
     if isinstance(data, unicode):
         data = data.encode('utf-8')
     logfile = xbmcvfs.File(path, 'w')
-    # data = time.strftime('[%d.%m/%H:%M:%S] ', time.localtime()) + data.__str__()
     logfile.write(data.__str__())
     logfile.write('\n')
     logfile.close()
@@ -361,7 +362,7 @@ def getToken(asin, cookie):
 def gen_id(renew=False):
     guid = getConfig("GenDeviceID") if not renew else False
     if not guid or len(guid) != 56:
-        guid = hmac.new(getConfig('UserAgent', def_UA), uuid.uuid4().bytes, hashlib.sha224).hexdigest()
+        guid = hmac.new(getConfig('UserAgent'), uuid.uuid4().bytes, hashlib.sha224).hexdigest()
         writeConfig("GenDeviceID", guid)
     return guid
 
@@ -409,7 +410,7 @@ def LogIn(ask=True, ue=None, up=None, attempt=1):
         br.set_handle_robots(False)
         br.set_cookiejar(cj)
         br.set_handle_gzip(True)
-        br.addheaders = [('User-Agent', getConfig('UserAgent', def_UA))]
+        br.addheaders = [('User-Agent', getConfig('UserAgent'))]
         caperr = -5
         while caperr:
             Log('Connect to SignIn Page %s attempts left' % -caperr)
@@ -432,7 +433,7 @@ def LogIn(ask=True, ue=None, up=None, attempt=1):
                          ('Content-Type', 'application/x-www-form-urlencoded'),
                          ('Host', BASE_URL.split('//')[1]),
                          ('Origin', BASE_URL),
-                         ('User-Agent', getConfig('UserAgent', def_UA)),
+                         ('User-Agent', getConfig('UserAgent')),
                          ('Upgrade-Insecure-Requests', '1')]
         br.submit()
         response = br.response().read()
@@ -899,7 +900,7 @@ def getUA(blacklist=False):
     UAblist = json.loads(getConfig('UABlacklist', json.dumps([])))
 
     if blacklist:
-        UAcur = getConfig('UserAgent', def_UA)
+        UAcur = getConfig('UserAgent')
         if UAcur not in UAblist:
             UAblist.append(UAcur)
             writeConfig('UABlacklist', json.dumps(UAblist))
@@ -917,7 +918,8 @@ def getUA(blacklist=False):
         writeConfig('UAlist', json.dumps(UAlist[0:len(UAlist) - 1]))
         UAwlist = UAlist
 
-    UAnew = UAwlist[randint(0, len(UAwlist) - 1)]
+    UAnew = UAwlist[randint(0, len(UAwlist) - 1)] if len(UAwlist > 0) else \
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/59.0.3071.115 Safari/537.36'
     writeConfig('UserAgent', UAnew)
     Log('Using UserAgent: ' + UAnew)
     return
@@ -925,7 +927,8 @@ def getUA(blacklist=False):
 
 def mobileUA(content):
     soup = BeautifulSoup(content, convertEntities=BeautifulSoup.HTML_ENTITIES)
-    res = soup.find('html').get('class', '')
+    res = soup.find('html')
+    res = res.get('class', '') if res else ''
     return True if 'a-mobile' in res or 'a-tablet' in res else False
 
 
@@ -952,7 +955,7 @@ else:
 if not getConfig('UserAgent'):
     getUA()
 
-UserAgent = getConfig('UserAgent', def_UA)
+UserAgent = getConfig('UserAgent')
 AgePin = getConfig('age_pin')
 PinReq = int(getConfig('pin_req', '0'))
 RestrAges = ','.join(a[1] for a in Ages[PinReq:]) if AgePin else ''

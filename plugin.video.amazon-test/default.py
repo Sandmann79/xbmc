@@ -81,10 +81,9 @@ country = int(addon.getSetting('country'))
 BaseUrl = 'https://www.amazon.' + ['de', 'co.uk', 'com', 'co.jp', ''][country]
 ATVUrl = 'https://atv-%s.amazon.com' % ['eu', 'eu', 'ext', 'ext-fe', 'ext'][country]
 wl_order = ['DATE_ADDED_DESC', 'TITLE_DESC', 'TITLE_ASC'][int('0'+addon.getSetting("wl_order"))]
-MarketID = ['A1PA6795UKMFR9', 'A1F83G8C2ARO7P', 'ATVPDKIKX0DER', 'A1VC38T7YXB528', 'ART4WZ8MWBX2Y'][country]
+MarketID = ['A1PA6795UKMFR9', 'A1F83G8C2ARO7P', 'ATVPDKIKX0DER', 'A1VC38T7YXB528', ''][country]
 Language = ['de', 'en', 'en', 'jp', ''][country]
 AgeRating = ['FSK ', '', '', '', ''][country]
-UserAgent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/59.0.3071.115 Safari/537.36'
 menuFile = os.path.join(DataPath, 'menu-%s.db' % MarketID)
 CookieFile = os.path.join(DataPath, 'cookie-%s.lwp' % MarketID)
 na = 'not available'
@@ -163,9 +162,11 @@ def getURL(url, useCookie=False, silent=False, headers=None, rjson=True, attempt
         dispurl = url
         dispurl = re.sub('(?i)%s|%s|&token=\w+|&customerId=\w+' % (tvdb, tmdb), '', url).strip()
         Log('getURL: ' + dispurl)
+
     headers = [] if not headers else headers
-    headers.append(('User-Agent', getConfig('UserAgent', UserAgent)))
-    headers.append(('Host', BaseUrl.split('//')[1]))
+    headers += [('User-Agent', getConfig('UserAgent'))] if 'User-Agent' not in headers.__str__() else []
+    headers += [('Host', BaseUrl.split('//')[1])] if 'Host' not in headers.__str__() else []
+
     try:
         opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cj), urllib2.HTTPRedirectHandler)
         opener.addheaders = headers
@@ -303,8 +304,10 @@ def loadCategories(force=False):
             return
 
     Log('Parse Menufile', xbmc.LOGDEBUG)
+    jsonfile = os.path.join(PluginPath, 'resources', 'menu', MarketID + '.json')
+    jsonfile = jsonfile.replace(MarketID, 'ATVPDKIKX0DER') if not xbmcvfs.exists(jsonfile) else jsonfile
     createDB(True)
-    data = json.load(open(os.path.join(PluginPath, 'resources', 'menu', MarketID + '.json')))
+    data = json.load(open(jsonfile))
     parseNodes(data)
     updateTime()
     menuDb.commit()
@@ -1102,8 +1105,7 @@ def IStreamPlayback(asin, name, trailer, isAdult, extern):
 
     if not extern:
         mpaa_check = xbmc.getInfoLabel('ListItem.MPAA') in mpaa_str or isAdult
-        number = xbmc.getInfoLabel('ListItem.Episode')
-        title = xbmc.getInfoLabel('ListItem.Title')
+        title = xbmc.getInfoLabel('ListItem.Label')
         thumb = xbmc.getInfoLabel('ListItem.Art(season.poster)')
         if not thumb:
             thumb = xbmc.getInfoLabel('ListItem.Art(tvshow.poster)')
@@ -1114,14 +1116,11 @@ def IStreamPlayback(asin, name, trailer, isAdult, extern):
         ct, Info = getInfos(content, False)
         title = Info['DisplayTitle']
         thumb = Info.get('Poster', Info['Thumb'])
-        number = Info.get('Episode', False)
         mpaa_check = str(Info.get('MPAA', mpaa_str)) in mpaa_str or isAdult
 
     if trailer == '1':
         title += ' (Trailer)'
         Info = {'Plot': xbmc.getInfoLabel('ListItem.Plot')}
-    if number and not extern:
-        title = '%s - %s' % (number, title)
     if not title:
         title = name
 
@@ -1141,7 +1140,7 @@ def IStreamPlayback(asin, name, trailer, isAdult, extern):
     listitem.setSubtitles(subs)
     listitem.setProperty('%s.license_type' % is_addon, 'com.widevine.alpha')
     listitem.setProperty('%s.license_key' % is_addon, licURL)
-    listitem.setProperty('%s.stream_headers' % is_addon, 'user-agent=' + getConfig('UserAgent', UserAgent))
+    listitem.setProperty('%s.stream_headers' % is_addon, 'user-agent=' + getConfig('UserAgent'))
     listitem.setProperty('inputstreamaddon', is_addon)
     xbmcplugin.setResolvedUrl(pluginhandle, True, listitem=listitem)
 
@@ -1335,7 +1334,7 @@ def getFlashVars(asin):
 
     values = {'asin': asin,
               'deviceTypeID': 'AOAGZA014O5RE',
-              'userAgent': getConfig('UserAgent', UserAgent)}
+              'userAgent': getConfig('UserAgent')}
     values.update(showpage['resourceData']['GBCustomerData'])
 
     if 'customerId' not in values:
@@ -1473,7 +1472,7 @@ def Input(mousex=0, mousey=0, click=0, keys=None, delay='200'):
 def genID(renew=False):
     guid = getConfig("GenDeviceID") if not renew else False
     if not guid or len(guid) != 56:
-        guid = hmac.new(getConfig('UserAgent', UserAgent), uuid.uuid4().bytes, hashlib.sha224).hexdigest()
+        guid = hmac.new(getConfig('UserAgent'), uuid.uuid4().bytes, hashlib.sha224).hexdigest()
         writeConfig("GenDeviceID", guid)
     return guid
 
@@ -1519,7 +1518,7 @@ def LogIn(ask=True, ue=None, up=None, attempt=1):
         br.set_handle_robots(False)
         br.set_cookiejar(cj)
         br.set_handle_gzip(True)
-        br.addheaders = [('User-Agent', getConfig('UserAgent', UserAgent))]
+        br.addheaders = [('User-Agent', getConfig('UserAgent'))]
         caperr = -5
         while caperr:
             Log('Connect to SignIn Page %s attempts left' % -caperr)
@@ -1542,7 +1541,7 @@ def LogIn(ask=True, ue=None, up=None, attempt=1):
                          ('Content-Type', 'application/x-www-form-urlencoded'),
                          ('Host', BaseUrl.split('//')[1]),
                          ('Origin', BaseUrl),
-                         ('User-Agent', getConfig('UserAgent', UserAgent)),
+                         ('User-Agent', getConfig('UserAgent')),
                          ('Upgrade-Insecure-Requests', '1')]
         br.submit()
         response = br.response().read()
@@ -1960,7 +1959,7 @@ def getUA(blacklist=False):
     UAblist = json.loads(getConfig('UABlacklist', json.dumps([])))
 
     if blacklist:
-        UAcur = getConfig('UserAgent', UserAgent)
+        UAcur = getConfig('UserAgent')
         if UAcur not in UAblist:
             UAblist.append(UAcur)
             writeConfig('UABlacklist', json.dumps(UAblist))
@@ -1978,7 +1977,8 @@ def getUA(blacklist=False):
         writeConfig('UAlist', json.dumps(UAlist[0:len(UAlist)-1]))
         UAwlist = UAlist
 
-    UAnew = UAwlist[randint(0, len(UAwlist)-1)]
+    UAnew = UAwlist[randint(0, len(UAwlist)-1)] if len(UAwlist > 0) else \
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/59.0.3071.115 Safari/537.36'
     writeConfig('UserAgent', UAnew)
     Log('Using UserAgent: ' + UAnew)
     return
@@ -1986,7 +1986,8 @@ def getUA(blacklist=False):
 
 def mobileUA(content):
     soup = BeautifulSoup(content, convertEntities=BeautifulSoup.HTML_ENTITIES)
-    res = soup.find('html').get('class', '')
+    res = soup.find('html')
+    res = res.get('class', '') if res else ''
     return True if 'a-mobile' in res or 'a-tablet' in res else False
 
 

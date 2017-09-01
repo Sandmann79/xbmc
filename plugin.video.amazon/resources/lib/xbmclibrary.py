@@ -11,6 +11,8 @@ from BeautifulSoup import BeautifulSoup, Tag
 cr_nfo = addon.getSetting('cr_nfo') == 'true'
 ms_mov = addon.getSetting('mediasource_movie')
 ms_tv = addon.getSetting('mediasource_tv')
+ms_mov = ms_mov if ms_mov else 'Amazon Movies'
+ms_tv = ms_tv if ms_tv else 'Amazon TV'
 
 if addon.getSetting('enablelibraryfolder') == 'true':
     MOVIE_PATH = os.path.join(xbmc.translatePath(addon.getSetting('customlibraryfolder')), 'Movies').decode('utf-8')

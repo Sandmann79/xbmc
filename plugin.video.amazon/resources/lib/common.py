@@ -717,7 +717,7 @@ def compasin(asinlist, searchstring, season=False):
 def getcompresult(asinlist, returnval=0):
     removeAsins = []
     for item in asinlist:
-        if item[1] == returnval:
+        if item[-1] == returnval:
             removeAsins.append(item[0])
     return removeAsins
 

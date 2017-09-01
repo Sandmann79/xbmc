@@ -125,7 +125,8 @@ if addon.getSetting('enablelibraryfolder') == 'true':
 
 MOVIE_PATH = os.path.join(EXPORT_PATH, 'Movies')
 TV_SHOWS_PATH = os.path.join(EXPORT_PATH, 'TV')
-
+ms_mov = ms_mov if ms_mov else 'Amazon Movies'
+ms_tv = ms_tv if ms_tv else 'Amazon TV'
 
 def setView(content, view=False, updateListing=False):
     # 501-POSTER WRAP 503-MLIST3 504=MLIST2 508-FANARTPOSTER

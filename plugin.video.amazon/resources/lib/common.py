@@ -918,7 +918,7 @@ def getUA(blacklist=False):
         writeConfig('UAlist', json.dumps(UAlist[0:len(UAlist) - 1]))
         UAwlist = UAlist
 
-    UAnew = UAwlist[randint(0, len(UAwlist) - 1)] if len(UAwlist > 0) else \
+    UAnew = UAwlist[randint(0, len(UAwlist) - 1)] if UAwlist else \
         'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/59.0.3071.115 Safari/537.36'
     writeConfig('UserAgent', UAnew)
     Log('Using UserAgent: ' + UAnew)

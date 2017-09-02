@@ -128,6 +128,7 @@ TV_SHOWS_PATH = os.path.join(EXPORT_PATH, 'TV')
 ms_mov = ms_mov if ms_mov else 'Amazon Movies'
 ms_tv = ms_tv if ms_tv else 'Amazon TV'
 
+
 def setView(content, view=False, updateListing=False):
     # 501-POSTER WRAP 503-MLIST3 504=MLIST2 508-FANARTPOSTER
     if content == 'movie':
@@ -1980,7 +1981,7 @@ def getUA(blacklist=False):
         writeConfig('UAlist', json.dumps(UAlist[0:len(UAlist)-1]))
         UAwlist = UAlist
 
-    UAnew = UAwlist[randint(0, len(UAwlist)-1)] if len(UAwlist > 0) else \
+    UAnew = UAwlist[randint(0, len(UAwlist)-1)] if UAwlist else \
         'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/59.0.3071.115 Safari/537.36'
     writeConfig('UserAgent', UAnew)
     Log('Using UserAgent: ' + UAnew)

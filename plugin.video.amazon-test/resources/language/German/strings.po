@@ -238,12 +238,12 @@ msgid "Use own user profile"
 msgstr "Eigenes Nutzerprofil verwenden"
 
 msgctxt "#30060"
-msgid "Library"
-msgstr "Bibliothek"
+msgid "Export"
+msgstr "Export"
 
 msgctxt "#30061"
-msgid "Custom Library Folder"
-msgstr "Eigener Bibliothekordner"
+msgid "Custom Export Folder"
+msgstr "Eigener Exportordner"
 
 msgctxt "#30062"
 msgid "Path"

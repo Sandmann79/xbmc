@@ -267,11 +267,11 @@ msgid "Use own user profile"
 msgstr ""
 
 msgctxt "#30060"
-msgid "Library"
+msgid "Export"
 msgstr ""
 
 msgctxt "#30061"
-msgid "Custom Library Folder"
+msgid "Custom Export Folder"
 msgstr ""
 
 msgctxt "#30062"

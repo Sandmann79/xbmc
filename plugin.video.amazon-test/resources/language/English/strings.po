@@ -249,11 +249,11 @@ msgid "Use own user profile"
 msgstr ""
 
 msgctxt "#30060"
-msgid "Library"
+msgid "Export"
 msgstr ""
 
 msgctxt "#30061"
-msgid "Custom Library Folder"
+msgid "Custom Export Folder"
 msgstr ""
 
 msgctxt "#30062"
@@ -337,7 +337,6 @@ msgstr ""
 msgctxt "#30085"
 msgid "Other (primevideo.com)"
 msgstr ""
-
 
 #empty strings from id 30086 to 30099
 

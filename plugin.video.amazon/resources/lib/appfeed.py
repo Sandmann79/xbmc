@@ -49,7 +49,7 @@ def BUILD_BASE_API(MODE, HOST=ATV_URL + '/cdp/'):
 def getList(ContentType=None, start=0, isPrime=True, NumberOfResults=0, OrderBy='MostPopular', version=2,
             AsinList=None, catalog='Browse', asin=None, enablefilter=False):
 
-    ContentFilter = '&ContractID=UX*' # if onlyGer else ''
+    ContentFilter = '&ContractID=UX*'  # if onlyGer else ''
     BROWSE_PARAMS = '&StartIndex=' + str(start)
     if NumberOfResults:
         BROWSE_PARAMS += '&NumberOfResults=' + str(NumberOfResults)

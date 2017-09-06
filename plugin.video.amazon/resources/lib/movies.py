@@ -2,59 +2,27 @@
 # -*- coding: utf-8 -*-
 from service import updateRunning
 from common import *
-from sqlite3 import dbapi2 as sqlite
 import appfeed
+import db
 
-MAX = 140  # int(addon.getSetting('mov_perpage'))
+MAX = 140
 tmdb_art = addon.getSetting("tmdb_art")
-
-
-def createMoviedb():
-    c = MovieDB.cursor()
-    c.execute('drop table if exists movies')
-    c.execute('drop table if exists categories')
-    c.execute('''create table movies
-                (asin TEXT UNIQUE,
-                 movietitle TEXT,
-                 trailer BOOLEAN,
-                 poster TEXT,
-                 plot TEXT,
-                 director TEXT,
-                 writer TEXT,
-                 runtime INTEGER,
-                 year INTEGER,
-                 premiered TEXT,
-                 studio TEXT,
-                 mpaa TEXT,
-                 actors TEXT,
-                 genres TEXT,
-                 stars FLOAT,
-                 votes INTEGER,
-                 fanart TEXT,
-                 isprime BOOLEAN,
-                 isHD BOOLEAN,
-                 isAdult BOOLEAN,
-                 popularity INTEGER,
-                 recent INTEGER,
-                 audio INTEGER,
-    PRIMARY KEY(movietitle,asin))''')
-    MovieDB.commit()
-    c.close()
 
 
 def addMoviedb(moviedata):
     c = MovieDB.cursor()
-    num = c.execute('insert or ignore into movies values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
-                    moviedata).rowcount
+    num = db.cur_exec(c, 'insert ignore into movies values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
+                      moviedata).rowcount
+
     if num:
         MovieDB.commit()
     return num
 
 
 def lookupMoviedb(value, rvalue='distinct *', name='asin', single=True, exact=False, table='movies'):
-    waitforDB('movie')
+    db.waitforDB(MovieDB)
     c = MovieDB.cursor()
-    if not c.execute('SELECT count(*) FROM sqlite_master WHERE type="table" AND name=(?)', (table,)).fetchone()[0]:
+    if not db.cur_exec(c, 'counttables', (table,)).fetchone():
         return '' if single else []
 
     sqlstring = 'select %s from %s where %s ' % (rvalue, table, name)
@@ -64,8 +32,8 @@ def lookupMoviedb(value, rvalue='distinct *', name='asin', single=True, exact=Fa
         sqlstring += 'like (?)'
     else:
         sqlstring += '= (?)'
-    if c.execute(sqlstring, (value,)).fetchall():
-        result = c.execute(sqlstring, (value,)).fetchall()
+    if db.cur_exec(c, sqlstring, (value,)).fetchall():
+        result = db.cur_exec(c, sqlstring, (value,)).fetchall()
         if single:
             if len(result[0]) > 1:
                 return result[0]
@@ -82,7 +50,7 @@ def deleteMoviedb(asin=False):
     num = 0
     if movietitle:
         c = MovieDB.cursor()
-        num = c.execute('delete from movies where asin like (?)', ('%' + asin + '%',)).rowcount
+        num = db.cur_exec(c, 'delete from movies where asin like (?)', ('%' + asin + '%',)).rowcount
         if num:
             MovieDB.commit()
 
@@ -90,43 +58,43 @@ def deleteMoviedb(asin=False):
 
 
 def updateMoviedb(asin, col, value):
-    waitforDB('movie')
+    db.waitforDB(MovieDB)
     c = MovieDB.cursor()
     asin = '%' + asin + '%'
     sqlquery = 'update movies set %s=? where asin like (?)' % col
-    result = c.execute(sqlquery, (value, asin)).rowcount
+    result = db.cur_exec(c, sqlquery, (value, asin)).rowcount
     return result
 
 
 def loadMoviedb(filterobj=None, value=None, sortcol=False):
-    waitforDB('movie')
+    db.waitforDB(MovieDB)
     c = MovieDB.cursor()
     if filterobj:
         value = '%' + value + '%'
-        return c.execute('select distinct * from movies where %s like (?)' % filterobj, (value,))
+        return db.cur_exec(c, 'select distinct * from movies where %s like (?)' % filterobj, (value,))
     elif sortcol:
-        return c.execute('select distinct * from movies where %s is not null order by %s asc' % (sortcol, sortcol))
+        return db.cur_exec(c, 'select distinct * from movies where %s is not null order by %s asc' % (sortcol, sortcol))
     else:
-        return c.execute('select distinct * from movies')
+        return db.cur_exec(c, 'select distinct * from movies order by movietitle asc')
 
 
 def getMovieTypes(col):
-    waitforDB('movie')
+    db.waitforDB(MovieDB)
     c = MovieDB.cursor()
-    items = c.execute('select distinct %s from movies' % col)
+    items = db.cur_exec(c, 'select distinct %s from movies' % col)
     l = getTypes(items, col)
     c.close()
     return l
 
 
 def getMoviedbAsins(isPrime=1, retlist=False):
-    waitforDB('movie')
+    db.waitforDB(MovieDB)
     c = MovieDB.cursor()
     content = ''
     sqlstring = 'select asin from movies where isPrime = (%s)' % isPrime
     if retlist:
         content = []
-    for item in c.execute(sqlstring).fetchall():
+    for item in db.cur_exec(c, sqlstring).fetchall():
         if retlist:
             content.append([','.join(item), 0])
         else:
@@ -149,7 +117,8 @@ def addMoviesdb(full_update=True, cj=True):
 
         dialog.create(getString(30120))
         dialog.update(0, getString(30121))
-        createMoviedb()
+        from db import createDatabase
+        createDatabase(MovieDB, 'movie')
         MOVIE_ASINS = []
     else:
         MOVIE_ASINS = getMoviedbAsins(retlist=True)
@@ -160,10 +129,9 @@ def addMoviesdb(full_update=True, cj=True):
     new_mov = 0
     retrycount = 0
     approx = appfeed.getList('Movie', 0, NumberOfResults=1)['message']['body'].get('approximateSize', 0)
-    filter_mov = approx > 8000
 
     while goAhead == 1:
-        jsondata = appfeed.getList('Movie', endIndex, NumberOfResults=MAX, OrderBy='Title', enablefilter=filter_mov)
+        jsondata = appfeed.getList('Movie', endIndex, NumberOfResults=MAX, OrderBy='Title')
         if not jsondata:
             goAhead = -1
             break
@@ -179,7 +147,7 @@ def addMoviesdb(full_update=True, cj=True):
                 if 'titleId' in title.keys():
                     asin = title['titleId']
                     if '_duplicate_' not in title['title']:
-                        if onlyGer and re.compile('(?i)\[(ov|omu)[(\W|omu|ov)]*\]').search(title['title']):
+                        if onlyGer and re.compile(regex_ovf).search(title['title']):
                             Log('Movie Ignored: %s' % title['title'], xbmc.LOGDEBUG)
                             found = True
                         else:
@@ -193,7 +161,7 @@ def addMoviesdb(full_update=True, cj=True):
         if retrycount > 3:
             Log('Waiting 5min')
             sleep(300)
-            appfeed.getList('Movie', endIndex-randint(1, MAX-1), NumberOfResults=randint(1, 10), enablefilter=filter_mov)
+            appfeed.getList('Movie', endIndex-randint(1, MAX-1), NumberOfResults=randint(1, 10))
             retrycount = 0
 
         endIndex += len(titles)
@@ -229,9 +197,9 @@ def addMoviesdb(full_update=True, cj=True):
 
 
 def updatePop():
-    waitforDB('movie')
+    db.waitforDB(MovieDB)
     c = MovieDB.cursor()
-    c.execute("update movies set popularity=null")
+    db.cur_exec(c, "update movies set popularity=null")
     Index = 0
     maxIndex = MAX * 3
 
@@ -273,13 +241,13 @@ def setNewest(compList=False):
     if not compList:
         compList = getCategories()
     catList = compList['movies']
-    waitforDB('movie')
+    db.waitforDB(MovieDB)
     c = MovieDB.cursor()
-    c.execute('drop table if exists categories')
-    c.execute('''create table categories(
+    db.cur_exec(c, 'drop table if exists categories')
+    db.cur_exec(c, '''create table categories(
                  title TEXT,
     asins TEXT);''')
-    c.execute('update movies set recent=null')
+    db.cur_exec(c, 'update movies set recent=null')
     count = 1
     for catid in catList:
         if catid == 'PrimeMovieRecentlyAdded':
@@ -287,7 +255,7 @@ def setNewest(compList=False):
                 updateMoviedb(asin, 'recent', count)
                 count += 1
         else:
-            c.execute('insert or ignore into categories values (?,?)', [catid, catList[catid]])
+            db.cur_exec(c, 'insert ignore into categories values (?,?)', [catid, catList[catid]])
     MovieDB.commit()
 
 
@@ -295,14 +263,14 @@ def updateFanart():
     if tmdb_art == '0':
         return
 
-    sqlstring = 'select asin, movietitle, year, fanart from movies where fanart is null'
+    sqlstring = "select asin, movietitle, year, fanart from movies where fanart is null"
     c = MovieDB.cursor()
     Log('Movie Update: Updating Fanart')
     if tmdb_art == '2':
-        sqlstring += ' or fanart like "%images-amazon.com%"'
+        sqlstring += " or fanart like '%images-amazon.com%'"
 
-    waitforDB('movie')
-    for asin, movie, year, oldfanart in c.execute(sqlstring):
+    db.waitforDB(MovieDB)
+    for asin, movie, year, oldfanart in db.cur_exec(c, sqlstring):
         movie = movie.lower().replace('[ov]', '').replace('omu', '').replace('[ultra hd]', '').split('(')[0].strip()
         result = appfeed.getTMDBImages(movie, year=year)
         if oldfanart:
@@ -373,12 +341,4 @@ def ASIN_ADD(title):
         titelnum += addMoviedb(moviedata)
     return titelnum
 
-
-MovieDBfile = getDBlocation('movie')
-if not xbmcvfs.exists(MovieDBfile):
-    MovieDB = sqlite.connect(MovieDBfile)
-    MovieDB.text_factory = str
-    createMoviedb()
-else:
-    MovieDB = sqlite.connect(MovieDBfile)
-    MovieDB.text_factory = str
+MovieDB = db.connSQL('movie')

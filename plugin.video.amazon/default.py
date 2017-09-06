@@ -33,6 +33,9 @@ def modes():
         addDir(getString(30108), 'appfeed', 'SEARCH_DB', cm=cm['search'])
         addDir(getString(30060), 'appfeed', 'ListMenu', lib, cm=cm['lib'])
 
+        if addon.getSetting('update_mm') == 'true':
+            addDir(cm['search'][0][0], 'appfeed', 'updateAll')
+
         xbmcplugin.endOfDirectory(pluginhandle)
     else:
         exec 'import resources.lib.%s as sitemodule' % args.get('mode')

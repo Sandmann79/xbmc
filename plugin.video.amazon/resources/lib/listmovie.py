@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 from common import *
 import xbmclibrary
+import movies as moviesDB
 
 
 def LIST_MOVIE_ROOT():
@@ -19,7 +20,6 @@ def LIST_MOVIE_ROOT():
 
 
 def LIST_MOVIES_CATS():
-    import movies as moviesDB
     catid = args.get('url')
     if catid:
         asins = moviesDB.lookupMoviedb(catid, rvalue='asins', name='title', table='categories')
@@ -35,7 +35,6 @@ def LIST_MOVIES_CATS():
 
 
 def LIST_MOVIE_TYPES(movtype=None):
-    import movies as moviesDB
     if not movtype:
         movtype = args.get('url')
     if movtype:
@@ -54,7 +53,6 @@ def LIST_MOVIES_SORTED():
 
 
 def LIST_MOVIES(filterobj='', value=None, sortcol=False, sortaz=True, search=False, cmmode=0, export=False):
-    import movies as moviesDB
     if 'year' in filterobj:
         value = value.replace('0 -', '')
 

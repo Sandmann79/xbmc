@@ -3,142 +3,51 @@
 # -*- coding: utf-8 -*-
 from common import *
 from service import updateRunning
-from sqlite3 import dbapi2 as sqlite
+import db
 import appfeed
 
-MAX = 140  # int(addon.getSetting('mov_perpage'))
-EPI_TOTAL = int(getConfig('EpisodesTotal', '17000'))
-
 tvdb_art = addon.getSetting("tvdb_art")
-
 Dialog = xbmcgui.Dialog()
 DialogPG = xbmcgui.DialogProgress()
-
-
-def createTVdb():
-    c = tvDB.cursor()
-    c.execute('drop table if exists shows')
-    c.execute('drop table if exists seasons')
-    c.execute('drop table if exists episodes')
-    c.execute('drop table if exists categories')
-    c.execute('''CREATE TABLE shows(
-                 asin TEXT UNIQUE,
-                 seriestitle TEXT,
-                 plot TEXT,
-                 network TEXT,
-                 mpaa TEXT,
-                 genres TEXT,
-                 actors TEXT,
-                 airdate TEXT,
-                 year INTEGER,
-                 stars float,
-                 votes INTEGER,
-                 seasontotal INTEGER,
-                 episodetotal INTEGER,
-                 audio INTEGER,
-                 isHD BOOLEAN,
-                 isprime BOOLEAN,
-                 popularity INTEGER,
-                 recent INTEGER,
-                 imdb TEXT,
-                 poster TEXT,
-                 banner TEXT,
-                 fanart TEXT,
-                 PRIMARY KEY(asin,seriestitle)
-    );''')
-    c.execute('''CREATE TABLE seasons(
-                 asin TEXT UNIQUE,
-                 seriesasin TEXT,
-                 season INTEGER,
-                 seriestitle TEXT,
-                 plot TEXT,
-                 actors TEXT,
-                 network TEXT,
-                 mpaa TEXT,
-                 genres TEXT,
-                 airdate TEXT,
-                 year INTEGER,
-                 stars float,
-                 votes INTEGER,
-                 episodetotal INTEGER,
-                 audio INTEGER,
-                 popularity INTEGER,
-                 recent INTEGER,
-                 isHD BOOLEAN,
-                 isprime BOOLEAN,
-                 imdburl TEXT,
-                 poster TEXT,
-                 banner TEXT,
-                 fanart TEXT,
-                 forceupdate BOOLEAN,
-                 PRIMARY KEY(asin,seriestitle,season)
-    );''')
-    c.execute('''create table episodes(
-                 asin TEXT UNIQUE,
-                 seasonasin TEXT,
-                 seriesasin TEXT,
-                 seriestitle TEXT,
-                 season INTEGER,
-                 episode INTEGER,
-                 poster TEXT,
-                 mpaa TEXT,
-                 actors TEXT,
-                 genres TEXT,
-                 episodetitle TEXT,
-                 studio TEXT,
-                 stars float,
-                 votes INTEGER,
-                 fanart TEXT,
-                 plot TEXT,
-                 airdate TEXT,
-                 year INTEGER,
-                 runtime INTEGER,
-                 isHD BOOLEAN,
-                 isprime BOOLEAN,
-                 isAdult BOOLEAN,
-                 audio INTEGER,
-                 PRIMARY KEY(asin,season,episode,episodetitle)
-    );''')
-    tvDB.commit()
-    c.close()
+MAX = 140
 
 
 def loadTVShowdb(filterobj=None, value=None, sortcol=None):
-    waitforDB('tv')
+    db.waitforDB(tvDB)
     c = tvDB.cursor()
     if filterobj:
         value = '%' + value + '%'
-        return c.execute('select distinct * from shows where %s like (?)' % filterobj, (value,))
+        return db.cur_exec(c, 'select distinct * from shows where %s like (?)' % filterobj, (value,))
     elif sortcol:
-        return c.execute('select distinct * from shows where %s is not null order by %s asc' % (sortcol, sortcol))
+        return db.cur_exec(c, 'select distinct * from shows where %s is not null order by %s asc' % (sortcol, sortcol))
     else:
-        return c.execute('select distinct * from shows')
+        return db.cur_exec(c, 'select distinct * from shows order by seriestitle asc')
 
 
 def loadTVSeasonsdb(seriesasin=None, sortcol=None, seasonasin=None):
-    waitforDB('tv')
+    db.waitforDB(tvDB)
     c = tvDB.cursor()
     if seriesasin:
-        return c.execute('select distinct * from seasons where seriesasin = (?)', (seriesasin,))
+        return db.cur_exec(c, 'select distinct * from seasons where seriesasin = (?)', (seriesasin,))
     if seasonasin:
         seasonasin = '%' + seasonasin + '%'
-        return c.execute('select distinct * from seasons where asin like (?)', (seasonasin,))
+        return db.cur_exec(c, 'select distinct * from seasons where asin like (?)', (seasonasin,))
     elif sortcol:
-        return c.execute('select distinct * from seasons where %s is not null order by %s asc' % (sortcol, sortcol))
+        return db.cur_exec(c, 'select distinct * from seasons where %s is not null order by %s asc' % (sortcol, sortcol))
     else:
-        return c.execute('select distinct * from seasons')
+        return db.cur_exec(c, 'select distinct * from seasons')
 
 
 def loadTVEpisodesdb(seriestitle):
-    waitforDB('tv')
+    db.waitforDB(tvDB)
     c = tvDB.cursor()
-    return c.execute('select distinct * from episodes where seasonasin = (?) order by episode', (seriestitle,))
+    return db.cur_exec(c, 'select distinct * from episodes where seasonasin = (?) order by episode', (seriestitle,))
 
 
 def getShowTypes(col):
-    waitforDB('tv')
+    db.waitforDB(tvDB)
     c = tvDB.cursor()
-    items = c.execute('select distinct %s from shows' % col)
+    items = db.cur_exec(c, 'select distinct %s from shows' % col)
     l = getTypes(items, col)
     c.close()
     return l
@@ -146,53 +55,58 @@ def getShowTypes(col):
 
 def getPoster(seriestitle):
     c = tvDB.cursor()
-    data = c.execute('select distinct poster from seasons where seriestitle = (?)', (seriestitle,)).fetchone()
+    data = db.cur_exec(c, 'select distinct poster from seasons where seriestitle = (?)', (seriestitle,)).fetchone()
     return data[0]
 
 
 def fixHDshows():
+    Log('fixing HD infos', xbmc.LOGDEBUG)
     c = tvDB.cursor()
-    c.execute("update shows set isHD=?", (False,))
-    HDseasons = c.execute('select distinct seriestitle from seasons where isHD = (?)', (True,)).fetchall()
+    db.cur_exec(c, "update shows set isHD=?", (False,))
+    HDseasons = db.cur_exec(c, 'select distinct seriestitle from seasons where isHD = (?)', (True,)).fetchall()
     for series in HDseasons:
-        c.execute("update shows set isHD=? where seriestitle=?", (True, series[0]))
+        db.cur_exec(c, "update shows set isHD=? where seriestitle=?", (True, series[0]))
 
 
 def fixGenres():
+    Log('fixing genres', xbmc.LOGDEBUG)
     c = tvDB.cursor()
-    seasons = c.execute('select distinct seriestitle,genres from seasons where genres is not null').fetchall()
+    seasons = db.cur_exec(c, 'select distinct seriestitle,genres from seasons where genres is not null').fetchall()
     for series, genres in seasons:
-        c.execute("update seasons set genres=? where seriestitle=? and genres is null", (genres, series))
-        c.execute("update shows set genres=? where seriestitle=? and genres is null", (genres, series))
+        db.cur_exec(c, "update seasons set genres=? where seriestitle=? and genres is null", (genres, series))
+        db.cur_exec(c, "update shows set genres=? where seriestitle=? and genres is null", (genres, series))
 
 
 def updateEpisodes():
+    Log('updateing num of epsiodes', xbmc.LOGDEBUG)
     c = tvDB.cursor()
-    shows = c.execute('select distinct asin from shows where episodetotal is 0').fetchall()
+    shows = db.cur_exec(c, 'select distinct asin from shows where episodetotal = 0').fetchall()
     for asin in shows:
         asinn = asin[0]
         nums = 0
         for sasin in asinn.split(','):
-            nums += int((c.execute("select count(*) from episodes where seriesasin like ?", (sasin,)).fetchone())[0])
-        c.execute("update shows set episodetotal=? where asin=?", (nums, asinn))
+            nums += int((db.cur_exec(c, "select count(*) from episodes where seriesasin like ?", (sasin,)).fetchone())[0])
+        db.cur_exec(c, "update shows set episodetotal=? where asin=?", (nums, asinn))
 
 
 def fixYears():
+    Log('fixing years', xbmc.LOGDEBUG)
     c = tvDB.cursor()
-    seasons = c.execute('select seasonasin,year,season from episodes where year is not null order by year desc').fetchall()
+    seasons = db.cur_exec(c, 'select seasonasin,year,season from episodes where year is not null order by year desc').fetchall()
     for asin, year, season in seasons:
         asin = '%' + asin + '%'
-        c.execute("update seasons set year=? where season=? and asin like ?", (year, season, asin))
-    seasons = c.execute('select seriesasin,year from seasons where year is not null order by year desc').fetchall()
+        db.cur_exec(c, "update seasons set year=? where season=? and asin like ?", (year, season, asin))
+    seasons = db.cur_exec(c, 'select seriesasin,year from seasons where year is not null order by year desc').fetchall()
     for asin, year in seasons:
         asin = '%' + asin + '%'
-        c.execute("update shows set year=? where asin like ?", (year, asin))
+        db.cur_exec(c, "update shows set year=? where asin like ?", (year, asin))
 
 
 def fixDBLShows():
+    Log('fixing double shows', xbmc.LOGDEBUG)
     c = tvDB.cursor()
     allseries = []
-    for asin, seriestitle in c.execute('select asin,seriestitle from shows').fetchall():
+    for asin, seriestitle in db.cur_exec(c, 'select asin,seriestitle from shows').fetchall():
         flttitle = cleanTitle(seriestitle)
         addlist = True
         index = 0
@@ -200,35 +114,38 @@ def fixDBLShows():
             if flttitle == fltlist:
                 allseries.pop(index)
                 allseries.insert(index, [asinlist + ',' + asin, titlelist, fltlist])
-                c.execute('delete from shows where seriestitle = (?) and asin = (?)', (seriestitle, asin))
+                db.cur_exec(c, 'delete from shows where seriestitle = (?) and asin = (?)', (seriestitle, asin))
                 addlist = False
             index += 1
         if addlist:
             allseries.append([asin, seriestitle, flttitle])
 
     for asinlist, titlelist, fltlist in allseries:
-        c.execute("update shows set asin = (?) where seriestitle = (?)", (asinlist, titlelist))
+        db.cur_exec(c, "update shows set asin = (?) where seriestitle = (?)", (asinlist, titlelist))
 
 
 def fixStars():
+    Log('fixing stars', xbmc.LOGDEBUG)
     c = tvDB.cursor()
-    series = c.execute('select seriestitle from shows where votes is 0').fetchall()
+    series = db.cur_exec(c, 'select seriestitle from shows where votes = 0').fetchall()
     for title in series:
         title = title[0]
-        stars = c.execute('select avg(stars) from seasons where seriestitle like ? and votes is not 0', (title,)).fetchone()[0]
+        stars = db.cur_exec(c, 'select avg(stars) from seasons where seriestitle like ? and votes != 0', (title,)).fetchone()[0]
         if stars:
-            c.execute('update shows set stars = (?) where seriestitle = (?)', (stars, title))
+            db.cur_exec(c, 'update shows set stars = (?) where seriestitle = (?)', (stars, title))
 
 
 def fixTitles():
+    Log('fixing titles', xbmc.LOGDEBUG)
     c = tvDB.cursor()
-    for asins, title in c.execute('select asin, seriestitle from shows').fetchall():
+    for asins, title in db.cur_exec(c, 'select asin, seriestitle from shows').fetchall():
         for asin in asins.split(','):
-            c.execute('update seasons set seriestitle = (?) where seriesasin = (?)', (title, asin))
-            c.execute('update episodes set seriestitle = (?) where seriesasin = (?)', (title, asin))
+            db.cur_exec(c, 'update seasons set seriestitle = (?) where seriesasin = (?)', (title, asin))
+            db.cur_exec(c, 'update episodes set seriestitle = (?) where seriesasin = (?)', (title, asin))
 
 
 def cleanTitle(content):
+    Log('cleaning titlea', xbmc.LOGDEBUG)
     content = content.replace(' und ', '').lower()
     invalid_chars = "?!.:&,;' "
     return ''.join(c for c in content if c not in invalid_chars)
@@ -238,12 +155,12 @@ def addDB(table, data):
     c = tvDB.cursor()
     columns = {'shows': 22, 'seasons': 24, 'episodes': 23}
     query = '?,' * columns[table]
-    num = c.execute('insert or ignore into %s values (%s)' % (table, query[0:-1]), data).rowcount
+    num = db.cur_exec(c, 'insert ignore into %s values (%s)' % (table, query[0:-1]), data).rowcount
 
     if not num and table == 'seasons':
-        oldepi = c.execute('select episodetotal from seasons where asin=(?)', (data[0],)).fetchall()[0][0]
+        oldepi = db.cur_exec(c, 'select episodetotal from seasons where asin=(?)', (data[0],)).fetchall()[0][0]
         Log('Updating show %s season %s (O:%s N:%s)' % (data[3], data[2], oldepi, data[13]), xbmc.LOGDEBUG)
-        num = c.execute('update seasons set episodetotal=(?) where asin=(?)', (data[13], data[0])).rowcount
+        num = db.cur_exec(c, 'update seasons set episodetotal=(?) where asin=(?)', (data[13], data[0])).rowcount
 
     if num:
         tvDB.commit()
@@ -252,9 +169,9 @@ def addDB(table, data):
 
 
 def lookupTVdb(value, rvalue='distinct *', tbl='episodes', name='asin', single=True, exact=False):
-    waitforDB('tv')
+    db.waitforDB(tvDB)
     c = tvDB.cursor()
-    if not c.execute('SELECT count(*) FROM sqlite_master WHERE type="table" AND name=(?)', (tbl,)).fetchone()[0]:
+    if not db.cur_exec(c, 'counttables', (tbl,)).fetchone():
         return '' if single else []
 
     sqlstring = 'select %s from %s where %s ' % (rvalue, tbl, name)
@@ -264,8 +181,8 @@ def lookupTVdb(value, rvalue='distinct *', tbl='episodes', name='asin', single=T
         sqlstring += 'like (?)'
     else:
         sqlstring += '= (?)'
-    if c.execute(sqlstring, (value,)).fetchall():
-        result = c.execute(sqlstring, (value,)).fetchall()
+    if db.cur_exec(c, sqlstring, (value,)).fetchall():
+        result = db.cur_exec(c, sqlstring, (value,)).fetchall()
         if single:
             if len(result[0]) > 1:
                 return result[0]
@@ -279,7 +196,7 @@ def lookupTVdb(value, rvalue='distinct *', tbl='episodes', name='asin', single=T
 
 def countDB(tbl):
     c = tvDB.cursor()
-    return len(c.execute('select * from %s' % tbl).fetchall())
+    return len(db.cur_exec(c, 'select * from %s' % tbl).fetchall())
 
 
 def delfromTVdb():
@@ -304,6 +221,7 @@ def delfromTVdb():
 
 
 def deleteremoved(asins, refresh=True):
+    Log('delete removed titles', xbmc.LOGDEBUG)
     c = tvDB.cursor()
     delShows = 0
     delSeasons = 0
@@ -316,12 +234,10 @@ def deleteremoved(asins, refresh=True):
                 season, seriesasin = lookupTVdb(seasonasin, rvalue='season, seriesasin', name='seasonasin', tbl='episodes')
             if seriesasin:
                 asin = '%' + seasonasin + '%'
-                delEpisodes += c.execute(
-                    'delete from episodes where season = (?) and seasonasin like (?)', (season, asin)).rowcount
-                delSeasons += c.execute(
-                    'delete from seasons where season = (?) and asin like (?)', (season, asin)).rowcount
+                delEpisodes += db.cur_exec(c, 'delete from episodes where season = (?) and seasonasin like (?)', (season, asin)).rowcount
+                delSeasons += db.cur_exec(c, 'delete from seasons where season = (?) and asin like (?)', (season, asin)).rowcount
                 if not lookupTVdb(seriesasin, rvalue='asin', tbl='seasons', name='seriesasin'):
-                    delShows += c.execute('delete from shows where asin like (?)', ('%'+seriesasin+'%',)).rowcount
+                    delShows += db.cur_exec(c, 'delete from shows where asin like (?)', ('%'+seriesasin+'%',)).rowcount
     tvDB.commit()
     c.close()
     if refresh:
@@ -331,6 +247,7 @@ def deleteremoved(asins, refresh=True):
 
 
 def cleanDB():
+    Log('cleaning db', xbmc.LOGDEBUG)
     removeAsins = []
     seasonasins = getTVdbAsins('seasons', 2, value='asin')
     for asin, pos in getTVdbAsins('episodes', 2, retlist=True, value='seasonasin'):
@@ -351,7 +268,7 @@ def getTVdbAsins(table, isPrime=1, retlist=False, value='asin'):
     if isPrime < 2:
         sqlstring += ' where isPrime = (%s)' % isPrime
 
-    for item in c.execute(sqlstring).fetchall():
+    for item in db.cur_exec(c, sqlstring).fetchall():
         if str(item[0]) not in str(content):
             if retlist:
                 content.append(list(item)+[0, ])
@@ -385,7 +302,7 @@ def addTVdb(full_update=True, libasins=None, cj=True):
             return
         DialogPG.create(getString(30130))
         DialogPG.update(0, getString(30131))
-        createTVdb()
+        db.createDatabase(tvDB, 'tv')
         ALL_SERIES_ASINS = ''
         ALL_SEASONS_ASINS = []
     else:
@@ -426,7 +343,7 @@ def addTVdb(full_update=True, libasins=None, cj=True):
                     break
                 SEASONS_ASIN = title['titleId']
 
-                if onlyGer and re.compile('(?i)\[(ov|omu)[(\W|omu|ov)]*\]').search(title['title']):
+                if onlyGer and not libasins and re.compile(regex_ovf).search(title['title']):
                     Log('Season Ignored: %s' % title['title'], xbmc.LOGDEBUG)
                     found = True
                 else:
@@ -458,7 +375,7 @@ def addTVdb(full_update=True, libasins=None, cj=True):
             if SERIES_ASINS:
                 ASIN_ADD(0, asins=SERIES_ASINS)
             if full_update:
-                DialogPG.update(int(EPISODE_COUNT * 100.0 / EPI_TOTAL), getString(30132) % SERIES_COUNT,
+                DialogPG.update(int(SEASON_COUNT * 100.0 / approx), getString(30132) % SERIES_COUNT,
                                 getString(30133) % SEASON_COUNT, getString(30134) % EPISODE_COUNT)
             episodes = 0
             AsinList = ''
@@ -477,7 +394,7 @@ def addTVdb(full_update=True, libasins=None, cj=True):
                     episodes = 0
                     AsinList = ''
                     if full_update:
-                        DialogPG.update(int(EPISODE_COUNT * 100.0 / EPI_TOTAL), getString(30132) % SERIES_COUNT,
+                        DialogPG.update(int(SEASON_COUNT * 100.0 / approx), getString(30132) % SERIES_COUNT,
                                         getString(30133) % SEASON_COUNT, getString(30134) % EPISODE_COUNT)
                     del titles
         else:
@@ -511,13 +428,13 @@ def addTVdb(full_update=True, libasins=None, cj=True):
             DialogPG.close()
             updateFanart()
         tvDB.commit()
-        writeConfig("EpisodesTotal", countDB('episodes'))
         return True
 
     return False
 
 
 def checkLibraryAsins(asinlist, cj):
+    Log('updating titles in libary', xbmc.LOGDEBUG)
     asins = ''
     removed_seasons = []
 
@@ -544,8 +461,9 @@ def checkLibraryAsins(asinlist, cj):
 
 
 def updatePop():
+    Log('updating popular titles', xbmc.LOGDEBUG)
     c = tvDB.cursor()
-    c.execute("update shows set popularity=null")
+    db.cur_exec(c, "update shows set popularity=null")
     Index = 0
     maxIndex = MAX * 3
 
@@ -556,9 +474,8 @@ def updatePop():
             Index += 1
             asin = title['titleId']
             if asin:
-                c.execute("update shows set popularity=? where asin like (?) and popularity is null",
-
-                          (Index, '%' + asin + '%'))
+                db.cur_exec(c, "update shows set popularity=? where asin like (?) and popularity is null",
+                            (Index, '%' + asin + '%'))
         if len(titles) == 0:
             Index = -1
 
@@ -700,15 +617,15 @@ def updateFanart():
 
     seasons = False
     c = tvDB.cursor()
-    sqlstring = 'select asin, seriestitle, fanart, poster from shows where fanart is null'
+    sqlstring = "select asin, seriestitle, fanart, poster from shows where fanart is null"
     Log('TV Update: Updating Fanart')
     if tvdb_art == '2':
-        sqlstring += ' or fanart like "%images-amazon.com%"'
+        sqlstring += " or fanart like '%images-amazon.com%'"
     if tvdb_art == '3':
-        sqlstring += ' or poster like "%images-amazon.com%"'
+        sqlstring += " or poster like '%images-amazon.com%'"
         seasons = True
-    waitforDB('tv')
-    for asin, title, oldfanart, oldposter in c.execute(sqlstring).fetchall():
+    db.waitforDB(tvDB)
+    for asin, title, oldfanart, oldposter in db.cur_exec(c, sqlstring).fetchall():
         title = title.lower().replace('[ov]', '').replace('[ultra hd]', '').replace('?', '') \
                 .replace('omu', '').split('(')[0].strip()
         tvid, poster, fanart = appfeed.getTVDBImages(title, seasons=seasons)
@@ -729,27 +646,27 @@ def updateFanart():
             if not poster:
                 fanart = na
 
-        c.execute("update shows set fanart=? where asin = (?)", (fanart, asin))
+        db.cur_exec(c, 'update shows set fanart=? where asin = (?)', (fanart, asin))
         if tvdb_art == '3':
-            c.execute("update shows set poster=? where asin = (?)", (poster, asin))
+            db.cur_exec(c, 'update shows set poster=? where asin = (?)', (poster, asin))
             if tvid:
                 for season, url in tvid.items():
                     for singleasin in asin.split(','):
                         singleasin = '%' + singleasin + '%'
-                        c.execute("update seasons set poster=? where seriesasin like (?) and season = (?)",
-                                  (url, singleasin, season))
+                        db.cur_exec(c, 'update seasons set poster=? where seriesasin like (?) and season = (?)',
+                                    (url, singleasin, int(season)))
     tvDB.commit()
     Log('TV Update: Updating Fanart Finished')
 
 
 def getIMDbID(asins, title):
     url = imdbid = None
-    waitforDB('tv')
+    db.waitforDB(tvDB)
     c = tvDB.cursor()
     for asin in asins.split(','):
         asin = '%' + asin + '%'
-        url = c.execute('select imdburl from seasons where seriesasin like (?) and imdburl is not null',
-                        (asin,)).fetchone()
+        url = db.cur_exec(c, 'select imdburl from seasons where seriesasin like (?) and imdburl is not null',
+                          (asin,)).fetchone()
         if url:
             url = url[0]
             break
@@ -775,14 +692,15 @@ def getIMDbID(asins, title):
 
 
 def setNewest(compList=False):
+    Log('updating new seasons', xbmc.LOGDEBUG)
     if not compList:
         compList = getCategories()
     catList = compList['tv_shows']
-    waitforDB('tv')
+    db.waitforDB(tvDB)
     c = tvDB.cursor()
-    c.execute('drop table if exists categories')
-    c.execute('create table categories(title TEXT, asins TEXT)')
-    c.execute('update seasons set recent=null')
+    db.cur_exec(c, 'drop table if exists categories')
+    db.cur_exec(c, 'create table categories(title TEXT, asins TEXT)')
+    db.cur_exec(c, 'update seasons set recent=null')
     count = 1
     for catid in catList:
         if catid == 'PrimeTVRecentlyAdded':
@@ -791,18 +709,10 @@ def setNewest(compList=False):
                 if not seasonasin:
                     seasonasin = asin
 
-                c.execute("update seasons set recent=? where asin like (?)", (count, '%' + seasonasin + '%'))
+                db.cur_exec(c, "update seasons set recent=? where asin like (?)", (count, '%' + seasonasin + '%'))
                 count += 1
         else:
-            c.execute('insert or ignore into categories values (?,?)', [catid, catList[catid]])
+            db.cur_exec(c, 'insert ignore into categories values (?,?)', [catid, catList[catid]])
     tvDB.commit()
 
-
-tvDBfile = getDBlocation('tv')
-if not xbmcvfs.exists(tvDBfile):
-    tvDB = sqlite.connect(tvDBfile)
-    tvDB.text_factory = str
-    createTVdb()
-else:
-    tvDB = sqlite.connect(tvDBfile)
-    tvDB.text_factory = str
+tvDB = db.connSQL('tv')

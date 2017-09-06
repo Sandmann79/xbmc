@@ -34,8 +34,6 @@ pluginpath = addon.getAddonInfo('path').decode('utf-8')
 pldatapath = xbmc.translatePath(addon.getAddonInfo('profile')).decode('utf-8')
 configpath = os.path.join(pldatapath, 'config')
 homepath = xbmc.translatePath('special://home').decode('utf-8')
-dbplugin = 'script.module.amazon.database'
-dbpath = os.path.join(homepath, 'addons', dbplugin, 'lib')
 tmdb = base64.b64decode('YjM0NDkwYzA1NmYwZGQ5ZTNlYzlhZjIxNjdhNzMxZjQ=')
 tvdb = base64.b64decode('MUQ2MkYyRjkwMDMwQzQ0NA==')
 COOKIEFILE = os.path.join(pldatapath, 'cookies.lwp')
@@ -54,6 +52,7 @@ onlyGer = addon.getSetting('content_filter') == 'true'
 kodi_mjver = int(xbmc.getInfoLabel('System.BuildVersion')[0:2])
 Dialog = xbmcgui.Dialog()
 socket.setdefaulttimeout(30)
+regex_ovf = "((?i)(\[|\()(omu|ov).*(\)|\]))|\sOmU"
 
 try:
     pluginhandle = int(sys.argv[1])
@@ -722,27 +721,6 @@ def getcompresult(asinlist, returnval=0):
     return removeAsins
 
 
-def waitforDB(database):
-    if database == 'tv':
-        import tv
-        c = tv.tvDB.cursor()
-        tbl = 'shows'
-    else:
-        import movies
-        c = movies.MovieDB.cursor()
-        tbl = 'movies'
-    error = True
-    while error:
-        error = False
-        try:
-            c.execute('select distinct * from ' + tbl).fetchone()
-        except:
-            error = True
-            xbmc.sleep(1000)
-            Log('Database locked')
-    c.close()
-
-
 def getTypes(items, col):
     studiolist = []
     lowlist = []
@@ -769,51 +747,6 @@ def getTypes(items, col):
                 if strdata not in studiolist:
                     studiolist.append(strdata)
     return studiolist
-
-
-def copyDB(source, dest, ask=False):
-    import shutil
-    if ask:
-        if not Dialog.yesno(getString(30193), getString(30194)):
-            shutil.copystat(source['tv'], dest['tv'])
-            shutil.copystat(source['movie'], dest['movie'])
-            return
-    shutil.copy2(source['tv'], dest['tv'])
-    shutil.copy2(source['movie'], dest['movie'])
-
-
-def getDBlocation(retvar):
-    custdb = addon.getSetting('customdbfolder') == 'true'
-    old_dbpath = xbmc.translatePath(getConfig('old_dbfolder')).decode('utf-8')
-    cur_dbpath = dbpath
-
-    if not old_dbpath:
-        old_dbpath = cur_dbpath
-    if custdb:
-        cur_dbpath = xbmc.translatePath(addon.getSetting('dbfolder')).decode('utf-8')
-    else:
-        addon.setSetting('dbfolder', dbpath)
-
-    orgDBfile = {'tv': os.path.join(dbpath, 'tv.db'), 'movie': os.path.join(dbpath, 'movies.db')}
-    oldDBfile = {'tv': os.path.join(old_dbpath, 'tv.db'), 'movie': os.path.join(old_dbpath, 'movies.db')}
-    DBfile = {'tv': os.path.join(cur_dbpath, 'tv.db'), 'movie': os.path.join(cur_dbpath, 'movies.db')}
-
-    if old_dbpath != cur_dbpath:
-        Log('DBPath changed')
-        if xbmcvfs.exists(oldDBfile['tv']) and xbmcvfs.exists(oldDBfile['movie']):
-            if not xbmcvfs.exists(cur_dbpath):
-                xbmcvfs.mkdir(cur_dbpath)
-            if not xbmcvfs.exists(DBfile['tv']) or not xbmcvfs.exists(DBfile['movie']):
-                copyDB(oldDBfile, DBfile)
-        writeConfig('old_dbfolder', cur_dbpath)
-
-    if custdb:
-        org_fileacc = int(xbmcvfs.Stat(orgDBfile['tv']).st_mtime() + xbmcvfs.Stat(orgDBfile['movie']).st_mtime())
-        cur_fileacc = int(xbmcvfs.Stat(DBfile['tv']).st_mtime() + xbmcvfs.Stat(DBfile['movie']).st_mtime())
-        if org_fileacc > cur_fileacc:
-            copyDB(orgDBfile, DBfile, True)
-
-    return DBfile[retvar]
 
 
 def openSettings():

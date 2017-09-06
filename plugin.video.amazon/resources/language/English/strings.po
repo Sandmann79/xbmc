@@ -59,7 +59,7 @@ msgid "Remove Credentials and Cookie"
 msgstr ""
 
 msgctxt "#30008"
-msgid "Database Update"
+msgid "Database"
 msgstr ""
 
 msgctxt "#30009"
@@ -183,7 +183,7 @@ msgid "Connection"
 msgstr ""
 
 msgctxt "#30039"
-msgid "Items Per Page"
+msgid "Show Update Database in Main Menu"
 msgstr ""
 
 msgctxt "#30040"
@@ -267,7 +267,7 @@ msgid "Use own user profile"
 msgstr ""
 
 msgctxt "#30060"
-msgid "Export"
+msgid "Library"
 msgstr ""
 
 msgctxt "#30061"
@@ -290,7 +290,15 @@ msgctxt "#30065"
 msgid "Enable DRM check"
 msgstr ""
 
-#empty strings from id 30066 to 30069
+msgctxt "#30066"
+msgid "Database system"
+msgstr ""
+
+msgctxt "#30067"
+msgid "Username"
+msgstr ""
+
+#empty strings from id 30068 to 30069
 
 msgctxt "#30070"
 msgid "Miscellaneous"
@@ -731,7 +739,7 @@ msgid "Captcha Request, please change IP or try again later"
 msgstr ""
 
 msgctxt "#30213"
-msgid "Unknown Error, please check amazon-login.log"
+msgid "Unknown Error, please enable advanced debugging in settings and check amazon-login.log"
 msgstr ""
 
 msgctxt "#30214"
@@ -768,4 +776,12 @@ msgstr ""
 
 msgctxt "#30223"
 msgid "Cancel"
+msgstr ""
+
+msgctxt "#30224"
+msgid "Connection to host failed"
+msgstr ""
+
+msgctxt "#30225"
+msgid "Wrong username or password"
 msgstr ""

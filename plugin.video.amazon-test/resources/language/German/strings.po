@@ -530,8 +530,8 @@ msgid "Captcha Request, please change IP or try again later"
 msgstr "Captcha Abfrage, bitte IP ändern oder später erneut versuchen"
 
 msgctxt "#30213"
-msgid "Unknown Error, please check avod-login.log"
-msgstr "Unbekannter Fehler, bitte avod-login.log prüfen"
+msgid "Unknown Error, please enable advanced debugging in settings and check avod-login.log/avod-login-si.log/avod-login-mfa.log"
+msgstr "Unbekannter Fehler, bitte ausführliches Logging in den Einstellungen aktivieren und avod-login.log/avod-login-si.log/avod-login-mfa.log prüfen"
 
 msgctxt "#30214"
 msgid "Wrong Code"

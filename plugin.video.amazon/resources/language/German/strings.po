@@ -714,8 +714,8 @@ msgid "Captcha Request, please change IP or try again later"
 msgstr "Captcha Abfrage, bitte IP ändern oder später erneut versuchen"
 
 msgctxt "#30213"
-msgid "Unknown Error, please enable advanced debugging in settings and check amazon-login.log"
-msgstr "Unbekannter Fehler, bitte ausführliches Logging in Einstellungen aktivieren amazon-login.log prüfen"
+msgid "Unknown Error, please enable advanced debugging in settings and check amazon-login.log/amazon-login-si.log/amazon-login-mfa.log"
+msgstr "Unbekannter Fehler, bitte ausführliches Logging in den Einstellungen aktivieren und amazon-login.log/amazon-login-si.log/amazon-login-mfa.log prüfen"
 
 msgctxt "#30214"
 msgid "Wrong Code"

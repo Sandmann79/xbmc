@@ -36,7 +36,7 @@ configpath = os.path.join(pldatapath, 'config')
 homepath = xbmc.translatePath('special://home').decode('utf-8')
 tmdb = base64.b64decode('YjM0NDkwYzA1NmYwZGQ5ZTNlYzlhZjIxNjdhNzMxZjQ=')
 tvdb = base64.b64decode('MUQ2MkYyRjkwMDMwQzQ0NA==')
-COOKIEFILE = os.path.join(pldatapath, 'cookies.lwp')
+CookieFile = os.path.join(pldatapath, 'cookies.lwp')
 def_fanart = os.path.join(pluginpath, 'fanart.jpg')
 na = 'not available'
 BASE_URL = 'https://www.amazon.de'
@@ -368,62 +368,64 @@ def gen_id(renew=False):
 
 def mechanizeLogin():
     cj = cookielib.LWPCookieJar()
-    if xbmcvfs.exists(COOKIEFILE):
-        cj.load(COOKIEFILE, ignore_discard=True, ignore_expires=True)
+    if xbmcvfs.exists(CookieFile):
+        cj.load(CookieFile, ignore_discard=True, ignore_expires=True)
         return cj
     Log('Login')
 
     return LogIn(False)
 
 
-def LogIn(ask=True, ue=None, up=None, attempt=1):
-    Log('Login attempt #%s' % attempt)
+def LogIn(ask=True):
     addon.setSetting('login_acc', '')
-    email = getConfig('login_name') if not ue else ue
-    password = decode(getConfig('login_pass')) if not up else up
+    addon.setSetting('use_mfa', 'false')
+    email = getConfig('login_name')
+    password = decode(getConfig('login_pass'))
     savelogin = addon.getSetting('save_login') == 'true'
     useMFA = False
 
     if ask:
-        writeConfig('login', 'true')
         keyboard = xbmc.Keyboard(email, getString(30002))
         keyboard.doModal()
         if keyboard.isConfirmed() and keyboard.getText():
             email = keyboard.getText()
             password = setLoginPW()
-        writeConfig('login', 'false')
     else:
         if not email or not password:
-            if getConfig('login', 'false') == 'false':
-                Dialog.notification(getString(30200), getString(30216))
-                xbmc.executebuiltin('Addon.OpenSettings(%s)' % addon.getAddonInfo('id'))
+            Dialog.notification(getString(30200), getString(30216))
+            xbmc.executebuiltin('Addon.OpenSettings(%s)' % addon.getAddonInfo('id'))
             return False
 
     if password:
-        writeConfig('login', 'true')
         xbmc.executebuiltin('ActivateWindow(busydialog)')
-        if xbmcvfs.exists(COOKIEFILE):
-            xbmcvfs.delete(COOKIEFILE)
+        if xbmcvfs.exists(CookieFile):
+            xbmcvfs.delete(CookieFile)
         cj = cookielib.LWPCookieJar()
         br = mechanize.Browser()
         br.set_handle_robots(False)
         br.set_cookiejar(cj)
         br.set_handle_gzip(True)
-        br.addheaders = [('User-Agent', getConfig('UserAgent'))]
         caperr = -5
         while caperr:
             Log('Connect to SignIn Page %s attempts left' % -caperr)
-            br.open(BASE_URL + "/gp/aw/si.html")
-            if 'signIn' not in [i.name for i in br.forms()]:
-                caperr = caperr + 1
-                WriteLog(br.response().read(), 'si')
+            br.addheaders = [('User-Agent', getConfig('UserAgent'))]
+            br.open(BASE_URL + '/gp/aw/si.html')
+            response = br.response().read()
+            if mobileUA(response) or 'signIn' not in [i.name for i in br.forms()]:
+                getUA(True)
+                caperr += 1
+                WriteLog(response, 'login-si')
                 xbmc.sleep(randint(750, 1500))
             else:
-                caperr = 0
+                break
+        else:
+            xbmc.executebuiltin('Dialog.Close(busydialog)')
+            Dialog.ok(getString(30200), getString(30213))
+            return False
 
-        br.select_form(name="signIn")
-        br["email"] = email
-        br["password"] = password
+        br.select_form(name='signIn')
+        br['email'] = email
+        br['password'] = password
         br.addheaders = [('Accept', 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8'),
                          ('Accept-Encoding', 'gzip, deflate'),
                          ('Accept-Language', 'de,en-US;q=0.8,en;q=0.6'),
@@ -440,62 +442,10 @@ def LogIn(ask=True, ue=None, up=None, attempt=1):
         xbmc.executebuiltin('Dialog.Close(busydialog)')
         WriteLog(response, 'login')
 
-        if mobileUA(response) and attempt < 4:
-            getUA(True)
-            return LogIn(False, email, password, attempt + 1)
-
         while 'auth-mfa-form' in response or 'ap_dcq_form' in response or 'ap_captcha_img_label' in response:
-            Log('MFA or DCQ form')
-            if 'auth-mfa-form' in response:
-                msg = soup.find('form', attrs={'id': 'auth-mfa-form'})
-                msgtxt = msg.p.renderContents().strip()
-                kb = xbmc.Keyboard('', msgtxt)
-                kb.doModal()
-                if kb.isConfirmed() and kb.getText():
-                    xbmc.executebuiltin('ActivateWindow(busydialog)')
-                    br.select_form(nr=0)
-                    br['otpCode'] = kb.getText()
-                else:
-                    return False
-            elif 'ap_dcq_form' in response:
-                msg = soup.find('div', attrs={'id': 'message_warning'})
-                Dialog.ok(pluginname, msg.p.contents[0].strip())
-                dcq = soup.find('div', attrs={'id': 'ap_dcq1a_pagelet'})
-                dcq_title = dcq.find('div', attrs={'id': 'ap_dcq1a_pagelet_title'}).h1.contents[0].strip()
-                q_title = []
-                q_id = []
-                for q in dcq.findAll('div', attrs={'class': 'dcq_question'}):
-                    if q.span.label:
-                        label = q.span.label.renderContents().strip().replace('  ', '').replace('\n', '')
-                        if q.span.label.span:
-                            label = label.replace(str(q.span.label.span), q.span.label.span.text)
-                        q_title.append(insertLF(label))
-                        q_id.append(q.input['id'])
-
-                sel = Dialog.select(insertLF(dcq_title, 60), q_title) if len(q_title) > 1 else 0
-                if sel < 0:
-                    return False
-
-                ret = Dialog.input(q_title[sel])
-                if ret:
-                    xbmc.executebuiltin('ActivateWindow(busydialog)')
-                    br.select_form(nr=0)
-                    br[q_id[sel]] = ret
-                else:
-                    return False
-            elif 'ap_captcha_img_label' in response:
-                wnd = Captcha((getString(30008).split('.')[0]), soup, email)
-                wnd.doModal()
-                if wnd.email and wnd.cap and wnd.pwd:
-                    xbmc.executebuiltin('ActivateWindow(busydialog)')
-                    br.select_form(nr=0)
-                    br['email'] = wnd.email
-                    br['password'] = wnd.pwd
-                    br['guess'] = wnd.cap
-                else:
-                    return False
-                del wnd
-
+            br = MFACheck(br, email, soup)
+            if not br:
+                return False
             br.submit()
             response = br.response().read()
             soup = parseHTML(response)
@@ -503,9 +453,17 @@ def LogIn(ask=True, ue=None, up=None, attempt=1):
             xbmc.executebuiltin('Dialog.Close(busydialog)')
 
         if 'action=sign-out' in response:
-            msg = soup.body.findAll('center')
-            wlc = msg[1].renderContents().strip()
-            usr = wlc.split(',', 1)[1][:-1].strip()
+            try:
+                msg = soup.body.findAll('center')
+                if len(msg) > 1:
+                    wlc = msg[1].renderContents().strip()
+                    usr = wlc.split(',', 1)[1][:-1].strip()
+                else:
+                    msg = soup.find('a', attrs={'data-nav-ref': 'nav_ya_signin'})
+                    wlc = msg.find('span').renderContents().strip()
+                    usr = wlc.split(',', 1)[1].strip()
+            except (IndexError, AttributeError):
+                usr = wlc = getString(30215)
             addon.setSetting('login_acc', usr)
             addon.setSetting('use_mfa', str(useMFA).lower())
             if useMFA:
@@ -515,11 +473,10 @@ def LogIn(ask=True, ue=None, up=None, attempt=1):
                 writeConfig('login_name', email)
                 writeConfig('login_pass', encode(password))
             else:
-                cj.save(COOKIEFILE, ignore_discard=True, ignore_expires=True)
-            if ask or (ue and up):
+                cj.save(CookieFile, ignore_discard=True, ignore_expires=True)
+            if ask:
                 Dialog.ok(getString(30215), wlc)
             gen_id()
-            writeConfig('login', 'false')
             return cj
         elif 'message_error' in response:
             writeConfig('login_pass', '')
@@ -535,8 +492,62 @@ def LogIn(ask=True, ue=None, up=None, attempt=1):
             Dialog.ok(getString(30200), getString(30214))
         else:
             Dialog.ok(getString(30200), getString(30213))
-        writeConfig('login', 'false')
+
     return False
+
+
+def MFACheck(br, email, soup):
+    Log('MFA, DCQ or Captcha form')
+    if 'auth-mfa-form' in str(soup):
+        msg = soup.find('form', attrs={'id': 'auth-mfa-form'})
+        msgtxt = msg.p.renderContents().strip()
+        kb = xbmc.Keyboard('', msgtxt)
+        kb.doModal()
+        if kb.isConfirmed() and kb.getText():
+            xbmc.executebuiltin('ActivateWindow(busydialog)')
+            br.select_form(nr=0)
+            br['otpCode'] = kb.getText()
+        else:
+            return False
+    elif 'ap_dcq_form' in str(soup):
+        msg = soup.find('div', attrs={'id': 'message_warning'})
+        Dialog.ok(pluginname, msg.p.contents[0].strip())
+        dcq = soup.find('div', attrs={'id': 'ap_dcq1a_pagelet'})
+        dcq_title = dcq.find('div', attrs={'id': 'ap_dcq1a_pagelet_title'}).h1.contents[0].strip()
+        q_title = []
+        q_id = []
+        for q in dcq.findAll('div', attrs={'class': 'dcq_question'}):
+            if q.span.label:
+                label = q.span.label.renderContents().strip().replace('  ', '').replace('\n', '')
+                if q.span.label.span:
+                    label = label.replace(str(q.span.label.span), q.span.label.span.text)
+                q_title.append(insertLF(label))
+                q_id.append(q.input['id'])
+
+        sel = Dialog.select(insertLF(dcq_title, 60), q_title) if len(q_title) > 1 else 0
+        if sel < 0:
+            return False
+
+        ret = Dialog.input(q_title[sel])
+        if ret:
+            xbmc.executebuiltin('ActivateWindow(busydialog)')
+            br.select_form(nr=0)
+            br[q_id[sel]] = ret
+        else:
+            return False
+    elif 'ap_captcha_img_label' in str(soup):
+        wnd = Captcha((getString(30008).split('.')[0]), soup, email)
+        wnd.doModal()
+        if wnd.email and wnd.cap and wnd.pwd:
+            xbmc.executebuiltin('ActivateWindow(busydialog)')
+            br.select_form(nr=0)
+            br['email'] = wnd.email
+            br['password'] = wnd.pwd
+            br['guess'] = wnd.cap
+        else:
+            return False
+        del wnd
+    return br
 
 
 def setLoginPW():
@@ -640,8 +651,8 @@ def getString(string_id):
 
 def remLoginData(savelogin=False, info=True):
     if savelogin or info:
-        if xbmcvfs.exists(COOKIEFILE):
-            xbmcvfs.delete(COOKIEFILE)
+        if xbmcvfs.exists(CookieFile):
+            xbmcvfs.delete(CookieFile)
 
     if not savelogin or info:
         writeConfig('login_name', '')

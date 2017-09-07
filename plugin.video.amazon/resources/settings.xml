@@ -59,7 +59,7 @@
         <setting id="seasonid" type="number" label="View ID" enable="eq(-1,6) + eq(-6,true)" subsetting="true" />
         <setting id="episodeview" type="enum" lvalues="30023|30024|30025|30026|30027|30034|30033" label="30032" default="3" enable="eq(-7,true)"/>
         <setting id="episodeid" type="number" label="View ID" enable="eq(-1,6) + eq(-8,true)" subsetting="true" />
-        <setting id="update_mm" type="bool" label="30039" default="0"/>
+        <setting id="update_mm" type="bool" label="30039" default="false"/>
     </category>
     <category label="Export">
         <setting id="enablelibraryfolder" type="bool" label="30061" default="false" />

@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-from common import xbmc, addon, xbmcvfs, xbmcgui, os, Dialog, Log, getString, getConfig, writeConfig, homepath
+from common import xbmc, addon, xbmcvfs, xbmcgui, os, Dialog, Log, getString, getConfig, writeConfig, homepath, pluginname
+from BeautifulSoup import BeautifulSoup
 
 usesqlite = addon.getSetting('dbsystem') == '0'
 dbplugin = 'script.module.amazon.database'
@@ -133,9 +134,28 @@ def connSQL(dbname):
     return cnx
 
 
+def loadSQLconfig():
+    keys = 'host port user pass'
+    userdata = xbmc.translatePath('special://userdata').decode('utf-8')
+    asfile = os.path.join(userdata, 'advancedsettings.xml')
+    if xbmcvfs.exists(asfile):
+        f = xbmcvfs.File(asfile, 'r')
+        soup = BeautifulSoup(f.read(), convertEntities=BeautifulSoup.XML_ENTITIES)
+        videodb = soup.advancedsettings.videodatabase
+        if videodb:
+            for tag in videodb.findAll():
+                if tag.name in keys:
+                    addon.setSetting('db'+tag.name, tag.string)
+        else:
+            Dialog.notification(pluginname, getString(30226))
+    else:
+        Dialog.notification(pluginname, getString(30226))
+
+
 def createDatabase(cnx, dbname):
     c = cnx.cursor()
     cur_exec(c, 'drop table if exists categories')
+    Log('Creating %s database' % dbname.upper())
 
     if 'movie' in dbname:
         cur_exec(c, 'drop table if exists movies')

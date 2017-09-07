@@ -36,12 +36,13 @@
     </category>
     <category label="30008">
         <setting id="dbsystem" type="enum" label="30066" values="SQLite|MySQL/MariaDB" default="0"/>
-        <setting id="dbhost" type="text" label="Host" default="127.0.0.1" visible="eq(-1,1)" subsetting="true"/>
-        <setting id="dbport" type="number" label="Port" default="3306" visible="eq(-2,1)" subsetting="true"/>
-        <setting id="dbuser" type="text" label="30067" default="" visible="eq(-3,1)" subsetting="true"/>
-        <setting id="dbpass" type="text" label="30003" default="" visible="eq(-4,1)" subsetting="true" option="hidden"/>
-        <setting id="customdbfolder" type="bool" label="30058" visible="eq(-5,0)" default="false"/>
-        <setting id="dbfolder" type="folder" label="30062" visible="eq(-6,0)" enable="eq(-1,true)" default="special://home/addons/script.module.amazon.database/lib" source="auto" option="writeable" subsetting="true"/>
+        <setting id="dblass" type="action" label="30068" visible="eq(-1,1)" action="RunPlugin(plugin://plugin.video.amazon/?mode=db&sitemode=loadSQLconfig)"/>
+        <setting id="dbhost" type="text" label="Host" default="127.0.0.1" visible="eq(-2,1)" subsetting="true"/>
+        <setting id="dbport" type="number" label="Port" default="3306" visible="eq(-3,1)" subsetting="true"/>
+        <setting id="dbuser" type="text" label="30067" default="" visible="eq(-4,1)" subsetting="true"/>
+        <setting id="dbpass" type="text" label="30003" default="" visible="eq(-5,1)" subsetting="true" option="hidden"/>
+        <setting id="customdbfolder" type="bool" label="30058" visible="eq(-6,0)" default="false"/>
+        <setting id="dbfolder" type="folder" label="30062" visible="eq(-7,0)" enable="eq(-1,true)" default="special://home/addons/script.module.amazon.database/lib" source="auto" option="writeable" subsetting="true"/>
         <setting id="auto_update" type="enum" lvalues="30010|30018|30019|30020|30021" label="30009" default="2"/>
         <setting id="update_time" type="time" label="30013" visible="gt(-1,0)" default="00:00" subsetting="true"/>
         <setting id="wait_idle" type="bool" label="30022" visible="gt(-2,0)" default="false" subsetting="true"/>

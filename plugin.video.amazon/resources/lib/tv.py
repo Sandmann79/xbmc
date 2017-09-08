@@ -316,6 +316,11 @@ def addTVdb(full_update=True, libasins=None, cj=True):
         new_libasins = checkLibraryAsins(libasins, cj)
         if not new_libasins:
             return
+    else:
+        while not approx:
+            jsondata = appfeed.getList('TVEpisode&RollUpToSeason=T', randint(1, 20), NumberOfResults=1)
+            approx = jsondata['message']['body'].get('approximateSize', 0)
+            xbmc.sleep(randint(500, 1000))
 
     while goAhead == 1:
         jsondata = appfeed.getList('TVEpisode&RollUpToSeason=T', endIndex, isPrime=prime,
@@ -325,7 +330,6 @@ def addTVdb(full_update=True, libasins=None, cj=True):
             break
 
         titles = jsondata['message']['body']['titles']
-        approx = jsondata['message']['body'].get('approximateSize', approx)
         endI = jsondata['message']['body']['endIndex']
         if endI:
             endIndex = endI

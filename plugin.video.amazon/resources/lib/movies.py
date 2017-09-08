@@ -117,8 +117,7 @@ def addMoviesdb(full_update=True, cj=True):
 
         dialog.create(getString(30120))
         dialog.update(0, getString(30121))
-        from db import createDatabase
-        createDatabase(MovieDB, 'movie')
+        db.createDatabase(MovieDB, 'movie')
         MOVIE_ASINS = []
     else:
         MOVIE_ASINS = getMoviedbAsins(retlist=True)
@@ -128,14 +127,19 @@ def addMoviesdb(full_update=True, cj=True):
     endIndex = 0
     new_mov = 0
     retrycount = 0
-    approx = appfeed.getList('Movie', 0, NumberOfResults=1)['message']['body'].get('approximateSize', 0)
+    approx = 0
+
+    while not approx:
+        jsondata = appfeed.getList('Movie', randint(1, 20), NumberOfResults=1)
+        approx = jsondata['message']['body'].get('approximateSize', 0)
+        xbmc.sleep(randint(500, 1000))
 
     while goAhead == 1:
         jsondata = appfeed.getList('Movie', endIndex, NumberOfResults=MAX, OrderBy='Title')
         if not jsondata:
             goAhead = -1
             break
-        approx = jsondata['message']['body'].get('approximateSize', approx)
+
         titles = jsondata['message']['body']['titles']
         del jsondata
 

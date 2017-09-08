@@ -20,7 +20,7 @@
 </addon>
 <addon id="plugin.video.amazon"
        name="Amazon"
-       version="1.8.5"
+       version="1.8.6"
        provider-name="Sandmann79 + BlueCop + Romans I XVI">
   <requires>
     <import addon="xbmc.python" version="2.24.0"/>
@@ -29,6 +29,7 @@
     <import addon="script.module.amazon.database" version="0.1.1"/>
     <import addon="script.module.pydes" version="2.0.1"/>
     <import addon="script.module.pyxbmct" version="1.1.7"/>
+    <import addon="script.module.myconnpy" version="1.1.7"/>
   </requires>
   <extension point="xbmc.python.pluginsource"
              library="default.py">
@@ -53,7 +54,7 @@ Diese Addon verwendet pyDes von Todd Whiteman</disclaimer>
 </addon>
 <addon id="plugin.video.amazon-test"
        name="Amazon VOD"
-       version="0.4.0"
+       version="0.4.1"
        provider-name="Sandmann79">
   <requires>
     <import addon="xbmc.python" version="2.24.0"/>
@@ -106,44 +107,6 @@ Diese Addon verwendet pyDes von Todd Whiteman</disclaimer>
   <extension point="xbmc.addon.metadata">
     <platform>all</platform>
   </extension>
-</addon>
-<addon id="script.module.beautifulsoup"
-       name="BeautifulSoup"
-       version="3.2.1"
-       provider-name="Leonard Richardson (leonardr@segfault.org)">
-  <requires>
-    <import addon="xbmc.python" 
-    		version="2.1.0"/>
-  </requires>
-  <extension point="xbmc.python.module"
-             library="lib" />
-  <extension point="xbmc.addon.metadata">
-    <summary>HTML/XML parser for quick-turnaround applications like screen-scraping</summary>
-    <description>Beautiful Soup parses arbitrarily invalid SGML and provides a variety of methods and Pythonic idioms for iterating and searching the parse tree.</description>
-    <license>BSD</license>
-    <platform>all</platform>
-  </extension>
-</addon>
-<addon id="script.module.mechanize"
-	name="Mechanize"
-	version="0.2.6"
-	provider-name="Tristan Fischer (sphere)">
-	<requires>
-	<import addon="xbmc.python" 
-			version="2.1.0"/>
-	</requires>
-	<extension point="xbmc.python.module"
-			 library="lib" />
-	<extension point="xbmc.addon.metadata">
-		<summary lang="en">Stateful programmatic web browsing in Python, after Andy Lester’s Perl module WWW::Mechanize.</summary>
-		<description lang="en">packed for xbmc from https://github.com/jjlee/mechanize</description>
-		<disclaimer lang="en">packed for xbmc from https://github.com/jjlee/mechanize</disclaimer>
-		<forum></forum>
-		<website>http://wwwsearch.sourceforge.net/mechanize/</website>
-		<license>BSD</license>
-		<platform>all</platform>
-		<source>https://github.com/jjlee/mechanize</source>
-	</extension>
 </addon>
 <addon id="script.module.pydes"
        name="pyDes"

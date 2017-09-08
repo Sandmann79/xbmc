@@ -153,7 +153,8 @@ def LIST_TVSEASON_SORTED(seasons=False, cmmode=0):
 def ADD_SEASON_ITEM(seasondata, mode='listtv', submode='LIST_EPISODES_DB', disptitle=False, cmmode=0, onlyinfo=False, export=False):
     asin, seriesASIN, season, seriestitle, plot, actors, network, mpaa, genres, premiered, year, stars, votes, \
         episodetotal, audio, empty, empty, isHD, isprime, empty, poster, banner, fanart, forceupd = seasondata
-    fanart, cover = getFanart(seriesASIN) if showfanart else None
+    tvfanart, tvposter = getFanart(seriesASIN)
+    fanart = tvfanart if showfanart else fanart
     infoLabels = {'Title': seriestitle,
                   'TVShowTitle': seriestitle,
                   'Plot': plot,

@@ -21,7 +21,6 @@ if xbmc.getCondVisibility('system.platform.osx'):
 if xbmc.getCondVisibility('system.platform.android'):
     platform = osAndroid
 
-osLE = socket.gethostname() == 'LibreELEC'
 hasExtRC = xbmc.getCondVisibility('System.HasAddon(script.chromium_remotecontrol)')
 useIntRC = addon.getSetting("remotectrl") == 'true'
 browser = int(addon.getSetting("browser"))
@@ -71,9 +70,14 @@ def ExtPlayback(videoUrl, isAdult, method):
     pininput = addon.getSetting("pininput") == 'true'
     fullscr = addon.getSetting("fullscreen") == 'true'
     videoUrl += '&playerDebug=true' if verbLog else ''
+    osLE = False
 
     xbmc.Player().stop()
     xbmc.executebuiltin('ActivateWindow(busydialog)')
+
+    if xbmcvfs.exists('/etc/os-release'):
+        osLE = 'libreelec' in xbmcvfs.File('/etc/os-release').read()
+
     suc, url = getCmdLine(videoUrl, method)
     if not suc:
         Dialog.notification(getString(30203), url, xbmcgui.NOTIFICATION_ERROR)

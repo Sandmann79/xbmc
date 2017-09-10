@@ -117,30 +117,6 @@ msgctxt "#30022"
 msgid "Start after 5 minutes of idle"
 msgstr "Nach 5 Minuten Leerlauf starten"
 
-msgctxt "#30023"
-msgid "Thumbnail"
-msgstr "Vorschau"
-
-msgctxt "#30024"
-msgid "Poster Wrap"
-msgstr "Poster Wrap"
-
-msgctxt "#30025"
-msgid "List"
-msgstr "Liste"
-
-msgctxt "#30026"
-msgid "Media Info 2"
-msgstr "Media Info 2"
-
-msgctxt "#30027"
-msgid "Media Info"
-msgstr "Media Info"
-
-msgctxt "#30028"
-msgid "Fanart"
-msgstr "Fanart"
-
 msgctxt "#30029"
 msgid "Movie View"
 msgstr "Film Ansicht"
@@ -156,14 +132,6 @@ msgstr "Staffel Ansicht"
 msgctxt "#30032"
 msgid "Episode View"
 msgstr "Episoden Ansicht"
-
-msgctxt "#30033"
-msgid "Custom"
-msgstr "Benutzerdefiniert"
-
-msgctxt "#30034"
-msgid "Big List"
-msgstr "Große Liste"
 
 msgctxt "#30035"
 msgid "Enable Views"

@@ -128,8 +128,7 @@ ms_mov = ms_mov if ms_mov else 'Amazon Movies'
 ms_tv = ms_tv if ms_tv else 'Amazon TV'
 
 
-def setView(content, view=False, updateListing=False):
-    # 501-POSTER WRAP 503-MLIST3 504=MLIST2 508-FANARTPOSTER
+def setView(content, updateListing=False):
     if content == 'movie':
         ctype = 'movies'
         cview = 'movieview'
@@ -143,11 +142,11 @@ def setView(content, view=False, updateListing=False):
         ctype = 'episodes'
         cview = 'episodeview'
 
-    confluence_views = [500, 501, 502, 503, 504, 508, -1]
+    views = [50, 51, 52, 53, 54, 55, 500, 501, 502, -1]
     xbmcplugin.setContent(pluginhandle, ctype)
     viewenable = addon.getSetting("viewenable") == 'true'
-    if viewenable and view:
-        viewid = confluence_views[int(addon.getSetting(cview))]
+    if viewenable:
+        viewid = views[int(addon.getSetting(cview))]
         if viewid == -1:
             viewid = int(addon.getSetting(cview.replace('view', 'id')))
         xbmc.executebuiltin('Container.SetViewMode(%s)' % viewid)
@@ -474,9 +473,9 @@ def listContent(catalog, url, page, parent, export=False):
         db.commit()
         xbmc.executebuiltin('RunPlugin(%s?mode=checkMissing)' % sys.argv[0])
         if 'search' in parent:
-            setView('season', True)
+            setView('season')
         else:
-            setView(contentType, True)
+            setView(contentType)
 
 
 def cleanTitle(title):

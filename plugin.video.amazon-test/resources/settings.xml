@@ -38,14 +38,14 @@
     </category>
     <category label="30015">
         <setting id="viewenable" type ="bool" label="30035" default="false"/>
-        <setting id="movieview" type="enum" lvalues="30023|30024|30025|30026|30027|30028|30033" label="30029" default="5" enable="eq(-1,true)" />
-        <setting id="movieid" type="number" label="View ID" enable="eq(-1,6) + eq(-2,true)" subsetting="true"/>
-        <setting id="showview" type="enum" lvalues="30023|30024|30025|30026|30027|30034|30033" label="30030" default="4" enable="eq(-3,true)"/>
-        <setting id="showid" type="number" label="View ID" enable="eq(-1,6) + eq(-4,true)" subsetting="true" />
-        <setting id="seasonview" type="enum" lvalues="30023|30024|30025|30026|30027|30034|30033" label="30031" default="4" enable="eq(-5,true)"/>
-        <setting id="seasonid" type="number" label="View ID" enable="eq(-1,6) + eq(-6,true)" subsetting="true" />
-        <setting id="episodeview" type="enum" lvalues="30023|30024|30025|30026|30027|30034|30033" label="30032" default="3" enable="eq(-7,true)"/>
-        <setting id="episodeid" type="number" label="View ID" enable="eq(-1,6) + eq(-8,true)" subsetting="true" />
+        <setting id="movieview" type="enum" values="List|Poster|IconWall|Shift|InfoWall|WideList|Wall|Banner|FanArt|Custom" label="30029" default="5" enable="eq(-1,true)" />
+        <setting id="movieid" type="number" label="View ID" enable="eq(-1,9) + eq(-2,true)" subsetting="true"/>
+        <setting id="showview" type="enum" values="List|Poster|IconWall|Shift|InfoWall|WideList|Wall|Banner|FanArt|Custom" label="30030" default="4" enable="eq(-3,true)"/>
+        <setting id="showid" type="number" label="View ID" enable="eq(-1,9) + eq(-4,true)" subsetting="true" />
+        <setting id="seasonview" type="enum" values="List|Poster|IconWall|Shift|InfoWall|WideList|Wall|Banner|FanArt|Custom" label="30031" default="4" enable="eq(-5,true)"/>
+        <setting id="seasonid" type="number" label="View ID" enable="eq(-1,9) + eq(-6,true)" subsetting="true" />
+        <setting id="episodeview" type="enum" values="List|Poster|IconWall|Shift|InfoWall|WideList|Wall|Banner|FanArt|Custom" label="30032" default="3" enable="eq(-7,true)"/>
+        <setting id="episodeid" type="number" label="View ID" enable="eq(-1,9) + eq(-8,true)" subsetting="true" />
     </category>
     <category label="30060">
         <setting id="enablelibraryfolder" type="bool" label="30061" default="false" />

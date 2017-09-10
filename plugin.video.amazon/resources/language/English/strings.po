@@ -118,29 +118,7 @@ msgctxt "#30022"
 msgid "Start after 5 minutes of idle"
 msgstr ""
 
-msgctxt "#30023"
-msgid "Thumbnail"
-msgstr ""
-
-msgctxt "#30024"
-msgid "Poster Wrap"
-msgstr ""
-
-msgctxt "#30025"
-msgid "List"
-msgstr ""
-
-msgctxt "#30026"
-msgid "Media Info 2"
-msgstr ""
-
-msgctxt "#30027"
-msgid "Media Info"
-msgstr ""
-
-msgctxt "#30028"
-msgid "Fanart"
-msgstr ""
+#empty strings from id 30023 to 30028
 
 msgctxt "#30029"
 msgid "Movie View"
@@ -158,13 +136,7 @@ msgctxt "#30032"
 msgid "Episode View"
 msgstr ""
 
-msgctxt "#30033"
-msgid "Custom"
-msgstr ""
-
-msgctxt "#30034"
-msgid "Big List"
-msgstr ""
+#empty strings from id 30033 to 30034
 
 msgctxt "#30035"
 msgid "Enable Views"

@@ -1149,6 +1149,8 @@ def IStreamPlayback(asin, name, trailer, isAdult, extern):
     listitem.setProperty('%s.license_key' % is_addon, licURL)
     listitem.setProperty('%s.stream_headers' % is_addon, 'user-agent=' + getConfig('UserAgent'))
     listitem.setProperty('inputstreamaddon', is_addon)
+    listitem.setMimeType('application/dash+xml')
+    listitem.setContentLookup(False)
     xbmcplugin.setResolvedUrl(pluginhandle, True, listitem=listitem)
 
     while not xbmc.Player().isPlayingVideo():

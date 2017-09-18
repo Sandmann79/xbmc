@@ -165,6 +165,9 @@ def check_output(*popenargs, **kwargs):
 
 
 def IStreamPlayback(trailer, isAdult, extern):
+    drm_check = addon.getSetting("drm_check") == 'true'
+    at_check = addon.getSetting("at_check") == 'true'
+
     if not is_addon:
         Log('No Inputstream Addon found or activated')
         Dialog.notification(getString(30203), 'No Inputstream Addon found or activated', xbmcgui.NOTIFICATION_ERROR)
@@ -187,16 +190,18 @@ def IStreamPlayback(trailer, isAdult, extern):
 
     orgmpd = mpd
     is_version = xbmcaddon.Addon(is_addon).getAddonInfo('version') if is_addon else '0'
+    is_binary = xbmc.getCondVisibility('System.HasAddon(kodi.binary.instance.inputstream)')
     mpd = re.sub(r'~', '', mpd) if mpd != re.sub(r'~', '', mpd) else re.sub(r'/[1-9][$].*?/', '/', mpd)
 
-    if addon.getSetting("drm_check") == 'true':
+    if drm_check:
         mpdcontent = getURL(mpd, retjson=False)
-        if len(re.compile(r'(?i)edef8ba9-79d6-4ace-a3c8-27dcd51d21ed').findall(mpdcontent)) < 2:
-            if platform != osAndroid and int(is_version[0:1]) < 2:
+        if 'avc1.4D00' in mpdcontent:
+            if platform != osAndroid and not is_binary:
                 xbmc.executebuiltin('ActivateWindow(busydialog)')
                 return False
-        elif platform == osAndroid or int(is_version[0:1]) >= 2:
+        if mpdcontent.count('EDEF8BA9-79D6-4ACE-A3C8-27DCD51D21ED') > 1 and platform == osAndroid:
             mpd = orgmpd
+            at_check = False
 
     Log(mpd)
 
@@ -225,7 +230,7 @@ def IStreamPlayback(trailer, isAdult, extern):
 
     Log('Using %s Version:%s' %(is_addon, is_version))
     listitem.setArt({'thumb': infoLabels['Thumb']})
-    listitem.setInfo('video', infoLabels)
+    listitem.setInfo('video', getInfolabels(infoLabels))
     listitem.setSubtitles(subs)
     listitem.setProperty('%s.license_type' % is_addon, 'com.widevine.alpha')
     listitem.setProperty('%s.license_key' % is_addon, licURL)
@@ -235,14 +240,84 @@ def IStreamPlayback(trailer, isAdult, extern):
     listitem.setContentLookup(False)
     xbmcplugin.setResolvedUrl(pluginhandle, True, listitem=listitem)
 
-    while not xbmc.Player().isPlaying():
-        xbmc.sleep(500)
-
-    xbmc.sleep(5000)
-    Log('Playback startet...', 0)
+    valid_track = validAudioTrack()
+    Log('Playback started...', 0)
     Log('Video ContentType Movie? %s' % xbmc.getCondVisibility('VideoPlayer.Content(movies)'), 0)
     Log('Video ContentType Episode? %s' % xbmc.getCondVisibility('VideoPlayer.Content(episodes)'), 0)
+
+    if not valid_track and at_check:
+        lang = addon.getSetting("at_lang")
+        res_pid = xbmc.executeJSONRPC('{"jsonrpc":"2.0","method":"Player.GetActivePlayers","id": 1}')
+        pid = [i['playerid'] for i in json.loads(res_pid)['result'] if i['type'] == 'video'][0]
+        res_all = xbmc.executeJSONRPC('{"jsonrpc":"2.0","method":"Player.GetProperties","params":'
+                                      '{"properties":["audiostreams"],"playerid": %s},"id": 1}' % pid)
+        all_tracks = json.loads(res_all)['result']['audiostreams']
+        Log(str(all_tracks).replace('},', '}\n'))
+
+        count = 3
+        while count and len(all_tracks):
+            res_cur = xbmc.executeJSONRPC('{"jsonrpc":"2.0","method":"Player.GetProperties","params":'
+                                          '{"properties":["currentaudiostream"],"playerid": %s},"id": 1}' % pid)
+            cur_track = json.loads(res_cur)['result']['currentaudiostream']['index']
+            all_tracks = [i for i in all_tracks if i['index'] != cur_track]
+            Log('Current AudioTrackID %d' % cur_track)
+            tracks = all_tracks
+            if lang in str(tracks):
+                tracks = [i for i in tracks if i['language'] == lang]
+            if 'eac3' in str(tracks):
+                tracks = [i for i in tracks if i['codec'] == 'eac3']
+            chan = max([i['channels'] for i in tracks])
+            trackid = -1
+            trackbr = 0
+
+            for at in tracks:
+                if at['channels'] == chan and at['bitrate'] > trackbr:
+                    trackid = at['index']
+                    trackbr = at['bitrate']
+
+            if trackid > -1:
+                Log('Switching to AudioTrackID %d' % trackid)
+                xbmc.Player().setAudioStream(trackid)
+                if validAudioTrack():
+                    break
+            count -= 1
     return True
+
+
+def validAudioTrack():
+    player = xbmc.Player()
+    sleeptm = 0.2
+    Log('Checking AudioTrack')
+
+    while not player.isPlayingVideo():
+        sleep(sleeptm)
+
+    cac_s = time.time()
+    Log('Player Starting: %s/%s' % (player.getTime(), player.getTotalTime()))
+    while xbmc.getCondVisibility('!Player.Caching') and cac_s + 1.2 > time.time():
+        sleep(sleeptm)
+
+    cac_s = time.time()
+    Log('Player Caching: %s/%s' % (player.getTime(), player.getTotalTime()))
+    while xbmc.getCondVisibility('Player.Caching') and cac_s + 2 > time.time():
+        sleep(sleeptm)
+
+    Log('Player Resuming: %s/%s' % (player.getTime(), player.getTotalTime()))
+
+    chan1_track = xbmc.getInfoLabel('VideoPlayer.AudioChannels')
+    sr_track = int(xbmc.getInfoLabel('Player.Process(AudioSamplerate)').replace(',', ''))
+    cc_track = xbmc.getInfoLabel('VideoPlayer.AudioCodec')
+    ch_track = xbmc.getInfoLabel('Player.Process(AudioChannels)	')
+    Log('Codec:%s Samplerate:%s Channels:I(%s)R(%s)' % (cc_track, sr_track, chan1_track, len(ch_track.split(','))))
+
+    if cc_track == 'eac3' and sr_track >= 48000:
+        retval = True
+    elif cc_track != 'eac3' and sr_track >= 22050:
+        retval = True
+    else:
+        retval = False
+
+    return retval
 
 
 def parseSubs(data):

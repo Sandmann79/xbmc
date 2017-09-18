@@ -104,7 +104,15 @@ msgctxt "#30020"
 msgid "Enable DRM check"
 msgstr ""
 
-#empty strings from id 30021 to 30028
+msgctxt "#30021"
+msgid "Switch Audiotrack, if not valid (experimental)"
+msgstr ""
+
+msgctxt "#30022"
+msgid "Language"
+msgstr ""
+
+#empty strings from id 30023 to 30028
 
 msgctxt "#30029"
 msgid "Movie View"

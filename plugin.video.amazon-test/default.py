@@ -81,7 +81,7 @@ HomeIcon = os.path.join(PluginPath, 'resources', 'home.png')
 country = int(addon.getSetting('country'))
 BaseUrl = 'https://www.amazon.' + ['de', 'co.uk', 'com', 'co.jp', ''][country]
 ATVUrl = 'https://atv-%s.amazon.com' % ['eu', 'eu', 'ext', 'ext-fe', 'ext'][country]
-wl_order = ['DATE_ADDED_DESC', 'TITLE_DESC', 'TITLE_ASC'][int('0'+addon.getSetting("wl_order"))]
+wl_order = ['DATE_ADDED_DESC', 'TITLE_DESC', 'TITLE_ASC'][int('0' + addon.getSetting("wl_order"))]
 MarketID = ['A1PA6795UKMFR9', 'A1F83G8C2ARO7P', 'ATVPDKIKX0DER', 'A1VC38T7YXB528', ''][country]
 Language = ['de', 'en', 'en', 'jp', ''][country]
 AgeRating = ['FSK ', '', '', '', ''][country]
@@ -163,7 +163,7 @@ def getURL(url, useCookie=False, silent=False, headers=None, rjson=True, attempt
     if not silent or verbLog:
         dispurl = url
         dispurl = re.sub('(?i)%s|%s|&token=\w+|&customerId=\w+' % (tvdb, tmdb), '', url).strip()
-        Log('getURL: ' + dispurl)
+        Log('%sURL: %s' % ('check' if check else 'get', dispurl))
 
     headers = [] if not headers else headers
     headers += [('User-Agent', getConfig('UserAgent'))] if 'User-Agent' not in headers.__str__() else []
@@ -271,7 +271,7 @@ def addVideo(name, asin, infoLabels, cm=[], export=False):
         Export(infoLabels, url)
     else:
         cm.insert(0, (getString(30101), 'Action(ToggleWatched)'))
-        cm.insert(1, (getString(30102), 'RunPlugin(%s)' % (url+'&selbitrate=1')))
+        cm.insert(1, (getString(30102), 'RunPlugin(%s)' % (url + '&selbitrate=1')))
         url += '&selbitrate=0'
         item.setInfo(type='Video', infoLabels=getInfolabels(infoLabels))
         item.addContextMenuItems(cm)
@@ -324,7 +324,8 @@ def updateTime(savetime=True):
         try:
             result = c.execute('select content, id from menu where node = ("last_update")').fetchone()
             result = True if DBVersion == float(result[1]) else False
-        except: pass
+        except:
+            pass
     c.close()
     return result
 
@@ -454,7 +455,7 @@ def listContent(catalog, url, page, parent, export=False):
                     curl = 'SeriesASIN=%s&ContentType=TVEpisode,TVSeason&RollUpToSeason=T&IncludeBlackList=T%s' % (
                         infoLabels['SeriesAsin'], OfferGroup)
                     cm.insert(0, (getString(30182), 'Container.Update(%s?mode=listContent&cat=Browse&url=%s&page=1)' % (
-                                sys.argv[0], urllib.quote_plus(curl))))
+                        sys.argv[0], urllib.quote_plus(curl))))
 
             if export:
                 url = re.sub(r'(?i)contenttype=\w+', 'ContentType=TVEpisode', url)
@@ -980,7 +981,7 @@ def PlayVideo(name, asin, adultstr, trailer, forcefb=0):
                 Dialog.ok(getString(30203), getString(30218))
                 playable = True
 
-    if methodOW !=3:
+    if methodOW != 3:
         playDummyVid()
 
 
@@ -1077,6 +1078,8 @@ def AndroidPlayback(asin, trailer):
 def IStreamPlayback(asin, name, trailer, isAdult, extern):
     mpaa_str = RestrAges + getString(30171)
     vMT = 'Trailer' if trailer == '1' else 'Feature'
+    drm_check = addon.getSetting("drm_check") == 'true'
+    at_check = addon.getSetting("at_check") == 'true'
 
     if not is_addon:
         Log('No Inputstream Addon found or activated')
@@ -1096,17 +1099,22 @@ def IStreamPlayback(asin, name, trailer, isAdult, extern):
         return True
 
     is_version = xbmcaddon.Addon(is_addon).getAddonInfo('version') if is_addon else '0'
+    is_binary = xbmc.getCondVisibility('System.HasAddon(kodi.binary.instance.inputstream)')
     orgmpd = mpd
     mpd = re.sub(r'~', '', mpd) if mpd != re.sub(r'~', '', mpd) else re.sub(r'/[1-9][$].*?/', '/', mpd)
+    # mpd = re.sub('/[^/]*/[^/]*~/', '/', mpd)                           # 256kbits eac3
+    # mpd = re.sub('/[^/]*~/', '/2$tQ1Rj-TTsO34klUt8K0l6HnN5q0~/', mpd)  # AndroidUrl (de)
+    # mpd = re.sub('/[^/]*~/', '/2$6BJKsZ54Gexh0EdtXZCzEAxiCYo/', mpd)   # tvUrl
 
-    if addon.getSetting("drm_check") == 'true':
+    if drm_check:
         mpdcontent = getURL(mpd, rjson=False)
-        if len(re.compile(r'(?i)edef8ba9-79d6-4ace-a3c8-27dcd51d21ed').findall(mpdcontent)) < 2:
-            if platform != osAndroid and int(is_version[0:1]) < 2:
+        if 'avc1.4D00' in mpdcontent:
+            if platform != osAndroid and not is_binary:
                 xbmc.executebuiltin('ActivateWindow(busydialog)')
                 return False
-        elif platform == osAndroid or int(is_version[0:1]) >= 2:
+        if mpdcontent.count('EDEF8BA9-79D6-4ACE-A3C8-27DCD51D21ED') > 1 and platform == osAndroid:
             mpd = orgmpd
+            at_check = False
 
     Log(mpd)
 
@@ -1137,12 +1145,12 @@ def IStreamPlayback(asin, name, trailer, isAdult, extern):
     listitem = xbmcgui.ListItem(label=title, path=mpd)
 
     if extern or trailer == '1':
-        listitem.setInfo('video', Info)
+        listitem.setInfo('video', getInfolabels(Info))
 
     if 'adaptive' in is_addon:
         listitem.setProperty('inputstream.adaptive.manifest_type', 'mpd')
 
-    Log('Using %s Version:%s' %(is_addon, is_version))
+    Log('Using %s Version:%s' % (is_addon, is_version))
     listitem.setArt({'thumb': thumb})
     listitem.setSubtitles(subs)
     listitem.setProperty('%s.license_type' % is_addon, 'com.widevine.alpha')
@@ -1153,13 +1161,84 @@ def IStreamPlayback(asin, name, trailer, isAdult, extern):
     listitem.setContentLookup(False)
     xbmcplugin.setResolvedUrl(pluginhandle, True, listitem=listitem)
 
-    while not xbmc.Player().isPlayingVideo():
-        sleep(2)
-
+    valid_track = validAudioTrack()
     Log('Playback started...', 0)
     Log('Video ContentType Movie? %s' % xbmc.getCondVisibility('VideoPlayer.Content(movies)'), 0)
     Log('Video ContentType Episode? %s' % xbmc.getCondVisibility('VideoPlayer.Content(episodes)'), 0)
+
+    if not valid_track and at_check:
+        lang = addon.getSetting("at_lang")
+        res_pid = xbmc.executeJSONRPC('{"jsonrpc":"2.0","method":"Player.GetActivePlayers","id": 1}')
+        pid = [i['playerid'] for i in json.loads(res_pid)['result'] if i['type'] == 'video'][0]
+        res_all = xbmc.executeJSONRPC('{"jsonrpc":"2.0","method":"Player.GetProperties","params":'
+                                      '{"properties":["audiostreams"],"playerid": %s},"id": 1}' % pid)
+        all_tracks = json.loads(res_all)['result']['audiostreams']
+        Log(str(all_tracks).replace('},', '}\n'))
+
+        count = 3
+        while count and len(all_tracks):
+            res_cur = xbmc.executeJSONRPC('{"jsonrpc":"2.0","method":"Player.GetProperties","params":'
+                                          '{"properties":["currentaudiostream"],"playerid": %s},"id": 1}' % pid)
+            cur_track = json.loads(res_cur)['result']['currentaudiostream']['index']
+            all_tracks = [i for i in all_tracks if i['index'] != cur_track]
+            Log('Current AudioTrackID %d' % cur_track)
+            tracks = all_tracks
+            if lang in str(tracks):
+                tracks = [i for i in tracks if i['language'] == lang]
+            if 'eac3' in str(tracks):
+                tracks = [i for i in tracks if i['codec'] == 'eac3']
+            chan = max([i['channels'] for i in tracks])
+            trackid = -1
+            trackbr = 0
+
+            for at in tracks:
+                if at['channels'] == chan and at['bitrate'] > trackbr:
+                    trackid = at['index']
+                    trackbr = at['bitrate']
+
+            if trackid > -1:
+                Log('Switching to AudioTrackID %d' % trackid)
+                xbmc.Player().setAudioStream(trackid)
+                if validAudioTrack():
+                    break
+            count -= 1
     return True
+
+
+def validAudioTrack():
+    player = xbmc.Player()
+    sleeptm = 0.2
+    Log('Checking AudioTrack')
+
+    while not player.isPlayingVideo():
+        sleep(sleeptm)
+
+    cac_s = time.time()
+    Log('Player Starting: %s/%s' % (player.getTime(), player.getTotalTime()))
+    while xbmc.getCondVisibility('!Player.Caching') and cac_s + 1.2 > time.time():
+        sleep(sleeptm)
+
+    cac_s = time.time()
+    Log('Player Caching: %s/%s' % (player.getTime(), player.getTotalTime()))
+    while xbmc.getCondVisibility('Player.Caching') and cac_s + 2 > time.time():
+        sleep(sleeptm)
+
+    Log('Player Resuming: %s/%s' % (player.getTime(), player.getTotalTime()))
+
+    chan1_track = xbmc.getInfoLabel('VideoPlayer.AudioChannels')
+    sr_track = int(xbmc.getInfoLabel('Player.Process(AudioSamplerate)').replace(',', ''))
+    cc_track = xbmc.getInfoLabel('VideoPlayer.AudioCodec')
+    ch_track = xbmc.getInfoLabel('Player.Process(AudioChannels)	')
+    Log('Codec:%s Samplerate:%s Channels:I(%s)R(%s)' % (cc_track, sr_track, chan1_track, len(ch_track.split(','))))
+
+    if cc_track == 'eac3' and sr_track >= 48000:
+        retval = True
+    elif cc_track != 'eac3' and sr_track >= 22050:
+        retval = True
+    else:
+        retval = False
+
+    return retval
 
 
 def AddonEnabled(addon_id):
@@ -1222,7 +1301,7 @@ def getCmdLine(videoUrl, asin, method):
                  [(None, ['Safari\\Safari.exe'], '', 'safari'), '', '', '']]
 
     if not cust_br:
-            br_path = ''
+        br_path = ''
 
     if platform != osOSX and not cust_br:
         for path in os_paths[platform]:
@@ -1377,7 +1456,7 @@ def getUrldata(mode, values, retformat='json', devicetypeid=False, version=1, fi
     url += opt
     if extra:
         url += '&resourceUsage=ImmediateConsumption&consumptionType=Streaming&deviceDrmOverride=CENC' \
-               '&deviceStreamingTechnologyOverride=DASH&deviceProtocolOverride=Http&audioTrackId=all' \
+               '&deviceStreamingTechnologyOverride=DASH&deviceProtocolOverride=Https&audioTrackId=all' \
                '&deviceBitrateAdaptationsOverride=CVBR%2CCBR'
         url += '&videoMaterialType=' + vMT
         url += '&desiredResources=' + dRes
@@ -1804,7 +1883,7 @@ def SetupLibrary():
 
 def CreateInfoFile(nfofile, path, content, Infol, language, hasSubtitles=False):
     Info = {}
-    for k,v in Infol.items():
+    for k, v in Infol.items():
         if isinstance(v, str):
             v = unicode(v.decode('utf-8'))
         if isinstance(v, list):
@@ -1998,10 +2077,10 @@ def getUA(blacklist=False):
         UAlist = text.string.split('\n')
         UAblist = []
         writeConfig('UABlacklist', json.dumps(UAblist))
-        writeConfig('UAlist', json.dumps(UAlist[0:len(UAlist)-1]))
+        writeConfig('UAlist', json.dumps(UAlist[0:len(UAlist) - 1]))
         UAwlist = UAlist
 
-    UAnew = UAwlist[randint(0, len(UAwlist)-1)] if UAwlist else \
+    UAnew = UAwlist[randint(0, len(UAwlist) - 1)] if UAwlist else \
         'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/59.0.3071.115 Safari/537.36'
     writeConfig('UserAgent', UAnew)
     Log('Using UserAgent: ' + UAnew)
@@ -2021,8 +2100,8 @@ def sleep(sec):
 
 
 def getInfolabels(Infos):
-    rem_keys = 'ishd isprime asins audiochannels banner displaytitle fanart poster' \
-               'thumb traileravailable contenttype isadult totalseasons seriesasin'
+    rem_keys = ('ishd', 'isprime', 'asins', 'audiochannels', 'banner', 'displaytitle', 'fanart', 'poster', 'seasonasin',
+                'thumb', 'traileravailable', 'contenttype', 'isadult', 'totalseasons', 'seriesasin', 'episodename')
     if not Infos:
         return
     return {k: v for k, v in Infos.items() if k.lower() not in rem_keys}
@@ -2126,7 +2205,6 @@ class window(xbmcgui.WindowDialog):
 
 
 class AgeSettings(pyxbmct.AddonDialogWindow):
-
     def __init__(self, title=''):
         super(AgeSettings, self).__init__(title)
         self.age_list = [age[0] for age in Ages[country]]
@@ -2173,7 +2251,6 @@ class AgeSettings(pyxbmct.AddonDialogWindow):
 
 
 class Captcha(pyxbmct.AddonDialogWindow):
-
     def __init__(self, title='', soup=None, email=None):
         super(Captcha, self).__init__(title)
         head = soup.find('div', attrs={'id': 'message_warning'})

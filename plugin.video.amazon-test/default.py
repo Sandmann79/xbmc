@@ -2147,8 +2147,11 @@ class window(xbmcgui.WindowDialog):
 
     @staticmethod
     def getDuration(asin):
-        if xbmc.getInfoLabel('ListItem.Duration'):
-            return int(xbmc.getInfoLabel('ListItem.Duration')) * 60
+        li_dur = xbmc.getInfoLabel('ListItem.Duration')
+        if li_dur:
+            if ':' in li_dur:
+                return sum(i * int(t) for i, t in zip([3600, 60, 1], li_dur.split(":")))
+            return int(li_dur) * 60
         else:
             content = getATVData('GetASINDetails', 'ASINList=' + asin)['titles'][0]
             ct, Info = getInfos(content, False)

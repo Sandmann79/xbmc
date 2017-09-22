@@ -664,8 +664,11 @@ class window(xbmcgui.WindowDialog):
 
     @staticmethod
     def getDuration():
-        if xbmc.getInfoLabel('ListItem.Duration'):
-            return int(xbmc.getInfoLabel('ListItem.Duration')) * 60
+        li_dur = xbmc.getInfoLabel('ListItem.Duration')
+        if li_dur:
+            if ':' in li_dur:
+                return sum(i * int(t) for i, t in zip([3600, 60, 1], li_dur.split(":")))
+            return int(li_dur) * 60
         else:
             infoLabels = GetStreamInfo(args.get('asin'))
             return int(infoLabels.get('Duration', 0))

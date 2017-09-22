@@ -191,15 +191,14 @@ def IStreamPlayback(trailer, isAdult, extern):
     orgmpd = mpd
     is_version = xbmcaddon.Addon(is_addon).getAddonInfo('version') if is_addon else '0'
     is_binary = xbmc.getCondVisibility('System.HasAddon(kodi.binary.instance.inputstream)')
-    mpd = re.sub(r'~', '', mpd) if mpd != re.sub(r'~', '', mpd) else re.sub(r'/[1-9][$].*?/', '/', mpd)
+    mpd = re.sub('/[^/]*~/', '/2$cRlBqQh9nnSAW9qpcQWMwOQi3bA~/', mpd)
 
     if drm_check:
         mpdcontent = getURL(mpd, retjson=False)
-        if 'avc1.4D00' in mpdcontent:
-            if platform != osAndroid and not is_binary:
-                xbmc.executebuiltin('ActivateWindow(busydialog)')
-                return False
-        if mpdcontent.count('EDEF8BA9-79D6-4ACE-A3C8-27DCD51D21ED') > 1 and platform == osAndroid:
+        if 'avc1.4D00' in mpdcontent and platform != osAndroid and not is_binary:
+            xbmc.executebuiltin('ActivateWindow(busydialog)')
+            return False
+        if mpdcontent.count('EDEF8BA9-79D6-4ACE-A3C8-27DCD51D21ED') > 1 and (platform == osAndroid or is_binary):
             mpd = orgmpd
             at_check = False
 
@@ -247,18 +246,12 @@ def IStreamPlayback(trailer, isAdult, extern):
 
     if not valid_track and at_check:
         lang = addon.getSetting("at_lang")
-        res_pid = xbmc.executeJSONRPC('{"jsonrpc":"2.0","method":"Player.GetActivePlayers","id": 1}')
-        pid = [i['playerid'] for i in json.loads(res_pid)['result'] if i['type'] == 'video'][0]
-        res_all = xbmc.executeJSONRPC('{"jsonrpc":"2.0","method":"Player.GetProperties","params":'
-                                      '{"properties":["audiostreams"],"playerid": %s},"id": 1}' % pid)
-        all_tracks = json.loads(res_all)['result']['audiostreams']
+        all_tracks = jsonRPC('Player.GetProperties', 'audiostreams', {'playerid': 0})
         Log(str(all_tracks).replace('},', '}\n'))
 
         count = 3
         while count and len(all_tracks):
-            res_cur = xbmc.executeJSONRPC('{"jsonrpc":"2.0","method":"Player.GetProperties","params":'
-                                          '{"properties":["currentaudiostream"],"playerid": %s},"id": 1}' % pid)
-            cur_track = json.loads(res_cur)['result']['currentaudiostream']['index']
+            cur_track = jsonRPC('Player.GetProperties', 'currentaudiostream', {'playerid': 0})['index']
             all_tracks = [i for i in all_tracks if i['index'] != cur_track]
             Log('Current AudioTrackID %d' % cur_track)
             tracks = all_tracks
@@ -638,8 +631,7 @@ def playDummyVid():
 
 
 def SetVol(step):
-    rpc = '{"jsonrpc": "2.0", "method": "Application.GetProperties", "params": {"properties": ["volume"]}, "id": 1}'
-    vol = json.loads(xbmc.executeJSONRPC(rpc))["result"]["volume"]
+    vol = jsonRPC('Application.GetProperties', 'volume')
     xbmc.executebuiltin('SetVolume(%d,showVolumeBar)' % (vol + step))
 
 

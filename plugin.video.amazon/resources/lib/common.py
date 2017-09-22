@@ -832,9 +832,8 @@ def parseHTML(response):
 
 
 def AddonEnabled(addon_id):
-    result = xbmc.executeJSONRPC('{"jsonrpc":"2.0","method":"Addons.GetAddonDetails","id":1,\
-                                   "params":{"addonid":"%s", "properties": ["enabled"]}}' % addon_id)
-    return False if '"error":' in result or '"enabled":false' in result else True
+    res = jsonRPC('Addons.GetAddonDetails', 'enabled', {'addonid': addon_id})
+    return res['addon'].get('enabled', False) if 'addon' in res.keys() else False
 
 
 def getUA(blacklist=False):
@@ -888,12 +887,36 @@ def getInfolabels(Infos):
     return {k: v for k, v in Infos.items() if k.lower() not in rem_keys}
 
 
+def jsonRPC(method, props='', param=None):
+    rpc = {'jsonrpc': '2.0',
+           'method': method,
+           'params': {},
+           'id': 1}
+
+    if props:
+        rpc['params']['properties'] = props.split(',')
+    if param:
+        rpc['params'].update(param)
+    if 'playerid' in param.keys():
+        res_pid = xbmc.executeJSONRPC('{"jsonrpc":"2.0","method":"Player.GetActivePlayers","id": 1}')
+        pid = [i['playerid'] for i in json.loads(res_pid)['result'] if i['type'] == 'video']
+        pid = pid[0] if pid else 0
+        rpc['params']['playerid'] = pid
+
+    res = json.loads(xbmc.executeJSONRPC(json.dumps(rpc)))
+    if 'error' in res.keys():
+        Log(res['error'])
+        return res['error']
+
+    return res['result'].get(props, res['result'])
+
+
 if AddonEnabled('inputstream.adaptive'):
     is_addon = 'inputstream.adaptive'
 elif AddonEnabled('inputstream.mpd'):
     is_addon = 'inputstream.mpd'
 else:
-    is_addon = None
+    is_addon = ''
 
 if not getConfig('UserAgent'):
     getUA()

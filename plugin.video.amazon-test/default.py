@@ -957,7 +957,7 @@ def PlayVideo(name, asin, adultstr, trailer, forcefb=0):
     playable = False
     fallback = int(addon.getSetting("fallback_method"))
     methodOW = fallback - 1 if forcefb and fallback else playMethod
-    videoUrl = "%s/?autoplay%s=1" % (amazonUrl, ('trailer' if trailer == '1' else ''))
+    videoUrl = "%s/?autoplay=%s" % (amazonUrl, ('trailer' if trailer == '1' else '1'))
     extern = not xbmc.getInfoLabel('Container.PluginName').startswith('plugin.video.amazon')
 
     if extern:

@@ -202,7 +202,14 @@ def getURL(url, useCookie=False, silent=False, headers=None, attempt=0, retjson=
     headers += [('Host', BASE_URL.split('//')[1])] if 'Host' not in headers.__str__() else []
 
     try:
-        opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cj), urllib2.HTTPRedirectHandler)
+        if sys.version_info[0:3] > (2, 7, 8):
+            ctx = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
+            ctx.options |= ssl.OP_NO_SSLv2
+            ctx.options |= ssl.OP_NO_SSLv3
+            opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cj), urllib2.HTTPRedirectHandler, urllib2.HTTPSHandler(context=ctx))
+        else:
+            Log('Using outdated Python version %d.%d.%d' % (sys.version_info[0:3]))
+            opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cj), urllib2.HTTPRedirectHandler)
         opener.addheaders = headers
         usock = opener.open(url)
         response = usock.read() if not check else 'OK'

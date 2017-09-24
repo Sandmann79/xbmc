@@ -289,14 +289,14 @@ def MainMenu():
     Log('Version: %s' % __version__)
     Log('Unicode support: %s' % os.path.supports_unicode_filenames)
     loadCategories()
-    cm_wl = [(getString(30185) % 'Watchlist', 'RunPlugin(%s?mode=getList&url=%s&export=1)' % (sys.argv[0], watchlist))]
+    cm_wl = [(getString(30185) % 'Watchlist', 'RunPlugin(%s?mode=getListMenu&url=%s&export=1)' % (sys.argv[0], watchlist))]
     cm_lb = [(getString(30185) % getString(30100),
-              'RunPlugin(%s?mode=getList&url=%s&export=1)' % (sys.argv[0], library))]
-    addDir('Watchlist', 'getList', watchlist, cm=cm_wl)
+              'RunPlugin(%s?mode=getListMenu&url=%s&export=1)' % (sys.argv[0], library))]
+    addDir('Watchlist', 'getListMenu', watchlist, cm=cm_wl)
     addDir(getString(30104), 'listCategories', getNodeId('movies'), opt='30143')
     addDir(getString(30107), 'listCategories', getNodeId('tv_shows'), opt='30160')
     addDir(getString(30108), 'Search', '')
-    addDir(getString(30100), 'getList', library, cm=cm_lb)
+    addDir(getString(30100), 'getListMenu', library, cm=cm_lb)
     xbmcplugin.endOfDirectory(pluginhandle, updateListing=False)
 
 
@@ -446,7 +446,7 @@ def listContent(catalog, url, page, parent, export=False):
               (getString(wlmode + 30180) % getString(langID[contentType]),
                'RunPlugin(%s?mode=WatchList&url=%s&opt=%s)' % (sys.argv[0], asin, wlmode)),
               (getString(30185) % getString(langID[contentType]),
-               'RunPlugin(%s?mode=getList&url=%s&export=1)' % (sys.argv[0], asin)),
+               'RunPlugin(%s?mode=getListMenu&url=%s&export=1)' % (sys.argv[0], asin)),
               (getString(30186), 'UpdateLibrary(video)')]
 
         if contentType == 'movie' or contentType == 'episode':
@@ -766,28 +766,32 @@ def formatSeason(infoLabels, parent):
     return name
 
 
-def getList(listing, export):
+def getListMenu(listing, export):
+    if export:
+        getList(listing, export, ['movie', 'tv'])
+    else:
+        addDir(getString(30104), 'getList', listing, export, opt='movie')
+        addDir(getString(30107), 'getList', listing, export, opt='tv')
+        xbmcplugin.endOfDirectory(pluginhandle, updateListing=False)
+
+
+def getList(listing, export, cont):
     if listing == watchlist or listing == library:
         cj = MechanizeLogin()
         if not cj:
             return
-        asins_movie = scrapAsins('/gp/video/%s/movie/?ie=UTF8&sort=%s' % (listing, wl_order), cj)
-        asins_tv = scrapAsins('/gp/video/%s/tv/?ie=UTF8&sort=%s' % (listing, wl_order), cj)
+        asins = ''
+        for content in cont:
+            asins += scrapAsins('/gp/video/%s/%s/?ie=UTF8&sort=%s' % (listing, content, wl_order), cj) + ','
     else:
-        asins_movie = listing
-        asins_tv = ''
-
-    url = 'ASINList='
-    extraArgs = '&RollUpToSeries=T' if dispShowOnly else ''
+        asins = listing
 
     if export:
-        url += asins_movie + ',' + asins_tv
         SetupLibrary()
-        listContent('GetASINDetails', url, 1, listing, export)
-    else:
-        addDir(getString(30104), 'listContent', url + asins_movie, catalog='GetASINDetails', opt=listing)
-        addDir(getString(30107), 'listContent', url + asins_tv + extraArgs, catalog='GetASINDetails', opt=listing)
-        xbmcplugin.endOfDirectory(pluginhandle, updateListing=False)
+
+    url = 'ASINList=' + asins
+    extraArgs = '&RollUpToSeries=T' if dispShowOnly and 'movie' not in cont and not export else ''
+    listContent('GetASINDetails', url + extraArgs, 1, listing)
 
 
 def Log(msg, level=xbmc.LOGNOTICE):
@@ -2378,7 +2382,9 @@ elif mode == 'listContent':
 elif mode == 'PlayVideo':
     PlayVideo(args.get('name'), args.get('asin'), args.get('adult'), args.get('trailer'), int(args.get('selbitrate')))
 elif mode == 'getList':
-    getList(args.get('url', ''), int(args.get('export', '0')))
+    getList(args.get('url', ''), int(args.get('export', '0')), [args.get('opt')])
+elif mode == 'getListMenu':
+    getListMenu(args.get('url', ''), int(args.get('export', '0')))
 elif mode == 'WatchList':
     WatchList(args.get('url', ''), int(args.get('opt', '0')))
 elif mode == 'openSettings':

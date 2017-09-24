@@ -489,7 +489,7 @@ def listContent(catalog, url, page, parent, export=False):
 def cleanTitle(title):
     if title.isupper():
         title = title.title().replace('[Ov]', '[OV]').replace('Bc', 'BC')
-    title = title.replace(u'\u2013', '-').replace(u'\u00A0', ' ').replace('[dt./OV]', '')
+    title = title.replace(u'\u2013', '-').replace(u'\u00A0', ' ').replace('[dt./OV]', '').replace('_DUPLICATE_', '')
     return title.strip()
 
 
@@ -791,7 +791,7 @@ def getList(listing, export, cont):
 
     url = 'ASINList=' + asins
     extraArgs = '&RollUpToSeries=T' if dispShowOnly and 'movie' not in cont and not export else ''
-    listContent('GetASINDetails', url + extraArgs, 1, listing)
+    listContent('GetASINDetails', url + extraArgs, 1, listing, export)
 
 
 def Log(msg, level=xbmc.LOGNOTICE):
@@ -1732,6 +1732,8 @@ def MFACheck(br, email, soup):
         if ret:
             xbmc.executebuiltin('ActivateWindow(busydialog)')
             br.select_form(nr=0)
+            Log(br, xbmc.LOGDEBUG)
+            Log(br[q_id[sel]], xbmc.LOGDEBUG)
             br[q_id[sel]] = ret
         else:
             return False

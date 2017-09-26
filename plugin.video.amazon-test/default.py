@@ -90,7 +90,7 @@ CookieFile = os.path.join(DataPath, 'cookie-%s.lwp' % MarketID)
 na = 'not available'
 watchlist = 'watchlist'
 library = 'video-library'
-DBVersion = 1.2
+DBVersion = 1.3
 PayCol = 'FFE95E01'
 Ages = [[('FSK 0', 'FSK 0'), ('FSK 6', 'FSK 6'), ('FSK 12', 'FSK 12'), ('FSK 16', 'FSK 16'), ('FSK 18', 'FSK 18')],
         [('Universal', 'U'), ('Parental Guidance', 'PG'), ('12 and older', '12,12A'), ('15 and older', '15'),
@@ -309,32 +309,41 @@ def Search():
 
 def loadCategories(force=False):
     if xbmcvfs.exists(menuFile) and not force:
-        if updateTime(False):
+        ftime = updateTime(False)
+        ctime = time.time()
+        if ctime - ftime < 8 * 3600:
             return
 
     Log('Parse Menufile', xbmc.LOGDEBUG)
-    jsonfile = os.path.join(PluginPath, 'resources', 'menu', MarketID + '.json')
-    jsonfile = jsonfile.replace(MarketID, 'ATVPDKIKX0DER') if not xbmcvfs.exists(jsonfile) else jsonfile
+    parseStart = time.time()
+    data = getURL('https://raw.githubusercontent.com/Sandmann79/xbmc/master/plugin.video.amazon-test/resources/menu/%s.json' % MarketID)
+    if not data:
+        jsonfile = os.path.join(PluginPath, 'resources', 'menu', MarketID + '.json')
+        jsonfile = jsonfile.replace(MarketID, 'ATVPDKIKX0DER') if not xbmcvfs.exists(jsonfile) else jsonfile
+        data = json.load(open(jsonfile))
     createDB(True)
-    data = json.load(open(jsonfile))
     parseNodes(data)
     updateTime()
     menuDb.commit()
+    Log('Parse MenuTime: %s' % (time.time() - parseStart), xbmc.LOGDEBUG)
 
 
 def updateTime(savetime=True):
     c = menuDb.cursor()
-    result = False
     if savetime:
         wMenuDB(['last_update', '', '', str(time.time()), str(DBVersion), ''])
     else:
         try:
             result = c.execute('select content, id from menu where node = ("last_update")').fetchone()
-            result = True if DBVersion == float(result[1]) else False
         except:
-            pass
+            result = 0
+        c.close()
+        if result:
+            if DBVersion > float(result[1]):
+                return 0
+            return float(result[0])
+        return 0
     c.close()
-    return result
 
 
 def getNodeId(mainid):
@@ -362,14 +371,16 @@ def parseNodes(data, node_id=''):
             parseNodes(entry['categories'], '%s%s' % (node_id, count))
             content = '%s%s' % (node_id, count)
             category = 'node'
-        elif 'query' in entry.keys():
-            content = entry['query']
-            category = 'query'
+        else:
+            for e in ['query', 'play']:
+                if e in entry.keys():
+                    content = entry[e]
+                    category = e
         if category and 'title' in entry.keys() and 'id' in entry.keys():
             if 'refTag' not in entry:
                 entry['refTag'] = ''
             if entry['title']:
-                wMenuDB([node_id, entry['title'], category, content, entry['id'].lower(), entry['refTag']])
+                wMenuDB([node_id, entry['title'], category, content, entry['id'], entry['refTag']])
 
 
 def wMenuDB(menudata):
@@ -404,6 +415,11 @@ def listCategories(node, root=None):
             mode = 'listContent'
             opt = 'listcat'
             url = content.replace('\n', '').replace("\n", '')
+        elif category == 'play':
+            Info = getAsins({'formats': []}, True)
+            Info['title'] = title
+            Info['plot'] = menu_id
+            addVideo(title, content, Info)
         if mode:
             addDir(title, mode, url, opt=opt)
     xbmcplugin.endOfDirectory(pluginhandle)

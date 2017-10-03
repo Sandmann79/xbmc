@@ -54,7 +54,7 @@ Diese Addon verwendet pyDes von Todd Whiteman</disclaimer>
 </addon>
 <addon id="plugin.video.amazon-test"
        name="Amazon VOD"
-       version="0.4.3"
+       version="0.4.4"
        provider-name="Sandmann79">
   <requires>
     <import addon="xbmc.python" version="2.24.0"/>

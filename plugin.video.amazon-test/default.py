@@ -90,7 +90,7 @@ CookieFile = os.path.join(DataPath, 'cookie-%s.lwp' % MarketID)
 na = 'not available'
 watchlist = 'watchlist'
 library = 'video-library'
-DBVersion = 1.3
+DBVersion = 1.4
 PayCol = 'FFE95E01'
 Ages = [[('FSK 0', 'FSK 0'), ('FSK 6', 'FSK 6'), ('FSK 12', 'FSK 12'), ('FSK 16', 'FSK 16'), ('FSK 18', 'FSK 18')],
         [('Universal', 'U'), ('Parental Guidance', 'PG'), ('12 and older', '12,12A'), ('15 and older', '15'),
@@ -271,7 +271,8 @@ def addVideo(name, asin, infoLabels, cm=[], export=False):
 
     if infoLabels['TrailerAvailable']:
         infoLabels['Trailer'] = url + '&trailer=1&selbitrate=0'
-    url += '&trailer=0'
+
+    url += '&trailer=2' if "live" in infoLabels['contentType'] else '&trailer=0'
 
     if export:
         url += '&selbitrate=0'
@@ -376,11 +377,8 @@ def parseNodes(data, node_id=''):
                 if e in entry.keys():
                     content = entry[e]
                     category = e
-        if category and 'title' in entry.keys() and 'id' in entry.keys():
-            if 'refTag' not in entry:
-                entry['refTag'] = ''
-            if entry['title']:
-                wMenuDB([node_id, entry['title'], category, content, entry['id'], entry['refTag']])
+        if category:
+            wMenuDB([node_id, entry.get('title', ''), category, content, entry.get('id', ''), json.dumps(entry.get('infolabel', ''))])
 
 
 def wMenuDB(menudata):
@@ -405,9 +403,15 @@ def listCategories(node, root=None):
         url += 'tvseason,tvepisodes&RollUpToSeries=T' if root == '30160' else 'movie'
         addDir(getString(int(root)), 'listContent', url)
 
-    for node, title, category, content, menu_id, reftag in cat:
+    for node, title, category, content, menu_id, infolabel in cat:
+        infolabel = json.loads(infolabel)
         mode = None
+        info = None
         opt = ''
+        if infolabel:
+            info = getAsins({'formats': []}, True)
+            info.update(infolabel)
+
         if category == 'node':
             mode = 'listCategories'
             url = content
@@ -416,12 +420,9 @@ def listCategories(node, root=None):
             opt = 'listcat'
             url = content.replace('\n', '').replace("\n", '')
         elif category == 'play':
-            Info = getAsins({'formats': []}, True)
-            Info['title'] = title
-            Info['plot'] = menu_id
-            addVideo(title, content, Info)
+            addVideo(info['Title'], info['Asins'], info)
         if mode:
-            addDir(title, mode, url, opt=opt)
+            addDir(title, mode, url, info, opt)
     xbmcplugin.endOfDirectory(pluginhandle)
 
 
@@ -984,7 +985,7 @@ def PlayVideo(name, asin, adultstr, trailer, forcefb=0):
     playable = False
     fallback = int(addon.getSetting("fallback_method"))
     methodOW = fallback - 1 if forcefb and fallback else playMethod
-    videoUrl = "%s/?autoplay=%s" % (amazonUrl, ('trailer' if trailer == '1' else '1'))
+    videoUrl = "%s/?autoplay=%s" % (amazonUrl, ('trailer' if trailer == 1 else '1'))
     extern = not xbmc.getInfoLabel('Container.PluginName').startswith('plugin.video.amazon')
 
     if extern:
@@ -1087,7 +1088,7 @@ def AndroidPlayback(asin, trailer):
         pkg = 'com.amazon.avod.thirdpartyclient'
         act = 'android.intent.action.VIEW'
         url = BaseUrl + '/piv-apk-play?asin=' + asin
-        url += '&playTrailer=T' if trailer == '1' else ''
+        url += '&playTrailer=T' if trailer == 1 else ''
 
     subprocess.Popen(['log', '-p', 'v', '-t', 'Kodi-Amazon', 'Manufacturer: ' + manu])
     subprocess.Popen(['log', '-p', 'v', '-t', 'Kodi-Amazon', 'Starting App: %s Video: %s' % (pkg, url)])
@@ -1103,8 +1104,8 @@ def AndroidPlayback(asin, trailer):
 
 
 def IStreamPlayback(asin, name, trailer, isAdult, extern):
+    vMT = ['Feature', 'Trailer', 'LiveStreaming'][trailer]
     mpaa_str = RestrAges + getString(30171)
-    vMT = 'Trailer' if trailer == '1' else 'Feature'
     drm_check = addon.getSetting("drm_check") == 'true'
     at_check = addon.getSetting("at_check") == 'true'
 
@@ -1128,7 +1129,8 @@ def IStreamPlayback(asin, name, trailer, isAdult, extern):
     is_version = xbmcaddon.Addon(is_addon).getAddonInfo('version') if is_addon else '0'
     is_binary = xbmc.getCondVisibility('System.HasAddon(kodi.binary.instance.inputstream)')
     orgmpd = mpd
-    mpd = re.sub('/[^/]*~/', '/2$cRlBqQh9nnSAW9qpcQWMwOQi3bA~/', mpd)
+    if trailer != 2:
+        mpd = re.sub('/[^/]*~/', '/2$cRlBqQh9nnSAW9qpcQWMwOQi3bA~/', mpd)
 
     if drm_check:
         mpdcontent = getURL(mpd, rjson=False)
@@ -1156,7 +1158,7 @@ def IStreamPlayback(asin, name, trailer, isAdult, extern):
         thumb = Info.get('Poster', Info['Thumb'])
         mpaa_check = str(Info.get('MPAA', mpaa_str)) in mpaa_str or isAdult
 
-    if trailer == '1':
+    if trailer == 1:
         title += ' (Trailer)'
         Info = {'Plot': xbmc.getInfoLabel('ListItem.Plot')}
     if not title:
@@ -1167,7 +1169,7 @@ def IStreamPlayback(asin, name, trailer, isAdult, extern):
 
     listitem = xbmcgui.ListItem(label=title, path=mpd)
 
-    if extern or trailer == '1':
+    if extern or trailer == 1:
         listitem.setInfo('video', getInfolabels(Info))
 
     if 'adaptive' in is_addon:
@@ -1479,16 +1481,19 @@ def getUrldata(mode, values, retformat='json', devicetypeid=False, version=1, fi
         url += '&supportedDRMKeyScheme=DUAL_KEY' if platform != osAndroid and 'AudioVideoUrls' in dRes else ''
     if retURL:
         return url
-    data = getURL(url, useCookie=useCookie, rjson=False)
+    data = getURL(url, useCookie=useCookie)
     if data:
-        error = re.findall('{[^"]*"errorCode[^}]*}', data)
-        if error:
-            return False, Error(json.loads(error[0]))
-        return True, json.loads(data)
+        if 'error' in data.keys():
+            return False, Error([data[0]])
+        elif 'AudioVideoUrls' in data.get('errorsByResource', ''):
+            return False, Error(data['errorsByResource']['AudioVideoUrls'])
+        else:
+            return True, data
     return False, 'HTTP Error'
 
 
 def Error(data):
+    Log(data, xbmc.LOGERROR)
     code = data['errorCode'].lower()
     Log('%s (%s) ' % (data['message'], code), xbmc.LOGERROR)
     if 'invalidrequest' in code:
@@ -1835,7 +1840,7 @@ def createDB(menu=False):
                     category TEXT,
                     content TEXT,
                     id TEXT,
-                    reftag TEXT
+                    infolabel TEXT
                     );''')
         menuDb.commit()
     else:
@@ -2398,7 +2403,7 @@ if mode == 'listCategories':
 elif mode == 'listContent':
     listContent(args.get('cat'), args.get('url', ''), int(args.get('page', '1')), args.get('opt', ''))
 elif mode == 'PlayVideo':
-    PlayVideo(args.get('name'), args.get('asin'), args.get('adult'), args.get('trailer'), int(args.get('selbitrate')))
+    PlayVideo(args.get('name'), args.get('asin'), args.get('adult'), int(args.get('trailer', '0')), int(args.get('selbitrate', '0')))
 elif mode == 'getList':
     getList(args.get('url', ''), int(args.get('export', '0')), [args.get('opt')])
 elif mode == 'getListMenu':

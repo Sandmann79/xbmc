@@ -1105,6 +1105,7 @@ def AndroidPlayback(asin, trailer):
 
 def IStreamPlayback(asin, name, trailer, isAdult, extern):
     vMT = ['Feature', 'Trailer', 'LiveStreaming'][trailer]
+    dRes = 'PlaybackUrls' if trailer == 2 else 'AudioVideoUrls,SubtitleUrls'
     mpaa_str = RestrAges + getString(30171)
     drm_check = addon.getSetting("drm_check") == 'true'
     at_check = addon.getSetting("at_check") == 'true'
@@ -1112,18 +1113,21 @@ def IStreamPlayback(asin, name, trailer, isAdult, extern):
     if not is_addon:
         Log('No Inputstream Addon found or activated')
         Dialog.notification(getString(30203), 'No Inputstream Addon found or activated', xbmcgui.NOTIFICATION_ERROR)
+        playDummyVid()
         return True
 
     values = getFlashVars(asin)
     if not values:
+        playDummyVid()
         return True
 
     mpd, subs = getStreams(*getUrldata('catalog/GetPlaybackResources', values, extra=True, vMT=vMT,
-                                       opt='&titleDecorationScheme=primary-content'), retmpd=True)
+                                       opt='&titleDecorationScheme=primary-content', dRes=dRes), retmpd=True)
     licURL = getUrldata('catalog/GetPlaybackResources', values, extra=True, vMT=vMT, dRes='Widevine2License', retURL=True)
 
     if not mpd:
         Dialog.notification(getString(30203), subs, xbmcgui.NOTIFICATION_ERROR)
+        playDummyVid()
         return True
 
     is_version = xbmcaddon.Addon(is_addon).getAddonInfo('version') if is_addon else '0'
@@ -1368,27 +1372,43 @@ def getStreams(suc, data, retmpd=False):
     if retmpd:
         subUrls = parseSubs(data)
 
-    hosts = data['audioVideoUrls']['avCdnUrlSets']
+    if 'audioVideoUrls' in data.keys():
+        hosts = data['audioVideoUrls']['avCdnUrlSets']
+    elif 'playbackUrls' in data.keys():
+        defid = data['playbackUrls']['defaultUrlSetId']
+        h_dict = data['playbackUrls']['urlSets']
+        '''
+        if h_dict[defid]['failover']['cdn']['mode'] == 'seamless':
+            defid = h_dict[defid]['failover']['cdn']['urlSetId']
+        '''
+        hosts = [h_dict[k] for k in h_dict]
+        hosts.insert(0, h_dict[defid])
+        WriteLog(json.dumps(hosts), 'hosts')
 
     while hosts:
         for cdn in hosts:
             prefHost = False if HostSet not in str(hosts) or HostSet == 'Auto' else HostSet
+            cdn_item = cdn
+
+            if 'urls' in cdn:
+                cdn = cdn['urls']['manifest']
             if prefHost and prefHost not in cdn['cdn']:
                 continue
             Log('Using Host: ' + cdn['cdn'])
 
-            for urlset in cdn['avUrlInfoList']:
-                data = getURL(urlset['url'], rjson=False, check=retmpd)
-                if not data:
-                    hosts.remove(cdn)
-                    Log('Host not reachable: ' + cdn['cdn'])
-                    break
-                if retmpd:
-                    return urlset['url'], subUrls
-                else:
-                    fps_string = re.compile('frameRate="([^"]*)').findall(data)[0]
-                    fr = round(eval(fps_string + '.0'), 3)
-                    return True, str(fr).replace('.0', '')
+            urlset = cdn['avUrlInfoList'][0] if 'avUrlInfoList' in cdn else cdn
+
+            data = getURL(urlset['url'], rjson=False, check=retmpd)
+            if not data:
+                hosts.remove(cdn_item)
+                Log('Host not reachable: ' + cdn['cdn'])
+                break
+            if retmpd:
+                return urlset['url'], subUrls
+            else:
+                fps_string = re.compile('frameRate="([^"]*)').findall(data)[0]
+                fr = round(eval(fps_string + '.0'), 3)
+                return True, str(fr).replace('.0', '')
 
     return False, getString(30217)
 
@@ -1478,15 +1498,18 @@ def getUrldata(mode, values, retformat='json', devicetypeid=False, version=1, fi
                '&deviceBitrateAdaptationsOverride=CVBR%2CCBR'
         url += '&videoMaterialType=' + vMT
         url += '&desiredResources=' + dRes
-        url += '&supportedDRMKeyScheme=DUAL_KEY' if platform != osAndroid and 'AudioVideoUrls' in dRes else ''
+        url += '&supportedDRMKeyScheme=DUAL_KEY' if platform != osAndroid and 'AudioVideoUrls' in dRes or 'PlaybackUrls' in dRes else ''
     if retURL:
         return url
     data = getURL(url, useCookie=useCookie)
     if data:
+        Log(data)
         if 'error' in data.keys():
-            return False, Error([data[0]])
+            return False, Error(data['error'])
         elif 'AudioVideoUrls' in data.get('errorsByResource', ''):
             return False, Error(data['errorsByResource']['AudioVideoUrls'])
+        elif 'PlaybackUrls' in data.get('errorsByResource', ''):
+            return False, Error(data['errorsByResource']['PlaybackUrls'])
         else:
             return True, data
     return False, 'HTTP Error'

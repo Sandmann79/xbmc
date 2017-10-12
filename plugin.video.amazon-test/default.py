@@ -1402,7 +1402,7 @@ def getStreams(suc, data, retmpd=False):
             if not data:
                 hosts.remove(cdn_item)
                 Log('Host not reachable: ' + cdn['cdn'])
-                break
+                continue
             if retmpd:
                 return urlset['url'], subUrls
             else:

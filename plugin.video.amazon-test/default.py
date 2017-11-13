@@ -1690,6 +1690,7 @@ def LogIn(ask=True):
             br = MFACheck(br, email, soup)
             if not br:
                 return False
+            useMFA = True if [True for f in br.forms() if 'otpCode' in str(f)] else False
             br.submit()
             response = br.response().read()
             soup = parseHTML(response)
@@ -1751,6 +1752,7 @@ def MFACheck(br, email, soup):
             xbmc.executebuiltin('ActivateWindow(busydialog)')
             br.select_form(nr=0)
             br['otpCode'] = kb.getText()
+            # br.find_control('rememberDevice').items[0].selected = True
         else:
             return False
     elif 'ap_dcq_form' in str(soup):

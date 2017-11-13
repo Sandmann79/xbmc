@@ -453,6 +453,7 @@ def LogIn(ask=True):
             br = MFACheck(br, email, soup)
             if not br:
                 return False
+            useMFA = True if [True for f in br.forms() if 'otpCode' in str(f)] else False
             br.submit()
             response = br.response().read()
             soup = parseHTML(response)

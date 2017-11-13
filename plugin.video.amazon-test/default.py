@@ -1134,7 +1134,7 @@ def IStreamPlayback(asin, name, trailer, isAdult, extern):
     is_binary = xbmc.getCondVisibility('System.HasAddon(kodi.binary.instance.inputstream)')
     orgmpd = mpd
     if trailer != 2:
-        mpd = re.sub('/[^/]*~/', '/2$cRlBqQh9nnSAW9qpcQWMwOQi3bA~/', mpd)
+        mpd = re.sub(r'~', '', mpd)
 
     if drm_check:
         mpdcontent = getURL(mpd, rjson=False)

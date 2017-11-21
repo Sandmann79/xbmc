@@ -61,6 +61,14 @@ msgctxt "#30008"
 msgid "Sign In..."
 msgstr "Anmelden..."
 
+msgctxt "#30009"
+msgid "Multi User Support"
+msgstr "Mehrbenutzer Unterstützung"
+
+msgctxt "#30010"
+msgid "Remove all Users"
+msgstr "Alle Benutzer entfernen"
+
 msgctxt "#30011"
 msgid "General"
 msgstr "Allgemein"
@@ -364,6 +372,30 @@ msgstr "Abbrechen"
 msgctxt "#30127"
 msgid "No content found"
 msgstr "Keine Inhalte gefunden"
+
+msgctxt "#30130"
+msgid "Add User..."
+msgstr "Benutzer hinzufügen..."
+
+msgctxt "#30131"
+msgid "Delete User..."
+msgstr "Benutzer löschen..."
+
+msgctxt "#30132"
+msgid "Rename User"
+msgstr "Benutzer umbenennen"
+
+msgctxt "#30133"
+msgid "Choose User"
+msgstr "Benutzer auswählen"
+
+msgctxt "#30134"
+msgid "Current User: "
+msgstr "Aktueller Benutzer: "
+
+msgctxt "#30135"
+msgid "Display Name"
+msgstr "Anzeigename"
 
 msgctxt "#30143"
 msgid "All Movies"

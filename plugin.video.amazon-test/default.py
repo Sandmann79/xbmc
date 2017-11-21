@@ -73,6 +73,7 @@ useIntRC = addon.getSetting("remotectrl") == 'true'
 RMC_vol = addon.getSetting("remote_vol") == 'true'
 ms_mov = addon.getSetting('mediasource_movie')
 ms_tv = addon.getSetting('mediasource_tv')
+multiuser = addon.getSetting('multiuser') == 'true'
 tmdb = base64.b64decode('YjM0NDkwYzA1NmYwZGQ5ZTNlYzlhZjIxNjdhNzMxZjQ=')
 tvdb = base64.b64decode('MUQ2MkYyRjkwMDMwQzQ0NA==')
 DefaultFanart = os.path.join(PluginPath, 'fanart.jpg')
@@ -82,7 +83,8 @@ country = int(addon.getSetting('country'))
 BaseUrl = 'https://www.amazon.' + ['de', 'co.uk', 'com', 'co.jp', ''][country]
 ATVUrl = 'https://atv-%s.amazon.com' % ['ext-eu', 'ext-eu', 'ext', 'ext-fe', ''][country]
 wl_order = ['DATE_ADDED_DESC', 'TITLE_DESC', 'TITLE_ASC'][int('0' + addon.getSetting("wl_order"))]
-MarketID = ['A1PA6795UKMFR9', 'A1F83G8C2ARO7P', 'ATVPDKIKX0DER', 'A1VC38T7YXB528', ''][country]
+MarketIDs = ['A1PA6795UKMFR9', 'A1F83G8C2ARO7P', 'ATVPDKIKX0DER', 'A1VC38T7YXB528', '']
+MarketID = MarketIDs[country]
 Language = ['de', 'en', 'en', 'jp', ''][country]
 AgeRating = ['FSK ', '', '', '', ''][country]
 menuFile = os.path.join(DataPath, 'menu-%s.db' % MarketID)
@@ -290,9 +292,16 @@ def MainMenu():
     Log('Version: %s' % __version__)
     Log('Unicode support: %s' % os.path.supports_unicode_filenames)
     loadCategories()
+
     cm_wl = [(getString(30185) % 'Watchlist', 'RunPlugin(%s?mode=getListMenu&url=%s&export=1)' % (sys.argv[0], watchlist))]
     cm_lb = [(getString(30185) % getString(30100),
               'RunPlugin(%s?mode=getListMenu&url=%s&export=1)' % (sys.argv[0], library))]
+
+    if multiuser:
+        cm_mu = [(getString(30130).split('.')[0], 'RunPlugin(%s?mode=LogIn)' % sys.argv[0]),
+                 (getString(30131).split('.')[0], 'RunPlugin(%s?mode=removeUser)' % sys.argv[0]),
+                 (getString(30132), 'RunPlugin(%s?mode=renameUser)' % sys.argv[0])]
+        addDir(getString(30134) + addon.getSetting('login_acc'), 'switchUser', '', cm=cm_mu)
     addDir('Watchlist', 'getListMenu', watchlist, cm=cm_wl)
     addDir(getString(30104), 'listCategories', getNodeId('movies'), opt='30143')
     addDir(getString(30107), 'listCategories', getNodeId('tv_shows'), opt='30160')
@@ -1503,7 +1512,6 @@ def getUrldata(mode, values, retformat='json', devicetypeid=False, version=1, fi
         return url
     data = getURL(url, useCookie=useCookie)
     if data:
-        Log(data)
         if 'error' in data.keys():
             return False, Error(data['error'])
         elif 'AudioVideoUrls' in data.get('errorsByResource', ''):
@@ -1516,7 +1524,6 @@ def getUrldata(mode, values, retformat='json', devicetypeid=False, version=1, fi
 
 
 def Error(data):
-    Log(data, xbmc.LOGERROR)
     code = data['errorCode'].lower()
     Log('%s (%s) ' % (data['message'], code), xbmc.LOGERROR)
     if 'invalidrequest' in code:
@@ -1621,12 +1628,12 @@ def MechanizeLogin():
 
 
 def LogIn(ask=True):
-    addon.setSetting('login_acc', '')
-    addon.setSetting('use_mfa', 'false')
     email = getConfig('login_name')
     password = decode(getConfig('login_pass'))
     savelogin = addon.getSetting('save_login') == 'true'
     useMFA = False
+    if ask and multiuser:
+        email = ''
 
     if ask:
         keyboard = xbmc.Keyboard(email, getString(30002))
@@ -1690,7 +1697,7 @@ def LogIn(ask=True):
             br = MFACheck(br, email, soup)
             if not br:
                 return False
-            useMFA = True if [True for f in br.forms() if 'otpCode' in str(f)] else False
+            useMFA = 'otpCode' in str(list(br.forms())[0])
             br.submit()
             response = br.response().read()
             soup = parseHTML(response)
@@ -1709,8 +1716,9 @@ def LogIn(ask=True):
                     usr = wlc.split(',', 1)[1].strip()
             except (IndexError, AttributeError):
                 usr = wlc = getString(30215)
-            addon.setSetting('login_acc', usr)
-            addon.setSetting('use_mfa', str(useMFA).lower())
+
+            if multiuser and ask:
+                checkUser()
             if useMFA:
                 addon.setSetting('save_login', 'false')
                 savelogin = False
@@ -1719,8 +1727,19 @@ def LogIn(ask=True):
                 writeConfig('login_pass', encode(password))
             else:
                 cj.save(CookieFile, ignore_discard=True, ignore_expires=True)
+            remLoginData(savelogin, False)
+
             if ask:
-                Dialog.ok(getString(30215), wlc)
+                addon.setSetting('login_acc', usr)
+                if multiuser:
+                    keyboard = xbmc.Keyboard(usr, getString(30135))
+                    keyboard.doModal()
+                    if keyboard.isConfirmed() and keyboard.getText():
+                        usr = keyboard.getText()
+                        addon.setSetting('login_acc', usr)
+                    addUser()
+                else:
+                    Dialog.ok(getString(30215), wlc)
             genID()
             return cj
         elif 'message_error' in response:
@@ -1739,6 +1758,89 @@ def LogIn(ask=True):
             Dialog.ok(getString(30200), getString(30213))
 
     return False
+
+
+def checkUser():
+    cur_user = addon.getSetting('login_acc')
+    users = json.loads(getConfig('accounts', '[]'))
+    if not [i for i in users if cur_user == i['name']]:
+        addUser()
+
+
+def addUser():
+    savelogin = addon.getSetting('save_login')
+    cfile = os.path.join(ConfigPath, 'cookie-%s.lwp' % uuid.uuid4().hex)
+
+    if xbmcvfs.exists(CookieFile) and savelogin == 'false':
+        xbmcvfs.copy(CookieFile, cfile)
+    else:
+        cfile = ''
+
+    if not cfile and not getConfig('login_pass'):
+        return
+
+    users = json.loads(getConfig('accounts', '[]'))
+    users.append({'email': getConfig('login_name'),
+                  'password': getConfig('login_pass'),
+                  'name': addon.getSetting('login_acc'),
+                  'save': savelogin,
+                  'mid': MarketID,
+                  'cfile': cfile})
+
+    writeConfig('accounts', json.dumps(users))
+    xbmc.executebuiltin('Container.Refresh')
+
+
+def switchUser():
+    checkUser()
+    users = json.loads(getConfig('accounts', '[]'))
+    sel = Dialog.select(getString(30133), [i['name'] for i in users])
+    if sel > -1:
+        user = users[sel]
+        remLoginData(True, False)
+        writeConfig('login_name', user['email'])
+        writeConfig('login_pass', user['password'])
+        addon.setSetting('save_login', user['save'])
+        addon.setSetting('login_acc', user['name'])
+        if user['save'] == 'false':
+            addon.setSetting('country', str(MarketIDs.index(user['mid'])))
+            xbmcvfs.copy(user['cfile'], CookieFile)
+
+
+def removeUser():
+    checkUser()
+    cur_user = addon.getSetting('login_acc')
+    users = json.loads(getConfig('accounts', '[]'))
+    sel = Dialog.select(getString(30133), [i['name'] for i in users])
+    if sel > -1:
+        user = users[sel]
+        users.remove(user)
+        writeConfig('accounts', json.dumps(users))
+        if xbmcvfs.exists(user['cfile']):
+            xbmcvfs.delete(user['cfile'])
+        if user['name'] == cur_user:
+            addon.setSetting('login_acc', '')
+            remLoginData(True, False)
+            remLoginData(False, False)
+            switchUser()
+            xbmc.executebuiltin('Container.Refresh')
+
+
+def renameUser():
+    checkUser()
+    cur_user = addon.getSetting('login_acc')
+    users = json.loads(getConfig('accounts', '[]'))
+    sel = Dialog.select(getString(30133), [i['name'] for i in users])
+    if sel > -1:
+        keyboard = xbmc.Keyboard(users[sel]['name'], getString(30135))
+        keyboard.doModal()
+        if keyboard.isConfirmed() and keyboard.getText():
+            usr = keyboard.getText()
+            if users[sel]['name'] == cur_user:
+                addon.setSetting('login_acc', usr)
+                xbmc.executebuiltin('Container.Refresh')
+            users[sel]['name'] = usr
+            writeConfig('accounts', json.dumps(users))
 
 
 def MFACheck(br, email, soup):
@@ -1778,8 +1880,6 @@ def MFACheck(br, email, soup):
         if ret:
             xbmc.executebuiltin('ActivateWindow(busydialog)')
             br.select_form(nr=0)
-            Log(br, xbmc.LOGDEBUG)
-            Log(br[q_id[sel]], xbmc.LOGDEBUG)
             br[q_id[sel]] = ret
         else:
             return False
@@ -1834,13 +1934,17 @@ def remLoginData(savelogin=False, info=True):
             if fn.startswith('cookie'):
                 xbmcvfs.delete(os.path.join(DataPath, fn))
 
+    if not savelogin and info:
+        for fn in xbmcvfs.listdir(ConfigPath)[1]:
+            if fn.startswith('cookie') or fn == 'accounts':
+                xbmcvfs.delete(os.path.join(ConfigPath, fn))
+
     if not savelogin or info:
         writeConfig('login_name', '')
         writeConfig('login_pass', '')
 
     if info:
         addon.setSetting('login_acc', '')
-        addon.setSetting('use_mfa', 'false')
         Dialog.notification(__plugin__, getString(30211), xbmcgui.NOTIFICATION_INFO)
 
 
@@ -2405,7 +2509,6 @@ else:
 if not getConfig('UserAgent'):
     getUA()
 
-remLoginData(addon.getSetting('save_login') == 'true', False)
 AgePin = getConfig('age_pin')
 PinReq = int(getConfig('pin_req', '0'))
 RestrAges = ','.join(a[1] for a in Ages[country][PinReq:]) if AgePin else ''

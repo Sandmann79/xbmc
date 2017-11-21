@@ -30,11 +30,14 @@
     <category label="30038">
         <setting id="ssl_verif" type="bool" label="30037" default="false"/>
         <setting label="30001" type="lsep"/>
-        <setting id="set_login" type="action" label="30004" action="RunPlugin(plugin://plugin.video.amazon/?mode=common&sitemode=LogIn)" option="close"/>
-        <setting id="login_acc" type="text" label="30014" enable="false" default="" subsetting="true"/>
-        <setting id="use_mfa" type="bool" label="MFA" visible="false" default="false"/>
-        <setting id="save_login" type="bool" label="30006" enable="eq(-1,false)" default="false"/>
-        <setting label="30007" type="action" action="RunPlugin(plugin://plugin.video.amazon/?mode=common&sitemode=remLoginData)" option="close"/>
+        <setting id="multiuser" type="bool" label="30027" default="false"/>
+        <setting type="action" label="30004" action="RunPlugin(plugin://plugin.video.amazon/?mode=common&sitemode=LogIn)" visible="eq(-1,false)" option="close"/>
+        <setting id="login_acc" type="text" label="30014" enable="false" default="" subsetting="true" visible="eq(-2,false)"/>
+        <setting type="action" label="30174" action="RunPlugin(plugin://plugin.video.amazon/?mode=common&sitemode=LogIn)" visible="eq(-3,true)" option="close"/>
+        <setting type="action" label="30175" action="RunPlugin(plugin://plugin.video.amazon/?mode=common&sitemode=removeUser)" visible="eq(-4,true)" option="close"/>
+        <setting id="save_login" type="bool" label="30006" default="false"/>
+        <setting label="30007" type="action" action="RunPlugin(plugin://plugin.video.amazon/?mode=common&sitemode=remLoginData)" visible="eq(-6,false)" option="close"/>
+        <setting label="30028" type="action" action="RunPlugin(plugin://plugin.video.amazon/?mode=common&sitemode=remLoginData)" visible="eq(-7,true)" option="close"/>
     </category>
     <category label="30008">
         <setting id="dbsystem" type="enum" label="30066" values="SQLite|MySQL/MariaDB" default="0"/>

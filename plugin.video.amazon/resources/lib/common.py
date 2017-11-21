@@ -50,6 +50,7 @@ verbLog = addon.getSetting('logging') == 'true'
 playMethod = int(addon.getSetting("playmethod"))
 onlyGer = addon.getSetting('content_filter') == 'true'
 kodi_mjver = int(xbmc.getInfoLabel('System.BuildVersion')[0:2])
+multiuser = addon.getSetting('multiuser') == 'true'
 Dialog = xbmcgui.Dialog()
 socket.setdefaulttimeout(30)
 regex_ovf = "((?i)(\[|\()(omu|ov).*(\)|\]))|\sOmU"
@@ -384,12 +385,12 @@ def mechanizeLogin():
 
 
 def LogIn(ask=True):
-    addon.setSetting('login_acc', '')
-    addon.setSetting('use_mfa', 'false')
     email = getConfig('login_name')
     password = decode(getConfig('login_pass'))
     savelogin = addon.getSetting('save_login') == 'true'
     useMFA = False
+    if ask and multiuser:
+        email = ''
 
     if ask:
         keyboard = xbmc.Keyboard(email, getString(30002))
@@ -453,7 +454,7 @@ def LogIn(ask=True):
             br = MFACheck(br, email, soup)
             if not br:
                 return False
-            useMFA = True if [True for f in br.forms() if 'otpCode' in str(f)] else False
+            useMFA = 'otpCode' in str(list(br.forms())[0])
             br.submit()
             response = br.response().read()
             soup = parseHTML(response)
@@ -472,8 +473,9 @@ def LogIn(ask=True):
                     usr = wlc.split(',', 1)[1].strip()
             except (IndexError, AttributeError):
                 usr = wlc = getString(30215)
-            addon.setSetting('login_acc', usr)
-            addon.setSetting('use_mfa', str(useMFA).lower())
+
+            if multiuser and ask:
+                checkUser()
             if useMFA:
                 addon.setSetting('save_login', 'false')
                 savelogin = False
@@ -482,8 +484,19 @@ def LogIn(ask=True):
                 writeConfig('login_pass', encode(password))
             else:
                 cj.save(CookieFile, ignore_discard=True, ignore_expires=True)
+            remLoginData(savelogin, False)
+
             if ask:
-                Dialog.ok(getString(30215), wlc)
+                addon.setSetting('login_acc', usr)
+                if multiuser:
+                    keyboard = xbmc.Keyboard(usr, getString(30179))
+                    keyboard.doModal()
+                    if keyboard.isConfirmed() and keyboard.getText():
+                        usr = keyboard.getText()
+                        addon.setSetting('login_acc', usr)
+                    addUser()
+                else:
+                    Dialog.ok(getString(30215), wlc)
             gen_id()
             return cj
         elif 'message_error' in response:
@@ -502,6 +515,87 @@ def LogIn(ask=True):
             Dialog.ok(getString(30200), getString(30213))
 
     return False
+
+
+def checkUser():
+    cur_user = addon.getSetting('login_acc')
+    users = json.loads(getConfig('accounts', '[]'))
+    if not [i for i in users if cur_user == i['name']]:
+        addUser()
+
+
+def addUser():
+    savelogin = addon.getSetting('save_login')
+    cfile = os.path.join(configpath, 'cookie-%s.lwp' % uuid.uuid4().hex)
+
+    if xbmcvfs.exists(CookieFile) and savelogin == 'false':
+        xbmcvfs.copy(CookieFile, cfile)
+    else:
+        cfile = ''
+
+    if not cfile and not getConfig('login_pass'):
+        return
+
+    users = json.loads(getConfig('accounts', '[]'))
+    users.append({'email': getConfig('login_name'),
+                  'password': getConfig('login_pass'),
+                  'name': addon.getSetting('login_acc'),
+                  'save': savelogin,
+                  'cfile': cfile})
+
+    writeConfig('accounts', json.dumps(users))
+    xbmc.executebuiltin('Container.Refresh')
+
+
+def switchUser():
+    checkUser()
+    users = json.loads(getConfig('accounts', '[]'))
+    sel = Dialog.select(getString(30177), [i['name'] for i in users])
+    if sel > -1:
+        user = users[sel]
+        remLoginData(True, False)
+        writeConfig('login_name', user['email'])
+        writeConfig('login_pass', user['password'])
+        addon.setSetting('save_login', user['save'])
+        addon.setSetting('login_acc', user['name'])
+        if user['save'] == 'false':
+            xbmcvfs.copy(user['cfile'], CookieFile)
+
+
+def removeUser():
+    checkUser()
+    cur_user = addon.getSetting('login_acc')
+    users = json.loads(getConfig('accounts', '[]'))
+    sel = Dialog.select(getString(30177), [i['name'] for i in users])
+    if sel > -1:
+        user = users[sel]
+        users.remove(user)
+        writeConfig('accounts', json.dumps(users))
+        if xbmcvfs.exists(user['cfile']):
+            xbmcvfs.delete(user['cfile'])
+        if user['name'] == cur_user:
+            addon.setSetting('login_acc', '')
+            remLoginData(True, False)
+            remLoginData(False, False)
+            switchUser()
+            xbmc.executebuiltin('Container.Refresh')
+
+
+def renameUser():
+    checkUser()
+    cur_user = addon.getSetting('login_acc')
+    users = json.loads(getConfig('accounts', '[]'))
+    sel = Dialog.select(getString(30177), [i['name'] for i in users])
+    if sel > -1:
+        keyboard = xbmc.Keyboard(users[sel]['name'], getString(30179))
+        keyboard.doModal()
+        if keyboard.isConfirmed() and keyboard.getText():
+            usr = keyboard.getText()
+            if users[sel]['name'] == cur_user:
+                addon.setSetting('login_acc', usr)
+                xbmc.executebuiltin('Container.Refresh')
+            users[sel]['name'] = usr
+            writeConfig('accounts', json.dumps(users))
 
 
 def MFACheck(br, email, soup):
@@ -662,13 +756,17 @@ def remLoginData(savelogin=False, info=True):
         if xbmcvfs.exists(CookieFile):
             xbmcvfs.delete(CookieFile)
 
+    if not savelogin and info:
+        for fn in xbmcvfs.listdir(configpath)[1]:
+            if fn.startswith('cookie') or fn == 'accounts':
+                xbmcvfs.delete(os.path.join(configpath, fn))
+
     if not savelogin or info:
         writeConfig('login_name', '')
         writeConfig('login_pass', '')
 
     if info:
         addon.setSetting('login_acc', '')
-        addon.setSetting('use_mfa', 'false')
         Dialog.notification(pluginname, getString(30211), xbmcgui.NOTIFICATION_INFO)
 
 
@@ -934,5 +1032,4 @@ AgePin = getConfig('age_pin')
 PinReq = int(getConfig('pin_req', '0'))
 RestrAges = ','.join(a[1] for a in Ages[PinReq:]) if AgePin else ''
 
-remLoginData(addon.getSetting('save_login') == 'true', False)
 Log('Args: %s' % args)

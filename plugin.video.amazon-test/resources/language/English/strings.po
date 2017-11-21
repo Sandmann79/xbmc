@@ -62,7 +62,13 @@ msgctxt "#30008"
 msgid "Sign In..."
 msgstr ""
 
-#empty strings from id 30009 to 30010
+msgctxt "#30009"
+msgid "Multi User Support"
+msgstr ""
+
+msgctxt "#30010"
+msgid "Remove all Users"
+msgstr ""
 
 msgctxt "#30011"
 msgid "General"
@@ -396,7 +402,33 @@ msgctxt "#30127"
 msgid "No content found"
 msgstr ""
 
-#empty strings from id 30128 to 30142
+#empty strings from id 30128 to 30129
+
+msgctxt "#30130"
+msgid "Add User..."
+msgstr ""
+
+msgctxt "#30131"
+msgid "Delete User..."
+msgstr ""
+
+msgctxt "#30132"
+msgid "Rename User"
+msgstr ""
+
+msgctxt "#30133"
+msgid "Choose User"
+msgstr ""
+
+msgctxt "#30134"
+msgid "Current User: "
+msgstr ""
+
+msgctxt "#30135"
+msgid "Display Name"
+msgstr ""
+
+#empty strings from id 30136 to 30142
 
 msgctxt "#30143"
 msgid "All Movies"

@@ -4,6 +4,7 @@ from BeautifulSoup import BeautifulSoup
 from pyDes import *
 from platform import node
 from random import randint
+from base64 import b64encode, b64decode
 import uuid
 import cookielib
 import mechanize
@@ -16,7 +17,6 @@ import xbmcplugin
 import xbmcgui
 import xbmcaddon
 import xbmc
-import base64
 import urlparse
 import hmac
 import hashlib
@@ -34,8 +34,8 @@ pluginpath = addon.getAddonInfo('path').decode('utf-8')
 pldatapath = xbmc.translatePath(addon.getAddonInfo('profile')).decode('utf-8')
 configpath = os.path.join(pldatapath, 'config')
 homepath = xbmc.translatePath('special://home').decode('utf-8')
-tmdb = base64.b64decode('YjM0NDkwYzA1NmYwZGQ5ZTNlYzlhZjIxNjdhNzMxZjQ=')
-tvdb = base64.b64decode('MUQ2MkYyRjkwMDMwQzQ0NA==')
+tmdb = b64decode('YjM0NDkwYzA1NmYwZGQ5ZTNlYzlhZjIxNjdhNzMxZjQ=')
+tvdb = b64decode('MUQ2MkYyRjkwMDMwQzQ0NA==')
 CookieFile = os.path.join(pldatapath, 'cookies.lwp')
 def_fanart = os.path.join(pluginpath, 'fanart.jpg')
 na = 'not available'
@@ -475,25 +475,28 @@ def LogIn(ask=True):
                 usr = wlc = getString(30215)
 
             if multiuser and ask:
+                keyboard = xbmc.Keyboard(usr, getString(30179))
+                keyboard.doModal()
+                if not keyboard.isConfirmed() or not keyboard.getText():
+                    return False
+                usr = keyboard.getText()
                 checkUser()
             if useMFA:
                 addon.setSetting('save_login', 'false')
                 savelogin = False
+
+            remLoginData(savelogin, False)
             if savelogin:
                 writeConfig('login_name', email)
                 writeConfig('login_pass', encode(password))
             else:
                 cj.save(CookieFile, ignore_discard=True, ignore_expires=True)
-            remLoginData(savelogin, False)
+                while not xbmcvfs.exists(CookieFile):
+                    sleep(.2)
 
             if ask:
                 addon.setSetting('login_acc', usr)
                 if multiuser:
-                    keyboard = xbmc.Keyboard(usr, getString(30179))
-                    keyboard.doModal()
-                    if keyboard.isConfirmed() and keyboard.getText():
-                        usr = keyboard.getText()
-                        addon.setSetting('login_acc', usr)
                     addUser()
                 else:
                     Dialog.ok(getString(30215), wlc)
@@ -517,6 +520,14 @@ def LogIn(ask=True):
     return False
 
 
+def cookie_data(fn, data=''):
+    fmode = 'w' if data else 'r'
+    f = xbmcvfs.File(fn, fmode)
+    res = b64encode(f.read()) if fmode == 'r' else f.write(b64decode(data))
+    f.close()
+    return res
+
+
 def checkUser():
     cur_user = addon.getSetting('login_acc')
     users = json.loads(getConfig('accounts', '[]'))
@@ -526,14 +537,11 @@ def checkUser():
 
 def addUser():
     savelogin = addon.getSetting('save_login')
-    cfile = os.path.join(configpath, 'cookie-%s.lwp' % uuid.uuid4().hex)
+    cookie = ''
 
     if xbmcvfs.exists(CookieFile) and savelogin == 'false':
-        xbmcvfs.copy(CookieFile, cfile)
-    else:
-        cfile = ''
-
-    if not cfile and not getConfig('login_pass'):
+        cookie = cookie_data(CookieFile)
+    if not cookie and not getConfig('login_pass'):
         return
 
     users = json.loads(getConfig('accounts', '[]'))
@@ -541,7 +549,7 @@ def addUser():
                   'password': getConfig('login_pass'),
                   'name': addon.getSetting('login_acc'),
                   'save': savelogin,
-                  'cfile': cfile})
+                  'cookie': cookie})
 
     writeConfig('accounts', json.dumps(users))
     xbmc.executebuiltin('Container.Refresh')
@@ -559,7 +567,8 @@ def switchUser():
         addon.setSetting('save_login', user['save'])
         addon.setSetting('login_acc', user['name'])
         if user['save'] == 'false':
-            xbmcvfs.copy(user['cfile'], CookieFile)
+            cookie_data(CookieFile, user['cookie'])
+        xbmc.executebuiltin('Container.Refresh')
 
 
 def removeUser():
@@ -571,14 +580,10 @@ def removeUser():
         user = users[sel]
         users.remove(user)
         writeConfig('accounts', json.dumps(users))
-        if xbmcvfs.exists(user['cfile']):
-            xbmcvfs.delete(user['cfile'])
         if user['name'] == cur_user:
             addon.setSetting('login_acc', '')
-            remLoginData(True, False)
-            remLoginData(False, False)
+            remLoginData(user['save'] == 'true', False)
             switchUser()
-            xbmc.executebuiltin('Container.Refresh')
 
 
 def renameUser():
@@ -664,14 +669,14 @@ def setLoginPW():
 def encode(data):
     k = triple_des(getmac(), CBC, "\0\0\0\0\0\0\0\0", padmode=PAD_PKCS5)
     d = k.encrypt(data)
-    return base64.b64encode(d)
+    return b64encode(d)
 
 
 def decode(data):
     if not data:
         return ''
     k = triple_des(getmac(), CBC, "\0\0\0\0\0\0\0\0", padmode=PAD_PKCS5)
-    d = k.decrypt(base64.b64decode(data))
+    d = k.decrypt(b64decode(data))
     return d
 
 
@@ -753,13 +758,10 @@ def getString(string_id):
 
 def remLoginData(savelogin=False, info=True):
     if savelogin or info:
-        if xbmcvfs.exists(CookieFile):
-            xbmcvfs.delete(CookieFile)
+        xbmcvfs.delete(CookieFile)
 
     if not savelogin and info:
-        for fn in xbmcvfs.listdir(configpath)[1]:
-            if fn.startswith('cookie') or fn == 'accounts':
-                xbmcvfs.delete(os.path.join(configpath, fn))
+        xbmcvfs.delete(os.path.join(configpath, 'accounts'))
 
     if not savelogin or info:
         writeConfig('login_name', '')

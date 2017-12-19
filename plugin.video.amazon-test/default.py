@@ -80,8 +80,9 @@ DefaultFanart = os.path.join(PluginPath, 'fanart.jpg')
 NextIcon = os.path.join(PluginPath, 'resources', 'next.png')
 HomeIcon = os.path.join(PluginPath, 'resources', 'home.png')
 country = int(addon.getSetting('country'))
-BaseUrl = 'https://www.amazon.' + ['de', 'co.uk', 'com', 'co.jp', ''][country]
-ATVUrl = 'https://atv-%s.amazon.com' % ['ext-eu', 'ext-eu', 'ext', 'ext-fe', ''][country]
+c_tld = ['de', 'co.uk', 'com', 'co.jp', ''][country]
+BaseUrl = 'https://www.amazon.' + c_tld
+ATVUrl = 'https://atv-%s.amazon.%s' % (['ps-eu', 'ps-eu', 'ps', 'ps-fe'][country], c_tld)
 wl_order = ['DATE_ADDED_DESC', 'TITLE_DESC', 'TITLE_ASC'][int('0' + addon.getSetting("wl_order"))]
 MarketIDs = ['A1PA6795UKMFR9', 'A1F83G8C2ARO7P', 'ATVPDKIKX0DER', 'A1VC38T7YXB528', '']
 MarketID = MarketIDs[country]
@@ -106,7 +107,7 @@ Ages = [[('FSK 0', 'FSK 0'), ('FSK 6', 'FSK 6'), ('FSK 12', 'FSK 12'), ('FSK 16'
 #      ADVBD696BHNV5 - montoya / A3VN4E5F7BBC7S - roku / A1MPSLFC7L5AFK - kindle / A2M4YX06LWP8WI - firetv2 /
 # TypeIDs = {'GetCategoryList': 'firmware=fmw:15-app:1.1.23&deviceTypeID=A1MPSLFC7L5AFK',
 #            'GetSimilarities': 'firmware=fmw:15-app:1.1.23&deviceTypeID=A1MPSLFC7L5AFK',
-#                        'All': 'firmware=fmw:17-app:1.0.1433.3&deviceTypeID=A43PXU4ZN2AL1'}
+#                        'All': 'firmware=fmw:22-app:3.0.211.123001&deviceTypeID=A43PXU4ZN2AL1'}
 #                        'All': 'firmware=fmw:045.01E01164A-app:4.7&deviceTypeID=A3VN4E5F7BBC7S'}
 # TypeIDs = {'All': 'firmware=fmw:17-app:2.0.45.1210&deviceTypeID=A2RJLFEH0UEKI9'}
 
@@ -203,7 +204,7 @@ def getATVData(pg_mode, query='', version=2, useCookie=False, site_id=None):
     if '?' in query:
         query = query.split('?')[1]
     if query:
-        query = '&IncludeAll=T&AID=T&' + query
+        query = '&IncludeAll=T&AID=1&' + query.replace('HideNum=T', 'HideNum=F')
     deviceTypeID = TypeIDs[pg_mode] if pg_mode in TypeIDs else TypeIDs['All']
     pg_mode = pg_mode.split('_')[0]
     if '/' not in pg_mode:
@@ -1114,7 +1115,7 @@ def AndroidPlayback(asin, trailer):
 
 def IStreamPlayback(asin, name, trailer, isAdult, extern):
     vMT = ['Feature', 'Trailer', 'LiveStreaming'][trailer]
-    dRes = 'PlaybackUrls' if trailer == 2 else 'AudioVideoUrls,SubtitleUrls'
+    dRes = 'PlaybackUrls' if trailer == 2 else 'PlaybackUrls,SubtitleUrls'
     mpaa_str = RestrAges + getString(30171)
     drm_check = addon.getSetting("drm_check") == 'true'
     at_check = addon.getSetting("at_check") == 'true'
@@ -1130,9 +1131,15 @@ def IStreamPlayback(asin, name, trailer, isAdult, extern):
         playDummyVid()
         return True
 
+    cj = MechanizeLogin()
     mpd, subs = getStreams(*getUrldata('catalog/GetPlaybackResources', values, extra=True, vMT=vMT,
-                                       opt='&titleDecorationScheme=primary-content', dRes=dRes), retmpd=True)
-    licURL = getUrldata('catalog/GetPlaybackResources', values, extra=True, vMT=vMT, dRes='Widevine2License', retURL=True)
+                                       opt='&titleDecorationScheme=primary-content', dRes=dRes, useCookie=cj), retmpd=True)
+
+    cj_str = ';'.join([c.name + '=' + c.value for c in cj])
+    opt = '|Content-Type=application%2Fx-www-form-urlencoded&Cookie=' + urllib.quote_plus(cj_str)
+    opt += '|widevine2Challenge=B{SSM}&includeHdcpTestKeyInLicense=true'
+    opt += '|JBlicense;hdcpEnforcementResolutionPixels'
+    licURL = getUrldata('catalog/GetPlaybackResources', values, opt=opt, extra=True, vMT=vMT, dRes='Widevine2License', retURL=True)
 
     if not mpd:
         Dialog.notification(getString(30203), subs, xbmcgui.NOTIFICATION_ERROR)
@@ -1200,6 +1207,7 @@ def IStreamPlayback(asin, name, trailer, isAdult, extern):
     xbmcplugin.setResolvedUrl(pluginhandle, True, listitem=listitem)
 
     valid_track = validAudioTrack()
+
     Log('Playback started...', 0)
     Log('Video ContentType Movie? %s' % xbmc.getCondVisibility('VideoPlayer.Content(movies)'), 0)
     Log('Video ContentType Episode? %s' % xbmc.getCondVisibility('VideoPlayer.Content(episodes)'), 0)
@@ -1487,11 +1495,11 @@ def getFlashVars(asin):
 
 
 def getUrldata(mode, values, retformat='json', devicetypeid=False, version=1, firmware='1', opt='', extra=False,
-               useCookie=False, retURL=False, vMT='Feature', dRes='AudioVideoUrls,SubtitleUrls'):
+               useCookie=False, retURL=False, vMT='Feature', dRes='PlaybackUrls,SubtitleUrls'):
     if not devicetypeid:
         devicetypeid = values['deviceTypeID']
     url = ATVUrl + '/cdp/' + mode
-    url += '?titleId=' + values['asin']
+    url += '?asin=' + values['asin']
     url += '&deviceTypeID=' + devicetypeid
     url += '&firmware=' + firmware
     url += '&customerID=' + values['customerId']
@@ -1500,14 +1508,14 @@ def getUrldata(mode, values, retformat='json', devicetypeid=False, version=1, fi
     url += '&token=' + values['token']
     url += '&format=' + retformat
     url += '&version=' + str(version)
-    url += opt
     if extra:
         url += '&resourceUsage=ImmediateConsumption&consumptionType=Streaming&deviceDrmOverride=CENC' \
                '&deviceStreamingTechnologyOverride=DASH&deviceProtocolOverride=Https&audioTrackId=all' \
                '&deviceBitrateAdaptationsOverride=CVBR%2CCBR'
         url += '&videoMaterialType=' + vMT
         url += '&desiredResources=' + dRes
-        url += '&supportedDRMKeyScheme=DUAL_KEY' if platform != osAndroid and 'AudioVideoUrls' in dRes or 'PlaybackUrls' in dRes else ''
+        url += '&supportedDRMKeyScheme=DUAL_KEY' if platform != osAndroid and 'PlaybackUrls' in dRes else ''
+    url += opt
     if retURL:
         return url
     data = getURL(url, useCookie=useCookie)

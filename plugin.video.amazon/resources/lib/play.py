@@ -179,10 +179,16 @@ def IStreamPlayback(trailer, isAdult, extern):
 
     vMT = 'Trailer' if trailer else 'Feature'
 
-    mpd, subs = getStreams(*getUrldata('catalog/GetPlaybackResources', values, extra=True, vMT=vMT,
-                                       opt='&titleDecorationScheme=primary-content'), retmpd=True)
+    cj = mechanizeLogin()
 
-    licURL = getUrldata('catalog/GetPlaybackResources', values, extra=True, vMT=vMT, dRes='Widevine2License', retURL=True)
+    mpd, subs = getStreams(*getUrldata('catalog/GetPlaybackResources', values, extra=True, vMT=vMT,
+                                       opt='&titleDecorationScheme=primary-content', useCookie=cj), retmpd=True)
+
+    cj_str = ';'.join([c.name + '=' + c.value for c in cj])
+    opt = '|Content-Type=application%2Fx-www-form-urlencoded&Cookie=' + urllib.quote_plus(cj_str)
+    opt += '|widevine2Challenge=B{SSM}&includeHdcpTestKeyInLicense=true'
+    opt += '|JBlicense;hdcpEnforcementResolutionPixels'
+    licURL = getUrldata('catalog/GetPlaybackResources', values, extra=True, vMT=vMT, dRes='Widevine2License', opt=opt, retURL=True)
 
     if not mpd:
         Dialog.notification(getString(30203), subs, xbmcgui.NOTIFICATION_ERROR)
@@ -433,27 +439,38 @@ def getStreams(suc, data, retmpd=False):
     if retmpd:
         subUrls = parseSubs(data)
 
-    hosts = data['audioVideoUrls']['avCdnUrlSets']
+    if 'audioVideoUrls' in data.keys():
+        hosts = data['audioVideoUrls']['avCdnUrlSets']
+    elif 'playbackUrls' in data.keys():
+        defid = data['playbackUrls']['defaultUrlSetId']
+        h_dict = data['playbackUrls']['urlSets']
+        hosts = [h_dict[k] for k in h_dict]
+        hosts.insert(0, h_dict[defid])
 
     while hosts:
         for cdn in hosts:
             prefHost = False if HostSet not in str(hosts) or HostSet == 'Auto' else HostSet
+            cdn_item = cdn
+
+            if 'urls' in cdn:
+                cdn = cdn['urls']['manifest']
             if prefHost and prefHost not in cdn['cdn']:
                 continue
             Log('Using Host: ' + cdn['cdn'])
 
-            for urlset in cdn['avUrlInfoList']:
-                data = getURL(urlset['url'], retjson=False, check=retmpd)
-                if not data:
-                    hosts.remove(cdn)
-                    Log('Host not reachable: ' + cdn['cdn'])
-                    break
-                if retmpd:
-                    return urlset['url'], subUrls
-                else:
-                    fps_string = re.compile('frameRate="([^"]*)').findall(data)[0]
-                    fr = round(eval(fps_string + '.0'), 3)
-                    return True, str(fr).replace('.0', '')
+            urlset = cdn['avUrlInfoList'][0] if 'avUrlInfoList' in cdn else cdn
+
+            data = getURL(urlset['url'], retjson=False, check=retmpd)
+            if not data:
+                hosts.remove(cdn_item)
+                Log('Host not reachable: ' + cdn['cdn'])
+                continue
+            if retmpd:
+                return urlset['url'], subUrls
+            else:
+                fps_string = re.compile('frameRate="([^"]*)').findall(data)[0]
+                fr = round(eval(fps_string + '.0'), 3)
+                return True, str(fr).replace('.0', '')
 
     return False, getString(30217)
 
@@ -502,11 +519,11 @@ def getFlashVars():
 
 
 def getUrldata(mode, values, devicetypeid=False, version=1, firmware='1', opt='', extra=False,
-               useCookie=False, retURL=False, vMT='Feature', dRes='AudioVideoUrls,SubtitleUrls'):
+               useCookie=False, retURL=False, vMT='Feature', dRes='PlaybackUrls,SubtitleUrls'):
     if not devicetypeid:
         devicetypeid = values['deviceTypeID']
     url = ATV_URL + '/cdp/' + mode
-    url += '?titleId=' + values['asin']
+    url += '?asin=' + values['asin']
     url += '&deviceTypeID=' + devicetypeid
     url += '&firmware=' + firmware
     url += '&customerID=' + values['customerId']
@@ -515,14 +532,14 @@ def getUrldata(mode, values, devicetypeid=False, version=1, firmware='1', opt=''
     url += '&token=' + values['token']
     url += '&format=json'
     url += '&version=' + str(version)
-    url += opt
     if extra:
         url += '&resourceUsage=ImmediateConsumption&consumptionType=Streaming&deviceDrmOverride=CENC' \
-               '&deviceStreamingTechnologyOverride=DASH&deviceProtocolOverride=Http&audioTrackId=all' \
+               '&deviceStreamingTechnologyOverride=DASH&deviceProtocolOverride=Https&audioTrackId=all' \
                '&deviceBitrateAdaptationsOverride=CVBR%2CCBR'
         url += '&videoMaterialType=' + vMT
         url += '&desiredResources=' + dRes
-        url += '&supportedDRMKeyScheme=DUAL_KEY' if platform != osAndroid and 'AudioVideoUrls' in dRes else ''
+        url += '&supportedDRMKeyScheme=DUAL_KEY' if platform != osAndroid and 'PlaybackUrls' in dRes else ''
+    url += opt
     if retURL:
         return url
     data = getURL(url, useCookie=useCookie, retjson=False)

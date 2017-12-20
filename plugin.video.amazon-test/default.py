@@ -997,6 +997,7 @@ def PlayVideo(name, asin, adultstr, trailer, forcefb=0):
     methodOW = fallback - 1 if forcefb and fallback else playMethod
     videoUrl = "%s/?autoplay=%s" % (amazonUrl, ('trailer' if trailer == 1 else '1'))
     extern = not xbmc.getInfoLabel('Container.PluginName').startswith('plugin.video.amazon')
+    fr = ''
 
     if extern:
         Log('External Call', xbmc.LOGDEBUG)
@@ -1009,11 +1010,14 @@ def PlayVideo(name, asin, adultstr, trailer, forcefb=0):
         elif methodOW == 3:
             playable = IStreamPlayback(asin, name, trailer, isAdult, extern)
         elif platform != osAndroid:
-            ExtPlayback(videoUrl, asin, isAdult, methodOW)
+            ExtPlayback(videoUrl, asin, isAdult, methodOW, fr)
 
-        if not playable:
+        if not playable or isinstance(playable, str):
             if fallback:
                 methodOW = fallback - 1
+                if isinstance(playable, str):
+                    fr = playable
+                    playable = False
             else:
                 xbmc.sleep(500)
                 Dialog.ok(getString(30203), getString(30218))
@@ -1023,7 +1027,7 @@ def PlayVideo(name, asin, adultstr, trailer, forcefb=0):
         playDummyVid()
 
 
-def ExtPlayback(videoUrl, asin, isAdult, method):
+def ExtPlayback(videoUrl, asin, isAdult, method, fr):
     waitsec = int(addon.getSetting("clickwait")) * 1000
     waitprepin = int(addon.getSetting("waitprepin")) * 1000
     pin = addon.getSetting("pin")
@@ -1039,7 +1043,7 @@ def ExtPlayback(videoUrl, asin, isAdult, method):
     if xbmcvfs.exists('/etc/os-release'):
         osLE = 'libreelec' in xbmcvfs.File('/etc/os-release').read()
 
-    suc, url = getCmdLine(videoUrl, asin, method)
+    suc, url = getCmdLine(videoUrl, asin, method, fr)
     if not suc:
         Dialog.notification(getString(30203), url, xbmcgui.NOTIFICATION_ERROR)
         return
@@ -1126,16 +1130,16 @@ def IStreamPlayback(asin, name, trailer, isAdult, extern):
         playDummyVid()
         return True
 
-    values = getFlashVars(asin)
+    cookie = MechanizeLogin()
+    values = getFlashVars(asin, cookie)
     if not values:
         playDummyVid()
         return True
 
-    cj = MechanizeLogin()
     mpd, subs = getStreams(*getUrldata('catalog/GetPlaybackResources', values, extra=True, vMT=vMT,
-                                       opt='&titleDecorationScheme=primary-content', dRes=dRes, useCookie=cj), retmpd=True)
+                                       opt='&titleDecorationScheme=primary-content', dRes=dRes, useCookie=cookie), retmpd=True)
 
-    cj_str = ';'.join([c.name + '=' + c.value for c in cj])
+    cj_str = ';'.join([c.name + '=' + c.value for c in cookie])
     opt = '|Content-Type=application%2Fx-www-form-urlencoded&Cookie=' + urllib.quote_plus(cj_str)
     opt += '|widevine2Challenge=B{SSM}&includeHdcpTestKeyInLicense=true'
     opt += '|JBlicense;hdcpEnforcementResolutionPixels'
@@ -1156,7 +1160,7 @@ def IStreamPlayback(asin, name, trailer, isAdult, extern):
         mpdcontent = getURL(mpd, rjson=False)
         if 'avc1.4D00' in mpdcontent and platform != osAndroid and not is_binary:
             xbmc.executebuiltin('ActivateWindow(busydialog)')
-            return False
+            return extrFr(mpdcontent)
         if mpdcontent.count('EDEF8BA9-79D6-4ACE-A3C8-27DCD51D21ED') > 1 and (platform == osAndroid or is_binary):
             mpd = orgmpd
             at_check = False
@@ -1308,7 +1312,7 @@ def check_output(*popenargs, **kwargs):
     return out.strip()
 
 
-def getCmdLine(videoUrl, asin, method):
+def getCmdLine(videoUrl, asin, method, fr):
     scr_path = addon.getSetting("scr_path")
     br_path = addon.getSetting("br_path").strip()
     scr_param = addon.getSetting("scr_param").strip()
@@ -1316,14 +1320,18 @@ def getCmdLine(videoUrl, asin, method):
     appdata = addon.getSetting("ownappdata") == 'true'
     cust_br = addon.getSetting("cust_path") == 'true'
     nobr_str = getString(30198)
+    frdetect = addon.getSetting("framerate") == 'true'
 
     if method == 1:
         if not xbmcvfs.exists(scr_path):
             return False, nobr_str
 
-        suc, fr = getPlaybackInfo(asin)
-        if not suc:
-            return False, fr
+        if frdetect:
+            suc, fr = (getPlaybackInfo(asin)) if not fr else (True, fr)
+            if not suc:
+                return False, fr
+        else:
+            fr = ''
 
         return True, scr_path + ' ' + scr_param.replace('{f}', fr).replace('{u}', videoUrl)
 
@@ -1394,13 +1402,8 @@ def getStreams(suc, data, retmpd=False):
     elif 'playbackUrls' in data.keys():
         defid = data['playbackUrls']['defaultUrlSetId']
         h_dict = data['playbackUrls']['urlSets']
-        '''
-        if h_dict[defid]['failover']['cdn']['mode'] == 'seamless':
-            defid = h_dict[defid]['failover']['cdn']['urlSetId']
-        '''
         hosts = [h_dict[k] for k in h_dict]
         hosts.insert(0, h_dict[defid])
-        WriteLog(json.dumps(hosts), 'hosts')
 
     while hosts:
         for cdn in hosts:
@@ -1420,14 +1423,16 @@ def getStreams(suc, data, retmpd=False):
                 hosts.remove(cdn_item)
                 Log('Host not reachable: ' + cdn['cdn'])
                 continue
-            if retmpd:
-                return urlset['url'], subUrls
-            else:
-                fps_string = re.compile('frameRate="([^"]*)').findall(data)[0]
-                fr = round(eval(fps_string + '.0'), 3)
-                return True, str(fr).replace('.0', '')
+
+            return (urlset['url'], subUrls) if retmpd else (True, extrFr(data))
 
     return False, getString(30217)
+
+
+def extrFr(data):
+    fps_string = re.compile('frameRate="([^"]*)').findall(data)[0]
+    fr = round(eval(fps_string + '.0'), 3)
+    return str(fr).replace('.0', '')
 
 
 def parseSubs(data):
@@ -1454,19 +1459,15 @@ def parseSubs(data):
 
 
 def getPlaybackInfo(asin):
-    if addon.getSetting("framerate") == 'false':
-        return True, ''
-    values = getFlashVars(asin)
+    cookie = MechanizeLogin()
+    values = getFlashVars(asin, cookie)
     if not values:
         return False, 'getFlashVars'
-    suc, fr = getStreams(*getUrldata('catalog/GetPlaybackResources', values, extra=True))
+    suc, fr = getStreams(*getUrldata('catalog/GetPlaybackResources', values, extra=True, useCookie=cookie))
     return suc, fr
 
 
-def getFlashVars(asin):
-    cookie = MechanizeLogin()
-    if not cookie:
-        return False
+def getFlashVars(asin, cookie):
     url = BaseUrl + '/gp/deal/ajax/getNotifierResources.html'
     showpage = getURL(url, useCookie=cookie)
 

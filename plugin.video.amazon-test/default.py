@@ -81,14 +81,27 @@ DefaultFanart = os.path.join(PluginPath, 'fanart.jpg')
 NextIcon = os.path.join(PluginPath, 'resources', 'next.png')
 HomeIcon = os.path.join(PluginPath, 'resources', 'home.png')
 country = int(addon.getSetting('country'))
-c_tld = ['de', 'co.uk', 'com', 'co.jp', ''][country]
-BaseUrl = 'https://www.amazon.' + c_tld
-ATVUrl = 'https://atv-%s.amazon.%s' % (['ps-eu', 'ps-eu', 'ps', 'ps-fe'][country], c_tld)
 wl_order = ['DATE_ADDED_DESC', 'TITLE_DESC', 'TITLE_ASC'][int('0' + addon.getSetting("wl_order"))]
-MarketIDs = ['A1PA6795UKMFR9', 'A1F83G8C2ARO7P', 'ATVPDKIKX0DER', 'A1VC38T7YXB528', '']
-MarketID = MarketIDs[country]
-Language = ['de', 'en', 'en', 'jp', ''][country]
-AgeRating = ['FSK ', '', '', '', ''][country]
+UsePrimeVideo = False
+if 4 > country:
+    c_tld = ['de', 'co.uk', 'com', 'co.jp'][country]
+    BaseUrl = 'https://www.amazon.' + c_tld
+    LoginUrl = BaseUrl
+    ATVUrl = 'https://atv-%s.amazon.%s' % (['ps-eu', 'ps-eu', 'ps', 'ps-fe'][country], c_tld)
+    MarketIDs = ['A1PA6795UKMFR9', 'A1F83G8C2ARO7P', 'ATVPDKIKX0DER', 'A1VC38T7YXB528']
+    MarketID = MarketIDs[country]
+    Language = ['de', 'en', 'en', 'jp'][country]
+    AgeRating = ['FSK ', '', '', '', ''][country]
+else:
+    ''' Temporarily Hardcoded '''
+    BaseUrl = 'https://www.primevideo.com'
+    LoginUrl = 'https://www.amazon.com'
+    ATVUrl = 'https://atvs-ps-eu.primevideo.com'
+    MarketID = 'A3K6Y4MI8GDYMT'
+    Language = 'en'
+    AgeRating = ''
+    UsePrimeVideo = True
+    
 menuFile = os.path.join(DataPath, 'menu-%s.db' % MarketID)
 CookieFile = os.path.join(DataPath, 'cookie-%s.lwp' % MarketID)
 is_addon = 'inputstream.adaptive'
@@ -1671,7 +1684,7 @@ def LogIn(ask=True):
         while caperr:
             Log('Connect to SignIn Page %s attempts left' % -caperr)
             br.addheaders = [('User-Agent', getConfig('UserAgent'))]
-            br.open(BaseUrl + '/gp/aw/si.html')
+            br.open(LoginUrl + '/gp/aw/si.html')
             response = br.response().read()
             if mobileUA(response) or 'signIn' not in [i.name for i in br.forms()]:
                 getUA(True)
@@ -1694,8 +1707,8 @@ def LogIn(ask=True):
                          ('Cache-Control', 'max-age=0'),
                          ('Connection', 'keep-alive'),
                          ('Content-Type', 'application/x-www-form-urlencoded'),
-                         ('Host', BaseUrl.split('//')[1]),
-                         ('Origin', BaseUrl),
+                         ('Host', LoginUrl.split('//')[1]),
+                         ('Origin', LoginUrl),
                          ('User-Agent', getConfig('UserAgent')),
                          ('Upgrade-Insecure-Requests', '1')]
         br.submit()

@@ -322,7 +322,29 @@ msgctxt "#30085"
 msgid "Other (primevideo.com)"
 msgstr ""
 
-#empty strings from id 30086 to 30099
+#empty strings from id 30086 to 30089
+
+msgctxt "#30090"
+msgid "PrimeVideo Area"
+msgstr ""
+
+msgctxt "#30091"
+msgid "ROE_EU"
+msgstr ""
+
+msgctxt "#30092"
+msgid "ROW_EU"
+msgstr ""
+
+msgctxt "#30093"
+msgid "ROW_FE"
+msgstr ""
+
+msgctxt "#30094"
+msgid "ROW_NA"
+msgstr ""
+
+#empty strings from id 30095 to 30099
 
 msgctxt "#30100"
 msgid "Library"

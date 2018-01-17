@@ -81,6 +81,7 @@ DefaultFanart = os.path.join(PluginPath, 'fanart.jpg')
 NextIcon = os.path.join(PluginPath, 'resources', 'next.png')
 HomeIcon = os.path.join(PluginPath, 'resources', 'home.png')
 country = int(addon.getSetting('country'))
+pvArea = int(addon.getSetting('primevideo_area'))
 wl_order = ['DATE_ADDED_DESC', 'TITLE_DESC', 'TITLE_ASC'][int('0' + addon.getSetting("wl_order"))]
 UsePrimeVideo = False
 if 4 > country:
@@ -96,12 +97,14 @@ else:
     ''' Temporarily Hardcoded '''
     BaseUrl = 'https://www.primevideo.com'
     LoginUrl = 'https://www.amazon.com'
-    ATVUrl = 'https://atvs-ps-eu.primevideo.com'
-    MarketID = 'A3K6Y4MI8GDYMT'
+    # MarketID   ROE_EU,           ROW_EU,           ROW_FE,           ROW_NA
+    MarketID = ['A3K6Y4MI8GDYMT', 'A2MFUE2XK8ZSSY', 'A15PK738MTQHSO', 'ART4WZ8MWBX2Y'][pvArea]
+    Endpoint = 'fls-%s.amazon.com' % (['eu', 'eu', 'fe', 'na'][pvArea])
+    ATVUrl = 'https://atv-ps%s.primevideo.com' % (['-eu', '-eu', '-fe', ''][pvArea])
     Language = 'en'
     AgeRating = ''
     UsePrimeVideo = True
-    
+
 menuFile = os.path.join(DataPath, 'menu-%s.db' % MarketID)
 CookieFile = os.path.join(DataPath, 'cookie-%s.lwp' % MarketID)
 is_addon = 'inputstream.adaptive'

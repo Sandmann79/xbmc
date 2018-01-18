@@ -32,9 +32,6 @@ import pyxbmct
 import socket
 import ssl
 import shlex
-from HTMLParser import HTMLParser
-
-Unescape = HTMLParser().unescape
 
 addon = xbmcaddon.Addon()
 Dialog = xbmcgui.Dialog()
@@ -86,7 +83,10 @@ HomeIcon = os.path.join(PluginPath, 'resources', 'home.png')
 country = int(addon.getSetting('country'))
 pvArea = int(addon.getSetting('primevideo_area'))
 wl_order = ['DATE_ADDED_DESC', 'TITLE_DESC', 'TITLE_ASC'][int('0' + addon.getSetting("wl_order"))]
+
 UsePrimeVideo = False
+PrimeVideoCache = os.path.join(DataPath, 'cache.json')
+
 if 4 > country:
     c_tld = ['de', 'co.uk', 'com', 'co.jp'][country]
     BaseUrl = 'https://www.amazon.' + c_tld
@@ -98,7 +98,7 @@ if 4 > country:
 else:
     UsePrimeVideo = True
     BaseUrl = 'https://www.primevideo.com'
-    # MarketID   ROE_EU,           ROW_EU,           ROW_FE,           ROW_NA
+    # Market     ROE_EU,           ROW_EU,           ROW_FE,           ROW_NA
     MarketID = ['A3K6Y4MI8GDYMT', 'A2MFUE2XK8ZSSY', 'A15PK738MTQHSO', 'ART4WZ8MWBX2Y'][pvArea]
     Endpoint = 'fls-%s.amazon.com' % (['eu', 'eu', 'fe', 'na'][pvArea])
     ATVUrl = 'https://atv-ps%s.primevideo.com' % (['-eu', '-eu', '-fe', ''][pvArea])
@@ -106,11 +106,14 @@ else:
     Language = 'en'
     AgeRating = ''
 
-pvCatalog = { 'root': {
-    'TV Shows': { 'lazyLoadURL':BaseUrl+'/storefront/tv?_encoding=UTF8&format=json' },
-    'Movies': { 'lazyLoadURL':BaseUrl+'/storefront/movie?_encoding=UTF8&format=json' },
-    'Kids': { 'lazyLoadURL':BaseUrl+'/storefront/kids?_encoding=UTF8&format=json' },
-} }
+pvCatalog = {
+    'root': {
+        u'TV Shows': { 'lazyLoadURL':BaseUrl+'/storefront/tv?_encoding=UTF8&format=json' },
+        u'Movies': { 'lazyLoadURL':BaseUrl+'/storefront/movie?_encoding=UTF8&format=json' },
+        u'Kids': { 'lazyLoadURL':BaseUrl+'/storefront/kids?_encoding=UTF8&format=json' },
+    },
+    'expiration': 0,
+}
 
 menuFile = os.path.join(DataPath, 'menu-%s.db' % MarketID)
 CookieFile = os.path.join(DataPath, 'cookie-%s.lwp' % MarketID)
@@ -338,11 +341,47 @@ def MainMenu():
         addDir(getString(30100), 'getListMenu', library, cm=cm_lb)
         xbmcplugin.endOfDirectory(pluginhandle, updateListing=False)
 
+def PV_Catalog(path):
+    node = pvCatalog
+    for n in path.split('-//-'):
+        node = node[n]
+    if 'lazyLoadURL' in node:
+        PV_LazyLoad(node)
+    for key in node:
+        url = u'{0}?mode=PV_Catalog&path={1}-//-{2}'.format(sys.argv[0], urllib.quote_plus(path.encode('utf-8')), urllib.quote_plus(key.encode('utf-8')))
+        item = xbmcgui.ListItem(key)
+        xbmcplugin.addDirectoryItem(pluginhandle, url, item, isFolder=True)
+    xbmcplugin.endOfDirectory(pluginhandle, updateListing=False)
+
 def PV_LazyLoad(obj):
     if 'lazyLoadURL' not in obj:
         return
     requestURL = obj['lazyLoadURL']
     del obj['lazyLoadURL']
+
+    def Unescape(text):
+        ''' Unescape various html/xml entities, courtesy of Fredrik Lundh '''
+        def fixup(m):
+            import htmlentitydefs
+            text = m.group(0)
+            if text[:2] == "&#":
+                # character reference
+                try:
+                    if text[:3] == "&#x":
+                        return unichr(int(text[3:-1], 16))
+                    else:
+                        return unichr(int(text[2:-1]))
+                except ValueError:
+                    pass
+            else:
+                # named entity
+                try:
+                    text = unichr(htmlentitydefs.name2codepoint[text[1:-1]])
+                except KeyError:
+                    pass
+            return text # leave as is
+        return re.sub("&#?\w+;", fixup, text.decode('utf-8'))
+
     while (None is not requestURL):
         nextRequestURL = None
         cnt = getURL(requestURL, rjson=False, useCookie=True)
@@ -353,7 +392,7 @@ def PV_LazyLoad(obj):
                 ''' List of series episodes '''
                 bgimg = re.search('<div class="av-hero-background-size av-bgimg av-bgimg-desktop-double">.*?url\(([^)]+)\)', cnt, flags=re.DOTALL)
                 if None is not bgimg:
-                    bgimg = bgimg[1]
+                    bgimg = bgimg.groups()[0]
                     obj['metadata']['bgimg'] = bgimg
                 results = re.sub(r'^.*<ol\s+[^>]*class="[^"]*av-episode-list[^"]*"[^>]*>\s*(.*?)\s*</ol>.*$', r'\1', cnt, flags=re.DOTALL)
                 for entry in re.findall(r'<li[^>]*>\s*(.*?)\s*</li>', results, flags=re.DOTALL):
@@ -370,17 +409,16 @@ def PV_LazyLoad(obj):
                     for i in range(0,len(rx)):
                         res.append(re.search(rx[i], entry))
                         if None is not res[i]:
+                            res[i] = res[i].groups()
                             if (0 < i):
-                                res[i] = res[i][1]
-                            else:
-                                res[i] = res[i].groups()
+                                res[i] = res[i][0]
                         if 1 == i:
                             res[1] = Unescape(res[1])
                     obj[res[1]] = {}
                     meta = { 'img': res[2], 'ref': res[0][0], 'asin': res[0][1], 'videoURL': res[0][2] }
                     if None is not re.match(r'/[^/]', meta['videoURL']):
-                        meta['videoURL'] = BaseURL + meta['videoURL']
-                    meta['video'] = re.search(r'/gp/video/detail/([^/]+)/', meta['videoURL'])[1]
+                        meta['videoURL'] = BaseUrl + meta['videoURL']
+                    meta['video'] = re.search(r'/gp/video/detail/([^/]+)/', meta['videoURL']).groups()[0]
                     if (None != res[3]): meta['runtime'] = res[3]
                     if (None != res[4]): meta['date'] = res[4]
                     if (None != res[5]): meta['rating'] = res[5]
@@ -404,10 +442,9 @@ def PV_LazyLoad(obj):
                     for i in range(0,len(rx)):
                         res.append(re.search(rx[i], entry))
                         if None is not res[i]:
+                            res[i] = res[i].groups()
                             if (0 < i):
-                                res[i] = res[i][1]
-                            else:
-                                res[i] = res[i].groups()
+                                res[i] = res[i][0]
                     title = Unescape(res[0][2])
                     if title not in obj:
                         obj[title] = {}
@@ -422,7 +459,7 @@ def PV_LazyLoad(obj):
                             obj[title]['metadata'] = { 'img': meta['img'] }
                         obj[title][sn] = { 'metadata': meta, 'lazyLoadURL': res[0][1] }
                         if None is not re.match(r'/[^/]', obj[title][sn]['lazyLoadURL']):
-                            obj[title][sn]['lazyLoadURL'] = BaseURL + obj[title][sn]['lazyLoadURL']
+                            obj[title][sn]['lazyLoadURL'] = BaseUrl + obj[title][sn]['lazyLoadURL']
                     else:
                         ''' Movie '''
                         obj[title]['metadata'] = meta
@@ -435,7 +472,7 @@ def PV_LazyLoad(obj):
                 section = re.split(r'","', section[2:-2])
                 if ('dvappend' == section[0]):
                     #data.append(section[2])
-                    title = re.sub(r'^.*<h2[^>]*>\s*<span[^>]*>\s*(.*?)\s*</span>.*$', r'\1', section[2], flags=re.DOTALL)
+                    title = re.sub(r'^.*<h2[^>]*>\s*<span[^>]*>\s*(.*?)\s*</span>.*$', r'\1', section[2], flags=re.DOTALL).decode('utf-8')
                     obj[title] = {}
                     if None is not re.search('<h2[^>]*>.*?<a\s+[^>]*\s+href="[^"]+"[^>]*>.*?</h2>', section[2], flags=re.DOTALL):
                         obj[title]['lazyLoadURL'] = Unescape(re.sub('\\n','',re.sub(r'^.*?<h2[^>]*>.*?<a\s+[^>]*\s+href="([^"]+)"[^>]*>.*?</h2>.*?$', r'\1', section[2], flags=re.DOTALL)))
@@ -447,18 +484,8 @@ def PV_LazyLoad(obj):
                     nextRequestURL = re.sub('&amp;','&',re.sub('&quot;,&quot;token&quot;:&quot;', '&token=', nextRequestURL)) + '&format=json'
                     #ParseData(next, obj)
         requestURL = nextRequestURL
-
-def PV_Catalog(path):
-    node = pvCatalog
-    for n in path.split('-//-'):
-        node = node[n]
-    if 'lazyLoadURL' in node:
-        PV_LazyLoad(node)
-    for key in node:
-        url = '{0}?mode=PV_Catalog&path={1}-//-{2}'.format(sys.argv[0], path, key)
-        item = xbmcgui.ListItem(key)
-        xbmcplugin.addDirectoryItem(pluginhandle, url, item, isFolder=True)
-    xbmcplugin.endOfDirectory(pluginhandle, updateListing=False)
+    with open(PrimeVideoCache, 'w+') as fp:
+        json.dump(pvCatalog, fp)
 
 def Search():
     searchString = Dialog.input(getString(24121))
@@ -2679,7 +2706,16 @@ createDB()
 
 menuDb = sqlite.connect(menuFile)
 menuDb.text_factory = str
-loadCategories()
+if not UsePrimeVideo:
+    loadCategories()
+
+if xbmcvfs.exists(PrimeVideoCache):
+    import codecs
+    with open(PrimeVideoCache,'r') as fp:
+        saved = json.load(fp)
+    ''' @TODO check cache age '''
+    pvCatalog = saved
+
 args = dict(urlparse.parse_qsl(urlparse.urlparse(sys.argv[2]).query))
 Log(args)
 mode = args.get('mode', '')
@@ -2704,7 +2740,7 @@ elif mode == 'ageSettings':
     if RequestPin():
         AgeSettings(getString(30018).split('.')[0]).doModal()
 elif mode == 'PV_Catalog':
-    PV_Catalog(None if 'path' not in args else args['path'])
+    PV_Catalog(None if 'path' not in args else args['path'].decode('utf-8'))
 elif mode == '':
     MainMenu()
 else:

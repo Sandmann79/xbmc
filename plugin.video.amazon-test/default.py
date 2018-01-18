@@ -87,23 +87,27 @@ UsePrimeVideo = False
 if 4 > country:
     c_tld = ['de', 'co.uk', 'com', 'co.jp'][country]
     BaseUrl = 'https://www.amazon.' + c_tld
-    LoginUrl = BaseUrl
     ATVUrl = 'https://atv-%s.amazon.%s' % (['ps-eu', 'ps-eu', 'ps', 'ps-fe'][country], c_tld)
     MarketIDs = ['A1PA6795UKMFR9', 'A1F83G8C2ARO7P', 'ATVPDKIKX0DER', 'A1VC38T7YXB528']
     MarketID = MarketIDs[country]
     Language = ['de', 'en', 'en', 'jp'][country]
     AgeRating = ['FSK ', '', '', '', ''][country]
 else:
-    ''' Temporarily Hardcoded '''
+    UsePrimeVideo = True
     BaseUrl = 'https://www.primevideo.com'
-    LoginUrl = 'https://www.amazon.com'
     # MarketID   ROE_EU,           ROW_EU,           ROW_FE,           ROW_NA
     MarketID = ['A3K6Y4MI8GDYMT', 'A2MFUE2XK8ZSSY', 'A15PK738MTQHSO', 'ART4WZ8MWBX2Y'][pvArea]
     Endpoint = 'fls-%s.amazon.com' % (['eu', 'eu', 'fe', 'na'][pvArea])
     ATVUrl = 'https://atv-ps%s.primevideo.com' % (['-eu', '-eu', '-fe', ''][pvArea])
+    ''' Temporarily Hardcoded '''
     Language = 'en'
     AgeRating = ''
-    UsePrimeVideo = True
+
+pvCatalog = { 'root': {
+    'Movies': { 'lazyLoadURL':BaseUrl+'/storefront/movie?_encoding=UTF8&format=json' },
+    'TV Series': { 'lazyLoadURL':BaseUrl+'/storefront/tv?_encoding=UTF8&format=json' },
+    'For kids': { 'lazyLoadURL':BaseUrl+'/storefront/kids?_encoding=UTF8&format=json' },
+} }
 
 menuFile = os.path.join(DataPath, 'menu-%s.db' % MarketID)
 CookieFile = os.path.join(DataPath, 'cookie-%s.lwp' % MarketID)
@@ -310,24 +314,46 @@ def addVideo(name, asin, infoLabels, cm=[], export=False):
 def MainMenu():
     Log('Version: %s' % __version__)
     Log('Unicode support: %s' % os.path.supports_unicode_filenames)
-    loadCategories()
+    if False is not UsePrimeVideo:
+        PV_Catalog('root')
+    else:
+        loadCategories()
 
-    cm_wl = [(getString(30185) % 'Watchlist', 'RunPlugin(%s?mode=getListMenu&url=%s&export=1)' % (sys.argv[0], watchlist))]
-    cm_lb = [(getString(30185) % getString(30100),
-              'RunPlugin(%s?mode=getListMenu&url=%s&export=1)' % (sys.argv[0], library))]
+        cm_wl = [(getString(30185) % 'Watchlist', 'RunPlugin(%s?mode=getListMenu&url=%s&export=1)' % (sys.argv[0], watchlist))]
+        cm_lb = [(getString(30185) % getString(30100),
+                'RunPlugin(%s?mode=getListMenu&url=%s&export=1)' % (sys.argv[0], library))]
 
-    if multiuser:
-        cm_mu = [(getString(30130).split('.')[0], 'RunPlugin(%s?mode=LogIn)' % sys.argv[0]),
-                 (getString(30131).split('.')[0], 'RunPlugin(%s?mode=removeUser)' % sys.argv[0]),
-                 (getString(30132), 'RunPlugin(%s?mode=renameUser)' % sys.argv[0])]
-        addDir(getString(30134) + addon.getSetting('login_acc'), 'switchUser', '', cm=cm_mu)
-    addDir('Watchlist', 'getListMenu', watchlist, cm=cm_wl)
-    addDir(getString(30104), 'listCategories', getNodeId('movies'), opt='30143')
-    addDir(getString(30107), 'listCategories', getNodeId('tv_shows'), opt='30160')
-    addDir(getString(30108), 'Search', '')
-    addDir(getString(30100), 'getListMenu', library, cm=cm_lb)
+        if multiuser:
+            cm_mu = [(getString(30130).split('.')[0], 'RunPlugin(%s?mode=LogIn)' % sys.argv[0]),
+                    (getString(30131).split('.')[0], 'RunPlugin(%s?mode=removeUser)' % sys.argv[0]),
+                    (getString(30132), 'RunPlugin(%s?mode=renameUser)' % sys.argv[0])]
+            addDir(getString(30134) + addon.getSetting('login_acc'), 'switchUser', '', cm=cm_mu)
+        addDir('Watchlist', 'getListMenu', watchlist, cm=cm_wl)
+        addDir(getString(30104), 'listCategories', getNodeId('movies'), opt='30143')
+        addDir(getString(30107), 'listCategories', getNodeId('tv_shows'), opt='30160')
+        addDir(getString(30108), 'Search', '')
+        addDir(getString(30100), 'getListMenu', library, cm=cm_lb)
+        xbmcplugin.endOfDirectory(pluginhandle, updateListing=False)
+
+def PV_LazyLoad(obj):
+    if 'lazyLoadURL' not in obj:
+        return
+    requestURL = obj['lazyLoadURL']
+    del obj['lazyLoadURL']
+    cnt = getURL(requestURL, rjson=False, useCookie=True)
+    Log('Load failed' if None is re.search('"dvappend"', cnt) else 'Load successful')
+
+def PV_Catalog(path):
+    node = pvCatalog
+    for n in path.split('-/-#-/-'):
+        node = node[n]
+    if 'lazyLoadURL' in node:
+        PV_LazyLoad(node)
+    for key in node:
+        url = '{0}?mode=PV_Catalog&path={1}-/-#-/-{2}'.format(sys.argv[0], path, key)
+        item = xbmcgui.ListItem(key)
+        xbmcplugin.addDirectoryItem(pluginhandle, url, item, isFolder=True)
     xbmcplugin.endOfDirectory(pluginhandle, updateListing=False)
-
 
 def Search():
     searchString = Dialog.input(getString(24121))
@@ -1687,7 +1713,7 @@ def LogIn(ask=True):
         while caperr:
             Log('Connect to SignIn Page %s attempts left' % -caperr)
             br.addheaders = [('User-Agent', getConfig('UserAgent'))]
-            br.open(LoginUrl + '/gp/aw/si.html')
+            br.open(BaseUrl + ('/gp/aw/si.html' if not UsePrimeVideo else '/auth-redirect/'))
             response = br.response().read()
             if mobileUA(response) or 'signIn' not in [i.name for i in br.forms()]:
                 getUA(True)
@@ -1706,12 +1732,12 @@ def LogIn(ask=True):
         br['password'] = password
         br.addheaders = [('Accept', 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8'),
                          ('Accept-Encoding', 'gzip, deflate'),
-                         ('Accept-Language', 'de,en-US;q=0.8,en;q=0.6'),
+                         ('Accept-Language', 'en-US'),
                          ('Cache-Control', 'max-age=0'),
                          ('Connection', 'keep-alive'),
                          ('Content-Type', 'application/x-www-form-urlencoded'),
-                         ('Host', LoginUrl.split('//')[1]),
-                         ('Origin', LoginUrl),
+                         ('Host', BaseUrl.split('//')[1]),
+                         ('Origin', BaseUrl),
                          ('User-Agent', getConfig('UserAgent')),
                          ('Upgrade-Insecure-Requests', '1')]
         br.submit()
@@ -1732,17 +1758,21 @@ def LogIn(ask=True):
             xbmc.executebuiltin('Dialog.Close(busydialog)')
 
         if 'action=sign-out' in response:
-            try:
-                msg = soup.body.findAll('center')
-                if len(msg) > 1:
-                    wlc = msg[1].renderContents().strip()
-                    usr = wlc.split(',', 1)[1][:-1].strip()
-                else:
-                    msg = soup.find('a', attrs={'data-nav-ref': 'nav_ya_signin'})
-                    wlc = msg.find('span').renderContents().strip()
-                    usr = wlc.split(',', 1)[1].strip()
-            except (IndexError, AttributeError):
-                usr = wlc = getString(30215)
+            if not UsePrimeVideo:
+                try:
+                    msg = soup.body.findAll('center')
+                    if len(msg) > 1:
+                        wlc = msg[1].renderContents().strip()
+                        usr = wlc.split(',', 1)[1][:-1].strip()
+                    else:
+                        msg = soup.find('a', attrs={'data-nav-ref': 'nav_ya_signin'})
+                        wlc = msg.find('span').renderContents().strip()
+                        usr = wlc.split(',', 1)[1].strip()
+                except (IndexError, AttributeError):
+                    usr = wlc = getString(30215)
+            else:
+                usr = re.search(r'action=sign-out[^"]*"[^>]*>[^?]+\s+([^?]+?)\s*\?', response).groups()[0]
+                wlc = '{0} {1}'.format(getString(30250), usr)
 
             if multiuser and ask:
                 keyboard = xbmc.Keyboard(usr, getString(30135))
@@ -2568,6 +2598,8 @@ elif mode == 'openSettings':
 elif mode == 'ageSettings':
     if RequestPin():
         AgeSettings(getString(30018).split('.')[0]).doModal()
+elif mode == 'PV_Catalog':
+    PV_Catalog(None if 'path' not in args else args['path'])
 elif mode == '':
     MainMenu()
 else:

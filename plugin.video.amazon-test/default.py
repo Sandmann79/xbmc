@@ -32,6 +32,9 @@ import pyxbmct
 import socket
 import ssl
 import shlex
+from HTMLParser import HTMLParser
+
+Unescape = HTMLParser().unescape
 
 addon = xbmcaddon.Addon()
 Dialog = xbmcgui.Dialog()
@@ -104,9 +107,9 @@ else:
     AgeRating = ''
 
 pvCatalog = { 'root': {
+    'TV Shows': { 'lazyLoadURL':BaseUrl+'/storefront/tv?_encoding=UTF8&format=json' },
     'Movies': { 'lazyLoadURL':BaseUrl+'/storefront/movie?_encoding=UTF8&format=json' },
-    'TV Series': { 'lazyLoadURL':BaseUrl+'/storefront/tv?_encoding=UTF8&format=json' },
-    'For kids': { 'lazyLoadURL':BaseUrl+'/storefront/kids?_encoding=UTF8&format=json' },
+    'Kids': { 'lazyLoadURL':BaseUrl+'/storefront/kids?_encoding=UTF8&format=json' },
 } }
 
 menuFile = os.path.join(DataPath, 'menu-%s.db' % MarketID)
@@ -340,17 +343,119 @@ def PV_LazyLoad(obj):
         return
     requestURL = obj['lazyLoadURL']
     del obj['lazyLoadURL']
-    cnt = getURL(requestURL, rjson=False, useCookie=True)
-    Log('Load failed' if None is re.search('"dvappend"', cnt) else 'Load successful')
+    while (None is not requestURL):
+        nextRequestURL = None
+        cnt = getURL(requestURL, rjson=False, useCookie=True)
+        for t in [('\\\\n', '\n'),('\\n', '\n'),('\\\\"', '"'),(r'^\s+', '')]:
+            cnt = re.sub(t[0],t[1],cnt,flags=re.DOTALL)
+        if None is not re.search('<html[^>]*>', cnt):
+            if None is re.search('"[^"]*av-result-cards[^"]*"', cnt, flags=re.DOTALL):
+                ''' List of series episodes '''
+                bgimg = re.search('<div class="av-hero-background-size av-bgimg av-bgimg-desktop-double">.*?url\(([^)]+)\)', cnt, flags=re.DOTALL)
+                if None is not bgimg:
+                    bgimg = bgimg[1]
+                    obj['metadata']['bgimg'] = bgimg
+                results = re.sub(r'^.*<ol\s+[^>]*class="[^"]*av-episode-list[^"]*"[^>]*>\s*(.*?)\s*</ol>.*$', r'\1', cnt, flags=re.DOTALL)
+                for entry in re.findall(r'<li[^>]*>\s*(.*?)\s*</li>', results, flags=re.DOTALL):
+                    rx = [
+                        r'<a data-automation-id="ep-playback-[0-9]+"[^>]*data-ref="([^"]*)"[^>]*data-title-id="([^"]*)"[^>]*href="([^"]*)"',
+                        r'<span class="av-play-title-text">\s*(.*?)\s*</span>',                                                 # Title
+                        r'<div class="av-bgimg av-bgimg-desktop-double">.*?url\(([^)]+)\)',                                     # Image
+                        r'<span data-automation-id="ep-runtime-badge-[0-9]+"[^>]*>\s*(.*?)\s*</span>',                          # Run time
+                        r'<span data-automation-id="ep-air-date-badge-[0-9]+"[^>]*>\s*(.*?)\s*</span>',                         # Original air date
+                        r'<span data-automation-id="ep-air-amr-badge-[0-9]+"[^>]*>\s*(.*?)\s*</span>',                          # Age rating
+                        r'<p data-automation-id="ep-synopsis-[0-9]+"[^>]*>\s*(.*?)\s*</p>',                                     # Synopsis
+                    ]
+                    res = []
+                    for i in range(0,len(rx)):
+                        res.append(re.search(rx[i], entry))
+                        if None is not res[i]:
+                            if (0 < i):
+                                res[i] = res[i][1]
+                            else:
+                                res[i] = res[i].groups()
+                        if 1 == i:
+                            res[1] = Unescape(res[1])
+                    obj[res[1]] = {}
+                    meta = { 'img': res[2], 'ref': res[0][0], 'asin': res[0][1], 'videoURL': res[0][2] }
+                    if None is not re.match(r'/[^/]', meta['videoURL']):
+                        meta['videoURL'] = BaseURL + meta['videoURL']
+                    meta['video'] = re.search(r'/gp/video/detail/([^/]+)/', meta['videoURL'])[1]
+                    if (None != res[3]): meta['runtime'] = res[3]
+                    if (None != res[4]): meta['date'] = res[4]
+                    if (None != res[5]): meta['rating'] = res[5]
+                    if (None != res[6]): meta['synopsis'] = Unescape(res[6])
+                    obj[res[1]]['metadata'] = meta
+                pass
+            else:
+                ''' Movie and series list '''
+                results = re.sub(r'^.*<ol\s+[^>]*class="[^"]*av-result-cards[^"]*"[^>]*>\s*(.*?)\s*</ol>.*$', r'\1', cnt, flags=re.DOTALL)
+
+                pagination = re.sub(r'^.*<ol\s+[^>]*id="[^"]*av-pagination[^"]*"[^>]*>\s*(.*?)\s*</ol>.*$', r'\1', cnt, flags=re.DOTALL)
+                for entry in re.findall(r'<li[^>]*>\s*(.*?)\s*</li>', results, flags=re.DOTALL):
+                    rx = [
+                        r'<img\s+[^>]*src="([^"]*)".*?<h2[^>]*>\s*<a\s+[^>]*href="([^"]+)"[^>]*>\s*(.*?)\s*</a>\s*</h2>',       # Image, link and title
+                        r'<p\s+[^>]*class="[^"]*av-result-card-synopsis[^"]*"[^>]*>\s*(.*?)\s*</p>',                            # Synopsis
+                        r'<span\s+[^>]*class="[^"]*av-result-card-season[^"]*"[^>]*>\s*(.*?)\s*</span>',                        # Season
+                        r'<span\s+[^>]*class="[^"]*av-result-card-year[^"]*"[^>]*>\s*(.*?)\s*</span>',                          # Year
+                        r'<span\s+[^>]*class="[^"]*av-result-card-certification[^"]*"[^>]*>\s*(.*?)\s*</span>',                 # Age rating
+                    ]
+                    res = []
+                    for i in range(0,len(rx)):
+                        res.append(re.search(rx[i], entry))
+                        if None is not res[i]:
+                            if (0 < i):
+                                res[i] = res[i][1]
+                            else:
+                                res[i] = res[i].groups()
+                    title = Unescape(res[0][2])
+                    if title not in obj:
+                        obj[title] = {}
+                    meta = { 'img': res[0][0] }
+                    if (None != res[1]): meta['synopsis'] = Unescape(res[1])
+                    if (None != res[3]): meta['date'] = res[3]
+                    if (None != res[4]): meta['rating'] = res[4]
+                    if (None != res[2]):
+                        ''' Series '''
+                        sn = res[2]
+                        if 'metadata' not in obj[title].keys():
+                            obj[title]['metadata'] = { 'img': meta['img'] }
+                        obj[title][sn] = { 'metadata': meta, 'lazyLoadURL': res[0][1] }
+                        if None is not re.match(r'/[^/]', obj[title][sn]['lazyLoadURL']):
+                            obj[title][sn]['lazyLoadURL'] = BaseURL + obj[title][sn]['lazyLoadURL']
+                    else:
+                        ''' Movie '''
+                        obj[title]['metadata'] = meta
+                        pass
+        else:
+            ''' Categories list '''
+            for section in re.split(r'&&&\s+', cnt):
+                if 0 == len(section):
+                    continue
+                section = re.split(r'","', section[2:-2])
+                if ('dvappend' == section[0]):
+                    #data.append(section[2])
+                    title = re.sub(r'^.*<h2[^>]*>\s*<span[^>]*>\s*(.*?)\s*</span>.*$', r'\1', section[2], flags=re.DOTALL)
+                    obj[title] = {}
+                    if None is not re.search('<h2[^>]*>.*?<a\s+[^>]*\s+href="[^"]+"[^>]*>.*?</h2>', section[2], flags=re.DOTALL):
+                        obj[title]['lazyLoadURL'] = Unescape(re.sub('\\n','',re.sub(r'^.*?<h2[^>]*>.*?<a\s+[^>]*\s+href="([^"]+)"[^>]*>.*?</h2>.*?$', r'\1', section[2], flags=re.DOTALL)))
+                    else:
+                        pass
+                if (('dvupdate' == section[0]) and (None is not re.search(r'data-ajax-pagination="{[^}]+}"', section[2], flags=re.DOTALL))):
+                    # Extract the pagination request data and clean it up
+                    nextRequestURL = re.sub(r'^.*data-ajax-pagination="{&quot;href&quot;:&quot;([^}]+)&quot;,&quot;scope&quot;:&quot;page2&quot;}".*$', r'\1', section[2], flags=re.DOTALL)
+                    nextRequestURL = re.sub('&amp;','&',re.sub('&quot;,&quot;token&quot;:&quot;', '&token=', nextRequestURL)) + '&format=json'
+                    #ParseData(next, obj)
+        requestURL = nextRequestURL
 
 def PV_Catalog(path):
     node = pvCatalog
-    for n in path.split('-/-#-/-'):
+    for n in path.split('-//-'):
         node = node[n]
     if 'lazyLoadURL' in node:
         PV_LazyLoad(node)
     for key in node:
-        url = '{0}?mode=PV_Catalog&path={1}-/-#-/-{2}'.format(sys.argv[0], path, key)
+        url = '{0}?mode=PV_Catalog&path={1}-//-{2}'.format(sys.argv[0], path, key)
         item = xbmcgui.ListItem(key)
         xbmcplugin.addDirectoryItem(pluginhandle, url, item, isFolder=True)
     xbmcplugin.endOfDirectory(pluginhandle, updateListing=False)

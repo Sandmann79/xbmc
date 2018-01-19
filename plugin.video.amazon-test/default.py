@@ -2705,9 +2705,9 @@ if not UsePrimeVideo:
 
 pvCatalog = {
     'root': {
-        getString(30235): { 'lazyLoadURL':BaseUrl+'/storefront/tv?_encoding=UTF8&format=json' },
-        getString(30104): { 'lazyLoadURL':BaseUrl+'/storefront/movie?_encoding=UTF8&format=json' },
-        getString(30236): { 'lazyLoadURL':BaseUrl+'/storefront/kids?_encoding=UTF8&format=json' },
+        getString(30235): { 'lazyLoadURL':BaseUrl+'/storefront/tv?_encoding=UTF8&format=json&pageSize=255' },
+        getString(30104): { 'lazyLoadURL':BaseUrl+'/storefront/movie?_encoding=UTF8&format=json&pageSize=255' },
+        getString(30236): { 'lazyLoadURL':BaseUrl+'/storefront/kids?_encoding=UTF8&format=json&pageSize=255' },
     },
     'expiration': 0,
 }

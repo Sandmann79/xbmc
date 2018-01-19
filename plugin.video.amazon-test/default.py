@@ -106,15 +106,6 @@ else:
     Language = 'en'
     AgeRating = ''
 
-pvCatalog = {
-    'root': {
-        u'TV Shows': { 'lazyLoadURL':BaseUrl+'/storefront/tv?_encoding=UTF8&format=json' },
-        u'Movies': { 'lazyLoadURL':BaseUrl+'/storefront/movie?_encoding=UTF8&format=json' },
-        u'Kids': { 'lazyLoadURL':BaseUrl+'/storefront/kids?_encoding=UTF8&format=json' },
-    },
-    'expiration': 0,
-}
-
 menuFile = os.path.join(DataPath, 'menu-%s.db' % MarketID)
 CookieFile = os.path.join(DataPath, 'cookie-%s.lwp' % MarketID)
 is_addon = 'inputstream.adaptive'
@@ -2708,6 +2699,15 @@ menuDb = sqlite.connect(menuFile)
 menuDb.text_factory = str
 if not UsePrimeVideo:
     loadCategories()
+
+pvCatalog = {
+    'root': {
+        getString(30235): { 'lazyLoadURL':BaseUrl+'/storefront/tv?_encoding=UTF8&format=json' },
+        getString(30104): { 'lazyLoadURL':BaseUrl+'/storefront/movie?_encoding=UTF8&format=json' },
+        getString(30236): { 'lazyLoadURL':BaseUrl+'/storefront/kids?_encoding=UTF8&format=json' },
+    },
+    'expiration': 0,
+}
 
 if xbmcvfs.exists(PrimeVideoCache):
     import codecs

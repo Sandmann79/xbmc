@@ -632,6 +632,18 @@ msgctxt "#30218"
 msgid "Due changes at Amazon's DRM encryption, it's not possible to use Inputstream for this video.\nPlease configure the fallback option in Settings, to use another Playback method."
 msgstr ""
 
+#empty strings from id 30218 to 30234
+
+msgctxt "#30235"
+msgid "TV Shows"
+msgstr ""
+
+msgctxt "#30236"
+msgid "Kids"
+msgstr ""
+
+#empty strings from id 30237 to 30249
+
 msgctxt "#30250"
 msgid "Logged in as"
 msgstr ""

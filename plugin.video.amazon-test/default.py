@@ -475,6 +475,9 @@ def PV_LazyLoad(obj):
                     nextRequestURL = re.sub('&amp;','&',re.sub('&quot;,&quot;token&quot;:&quot;', '&token=', nextRequestURL)) + '&format=json'
                     #ParseData(next, obj)
         requestURL = nextRequestURL
+    if (0 == pvCatalog['expiration']):
+        ''' Expire in 11 hours '''
+        pvCatalog['expiration'] = 39600 + int(time.time())
     with open(PrimeVideoCache, 'w+') as fp:
         json.dump(pvCatalog, fp)
 
@@ -2712,9 +2715,9 @@ pvCatalog = {
 if xbmcvfs.exists(PrimeVideoCache):
     import codecs
     with open(PrimeVideoCache,'r') as fp:
-        saved = json.load(fp)
-    ''' @TODO check cache age '''
-    pvCatalog = saved
+        cached = json.load(fp)
+    if (time.time() < cached['expiration']):
+        pvCatalog = cached
 
 args = dict(urlparse.parse_qsl(urlparse.urlparse(sys.argv[2]).query))
 #Log(args)

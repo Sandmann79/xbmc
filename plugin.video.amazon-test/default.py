@@ -7,6 +7,7 @@ from platform import node
 from sqlite3 import dbapi2 as sqlite
 from random import randint
 from base64 import b64encode, b64decode
+from inputstreamhelper import Helper
 import uuid
 import cookielib
 import mechanize
@@ -90,6 +91,7 @@ Language = ['de', 'en', 'en', 'jp', ''][country]
 AgeRating = ['FSK ', '', '', '', ''][country]
 menuFile = os.path.join(DataPath, 'menu-%s.db' % MarketID)
 CookieFile = os.path.join(DataPath, 'cookie-%s.lwp' % MarketID)
+is_addon = 'inputstream.adaptive'
 na = 'not available'
 watchlist = 'watchlist'
 library = 'video-library'
@@ -1123,10 +1125,10 @@ def IStreamPlayback(asin, name, trailer, isAdult, extern):
     mpaa_str = RestrAges + getString(30171)
     drm_check = addon.getSetting("drm_check") == 'true'
     at_check = addon.getSetting("at_check") == 'true'
+    inputstream_helper = Helper('mpd', drm='com.widevine.alpha')
 
-    if not is_addon:
+    if not inputstream_helper.check_inputstream():
         Log('No Inputstream Addon found or activated')
-        Dialog.notification(getString(30203), 'No Inputstream Addon found or activated', xbmcgui.NOTIFICATION_ERROR)
         playDummyVid()
         return True
 
@@ -2510,13 +2512,6 @@ class Captcha(pyxbmct.AddonDialogWindow):
         self.email = self.username.getText()
         self.close()
 
-
-if AddonEnabled('inputstream.adaptive'):
-    is_addon = 'inputstream.adaptive'
-elif AddonEnabled('inputstream.mpd'):
-    is_addon = 'inputstream.mpd'
-else:
-    is_addon = ''
 
 if not getConfig('UserAgent'):
     getUA()

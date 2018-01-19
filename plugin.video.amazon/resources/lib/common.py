@@ -53,6 +53,7 @@ kodi_mjver = int(xbmc.getInfoLabel('System.BuildVersion')[0:2])
 multiuser = addon.getSetting('multiuser') == 'true'
 Dialog = xbmcgui.Dialog()
 socket.setdefaulttimeout(30)
+is_addon = 'inputstream.adaptive'
 regex_ovf = "((?i)(\[|\()(omu|ov).*(\)|\]))|\sOmU"
 
 try:
@@ -1018,13 +1019,6 @@ def jsonRPC(method, props='', param=None):
 
     return res['result'].get(props, res['result'])
 
-
-if AddonEnabled('inputstream.adaptive'):
-    is_addon = 'inputstream.adaptive'
-elif AddonEnabled('inputstream.mpd'):
-    is_addon = 'inputstream.mpd'
-else:
-    is_addon = ''
 
 if not getConfig('UserAgent'):
     getUA()

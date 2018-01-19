@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 from BeautifulSoup import BeautifulStoneSoup
 from common import *
+from inputstreamhelper import Helper
 import subprocess
 import threading
 import codecs
@@ -171,10 +172,10 @@ def check_output(*popenargs, **kwargs):
 def IStreamPlayback(trailer, isAdult, extern):
     drm_check = addon.getSetting("drm_check") == 'true'
     at_check = addon.getSetting("at_check") == 'true'
+    inputstream_helper = Helper('mpd', drm='com.widevine.alpha')
 
-    if not is_addon:
+    if not inputstream_helper.check_inputstream():
         Log('No Inputstream Addon found or activated')
-        Dialog.notification(getString(30203), 'No Inputstream Addon found or activated', xbmcgui.NOTIFICATION_ERROR)
         return True
 
     cookie = mechanizeLogin()

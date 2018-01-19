@@ -343,12 +343,12 @@ def MainMenu():
 
 def PV_Catalog(path):
     node = pvCatalog
-    for n in path.split('-//-'):
+    for n in path.decode('utf-8').split('-//-'):
         node = node[n]
     if 'lazyLoadURL' in node:
         PV_LazyLoad(node)
     for key in node:
-        url = u'{0}?mode=PV_Catalog&path={1}-//-{2}'.format(sys.argv[0], urllib.quote_plus(path.encode('utf-8')), urllib.quote_plus(key.encode('utf-8')))
+        url = u'{0}?mode=PV_Catalog&path={1}-//-{2}'.format(sys.argv[0], urllib.quote_plus(path), urllib.quote_plus(key.encode('utf-8')))
         item = xbmcgui.ListItem(key)
         xbmcplugin.addDirectoryItem(pluginhandle, url, item, isFolder=True)
     xbmcplugin.endOfDirectory(pluginhandle, updateListing=False)
@@ -2717,10 +2717,12 @@ if xbmcvfs.exists(PrimeVideoCache):
     pvCatalog = saved
 
 args = dict(urlparse.parse_qsl(urlparse.urlparse(sys.argv[2]).query))
-Log(args)
-mode = args.get('mode', '')
+#Log(args)
+mode = args.get('mode', None)
 
-if mode == 'listCategories':
+if None is mode:
+    MainMenu()
+elif mode == 'listCategories':
     listCategories(args.get('url', ''), args.get('opt', ''))
 elif mode == 'listContent':
     listContent(args.get('cat'), args.get('url', ''), int(args.get('page', '1')), args.get('opt', ''))
@@ -2740,8 +2742,6 @@ elif mode == 'ageSettings':
     if RequestPin():
         AgeSettings(getString(30018).split('.')[0]).doModal()
 elif mode == 'PV_Catalog':
-    PV_Catalog(None if 'path' not in args else args['path'].decode('utf-8'))
-elif mode == '':
-    MainMenu()
+    PV_Catalog(None if 'path' not in args else args['path'])
 else:
     exec mode + '()'

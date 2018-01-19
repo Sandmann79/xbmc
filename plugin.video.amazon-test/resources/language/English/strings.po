@@ -647,3 +647,7 @@ msgstr ""
 msgctxt "#30250"
 msgid "Logged in as"
 msgstr ""
+
+msgctxt "#30251"
+msgid "Connection error"
+msgstr ""

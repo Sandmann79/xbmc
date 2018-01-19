@@ -345,11 +345,6 @@ def PV_Catalog(path):
     xbmcplugin.endOfDirectory(pluginhandle, updateListing=False)
 
 def PV_LazyLoad(obj):
-    if 'lazyLoadURL' not in obj:
-        return
-    requestURL = obj['lazyLoadURL']
-    del obj['lazyLoadURL']
-
     def Unescape(text):
         ''' Unescape various html/xml entities, courtesy of Fredrik Lundh '''
         def fixup(m):
@@ -371,11 +366,24 @@ def PV_LazyLoad(obj):
                 except KeyError:
                     pass
             return text # leave as is
+        ''' Since we're using this for titles and synopses, also decode utf-8 '''
         return re.sub("&#?\w+;", fixup, text.decode('utf-8'))
+
+    if 'lazyLoadURL' not in obj:
+        return
+    requestURL = obj['lazyLoadURL']
 
     while (None is not requestURL):
         nextRequestURL = None
-        cnt = getURL(requestURL, rjson=False, useCookie=True)
+        try:
+            cnt = getURL(requestURL, rjson=False, useCookie=True)
+            if 'lazyLoadURL' in obj:
+                del obj['lazyLoadURL']
+        except:
+            Log('Unable to fetch the url: {0}'.format(requestURL))
+            Dialog.notification(getString(30251), requestURL, xbmcgui.NOTIFICATION_ERROR)
+            break
+        
         for t in [('\\\\n', '\n'),('\\n', '\n'),('\\\\"', '"'),(r'^\s+', '')]:
             cnt = re.sub(t[0],t[1],cnt,flags=re.DOTALL)
         if None is not re.search('<html[^>]*>', cnt):

@@ -470,18 +470,15 @@ def PV_LazyLoad(obj):
                     continue
                 section = re.split(r'","', section[2:-2])
                 if ('dvappend' == section[0]):
-                    #data.append(section[2])
                     title = re.sub(r'^.*<h2[^>]*>\s*<span[^>]*>\s*(.*?)\s*</span>.*$', r'\1', section[2], flags=re.DOTALL).decode('utf-8')
                     obj[title] = {}
                     if None is not re.search('<h2[^>]*>.*?<a\s+[^>]*\s+href="[^"]+"[^>]*>.*?</h2>', section[2], flags=re.DOTALL):
                         obj[title]['lazyLoadURL'] = Unescape(re.sub('\\n','',re.sub(r'^.*?<h2[^>]*>.*?<a\s+[^>]*\s+href="([^"]+)"[^>]*>.*?</h2>.*?$', r'\1', section[2], flags=re.DOTALL)))
                     else:
                         pass
-                if (('dvupdate' == section[0]) and (None is not re.search(r'data-ajax-pagination="{[^}]+}"', section[2], flags=re.DOTALL))):
-                    # Extract the pagination request data and clean it up
-                    nextRequestURL = re.sub(r'^.*data-ajax-pagination="{&quot;href&quot;:&quot;([^}]+)&quot;,&quot;scope&quot;:&quot;page2&quot;}".*$', r'\1', section[2], flags=re.DOTALL)
-                    nextRequestURL = re.sub('&amp;','&',re.sub('&quot;,&quot;token&quot;:&quot;', '&token=', nextRequestURL)) + '&format=json'
-                    #ParseData(next, obj)
+                pagination = re.search(r'data-ajax-pagination="{&quot;href&quot;:&quot;([^}]+)&quot;}"', section[2], flags=re.DOTALL)
+                if (('dvupdate' == section[0]) and (None is not pagination)):
+                    nextRequestURL = re.sub(r'(&quot;,&quot;|&amp;)','&',re.sub('&quot;:&quot;','=',pagination.groups()[0]+'&format=json'))
         requestURL = nextRequestURL
     if (0 == pvCatalog['expiration']):
         ''' Expire in 11 hours '''

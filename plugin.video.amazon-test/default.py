@@ -339,9 +339,15 @@ def PV_Catalog(path):
     if 'lazyLoadURL' in node:
         PV_LazyLoad(node)
     for key in node:
+        if ('metadata' == key) or ('ref' == key):
+            continue
         url = u'{0}?mode=PV_Catalog&path={1}-//-{2}'.format(sys.argv[0], urllib.quote_plus(path), urllib.quote_plus(key.encode('utf-8')))
         item = xbmcgui.ListItem(key)
+        if ('metadata' in node[key]):
+            if 'videometa' in node[key]['metadata']: item.setInfo('video', node[key]['metadata']['videometa'])
+            if 'artmeta' in node[key]['metadata']: item.setArt(node[key]['metadata']['artmeta'])
         xbmcplugin.addDirectoryItem(pluginhandle, url, item, isFolder=True)
+        del item
     xbmcplugin.endOfDirectory(pluginhandle, updateListing=False)
 
 def PV_LazyLoad(obj):
@@ -366,8 +372,13 @@ def PV_LazyLoad(obj):
                 except KeyError:
                     pass
             return text # leave as is
-        ''' Since we're using this for titles and synopses, also decode utf-8 '''
-        return re.sub("&#?\w+;", fixup, text.decode('utf-8'))
+        # Since we're using this for titles and synopses, also decode utf-8, and clean up general mess
+        ret = re.sub("&#?\w+;", fixup, text.decode('utf-8'))
+        if ('"' == ret[0:1]) and ('"' == ret[-1:]):
+            ret = ret[1:-1]
+        return ret
+    # Set up the fetch order to find the best quality image possible
+    imageSizes = r'(large-screen-double|desktop-double|tablet-landscape-double|phone-landscape-double|phablet-double|phone-double|large-screen|desktop|tablet-landscape|tablet|phone-landscape|phablet|phone)'
 
     if 'lazyLoadURL' not in obj:
         return
@@ -378,6 +389,7 @@ def PV_LazyLoad(obj):
         try:
             cnt = getURL(requestURL, rjson=False, useCookie=True)
             if 'lazyLoadURL' in obj:
+                obj['ref'] = obj['lazyLoadURL']
                 del obj['lazyLoadURL']
         except:
             Log('Unable to fetch the url: {0}'.format(requestURL))
@@ -387,43 +399,99 @@ def PV_LazyLoad(obj):
         for t in [('\\\\n', '\n'),('\\n', '\n'),('\\\\"', '"'),(r'^\s+', '')]:
             cnt = re.sub(t[0],t[1],cnt,flags=re.DOTALL)
         if None is not re.search('<html[^>]*>', cnt):
+            ''' If there's an HTML tag it's no JSON-AmazonUI-Streaming object '''
             if None is re.search('"[^"]*av-result-cards[^"]*"', cnt, flags=re.DOTALL):
                 ''' List of series episodes '''
-                bgimg = re.search('<div class="av-hero-background-size av-bgimg av-bgimg-desktop-double">.*?url\(([^)]+)\)', cnt, flags=re.DOTALL)
+
+                # Find the biggest fanart available
+                bgimg = re.search(r'<div class="av-hero-background-size av-bgimg av-bgimg-' + imageSizes + r'">.*?url\(([^)]+)\)', cnt, flags=re.DOTALL)
                 if None is not bgimg:
-                    bgimg = bgimg.groups()[0]
-                    obj['metadata']['bgimg'] = bgimg
+                    bgimg = bgimg.group(2)
+                    obj['metadata']['artmeta']['fanart'] = bgimg
+
+                # Extract the per-season data
+                rx = [
+                        r'<span data-automation-id="imdb-release-year-badge"[^>]*>\s*([0-9]+)\s*</span>',                       # Year
+                        r'<span data-automation-id="imdb-rating-badge"[^>]*>\s*([0-9]+)[,.]([0-9]+)\s*</span>',                 # IMDb rating
+                        r'<span data-automation-id="maturity-rating-badge"[^>]*>\s*(.*?)\s*</span>',                            # Age rating
+                        r'<dt data-automation-id="meta-info-starring">[^<]*</dt>\s*<dd[^>]*>\s*(.*?)\s*</dd>',                  # Starring
+                        r'<dt data-automation-id="meta-info-genres">[^<]*</dt>\s*<dd[^>]*>\s*(.*?)\s*</dd>',                    # Genre
+                        r'<dt data-automation-id="meta-info-director">[^<]*</dt>\s*<dd[^>]*>\s(.*?)\s*</dd>',                   # Director
+                ]
+                results = re.search(r'<section\s+[^>]*class="[^"]*av-detail-section[^"]*"[^>]*>\s*(.*?)\s*</section>', cnt, flags=re.DOTALL).group(1)
+                gres = []
+                for i in range(0,len(rx)):
+                    gres.append(re.search(rx[i], results, flags=re.DOTALL))
+                    if None is not gres[i]:
+                        gres[i] = gres[i].groups()
+                        if (1 == len(gres[i])):
+                            gres[i] = gres[i][0]
+                        if (2 < i):
+                            gres[i] = re.sub(r'\s*</?a[^>]*>\s*', '', gres[i])
+                            gres[i] = re.split(r'\s*[,;]\s*', gres[i])
+                            # Make sure they're human readable
+                            for idx,t in enumerate(gres[i]):
+                                gres[i][idx] = Unescape(t)
+                            # Cast is always to be sent as a list, single string is only required/preferred for Genre and Director
+                            if (3 < i) and (1 == len(gres[i])):
+                                gres[i] = gres[i][0]
+
+                # Extract the per-episode data
                 results = re.sub(r'^.*<ol\s+[^>]*class="[^"]*av-episode-list[^"]*"[^>]*>\s*(.*?)\s*</ol>.*$', r'\1', cnt, flags=re.DOTALL)
                 for entry in re.findall(r'<li[^>]*>\s*(.*?)\s*</li>', results, flags=re.DOTALL):
                     rx = [
                         r'<a data-automation-id="ep-playback-[0-9]+"[^>]*data-ref="([^"]*)"[^>]*data-title-id="([^"]*)"[^>]*href="([^"]*)"',
+                        r'<div class="av-bgimg av-bgimg-' + imageSizes + r'">.*?url\(([^)]+)\)',                                # Image
                         r'<span class="av-play-title-text">\s*(.*?)\s*</span>',                                                 # Title
-                        r'<div class="av-bgimg av-bgimg-desktop-double">.*?url\(([^)]+)\)',                                     # Image
                         r'<span data-automation-id="ep-runtime-badge-[0-9]+"[^>]*>\s*(.*?)\s*</span>',                          # Run time
                         r'<span data-automation-id="ep-air-date-badge-[0-9]+"[^>]*>\s*(.*?)\s*</span>',                         # Original air date
-                        r'<span data-automation-id="ep-air-amr-badge-[0-9]+"[^>]*>\s*(.*?)\s*</span>',                          # Age rating
+                        r'<span data-automation-id="ep-amr-badge-[0-9]+"[^>]*>\s*(.*?)\s*</span>',                              # Age rating
                         r'<p data-automation-id="ep-synopsis-[0-9]+"[^>]*>\s*(.*?)\s*</p>',                                     # Synopsis
+                        r'id="ep-playback-([0-9]+)"',                                                                           # Episode number
                     ]
                     res = []
                     for i in range(0,len(rx)):
                         res.append(re.search(rx[i], entry))
                         if None is not res[i]:
                             res[i] = res[i].groups()
-                            if (0 < i):
+                            # If holding a single result, don't provide a list
+                            if (1 == len(res[i])):
                                 res[i] = res[i][0]
-                        if 1 == i:
-                            res[1] = Unescape(res[1])
-                    obj[res[1]] = {}
-                    meta = { 'img': res[2], 'ref': res[0][0], 'asin': res[0][1], 'videoURL': res[0][2] }
+                            # We just need the image, not the type                            
+                            if (1 == i):
+                                res[i] = res[i][1]
+                            # Make sure they're human readable
+                            if (1 < i):
+                                res[i] = Unescape(res[i])
+                    obj[res[2]] = {}
+                    meta = { 'artmeta': { 'thumb': res[1], 'fanart': bgimg, }, 'videometa': { 'mediatype':'episode' }, 'id': res[0][0], 'asin': res[0][1], 'videoURL': res[0][2] }
                     if None is not re.match(r'/[^/]', meta['videoURL']):
                         meta['videoURL'] = BaseUrl + meta['videoURL']
-                    meta['video'] = re.search(r'/gp/video/detail/([^/]+)/', meta['videoURL']).groups()[0]
-                    if (None != res[3]): meta['runtime'] = res[3]
-                    if (None != res[4]): meta['date'] = res[4]
-                    if (None != res[5]): meta['rating'] = res[5]
-                    if (None != res[6]): meta['synopsis'] = Unescape(res[6])
-                    obj[res[1]]['metadata'] = meta
-                pass
+                    meta['video'] = re.search(r'/gp/video/detail/([^/]+)/', meta['videoURL']).group(1)
+
+                    # Insert series information
+                    if (None is not gres[0]): meta['videometa']['year'] = gres[0]
+                    if (None is not gres[1]): meta['videometa']['rating'] = int(gres[1][0]) + (int(gres[1][1]) / 10.0)
+                    if (None is not gres[2]): meta['videometa']['mpaa'] = gres[2]
+                    if (None is not gres[3]):
+                        meta['videometa']['cast'] = gres[3]
+                        obj['metadata']['videometa']['cast'] = gres[3]
+                    if (None is not gres[4]):
+                        meta['videometa']['genre'] = gres[4]
+                        obj['metadata']['videometa']['genre'] = gres[4]
+                    if (None is not gres[5]):
+                        meta['videometa']['director'] = gres[5]
+                        obj['metadata']['videometa']['director'] = gres[5]
+
+                    # Insert episode specific information
+                    if (None is not res[3]): meta['runtime'] = res[3]
+                    if (None is not res[4]): meta['videometa']['premiered'] = res[4]
+                    if (None is not res[5]): meta['videometa']['mpaa'] = res[5]
+                    if (None is not res[6]): meta['videometa']['plot'] = res[6]
+                    if (None is not res[7]):
+                        meta['videometa']['season'] = obj['metadata']['videometa']['season']
+                        meta['videometa']['episode'] = int(res[7])
+                    obj[res[2]]['metadata'] = meta
             else:
                 ''' Movie and series list '''
                 results = re.sub(r'^.*<ol\s+[^>]*class="[^"]*av-result-cards[^"]*"[^>]*>\s*(.*?)\s*</ol>.*$', r'\1', cnt, flags=re.DOTALL)
@@ -436,33 +504,39 @@ def PV_LazyLoad(obj):
                         r'<span\s+[^>]*class="[^"]*av-result-card-season[^"]*"[^>]*>\s*(.*?)\s*</span>',                        # Season
                         r'<span\s+[^>]*class="[^"]*av-result-card-year[^"]*"[^>]*>\s*(.*?)\s*</span>',                          # Year
                         r'<span\s+[^>]*class="[^"]*av-result-card-certification[^"]*"[^>]*>\s*(.*?)\s*</span>',                 # Age rating
+                        r'<span\s+[^>]*class="[^"]*av-result-card-rating[^"]*"[^>]*>\s*([0-9]+)[,.]([0-9]+)\s*</span>',         # IMDb rating
                     ]
                     res = []
                     for i in range(0,len(rx)):
                         res.append(re.search(rx[i], entry))
                         if None is not res[i]:
                             res[i] = res[i].groups()
-                            if (0 < i):
+                            if (1 == len(res[i])):
                                 res[i] = res[i][0]
                     title = Unescape(res[0][2])
                     if title not in obj:
                         obj[title] = {}
-                    meta = { 'img': res[0][0] }
-                    if (None != res[1]): meta['synopsis'] = Unescape(res[1])
-                    if (None != res[3]): meta['date'] = res[3]
-                    if (None != res[4]): meta['rating'] = res[4]
-                    if (None != res[2]):
+                    meta = { 'artmeta': { 'thumb': res[0][0] }, 'videometa': {} }
+                    if (None is not res[1]): meta['videometa']['plot'] = Unescape(res[1])
+                    if (None is not res[3]): meta['videometa']['year'] = int(res[3])
+                    if (None is not res[4]): meta['videometa']['mpaa'] = res[4]
+                    if (None is not res[5]): meta['videometa']['rating'] = int(res[5][0]) + (int(res[5][1]) / 10.0)
+
+                    meta['videometa']['mediatype'] = 'movie' if None == res[2] else 'season'
+                    if (None == res[2]):
+                        ''' Movie '''
+                        obj[title]['metadata'] = meta
+                    else:
                         ''' Series '''
                         sn = res[2]
-                        if 'metadata' not in obj[title].keys():
-                            obj[title]['metadata'] = { 'img': meta['img'] }
+                        n = int(re.sub(r'^[^0-9]*([0-9]+)[^0-9]*$',r'\1',sn))
+                        meta['videometa']['season'] = n
                         obj[title][sn] = { 'metadata': meta, 'lazyLoadURL': res[0][1] }
                         if None is not re.match(r'/[^/]', obj[title][sn]['lazyLoadURL']):
                             obj[title][sn]['lazyLoadURL'] = BaseUrl + obj[title][sn]['lazyLoadURL']
-                    else:
-                        ''' Movie '''
-                        obj[title]['metadata'] = meta
-                        pass
+                        # Update the parent (Series name) with few meta information
+                        if 'metadata' not in obj[title].keys():
+                            obj[title]['metadata'] = { 'artmeta': { 'thumb': meta['artmeta']['thumb'] }, 'videometa': { 'mediatype':'season' } }
         else:
             ''' Categories list '''
             for section in re.split(r'&&&\s+', cnt):
@@ -478,7 +552,7 @@ def PV_LazyLoad(obj):
                         pass
                 pagination = re.search(r'data-ajax-pagination="{&quot;href&quot;:&quot;([^}]+)&quot;}"', section[2], flags=re.DOTALL)
                 if (('dvupdate' == section[0]) and (None is not pagination)):
-                    nextRequestURL = re.sub(r'(&quot;,&quot;|&amp;)','&',re.sub('&quot;:&quot;','=',pagination.groups()[0]+'&format=json'))
+                    nextRequestURL = re.sub(r'(&quot;,&quot;|&amp;)','&',re.sub('&quot;:&quot;','=',pagination.group(1)+'&format=json'))
         requestURL = nextRequestURL
     if (0 == pvCatalog['expiration']):
         ''' Expire in 11 hours '''
@@ -1902,7 +1976,7 @@ def LogIn(ask=True):
                 except (IndexError, AttributeError):
                     usr = wlc = getString(30215)
             else:
-                usr = re.search(r'action=sign-out[^"]*"[^>]*>[^?]+\s+([^?]+?)\s*\?', response).groups()[0]
+                usr = re.search(r'action=sign-out[^"]*"[^>]*>[^?]+\s+([^?]+?)\s*\?', response).group(1)
                 wlc = '{0} {1}'.format(getString(30250), usr)
 
             if multiuser and ask:

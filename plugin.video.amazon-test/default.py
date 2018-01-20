@@ -495,8 +495,6 @@ def PV_LazyLoad(obj):
             else:
                 ''' Movie and series list '''
                 results = re.sub(r'^.*<ol\s+[^>]*class="[^"]*av-result-cards[^"]*"[^>]*>\s*(.*?)\s*</ol>.*$', r'\1', cnt, flags=re.DOTALL)
-
-                pagination = re.sub(r'^.*<ol\s+[^>]*id="[^"]*av-pagination[^"]*"[^>]*>\s*(.*?)\s*</ol>.*$', r'\1', cnt, flags=re.DOTALL)
                 for entry in re.findall(r'<li[^>]*>\s*(.*?)\s*</li>', results, flags=re.DOTALL):
                     rx = [
                         r'<img\s+[^>]*src="([^"]*)".*?<h2[^>]*>\s*<a\s+[^>]*href="([^"]+)"[^>]*>\s*(.*?)\s*</a>\s*</h2>',       # Image, link and title
@@ -537,6 +535,12 @@ def PV_LazyLoad(obj):
                         # Update the parent (Series name) with few meta information
                         if 'metadata' not in obj[title].keys():
                             obj[title]['metadata'] = { 'artmeta': { 'thumb': meta['artmeta']['thumb'] }, 'videometa': { 'mediatype':'season' } }
+                # Next page
+                pagination = re.search(r'<ol\s+[^>]*id="[^"]*av-pagination[^"]*"[^>]*>.*?<li\s+[^>]*class="[^"]*av-pagination-current-page[^"]*"[^>]*>.*?</li>\s*<li\s+[^>]*class="av-pagination[^>]*>\s*(.*?)\s*</li>\s*</ol>', cnt, flags=re.DOTALL)
+                if (None is not pagination):
+                    nextRequestURL = Unescape(re.search(r'href="([^"]+)"', pagination.group(1), flags=re.DOTALL).group(1))
+                    if None is not re.match(r'/[^/]', nextRequestURL):
+                        nextRequestURL = BaseUrl + nextRequestURL
         else:
             ''' Categories list '''
             for section in re.split(r'&&&\s+', cnt):
@@ -2784,9 +2788,9 @@ if not UsePrimeVideo:
 
 pvCatalog = {
     'root': {
-        getString(30235): { 'lazyLoadURL':BaseUrl+'/storefront/tv?_encoding=UTF8&format=json&pageSize=255' },
-        getString(30104): { 'lazyLoadURL':BaseUrl+'/storefront/movie?_encoding=UTF8&format=json&pageSize=255' },
-        getString(30236): { 'lazyLoadURL':BaseUrl+'/storefront/kids?_encoding=UTF8&format=json&pageSize=255' },
+        getString(30235): { 'lazyLoadURL':BaseUrl+'/storefront/tv?_encoding=UTF8&format=json' },
+        getString(30104): { 'lazyLoadURL':BaseUrl+'/storefront/movie?_encoding=UTF8&format=json' },
+        getString(30236): { 'lazyLoadURL':BaseUrl+'/storefront/kids?_encoding=UTF8&format=json' },
     },
     'expiration': 0,
 }

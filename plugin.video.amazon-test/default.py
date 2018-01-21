@@ -124,6 +124,8 @@ Ages = [[('FSK 0', 'FSK 0'), ('FSK 6', 'FSK 6'), ('FSK 12', 'FSK 12'), ('FSK 16'
 
 # ids: A28RQHJKHM2A2W - ps3 / AFOQV1TK6EU6O - ps4 / A1IJNVP3L4AY8B - samsung / A2E0SNTXJVT7WK - firetv1 /
 #      ADVBD696BHNV5 - montoya / A3VN4E5F7BBC7S - roku / A1MPSLFC7L5AFK - kindle / A2M4YX06LWP8WI - firetv2 /
+# PrimeVideo web device IDs:
+#      A63V4FRV3YUP9 / SILVERLIGHT_PC, A2G17C9GWLWFKO / SILVERLIGHT_MAC, AOAGZA014O5RE / HTML5
 # TypeIDs = {'GetCategoryList': 'firmware=fmw:15-app:1.1.23&deviceTypeID=A1MPSLFC7L5AFK',
 #            'GetSimilarities': 'firmware=fmw:15-app:1.1.23&deviceTypeID=A1MPSLFC7L5AFK',
 #                        'All': 'firmware=fmw:22-app:3.0.211.123001&deviceTypeID=A43PXU4ZN2AL1'}
@@ -340,6 +342,7 @@ def PV_Catalog(path):
         PV_LazyLoad(node)
     if ('metadata' in node) and ('video' in node['metadata']):
         ''' Play the video '''
+        PlayVideo(node['metadata']['asin'], node['metadata']['video'], '', 0)
         return
     for key in node:
         if ('metadata' == key) or ('ref' == key):
@@ -398,7 +401,7 @@ def PV_LazyLoad(obj):
     while (None is not requestURL):
         nextRequestURL = None
         try:
-            cnt = getURL(requestURL, rjson=False, useCookie=True)
+            cnt = getURL(requestURL, rjson=False)
             if 'lazyLoadURL' in obj:
                 obj['ref'] = obj['lazyLoadURL']
                 del obj['lazyLoadURL']
@@ -1411,10 +1414,19 @@ def IStreamPlayback(asin, name, trailer, isAdult, extern):
         return True
 
     cookie = MechanizeLogin()
-    values = getFlashVars(asin, cookie)
-    if not values:
-        playDummyVid()
-        return True
+    if not UsePrimeVideo:
+        values = getFlashVars(asin, cookie)
+        if not values:
+            playDummyVid()
+            return True
+    else:
+        values = {
+             'deviceID':getConfig('GenDeviceID'),
+             'deviceTypeID':'AOAGZA014O5RE',        # HTML5 / AOAGZA014O5RE
+             'marketplaceID':MarketID,
+             'asin':name,
+             #'clientId':clientId,                  # Apparently atm insignificant and not necessary, might change in the future
+        }
 
     mpd, subs = getStreams(*getUrldata('catalog/GetPlaybackResources', values, extra=True, vMT=vMT,
                                        opt='&titleDecorationScheme=primary-content', dRes=dRes, useCookie=cookie), retmpd=True)
@@ -1783,16 +1795,18 @@ def getUrldata(mode, values, retformat='json', devicetypeid=False, version=1, fi
     url += '?asin=' + values['asin']
     url += '&deviceTypeID=' + devicetypeid
     url += '&firmware=' + firmware
-    url += '&customerID=' + values['customerId']
+    if not UsePrimeVideo:
+        url += '&token=' + values['token']
+        url += '&customerID=' + values['customerId']
     url += '&deviceID=' + deviceID
     url += '&marketplaceID=' + MarketID
-    url += '&token=' + values['token']
     url += '&format=' + retformat
     url += '&version=' + str(version)
     if extra:
         url += '&resourceUsage=ImmediateConsumption&consumptionType=Streaming&deviceDrmOverride=CENC' \
-               '&deviceStreamingTechnologyOverride=DASH&deviceProtocolOverride=Https&audioTrackId=all' \
-               '&deviceBitrateAdaptationsOverride=CVBR%2CCBR'
+            '&deviceStreamingTechnologyOverride=DASH&deviceProtocolOverride=Https' \
+            '&deviceBitrateAdaptationsOverride=CVBR%2CCBR'
+        url += '&audioTrackId=all' if not UsePrimeVideo else '&gascEnabled=true'
         url += '&videoMaterialType=' + vMT
         url += '&desiredResources=' + dRes
         url += '&supportedDRMKeyScheme=DUAL_KEY' if platform != osAndroid and 'PlaybackUrls' in dRes else ''

@@ -338,15 +338,21 @@ def PV_Catalog(path):
         node = node[n]
     if 'lazyLoadURL' in node:
         PV_LazyLoad(node)
+    if ('metadata' in node) and ('video' in node['metadata']):
+        ''' Play the video '''
+        return
     for key in node:
         if ('metadata' == key) or ('ref' == key):
             continue
         url = u'{0}?mode=PV_Catalog&path={1}-//-{2}'.format(sys.argv[0], urllib.quote_plus(path), urllib.quote_plus(key.encode('utf-8')))
         item = xbmcgui.ListItem(key)
+        folder = True
         if ('metadata' in node[key]):
-            if 'videometa' in node[key]['metadata']: item.setInfo('video', node[key]['metadata']['videometa'])
-            if 'artmeta' in node[key]['metadata']: item.setArt(node[key]['metadata']['artmeta'])
-        xbmcplugin.addDirectoryItem(pluginhandle, url, item, isFolder=True)
+            m = node[key]['metadata']
+            if 'videometa' in m: item.setInfo('video', m['videometa'])
+            if 'artmeta' in m: item.setArt(m['artmeta'])
+            if 'video' in m: folder = False
+        xbmcplugin.addDirectoryItem(pluginhandle, url, item, isFolder=folder)
         del item
     xbmcplugin.endOfDirectory(pluginhandle, updateListing=False)
 
@@ -528,6 +534,14 @@ def PV_LazyLoad(obj):
                     meta['videometa']['mediatype'] = 'movie' if None == res[2] else 'season'
                     if (None == res[2]):
                         ''' Movie '''
+                        res = re.search(r'<a\s+[^>]*class="[^"]*av-play-icon[^"]*"[^>]*href="([^"]+)"[^>]*data-asin="([^"]+)"[^>]*data-title-id="([^"]+)"[^>]*', entry, flags=re.DOTALL).groups()
+                        meta['id'] = res[2]
+                        meta['asin'] = res[1]
+                        meta['videoURL'] = res[0]
+                        if None is not re.match(r'/[^/]', meta['videoURL']):
+                            meta['videoURL'] = BaseUrl + meta['videoURL']
+                        Log(meta['videoURL'])
+                        meta['video'] = re.search(r'(/gp/video)?/detail/([^/]+)/', meta['videoURL']).group(2)
                         obj[title]['metadata'] = meta
                     else:
                         ''' Series '''

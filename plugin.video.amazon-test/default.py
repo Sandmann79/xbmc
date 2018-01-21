@@ -377,6 +377,11 @@ def PV_LazyLoad(obj):
         if ('"' == ret[0:1]) and ('"' == ret[-1:]):
             ret = ret[1:-1]
         return ret
+
+    def MaxSize(imgUrl):
+        ''' Strip the dynamic resize triggers from the URL '''
+        return re.sub(r'_(SX[0-9]+|UR[0-9]+,[0-9]+)','',imgUrl)
+
     # Set up the fetch order to find the best quality image possible
     imageSizes = r'(large-screen-double|desktop-double|tablet-landscape-double|phone-landscape-double|phablet-double|phone-double|large-screen|desktop|tablet-landscape|tablet|phone-landscape|phablet|phone)'
 
@@ -406,17 +411,17 @@ def PV_LazyLoad(obj):
                 # Find the biggest fanart available
                 bgimg = re.search(r'<div class="av-hero-background-size av-bgimg av-bgimg-' + imageSizes + r'">.*?url\(([^)]+)\)', cnt, flags=re.DOTALL)
                 if None is not bgimg:
-                    bgimg = bgimg.group(2)
+                    bgimg = MaxSize(bgimg.group(2))
                     obj['metadata']['artmeta']['fanart'] = bgimg
 
                 # Extract the per-season data
                 rx = [
-                        r'<span data-automation-id="imdb-release-year-badge"[^>]*>\s*([0-9]+)\s*</span>',                       # Year
-                        r'<span data-automation-id="imdb-rating-badge"[^>]*>\s*([0-9]+)[,.]([0-9]+)\s*</span>',                 # IMDb rating
-                        r'<span data-automation-id="maturity-rating-badge"[^>]*>\s*(.*?)\s*</span>',                            # Age rating
-                        r'<dt data-automation-id="meta-info-starring">[^<]*</dt>\s*<dd[^>]*>\s*(.*?)\s*</dd>',                  # Starring
-                        r'<dt data-automation-id="meta-info-genres">[^<]*</dt>\s*<dd[^>]*>\s*(.*?)\s*</dd>',                    # Genre
-                        r'<dt data-automation-id="meta-info-director">[^<]*</dt>\s*<dd[^>]*>\s(.*?)\s*</dd>',                   # Director
+                    r'<span data-automation-id="imdb-release-year-badge"[^>]*>\s*([0-9]+)\s*</span>',                           # Year
+                    r'<span data-automation-id="imdb-rating-badge"[^>]*>\s*([0-9]+)[,.]([0-9]+)\s*</span>',                     # IMDb rating
+                    r'<span data-automation-id="maturity-rating-badge"[^>]*>\s*(.*?)\s*</span>',                                # Age rating
+                    r'<dt data-automation-id="meta-info-starring">[^<]*</dt>\s*<dd[^>]*>\s*(.*?)\s*</dd>',                      # Starring
+                    r'<dt data-automation-id="meta-info-genres">[^<]*</dt>\s*<dd[^>]*>\s*(.*?)\s*</dd>',                        # Genre
+                    r'<dt data-automation-id="meta-info-director">[^<]*</dt>\s*<dd[^>]*>\s(.*?)\s*</dd>',                       # Director
                 ]
                 results = re.search(r'<section\s+[^>]*class="[^"]*av-detail-section[^"]*"[^>]*>\s*(.*?)\s*</section>', cnt, flags=re.DOTALL).group(1)
                 gres = []
@@ -464,7 +469,7 @@ def PV_LazyLoad(obj):
                             if (1 < i):
                                 res[i] = Unescape(res[i])
                     obj[res[2]] = {}
-                    meta = { 'artmeta': { 'thumb': res[1], 'fanart': bgimg, }, 'videometa': { 'mediatype':'episode' }, 'id': res[0][0], 'asin': res[0][1], 'videoURL': res[0][2] }
+                    meta = { 'artmeta': { 'thumb': MaxSize(res[1]), 'fanart': bgimg, }, 'videometa': { 'mediatype':'episode' }, 'id': res[0][0], 'asin': res[0][1], 'videoURL': res[0][2] }
                     if None is not re.match(r'/[^/]', meta['videoURL']):
                         meta['videoURL'] = BaseUrl + meta['videoURL']
                     meta['video'] = re.search(r'/gp/video/detail/([^/]+)/', meta['videoURL']).group(1)
@@ -514,7 +519,7 @@ def PV_LazyLoad(obj):
                     title = Unescape(res[0][2])
                     if title not in obj:
                         obj[title] = {}
-                    meta = { 'artmeta': { 'thumb': res[0][0] }, 'videometa': {} }
+                    meta = { 'artmeta': { 'thumb': MaxSize(res[0][0]) }, 'videometa': {} }
                     if (None is not res[1]): meta['videometa']['plot'] = Unescape(res[1])
                     if (None is not res[3]): meta['videometa']['year'] = int(res[3])
                     if (None is not res[4]): meta['videometa']['mpaa'] = res[4]
@@ -553,7 +558,15 @@ def PV_LazyLoad(obj):
                     if None is not re.search('<h2[^>]*>.*?<a\s+[^>]*\s+href="[^"]+"[^>]*>.*?</h2>', section[2], flags=re.DOTALL):
                         obj[title]['lazyLoadURL'] = Unescape(re.sub('\\n','',re.sub(r'^.*?<h2[^>]*>.*?<a\s+[^>]*\s+href="([^"]+)"[^>]*>.*?</h2>.*?$', r'\1', section[2], flags=re.DOTALL)))
                     else:
-                        pass
+                        ''' The carousel has no explore link, we need to parse what we can from the carousel itself '''
+                        for entry in re.findall(r'<li[^>]*>\s*(.*?)\s*</li>', section[2], flags=re.DOTALL):
+                            parts = re.search(r'<a\s+[^>]*href="([^"]*)"[^>]*>\s*.*?(src|data-a-image-source)="([^"]*)"[^>]*>.*?class="dv-core-title"[^>]*>\s*(.*?)\s*</span>', entry, flags=re.DOTALL)
+                            if None is not re.search(r'/search/', parts.group(1)):
+                                ''' Category '''
+                                obj[title][parts.group(4)] = { 'metadata': { 'artmeta': { 'thumb':MaxSize(parts.group(3)) } }, 'lazyLoadURL': parts.group(1) }
+                            else:
+                                ''' Movie list '''
+                                pass
                 pagination = re.search(r'data-ajax-pagination="{&quot;href&quot;:&quot;([^}]+)&quot;}"', section[2], flags=re.DOTALL)
                 if (('dvupdate' == section[0]) and (None is not pagination)):
                     nextRequestURL = re.sub(r'(&quot;,&quot;|&amp;)','&',re.sub('&quot;:&quot;','=',pagination.group(1)+'&format=json'))

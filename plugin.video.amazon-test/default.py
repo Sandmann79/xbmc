@@ -314,7 +314,7 @@ def MainMenu():
     Log('Version: %s' % __version__)
     Log('Unicode support: %s' % os.path.supports_unicode_filenames)
     if False is not UsePrimeVideo:
-        PV_Catalog('root')
+        PrimeVideo_Browse('root')
     else:
         loadCategories()
 
@@ -334,35 +334,51 @@ def MainMenu():
         addDir(getString(30100), 'getListMenu', library, cm=cm_lb)
         xbmcplugin.endOfDirectory(pluginhandle, updateListing=False)
 
-def PV_Catalog(path):
+def PrimeVideo_Browse(path):
     node = pvCatalog
     for n in path.decode('utf-8').split('-//-'):
         node = node[n]
     if 'lazyLoadURL' in node:
-        PV_LazyLoad(node)
+        PrimeVideo_LazyLoad(node)
     if ('metadata' in node) and ('video' in node['metadata']):
         ''' Play the video '''
         PlayVideo(node['metadata']['asin'], node['metadata']['video'], '', 0)
         return
+    folderType = 0 if 'root' == path else 1
     for key in node:
         if ('metadata' == key) or ('ref' == key):
             continue
-        url = u'{0}?mode=PV_Catalog&path={1}-//-{2}'.format(sys.argv[0], urllib.quote_plus(path), urllib.quote_plus(key.encode('utf-8')))
+        url = u'{0}?mode=PrimeVideo_Browse&path={1}-//-{2}'.format(sys.argv[0], urllib.quote_plus(path), urllib.quote_plus(key.encode('utf-8')))
         item = xbmcgui.ListItem(key)
         folder = True
         if ('metadata' in node[key]):
             m = node[key]['metadata']
-            if 'videometa' in m: item.setInfo('video', m['videometa'])
             if 'artmeta' in m: item.setArt(m['artmeta'])
+            if 'videometa' in m:
+                item.setInfo('video', m['videometa'])
+                if 'episode' in m['videometa']:
+                    folderType = 3
+                elif 'season' in m['videometa']:
+                    folderType = 4
+                else:
+                    folderType = 2
             if 'video' in m:
                 folder = False
                 item.setProperty('IsPlayable', 'true')
                 item.setInfo('video', { 'title':key })
         xbmcplugin.addDirectoryItem(pluginhandle, url, item, isFolder=folder)
         del item
+    msort = [
+        xbmcplugin.SORT_METHOD_NONE,
+        xbmcplugin.SORT_METHOD_LABEL,
+        xbmcplugin.SORT_METHOD_LABEL_IGNORE_THE,
+        xbmcplugin.SORT_METHOD_EPISODE,
+        xbmcplugin.SORT_METHOD_LABEL
+    ][folderType]
+    xbmcplugin.addSortMethod(pluginhandle, msort)       # https://codedocs.xyz/xbmc/xbmc/group__python__xbmcplugin.html#ga85b3bff796fd644fb28f87b136025f40
     xbmcplugin.endOfDirectory(pluginhandle, updateListing=False)
 
-def PV_LazyLoad(obj):
+def PrimeVideo_LazyLoad(obj):
     def Unescape(text):
         ''' Unescape various html/xml entities, courtesy of Fredrik Lundh '''
         def fixup(m):
@@ -480,7 +496,9 @@ def PV_LazyLoad(obj):
                             # Make sure they're human readable
                             if (1 < i):
                                 res[i] = Unescape(res[i])
-                    obj[res[2]] = {}
+                    if (None is res[0]) or (None is res[2]):
+                        ''' Some episodes might be not playable until a later date or just N/A, although listed '''
+                        continue
                     meta = { 'artmeta': { 'thumb': MaxSize(res[1]), 'fanart': bgimg, }, 'videometa': { 'mediatype':'episode' }, 'id': res[0][0], 'asin': res[0][1], 'videoURL': res[0][2] }
                     if None is not re.match(r'/[^/]', meta['videoURL']):
                         meta['videoURL'] = BaseUrl + meta['videoURL']
@@ -508,7 +526,19 @@ def PV_LazyLoad(obj):
                     if (None is not res[7]):
                         meta['videometa']['season'] = obj['metadata']['videometa']['season']
                         meta['videometa']['episode'] = int(res[7])
-                    obj[res[2]]['metadata'] = meta
+                    
+                    # Episode title cleanup
+                    title = res[2]
+                    if None is not re.match(r'[0-9]+[.]\s*', title):
+                        ''' Strip the episode number '''
+                        title = re.sub(r'^[0-9]+.\s*', '', title)
+                    else:
+                        ''' Probably an extra trailer or something, remove episode information '''
+                        del meta['videometa']['season']
+                        del meta['videometa']['episode']
+                    if title not in obj:
+                        obj[title] = {}
+                    obj[title]['metadata'] = meta
             else:
                 ''' Movie and series list '''
                 results = re.sub(r'^.*<ol\s+[^>]*class="[^"]*av-result-cards[^"]*"[^>]*>\s*(.*?)\s*</ol>.*$', r'\1', cnt, flags=re.DOTALL)
@@ -2872,7 +2902,7 @@ elif mode == 'openSettings':
 elif mode == 'ageSettings':
     if RequestPin():
         AgeSettings(getString(30018).split('.')[0]).doModal()
-elif mode == 'PV_Catalog':
-    PV_Catalog(None if 'path' not in args else args['path'])
+elif mode == 'PrimeVideo_Browse':
+    PrimeVideo_Browse(None if 'path' not in args else args['path'])
 else:
     exec mode + '()'

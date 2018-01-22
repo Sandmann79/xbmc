@@ -354,7 +354,10 @@ def PV_Catalog(path):
             m = node[key]['metadata']
             if 'videometa' in m: item.setInfo('video', m['videometa'])
             if 'artmeta' in m: item.setArt(m['artmeta'])
-            if 'video' in m: folder = False
+            if 'video' in m:
+                folder = False
+                item.setProperty('IsPlayable', 'true')
+                item.setInfo('video', { 'title':key })
         xbmcplugin.addDirectoryItem(pluginhandle, url, item, isFolder=folder)
         del item
     xbmcplugin.endOfDirectory(pluginhandle, updateListing=False)

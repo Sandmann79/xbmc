@@ -401,7 +401,7 @@ def PV_LazyLoad(obj):
     while (None is not requestURL):
         nextRequestURL = None
         try:
-            cnt = getURL(requestURL, rjson=False)
+            cnt = getURL(requestURL, useCookie=True, rjson=False)
             if 'lazyLoadURL' in obj:
                 obj['ref'] = obj['lazyLoadURL']
                 del obj['lazyLoadURL']
@@ -1435,7 +1435,7 @@ def IStreamPlayback(asin, name, trailer, isAdult, extern):
     opt = '|Content-Type=application%2Fx-www-form-urlencoded&Cookie=' + urllib.quote_plus(cj_str)
     opt += '|widevine2Challenge=B{SSM}&includeHdcpTestKeyInLicense=true'
     opt += '|JBlicense;hdcpEnforcementResolutionPixels'
-    licURL = getUrldata('catalog/GetPlaybackResources', values, opt=opt, extra=True, vMT=vMT, dRes='Widevine2License', retURL=True)
+    licURL = getUrldata('catalog/GetPlaybackResources', values, opt=opt, useCookie=cookie, extra=True, vMT=vMT, dRes='Widevine2License', retURL=True)
 
     if not mpd:
         Dialog.notification(getString(30203), subs, xbmcgui.NOTIFICATION_ERROR)
@@ -1449,7 +1449,7 @@ def IStreamPlayback(asin, name, trailer, isAdult, extern):
         mpd = re.sub(r'~', '', mpd)
 
     if drm_check:
-        mpdcontent = getURL(mpd, rjson=False)
+        mpdcontent = getURL(mpd, useCookie=cookie, rjson=False)
         if 'avc1.4D00' in mpdcontent and platform != osAndroid and not is_binary:
             xbmc.executebuiltin('ActivateWindow(busydialog)')
             return extrFr(mpdcontent)
@@ -1467,7 +1467,7 @@ def IStreamPlayback(asin, name, trailer, isAdult, extern):
             thumb = xbmc.getInfoLabel('ListItem.Art(tvshow.poster)')
             if not thumb:
                 thumb = xbmc.getInfoLabel('ListItem.Art(thumb)')
-    else:
+    elif not UsePrimeVideo:
         content = getATVData('GetASINDetails', 'ASINList=' + asin)['titles'][0]
         ct, Info = getInfos(content, False)
         title = Info['DisplayTitle']
@@ -1980,6 +1980,7 @@ def LogIn(ask=True):
         br.select_form(name='signIn')
         br['email'] = email
         br['password'] = password
+        br.find_control(name='rememberMe').items[0].selected = True
         br.addheaders = [('Accept', 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8'),
                          ('Accept-Encoding', 'gzip, deflate'),
                          ('Accept-Language', 'en-US'),

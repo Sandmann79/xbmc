@@ -32,6 +32,15 @@ import pyxbmct
 import socket
 import ssl
 import shlex
+import locale
+
+# Save the language code for HTTP requests and set the locale for l10n
+previousLocale = locale.getlocale()
+Language = locale.getdefaultlocale()
+if (isinstance(Language, tuple)):
+    Language = Language[0]
+userAcceptLanguages = '{0}, en-gb;q=0.8, en;q=0.6'.format(re.sub('_','-',Language.lower()))
+locale.setlocale(locale.LC_ALL, '')         # Defaults to the user machine's locale
 
 addon = xbmcaddon.Addon()
 Dialog = xbmcgui.Dialog()
@@ -103,7 +112,6 @@ else:
     Endpoint = 'fls-%s.amazon.com' % (['eu', 'eu', 'fe', 'na'][pvArea])
     ATVUrl = 'https://atv-ps%s.primevideo.com' % (['-eu', '-eu', '-fe', ''][pvArea])
     ''' Temporarily Hardcoded '''
-    Language = 'en'
     AgeRating = ''
 
 menuFile = os.path.join(DataPath, 'menu-%s.db' % MarketID)
@@ -192,6 +200,7 @@ def getURL(url, useCookie=False, silent=False, headers=None, rjson=True, attempt
     headers = [] if not headers else headers
     headers += [('User-Agent', getConfig('UserAgent'))] if 'User-Agent' not in headers.__str__() else []
     headers += [('Host', BaseUrl.split('//')[1])] if 'Host' not in headers.__str__() else []
+    headers += [('Accept-Language', userAcceptLanguages)] if 'Accept-Language' not in headers.__str__() else []
 
     try:
         if sys.version_info[0:3] > (2, 7, 8):
@@ -1468,7 +1477,7 @@ def IStreamPlayback(asin, name, trailer, isAdult, extern):
     opt = '|Content-Type=application%2Fx-www-form-urlencoded&Cookie=' + urllib.quote_plus(cj_str)
     opt += '|widevine2Challenge=B{SSM}&includeHdcpTestKeyInLicense=true'
     opt += '|JBlicense;hdcpEnforcementResolutionPixels'
-    licURL = getUrldata('catalog/GetPlaybackResources', values, opt=opt, useCookie=cookie, extra=True, vMT=vMT, dRes='Widevine2License', retURL=True)
+    licURL = getUrldata('catalog/GetPlaybackResources', values, opt=opt, extra=True, vMT=vMT, dRes='Widevine2License', retURL=True)
 
     if not mpd:
         Dialog.notification(getString(30203), subs, xbmcgui.NOTIFICATION_ERROR)
@@ -2016,7 +2025,7 @@ def LogIn(ask=True):
         br.find_control(name='rememberMe').items[0].selected = True
         br.addheaders = [('Accept', 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8'),
                          ('Accept-Encoding', 'gzip, deflate'),
-                         ('Accept-Language', 'en-US'),
+                         ('Accept-Language', userAcceptLanguages),
                          ('Cache-Control', 'max-age=0'),
                          ('Connection', 'keep-alive'),
                          ('Content-Type', 'application/x-www-form-urlencoded'),
@@ -2906,3 +2915,6 @@ elif mode == 'PrimeVideo_Browse':
     PrimeVideo_Browse(None if 'path' not in args else args['path'])
 else:
     exec mode + '()'
+
+# Restore the locale
+locale.setlocale(locale.LC_ALL, previousLocale)

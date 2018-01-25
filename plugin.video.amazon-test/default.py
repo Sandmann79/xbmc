@@ -94,7 +94,6 @@ pvArea = int(addon.getSetting('primevideo_area'))
 wl_order = ['DATE_ADDED_DESC', 'TITLE_DESC', 'TITLE_ASC'][int('0' + addon.getSetting("wl_order"))]
 
 UsePrimeVideo = False
-PrimeVideoCache = os.path.join(DataPath, 'cache.json')
 
 if 4 > country:
     c_tld = ['de', 'co.uk', 'com', 'co.jp'][country]
@@ -113,6 +112,8 @@ else:
     ATVUrl = 'https://atv-ps%s.primevideo.com' % (['-eu', '-eu', '-fe', ''][pvArea])
     ''' Temporarily Hardcoded '''
     AgeRating = ''
+
+PrimeVideoCache = os.path.join(DataPath, 'PVCatalog{0}.json'.format(MarketID))
 
 menuFile = os.path.join(DataPath, 'menu-%s.db' % MarketID)
 CookieFile = os.path.join(DataPath, 'cookie-%s.lwp' % MarketID)

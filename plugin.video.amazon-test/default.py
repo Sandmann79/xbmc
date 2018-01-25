@@ -193,7 +193,7 @@ def getURL(url, useCookie=False, silent=False, headers=None, rjson=True, attempt
         cj = MechanizeLogin() if isinstance(useCookie, bool) else useCookie
         if isinstance(cj, bool):
             return retval
-    if not silent or verbLog:
+    if (not silent) or (verbLog):
         dispurl = url
         dispurl = re.sub('(?i)%s|%s|&token=\w+|&customerId=\w+' % (tvdb, tmdb), '', url).strip()
         Log('%sURL: %s' % ('check' if check else 'get', dispurl))
@@ -375,13 +375,15 @@ def PrimeVideo_Browse(path):
             m = node[key]['metadata']
             if 'artmeta' in m: item.setArt(m['artmeta'])
             if 'videometa' in m:
+                # https://codedocs.xyz/xbmc/xbmc/group__python__xbmcgui__listitem.html#ga0b71166869bda87ad744942888fb5f14
                 item.setInfo('video', m['videometa'])
+                if 'runtime' in m['videometa']: item.setInfo('video', {'duration':m['videometa']['runtime']})
                 if 'episode' in m['videometa']:
-                    folderType = 3
+                    folderType = 3                  # Episode
                 elif 'season' in m['videometa']:
-                    folderType = 4
+                    folderType = 4                  # Season
                 else:
-                    folderType = 2
+                    folderType = 2                  # Movie
             if 'video' in m:
                 folder = False
                 item.setProperty('IsPlayable', 'true')
@@ -446,7 +448,7 @@ def PrimeVideo_LazyLoad(obj):
     while (None is not requestURL):
         nextRequestURL = None
         try:
-            cnt = getURL(requestURL, useCookie=True, rjson=False)
+            cnt = getURL(requestURL, silent=True, useCookie=True, rjson=False)
             if 'lazyLoadURL' in obj:
                 obj['ref'] = obj['lazyLoadURL']
                 del obj['lazyLoadURL']
@@ -499,11 +501,11 @@ def PrimeVideo_LazyLoad(obj):
                         r'<a data-automation-id="ep-playback-[0-9]+"[^>]*data-ref="([^"]*)"[^>]*data-title-id="([^"]*)"[^>]*href="([^"]*)"',
                         r'<div class="av-bgimg av-bgimg-' + imageSizes + r'">.*?url\(([^)]+)\)',                                # Image
                         r'<span class="av-play-title-text">\s*(.*?)\s*</span>',                                                 # Title
-                        r'<span data-automation-id="ep-runtime-badge-[0-9]+"[^>]*>\s*(.*?)\s*</span>',                          # Run time
                         r'<span data-automation-id="ep-air-date-badge-[0-9]+"[^>]*>\s*(.*?)\s*</span>',                         # Original air date
                         r'<span data-automation-id="ep-amr-badge-[0-9]+"[^>]*>\s*(.*?)\s*</span>',                              # Age rating
                         r'<p data-automation-id="ep-synopsis-[0-9]+"[^>]*>\s*(.*?)\s*</p>',                                     # Synopsis
                         r'id="ep-playback-([0-9]+)"',                                                                           # Episode number
+                        r'\s+data-title-id="\s*([^"]+?)\s*"',                                                                   # Episode's asin
                     ]
                     res = []
                     for i in range(0,len(rx)):
@@ -524,6 +526,14 @@ def PrimeVideo_LazyLoad(obj):
                         meta['videoURL'] = BaseUrl + meta['videoURL']
                     meta['video'] = ExtractURN(meta['videoURL'])
 
+                    # Extract the runtime
+                    success,gpr = getUrldata('catalog/GetPlaybackResources', PrimeVideo_GPRV(res[7]), useCookie=True, extra=True, opt='&titleDecorationScheme=primary-content', dRes='CatalogMetadata')
+                    if not success:
+                        gpr = None
+                    else:
+                        if 'runtimeSeconds' in gpr['catalogMetadata']['catalog']:
+                            meta['videometa']['runtime'] = gpr['catalogMetadata']['catalog']['runtimeSeconds']
+
                     # Insert series information
                     if (None is not gres[0]): meta['videometa']['year'] = gres[0]
                     if (None is not gres[1]): meta['videometa']['rating'] = int(gres[1][0]) + (int(gres[1][1]) / 10.0)
@@ -539,13 +549,12 @@ def PrimeVideo_LazyLoad(obj):
                         obj['metadata']['videometa']['director'] = gres[5]
 
                     # Insert episode specific information
-                    if (None is not res[3]): meta['runtime'] = res[3]
-                    if (None is not res[4]): meta['videometa']['premiered'] = res[4]
-                    if (None is not res[5]): meta['videometa']['mpaa'] = res[5]
-                    if (None is not res[6]): meta['videometa']['plot'] = res[6]
-                    if (None is not res[7]):
+                    if (None is not res[3]): meta['videometa']['premiered'] = res[3]
+                    if (None is not res[4]): meta['videometa']['mpaa'] = res[4]
+                    if (None is not res[5]): meta['videometa']['plot'] = res[5]
+                    if (None is not res[6]):
                         meta['videometa']['season'] = obj['metadata']['videometa']['season']
-                        meta['videometa']['episode'] = int(res[7])
+                        meta['videometa']['episode'] = int(res[6])
                     
                     # Episode title cleanup
                     title = res[2]
@@ -586,16 +595,24 @@ def PrimeVideo_LazyLoad(obj):
                     meta['videometa']['mediatype'] = 'movie' if None == res[3] else 'season'
                     if (None is not res[4]): meta['videometa']['year'] = int(res[4])
                     if (None is not res[5]): meta['videometa']['mpaa'] = res[5]
+                    success,gpr = getUrldata('catalog/GetPlaybackResources', PrimeVideo_GPRV(res[6]), useCookie=True, extra=True, opt='&titleDecorationScheme=primary-content', dRes='CatalogMetadata')
+                    if not success:
+                        gpr = None
 
                     if (None == res[3]):
                         ''' Movie '''
+                        # Find the fanart, if available
+                        if None is not gpr:
+                            if 'hero' in gpr['catalogMetadata']['images']['imageUrls']:
+                                meta['artmeta']['fanart'] = gpr['catalogMetadata']['images']['imageUrls']['hero']
+                            if 'runtimeSeconds' in gpr['catalogMetadata']['catalog']:
+                                meta['videometa']['runtime'] = gpr['catalogMetadata']['catalog']['runtimeSeconds']
                         res = re.search(r'<a\s+[^>]*class="[^"]*av-play-icon[^"]*"[^>]*href="([^"]+)"[^>]*data-asin="([^"]+)"[^>]*data-title-id="([^"]+)"[^>]*', entry, flags=re.DOTALL).groups()
                         meta['id'] = res[2]
                         meta['asin'] = res[1]
                         meta['videoURL'] = res[0]
                         if None is not re.match(r'/[^/]', meta['videoURL']):
                             meta['videoURL'] = BaseUrl + meta['videoURL']
-                        Log(meta['videoURL'])
                         meta['video'] = ExtractURN(meta['videoURL'])
                         obj[meta['video']] = { 'title':title, 'metadata':meta }
                     else:
@@ -603,9 +620,8 @@ def PrimeVideo_LazyLoad(obj):
                         id = title
                         sid = ExtractURN(res[0][1])
                         # Find the show Asin URN, if possible
-                        success,data = getUrldata('catalog/GetPlaybackResources', PrimeVideo_GPRV(res[6]), useCookie=True, extra=True, opt='&titleDecorationScheme=primary-content', dRes='CatalogMetadata')
-                        if success:
-                            for d in data['catalogMetadata']['family']['tvAncestors']:
+                        if None is not gpr:
+                            for d in gpr['catalogMetadata']['family']['tvAncestors']:
                                 if 'SHOW' == d['catalog']['type']:
                                     id = d['catalog']['id']
                                     break
@@ -1870,7 +1886,7 @@ def getUrldata(mode, values, retformat='json', devicetypeid=False, version=1, fi
     url += opt
     if retURL:
         return url
-    data = getURL(url, useCookie=useCookie)
+    data = getURL(url, useCookie=useCookie, silent=True)
     if data:
         if 'error' in data.keys():
             return False, Error(data['error'])

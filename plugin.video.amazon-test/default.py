@@ -377,17 +377,18 @@ def PrimeVideo_Browse(path):
             if 'videometa' in m:
                 # https://codedocs.xyz/xbmc/xbmc/group__python__xbmcgui__listitem.html#ga0b71166869bda87ad744942888fb5f14
                 item.setInfo('video', m['videometa'])
-                if 'runtime' in m['videometa']: item.setInfo('video', {'duration':m['videometa']['runtime']})
                 if 'episode' in m['videometa']:
                     folderType = 3                  # Episode
                 elif 'season' in m['videometa']:
                     folderType = 4                  # Season
-                else:
-                    folderType = 2                  # Movie
+                elif 2 > folderType:                # If it's not been declared season or episode yet…
+                    folderType = 2                  # … it's a Movie
             if 'video' in m:
                 folder = False
                 item.setProperty('IsPlayable', 'true')
                 item.setInfo('video', { 'title':node[key]['title'] })
+                if 'runtime' in m:
+                    item.setInfo('video', {'duration':m['runtime']})
         xbmcplugin.addDirectoryItem(pluginhandle, url, item, isFolder=folder)
         del item
     xbmcplugin.addSortMethod(pluginhandle, [
@@ -532,7 +533,7 @@ def PrimeVideo_LazyLoad(obj):
                         gpr = None
                     else:
                         if 'runtimeSeconds' in gpr['catalogMetadata']['catalog']:
-                            meta['videometa']['runtime'] = gpr['catalogMetadata']['catalog']['runtimeSeconds']
+                            meta['runtime'] = gpr['catalogMetadata']['catalog']['runtimeSeconds']
 
                     # Insert series information
                     if (None is not gres[0]): meta['videometa']['year'] = gres[0]
@@ -595,20 +596,21 @@ def PrimeVideo_LazyLoad(obj):
                     meta['videometa']['mediatype'] = 'movie' if None == res[3] else 'season'
                     if (None is not res[4]): meta['videometa']['year'] = int(res[4])
                     if (None is not res[5]): meta['videometa']['mpaa'] = res[5]
+
+                    # Extract video metadata
                     success,gpr = getUrldata('catalog/GetPlaybackResources', PrimeVideo_GPRV(res[6]), useCookie=True, extra=True, opt='&titleDecorationScheme=primary-content', dRes='CatalogMetadata')
                     if not success:
                         gpr = None
 
                     if (None == res[3]):
                         ''' Movie '''
-                        # Find the fanart, if available
+                        # Find fanart and runtime, if available
                         if None is not gpr:
                             if 'hero' in gpr['catalogMetadata']['images']['imageUrls']:
                                 meta['artmeta']['fanart'] = gpr['catalogMetadata']['images']['imageUrls']['hero']
                             if 'runtimeSeconds' in gpr['catalogMetadata']['catalog']:
-                                meta['videometa']['runtime'] = gpr['catalogMetadata']['catalog']['runtimeSeconds']
+                                meta['runtime'] = gpr['catalogMetadata']['catalog']['runtimeSeconds']
                         res = re.search(r'<a\s+[^>]*class="[^"]*av-play-icon[^"]*"[^>]*href="([^"]+)"[^>]*data-asin="([^"]+)"[^>]*data-title-id="([^"]+)"[^>]*', entry, flags=re.DOTALL).groups()
-                        meta['id'] = res[2]
                         meta['asin'] = res[1]
                         meta['videoURL'] = res[0]
                         if None is not re.match(r'/[^/]', meta['videoURL']):

@@ -13,7 +13,7 @@ import cookielib
 import mechanize
 import sys
 import urllib
-import urllib2
+import requests
 import re
 import os
 import xbmcplugin
@@ -92,8 +92,11 @@ HomeIcon = os.path.join(PluginPath, 'resources', 'home.png')
 country = int(addon.getSetting('country'))
 pvArea = int(addon.getSetting('primevideo_area'))
 wl_order = ['DATE_ADDED_DESC', 'TITLE_DESC', 'TITLE_ASC'][int('0' + addon.getSetting("wl_order"))]
-
+verifySsl = addon.getSetting('ssl_verif') == 'false'
+if not verifySsl:
+    requests.packages.urllib3.disable_warnings(requests.packages.urllib3.exceptions.InsecureRequestWarning)
 UsePrimeVideo = False
+sessions = {}               # Keep-Alive sessions
 
 if 4 > country:
     c_tld = ['de', 'co.uk', 'com', 'co.jp'][country]
@@ -152,9 +155,6 @@ if addon.getSetting('ssl_verif') == 'true' and hasattr(ssl, '_create_unverified_
     ssl._create_default_https_context = ssl._create_unverified_context
 
 EXPORT_PATH = DataPath
-if addon.getSetting('enablelibraryfolder') == 'true':
-    EXPORT_PATH = xbmc.translatePath(addon.getSetting('customlibraryfolder')).decode('utf-8')
-
 MOVIE_PATH = os.path.join(EXPORT_PATH, 'Movies')
 TV_SHOWS_PATH = os.path.join(EXPORT_PATH, 'TV')
 ms_mov = ms_mov if ms_mov else 'Amazon Movies'
@@ -187,6 +187,21 @@ def setView(content, updateListing=False):
 
 
 def getURL(url, useCookie=False, silent=False, headers=None, rjson=True, attempt=1, check=False):
+    # Try to extract the host from the URL
+    host = re.search('://([^/]+)/', url)
+
+    # Create sessions for keep-alives and connection pooling
+    session = None
+    if None is not host:
+        host = host.group(1)
+        if host in sessions:
+            session = sessions[host]
+        else:
+            session = requests.Session()
+            sessions[host] = session
+    else:
+        session = requests.Session()
+
     cj = cookielib.LWPCookieJar()
     retval = [] if rjson else ''
     if useCookie:
@@ -198,25 +213,17 @@ def getURL(url, useCookie=False, silent=False, headers=None, rjson=True, attempt
         dispurl = re.sub('(?i)%s|%s|&token=\w+|&customerId=\w+' % (tvdb, tmdb), '', url).strip()
         Log('%sURL: %s' % ('check' if check else 'get', dispurl))
 
-    headers = [] if not headers else headers
-    headers += [('User-Agent', getConfig('UserAgent'))] if 'User-Agent' not in headers.__str__() else []
-    headers += [('Host', BaseUrl.split('//')[1])] if 'Host' not in headers.__str__() else []
-    headers += [('Accept-Language', userAcceptLanguages)] if 'Accept-Language' not in headers.__str__() else []
+    headers = {} if not headers else headers
+    if 'User-Agent' not in headers: headers['User-Agent'] = getConfig('UserAgent')
+    if 'Host' not in headers: headers['Host'] = host if None is not host else BaseUrl.split('//')[1]
+    if 'Accept-Language' not in headers: headers['Accept-Language'] = userAcceptLanguages
+    Log(headers)
 
     try:
-        if sys.version_info[0:3] > (2, 7, 8):
-            ctx = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
-            ctx.options |= ssl.OP_NO_SSLv2
-            ctx.options |= ssl.OP_NO_SSLv3
-            opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cj), urllib2.HTTPRedirectHandler, urllib2.HTTPSHandler(context=ctx))
-        else:
-            Log('Using outdated Python version %d.%d.%d' % (sys.version_info[0:3]))
-            opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cj), urllib2.HTTPRedirectHandler)
-        opener.addheaders = headers
-        usock = opener.open(url)
-        response = usock.read() if not check else 'OK'
-        usock.close()
-    except (socket.timeout, ssl.SSLError, urllib2.URLError), e:
+        session.cookies = cj
+        r = session.get(url, headers=headers, verify=verifySsl)
+        response = r.text if not check else 'OK'
+    except (requests.exceptions.Timeout, requests.exceptions.SSLError, requests.exceptions.HTTPError), e:
         Log('Error reason: %s' % e, xbmc.LOGERROR)
         if '429' or 'timed out' in e:
             attempt += 1 if not check else 10
@@ -321,8 +328,8 @@ def addVideo(name, asin, infoLabels, cm=[], export=False):
 
 
 def MainMenu():
-    Log('Version: %s' % __version__)
-    Log('Unicode support: %s' % os.path.supports_unicode_filenames)
+    Log('Version: %s' % __version__, xbmc.LOGDEBUG)
+    Log('Unicode support: %s' % os.path.supports_unicode_filenames, xbmc.LOGDEBUG)
     if False is not UsePrimeVideo:
         PrimeVideo_Browse('root')
     else:
@@ -422,8 +429,8 @@ def PrimeVideo_LazyLoad(obj):
                 except KeyError:
                     pass
             return text # leave as is
-        # Since we're using this for titles and synopses, also decode utf-8, and clean up general mess
-        ret = re.sub("&#?\w+;", fixup, text.decode('utf-8'))
+        # Since we're using this for titles and synopses, and clean up general mess
+        ret = re.sub("&#?\w+;", fixup, text)
         if ('"' == ret[0:1]) and ('"' == ret[-1:]):
             ret = ret[1:-1]
         return ret
@@ -454,7 +461,7 @@ def PrimeVideo_LazyLoad(obj):
                 obj['ref'] = obj['lazyLoadURL']
                 del obj['lazyLoadURL']
         except:
-            Log('Unable to fetch the url: {0}'.format(requestURL))
+            Log('Unable to fetch the url: {0}'.format(requestURL), xbmc.LOGERROR)
             Dialog.notification(getString(30251), requestURL, xbmcgui.NOTIFICATION_ERROR)
             break
 
@@ -2920,7 +2927,7 @@ if xbmcvfs.exists(PrimeVideoCache):
         pvCatalog = cached
 
 args = dict(urlparse.parse_qsl(urlparse.urlparse(sys.argv[2]).query))
-#Log(args)
+Log(args, xbmc.LOGDEBUG)
 mode = args.get('mode', None)
 
 if None is mode:

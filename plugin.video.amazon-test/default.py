@@ -394,7 +394,10 @@ def PrimeVideo_Browse(path):
                 if 'episode' in m['videometa']:
                     folderType = 3                  # Episode
                 elif 'season' in m['videometa']:
-                    folderType = 4                  # Season
+                    if ('tvshow' == m['videometa']['mediatype']):
+                        folderType = 5              # Series list
+                    else:
+                        folderType = 4              # Season
                 elif 2 > folderType:                # If it's not been declared season or episode yet…
                     folderType = 2                  # … it's a Movie
             if 'video' in m:
@@ -412,7 +415,10 @@ def PrimeVideo_Browse(path):
         xbmcplugin.SORT_METHOD_EPISODE,
         xbmcplugin.SORT_METHOD_LABEL
     ][folderType])                      # https://codedocs.xyz/xbmc/xbmc/group__python__xbmcplugin.html#ga85b3bff796fd644fb28f87b136025f40
-    xbmcplugin.endOfDirectory(pluginhandle, updateListing=False)
+    if ('false' == addon.getSetting("viewenable")) or (2 > folderType):
+        xbmcplugin.endOfDirectory(pluginhandle, updateListing=False)
+    else:
+        setView(['movie','episode','season','series'][folderType-2])
 
 def PrimeVideo_LazyLoad(obj):
     def Unescape(text):
@@ -670,7 +676,7 @@ def PrimeVideo_LazyLoad(obj):
                             obj[id][sid]['lazyLoadURL'] = BaseUrl + obj[id][sid]['lazyLoadURL']
                         # Update the parent (Series name) with few meta information
                         if 'metadata' not in obj[id].keys():
-                            obj[id]['metadata'] = { 'artmeta': { 'thumb': meta['artmeta']['thumb'] }, 'videometa': { 'mediatype':'season' } }
+                            obj[id]['metadata'] = { 'artmeta': { 'thumb': meta['artmeta']['thumb'] }, 'videometa': { 'mediatype':'tvshow' } }
                 # Next page
                 pagination = re.search(r'<ol\s+[^>]*id="[^"]*av-pagination[^"]*"[^>]*>.*?<li\s+[^>]*class="[^"]*av-pagination-current-page[^"]*"[^>]*>.*?</li>\s*<li\s+[^>]*class="av-pagination[^>]*>\s*(.*?)\s*</li>\s*</ol>', cnt, flags=re.DOTALL)
                 if (None is not pagination):

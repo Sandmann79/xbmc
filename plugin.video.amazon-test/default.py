@@ -134,6 +134,15 @@ Ages = [[('FSK 0', 'FSK 0'), ('FSK 6', 'FSK 6'), ('FSK 12', 'FSK 12'), ('FSK 16'
         [('全ての観客', 'g'), ('親の指導・助言', 'pg12'), ('R-15指定', 'r15+'), ('成人映画', 'r18+,nr')],
         [('全ての観客', 'g'), ('親の指導・助言', 'pg12'), ('R-15指定', 'r15+'), ('成人映画', 'r18+,nr')]]
 
+dateParserData = {
+    'de_DE': { 'deconstruct':r'^([0-9]+)\.\s+([^\s]+)\s+([0-9]+)', 'reassemble':'{2}-{1:0>2}-{0:0>2}', 'month':1, 'months':{ 'Januar':1,'Februar':2,'März':3,'April':4,'Mai':5,'Juni':6,'Juli':7,'August':8,'September':9,'Oktober':10,'November':11,'Dezember':12 } },
+    'en_US': { 'deconstruct':r'^([^\s]+)\s+([0-9]+),\s+([0-9]+)', 'reassemble':'{2}-{0:0>2}-{1:0>2}', 'month':0, 'months':{ 'January':1,'February':2,'March':3,'April':4,'May':5,'June':6,'July':7,'August':8,'September':9,'October':10,'November':11,'December':12 } },
+    'es_ES': { 'deconstruct':r'^([0-9]+)\s+de\s+([^\s]+),\s+de\s+([0-9]+)', 'reassemble':'{2}-{1:0>2}-{0:0>2}', 'month':1, 'months':{ 'enero':1,'febrero':2,'marzo':3,'abril':4,'mayo':5,'junio':6,'julio':7,'agosto':8,'septiembre':9,'octubre':10,'noviembre':11,'diciembre':12 } },
+    'fr_FR': { 'deconstruct':r'^([0-9]+)\s+([^\s]+)\s+([0-9]+)', 'reassemble':'{2}-{1:0>2}-{0:0>2}', 'month':1, 'months':{ 'janvier':1,'février':2,'mars':3,'avril':4,'mai':5,'juin':6,'juillet':7,'aout':8,'septembre':9,'octobre':10,'novembre':11,'décembre':12 } },
+    'it_IT': { 'deconstruct':r'^([0-9]+)\s+([^\s]+)\s+([0-9]+)', 'reassemble':'{2}-{1:0>2}-{0:0>2}', 'month':1, 'months':{ 'gennaio':1,'febbraio':2,'marzo':3,'aprile':4,'maggio':5,'giugno':6,'luglio':7,'agosto':8,'settembre':9,'ottobre':10,'novembre':11,'dicembre':12 } },
+    'pt_BR': { 'deconstruct':r'^([0-9]+)\s+de\s+([^\s]+),\s+de\s+([0-9]+)', 'reassemble':'{2}-{1:0>2}-{0:0>2}', 'month':1, 'months':{ 'janeiro':1,'fevereiro':2,'março':3,'abril':4,'maio':5,'junho':6,'julho':7,'agosto':8,'setembro':9,'outubro':10,'novembro':11,'dezembro':12 } },
+}
+
 # ids: A28RQHJKHM2A2W - ps3 / AFOQV1TK6EU6O - ps4 / A1IJNVP3L4AY8B - samsung / A2E0SNTXJVT7WK - firetv1 /
 #      ADVBD696BHNV5 - montoya / A3VN4E5F7BBC7S - roku / A1MPSLFC7L5AFK - kindle / A2M4YX06LWP8WI - firetv2 /
 # PrimeVideo web device IDs:
@@ -217,11 +226,9 @@ def getURL(url, useCookie=False, silent=False, headers=None, rjson=True, attempt
     if 'User-Agent' not in headers: headers['User-Agent'] = getConfig('UserAgent')
     if 'Host' not in headers: headers['Host'] = host if None is not host else BaseUrl.split('//')[1]
     if 'Accept-Language' not in headers: headers['Accept-Language'] = userAcceptLanguages
-    Log(headers)
 
     try:
-        session.cookies = cj
-        r = session.get(url, headers=headers, verify=verifySsl)
+        r = session.get(url, headers=headers, cookies=cj, verify=verifySsl)
         response = r.text if not check else 'OK'
     except (requests.exceptions.Timeout, requests.exceptions.SSLError, requests.exceptions.HTTPError), e:
         Log('Error reason: %s' % e, xbmc.LOGERROR)
@@ -328,8 +335,8 @@ def addVideo(name, asin, infoLabels, cm=[], export=False):
 
 
 def MainMenu():
-    Log('Version: %s' % __version__, xbmc.LOGDEBUG)
-    Log('Unicode support: %s' % os.path.supports_unicode_filenames, xbmc.LOGDEBUG)
+    Log('Version: %s' % __version__, xbmc.LOGINFO)
+    Log('Unicode support: %s' % os.path.supports_unicode_filenames, xbmc.LOGINFO)
     if False is not UsePrimeVideo:
         PrimeVideo_Browse('root')
     else:
@@ -446,12 +453,31 @@ def PrimeVideo_LazyLoad(obj):
             ret = ret.group(2)
         return ret
 
+    def DelocalizeDate(lang, datestr):
+        ''' Convert language based timestamps into YYYY-MM-DD '''
+        if lang not in dateParserData:
+            return datestr
+        p = re.search(dateParserData[lang]['deconstruct'], datestr)
+        if None is p:
+            Log('Unable to parse date "{0}": format changed?'.format(datestr), xbmc.LOGWARNING)
+            return datestr
+        p = list(p.groups())
+        p[dateParserData[lang]['month']] = dateParserData[lang]['months'][p[dateParserData[lang]['month']]]
+        return dateParserData[lang]['reassemble'].format(p[0], p[1], p[2])
+
     # Set up the fetch order to find the best quality image possible
     imageSizes = r'(large-screen-double|desktop-double|tablet-landscape-double|phone-landscape-double|phablet-double|phone-double|large-screen|desktop|tablet-landscape|tablet|phone-landscape|phablet|phone)'
 
     if 'lazyLoadURL' not in obj:
         return
     requestURL = obj['lazyLoadURL']
+
+    amzLang = None
+    if (None is not requestURL):
+        # Fine the locale amazon's using
+        cj = MechanizeLogin()
+        if cj:
+            amzLang = cj._cookies['.primevideo.com']['/']['lc-main-av'].value
 
     while (None is not requestURL):
         nextRequestURL = None
@@ -557,7 +583,7 @@ def PrimeVideo_LazyLoad(obj):
                         obj['metadata']['videometa']['director'] = gres[5]
 
                     # Insert episode specific information
-                    if (None is not res[3]): meta['videometa']['premiered'] = res[3]
+                    if (None is not res[3]): meta['videometa']['premiered'] = DelocalizeDate(amzLang, res[3])
                     if (None is not res[4]): meta['videometa']['mpaa'] = res[4]
                     if (None is not res[5]): meta['videometa']['plot'] = res[5]
                     if (None is not res[6]):

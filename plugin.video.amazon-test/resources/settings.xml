@@ -34,13 +34,14 @@
         <setting id="items_perpage" type="labelenum" values="20|30|40|60|80|100|140|180|220|250" label="30039" default="40"/>
         <setting label="30001" type="lsep"/>
         <setting id="multiuser" type="bool" label="30009" default="false"/>
-        <setting type="action" label="30130" action="RunPlugin(plugin://plugin.video.amazon-test/?mode=LogIn)" visible="eq(-1,true)" option="close" />
-        <setting type="action" label="30131" action="RunPlugin(plugin://plugin.video.amazon-test/?mode=removeUser)" visible="eq(-2,true)" option="close"/>
-        <setting type="action" label="30008" action="RunPlugin(plugin://plugin.video.amazon-test/?mode=LogIn)" option="close" visible="eq(-3,false)"/>
-        <setting id="login_acc" type="text" label="30014" enable="false" default="" subsetting="true" visible="eq(-4,false)"/>
+        <setting id="rememberme" type="bool" label="30023" default="true"/>
+        <setting type="action" label="30130" action="RunPlugin(plugin://plugin.video.amazon-test/?mode=LogIn)" visible="eq(-2,true)" option="close" />
+        <setting type="action" label="30131" action="RunPlugin(plugin://plugin.video.amazon-test/?mode=removeUser)" visible="eq(-3,true)" option="close"/>
+        <setting type="action" label="30008" action="RunPlugin(plugin://plugin.video.amazon-test/?mode=LogIn)" option="close" visible="eq(-4,false)"/>
+        <setting id="login_acc" type="text" label="30014" enable="false" default="" subsetting="true" visible="eq(-5,false)"/>
         <setting id="save_login" type="bool" label="30006" default="false"/>
-        <setting label="30007" type="action" action="RunPlugin(plugin://plugin.video.amazon-test/?mode=remLoginData)" option="close" visible="eq(-6,false)"/>
-        <setting label="30010" type="action" action="RunPlugin(plugin://plugin.video.amazon-test/?mode=remLoginData)" option="close" visible="eq(-7,true)"/>
+        <setting label="30007" type="action" action="RunPlugin(plugin://plugin.video.amazon-test/?mode=remLoginData)" option="close" visible="eq(-7,false)"/>
+        <setting label="30010" type="action" action="RunPlugin(plugin://plugin.video.amazon-test/?mode=remLoginData)" option="close" visible="eq(-8,true)"/>
     </category>
     <category label="30015">
         <setting id="viewenable" type ="bool" label="30035" default="false"/>

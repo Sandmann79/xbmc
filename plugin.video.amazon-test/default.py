@@ -117,6 +117,10 @@ else:
     AgeRating = ''
 
 PrimeVideoCache = os.path.join(DataPath, 'PVCatalog{0}.json'.format(MarketID))
+pvCatalog = {
+    'root': {
+    }
+}
 
 menuFile = os.path.join(DataPath, 'menu-%s.db' % MarketID)
 CookieFile = os.path.join(DataPath, 'cookie-%s.lwp' % MarketID)
@@ -338,6 +342,14 @@ def MainMenu():
     Log('Version: %s' % __version__, xbmc.LOGINFO)
     Log('Unicode support: %s' % os.path.supports_unicode_filenames, xbmc.LOGINFO)
     if False is not UsePrimeVideo:
+        if (0 == len(pvCatalog['root'])):
+            ''' Build the root catalog '''
+            if not PrimeVideo_BuildRoot():
+                return
+            # Expire in 11 hours
+            pvCatalog['expiration'] = 39600 + int(time.time())
+            with open(PrimeVideoCache, 'w+') as fp:
+                json.dump(pvCatalog, fp)
         PrimeVideo_Browse('root')
     else:
         loadCategories()
@@ -358,6 +370,7 @@ def MainMenu():
         addDir(getString(30100), 'getListMenu', library, cm=cm_lb)
         xbmcplugin.endOfDirectory(pluginhandle, updateListing=False)
 
+
 def PrimeVideo_GPRV(asin):
     ''' Get playback resources values '''
     return {
@@ -367,6 +380,26 @@ def PrimeVideo_GPRV(asin):
              'asin':asin,
              #'clientId':clientId,                  # Apparently atm insignificant and not necessary, might change in the future
         }
+
+def PrimeVideo_BuildRoot():
+    ''' Parse the top menu on primevideo.com and build the root catalog '''
+    home = getURL(BaseUrl, silent=True, useCookie=True, rjson=False)
+    if None is home:
+        Log('Unable to fetch the primevideo.com homepage', xbmc.LOGERROR)
+        return False
+    home = re.search('<div id="av-nav-main-menu".*?<ul role="navigation"[^>]*>\s*(.*?)\s*</ul>', home)
+    if None is home:
+        Log('Unable to find the main primevideo.com navigation section', xbmc.LOGERROR)
+        return False
+    for item in re.findall('<li[^>]*>\s*(.*?)\s*</li>', home.group(1)):
+        item = re.search('<a href="([^"]+)"[^>]*>\s*(.*?)\s*</a>', item)
+        if None is not re.match('/storefront/home/', item.group(1)):
+            continue
+        pvCatalog['root'][item.group(2)] = { 'title':item.group(2),'lazyLoadURL':BaseUrl+item.group(1)+'?_encoding=UTF8&format=json' }
+    if (0 == len(pvCatalog['root'])):
+        Log('Unable to build the root catalog from primevideo.com', xbmc.LOGERROR)
+        return False
+    return True
 
 def PrimeVideo_Browse(path):
     node = pvCatalog
@@ -619,7 +652,7 @@ def PrimeVideo_LazyLoad(obj):
                         r'<span\s+[^>]*class="[^"]*av-result-card-season[^"]*"[^>]*>\s*(.*?)\s*</span>',                        # Season
                         r'<span\s+[^>]*class="[^"]*av-result-card-year[^"]*"[^>]*>\s*(.*?)\s*</span>',                          # Year
                         r'<span\s+[^>]*class="[^"]*av-result-card-certification[^"]*"[^>]*>\s*(.*?)\s*</span>',                 # Age rating
-                        r'\s+data-asin="\s*([^"]+?)\s*"',                                                                       # Movie/episode's asin
+                        r'\s+data-asin="\s*([^"]+?)\s*"',                                                                       # Movie/episode's URN
                     ]
                     res = []
                     for i in range(0,len(rx)):
@@ -637,9 +670,13 @@ def PrimeVideo_LazyLoad(obj):
                     if (None is not res[5]): meta['videometa']['mpaa'] = res[5]
 
                     # Extract video metadata
-                    success,gpr = getUrldata('catalog/GetPlaybackResources', PrimeVideo_GPRV(res[6]), useCookie=True, extra=True, opt='&titleDecorationScheme=primary-content', dRes='CatalogMetadata')
-                    if not success:
-                        gpr = None
+                    gpr = None
+                    if (None is not res[6]):
+                        success,gpr = getUrldata('catalog/GetPlaybackResources', PrimeVideo_GPRV(res[6]), useCookie=True, extra=True, opt='&titleDecorationScheme=primary-content', dRes='CatalogMetadata')
+                        if not success:
+                            gpr = None
+                    else:
+                        Log('Unable to get the video metadata for {0} ({1})'.format(title,res[0][1]), xbmc.LOGWARNING)
 
                     if (None == res[3]):
                         ''' Movie '''
@@ -708,11 +745,9 @@ def PrimeVideo_LazyLoad(obj):
                 if (('dvupdate' == section[0]) and (None is not pagination)):
                     nextRequestURL = re.sub(r'(&quot;,&quot;|&amp;)','&',re.sub('&quot;:&quot;','=',pagination.group(1)+'&format=json'))
         requestURL = nextRequestURL
-    if (0 == pvCatalog['expiration']):
-        ''' Expire in 11 hours '''
-        pvCatalog['expiration'] = 39600 + int(time.time())
     with open(PrimeVideoCache, 'w+') as fp:
         json.dump(pvCatalog, fp)
+
 
 def Search():
     searchString = Dialog.input(getString(24121))
@@ -1571,22 +1606,23 @@ def IStreamPlayback(asin, name, trailer, isAdult, extern):
             mpd = orgmpd
             at_check = False
 
-    Log(mpd)
+    Log(mpd, xbmc.LOGDEBUG)
 
-    if not extern:
-        mpaa_check = xbmc.getInfoLabel('ListItem.MPAA') in mpaa_str or isAdult
-        title = xbmc.getInfoLabel('ListItem.Label')
-        thumb = xbmc.getInfoLabel('ListItem.Art(season.poster)')
-        if not thumb:
-            thumb = xbmc.getInfoLabel('ListItem.Art(tvshow.poster)')
+    if not UsePrimeVideo:
+        if not extern:
+            mpaa_check = xbmc.getInfoLabel('ListItem.MPAA') in mpaa_str or isAdult
+            title = xbmc.getInfoLabel('ListItem.Label')
+            thumb = xbmc.getInfoLabel('ListItem.Art(season.poster)')
             if not thumb:
-                thumb = xbmc.getInfoLabel('ListItem.Art(thumb)')
-    elif not UsePrimeVideo:
-        content = getATVData('GetASINDetails', 'ASINList=' + asin)['titles'][0]
-        ct, Info = getInfos(content, False)
-        title = Info['DisplayTitle']
-        thumb = Info.get('Poster', Info['Thumb'])
-        mpaa_check = str(Info.get('MPAA', mpaa_str)) in mpaa_str or isAdult
+                thumb = xbmc.getInfoLabel('ListItem.Art(tvshow.poster)')
+                if not thumb:
+                    thumb = xbmc.getInfoLabel('ListItem.Art(thumb)')
+        else:
+            content = getATVData('GetASINDetails', 'ASINList=' + asin)['titles'][0]
+            ct, Info = getInfos(content, False)
+            title = Info['DisplayTitle']
+            thumb = Info.get('Poster', Info['Thumb'])
+            mpaa_check = str(Info.get('MPAA', mpaa_str)) in mpaa_str or isAdult
 
     if trailer == 1:
         title += ' (Trailer)'
@@ -2933,31 +2969,24 @@ PinReq = int(getConfig('pin_req', '0'))
 RestrAges = ','.join(a[1] for a in Ages[country][PinReq:]) if AgePin else ''
 
 deviceID = genID()
-dbFile = os.path.join(DataPath, 'art.db')
-db = sqlite.connect(dbFile)
-db.text_factory = str
-createDB()
 
-menuDb = sqlite.connect(menuFile)
-menuDb.text_factory = str
 if not UsePrimeVideo:
+    dbFile = os.path.join(DataPath, 'art.db')
+    db = sqlite.connect(dbFile)
+    db.text_factory = str
+    createDB()
+
+    menuDb = sqlite.connect(menuFile)
+    menuDb.text_factory = str
+
     loadCategories()
-
-pvCatalog = {
-    'root': {
-        getString(30235): { 'title':getString(30235),'lazyLoadURL':BaseUrl+'/storefront/tv?_encoding=UTF8&format=json' },
-        getString(30104): { 'title':getString(30104),'lazyLoadURL':BaseUrl+'/storefront/movie?_encoding=UTF8&format=json' },
-        getString(30236): { 'title':getString(30236),'lazyLoadURL':BaseUrl+'/storefront/kids?_encoding=UTF8&format=json' },
-    },
-    'expiration': 0,
-}
-
-if xbmcvfs.exists(PrimeVideoCache):
-    import codecs
-    with open(PrimeVideoCache,'r') as fp:
-        cached = json.load(fp)
-    if (time.time() < cached['expiration']):
-        pvCatalog = cached
+else:
+    if xbmcvfs.exists(PrimeVideoCache):
+        import codecs
+        with open(PrimeVideoCache,'r') as fp:
+            cached = json.load(fp)
+        if (time.time() < cached['expiration']):
+            pvCatalog = cached
 
 args = dict(urlparse.parse_qsl(urlparse.urlparse(sys.argv[2]).query))
 Log(args, xbmc.LOGDEBUG)

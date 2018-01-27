@@ -649,6 +649,7 @@ def PrimeVideo_LazyLoad(obj):
                         ''' Probably an extra trailer or something, remove episode information '''
                         del meta['videometa']['season']
                         del meta['videometa']['episode']
+                    NotifyUser(getString(30253).format(title.encode('utf-8')))
                     if meta['video'] not in obj:
                         obj[meta['video']] = { 'title':title }
                     obj[meta['video']]['metadata'] = meta

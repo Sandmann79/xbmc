@@ -751,7 +751,7 @@ def PrimeVideo_LazyLoad(obj):
                             parts = re.search(r'<a\s+[^>]*href="([^"]*)"[^>]*>\s*.*?(src|data-a-image-source)="([^"]*)"[^>]*>.*?class="dv-core-title"[^>]*>\s*(.*?)\s*</span>', entry, flags=re.DOTALL)
                             if None is not re.search(r'/search/', parts.group(1)):
                                 ''' Category '''
-                                obj[title][parts.group(4)] = { 'metadata': { 'artmeta': { 'thumb':MaxSize(parts.group(3)) } }, 'lazyLoadURL': parts.group(1) }
+                                obj[title][parts.group(4)] = { 'metadata': { 'artmeta': { 'thumb':MaxSize(parts.group(3)) } }, 'lazyLoadURL': parts.group(1), 'title': parts.group(4) }
                             else:
                                 ''' Movie list '''
                                 pass

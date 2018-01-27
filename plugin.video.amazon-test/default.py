@@ -485,11 +485,11 @@ def PrimeVideo_LazyLoad(obj):
 
     def MaxSize(imgUrl):
         ''' Strip the dynamic resize triggers from the URL '''
-        return re.sub(r'_(SX[0-9]+|UR[0-9]+,[0-9]+)','',imgUrl)
+        return re.sub(r'_(SX[0-9]+|UR[0-9]+,[0-9]+)', '', imgUrl)
 
     def ExtractURN(url):
         ''' Extract the unique resource name identifier '''
-        ret = re.search('(/gp/video)?/detail/([^/]+)/', url)
+        ret = re.search(r'(/gp/video)?/detail/([^/]+)/', url)
         if None is not ret:
             ret = ret.group(2)
         return ret
@@ -497,17 +497,18 @@ def PrimeVideo_LazyLoad(obj):
     def DelocalizeDate(lang, datestr):
         ''' Convert language based timestamps into YYYY-MM-DD '''
         if lang not in dateParserData:
+            Log('Unable decode date "{0}": language "{1}" not supported'.format(datestr, lang), xbmc.LOGWARNING)
             return datestr
         p = re.search(dateParserData[lang]['deconstruct'], datestr)
         if None is p:
-            Log('Unable to parse date "{0}": format changed?'.format(datestr), xbmc.LOGWARNING)
+            Log('Unable to parse date "{0}" with language "{1}": format changed?'.format(datestr, lang), xbmc.LOGWARNING)
             return datestr
         p = list(p.groups())
         p[dateParserData[lang]['month']] = dateParserData[lang]['months'][p[dateParserData[lang]['month']]]
         return dateParserData[lang]['reassemble'].format(p[0], p[1], p[2])
 
     def NotifyUser(msg):
-        ''' Pop up messages while scraping to inform them of progress '''
+        ''' Pop up messages while scraping to inform users of progress '''
         if not hasattr(NotifyUser, 'lastNotification'):
             NotifyUser.lastNotification = 0
         if (NotifyUser.lastNotification < time.time()):
@@ -520,22 +521,28 @@ def PrimeVideo_LazyLoad(obj):
 
     if 'lazyLoadURL' not in obj:
         return
-    requestURL = obj['lazyLoadURL']
+    requestURLs = [obj['lazyLoadURL']]
 
     amzLang = None
-    if (None is not requestURL):
+    if (None is not requestURLs[0]):
         # Fine the locale amazon's using
         cj = MechanizeLogin()
         if cj:
             amzLang = cj.get('lc-main-av', domain='.primevideo.com', path='/')
 
-    while (None is not requestURL):
-        nextRequestURL = None
+    while (0 < len(requestURLs)):
+        if not isinstance(requestURLs[0], tuple):
+            requestURL = requestURLs[0]
+            del requestURLs[0]
+            o = obj
+        else:
+            ''' @TODO: variable referenced objects '''
+            pass
         try:
             cnt = getURL(requestURL, silent=True, useCookie=True, rjson=False)
-            if 'lazyLoadURL' in obj:
-                obj['ref'] = obj['lazyLoadURL']
-                del obj['lazyLoadURL']
+            if 'lazyLoadURL' in o:
+                o['ref'] = o['lazyLoadURL']
+                del o['lazyLoadURL']
         except:
             Log('Unable to fetch the url: {0}'.format(requestURL), xbmc.LOGERROR)
             Dialog.notification(getString(30251), requestURL, xbmcgui.NOTIFICATION_ERROR)
@@ -552,7 +559,7 @@ def PrimeVideo_LazyLoad(obj):
                 bgimg = re.search(r'<div class="av-hero-background-size av-bgimg av-bgimg-' + imageSizes + r'">.*?url\(([^)]+)\)', cnt, flags=re.DOTALL)
                 if None is not bgimg:
                     bgimg = MaxSize(bgimg.group(2))
-                    obj['metadata']['artmeta']['fanart'] = bgimg
+                    o['metadata']['artmeta']['fanart'] = bgimg
 
                 # Extract the per-season data
                 rx = [
@@ -624,20 +631,20 @@ def PrimeVideo_LazyLoad(obj):
                     if (None is not gres[2]): meta['videometa']['mpaa'] = gres[2]
                     if (None is not gres[3]):
                         meta['videometa']['cast'] = gres[3]
-                        obj['metadata']['videometa']['cast'] = gres[3]
+                        o['metadata']['videometa']['cast'] = gres[3]
                     if (None is not gres[4]):
                         meta['videometa']['genre'] = gres[4]
-                        obj['metadata']['videometa']['genre'] = gres[4]
+                        o['metadata']['videometa']['genre'] = gres[4]
                     if (None is not gres[5]):
                         meta['videometa']['director'] = gres[5]
-                        obj['metadata']['videometa']['director'] = gres[5]
+                        o['metadata']['videometa']['director'] = gres[5]
 
                     # Insert episode specific information
                     if (None is not res[3]): meta['videometa']['premiered'] = DelocalizeDate(amzLang, res[3])
                     if (None is not res[4]): meta['videometa']['mpaa'] = res[4]
                     if (None is not res[5]): meta['videometa']['plot'] = res[5]
                     if (None is not res[6]):
-                        meta['videometa']['season'] = obj['metadata']['videometa']['season']
+                        meta['videometa']['season'] = o['metadata']['videometa']['season']
                         meta['videometa']['episode'] = int(res[6])
                     
                     # Episode title cleanup
@@ -650,9 +657,9 @@ def PrimeVideo_LazyLoad(obj):
                         del meta['videometa']['season']
                         del meta['videometa']['episode']
                     NotifyUser(getString(30253).format(title.encode('utf-8')))
-                    if meta['video'] not in obj:
-                        obj[meta['video']] = { 'title':title }
-                    obj[meta['video']]['metadata'] = meta
+                    if meta['video'] not in o:
+                        o[meta['video']] = { 'title':title }
+                    o[meta['video']]['metadata'] = meta
             else:
                 ''' Movie and series list '''
                 results = re.sub(r'^.*<ol\s+[^>]*class="[^"]*av-result-cards[^"]*"[^>]*>\s*(.*?)\s*</ol>.*$', r'\1', cnt, flags=re.DOTALL)
@@ -705,7 +712,7 @@ def PrimeVideo_LazyLoad(obj):
                         if None is not re.match(r'/[^/]', meta['videoURL']):
                             meta['videoURL'] = BaseUrl + meta['videoURL']
                         meta['video'] = ExtractURN(meta['videoURL'])
-                        obj[meta['video']] = { 'title':title, 'metadata':meta }
+                        o[meta['video']] = { 'title':title, 'metadata':meta }
                     else:
                         ''' Series '''
                         id = title
@@ -719,20 +726,21 @@ def PrimeVideo_LazyLoad(obj):
                         sn = res[3]
                         n = int(re.sub(r'^[^0-9]*([0-9]+)[^0-9]*$',r'\1',sn))
                         meta['videometa']['season'] = n
-                        if id not in obj:
-                            obj[id] = { 'title':title }
-                        obj[id][sid] = { 'title':sn, 'metadata': meta, 'lazyLoadURL': res[0][1] }
-                        if None is not re.match(r'/[^/]', obj[id][sid]['lazyLoadURL']):
-                            obj[id][sid]['lazyLoadURL'] = BaseUrl + obj[id][sid]['lazyLoadURL']
+                        if id not in o:
+                            o[id] = { 'title':title }
+                        o[id][sid] = { 'title':sn, 'metadata': meta, 'lazyLoadURL': res[0][1] }
+                        if None is not re.match(r'/[^/]', o[id][sid]['lazyLoadURL']):
+                            o[id][sid]['lazyLoadURL'] = BaseUrl + o[id][sid]['lazyLoadURL']
                         # Update the parent (Series name) with few meta information
-                        if 'metadata' not in obj[id].keys():
-                            obj[id]['metadata'] = { 'artmeta': { 'thumb': meta['artmeta']['thumb'] }, 'videometa': { 'mediatype':'tvshow' } }
+                        if 'metadata' not in o[id].keys():
+                            o[id]['metadata'] = { 'artmeta': { 'thumb': meta['artmeta']['thumb'] }, 'videometa': { 'mediatype':'tvshow' } }
                 # Next page
                 pagination = re.search(r'<ol\s+[^>]*id="[^"]*av-pagination[^"]*"[^>]*>.*?<li\s+[^>]*class="[^"]*av-pagination-current-page[^"]*"[^>]*>.*?</li>\s*<li\s+[^>]*class="av-pagination[^>]*>\s*(.*?)\s*</li>\s*</ol>', cnt, flags=re.DOTALL)
                 if (None is not pagination):
-                    nextRequestURL = Unescape(re.search(r'href="([^"]+)"', pagination.group(1), flags=re.DOTALL).group(1))
-                    if None is not re.match(r'/[^/]', nextRequestURL):
-                        nextRequestURL = BaseUrl + nextRequestURL
+                    nru = Unescape(re.search(r'href="([^"]+)"', pagination.group(1), flags=re.DOTALL).group(1))
+                    if None is not re.match(r'/[^/]', nru):
+                        nru = BaseUrl + nru
+                    requestURLs.append(nru)
         else:
             ''' Categories list '''
             for section in re.split(r'&&&\s+', cnt):
@@ -742,25 +750,24 @@ def PrimeVideo_LazyLoad(obj):
                 if ('dvappend' == section[0]):
                     title = Unescape(re.sub(r'^.*<h2[^>]*>\s*<span[^>]*>\s*(.*?)\s*</span>.*$', r'\1', section[2], flags=re.DOTALL))
                     NotifyUser(getString(30253).format(title.encode('utf-8')))
-                    obj[title] = { 'title':title }
+                    o[title] = { 'title':title }
                     if None is not re.search('<h2[^>]*>.*?<a\s+[^>]*\s+href="[^"]+"[^>]*>.*?</h2>', section[2], flags=re.DOTALL):
-                        obj[title]['lazyLoadURL'] = Unescape(re.sub('\\n','',re.sub(r'^.*?<h2[^>]*>.*?<a\s+[^>]*\s+href="([^"]+)"[^>]*>.*?</h2>.*?$', r'\1', section[2], flags=re.DOTALL)))
+                        o[title]['lazyLoadURL'] = Unescape(re.sub('\\n','',re.sub(r'^.*?<h2[^>]*>.*?<a\s+[^>]*\s+href="([^"]+)"[^>]*>.*?</h2>.*?$', r'\1', section[2], flags=re.DOTALL)))
                     else:
                         ''' The carousel has no explore link, we need to parse what we can from the carousel itself '''
                         for entry in re.findall(r'<li[^>]*>\s*(.*?)\s*</li>', section[2], flags=re.DOTALL):
                             parts = re.search(r'<a\s+[^>]*href="([^"]*)"[^>]*>\s*.*?(src|data-a-image-source)="([^"]*)"[^>]*>.*?class="dv-core-title"[^>]*>\s*(.*?)\s*</span>', entry, flags=re.DOTALL)
                             if None is not re.search(r'/search/', parts.group(1)):
                                 ''' Category '''
-                                obj[title][parts.group(4)] = { 'metadata': { 'artmeta': { 'thumb':MaxSize(parts.group(3)) } }, 'lazyLoadURL': parts.group(1), 'title': parts.group(4) }
+                                o[title][parts.group(4)] = { 'metadata': { 'artmeta': { 'thumb':MaxSize(parts.group(3)) } }, 'lazyLoadURL': parts.group(1), 'title': parts.group(4) }
                             else:
                                 ''' Movie list '''
                                 pass
                 pagination = re.search(r'data-ajax-pagination="{&quot;href&quot;:&quot;([^}]+)&quot;}"', section[2], flags=re.DOTALL)
                 if (('dvupdate' == section[0]) and (None is not pagination)):
-                    nextRequestURL = re.sub(r'(&quot;,&quot;|&amp;)','&',re.sub('&quot;:&quot;','=',pagination.group(1)+'&format=json'))
-        if None is not nextRequestURL:
+                    requestURLs.append(re.sub(r'(&quot;,&quot;|&amp;)','&',re.sub('&quot;:&quot;','=',pagination.group(1)+'&format=json')))
+        if 0 < len(requestURLs):
             NotifyUser(getString(30252))
-        requestURL = nextRequestURL
     with open(PrimeVideoCache, 'w+') as fp:
         json.dump(pvCatalog, fp)
 

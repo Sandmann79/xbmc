@@ -37,7 +37,12 @@ import locale
 Language = locale.getdefaultlocale()
 if (isinstance(Language, tuple)):
     Language = Language[0]
-userAcceptLanguages = '{0}, en-gb;q=0.2, en;q=0.1'.format(re.sub('_','-',Language.lower()))
+if None is Language:
+    ''' By Kodi standards, en_GB is the default lang '''
+    Language = 'en_GB'
+    userAcceptLanguages = 'en-gb, en;q=0.5'
+else:
+    userAcceptLanguages = '{0}, en-gb;q=0.2, en;q=0.1'.format(re.sub('_','-',Language.lower()))
 
 addon = xbmcaddon.Addon()
 Dialog = xbmcgui.Dialog()

@@ -8,6 +8,7 @@ from sqlite3 import dbapi2 as sqlite
 from random import randint
 from base64 import b64encode, b64decode
 from inputstreamhelper import Helper
+from collections import OrderedDict
 import uuid
 import mechanize
 import sys
@@ -32,6 +33,7 @@ import socket
 import ssl
 import shlex
 import locale
+import pickle
 
 # Save the language code for HTTP requests and set the locale for l10n
 Language = locale.getdefaultlocale()
@@ -95,8 +97,6 @@ country = int(addon.getSetting('country'))
 pvArea = int(addon.getSetting('primevideo_area'))
 wl_order = ['DATE_ADDED_DESC', 'TITLE_DESC', 'TITLE_ASC'][int('0' + addon.getSetting("wl_order"))]
 verifySsl = addon.getSetting('ssl_verif') == 'false'
-if not verifySsl:
-    requests.packages.urllib3.disable_warnings(requests.packages.urllib3.exceptions.InsecureRequestWarning)
 UsePrimeVideo = False
 sessions = {}               # Keep-Alive sessions
 
@@ -118,10 +118,9 @@ else:
     ''' Temporarily Hardcoded '''
     AgeRating = ''
 
-PrimeVideoCache = os.path.join(DataPath, 'PVCatalog{0}.json'.format(MarketID))
+PrimeVideoCache = os.path.join(DataPath, 'PVCatalog{0}.pvcp'.format(MarketID))
 pvCatalog = {
-    'root': {
-    }
+    'root': OrderedDict(),
 }
 
 menuFile = os.path.join(DataPath, 'menu-%s.db' % MarketID)
@@ -351,7 +350,7 @@ def MainMenu():
             # Expire in 11 hours
             pvCatalog['expiration'] = 39600 + int(time.time())
             with open(PrimeVideoCache, 'w+') as fp:
-                json.dump(pvCatalog, fp)
+                pickle.dump(pvCatalog, fp)
         PrimeVideo_Browse('root')
     else:
         loadCategories()
@@ -401,9 +400,19 @@ def PrimeVideo_BuildRoot():
     if (0 == len(pvCatalog['root'])):
         Log('Unable to build the root catalog from primevideo.com', xbmc.LOGERROR)
         return False
+    ''' Add functionalities to the root catalog '''
+    pvCatalog['root']['Search'] = { 'title':getString(30108), 'verb':'PrimeVideo_Search' }
     return True
 
-def PrimeVideo_Browse(path):
+def PrimeVideo_Search():
+    searchString = Dialog.input(getString(24121)).strip(' \t\n\r')
+    if 0 == len(searchString):
+        return False
+    Log('Searching "{0}"…'.format(searchString), xbmc.LOGINFO)
+    pvCatalog['search'] = OrderedDict([('lazyLoadURL','https://www.primevideo.com/search/ref=atv_nb_sr?ie=UTF8&phrase={0}'.format(searchString))])
+    PrimeVideo_Browse('search', xbmcplugin.SORT_METHOD_NONE)
+
+def PrimeVideo_Browse(path, forceSort=None):
     node = pvCatalog
     for n in path.decode('utf-8').split('-//-'):
         node = node[n]
@@ -415,9 +424,13 @@ def PrimeVideo_Browse(path):
         return
     folderType = 0 if 'root' == path else 1
     for key in node:
-        if (key in ['metadata','ref','title']):
+        if (key in ['metadata','ref','title','verb']):
             continue
-        url = u'{0}?mode=PrimeVideo_Browse&path={1}-//-{2}'.format(sys.argv[0], urllib.quote_plus(path), urllib.quote_plus(key.encode('utf-8')))
+        url = u'{0}?mode='.format(sys.argv[0])
+        if 'verb' not in node[key]:
+            url += 'PrimeVideo_Browse&path={0}-//-{1}'.format(urllib.quote_plus(path), urllib.quote_plus(key.encode('utf-8')))
+        else:
+            url += node[key]['verb']
         item = xbmcgui.ListItem(node[key]['title'])
         folder = True
         if ('metadata' in node[key]):
@@ -443,13 +456,14 @@ def PrimeVideo_Browse(path):
                     item.setInfo('video', {'duration':m['runtime']})
         xbmcplugin.addDirectoryItem(pluginhandle, url, item, isFolder=folder)
         del item
+    # https://codedocs.xyz/xbmc/xbmc/group__python__xbmcplugin.html#ga85b3bff796fd644fb28f87b136025f40
     xbmcplugin.addSortMethod(pluginhandle, [
         xbmcplugin.SORT_METHOD_NONE,
-        xbmcplugin.SORT_METHOD_LABEL,
+        xbmcplugin.SORT_METHOD_LABEL_IGNORE_THE,
         xbmcplugin.SORT_METHOD_LABEL_IGNORE_THE,
         xbmcplugin.SORT_METHOD_EPISODE,
         xbmcplugin.SORT_METHOD_LABEL
-    ][folderType])                      # https://codedocs.xyz/xbmc/xbmc/group__python__xbmcplugin.html#ga85b3bff796fd644fb28f87b136025f40
+    ][folderType if None is forceSort else forceSort])
     if ('false' == addon.getSetting("viewenable")) or (2 > folderType):
         xbmcplugin.endOfDirectory(pluginhandle, updateListing=False)
     else:
@@ -769,7 +783,7 @@ def PrimeVideo_LazyLoad(obj):
         if 0 < len(requestURLs):
             NotifyUser(getString(30252))
     with open(PrimeVideoCache, 'w+') as fp:
-        json.dump(pvCatalog, fp)
+        pickle.dump(pvCatalog, fp)
 
 
 def Search():
@@ -2097,7 +2111,6 @@ def genID(renew=False):
 def MechanizeLogin():
     cj = requests.cookies.RequestsCookieJar()
     if xbmcvfs.exists(CookieFile):
-        import pickle
         with open(CookieFile, 'r') as cf:
             cj.update(pickle.load(cf))
         return cj
@@ -2219,7 +2232,6 @@ def LogIn(ask=True):
                 writeConfig('login_name', email)
                 writeConfig('login_pass', encode(password))
             else:
-                import pickle
                 with open(CookieFile, 'w+') as cf:
                     pickle.dump(cj, cf)
                 while not xbmcvfs.exists(CookieFile):
@@ -3013,7 +3025,7 @@ else:
     if xbmcvfs.exists(PrimeVideoCache):
         import codecs
         with open(PrimeVideoCache,'r') as fp:
-            cached = json.load(fp)
+            cached = pickle.load(fp)
         if (time.time() < cached['expiration']):
             pvCatalog = cached
 

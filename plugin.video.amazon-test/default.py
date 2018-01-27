@@ -1608,21 +1608,20 @@ def IStreamPlayback(asin, name, trailer, isAdult, extern):
 
     Log(mpd, xbmc.LOGDEBUG)
 
-    if not UsePrimeVideo:
-        if not extern:
-            mpaa_check = xbmc.getInfoLabel('ListItem.MPAA') in mpaa_str or isAdult
-            title = xbmc.getInfoLabel('ListItem.Label')
-            thumb = xbmc.getInfoLabel('ListItem.Art(season.poster)')
+    if (not extern) or UsePrimeVideo:
+        mpaa_check = xbmc.getInfoLabel('ListItem.MPAA') in mpaa_str or isAdult
+        title = xbmc.getInfoLabel('ListItem.Label')
+        thumb = xbmc.getInfoLabel('ListItem.Art(season.poster)')
+        if not thumb:
+            thumb = xbmc.getInfoLabel('ListItem.Art(tvshow.poster)')
             if not thumb:
-                thumb = xbmc.getInfoLabel('ListItem.Art(tvshow.poster)')
-                if not thumb:
-                    thumb = xbmc.getInfoLabel('ListItem.Art(thumb)')
-        else:
-            content = getATVData('GetASINDetails', 'ASINList=' + asin)['titles'][0]
-            ct, Info = getInfos(content, False)
-            title = Info['DisplayTitle']
-            thumb = Info.get('Poster', Info['Thumb'])
-            mpaa_check = str(Info.get('MPAA', mpaa_str)) in mpaa_str or isAdult
+                thumb = xbmc.getInfoLabel('ListItem.Art(thumb)')
+    else:
+        content = getATVData('GetASINDetails', 'ASINList=' + asin)['titles'][0]
+        ct, Info = getInfos(content, False)
+        title = Info['DisplayTitle']
+        thumb = Info.get('Poster', Info['Thumb'])
+        mpaa_check = str(Info.get('MPAA', mpaa_str)) in mpaa_str or isAdult
 
     if trailer == 1:
         title += ' (Trailer)'
@@ -1887,15 +1886,16 @@ def parseSubs(data):
         lang = sub['displayName'].split('(')[0].strip()
         Log('Convert %s Subtitle' % lang)
         srtfile = xbmc.translatePath('special://temp/%s.srt' % lang).decode('utf-8')
-        srt = codecs.open(srtfile, 'w', encoding='utf-8')
-        soup = BeautifulStoneSoup(getURL(sub['url'], rjson=False), convertEntities=BeautifulStoneSoup.XML_ENTITIES)
-        enc = soup.originalEncoding
-        num = 0
-        for caption in soup.findAll('tt:p'):
-            num += 1
-            subtext = caption.renderContents().decode(enc).replace('<tt:br>', '\n').replace('</tt:br>', '')
-            srt.write(u'%s\n%s --> %s\n%s\n\n' % (num, caption['begin'], caption['end'], subtext))
-        srt.close()
+        with codecs.open(srtfile, 'w', encoding='utf-8') as srt:
+            soup = BeautifulStoneSoup(getURL(sub['url'], rjson=False), convertEntities=BeautifulStoneSoup.XML_ENTITIES)
+            enc = soup.originalEncoding
+            if None is enc:
+                enc = 'utf-8'
+            num = 0
+            for caption in soup.findAll('tt:p'):
+                num += 1
+                subtext = caption.renderContents().decode(enc).replace('<tt:br>', '\n').replace('</tt:br>', '')
+                srt.write(u'%s\n%s --> %s\n%s\n\n' % (num, caption['begin'], caption['end'], subtext))
         subs.append(srtfile)
     return subs
 
@@ -1956,7 +1956,9 @@ def getUrldata(mode, values, retformat='json', devicetypeid=False, version=1, fi
         url += '&resourceUsage=ImmediateConsumption&consumptionType=Streaming&deviceDrmOverride=CENC' \
             '&deviceStreamingTechnologyOverride=DASH&deviceProtocolOverride=Https' \
             '&deviceBitrateAdaptationsOverride=CVBR%2CCBR'
-        url += '&audioTrackId=all' if not UsePrimeVideo else '&gascEnabled=true'
+        url += '&audioTrackId=all'
+        if UsePrimeVideo:
+            url += '&gascEnabled=true'
         url += '&videoMaterialType=' + vMT
         url += '&desiredResources=' + dRes
         url += '&supportedDRMKeyScheme=DUAL_KEY' if platform != osAndroid and 'PlaybackUrls' in dRes else ''

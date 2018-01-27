@@ -34,12 +34,10 @@ import shlex
 import locale
 
 # Save the language code for HTTP requests and set the locale for l10n
-previousLocale = locale.getlocale()
 Language = locale.getdefaultlocale()
 if (isinstance(Language, tuple)):
     Language = Language[0]
-userAcceptLanguages = '{0}, en-gb;q=0.8, en;q=0.6'.format(re.sub('_','-',Language.lower()))
-locale.setlocale(locale.LC_ALL, '')         # Defaults to the user machine's locale
+userAcceptLanguages = '{0}, en-gb;q=0.2, en;q=0.1'.format(re.sub('_','-',Language.lower()))
 
 addon = xbmcaddon.Addon()
 Dialog = xbmcgui.Dialog()
@@ -110,7 +108,7 @@ else:
     BaseUrl = 'https://www.primevideo.com'
     # Market     ROE_EU,           ROW_EU,           ROW_FE,           ROW_NA
     MarketID = ['A3K6Y4MI8GDYMT', 'A2MFUE2XK8ZSSY', 'A15PK738MTQHSO', 'ART4WZ8MWBX2Y'][pvArea]
-    Endpoint = 'fls-%s.amazon.com' % (['eu', 'eu', 'fe', 'na'][pvArea])
+    #Endpoint = 'fls-%s.amazon.com' % (['eu', 'eu', 'fe', 'na'][pvArea])
     ATVUrl = 'https://atv-ps%s.primevideo.com' % (['-eu', '-eu', '-fe', ''][pvArea])
     ''' Temporarily Hardcoded '''
     AgeRating = ''
@@ -3022,6 +3020,3 @@ elif mode == 'PrimeVideo_Browse':
     PrimeVideo_Browse(None if 'path' not in args else args['path'])
 else:
     exec mode + '()'
-
-# Restore the locale
-locale.setlocale(locale.LC_ALL, previousLocale)

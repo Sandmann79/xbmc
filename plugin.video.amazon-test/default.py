@@ -9,7 +9,6 @@ from random import randint
 from base64 import b64encode, b64decode
 from inputstreamhelper import Helper
 import uuid
-import cookielib
 import mechanize
 import sys
 import urllib
@@ -123,7 +122,7 @@ pvCatalog = {
 }
 
 menuFile = os.path.join(DataPath, 'menu-%s.db' % MarketID)
-CookieFile = os.path.join(DataPath, 'cookie-%s.lwp' % MarketID)
+CookieFile = os.path.join(DataPath, 'cookie-%s.cjp' % MarketID)
 is_addon = 'inputstream.adaptive'
 na = 'not available'
 watchlist = 'watchlist'
@@ -215,7 +214,7 @@ def getURL(url, useCookie=False, silent=False, headers=None, rjson=True, attempt
     else:
         session = requests.Session()
 
-    cj = cookielib.LWPCookieJar()
+    cj = requests.cookies.RequestsCookieJar()
     retval = [] if rjson else ''
     if useCookie:
         cj = MechanizeLogin() if isinstance(useCookie, bool) else useCookie
@@ -516,7 +515,7 @@ def PrimeVideo_LazyLoad(obj):
         # Fine the locale amazon's using
         cj = MechanizeLogin()
         if cj:
-            amzLang = cj._cookies['.primevideo.com']['/']['lc-main-av'].value
+            amzLang = cj.get('lc-main-av', domain='.primevideo.com', path='/')
 
     while (None is not requestURL):
         nextRequestURL = None
@@ -2072,9 +2071,11 @@ def genID(renew=False):
 
 
 def MechanizeLogin():
-    cj = cookielib.LWPCookieJar()
+    cj = requests.cookies.RequestsCookieJar()
     if xbmcvfs.exists(CookieFile):
-        cj.load(CookieFile, ignore_discard=True, ignore_expires=True)
+        import pickle
+        with open(CookieFile, 'r') as cf:
+            cj.update(pickle.load(cf))
         return cj
 
     Log('Login')
@@ -2106,7 +2107,7 @@ def LogIn(ask=True):
         xbmc.executebuiltin('ActivateWindow(busydialog)')
         if xbmcvfs.exists(CookieFile):
             xbmcvfs.delete(CookieFile)
-        cj = cookielib.LWPCookieJar()
+        cj = requests.cookies.RequestsCookieJar()
         br = mechanize.Browser()
         br.set_handle_robots(False)
         br.set_cookiejar(cj)
@@ -2194,7 +2195,9 @@ def LogIn(ask=True):
                 writeConfig('login_name', email)
                 writeConfig('login_pass', encode(password))
             else:
-                cj.save(CookieFile, ignore_discard=True, ignore_expires=True)
+                import pickle
+                with open(CookieFile, 'w+') as cf:
+                    pickle.dump(cj, cf)
                 while not xbmcvfs.exists(CookieFile):
                     sleep(.2)
 

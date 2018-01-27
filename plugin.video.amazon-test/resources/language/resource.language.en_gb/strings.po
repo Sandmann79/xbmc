@@ -645,3 +645,11 @@ msgstr ""
 msgctxt "#30251"
 msgid "Connection error"
 msgstr ""
+
+msgctxt "#30252"
+msgid "Loading next page…"
+msgstr ""
+
+msgctxt "#30253"
+msgid "Found “{0}”"
+msgstr ""

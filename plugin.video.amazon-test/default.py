@@ -501,6 +501,15 @@ def PrimeVideo_LazyLoad(obj):
         p[dateParserData[lang]['month']] = dateParserData[lang]['months'][p[dateParserData[lang]['month']]]
         return dateParserData[lang]['reassemble'].format(p[0], p[1], p[2])
 
+    def NotifyUser(msg):
+        ''' Pop up messages while scraping to inform them of progress '''
+        if not hasattr(NotifyUser, 'lastNotification'):
+            NotifyUser.lastNotification = 0
+        if (NotifyUser.lastNotification < time.time()):
+            ''' Only update once every other second, to avoid endless message queue '''
+            NotifyUser.lastNotification = 1 + time.time()
+            Dialog.notification(__plugin__, msg, time=1000, sound=False)
+
     # Set up the fetch order to find the best quality image possible
     imageSizes = r'(large-screen-double|desktop-double|tablet-landscape-double|phone-landscape-double|phablet-double|phone-double|large-screen|desktop|tablet-landscape|tablet|phone-landscape|phablet|phone)'
 
@@ -669,6 +678,7 @@ def PrimeVideo_LazyLoad(obj):
                     # Extract video metadata
                     gpr = None
                     if (None is not res[6]):
+                        NotifyUser(getString(30253).format(title.encode('utf-8')))
                         success,gpr = getUrldata('catalog/GetPlaybackResources', PrimeVideo_GPRV(res[6]), useCookie=True, extra=True, opt='&titleDecorationScheme=primary-content', dRes='CatalogMetadata')
                         if not success:
                             gpr = None
@@ -725,6 +735,7 @@ def PrimeVideo_LazyLoad(obj):
                 section = re.split(r'","', section[2:-2])
                 if ('dvappend' == section[0]):
                     title = Unescape(re.sub(r'^.*<h2[^>]*>\s*<span[^>]*>\s*(.*?)\s*</span>.*$', r'\1', section[2], flags=re.DOTALL))
+                    NotifyUser(getString(30253).format(title.encode('utf-8')))
                     obj[title] = { 'title':title }
                     if None is not re.search('<h2[^>]*>.*?<a\s+[^>]*\s+href="[^"]+"[^>]*>.*?</h2>', section[2], flags=re.DOTALL):
                         obj[title]['lazyLoadURL'] = Unescape(re.sub('\\n','',re.sub(r'^.*?<h2[^>]*>.*?<a\s+[^>]*\s+href="([^"]+)"[^>]*>.*?</h2>.*?$', r'\1', section[2], flags=re.DOTALL)))
@@ -741,6 +752,8 @@ def PrimeVideo_LazyLoad(obj):
                 pagination = re.search(r'data-ajax-pagination="{&quot;href&quot;:&quot;([^}]+)&quot;}"', section[2], flags=re.DOTALL)
                 if (('dvupdate' == section[0]) and (None is not pagination)):
                     nextRequestURL = re.sub(r'(&quot;,&quot;|&amp;)','&',re.sub('&quot;:&quot;','=',pagination.group(1)+'&format=json'))
+        if None is not nextRequestURL:
+            NotifyUser(getString(30252))
         requestURL = nextRequestURL
     with open(PrimeVideoCache, 'w+') as fp:
         json.dump(pvCatalog, fp)

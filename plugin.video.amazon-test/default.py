@@ -406,7 +406,8 @@ def PrimeVideo_BuildRoot():
 def PrimeVideo_Search():
     searchString = Dialog.input(getString(24121)).strip(' \t\n\r')
     if 0 == len(searchString):
-        return False
+        xbmcplugin.endOfDirectory(pluginhandle, succeeded=False)
+        return
     Log('Searching "{0}"…'.format(searchString), xbmc.LOGINFO)
     pvCatalog['search'] = OrderedDict([('lazyLoadURL','https://www.primevideo.com/search/ref=atv_nb_sr?ie=UTF8&phrase={0}'.format(searchString))])
     PrimeVideo_Browse('search', xbmcplugin.SORT_METHOD_NONE)

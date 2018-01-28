@@ -655,7 +655,7 @@ def PrimeVideo_LazyLoad(obj):
                         if (None is res[0]) or (None is res[2]):
                             ''' Some episodes might be not playable until a later date or just N/A, although listed '''
                             continue
-                        meta = { 'artmeta': { 'thumb': MaxSize(res[1]), 'fanart': bgimg, }, 'videometa': { 'mediatype':'episode' }, 'id': res[0][0], 'asin': res[0][1], 'videoURL': res[0][2] }
+                        meta = { 'artmeta': { 'thumb': MaxSize(res[1]), 'poster': MaxSize(res[1]), 'fanart': bgimg, }, 'videometa': { 'mediatype':'episode' }, 'id': res[0][0], 'asin': res[0][1], 'videoURL': res[0][2] }
                         if None is not re.match(r'/[^/]', meta['videoURL']):
                             meta['videoURL'] = BaseUrl + meta['videoURL']
                         meta['video'] = ExtractURN(meta['videoURL'])
@@ -742,7 +742,7 @@ def PrimeVideo_LazyLoad(obj):
                     NotifyUser(getString(30253).format(title.encode('utf-8')))
                     if None is not re.match(r'/[^/]', res[0][1]):
                         res[0][1] = BaseUrl + res[0][1]
-                    meta = { 'artmeta': { 'thumb': MaxSize(res[0][0]) }, 'videometa': {} }
+                    meta = { 'artmeta': { 'thumb': MaxSize(res[0][0]), 'poster': MaxSize(res[0][0]) }, 'videometa': {} }
                     if (None is not res[1]): meta['videometa']['rating'] = int(res[1][0]) + (int(res[1][1]) / 10.0)
                     if (None is not res[2]): meta['videometa']['plot'] = res[2]
                     meta['videometa']['mediatype'] = 'movie' if None == res[3] else 'season'
@@ -779,7 +779,7 @@ def PrimeVideo_LazyLoad(obj):
                         o[id][sid] = { 'title':sn, 'metadata': meta, 'lazyLoadURL': res[0][1] }
                         # Update the parent (Series name) with few meta information
                         if 'metadata' not in o[id].keys():
-                            o[id]['metadata'] = { 'artmeta': { 'thumb': meta['artmeta']['thumb'] }, 'videometa': { 'mediatype':'tvshow' } }
+                            o[id]['metadata'] = { 'artmeta': { 'thumb': meta['artmeta']['thumb'], 'poster': meta['artmeta']['thumb'] }, 'videometa': { 'mediatype':'tvshow' } }
                 # Next page
                 pagination = re.search(r'<ol\s+[^>]*id="[^"]*av-pagination[^"]*"[^>]*>.*?<li\s+[^>]*class="[^"]*av-pagination-current-page[^"]*"[^>]*>.*?</li>\s*<li\s+[^>]*class="av-pagination[^>]*>\s*(.*?)\s*</li>\s*</ol>', cnt, flags=re.DOTALL)
                 if (None is not pagination):
@@ -805,11 +805,11 @@ def PrimeVideo_LazyLoad(obj):
                             parts = re.search(r'<a\s+[^>]*href="([^"]*)"[^>]*>\s*.*?(src|data-a-image-source)="([^"]*)"[^>]*>.*?class="dv-core-title"[^>]*>\s*(.*?)\s*</span>', entry, flags=re.DOTALL)
                             if None is not re.search(r'/search/', parts.group(1)):
                                 ''' Category '''
-                                o[title][parts.group(4)] = { 'metadata': { 'artmeta': { 'thumb':MaxSize(parts.group(3)) } }, 'lazyLoadURL': parts.group(1), 'title': parts.group(4) }
+                                o[title][parts.group(4)] = { 'metadata': { 'artmeta': { 'thumb':MaxSize(parts.group(3)), 'poster':MaxSize(parts.group(3)) } }, 'lazyLoadURL': parts.group(1), 'title': parts.group(4) }
                             else:
                                 ''' Movie/Series list '''
                                 urn = ExtractURN(parts.group(1))
-                                o[title][urn] = { 'metadata': { 'artmeta': { 'thumb':MaxSize(parts.group(3)) }, 'videometa': {} }, 'title': Unescape(parts.group(4)) }
+                                o[title][urn] = { 'metadata': { 'artmeta': { 'thumb':MaxSize(parts.group(3)), 'poster':MaxSize(parts.group(3)) }, 'videometa': {} }, 'title': Unescape(parts.group(4)) }
                                 requestURLs.append((parts.group(1),o[title][urn]))
                 pagination = re.search(r'data-ajax-pagination="{&quot;href&quot;:&quot;([^}]+)&quot;}"', section[2], flags=re.DOTALL)
                 if (('dvupdate' == section[0]) and (None is not pagination)):

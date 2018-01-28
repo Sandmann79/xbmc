@@ -594,7 +594,7 @@ def PrimeVideo_LazyLoad(obj):
                         gres[i] = gres[i].groups()
                         if (1 == len(gres[i])):
                             gres[i] = Unescape(gres[i][0])
-                        if (2 < i):
+                        if (2 < i) and (6 != i):
                             gres[i] = re.sub(r'\s*</?a[^>]*>\s*', '', gres[i])
                             gres[i] = re.split(r'\s*[,;]\s*', gres[i])
                             # Cast is always to be sent as a list, single string is only required/preferred for Genre and Director
@@ -619,6 +619,7 @@ def PrimeVideo_LazyLoad(obj):
                     if (None is not gres[4]): meta['videometa']['genre'] = gres[4]
                     if (None is not gres[5]): meta['videometa']['director'] = gres[5]
                     if (None is not gres[6]): meta['videometa']['plot'] = gres[6]
+                    Log(gres[6])
 
                     # Extract the runtime
                     success,gpr = getUrldata('catalog/GetPlaybackResources', PrimeVideo_GPRV(meta['asin']), useCookie=True, extra=True, opt='&titleDecorationScheme=primary-content', dRes='CatalogMetadata')

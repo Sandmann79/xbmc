@@ -30,7 +30,6 @@ import json
 import xbmcvfs
 import pyxbmct
 import socket
-import ssl
 import shlex
 import locale
 import pickle
@@ -165,9 +164,6 @@ langID = {'movie': 30165, 'series': 30166, 'season': 30167, 'episode': 30173}
 OfferGroup = '' if payCont else '&OfferGroups=B0043YVHMY'
 socket.setdefaulttimeout(30)
 
-if addon.getSetting('ssl_verif') == 'true' and hasattr(ssl, '_create_unverified_context'):
-    ssl._create_default_https_context = ssl._create_unverified_context
-
 EXPORT_PATH = DataPath
 MOVIE_PATH = os.path.join(EXPORT_PATH, 'Movies')
 TV_SHOWS_PATH = os.path.join(EXPORT_PATH, 'TV')
@@ -235,7 +231,10 @@ def getURL(url, useCookie=False, silent=False, headers=None, rjson=True, attempt
     try:
         r = session.get(url, headers=headers, cookies=cj, verify=verifySsl)
         response = r.text if not check else 'OK'
-    except (requests.exceptions.Timeout, requests.exceptions.SSLError, requests.exceptions.HTTPError), e:
+    except (requests.exceptions.Timeout,
+            requests.exceptions.ConnectionError,
+            requests.exceptions.SSLError,
+            requests.exceptions.HTTPError), e:
         Log('Error reason: %s' % e, xbmc.LOGERROR)
         if '429' or 'timed out' in e:
             attempt += 1 if not check else 10

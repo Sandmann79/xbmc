@@ -619,7 +619,6 @@ def PrimeVideo_LazyLoad(obj):
                     if (None is not gres[4]): meta['videometa']['genre'] = gres[4]
                     if (None is not gres[5]): meta['videometa']['director'] = gres[5]
                     if (None is not gres[6]): meta['videometa']['plot'] = gres[6]
-                    Log(gres[6])
 
                     # Extract the runtime
                     success,gpr = getUrldata('catalog/GetPlaybackResources', PrimeVideo_GPRV(meta['asin']), useCookie=True, extra=True, opt='&titleDecorationScheme=primary-content', dRes='CatalogMetadata')

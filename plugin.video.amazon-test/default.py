@@ -426,7 +426,7 @@ def PrimeVideo_Browse(path, forceSort=None):
         PrimeVideo_LazyLoad(node)
     if ('metadata' in node) and ('video' in node['metadata']):
         ''' Play the video '''
-        PlayVideo(node['metadata']['asin'], node['metadata']['video'], '', 0)
+        PlayVideo(node['metadata']['video'], node['metadata']['asin'], '', 0)
         return
     folderType = 0 if 'root' == path else 1
     for key in node:
@@ -1521,7 +1521,7 @@ def getInfos(item, export):
 
 def PlayVideo(name, asin, adultstr, trailer, forcefb=0):
     isAdult = adultstr == '1'
-    amazonUrl = BaseUrl + "/dp/" + asin
+    amazonUrl = BaseUrl + "/dp/" + name if UsePrimeVideo else asin
     playable = False
     fallback = int(addon.getSetting("fallback_method"))
     methodOW = fallback - 1 if forcefb and fallback else playMethod
@@ -1661,14 +1661,14 @@ def IStreamPlayback(asin, name, trailer, isAdult, extern):
         return True
 
     cookie = MechanizeLogin()
-    mpd, subs = getStreams(*getUrldata('catalog/GetPlaybackResources', name if UsePrimeVideo else asin, extra=True, vMT=vMT,
+    mpd, subs = getStreams(*getUrldata('catalog/GetPlaybackResources', asin, extra=True, vMT=vMT,
                                        opt='&titleDecorationScheme=primary-content', dRes=dRes, useCookie=cookie), retmpd=True)
 
     cj_str = ';'.join([c.name + '=' + c.value for c in cookie])
     opt = '|Content-Type=application%2Fx-www-form-urlencoded&Cookie=' + urllib.quote_plus(cj_str)
     opt += '|widevine2Challenge=B{SSM}&includeHdcpTestKeyInLicense=true'
     opt += '|JBlicense;hdcpEnforcementResolutionPixels'
-    licURL = getUrldata('catalog/GetPlaybackResources', name if UsePrimeVideo else asin, opt=opt, extra=True, vMT=vMT, dRes='Widevine2License', retURL=True)
+    licURL = getUrldata('catalog/GetPlaybackResources', asin, opt=opt, extra=True, vMT=vMT, dRes='Widevine2License', retURL=True)
 
     if not mpd:
         Dialog.notification(getString(30203), subs, xbmcgui.NOTIFICATION_ERROR)

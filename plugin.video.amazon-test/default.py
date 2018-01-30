@@ -385,17 +385,6 @@ def MainMenu():
         xbmcplugin.endOfDirectory(pluginhandle, updateListing=False)
 
 
-def PrimeVideo_GPRV(asin):
-    """ Get playback resources values """
-    return {
-        'deviceID': getConfig('GenDeviceID'),
-        'deviceTypeID': 'AOAGZA014O5RE',  # HTML5 / AOAGZA014O5RE
-        'marketplaceID': MarketID,
-        'asin': asin,
-        # 'clientId':clientId,                  # Apparently atm insignificant and not necessary, might change in the future
-    }
-
-
 def PrimeVideo_BuildRoot():
     """ Parse the top menu on primevideo.com and build the root catalog """
     home = getURL(BaseUrl, silent=True, useCookie=True, rjson=False)
@@ -641,7 +630,7 @@ def PrimeVideo_LazyLoad(obj):
                     if None is not gres[6]: meta['videometa']['plot'] = gres[6]
 
                     # Extract the runtime
-                    success, gpr = getUrldata('catalog/GetPlaybackResources', PrimeVideo_GPRV(meta['asin']), useCookie=True, extra=True,
+                    success, gpr = getUrldata('catalog/GetPlaybackResources', meta['asin'], useCookie=True, extra=True,
                                               opt='&titleDecorationScheme=primary-content', dRes='CatalogMetadata')
                     if not success:
                         gpr = None
@@ -682,7 +671,7 @@ def PrimeVideo_LazyLoad(obj):
                         meta['video'] = ExtractURN(meta['videoURL'])
 
                         # Extract the runtime
-                        success, gpr = getUrldata('catalog/GetPlaybackResources', PrimeVideo_GPRV(res[7]), useCookie=True, extra=True,
+                        success, gpr = getUrldata('catalog/GetPlaybackResources', res[7], useCookie=True, extra=True,
                                                   opt='&titleDecorationScheme=primary-content', dRes='CatalogMetadata')
                         if not success:
                             gpr = None
@@ -784,7 +773,7 @@ def PrimeVideo_LazyLoad(obj):
 
                         # Extract video metadata
                         if None is not res[6]:
-                            success, gpr = getUrldata('catalog/GetPlaybackResources', PrimeVideo_GPRV(res[6]), useCookie=True, extra=True,
+                            success, gpr = getUrldata('catalog/GetPlaybackResources', res[6], useCookie=True, extra=True,
                                                       opt='&titleDecorationScheme=primary-content', dRes='CatalogMetadata')
                             if not success:
                                 Log('Unable to get the video metadata for {0} ({1})'.format(title, res[0][1]), xbmc.LOGWARNING)
@@ -1672,22 +1661,14 @@ def IStreamPlayback(asin, name, trailer, isAdult, extern):
         return True
 
     cookie = MechanizeLogin()
-    if not UsePrimeVideo:
-        values = getFlashVars(asin, cookie)
-        if not values:
-            playDummyVid()
-            return True
-    else:
-        values = PrimeVideo_GPRV(name)
-
-    mpd, subs = getStreams(*getUrldata('catalog/GetPlaybackResources', values, extra=True, vMT=vMT,
+    mpd, subs = getStreams(*getUrldata('catalog/GetPlaybackResources', asin, extra=True, vMT=vMT,
                                        opt='&titleDecorationScheme=primary-content', dRes=dRes, useCookie=cookie), retmpd=True)
 
     cj_str = ';'.join([c.name + '=' + c.value for c in cookie])
     opt = '|Content-Type=application%2Fx-www-form-urlencoded&Cookie=' + urllib.quote_plus(cj_str)
     opt += '|widevine2Challenge=B{SSM}&includeHdcpTestKeyInLicense=true'
     opt += '|JBlicense;hdcpEnforcementResolutionPixels'
-    licURL = getUrldata('catalog/GetPlaybackResources', values, opt=opt, extra=True, vMT=vMT, dRes='Widevine2License', retURL=True)
+    licURL = getUrldata('catalog/GetPlaybackResources', asin, opt=opt, extra=True, vMT=vMT, dRes='Widevine2License', retURL=True)
 
     if not mpd:
         Dialog.notification(getString(30203), subs, xbmcgui.NOTIFICATION_ERROR)
@@ -1871,7 +1852,7 @@ def getCmdLine(videoUrl, asin, method, fr):
             return False, nobr_str
 
         if frdetect:
-            suc, fr = (getPlaybackInfo(asin)) if not fr else (True, fr)
+            suc, fr = getStreams(*getUrldata('catalog/GetPlaybackResources', asin, extra=True, useCookie=True)) if not fr else (True, fr)
             if not suc:
                 return False, fr
         else:
@@ -2003,54 +1984,12 @@ def parseSubs(data):
     return subs
 
 
-def getPlaybackInfo(asin):
-    cookie = MechanizeLogin()
-    values = getFlashVars(asin, cookie)
-    if not values:
-        return False, 'getFlashVars'
-    suc, fr = getStreams(*getUrldata('catalog/GetPlaybackResources', values, extra=True, useCookie=cookie))
-    return suc, fr
-
-
-def getFlashVars(asin, cookie):
-    url = BaseUrl + '/gp/deal/ajax/getNotifierResources.html'
-    showpage = getURL(url, useCookie=cookie)
-
-    if not showpage:
-        Dialog.notification(__plugin__, Error({'errorCode': 'invalidrequest', 'message': 'getFlashVars'}),
-                            xbmcgui.NOTIFICATION_ERROR)
-        return False
-
-    values = {'asin': asin,
-              'deviceTypeID': 'AOAGZA014O5RE',
-              'userAgent': getConfig('UserAgent')}
-    values.update(showpage['resourceData']['GBCustomerData'])
-
-    if 'customerId' not in values:
-        Dialog.notification(getString(30200), getString(30210), xbmcgui.NOTIFICATION_ERROR)
-        return False
-
-    rand = 'onWebToken_' + str(randint(0, 484))
-    pltoken = getURL(BaseUrl + "/gp/video/streaming/player-token.json?callback=" + rand, useCookie=cookie, rjson=False)
-    try:
-        values['token'] = re.compile('"([^"]*).*"([^"]*)"').findall(pltoken)[0][1]
-    except IndexError:
-        Dialog.notification(getString(30200), getString(30201), xbmcgui.NOTIFICATION_ERROR)
-        return False
-    return values
-
-
-def getUrldata(mode, values, retformat='json', devicetypeid=False, version=1, firmware='1', opt='', extra=False,
+def getUrldata(mode, asin, retformat='json', devicetypeid='AOAGZA014O5RE', version=1, firmware='1', opt='', extra=False,
                useCookie=False, retURL=False, vMT='Feature', dRes='PlaybackUrls,SubtitleUrls'):
-    if not devicetypeid:
-        devicetypeid = values['deviceTypeID']
     url = ATVUrl + '/cdp/' + mode
-    url += '?asin=' + values['asin']
+    url += '?asin=' + asin
     url += '&deviceTypeID=' + devicetypeid
     url += '&firmware=' + firmware
-    if not UsePrimeVideo:
-        url += '&token=' + values['token']
-        url += '&customerID=' + values['customerId']
     url += '&deviceID=' + deviceID
     url += '&marketplaceID=' + MarketID
     url += '&format=' + retformat
@@ -2058,10 +1997,7 @@ def getUrldata(mode, values, retformat='json', devicetypeid=False, version=1, fi
     if extra:
         url += '&resourceUsage=ImmediateConsumption&consumptionType=Streaming&deviceDrmOverride=CENC' \
                '&deviceStreamingTechnologyOverride=DASH&deviceProtocolOverride=Https' \
-               '&deviceBitrateAdaptationsOverride=CVBR%2CCBR'
-        url += '&audioTrackId=all'
-        if UsePrimeVideo:
-            url += '&gascEnabled=true'
+               '&deviceBitrateAdaptationsOverride=CVBR%2CCBR&audioTrackId=all&gascEnabled=true'
         url += '&videoMaterialType=' + vMT
         url += '&desiredResources=' + dRes
         url += '&supportedDRMKeyScheme=DUAL_KEY' if platform != osAndroid and 'PlaybackUrls' in dRes else ''

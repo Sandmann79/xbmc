@@ -8,12 +8,12 @@ from sqlite3 import dbapi2 as sqlite
 from random import randint
 from base64 import b64encode, b64decode
 from inputstreamhelper import Helper
+from collections import OrderedDict
 import uuid
-import cookielib
 import mechanize
 import sys
 import urllib
-import urllib2
+import requests
 import re
 import os
 import xbmcplugin
@@ -30,8 +30,20 @@ import json
 import xbmcvfs
 import pyxbmct
 import socket
-import ssl
 import shlex
+import locale
+import pickle
+
+# Save the language code for HTTP requests and set the locale for l10n
+Language = locale.getdefaultlocale()
+if (isinstance(Language, tuple)):
+    Language = Language[0]
+if None is Language:
+    ''' By Kodi standards, en_GB is the default lang '''
+    Language = 'en_GB'
+    userAcceptLanguages = 'en-gb, en;q=0.5'
+else:
+    userAcceptLanguages = '{0}, en-gb;q=0.2, en;q=0.1'.format(re.sub('_','-',Language.lower()))
 
 addon = xbmcaddon.Addon()
 Dialog = xbmcgui.Dialog()
@@ -81,16 +93,37 @@ DefaultFanart = os.path.join(PluginPath, 'fanart.jpg')
 NextIcon = os.path.join(PluginPath, 'resources', 'next.png')
 HomeIcon = os.path.join(PluginPath, 'resources', 'home.png')
 country = int(addon.getSetting('country'))
-c_tld = ['de', 'co.uk', 'com', 'co.jp', ''][country]
-BaseUrl = 'https://www.amazon.' + c_tld
-ATVUrl = 'https://atv-%s.amazon.%s' % (['ps-eu', 'ps-eu', 'ps', 'ps-fe'][country], c_tld)
+pvArea = int(addon.getSetting('primevideo_area'))
 wl_order = ['DATE_ADDED_DESC', 'TITLE_DESC', 'TITLE_ASC'][int('0' + addon.getSetting("wl_order"))]
-MarketIDs = ['A1PA6795UKMFR9', 'A1F83G8C2ARO7P', 'ATVPDKIKX0DER', 'A1VC38T7YXB528', '']
-MarketID = MarketIDs[country]
-Language = ['de', 'en', 'en', 'jp', ''][country]
-AgeRating = ['FSK ', '', '', '', ''][country]
+verifySsl = addon.getSetting('ssl_verif') == 'false'
+UsePrimeVideo = False
+sessions = {}               # Keep-Alive sessions
+
+if 4 > country:
+    c_tld = ['de', 'co.uk', 'com', 'co.jp'][country]
+    BaseUrl = 'https://www.amazon.' + c_tld
+    ATVUrl = 'https://atv-%s.amazon.%s' % (['ps-eu', 'ps-eu', 'ps', 'ps-fe'][country], c_tld)
+    MarketIDs = ['A1PA6795UKMFR9', 'A1F83G8C2ARO7P', 'ATVPDKIKX0DER', 'A1VC38T7YXB528']
+    MarketID = MarketIDs[country]
+    Language = ['de', 'en', 'en', 'jp'][country]
+    AgeRating = ['FSK ', '', '', '', ''][country]
+else:
+    UsePrimeVideo = True
+    BaseUrl = 'https://www.primevideo.com'
+    # Market     ROE_EU,           ROW_EU,           ROW_FE,           ROW_NA
+    MarketID = ['A3K6Y4MI8GDYMT', 'A2MFUE2XK8ZSSY', 'A15PK738MTQHSO', 'ART4WZ8MWBX2Y'][pvArea]
+    #Endpoint = 'fls-%s.amazon.com' % (['eu', 'eu', 'fe', 'na'][pvArea])
+    ATVUrl = 'https://atv-ps%s.primevideo.com' % (['-eu', '-eu', '-fe', ''][pvArea])
+    ''' Temporarily Hardcoded '''
+    AgeRating = ''
+
+PrimeVideoCache = os.path.join(DataPath, 'PVCatalog{0}.pvcp'.format(MarketID))
+pvCatalog = {
+    'root': OrderedDict(),
+}
+
 menuFile = os.path.join(DataPath, 'menu-%s.db' % MarketID)
-CookieFile = os.path.join(DataPath, 'cookie-%s.lwp' % MarketID)
+CookieFile = os.path.join(DataPath, 'cookie-%s.cjp' % MarketID)
 is_addon = 'inputstream.adaptive'
 na = 'not available'
 watchlist = 'watchlist'
@@ -105,8 +138,19 @@ Ages = [[('FSK 0', 'FSK 0'), ('FSK 6', 'FSK 6'), ('FSK 12', 'FSK 12'), ('FSK 16'
         [('全ての観客', 'g'), ('親の指導・助言', 'pg12'), ('R-15指定', 'r15+'), ('成人映画', 'r18+,nr')],
         [('全ての観客', 'g'), ('親の指導・助言', 'pg12'), ('R-15指定', 'r15+'), ('成人映画', 'r18+,nr')]]
 
+dateParserData = {
+    'de_DE': { 'deconstruct':r'^([0-9]+)\.\s+([^\s]+)\s+([0-9]+)', 'reassemble':'{2}-{1:0>2}-{0:0>2}', 'month':1, 'months':{ 'Januar':1,'Februar':2,'März':3,'April':4,'Mai':5,'Juni':6,'Juli':7,'August':8,'September':9,'Oktober':10,'November':11,'Dezember':12 } },
+    'en_US': { 'deconstruct':r'^([^\s]+)\s+([0-9]+),\s+([0-9]+)', 'reassemble':'{2}-{0:0>2}-{1:0>2}', 'month':0, 'months':{ 'January':1,'February':2,'March':3,'April':4,'May':5,'June':6,'July':7,'August':8,'September':9,'October':10,'November':11,'December':12 } },
+    'es_ES': { 'deconstruct':r'^([0-9]+)\s+de\s+([^\s]+),\s+de\s+([0-9]+)', 'reassemble':'{2}-{1:0>2}-{0:0>2}', 'month':1, 'months':{ 'enero':1,'febrero':2,'marzo':3,'abril':4,'mayo':5,'junio':6,'julio':7,'agosto':8,'septiembre':9,'octubre':10,'noviembre':11,'diciembre':12 } },
+    'fr_FR': { 'deconstruct':r'^([0-9]+)\s+([^\s]+)\s+([0-9]+)', 'reassemble':'{2}-{1:0>2}-{0:0>2}', 'month':1, 'months':{ 'janvier':1,'février':2,'mars':3,'avril':4,'mai':5,'juin':6,'juillet':7,'aout':8,'septembre':9,'octobre':10,'novembre':11,'décembre':12 } },
+    'it_IT': { 'deconstruct':r'^([0-9]+)\s+([^\s]+)\s+([0-9]+)', 'reassemble':'{2}-{1:0>2}-{0:0>2}', 'month':1, 'months':{ 'gennaio':1,'febbraio':2,'marzo':3,'aprile':4,'maggio':5,'giugno':6,'luglio':7,'agosto':8,'settembre':9,'ottobre':10,'novembre':11,'dicembre':12 } },
+    'pt_BR': { 'deconstruct':r'^([0-9]+)\s+de\s+([^\s]+),\s+de\s+([0-9]+)', 'reassemble':'{2}-{1:0>2}-{0:0>2}', 'month':1, 'months':{ 'janeiro':1,'fevereiro':2,'março':3,'abril':4,'maio':5,'junho':6,'julho':7,'agosto':8,'setembro':9,'outubro':10,'novembro':11,'dezembro':12 } },
+}
+
 # ids: A28RQHJKHM2A2W - ps3 / AFOQV1TK6EU6O - ps4 / A1IJNVP3L4AY8B - samsung / A2E0SNTXJVT7WK - firetv1 /
 #      ADVBD696BHNV5 - montoya / A3VN4E5F7BBC7S - roku / A1MPSLFC7L5AFK - kindle / A2M4YX06LWP8WI - firetv2 /
+# PrimeVideo web device IDs:
+#      A63V4FRV3YUP9 / SILVERLIGHT_PC, A2G17C9GWLWFKO / SILVERLIGHT_MAC, AOAGZA014O5RE / HTML5
 # TypeIDs = {'GetCategoryList': 'firmware=fmw:15-app:1.1.23&deviceTypeID=A1MPSLFC7L5AFK',
 #            'GetSimilarities': 'firmware=fmw:15-app:1.1.23&deviceTypeID=A1MPSLFC7L5AFK',
 #                        'All': 'firmware=fmw:22-app:3.0.211.123001&deviceTypeID=A43PXU4ZN2AL1'}
@@ -120,13 +164,7 @@ langID = {'movie': 30165, 'series': 30166, 'season': 30167, 'episode': 30173}
 OfferGroup = '' if payCont else '&OfferGroups=B0043YVHMY'
 socket.setdefaulttimeout(30)
 
-if addon.getSetting('ssl_verif') == 'true' and hasattr(ssl, '_create_unverified_context'):
-    ssl._create_default_https_context = ssl._create_unverified_context
-
 EXPORT_PATH = DataPath
-if addon.getSetting('enablelibraryfolder') == 'true':
-    EXPORT_PATH = xbmc.translatePath(addon.getSetting('customlibraryfolder')).decode('utf-8')
-
 MOVIE_PATH = os.path.join(EXPORT_PATH, 'Movies')
 TV_SHOWS_PATH = os.path.join(EXPORT_PATH, 'TV')
 ms_mov = ms_mov if ms_mov else 'Amazon Movies'
@@ -159,35 +197,44 @@ def setView(content, updateListing=False):
 
 
 def getURL(url, useCookie=False, silent=False, headers=None, rjson=True, attempt=1, check=False):
-    cj = cookielib.LWPCookieJar()
+    # Try to extract the host from the URL
+    host = re.search('://([^/]+)/', url)
+
+    # Create sessions for keep-alives and connection pooling
+    session = None
+    if None is not host:
+        host = host.group(1)
+        if host in sessions:
+            session = sessions[host]
+        else:
+            session = requests.Session()
+            sessions[host] = session
+    else:
+        session = requests.Session()
+
+    cj = requests.cookies.RequestsCookieJar()
     retval = [] if rjson else ''
     if useCookie:
         cj = MechanizeLogin() if isinstance(useCookie, bool) else useCookie
         if isinstance(cj, bool):
             return retval
-    if not silent or verbLog:
+    if (not silent) or (verbLog):
         dispurl = url
         dispurl = re.sub('(?i)%s|%s|&token=\w+|&customerId=\w+' % (tvdb, tmdb), '', url).strip()
         Log('%sURL: %s' % ('check' if check else 'get', dispurl))
 
-    headers = [] if not headers else headers
-    headers += [('User-Agent', getConfig('UserAgent'))] if 'User-Agent' not in headers.__str__() else []
-    headers += [('Host', BaseUrl.split('//')[1])] if 'Host' not in headers.__str__() else []
+    headers = {} if not headers else headers
+    if 'User-Agent' not in headers: headers['User-Agent'] = getConfig('UserAgent')
+    if 'Host' not in headers: headers['Host'] = host if None is not host else BaseUrl.split('//')[1]
+    if 'Accept-Language' not in headers: headers['Accept-Language'] = userAcceptLanguages
 
     try:
-        if sys.version_info[0:3] > (2, 7, 8):
-            ctx = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
-            ctx.options |= ssl.OP_NO_SSLv2
-            ctx.options |= ssl.OP_NO_SSLv3
-            opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cj), urllib2.HTTPRedirectHandler, urllib2.HTTPSHandler(context=ctx))
-        else:
-            Log('Using outdated Python version %d.%d.%d' % (sys.version_info[0:3]))
-            opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cj), urllib2.HTTPRedirectHandler)
-        opener.addheaders = headers
-        usock = opener.open(url)
-        response = usock.read() if not check else 'OK'
-        usock.close()
-    except (socket.timeout, ssl.SSLError, urllib2.URLError), e:
+        r = session.get(url, headers=headers, cookies=cj, verify=verifySsl)
+        response = r.text if not check else 'OK'
+    except (requests.exceptions.Timeout,
+            requests.exceptions.ConnectionError,
+            requests.exceptions.SSLError,
+            requests.exceptions.HTTPError), e:
         Log('Error reason: %s' % e, xbmc.LOGERROR)
         if '429' or 'timed out' in e:
             attempt += 1 if not check else 10
@@ -292,25 +339,484 @@ def addVideo(name, asin, infoLabels, cm=[], export=False):
 
 
 def MainMenu():
-    Log('Version: %s' % __version__)
-    Log('Unicode support: %s' % os.path.supports_unicode_filenames)
-    loadCategories()
+    Log('Version: %s' % __version__, xbmc.LOGINFO)
+    Log('Unicode support: %s' % os.path.supports_unicode_filenames, xbmc.LOGINFO)
+    if False is not UsePrimeVideo:
+        if (0 == len(pvCatalog['root'])):
+            ''' Build the root catalog '''
+            if not PrimeVideo_BuildRoot():
+                return
+            # Expire in 11 hours
+            pvCatalog['expiration'] = 39600 + int(time.time())
+            with open(PrimeVideoCache, 'w+') as fp:
+                pickle.dump(pvCatalog, fp)
+        PrimeVideo_Browse('root')
+    else:
+        loadCategories()
 
-    cm_wl = [(getString(30185) % 'Watchlist', 'RunPlugin(%s?mode=getListMenu&url=%s&export=1)' % (sys.argv[0], watchlist))]
-    cm_lb = [(getString(30185) % getString(30100),
-              'RunPlugin(%s?mode=getListMenu&url=%s&export=1)' % (sys.argv[0], library))]
+        cm_wl = [(getString(30185) % 'Watchlist', 'RunPlugin(%s?mode=getListMenu&url=%s&export=1)' % (sys.argv[0], watchlist))]
+        cm_lb = [(getString(30185) % getString(30100),
+                'RunPlugin(%s?mode=getListMenu&url=%s&export=1)' % (sys.argv[0], library))]
 
-    if multiuser:
-        cm_mu = [(getString(30130).split('.')[0], 'RunPlugin(%s?mode=LogIn)' % sys.argv[0]),
-                 (getString(30131).split('.')[0], 'RunPlugin(%s?mode=removeUser)' % sys.argv[0]),
-                 (getString(30132), 'RunPlugin(%s?mode=renameUser)' % sys.argv[0])]
-        addDir(getString(30134) + addon.getSetting('login_acc'), 'switchUser', '', cm=cm_mu)
-    addDir('Watchlist', 'getListMenu', watchlist, cm=cm_wl)
-    addDir(getString(30104), 'listCategories', getNodeId('movies'), opt='30143')
-    addDir(getString(30107), 'listCategories', getNodeId('tv_shows'), opt='30160')
-    addDir(getString(30108), 'Search', '')
-    addDir(getString(30100), 'getListMenu', library, cm=cm_lb)
-    xbmcplugin.endOfDirectory(pluginhandle, updateListing=False)
+        if multiuser:
+            cm_mu = [(getString(30130).split('.')[0], 'RunPlugin(%s?mode=LogIn)' % sys.argv[0]),
+                    (getString(30131).split('.')[0], 'RunPlugin(%s?mode=removeUser)' % sys.argv[0]),
+                    (getString(30132), 'RunPlugin(%s?mode=renameUser)' % sys.argv[0])]
+            addDir(getString(30134) + addon.getSetting('login_acc'), 'switchUser', '', cm=cm_mu)
+        addDir('Watchlist', 'getListMenu', watchlist, cm=cm_wl)
+        addDir(getString(30104), 'listCategories', getNodeId('movies'), opt='30143')
+        addDir(getString(30107), 'listCategories', getNodeId('tv_shows'), opt='30160')
+        addDir(getString(30108), 'Search', '')
+        addDir(getString(30100), 'getListMenu', library, cm=cm_lb)
+        xbmcplugin.endOfDirectory(pluginhandle, updateListing=False)
+
+
+def PrimeVideo_GPRV(asin):
+    ''' Get playback resources values '''
+    return {
+             'deviceID':getConfig('GenDeviceID'),
+             'deviceTypeID':'AOAGZA014O5RE',        # HTML5 / AOAGZA014O5RE
+             'marketplaceID':MarketID,
+             'asin':asin,
+             #'clientId':clientId,                  # Apparently atm insignificant and not necessary, might change in the future
+        }
+
+def PrimeVideo_BuildRoot():
+    ''' Parse the top menu on primevideo.com and build the root catalog '''
+    home = getURL(BaseUrl, silent=True, useCookie=True, rjson=False)
+    if None is home:
+        Log('Unable to fetch the primevideo.com homepage', xbmc.LOGERROR)
+        return False
+    home = re.search('<div id="av-nav-main-menu".*?<ul role="navigation"[^>]*>\s*(.*?)\s*</ul>', home)
+    if None is home:
+        Log('Unable to find the main primevideo.com navigation section', xbmc.LOGERROR)
+        return False
+    for item in re.findall('<li[^>]*>\s*(.*?)\s*</li>', home.group(1)):
+        item = re.search('<a href="([^"]+)"[^>]*>\s*(.*?)\s*</a>', item)
+        if None is not re.match('/storefront/home/', item.group(1)):
+            continue
+        pvCatalog['root'][item.group(2)] = { 'title':item.group(2),'lazyLoadURL':BaseUrl+item.group(1)+'?_encoding=UTF8&format=json' }
+    if (0 == len(pvCatalog['root'])):
+        Log('Unable to build the root catalog from primevideo.com', xbmc.LOGERROR)
+        return False
+    ''' Add functionalities to the root catalog '''
+    pvCatalog['root']['Search'] = { 'title':getString(30108), 'verb':'PrimeVideo_Search' }
+    return True
+
+def PrimeVideo_Search():
+    searchString = Dialog.input(getString(24121)).strip(' \t\n\r')
+    if 0 == len(searchString):
+        xbmcplugin.endOfDirectory(pluginhandle, succeeded=False)
+        return
+    Log('Searching "{0}"…'.format(searchString), xbmc.LOGINFO)
+    pvCatalog['search'] = OrderedDict([('lazyLoadURL','https://www.primevideo.com/search/ref=atv_nb_sr?ie=UTF8&phrase={0}'.format(searchString))])
+    PrimeVideo_Browse('search', xbmcplugin.SORT_METHOD_NONE)
+
+def PrimeVideo_Browse(path, forceSort=None):
+    node = pvCatalog
+    for n in path.decode('utf-8').split('-//-'):
+        node = node[n]
+    if 'lazyLoadURL' in node:
+        PrimeVideo_LazyLoad(node)
+    if ('metadata' in node) and ('video' in node['metadata']):
+        ''' Play the video '''
+        PlayVideo(node['metadata']['asin'], node['metadata']['video'], '', 0)
+        return
+    folderType = 0 if 'root' == path else 1
+    for key in node:
+        if (key in ['metadata','ref','title','verb']):
+            continue
+        url = u'{0}?mode='.format(sys.argv[0])
+        if 'verb' not in node[key]:
+            url += 'PrimeVideo_Browse&path={0}-//-{1}'.format(urllib.quote_plus(path), urllib.quote_plus(key.encode('utf-8')))
+        else:
+            url += node[key]['verb']
+        item = xbmcgui.ListItem(node[key]['title'])
+        folder = True
+        if ('metadata' in node[key]):
+            m = node[key]['metadata']
+            if 'artmeta' in m: item.setArt(m['artmeta'])
+            if 'videometa' in m:
+                # https://codedocs.xyz/xbmc/xbmc/group__python__xbmcgui__listitem.html#ga0b71166869bda87ad744942888fb5f14
+                item.setInfo('video', m['videometa'])
+                if 'episode' in m['videometa']:
+                    folderType = 3                  # Episode
+                elif 'season' in m['videometa']:
+                    if ('tvshow' == m['videometa']['mediatype']):
+                        folderType = 5              # Series list
+                    else:
+                        folderType = 4              # Season
+                elif 2 > folderType:                # If it's not been declared season or episode yet…
+                    folderType = 2                  # … it's a Movie
+            if 'video' in m:
+                folder = False
+                item.setProperty('IsPlayable', 'true')
+                item.setInfo('video', { 'title':node[key]['title'] })
+                if 'runtime' in m:
+                    item.setInfo('video', {'duration':m['runtime']})
+        xbmcplugin.addDirectoryItem(pluginhandle, url, item, isFolder=folder)
+        del item
+    # https://codedocs.xyz/xbmc/xbmc/group__python__xbmcplugin.html#ga85b3bff796fd644fb28f87b136025f40
+    xbmcplugin.addSortMethod(pluginhandle, [
+        xbmcplugin.SORT_METHOD_NONE,
+        xbmcplugin.SORT_METHOD_LABEL_IGNORE_THE,
+        xbmcplugin.SORT_METHOD_LABEL_IGNORE_THE,
+        xbmcplugin.SORT_METHOD_EPISODE,
+        xbmcplugin.SORT_METHOD_LABEL_IGNORE_THE,
+        xbmcplugin.SORT_METHOD_LABEL_IGNORE_THE,
+    ][folderType if None is forceSort else forceSort])
+    if ('false' == addon.getSetting("viewenable")) or (2 > folderType):
+        xbmcplugin.endOfDirectory(pluginhandle, updateListing=False)
+    else:
+        setView(['movie','episode','season','series'][folderType-2])
+
+def PrimeVideo_LazyLoad(obj):
+    def Unescape(text):
+        ''' Unescape various html/xml entities, courtesy of Fredrik Lundh '''
+        def fixup(m):
+            import htmlentitydefs
+            text = m.group(0)
+            if text[:2] == "&#":
+                # character reference
+                try:
+                    if text[:3] == "&#x":
+                        return unichr(int(text[3:-1], 16))
+                    else:
+                        return unichr(int(text[2:-1]))
+                except ValueError:
+                    pass
+            else:
+                # named entity
+                try:
+                    text = unichr(htmlentitydefs.name2codepoint[text[1:-1]])
+                except KeyError:
+                    pass
+            return text # leave as is
+        # Since we're using this for titles and synopses, and clean up general mess
+        ret = re.sub("&#?\w+;", fixup, text)
+        if ('"' == ret[0:1]) and ('"' == ret[-1:]):
+            ret = ret[1:-1]
+        return ret
+
+    def MaxSize(imgUrl):
+        ''' Strip the dynamic resize triggers from the URL '''
+        return re.sub(r'_(SX[0-9]+|UR[0-9]+,[0-9]+)', '', imgUrl)
+
+    def ExtractURN(url):
+        ''' Extract the unique resource name identifier '''
+        ret = re.search(r'(/gp/video)?/detail/([^/]+)/', url)
+        if None is not ret:
+            ret = ret.group(2)
+        return ret
+
+    def DelocalizeDate(lang, datestr):
+        ''' Convert language based timestamps into YYYY-MM-DD '''
+        if lang not in dateParserData:
+            Log('Unable decode date "{0}": language "{1}" not supported'.format(datestr, lang), xbmc.LOGWARNING)
+            return datestr
+        p = re.search(dateParserData[lang]['deconstruct'], datestr)
+        if None is p:
+            Log('Unable to parse date "{0}" with language "{1}": format changed?'.format(datestr, lang), xbmc.LOGWARNING)
+            return datestr
+        p = list(p.groups())
+        p[dateParserData[lang]['month']] = dateParserData[lang]['months'][p[dateParserData[lang]['month']]]
+        return dateParserData[lang]['reassemble'].format(p[0], p[1], p[2])
+
+    def NotifyUser(msg):
+        ''' Pop up messages while scraping to inform users of progress '''
+        if not hasattr(NotifyUser, 'lastNotification'):
+            NotifyUser.lastNotification = 0
+        if (NotifyUser.lastNotification < time.time()):
+            ''' Only update once every other second, to avoid endless message queue '''
+            NotifyUser.lastNotification = 1 + time.time()
+            Dialog.notification(__plugin__, msg, time=1000, sound=False)
+
+    # Set up the fetch order to find the best quality image possible
+    imageSizes = r'(large-screen-double|desktop-double|tablet-landscape-double|phone-landscape-double|phablet-double|phone-double|large-screen|desktop|tablet-landscape|tablet|phone-landscape|phablet|phone)'
+
+    if 'lazyLoadURL' not in obj:
+        return
+    requestURLs = [obj['lazyLoadURL']]
+
+    amzLang = None
+    if (None is not requestURLs[0]):
+        # Fine the locale amazon's using
+        cj = MechanizeLogin()
+        if cj:
+            amzLang = cj.get('lc-main-av', domain='.primevideo.com', path='/')
+
+    while (0 < len(requestURLs)):
+        if not isinstance(requestURLs[0], tuple):
+            requestURL = requestURLs[0]
+            o = obj
+        else:
+            requestURL = requestURLs[0][0]
+            o = requestURLs[0][1]
+        del requestURLs[0]
+        try:
+            cnt = getURL(requestURL, silent=True, useCookie=True, rjson=False)
+            if 'lazyLoadURL' in o:
+                o['ref'] = o['lazyLoadURL']
+                del o['lazyLoadURL']
+        except:
+            Log('Unable to fetch the url: {0}'.format(requestURL), xbmc.LOGERROR)
+            Dialog.notification(getString(30251), requestURL, xbmcgui.NOTIFICATION_ERROR)
+            break
+
+        for t in [('\\\\n', '\n'),('\\n', '\n'),('\\\\"', '"'),(r'^\s+', '')]:
+            cnt = re.sub(t[0],t[1],cnt,flags=re.DOTALL)
+        if None is not re.search('<html[^>]*>', cnt):
+            ''' If there's an HTML tag it's no JSON-AmazonUI-Streaming object '''
+            if None is re.search('"[^"]*av-result-cards[^"]*"', cnt, flags=re.DOTALL):
+                ''' Movie/series page '''
+
+                # Find the biggest fanart available
+                bgimg = re.search(r'<div class="av-hero-background-size av-bgimg av-bgimg-' + imageSizes + r'">.*?url\(([^)]+)\)', cnt, flags=re.DOTALL)
+                if None is not bgimg:
+                    bgimg = MaxSize(bgimg.group(2))
+                    o['metadata']['artmeta']['fanart'] = bgimg
+
+                # Extract the global data
+                rx = [
+                    r'<span data-automation-id="imdb-release-year-badge"[^>]*>\s*([0-9]+)\s*</span>',                           # Year
+                    r'<span data-automation-id="imdb-rating-badge"[^>]*>\s*([0-9]+)[,.]([0-9]+)\s*</span>',                     # IMDb rating
+                    r'<span data-automation-id="maturity-rating-badge"[^>]*>\s*(.*?)\s*</span>',                                # Age rating
+                    r'<dt data-automation-id="meta-info-starring"[^>]*>[^<]*</dt>\s*<dd[^>]*>\s*(.*?)\s*</dd>',                 # Starring
+                    r'<dt data-automation-id="meta-info-genres"[^>]*>[^<]*</dt>\s*<dd[^>]*>\s*(.*?)\s*</dd>',                   # Genre
+                    r'<dt data-automation-id="meta-info-director"[^>]*>[^<]*</dt>\s*<dd[^>]*>\s*(.*?)\s*</dd>',                 # Director
+                    r'<div data-automation-id="synopsis"[^>]*>[^<]*<p>\s*(.*?)\s*</p>',                                         # Synopsis
+                ]
+                results = re.search(r'<section\s+[^>]*class="[^"]*av-detail-section[^"]*"[^>]*>\s*(.*?)\s*</section>', cnt, flags=re.DOTALL).group(1)
+                gres = []
+                for i in range(0,len(rx)):
+                    gres.append(re.search(rx[i], results, flags=re.DOTALL))
+                    if None is not gres[i]:
+                        gres[i] = gres[i].groups()
+                        if (1 == len(gres[i])):
+                            gres[i] = Unescape(gres[i][0])
+                        if (2 < i) and (6 != i):
+                            gres[i] = re.sub(r'\s*</?a[^>]*>\s*', '', gres[i])
+                            gres[i] = re.split(r'\s*[,;]\s*', gres[i])
+                            # Cast is always to be sent as a list, single string is only required/preferred for Genre and Director
+                            if (3 < i) and (1 == len(gres[i])):
+                                gres[i] = gres[i][0]
+
+                results = re.search(r'<ol\s+[^>]*class="[^"]*av-episode-list[^"]*"[^>]*>\s*(.*?)\s*</ol>', cnt, flags=re.DOTALL)
+                if None is results:
+                    ''' Standalone movie '''
+                    meta = o['metadata']
+                    if None is not bgimg:
+                        meta['artmeta']['fanart'] = bgimg
+                    NotifyUser(getString(30253).format(o['title'].encode('utf-8')))
+                    meta['asin'] = re.search(r'"asin":"([^"]*)"', cnt, flags=re.DOTALL).group(1)
+                    meta['video'] = ExtractURN(requestURL)
+
+                    # Insert movie information
+                    if (None is not gres[0]): meta['videometa']['year'] = gres[0]
+                    if (None is not gres[1]): meta['videometa']['rating'] = int(gres[1][0]) + (int(gres[1][1]) / 10.0)
+                    if (None is not gres[2]): meta['videometa']['mpaa'] = gres[2]
+                    if (None is not gres[3]): meta['videometa']['cast'] = gres[3]
+                    if (None is not gres[4]): meta['videometa']['genre'] = gres[4]
+                    if (None is not gres[5]): meta['videometa']['director'] = gres[5]
+                    if (None is not gres[6]): meta['videometa']['plot'] = gres[6]
+
+                    # Extract the runtime
+                    success,gpr = getUrldata('catalog/GetPlaybackResources', PrimeVideo_GPRV(meta['asin']), useCookie=True, extra=True, opt='&titleDecorationScheme=primary-content', dRes='CatalogMetadata')
+                    if not success:
+                        gpr = None
+                    else:
+                        if 'runtimeSeconds' in gpr['catalogMetadata']['catalog']:
+                            meta['runtime'] = gpr['catalogMetadata']['catalog']['runtimeSeconds']
+                else:
+                    ''' Episode list '''
+                    for entry in re.findall(r'<li[^>]*>\s*(.*?)\s*</li>', results.group(1), flags=re.DOTALL):
+                        rx = [
+                            r'<a data-automation-id="ep-playback-[0-9]+"[^>]*data-ref="([^"]*)"[^>]*data-title-id="([^"]*)"[^>]*href="([^"]*)"',
+                            r'<div class="av-bgimg av-bgimg-' + imageSizes + r'">.*?url\(([^)]+)\)',                                # Image
+                            r'<span class="av-play-title-text">\s*(.*?)\s*</span>',                                                 # Title
+                            r'<span data-automation-id="ep-air-date-badge-[0-9]+"[^>]*>\s*(.*?)\s*</span>',                         # Original air date
+                            r'<span data-automation-id="ep-amr-badge-[0-9]+"[^>]*>\s*(.*?)\s*</span>',                              # Age rating
+                            r'<p data-automation-id="ep-synopsis-[0-9]+"[^>]*>\s*(.*?)\s*</p>',                                     # Synopsis
+                            r'id="ep-playback-([0-9]+)"',                                                                           # Episode number
+                            r'\s+data-title-id="\s*([^"]+?)\s*"',                                                                   # Episode's asin
+                        ]
+                        res = []
+                        for i in range(0,len(rx)):
+                            res.append(re.search(rx[i], entry))
+                            if None is not res[i]:
+                                res[i] = res[i].groups()
+                                # If holding a single result, don't provide a list
+                                if (1 == len(res[i])):
+                                    res[i] = Unescape(res[i][0])
+                                # We just need the image, not the type                            
+                                if (1 == i):
+                                    res[i] = res[i][1]
+                        if (None is res[0]) or (None is res[2]):
+                            ''' Some episodes might be not playable until a later date or just N/A, although listed '''
+                            continue
+                        meta = { 'artmeta': { 'thumb': MaxSize(res[1]), 'poster': MaxSize(res[1]), 'fanart': bgimg, }, 'videometa': { 'mediatype':'episode' }, 'id': res[0][0], 'asin': res[0][1], 'videoURL': res[0][2] }
+                        if None is not re.match(r'/[^/]', meta['videoURL']):
+                            meta['videoURL'] = BaseUrl + meta['videoURL']
+                        meta['video'] = ExtractURN(meta['videoURL'])
+
+                        # Extract the runtime
+                        success,gpr = getUrldata('catalog/GetPlaybackResources', PrimeVideo_GPRV(res[7]), useCookie=True, extra=True, opt='&titleDecorationScheme=primary-content', dRes='CatalogMetadata')
+                        if not success:
+                            gpr = None
+                        else:
+                            if 'runtimeSeconds' in gpr['catalogMetadata']['catalog']:
+                                meta['runtime'] = gpr['catalogMetadata']['catalog']['runtimeSeconds']
+
+                        # Insert series information
+                        if (None is not gres[0]): meta['videometa']['year'] = gres[0]
+                        if (None is not gres[1]): meta['videometa']['rating'] = int(gres[1][0]) + (int(gres[1][1]) / 10.0)
+                        if (None is not gres[2]): meta['videometa']['mpaa'] = gres[2]
+                        if (None is not gres[3]):
+                            meta['videometa']['cast'] = gres[3]
+                            o['metadata']['videometa']['cast'] = gres[3]
+                        if (None is not gres[4]):
+                            meta['videometa']['genre'] = gres[4]
+                            o['metadata']['videometa']['genre'] = gres[4]
+                        if (None is not gres[5]):
+                            meta['videometa']['director'] = gres[5]
+                            o['metadata']['videometa']['director'] = gres[5]
+
+                        # Insert episode specific information
+                        if (None is not res[3]): meta['videometa']['premiered'] = DelocalizeDate(amzLang, res[3])
+                        if (None is not res[4]): meta['videometa']['mpaa'] = res[4]
+                        if (None is not res[5]): meta['videometa']['plot'] = res[5]
+                        if (None is not res[6]):
+                            if 'season' in o['metadata']['videometa']:
+                                meta['videometa']['season'] = o['metadata']['videometa']['season']
+                            else:
+                                ''' We're coming from a widow carousel '''
+                                o['metadata']['videometa']['mediatype'] = 'tvshow'
+                                # Try with page season selector
+                                ssn = re.search(r'<a class="av-droplist--selected"[^>]*>[^0-9]*([0-9]+)[^0-9]*</a>', cnt)
+                                if None is ssn:
+                                    # Try with single season
+                                    ssn = re.search(r'<span class="av-season-single av-badge-text">[^0-9]*([0-9]+)[^0-9]*</span>', cnt)
+                                if None is not ssn:
+                                    ssn = ssn.group(1)
+                                    meta['videometa']['season'] = ssn
+                                    o['metadata']['videometa']['season'] = ssn
+                            meta['videometa']['episode'] = int(res[6])
+                        
+                        # Episode title cleanup
+                        title = res[2]
+                        if None is not re.match(r'[0-9]+[.]\s*', title):
+                            ''' Strip the episode number '''
+                            title = re.sub(r'^[0-9]+.\s*', '', title)
+                        else:
+                            ''' Probably an extra trailer or something, remove episode information '''
+                            del meta['videometa']['season']
+                            del meta['videometa']['episode']
+                        NotifyUser(getString(30253).format(title.encode('utf-8')))
+                        if meta['video'] not in o:
+                            o[meta['video']] = { 'title':title }
+                        o[meta['video']]['metadata'] = meta
+            else:
+                ''' Movie and series list '''
+                results = re.search(r'<ol\s+[^>]*class="[^"]*av-result-cards[^"]*"[^>]*>\s*(.*?)\s*</ol>', cnt, flags=re.DOTALL)
+                for entry in re.findall(r'<li[^>]*>\s*(.*?)\s*</li>', results.group(1), flags=re.DOTALL):
+                    rx = [
+                        r'<img\s+[^>]*src="([^"]*)".*?<h2[^>]*>\s*<a\s+[^>]*href="([^"]+)"[^>]*>\s*(.*?)\s*</a>\s*</h2>',       # Image, link and title
+                        r'<span\s+[^>]*class="[^"]*av-result-card-rating[^"]*"[^>]*>\s*([0-9]+)[,.]([0-9]+)\s*</span>',         # IMDb rating
+                        r'<p\s+[^>]*class="[^"]*av-result-card-synopsis[^"]*"[^>]*>\s*(.*?)\s*</p>',                            # Synopsis
+                        r'<span\s+[^>]*class="[^"]*av-result-card-season[^"]*"[^>]*>\s*(.*?)\s*</span>',                        # Season
+                        r'<span\s+[^>]*class="[^"]*av-result-card-year[^"]*"[^>]*>\s*(.*?)\s*</span>',                          # Year
+                        r'<span\s+[^>]*class="[^"]*av-result-card-certification[^"]*"[^>]*>\s*(.*?)\s*</span>',                 # Age rating
+                        r'\s+data-asin="\s*([^"]+?)\s*"',                                                                       # Movie/episode's URN
+                    ]
+                    res = []
+                    for i in range(0,len(rx)):
+                        res.append(re.search(rx[i], entry))
+                        if None is not res[i]:
+                            res[i] = res[i].groups()
+                            if (1 == len(res[i])):
+                                res[i] = Unescape(res[i][0])
+                            else:
+                                res[i] = list(res[i])
+                    title = Unescape(res[0][2])
+                    NotifyUser(getString(30253).format(title.encode('utf-8')))
+                    if None is not re.match(r'/[^/]', res[0][1]):
+                        res[0][1] = BaseUrl + res[0][1]
+                    meta = { 'artmeta': { 'thumb': MaxSize(res[0][0]), 'poster': MaxSize(res[0][0]) }, 'videometa': {} }
+                    if (None is not res[1]): meta['videometa']['rating'] = int(res[1][0]) + (int(res[1][1]) / 10.0)
+                    if (None is not res[2]): meta['videometa']['plot'] = res[2]
+                    meta['videometa']['mediatype'] = 'movie' if None == res[3] else 'season'
+                    if (None is not res[4]): meta['videometa']['year'] = int(res[4])
+                    if (None is not res[5]): meta['videometa']['mpaa'] = res[5]
+
+                    if (None == res[3]):
+                        ''' Movie '''
+                        # Queue the movie page instead of parsing partial information here
+                        urn = ExtractURN(res[0][1])
+                        o[urn] = { 'metadata': meta, 'title': title }
+                        requestURLs.append((res[0][1],o[urn]))
+                    else:
+                        ''' Series '''
+                        id = title
+                        sid = ExtractURN(res[0][1])
+
+                        # Extract video metadata
+                        if (None is not res[6]):
+                            success,gpr = getUrldata('catalog/GetPlaybackResources', PrimeVideo_GPRV(res[6]), useCookie=True, extra=True, opt='&titleDecorationScheme=primary-content', dRes='CatalogMetadata')
+                            if not success:
+                                Log('Unable to get the video metadata for {0} ({1})'.format(title,res[0][1]), xbmc.LOGWARNING)
+                            else:
+                                # Find the show Asin URN, if possible
+                                for d in gpr['catalogMetadata']['family']['tvAncestors']:
+                                    if 'SHOW' == d['catalog']['type']:
+                                        id = d['catalog']['id']
+                                        break
+                        sn = res[3]
+                        n = int(re.sub(r'^[^0-9]*([0-9]+)[^0-9]*$',r'\1',sn))
+                        meta['videometa']['season'] = n
+                        if id not in o:
+                            o[id] = { 'title':title }
+                        o[id][sid] = { 'title':sn, 'metadata': meta, 'lazyLoadURL': res[0][1] }
+                        # Update the parent (Series name) with few meta information
+                        if 'metadata' not in o[id].keys():
+                            o[id]['metadata'] = { 'artmeta': { 'thumb': meta['artmeta']['thumb'], 'poster': meta['artmeta']['thumb'] }, 'videometa': { 'mediatype':'tvshow' } }
+                # Next page
+                pagination = re.search(r'<ol\s+[^>]*id="[^"]*av-pagination[^"]*"[^>]*>.*?<li\s+[^>]*class="[^"]*av-pagination-current-page[^"]*"[^>]*>.*?</li>\s*<li\s+[^>]*class="av-pagination[^>]*>\s*(.*?)\s*</li>\s*</ol>', cnt, flags=re.DOTALL)
+                if (None is not pagination):
+                    nru = Unescape(re.search(r'href="([^"]+)"', pagination.group(1), flags=re.DOTALL).group(1))
+                    if None is not re.match(r'/[^/]', nru):
+                        nru = BaseUrl + nru
+                    requestURLs.append(nru)
+        else:
+            ''' Categories list '''
+            for section in re.split(r'&&&\s+', cnt):
+                if 0 == len(section):
+                    continue
+                section = re.split(r'","', section[2:-2])
+                if ('dvappend' == section[0]):
+                    title = Unescape(re.sub(r'^.*<h2[^>]*>\s*<span[^>]*>\s*(.*?)\s*</span>.*$', r'\1', section[2], flags=re.DOTALL))
+                    NotifyUser(getString(30253).format(title.encode('utf-8')))
+                    o[title] = { 'title':title }
+                    if None is not re.search('<h2[^>]*>.*?<a\s+[^>]*\s+href="[^"]+"[^>]*>.*?</h2>', section[2], flags=re.DOTALL):
+                        o[title]['lazyLoadURL'] = Unescape(re.sub('\\n','',re.sub(r'^.*?<h2[^>]*>.*?<a\s+[^>]*\s+href="([^"]+)"[^>]*>.*?</h2>.*?$', r'\1', section[2], flags=re.DOTALL)))
+                    else:
+                        ''' The carousel has no explore link, we need to parse what we can from the carousel itself '''
+                        for entry in re.findall(r'<li[^>]*>\s*(.*?)\s*</li>', section[2], flags=re.DOTALL):
+                            parts = re.search(r'<a\s+[^>]*href="([^"]*)"[^>]*>\s*.*?(src|data-a-image-source)="([^"]*)"[^>]*>.*?class="dv-core-title"[^>]*>\s*(.*?)\s*</span>', entry, flags=re.DOTALL)
+                            if None is not re.search(r'/search/', parts.group(1)):
+                                ''' Category '''
+                                o[title][parts.group(4)] = { 'metadata': { 'artmeta': { 'thumb':MaxSize(parts.group(3)), 'poster':MaxSize(parts.group(3)) } }, 'lazyLoadURL': parts.group(1), 'title': parts.group(4) }
+                            else:
+                                ''' Movie/Series list '''
+                                urn = ExtractURN(parts.group(1))
+                                o[title][urn] = { 'metadata': { 'artmeta': { 'thumb':MaxSize(parts.group(3)), 'poster':MaxSize(parts.group(3)) }, 'videometa': {} }, 'title': Unescape(parts.group(4)) }
+                                requestURLs.append((parts.group(1),o[title][urn]))
+                pagination = re.search(r'data-ajax-pagination="{&quot;href&quot;:&quot;([^}]+)&quot;}"', section[2], flags=re.DOTALL)
+                if (('dvupdate' == section[0]) and (None is not pagination)):
+                    requestURLs.append(re.sub(r'(&quot;,&quot;|&amp;)','&',re.sub('&quot;:&quot;','=',pagination.group(1)+'&format=json')))
+        if 0 < len(requestURLs):
+            NotifyUser(getString(30252))
+    with open(PrimeVideoCache, 'w+') as fp:
+        pickle.dump(pvCatalog, fp)
 
 
 def Search():
@@ -1133,10 +1639,13 @@ def IStreamPlayback(asin, name, trailer, isAdult, extern):
         return True
 
     cookie = MechanizeLogin()
-    values = getFlashVars(asin, cookie)
-    if not values:
-        playDummyVid()
-        return True
+    if not UsePrimeVideo:
+        values = getFlashVars(asin, cookie)
+        if not values:
+            playDummyVid()
+            return True
+    else:
+        values = PrimeVideo_GPRV(name)
 
     mpd, subs = getStreams(*getUrldata('catalog/GetPlaybackResources', values, extra=True, vMT=vMT,
                                        opt='&titleDecorationScheme=primary-content', dRes=dRes, useCookie=cookie), retmpd=True)
@@ -1159,7 +1668,7 @@ def IStreamPlayback(asin, name, trailer, isAdult, extern):
         mpd = re.sub(r'~', '', mpd)
 
     if drm_check:
-        mpdcontent = getURL(mpd, rjson=False)
+        mpdcontent = getURL(mpd, useCookie=cookie, rjson=False)
         if 'avc1.4D00' in mpdcontent and platform != osAndroid and not is_binary:
             xbmc.executebuiltin('ActivateWindow(busydialog)')
             return extrFr(mpdcontent)
@@ -1167,9 +1676,9 @@ def IStreamPlayback(asin, name, trailer, isAdult, extern):
             mpd = orgmpd
             at_check = False
 
-    Log(mpd)
+    Log(mpd, xbmc.LOGDEBUG)
 
-    if not extern:
+    if (not extern) or UsePrimeVideo:
         mpaa_check = xbmc.getInfoLabel('ListItem.MPAA') in mpaa_str or isAdult
         title = xbmc.getInfoLabel('ListItem.Label')
         thumb = xbmc.getInfoLabel('ListItem.Art(season.poster)')
@@ -1447,15 +1956,16 @@ def parseSubs(data):
         lang = sub['displayName'].split('(')[0].strip()
         Log('Convert %s Subtitle' % lang)
         srtfile = xbmc.translatePath('special://temp/%s.srt' % lang).decode('utf-8')
-        srt = codecs.open(srtfile, 'w', encoding='utf-8')
-        soup = BeautifulStoneSoup(getURL(sub['url'], rjson=False), convertEntities=BeautifulStoneSoup.XML_ENTITIES)
-        enc = soup.originalEncoding
-        num = 0
-        for caption in soup.findAll('tt:p'):
-            num += 1
-            subtext = caption.renderContents().decode(enc).replace('<tt:br>', '\n').replace('</tt:br>', '')
-            srt.write(u'%s\n%s --> %s\n%s\n\n' % (num, caption['begin'], caption['end'], subtext))
-        srt.close()
+        with codecs.open(srtfile, 'w', encoding='utf-8') as srt:
+            soup = BeautifulStoneSoup(getURL(sub['url'], rjson=False), convertEntities=BeautifulStoneSoup.XML_ENTITIES)
+            enc = soup.originalEncoding
+            if None is enc:
+                enc = 'utf-8'
+            num = 0
+            for caption in soup.findAll('tt:p'):
+                num += 1
+                subtext = caption.renderContents().decode(enc).replace('<tt:br>', '\n').replace('</tt:br>', '')
+                srt.write(u'%s\n%s --> %s\n%s\n\n' % (num, caption['begin'], caption['end'], subtext))
         subs.append(srtfile)
     return subs
 
@@ -1505,23 +2015,27 @@ def getUrldata(mode, values, retformat='json', devicetypeid=False, version=1, fi
     url += '?asin=' + values['asin']
     url += '&deviceTypeID=' + devicetypeid
     url += '&firmware=' + firmware
-    url += '&customerID=' + values['customerId']
+    if not UsePrimeVideo:
+        url += '&token=' + values['token']
+        url += '&customerID=' + values['customerId']
     url += '&deviceID=' + deviceID
     url += '&marketplaceID=' + MarketID
-    url += '&token=' + values['token']
     url += '&format=' + retformat
     url += '&version=' + str(version)
     if extra:
         url += '&resourceUsage=ImmediateConsumption&consumptionType=Streaming&deviceDrmOverride=CENC' \
-               '&deviceStreamingTechnologyOverride=DASH&deviceProtocolOverride=Https&audioTrackId=all' \
-               '&deviceBitrateAdaptationsOverride=CVBR%2CCBR'
+            '&deviceStreamingTechnologyOverride=DASH&deviceProtocolOverride=Https' \
+            '&deviceBitrateAdaptationsOverride=CVBR%2CCBR'
+        url += '&audioTrackId=all'
+        if UsePrimeVideo:
+            url += '&gascEnabled=true'
         url += '&videoMaterialType=' + vMT
         url += '&desiredResources=' + dRes
         url += '&supportedDRMKeyScheme=DUAL_KEY' if platform != osAndroid and 'PlaybackUrls' in dRes else ''
     url += opt
     if retURL:
         return url
-    data = getURL(url, useCookie=useCookie)
+    data = getURL(url, useCookie=useCookie, silent=True)
     if data:
         if 'error' in data.keys():
             return False, Error(data['error'])
@@ -1628,9 +2142,10 @@ def genID(renew=False):
 
 
 def MechanizeLogin():
-    cj = cookielib.LWPCookieJar()
+    cj = requests.cookies.RequestsCookieJar()
     if xbmcvfs.exists(CookieFile):
-        cj.load(CookieFile, ignore_discard=True, ignore_expires=True)
+        with open(CookieFile, 'r') as cf:
+            cj.update(pickle.load(cf))
         return cj
 
     Log('Login')
@@ -1662,7 +2177,7 @@ def LogIn(ask=True):
         xbmc.executebuiltin('ActivateWindow(busydialog)')
         if xbmcvfs.exists(CookieFile):
             xbmcvfs.delete(CookieFile)
-        cj = cookielib.LWPCookieJar()
+        cj = requests.cookies.RequestsCookieJar()
         br = mechanize.Browser()
         br.set_handle_robots(False)
         br.set_cookiejar(cj)
@@ -1671,7 +2186,7 @@ def LogIn(ask=True):
         while caperr:
             Log('Connect to SignIn Page %s attempts left' % -caperr)
             br.addheaders = [('User-Agent', getConfig('UserAgent'))]
-            br.open(BaseUrl + '/gp/aw/si.html')
+            br.open(BaseUrl + ('/gp/aw/si.html' if not UsePrimeVideo else '/auth-redirect/'))
             response = br.response().read()
             if mobileUA(response) or 'signIn' not in [i.name for i in br.forms()]:
                 getUA(True)
@@ -1688,9 +2203,11 @@ def LogIn(ask=True):
         br.select_form(name='signIn')
         br['email'] = email
         br['password'] = password
+        if 'true' == addon.getSetting('rememberme'):
+            br.find_control(name='rememberMe').items[0].selected = True
         br.addheaders = [('Accept', 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8'),
                          ('Accept-Encoding', 'gzip, deflate'),
-                         ('Accept-Language', 'de,en-US;q=0.8,en;q=0.6'),
+                         ('Accept-Language', userAcceptLanguages),
                          ('Cache-Control', 'max-age=0'),
                          ('Connection', 'keep-alive'),
                          ('Content-Type', 'application/x-www-form-urlencoded'),
@@ -1716,17 +2233,21 @@ def LogIn(ask=True):
             xbmc.executebuiltin('Dialog.Close(busydialog)')
 
         if 'action=sign-out' in response:
-            try:
-                msg = soup.body.findAll('center')
-                if len(msg) > 1:
-                    wlc = msg[1].renderContents().strip()
-                    usr = wlc.split(',', 1)[1][:-1].strip()
-                else:
-                    msg = soup.find('a', attrs={'data-nav-ref': 'nav_ya_signin'})
-                    wlc = msg.find('span').renderContents().strip()
-                    usr = wlc.split(',', 1)[1].strip()
-            except (IndexError, AttributeError):
-                usr = wlc = getString(30215)
+            if not UsePrimeVideo:
+                try:
+                    msg = soup.body.findAll('center')
+                    if len(msg) > 1:
+                        wlc = msg[1].renderContents().strip()
+                        usr = wlc.split(',', 1)[1][:-1].strip()
+                    else:
+                        msg = soup.find('a', attrs={'data-nav-ref': 'nav_ya_signin'})
+                        wlc = msg.find('span').renderContents().strip()
+                        usr = wlc.split(',', 1)[1].strip()
+                except (IndexError, AttributeError):
+                    usr = wlc = getString(30215)
+            else:
+                usr = re.search(r'action=sign-out[^"]*"[^>]*>[^?]+\s+([^?]+?)\s*\?', response).group(1)
+                wlc = '{0} {1}'.format(getString(30250), usr)
 
             if multiuser and ask:
                 keyboard = xbmc.Keyboard(usr, getString(30135))
@@ -1744,7 +2265,8 @@ def LogIn(ask=True):
                 writeConfig('login_name', email)
                 writeConfig('login_pass', encode(password))
             else:
-                cj.save(CookieFile, ignore_discard=True, ignore_expires=True)
+                with open(CookieFile, 'w+') as cf:
+                    pickle.dump(cj, cf)
                 while not xbmcvfs.exists(CookieFile):
                     sleep(.2)
 
@@ -2521,19 +3043,32 @@ PinReq = int(getConfig('pin_req', '0'))
 RestrAges = ','.join(a[1] for a in Ages[country][PinReq:]) if AgePin else ''
 
 deviceID = genID()
-dbFile = os.path.join(DataPath, 'art.db')
-db = sqlite.connect(dbFile)
-db.text_factory = str
-createDB()
 
-menuDb = sqlite.connect(menuFile)
-menuDb.text_factory = str
-loadCategories()
+if not UsePrimeVideo:
+    dbFile = os.path.join(DataPath, 'art.db')
+    db = sqlite.connect(dbFile)
+    db.text_factory = str
+    createDB()
+
+    menuDb = sqlite.connect(menuFile)
+    menuDb.text_factory = str
+
+    loadCategories()
+else:
+    if xbmcvfs.exists(PrimeVideoCache):
+        import codecs
+        with open(PrimeVideoCache,'r') as fp:
+            cached = pickle.load(fp)
+        if (time.time() < cached['expiration']):
+            pvCatalog = cached
+
 args = dict(urlparse.parse_qsl(urlparse.urlparse(sys.argv[2]).query))
-Log(args)
-mode = args.get('mode', '')
+Log(args, xbmc.LOGDEBUG)
+mode = args.get('mode', None)
 
-if mode == 'listCategories':
+if None is mode:
+    MainMenu()
+elif mode == 'listCategories':
     listCategories(args.get('url', ''), args.get('opt', ''))
 elif mode == 'listContent':
     listContent(args.get('cat'), args.get('url', ''), int(args.get('page', '1')), args.get('opt', ''))
@@ -2552,7 +3087,7 @@ elif mode == 'openSettings':
 elif mode == 'ageSettings':
     if RequestPin():
         AgeSettings(getString(30018).split('.')[0]).doModal()
-elif mode == '':
-    MainMenu()
+elif mode == 'PrimeVideo_Browse':
+    PrimeVideo_Browse(None if 'path' not in args else args['path'])
 else:
     exec mode + '()'

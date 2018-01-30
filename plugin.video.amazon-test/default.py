@@ -2172,7 +2172,7 @@ def LogIn(ask=True):
         br.select_form(name='signIn')
         br['email'] = email
         br['password'] = password
-        if 'true' == addon.getSetting('rememberme'):
+        if 'true' == addon.getSetting('rememberme') and UsePrimeVideo:
             br.find_control(name='rememberMe').items[0].selected = True
         br.addheaders = [('Accept', 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8'),
                          ('Accept-Encoding', 'gzip, deflate'),

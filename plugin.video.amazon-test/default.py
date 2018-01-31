@@ -103,24 +103,23 @@ if 4 > country:
     c_tld = ['de', 'co.uk', 'com', 'co.jp'][country]
     BaseUrl = 'https://www.amazon.' + c_tld
     ATVUrl = 'https://atv-%s.amazon.%s' % (['ps-eu', 'ps-eu', 'ps', 'ps-fe'][country], c_tld)
-    MarketIDs = ['A1PA6795UKMFR9', 'A1F83G8C2ARO7P', 'ATVPDKIKX0DER', 'A1VC38T7YXB528']
-    MarketID = MarketIDs[country]
+    MarketID_AV = ['A1PA6795UKMFR9', 'A1F83G8C2ARO7P', 'ATVPDKIKX0DER', 'A1VC38T7YXB528']
+    MarketID = MarketID_AV[country]
     Language = ['de', 'en', 'en', 'jp'][country]
     AgeRating = ['FSK ', '', '', '', ''][country]
 else:
     UsePrimeVideo = True
     BaseUrl = 'https://www.primevideo.com'
-    # Market     ROE_EU,           ROW_EU,           ROW_FE,           ROW_NA
-    MarketID = ['A3K6Y4MI8GDYMT', 'A2MFUE2XK8ZSSY', 'A15PK738MTQHSO', 'ART4WZ8MWBX2Y'][pvArea]
+    # Market        ROE_EU,           ROW_EU,           ROW_FE,           ROW_NA
+    MarketID_PV = ['A3K6Y4MI8GDYMT', 'A2MFUE2XK8ZSSY', 'A15PK738MTQHSO', 'ART4WZ8MWBX2Y']
+    MarketID = MarketID_PV[pvArea]
     # Endpoint = 'fls-%s.amazon.com' % (['eu', 'eu', 'fe', 'na'][pvArea])
     ATVUrl = 'https://atv-ps%s.primevideo.com' % (['-eu', '-eu', '-fe', ''][pvArea])
     ''' Temporarily Hardcoded '''
     AgeRating = ''
 
 PrimeVideoCache = os.path.join(DataPath, 'PVCatalog{0}.pvcp'.format(MarketID))
-pvCatalog = {
-    'root': OrderedDict(),
-}
+pvCatalog = {'root': OrderedDict()}
 
 menuFile = os.path.join(DataPath, 'menu-%s.db' % MarketID)
 is_addon = 'inputstream.adaptive'
@@ -398,6 +397,8 @@ def PrimeVideo_BuildRoot():
         item = re.search('<a href="([^"]+)"[^>]*>\s*(.*?)\s*</a>', item)
         if None is not re.match('/storefront/home/', item.group(1)):
             continue
+        if (not pvCatalog['root']) and multiuser:
+            pvCatalog['root']['User'] = {'title': getString(30134) + addon.getSetting('login_acc'), 'verb': 'switchUser'}
         pvCatalog['root'][item.group(2)] = {'title': item.group(2), 'lazyLoadURL': BaseUrl + item.group(1) + '?_encoding=UTF8&format=json'}
     if 0 == len(pvCatalog['root']):
         Log('Unable to build the root catalog from primevideo.com', xbmc.LOGERROR)
@@ -2298,8 +2299,11 @@ def switchUser():
         user = users[sel]
         addon.setSetting('save_login', user['save'])
         addon.setSetting('login_acc', user['name'])
-        if user['save'] == 'false':
-            addon.setSetting('country', str(MarketIDs.index(user['mid'])))
+        if user['mid'] in MarketID_AV:
+            addon.setSetting('country', str(MarketID_AV.index(user['mid'])))
+        else:
+            addon.setSetting('country', '4')
+            addon.setSetting('primevideo_area', str(MarketID_PV.index(user['mid'])))
         xbmc.executebuiltin('Container.Refresh')
 
 

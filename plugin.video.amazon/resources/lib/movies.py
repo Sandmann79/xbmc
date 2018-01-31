@@ -107,7 +107,7 @@ def addMoviesdb(full_update=True, cj=True):
     dialog = xbmcgui.DialogProgress()
 
     if isinstance(cj, bool):
-        cj = mechanizeLogin()
+        cj = MechanizeLogin()
         if not cj:
             return
 

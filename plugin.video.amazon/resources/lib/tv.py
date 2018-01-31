@@ -280,7 +280,7 @@ def getTVdbAsins(table, isPrime=1, retlist=False, value='asin'):
 
 def addTVdb(full_update=True, libasins=None, cj=True):
     if isinstance(cj, bool):
-        cj = mechanizeLogin()
+        cj = MechanizeLogin()
         if not cj:
             return
 

@@ -6,11 +6,9 @@ from platform import node
 from random import randint
 from base64 import b64encode, b64decode
 import uuid
-import cookielib
 import mechanize
 import sys
 import urllib
-import urllib2
 import re
 import os
 import xbmcplugin
@@ -24,9 +22,9 @@ import json
 import xbmcvfs
 import pyxbmct
 import socket
-import ssl
 import time
-
+import requests
+import pickle
 
 addon = xbmcaddon.Addon()
 pluginname = addon.getAddonInfo('name')
@@ -39,7 +37,7 @@ tvdb = b64decode('MUQ2MkYyRjkwMDMwQzQ0NA==')
 CookieFile = os.path.join(pldatapath, 'cookies.lwp')
 def_fanart = os.path.join(pluginpath, 'fanart.jpg')
 na = 'not available'
-BASE_URL = 'https://www.amazon.de'
+BaseUrl = 'https://www.amazon.de'
 ATV_URL = 'https://atv-ps-eu.amazon.de'
 movielib = '/gp/video/%s/movie/'
 tvlib = '/gp/video/%s/tv/'
@@ -51,10 +49,12 @@ playMethod = int(addon.getSetting("playmethod"))
 onlyGer = addon.getSetting('content_filter') == 'true'
 kodi_mjver = int(xbmc.getInfoLabel('System.BuildVersion')[0:2])
 multiuser = addon.getSetting('multiuser') == 'true'
+verifySsl = addon.getSetting('ssl_verif') == 'false'
 Dialog = xbmcgui.Dialog()
 socket.setdefaulttimeout(30)
 is_addon = 'inputstream.adaptive'
 regex_ovf = "((?i)(\[|\()(omu|ov).*(\)|\]))|\sOmU"
+sessions = {}
 
 try:
     pluginhandle = int(sys.argv[1])
@@ -63,9 +63,6 @@ except IndexError:
     pluginhandle = -1
     params = ''
 args = dict(urlparse.parse_qsl(urlparse.urlparse(params).query))
-
-if addon.getSetting('ssl_verif') == 'true' and hasattr(ssl, '_create_unverified_context'):
-    ssl._create_default_https_context = ssl._create_unverified_context
 
 
 class AgeSettings(pyxbmct.AddonDialogWindow):
@@ -125,7 +122,7 @@ class Captcha(pyxbmct.AddonDialogWindow):
         title = soup.find('div', attrs={'id': 'ap_captcha_guess_alert'})
         url = soup.find('div', attrs={'id': 'ap_captcha_img'}).img.get('src')
         pic = xbmc.translatePath('special://temp/captcha%s.jpg' % randint(0, 99999999999999)).decode('utf-8')
-        SaveFile(pic, getURL(url, retjson=False))
+        SaveFile(pic, getURL(url, rjson=False))
         self.setGeometry(500, 550, 9, 2)
         self.email = email
         self.pwd = ''
@@ -187,49 +184,59 @@ class Captcha(pyxbmct.AddonDialogWindow):
         self.close()
 
 
-def getURL(url, useCookie=False, silent=False, headers=None, attempt=0, retjson=True, check=False):
-    cj = cookielib.LWPCookieJar()
-    falseval = [] if retjson else ''
+def getURL(url, useCookie=False, silent=False, headers=None, rjson=True, attempt=1, check=False):
+    # Try to extract the host from the URL
+    host = re.search('://([^/]+)/', url)
+
+    # Create sessions for keep-alives and connection pooling
+    if None is not host:
+        host = host.group(1)
+        if host in sessions:
+            session = sessions[host]
+        else:
+            session = requests.Session()
+            sessions[host] = session
+    else:
+        session = requests.Session()
+
+    cj = requests.cookies.RequestsCookieJar()
+    retval = [] if rjson else ''
     if useCookie:
-        cj = mechanizeLogin() if isinstance(useCookie, bool) else useCookie
+        cj = MechanizeLogin() if isinstance(useCookie, bool) else useCookie
         if isinstance(cj, bool):
-            return falseval
-    if not silent or verbLog:
+            return retval
+    if (not silent) or verbLog:
         dispurl = url
         dispurl = re.sub('(?i)%s|%s|&token=\w+|&customerId=\w+' % (tvdb, tmdb), '', url).strip()
-        Log('getURL: ' + dispurl)
+        Log('%sURL: %s' % ('check' if check else 'get', dispurl))
 
-    headers = [] if not headers else headers
-    headers += [('User-Agent', getConfig('UserAgent'))] if 'User-Agent' not in headers.__str__() else []
-    headers += [('Host', BASE_URL.split('//')[1])] if 'Host' not in headers.__str__() else []
+    headers = {} if not headers else headers
+    if 'User-Agent' not in headers:
+        headers['User-Agent'] = getConfig('UserAgent')
+    if 'Host' not in headers:
+        headers['Host'] = host if None is not host else BaseUrl.split('//')[1]
+    if 'Accept-Language' not in headers:
+        headers['Accept-Language'] = 'de-de, en-gb;q=0.2, en;q=0.1'
 
     try:
-        if sys.version_info[0:3] > (2, 7, 8):
-            ctx = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
-            ctx.options |= ssl.OP_NO_SSLv2
-            ctx.options |= ssl.OP_NO_SSLv3
-            opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cj), urllib2.HTTPRedirectHandler, urllib2.HTTPSHandler(context=ctx))
-        else:
-            Log('Using outdated Python version %d.%d.%d' % (sys.version_info[0:3]))
-            opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cj), urllib2.HTTPRedirectHandler)
-        opener.addheaders = headers
-        usock = opener.open(url)
-        response = usock.read() if not check else 'OK'
-        usock.close()
-    except (socket.timeout, ssl.SSLError, urllib2.URLError), e:
+        r = session.get(url, headers=headers, cookies=cj, verify=verifySsl)
+        response = r.text if not check else 'OK'
+    except (requests.exceptions.Timeout,
+            requests.exceptions.ConnectionError,
+            requests.exceptions.SSLError,
+            requests.exceptions.HTTPError), e:
         Log('Error reason: %s' % e, xbmc.LOGERROR)
         if '429' or 'timed out' in e:
             attempt += 1 if not check else 10
             logout = 'Attempt #%s' % attempt
             if '429' in e:
                 logout += '. Too many requests - Pause 10 sec'
-                xbmc.sleep(10000)
+                sleep(10)
             Log(logout)
             if attempt < 3:
-                return getURL(url, useCookie, silent, headers, attempt, retjson)
-        return falseval
-
-    return json.loads(response) if retjson else response
+                return getURL(url, useCookie, silent, headers, rjson, attempt)
+        return retval
+    return json.loads(response) if rjson else response
 
 
 def WriteLog(data, fn=''):
@@ -339,12 +346,12 @@ def toogleWatchlist(asin=None, action='add'):
         asin = args.get('asin')
         action = 'remove' if args.get('remove') == '1' else 'add'
 
-    cookie = mechanizeLogin()
+    cookie = MechanizeLogin()
     if not cookie:
         return
 
     token = getToken(asin, cookie)
-    url = BASE_URL + '/gp/video/watchlist/ajax/addRemove.html?ASIN=%s&dataType=json&csrfToken=%s&action=%s' % (
+    url = BaseUrl + '/gp/video/watchlist/ajax/addRemove.html?ASIN=%s&dataType=json&csrfToken=%s&action=%s' % (
         asin, token, action)
     data = getURL(url, useCookie=cookie)
 
@@ -357,8 +364,8 @@ def toogleWatchlist(asin=None, action='add'):
 
 
 def getToken(asin, cookie):
-    url = BASE_URL + '/dp/video/' + asin
-    data = getURL(url, useCookie=cookie, retjson=False)
+    url = BaseUrl + '/dp/video/' + asin
+    data = getURL(url, useCookie=cookie, rjson=False)
     if data:
         tree = BeautifulSoup(data, convertEntities=BeautifulSoup.HTML_ENTITIES)
         form = tree.find('form', attrs={'class': 'dv-watchlist-toggle'})
@@ -375,19 +382,22 @@ def gen_id(renew=False):
     return guid
 
 
-def mechanizeLogin():
-    cj = cookielib.LWPCookieJar()
-    if xbmcvfs.exists(CookieFile):
-        cj.load(CookieFile, ignore_discard=True, ignore_expires=True)
+def MechanizeLogin():
+    cj = requests.cookies.RequestsCookieJar()
+    user = loadUser()
+    if user['cookie']:
+        cj.update(pickle.loads(user['cookie']))
         return cj
+
     Log('Login')
 
     return LogIn(False)
 
 
 def LogIn(ask=True):
-    email = getConfig('login_name')
-    password = decode(getConfig('login_pass'))
+    user = loadUser()
+    email = user['email']
+    password = decode(user['password'])
     savelogin = addon.getSetting('save_login') == 'true'
     useMFA = False
     if ask and multiuser:
@@ -407,9 +417,7 @@ def LogIn(ask=True):
 
     if password:
         xbmc.executebuiltin('ActivateWindow(busydialog)')
-        if xbmcvfs.exists(CookieFile):
-            xbmcvfs.delete(CookieFile)
-        cj = cookielib.LWPCookieJar()
+        cj = requests.cookies.RequestsCookieJar()
         br = mechanize.Browser()
         br.set_handle_robots(False)
         br.set_cookiejar(cj)
@@ -418,7 +426,7 @@ def LogIn(ask=True):
         while caperr:
             Log('Connect to SignIn Page %s attempts left' % -caperr)
             br.addheaders = [('User-Agent', getConfig('UserAgent'))]
-            br.open(BASE_URL + '/gp/aw/si.html')
+            br.open(BaseUrl + '/gp/aw/si.html')
             response = br.response().read()
             if mobileUA(response) or 'signIn' not in [i.name for i in br.forms()]:
                 getUA(True)
@@ -441,8 +449,8 @@ def LogIn(ask=True):
                          ('Cache-Control', 'max-age=0'),
                          ('Connection', 'keep-alive'),
                          ('Content-Type', 'application/x-www-form-urlencoded'),
-                         ('Host', BASE_URL.split('//')[1]),
-                         ('Origin', BASE_URL),
+                         ('Host', BaseUrl.split('//')[1]),
+                         ('Origin', BaseUrl),
                          ('User-Agent', getConfig('UserAgent')),
                          ('Upgrade-Insecure-Requests', '1')]
         br.submit()
@@ -481,26 +489,26 @@ def LogIn(ask=True):
                 if not keyboard.isConfirmed() or not keyboard.getText():
                     return False
                 usr = keyboard.getText()
-                checkUser()
             if useMFA:
                 addon.setSetting('save_login', 'false')
                 savelogin = False
 
-            remLoginData(savelogin, False)
+            user = loadUser(True)
+            user['name'] = usr
+
             if savelogin:
-                writeConfig('login_name', email)
-                writeConfig('login_pass', encode(password))
+                user['email'] = email
+                user['password'] = encode(password)
             else:
-                cj.save(CookieFile, ignore_discard=True, ignore_expires=True)
-                while not xbmcvfs.exists(CookieFile):
-                    sleep(.2)
+                user['cookie'] = pickle.dumps(cj)
 
             if ask:
+                remLoginData(False)
                 addon.setSetting('login_acc', usr)
-                if multiuser:
-                    addUser()
-                else:
+                if not multiuser:
                     Dialog.ok(getString(30215), wlc)
+
+            addUser(user)
             gen_id()
             return cj
         elif 'message_error' in response:
@@ -521,79 +529,62 @@ def LogIn(ask=True):
     return False
 
 
-def cookie_data(fn, data=''):
-    fmode = 'w' if data else 'r'
-    f = xbmcvfs.File(fn, fmode)
-    res = b64encode(f.read()) if fmode == 'r' else f.write(b64decode(data))
-    f.close()
-    return res
+def loadUsers():
+    users = json.loads(getConfig('accounts.lst', '[]'))
+    if not users:
+        addon.setSetting('login_acc', '')
+        xbmc.executebuiltin('Container.Refresh')
+    return users
 
 
-def checkUser():
+def loadUser(empty=False):
     cur_user = addon.getSetting('login_acc')
-    users = json.loads(getConfig('accounts', '[]'))
-    if not [i for i in users if cur_user == i['name']]:
-        addUser()
+    users = loadUsers()
+    user = None if empty else [i for i in users if cur_user == i['name']]
+    return user[0] if user else {'email': '', 'password': '', 'name': '', 'save': '', 'cookie': ''}
 
 
-def addUser():
-    savelogin = addon.getSetting('save_login')
-    cookie = ''
-
-    if xbmcvfs.exists(CookieFile) and savelogin == 'false':
-        cookie = cookie_data(CookieFile)
-    if not cookie and not getConfig('login_pass'):
-        return
-
-    users = json.loads(getConfig('accounts', '[]'))
-    users.append({'email': getConfig('login_name'),
-                  'password': getConfig('login_pass'),
-                  'name': addon.getSetting('login_acc'),
-                  'save': savelogin,
-                  'cookie': cookie})
-
-    writeConfig('accounts', json.dumps(users))
+def addUser(user):
+    user['save'] = addon.getSetting('save_login')
+    users = json.loads(getConfig('accounts.lst', '[]')) if multiuser else []
+    num = [n for n, i in enumerate(users) if user['name'] == i['name']]
+    if num:
+        users[num[0]] = user
+    else:
+        users.append(user)
+    writeConfig('accounts.lst', json.dumps(users))
     xbmc.executebuiltin('Container.Refresh')
 
 
 def switchUser():
-    checkUser()
-    users = json.loads(getConfig('accounts', '[]'))
+    users = loadUsers()
     sel = Dialog.select(getString(30177), [i['name'] for i in users])
     if sel > -1:
         user = users[sel]
-        remLoginData(True, False)
-        writeConfig('login_name', user['email'])
-        writeConfig('login_pass', user['password'])
         addon.setSetting('save_login', user['save'])
         addon.setSetting('login_acc', user['name'])
-        if user['save'] == 'false':
-            cookie_data(CookieFile, user['cookie'])
         xbmc.executebuiltin('Container.Refresh')
 
 
 def removeUser():
-    checkUser()
     cur_user = addon.getSetting('login_acc')
-    users = json.loads(getConfig('accounts', '[]'))
+    users = users = loadUsers()
     sel = Dialog.select(getString(30177), [i['name'] for i in users])
     if sel > -1:
         user = users[sel]
         users.remove(user)
-        writeConfig('accounts', json.dumps(users))
+        writeConfig('accounts.lst', json.dumps(users))
         if user['name'] == cur_user:
             addon.setSetting('login_acc', '')
-            remLoginData(user['save'] == 'true', False)
             switchUser()
 
 
 def renameUser():
-    checkUser()
     cur_user = addon.getSetting('login_acc')
-    users = json.loads(getConfig('accounts', '[]'))
+    users = loadUsers()
     sel = Dialog.select(getString(30177), [i['name'] for i in users])
     if sel > -1:
-        keyboard = xbmc.Keyboard(users[sel]['name'], getString(30179))
+        keyboard = xbmc.Keyboard(users[sel]['name'], getString(30135))
         keyboard.doModal()
         if keyboard.isConfirmed() and keyboard.getText():
             usr = keyboard.getText()
@@ -601,7 +592,7 @@ def renameUser():
                 addon.setSetting('login_acc', usr)
                 xbmc.executebuiltin('Container.Refresh')
             users[sel]['name'] = usr
-            writeConfig('accounts', json.dumps(users))
+            writeConfig('accounts.lst', json.dumps(users))
 
 
 def MFACheck(br, email, soup):
@@ -739,8 +730,8 @@ def GET_ASINS(content):
 def SCRAP_ASINS(aurl, cj=True):
     wl_order = ['DATE_ADDED_DESC', 'TITLE_DESC', 'TITLE_ASC'][int('0'+addon.getSetting("wl_order"))]
     asins = []
-    url = BASE_URL + aurl + '?ie=UTF8&sort=' + wl_order
-    content = getURL(url, useCookie=cj, retjson=False)
+    url = BaseUrl + aurl + '?ie=UTF8&sort=' + wl_order
+    content = getURL(url, useCookie=cj, rjson=False)
     WriteLog(content, 'watchlist')
     if content:
         if mobileUA(content):
@@ -757,19 +748,15 @@ def getString(string_id):
     return locString
 
 
-def remLoginData(savelogin=False, info=True):
-    if savelogin or info:
-        xbmcvfs.delete(CookieFile)
-
-    if not savelogin and info:
-        xbmcvfs.delete(os.path.join(configpath, 'accounts'))
-
-    if not savelogin or info:
-        writeConfig('login_name', '')
-        writeConfig('login_pass', '')
+def remLoginData(info=True):
+    xbmcvfs.delete(CookieFile)
+    writeConfig('accounts', '')
+    writeConfig('login_name', '')
+    writeConfig('login_pass', '')
 
     if info:
         addon.setSetting('login_acc', '')
+        writeConfig('accounts.lst', '')
         Dialog.notification(pluginname, getString(30211), xbmcgui.NOTIFICATION_INFO)
 
 
@@ -911,9 +898,13 @@ def writeConfig(cfile, value):
             l = xbmcvfs.File(cfglockfile, 'w')
             l.write(str(time.time()))
             l.close()
-            f = xbmcvfs.File(cfgfile, 'w')
-            f.write(value.__str__())
-            f.close()
+            if value == '':
+                xbmcvfs.delete(cfgfile)
+            else:
+                f = xbmcvfs.File(cfgfile, 'w')
+                f.write(value.__str__())
+                f.close()
+            xbmcvfs.delete(cfglockfile)
             xbmcvfs.delete(cfglockfile)
             return True
         else:
@@ -960,7 +951,7 @@ def getUA(blacklist=False):
     UAwlist = [i for i in UAlist if i not in UAblist]
     if not UAlist or len(UAwlist) < 5:
         Log('Loading list of common UserAgents')
-        html = getURL('https://techblog.willshouse.com/2012/01/03/most-common-user-agents/', retjson=False)
+        html = getURL('https://techblog.willshouse.com/2012/01/03/most-common-user-agents/', rjson=False)
         soup = BeautifulSoup(html, convertEntities=BeautifulSoup.HTML_ENTITIES)
         text = soup.find('textarea')
         UAlist = text.string.split('\n')

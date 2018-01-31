@@ -29,7 +29,7 @@ RMC_vol = addon.getSetting("remote_vol") == 'true'
 
 
 def PLAYVIDEO():
-    amazonUrl = BASE_URL + "/dp/" + args.get('asin')
+    amazonUrl = BaseUrl + "/dp/" + args.get('asin')
     trailer = args.get('trailer') == '1'
     isAdult = args.get('adult') == '1'
     playable = False
@@ -141,7 +141,7 @@ def AndroidPlayback(asin, trailer):
     else:
         pkg = 'com.amazon.avod.thirdpartyclient'
         act = 'android.intent.action.VIEW'
-        url = BASE_URL + '/piv-apk-play?asin=' + asin
+        url = BaseUrl + '/piv-apk-play?asin=' + asin
         if trailer:
             url += '&playTrailer=T'
     subprocess.Popen(['log', '-p', 'v', '-t', 'Kodi-Amazon', 'Manufacturer: ' + manu])
@@ -178,21 +178,17 @@ def IStreamPlayback(trailer, isAdult, extern):
         Log('No Inputstream Addon found or activated')
         return True
 
-    cookie = mechanizeLogin()
-    values = getFlashVars(cookie)
-    if not values:
-        return True
-
+    cookie = MechanizeLogin()
     vMT = 'Trailer' if trailer else 'Feature'
 
-    mpd, subs = getStreams(*getUrldata('catalog/GetPlaybackResources', values, extra=True, vMT=vMT,
+    mpd, subs = getStreams(*getUrldata('catalog/GetPlaybackResources', args.get('asin'), extra=True, vMT=vMT,
                                        opt='&titleDecorationScheme=primary-content', useCookie=cookie), retmpd=True)
 
     cj_str = ';'.join([c.name + '=' + c.value for c in cookie])
     opt = '|Content-Type=application%2Fx-www-form-urlencoded&Cookie=' + urllib.quote_plus(cj_str)
     opt += '|widevine2Challenge=B{SSM}&includeHdcpTestKeyInLicense=true'
     opt += '|JBlicense;hdcpEnforcementResolutionPixels'
-    licURL = getUrldata('catalog/GetPlaybackResources', values, extra=True, vMT=vMT, dRes='Widevine2License', opt=opt, retURL=True)
+    licURL = getUrldata('catalog/GetPlaybackResources', args.get('asin'), extra=True, vMT=vMT, dRes='Widevine2License', opt=opt, retURL=True)
 
     if not mpd:
         Dialog.notification(getString(30203), subs, xbmcgui.NOTIFICATION_ERROR)
@@ -204,7 +200,7 @@ def IStreamPlayback(trailer, isAdult, extern):
     mpd = re.sub(r'~', '', mpd)
 
     if drm_check:
-        mpdcontent = getURL(mpd, retjson=False)
+        mpdcontent = getURL(mpd, rjson=False)
         if 'avc1.4D00' in mpdcontent and platform != osAndroid and not is_binary:
             xbmc.executebuiltin('ActivateWindow(busydialog)')
             return extrFr(mpdcontent)
@@ -333,7 +329,7 @@ def parseSubs(data):
         Log('Convert %s Subtitle' % lang)
         srtfile = xbmc.translatePath('special://temp/%s.srt' % lang).decode('utf-8')
         srt = codecs.open(srtfile, 'w', encoding='utf-8')
-        soup = BeautifulStoneSoup(getURL(sub['url'], retjson=False), convertEntities=BeautifulStoneSoup.XML_ENTITIES)
+        soup = BeautifulStoneSoup(getURL(sub['url'], rjson=False), convertEntities=BeautifulStoneSoup.XML_ENTITIES)
         enc = soup.originalEncoding
         num = 0
         for caption in soup.findAll('tt:p'):
@@ -375,7 +371,7 @@ def getCmdLine(videoUrl, method, fr):
             return False, nobr_str
 
         if frdetect:
-            suc, fr = (getPlaybackInfo()) if not fr else (True, fr)
+            suc, fr = getStreams(*getUrldata('catalog/GetPlaybackResources', args.get('asin'), extra=True, useCookie=True)) if not fr else (True, fr)
             if not suc:
                 return False, fr
         else:
@@ -468,7 +464,7 @@ def getStreams(suc, data, retmpd=False):
 
             urlset = cdn['avUrlInfoList'][0] if 'avUrlInfoList' in cdn else cdn
 
-            data = getURL(urlset['url'], retjson=False, check=retmpd)
+            data = getURL(urlset['url'], rjson=False, check=retmpd)
             if not data:
                 hosts.remove(cdn_item)
                 Log('Host not reachable: ' + cdn['cdn'])
@@ -485,57 +481,13 @@ def extrFr(data):
     return str(fr).replace('.0', '')
 
 
-def getPlaybackInfo():
-    cookie = mechanizeLogin()
-    values = getFlashVars(cookie)
-    if not values:
-        return False, 'getFlashVars'
-    suc, fr = getStreams(*getUrldata('catalog/GetPlaybackResources', values, extra=True, useCookie=cookie))
-    return suc, fr
-
-
-def getFlashVars(cookie):
-    url = BASE_URL + '/gp/deal/ajax/getNotifierResources.html'
-    showpage = getURL(url, useCookie=cookie)
-
-    if not showpage:
-        Dialog.notification(pluginname, Error({'errorCode': 'invalidrequest', 'message': 'getFlashVars'}),
-                            xbmcgui.NOTIFICATION_ERROR)
-        return False
-
-    values = {'asin': args.get('asin'),
-              'deviceTypeID': 'AOAGZA014O5RE',
-              'userAgent': UserAgent}
-    values.update(showpage['resourceData']['GBCustomerData'])
-
-    if 'customerId' not in values:
-        Dialog.notification(getString(30200), getString(30210), xbmcgui.NOTIFICATION_ERROR)
-        return False
-
-    values['deviceID'] = gen_id()
-    rand = 'onWebToken_' + str(randint(0, 484))
-    pltoken = getURL(BASE_URL + "/gp/video/streaming/player-token.json?callback=" + rand,
-                     useCookie=cookie, retjson=False)
-    try:
-        values['token'] = re.compile('"([^"]*).*"([^"]*)"').findall(pltoken)[0][1]
-    except IndexError:
-        Dialog.notification(getString(30200), getString(30201), xbmcgui.NOTIFICATION_ERROR)
-        return False
-    return values
-
-
-def getUrldata(mode, values, devicetypeid=False, version=1, firmware='1', opt='', extra=False,
+def getUrldata(mode, asin, devicetypeid='AOAGZA014O5RE', version=1, firmware='1', opt='', extra=False,
                useCookie=False, retURL=False, vMT='Feature', dRes='PlaybackUrls,SubtitleUrls'):
-    if not devicetypeid:
-        devicetypeid = values['deviceTypeID']
     url = ATV_URL + '/cdp/' + mode
-    url += '?asin=' + values['asin']
+    url += '?asin=' + asin
     url += '&deviceTypeID=' + devicetypeid
     url += '&firmware=' + firmware
-    url += '&customerID=' + values['customerId']
-    url += '&deviceID=' + values['deviceID']
-    url += '&marketplaceID=' + values['marketplaceId']
-    url += '&token=' + values['token']
+    url += '&deviceID=' + gen_id()
     url += '&format=json'
     url += '&version=' + str(version)
     if extra:
@@ -548,7 +500,7 @@ def getUrldata(mode, values, devicetypeid=False, version=1, firmware='1', opt=''
     url += opt
     if retURL:
         return url
-    data = getURL(url, useCookie=useCookie, retjson=False)
+    data = getURL(url, useCookie=useCookie, rjson=False)
     if data:
         error = re.findall('{[^"]*"errorCode[^}]*}', data)
         if error:

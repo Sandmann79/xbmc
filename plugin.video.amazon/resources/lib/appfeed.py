@@ -156,7 +156,7 @@ def ListCont(export=False):
         showonly = True
         rvalue = 'seriesasin'
 
-    cj = mechanizeLogin()
+    cj = MechanizeLogin()
     if not cj:
         return False
 
@@ -194,7 +194,7 @@ def ListCont(export=False):
 
 
 def RefreshList():
-    cj = mechanizeLogin()
+    cj = MechanizeLogin()
     if not cj:
         return
 
@@ -236,7 +236,7 @@ def getTVDBImages(title, tvdbid=None, seasons=False):
     TVDB_URL = 'http://www.thetvdb.com/banners/'
     while not tvdbid and title:
         tv = urllib.quote_plus(title)
-        result = getURL('http://www.thetvdb.com/api/GetSeries.php?seriesname=%s&language=de' % tv, silent=True, retjson=False)
+        result = getURL('http://www.thetvdb.com/api/GetSeries.php?seriesname=%s&language=de' % tv, silent=True, rjson=False)
         if not result:
             continue
         soup = BeautifulSoup(result)
@@ -256,7 +256,7 @@ def getTVDBImages(title, tvdbid=None, seasons=False):
 
     if seasons:
         seasons = {}
-        result = getURL('http://www.thetvdb.com/api/%s/series/%s/banners.xml' % (tvdb, tvdbid), silent=True, retjson=False)
+        result = getURL('http://www.thetvdb.com/api/%s/series/%s/banners.xml' % (tvdb, tvdbid), silent=True, rjson=False)
         if result:
             soup = BeautifulSoup(result)
             for lang in langcodes:
@@ -276,7 +276,7 @@ def getTVDBImages(title, tvdbid=None, seasons=False):
         return seasons, posterurl, fanarturl
     else:
         for lang in langcodes:
-            result = getURL('http://www.thetvdb.com/api/%s/series/%s/%s.xml' % (tvdb, tvdbid, lang), silent=True, retjson=False)
+            result = getURL('http://www.thetvdb.com/api/%s/series/%s/%s.xml' % (tvdb, tvdbid, lang), silent=True, rjson=False)
             if result:
                 soup = BeautifulSoup(result)
                 fanart = soup.find('fanart')
@@ -336,7 +336,7 @@ def updateAll():
     if updateRunning():
         return
 
-    cj = mechanizeLogin()
+    cj = MechanizeLogin()
     if not cj:
         return
 

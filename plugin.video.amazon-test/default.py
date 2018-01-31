@@ -123,7 +123,6 @@ pvCatalog = {
 }
 
 menuFile = os.path.join(DataPath, 'menu-%s.db' % MarketID)
-CookieFile = os.path.join(DataPath, 'cookie-%s.cjp' % MarketID)
 is_addon = 'inputstream.adaptive'
 na = 'not available'
 watchlist = 'watchlist'
@@ -2112,9 +2111,10 @@ def genID(renew=False):
 
 def MechanizeLogin():
     cj = requests.cookies.RequestsCookieJar()
-    if xbmcvfs.exists(CookieFile):
-        with open(CookieFile, 'r') as cf:
-            cj.update(pickle.load(cf))
+    user = loadUser()
+
+    if user['cookie']:
+        cj.update(pickle.loads(user['cookie']))
         return cj
 
     Log('Login')
@@ -2123,8 +2123,9 @@ def MechanizeLogin():
 
 
 def LogIn(ask=True):
-    email = getConfig('login_name')
-    password = decode(getConfig('login_pass'))
+    user = loadUser()
+    email = user['email']
+    password = decode(user['password'])
     savelogin = addon.getSetting('save_login') == 'true'
     useMFA = False
     if ask and multiuser:
@@ -2144,8 +2145,6 @@ def LogIn(ask=True):
 
     if password:
         xbmc.executebuiltin('ActivateWindow(busydialog)')
-        if xbmcvfs.exists(CookieFile):
-            xbmcvfs.delete(CookieFile)
         cj = requests.cookies.RequestsCookieJar()
         br = mechanize.Browser()
         br.set_handle_robots(False)
@@ -2224,27 +2223,26 @@ def LogIn(ask=True):
                 if not keyboard.isConfirmed() or not keyboard.getText():
                     return False
                 usr = keyboard.getText()
-                checkUser()
             if useMFA:
                 addon.setSetting('save_login', 'false')
                 savelogin = False
 
-            remLoginData(savelogin, False)
+            user = loadUser(True)
+            user['name'] = usr
+
             if savelogin:
-                writeConfig('login_name', email)
-                writeConfig('login_pass', encode(password))
+                user['email'] = email
+                user['password'] = encode(password)
             else:
-                with open(CookieFile, 'w+') as cf:
-                    pickle.dump(cj, cf)
-                while not xbmcvfs.exists(CookieFile):
-                    sleep(.2)
+                user['cookie'] = pickle.dumps(cj)
 
             if ask:
+                remLoginData(False)
                 addon.setSetting('login_acc', usr)
-                if multiuser:
-                    addUser()
-                else:
+                if not multiuser:
                     Dialog.ok(getString(30215), wlc)
+
+            addUser(user)
             genID()
             return cj
         elif 'message_error' in response:
@@ -2265,78 +2263,62 @@ def LogIn(ask=True):
     return False
 
 
-def checkUser():
+def loadUsers():
+    users = json.loads(getConfig('accounts.lst', '[]'))
+    if not users:
+        addon.setSetting('login_acc', '')
+        xbmc.executebuiltin('Container.Refresh')
+    return users
+
+
+def loadUser(empty=False):
     cur_user = addon.getSetting('login_acc')
-    users = json.loads(getConfig('accounts', '[]'))
-    if not [i for i in users if cur_user == i['name']]:
-        addUser()
+    users = loadUsers()
+    user = None if empty else [i for i in users if cur_user == i['name']]
+    return user[0] if user else {'email': '', 'password': '', 'name': '', 'save': '', 'mid': '', 'cookie': ''}
 
 
-def cookie_data(fn, data=''):
-    fmode = 'w' if data else 'r'
-    f = xbmcvfs.File(fn, fmode)
-    res = b64encode(f.read()) if fmode == 'r' else f.write(b64decode(data))
-    f.close()
-    return res
-
-
-def addUser():
-    savelogin = addon.getSetting('save_login')
-    cookie = ''
-
-    if xbmcvfs.exists(CookieFile) and savelogin == 'false':
-        cookie = cookie_data(CookieFile)
-    if not cookie and not getConfig('login_pass'):
-        return
-
-    users = json.loads(getConfig('accounts', '[]'))
-    users.append({'email': getConfig('login_name'),
-                  'password': getConfig('login_pass'),
-                  'name': addon.getSetting('login_acc'),
-                  'save': savelogin,
-                  'mid': MarketID,
-                  'cookie': cookie})
-
-    writeConfig('accounts', json.dumps(users))
+def addUser(user):
+    user['save'] = addon.getSetting('save_login')
+    user['mid'] = MarketID
+    users = json.loads(getConfig('accounts.lst', '[]')) if multiuser else []
+    num = [n for n, i in enumerate(users) if user['name'] == i['name']]
+    if num:
+        users[num[0]] = user
+    else:
+        users.append(user)
+    writeConfig('accounts.lst', json.dumps(users))
     xbmc.executebuiltin('Container.Refresh')
 
 
 def switchUser():
-    checkUser()
-    users = json.loads(getConfig('accounts', '[]'))
+    users = loadUsers()
     sel = Dialog.select(getString(30133), [i['name'] for i in users])
     if sel > -1:
         user = users[sel]
-        remLoginData(True, False)
-        writeConfig('login_name', user['email'])
-        writeConfig('login_pass', user['password'])
         addon.setSetting('save_login', user['save'])
         addon.setSetting('login_acc', user['name'])
         if user['save'] == 'false':
             addon.setSetting('country', str(MarketIDs.index(user['mid'])))
-            cookie_data(CookieFile, user['cookie'])
         xbmc.executebuiltin('Container.Refresh')
 
 
 def removeUser():
-    checkUser()
     cur_user = addon.getSetting('login_acc')
-    users = json.loads(getConfig('accounts', '[]'))
+    users = loadUsers()
     sel = Dialog.select(getString(30133), [i['name'] for i in users])
     if sel > -1:
         user = users[sel]
         users.remove(user)
-        writeConfig('accounts', json.dumps(users))
+        writeConfig('accounts.lst', json.dumps(users))
         if user['name'] == cur_user:
             addon.setSetting('login_acc', '')
-            remLoginData(user['save'] == 'true', False)
             switchUser()
 
 
 def renameUser():
-    checkUser()
     cur_user = addon.getSetting('login_acc')
-    users = json.loads(getConfig('accounts', '[]'))
+    users = loadUsers()
     sel = Dialog.select(getString(30133), [i['name'] for i in users])
     if sel > -1:
         keyboard = xbmc.Keyboard(users[sel]['name'], getString(30135))
@@ -2347,7 +2329,7 @@ def renameUser():
                 addon.setSetting('login_acc', usr)
                 xbmc.executebuiltin('Container.Refresh')
             users[sel]['name'] = usr
-            writeConfig('accounts', json.dumps(users))
+            writeConfig('accounts.lst', json.dumps(users))
 
 
 def MFACheck(br, email, soup):
@@ -2435,20 +2417,16 @@ def getmac():
     return uuid.uuid5(uuid.NAMESPACE_DNS, str(mac)).bytes
 
 
-def remLoginData(savelogin=False, info=True):
-    if savelogin or info:
-        for fn in xbmcvfs.listdir(DataPath)[1]:
-            if fn.startswith('cookie'):
-                xbmcvfs.delete(os.path.join(DataPath, fn))
-
-    if not savelogin and info:
-        xbmcvfs.delete(os.path.join(ConfigPath, 'accounts'))
-
-    if not savelogin or info:
-        writeConfig('login_name', '')
-        writeConfig('login_pass', '')
+def remLoginData(info=True):
+    for fn in xbmcvfs.listdir(DataPath)[1]:
+        if fn.startswith('cookie'):
+            xbmcvfs.delete(os.path.join(DataPath, fn))
+    writeConfig('accounts', '')
+    writeConfig('login_name', '')
+    writeConfig('login_pass', '')
 
     if info:
+        writeConfig('accounts.lst', '')
         addon.setSetting('login_acc', '')
         Dialog.notification(__plugin__, getString(30211), xbmcgui.NOTIFICATION_INFO)
 
@@ -2683,9 +2661,12 @@ def writeConfig(cfile, value):
             l = xbmcvfs.File(cfglockfile, 'w')
             l.write(str(time.time()))
             l.close()
-            f = xbmcvfs.File(cfgfile, 'w')
-            f.write(value.__str__())
-            f.close()
+            if value == '':
+                xbmcvfs.delete(cfgfile)
+            else:
+                f = xbmcvfs.File(cfgfile, 'w')
+                f.write(value.__str__())
+                f.close()
             xbmcvfs.delete(cfglockfile)
             return True
         else:

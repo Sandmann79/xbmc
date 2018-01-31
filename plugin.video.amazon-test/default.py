@@ -2296,7 +2296,6 @@ def loadUsers():
     users = json.loads(getConfig('accounts.lst', '[]'))
     if not users:
         addon.setSetting('login_acc', '')
-        xbmc.executebuiltin('Container.Refresh')
     return users
 
 

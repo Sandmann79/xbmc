@@ -582,12 +582,15 @@ def PrimeVideo_LazyLoad(obj):
             requestURL = requestURLs[0][0]
             o = requestURLs[0][1]
         del requestURLs[0]
+        couldNotParse = False
         try:
             cnt = getURL(requestURL, silent=True, useCookie=True, rjson=False)
             if 'lazyLoadURL' in o:
                 o['ref'] = o['lazyLoadURL']
                 del o['lazyLoadURL']
         except:
+            couldNotParse = True
+        if couldNotParse or (0 == len(cnt)):
             Log('Unable to fetch the url: {0}'.format(requestURL), xbmc.LOGERROR)
             Dialog.notification(getString(30251), requestURL, xbmcgui.NOTIFICATION_ERROR)
             break

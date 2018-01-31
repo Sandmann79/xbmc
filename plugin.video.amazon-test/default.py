@@ -427,11 +427,11 @@ def PrimeVideo_Browse(path, forceSort=None):
 
     # Add multiuser menu if needed
     if (multiuser) and ('root' == path) and (1 < countUsers()):
-        xbmcplugin.addDirectoryItem(pluginhandle, u'{0}?mode=PrimeVideo_Browse&path=root-//-SwitchUser'.format(sys.argv[0]), xbmcgui.ListItem(getString(30134).format(loadUser()['name'])), isFolder=False)
+        xbmcplugin.addDirectoryItem(pluginhandle, u'{0}?mode=PrimeVideo_Browse&path=root-//-SwitchUser'.format(sys.argv[0]),
+                                    xbmcgui.ListItem(getString(30134).format(loadUser()['name'])), isFolder=False)
     if 'root-//-SwitchUser' == path:
         if switchUser():
             PrimeVideo_BuildRoot()
-            #PrimeVideo_Browse('root')
         return
 
     node = pvCatalog

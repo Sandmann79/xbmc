@@ -99,19 +99,19 @@ verifySsl = addon.getSetting('ssl_verif') == 'false'
 UsePrimeVideo = False
 sessions = {}  # Keep-Alive sessions
 
+MarketID_AV = ['A1PA6795UKMFR9', 'A1F83G8C2ARO7P', 'ATVPDKIKX0DER', 'A1VC38T7YXB528']
+MarketID_PV = ['A3K6Y4MI8GDYMT', 'A2MFUE2XK8ZSSY', 'A15PK738MTQHSO', 'ART4WZ8MWBX2Y'] # ROE_EU, ROW_EU, ROW_FE, ROW_NA
+
 if 4 > country:
     c_tld = ['de', 'co.uk', 'com', 'co.jp'][country]
     BaseUrl = 'https://www.amazon.' + c_tld
     ATVUrl = 'https://atv-%s.amazon.%s' % (['ps-eu', 'ps-eu', 'ps', 'ps-fe'][country], c_tld)
-    MarketID_AV = ['A1PA6795UKMFR9', 'A1F83G8C2ARO7P', 'ATVPDKIKX0DER', 'A1VC38T7YXB528']
     MarketID = MarketID_AV[country]
     Language = ['de', 'en', 'en', 'jp'][country]
     AgeRating = ['FSK ', '', '', '', ''][country]
 else:
     UsePrimeVideo = True
     BaseUrl = 'https://www.primevideo.com'
-    # Market        ROE_EU,           ROW_EU,           ROW_FE,           ROW_NA
-    MarketID_PV = ['A3K6Y4MI8GDYMT', 'A2MFUE2XK8ZSSY', 'A15PK738MTQHSO', 'ART4WZ8MWBX2Y']
     MarketID = MarketID_PV[pvArea]
     # Endpoint = 'fls-%s.amazon.com' % (['eu', 'eu', 'fe', 'na'][pvArea])
     ATVUrl = 'https://atv-ps%s.primevideo.com' % (['-eu', '-eu', '-fe', ''][pvArea])
@@ -119,7 +119,7 @@ else:
     AgeRating = ''
 
 PrimeVideoCache = os.path.join(DataPath, 'PVCatalog{0}.pvcp'.format(MarketID))
-pvCatalog = {'root': OrderedDict()}
+pvCatalog = {}
 
 menuFile = os.path.join(DataPath, 'menu-%s.db' % MarketID)
 is_addon = 'inputstream.adaptive'
@@ -354,14 +354,10 @@ def MainMenu():
     Log('Version: %s' % __version__, xbmc.LOGINFO)
     Log('Unicode support: %s' % os.path.supports_unicode_filenames, xbmc.LOGINFO)
     if False is not UsePrimeVideo:
-        if 0 == len(pvCatalog['root']):
+        if 0 == len(pvCatalog):
             ''' Build the root catalog '''
             if not PrimeVideo_BuildRoot():
                 return
-            # Expire in 11 hours
-            pvCatalog['expiration'] = 39600 + int(time.time())
-            with open(PrimeVideoCache, 'w+') as fp:
-                pickle.dump(pvCatalog, fp)
         PrimeVideo_Browse('root')
     else:
         loadCategories()
@@ -374,7 +370,7 @@ def MainMenu():
             cm_mu = [(getString(30130).split('.')[0], 'RunPlugin(%s?mode=LogIn)' % sys.argv[0]),
                      (getString(30131).split('.')[0], 'RunPlugin(%s?mode=removeUser)' % sys.argv[0]),
                      (getString(30132), 'RunPlugin(%s?mode=renameUser)' % sys.argv[0])]
-            addDir(getString(30134) + addon.getSetting('login_acc'), 'switchUser', '', cm=cm_mu)
+            addDir(getString(30134).format(addon.getSetting('login_acc')), 'switchUser', '', cm=cm_mu)
         addDir('Watchlist', 'getListMenu', watchlist, cm=cm_wl)
         addDir(getString(30104), 'listCategories', getNodeId('movies'), opt='30143')
         addDir(getString(30107), 'listCategories', getNodeId('tv_shows'), opt='30160')
@@ -385,6 +381,7 @@ def MainMenu():
 
 def PrimeVideo_BuildRoot():
     """ Parse the top menu on primevideo.com and build the root catalog """
+    pvCatalog['root'] = OrderedDict()
     home = getURL(BaseUrl, silent=True, useCookie=True, rjson=False)
     if None is home:
         Log('Unable to fetch the primevideo.com homepage', xbmc.LOGERROR)
@@ -397,18 +394,25 @@ def PrimeVideo_BuildRoot():
         item = re.search('<a href="([^"]+)"[^>]*>\s*(.*?)\s*</a>', item)
         if None is not re.match('/storefront/home/', item.group(1)):
             continue
-        if (not pvCatalog['root']) and multiuser:
-            pvCatalog['root']['User'] = {'title': getString(30134) + addon.getSetting('login_acc'), 'verb': 'switchUser'}
         pvCatalog['root'][item.group(2)] = {'title': item.group(2), 'lazyLoadURL': BaseUrl + item.group(1) + '?_encoding=UTF8&format=json'}
     if 0 == len(pvCatalog['root']):
         Log('Unable to build the root catalog from primevideo.com', xbmc.LOGERROR)
         return False
     ''' Add functionalities to the root catalog '''
     pvCatalog['root']['Search'] = {'title': getString(30108), 'verb': 'PrimeVideo_Search'}
+
+    # Set the expiration in 11 hours
+    pvCatalog['expiration'] = 39600 + int(time.time())
+
+    # Flush
+    with open(PrimeVideoCache, 'w+') as fp:
+        pickle.dump(pvCatalog, fp)
+
     return True
 
 
 def PrimeVideo_Search():
+    """ Provide search functionality for PrimeVideo """
     searchString = Dialog.input(getString(24121)).strip(' \t\n\r')
     if 0 == len(searchString):
         xbmcplugin.endOfDirectory(pluginhandle, succeeded=False)
@@ -419,15 +423,29 @@ def PrimeVideo_Search():
 
 
 def PrimeVideo_Browse(path, forceSort=None):
+    """ Display and navigate the menu for PrimeVideo users """
+
+    # Add multiuser menu if needed
+    if (multiuser) and ('root' == path) and (1 < countUsers()):
+        xbmcplugin.addDirectoryItem(pluginhandle, u'{0}?mode=PrimeVideo_Browse&path=root-//-SwitchUser'.format(sys.argv[0]), xbmcgui.ListItem(getString(30134).format(loadUser()['name'])), isFolder=False)
+    if 'root-//-SwitchUser' == path:
+        if switchUser():
+            PrimeVideo_BuildRoot()
+            #PrimeVideo_Browse('root')
+        return
+
     node = pvCatalog
     for n in path.decode('utf-8').split('-//-'):
         node = node[n]
     if 'lazyLoadURL' in node:
         PrimeVideo_LazyLoad(node)
+
+    # Start the playback if on a video leaf
     if ('metadata' in node) and ('video' in node['metadata']):
-        ''' Play the video '''
+        """ Play the video """
         PlayVideo(node['metadata']['video'], node['metadata']['asin'], '', 0)
         return
+
     folderType = 0 if 'root' == path else 1
     for key in node:
         if key in ['metadata', 'ref', 'title', 'verb']:
@@ -462,6 +480,8 @@ def PrimeVideo_Browse(path, forceSort=None):
                     item.setInfo('video', {'duration': m['runtime']})
         xbmcplugin.addDirectoryItem(pluginhandle, url, item, isFolder=folder)
         del item
+
+    # Set sort method and view
     # https://codedocs.xyz/xbmc/xbmc/group__python__xbmcplugin.html#ga85b3bff796fd644fb28f87b136025f40
     xbmcplugin.addSortMethod(pluginhandle, [
         xbmcplugin.SORT_METHOD_NONE,
@@ -2264,6 +2284,11 @@ def LogIn(ask=True):
     return False
 
 
+def countUsers():
+    users = json.loads(getConfig('accounts.lst', '[]'))
+    return len(users)
+
+
 def loadUsers():
     users = json.loads(getConfig('accounts.lst', '[]'))
     if not users:
@@ -2296,6 +2321,8 @@ def switchUser():
     users = loadUsers()
     sel = Dialog.select(getString(30133), [i['name'] for i in users])
     if sel > -1:
+        if (addon.getSetting('login_acc') == users[sel]['name']):
+            return False
         user = users[sel]
         addon.setSetting('save_login', user['save'])
         addon.setSetting('login_acc', user['name'])
@@ -2305,6 +2332,7 @@ def switchUser():
             addon.setSetting('country', '4')
             addon.setSetting('primevideo_area', str(MarketID_PV.index(user['mid'])))
         xbmc.executebuiltin('Container.Refresh')
+    return -1 < sel
 
 
 def removeUser():

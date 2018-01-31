@@ -447,7 +447,7 @@ msgid "Choose User"
 msgstr ""
 
 msgctxt "#30134"
-msgid "Current User: "
+msgid "Current User: {0}"
 msgstr ""
 
 msgctxt "#30135"

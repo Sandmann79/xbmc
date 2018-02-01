@@ -426,7 +426,7 @@ def PrimeVideo_Browse(path, forceSort=None):
     """ Display and navigate the menu for PrimeVideo users """
 
     # Add multiuser menu if needed
-    if (multiuser) and ('root' == path) and (1 < countUsers()):
+    if (multiuser) and ('root' == path) and (1 < len(loadUsers())):
         xbmcplugin.addDirectoryItem(pluginhandle, u'{0}?mode=PrimeVideo_Browse&path=root-//-SwitchUser'.format(sys.argv[0]),
                                     xbmcgui.ListItem(getString(30134).format(loadUser()['name'])), isFolder=False)
     if 'root-//-SwitchUser' == path:
@@ -2287,11 +2287,6 @@ def LogIn(ask=True):
     return False
 
 
-def countUsers():
-    users = json.loads(getConfig('accounts.lst', '[]'))
-    return len(users)
-
-
 def loadUsers():
     users = json.loads(getConfig('accounts.lst', '[]'))
     if not users:
@@ -2347,7 +2342,8 @@ def removeUser():
         writeConfig('accounts.lst', json.dumps(users))
         if user['name'] == cur_user:
             addon.setSetting('login_acc', '')
-            switchUser()
+            if not switchUser():
+                xbmc.executebuiltin('Container.Refresh')
 
 
 def renameUser():

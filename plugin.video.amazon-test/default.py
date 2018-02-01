@@ -349,10 +349,12 @@ def addVideo(name, asin, infoLabels, cm=[], export=False):
         item.addContextMenuItems(cm)
         xbmcplugin.addDirectoryItem(pluginhandle, url, item, isFolder=False)
 
+
 def ContextMenu_MultiUser():
     return [(getString(30130).split('…')[0], 'RunPlugin(%s?mode=LogIn)' % sys.argv[0]),
             (getString(30131).split('…')[0], 'RunPlugin(%s?mode=removeUser)' % sys.argv[0]),
             (getString(30132), 'RunPlugin(%s?mode=renameUser)' % sys.argv[0])]
+
 
 def MainMenu():
     Log('Version: %s' % __version__, xbmc.LOGINFO)
@@ -378,6 +380,17 @@ def MainMenu():
         addDir(getString(30108), 'Search', '')
         addDir(getString(30100), 'getListMenu', library, cm=cm_lb)
         xbmcplugin.endOfDirectory(pluginhandle, updateListing=False)
+
+
+def BeautifyTitle(title):
+    """ Correct stylistic errors in Amazon's titles """
+    for t in [(r'\s+-\s*', u' – '), # Convert dash from small to medium where needed
+              (r'\s*-\s+', u' – '), # Convert dash from small to medium where needed
+              (r'^\s+', u''), # Remove leading spaces
+              (r'\s+$', u''), # Remove trailing spaces
+              (r' {2,}', u' ')]: # Remove double spacing
+        title = re.sub(t[0], t[1], title)
+    return title
 
 
 def PrimeVideo_BuildRoot():
@@ -457,7 +470,7 @@ def PrimeVideo_Browse(path, forceSort=None):
             url += 'PrimeVideo_Browse&path={0}-//-{1}'.format(urllib.quote_plus(path), urllib.quote_plus(key.encode('utf-8')))
         else:
             url += node[key]['verb']
-        item = xbmcgui.ListItem(node[key]['title'])
+        item = xbmcgui.ListItem(BeautifyTitle(node[key]['title']))
         folder = True
         if 'metadata' in node[key]:
             m = node[key]['metadata']
@@ -477,7 +490,7 @@ def PrimeVideo_Browse(path, forceSort=None):
             if 'video' in m:
                 folder = False
                 item.setProperty('IsPlayable', 'true')
-                item.setInfo('video', {'title': node[key]['title']})
+                item.setInfo('video', {'title': BeautifyTitle(node[key]['title'])})
                 if 'runtime' in m:
                     item.setInfo('video', {'duration': m['runtime']})
         xbmcplugin.addDirectoryItem(pluginhandle, url, item, isFolder=folder)

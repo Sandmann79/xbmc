@@ -367,8 +367,8 @@ def MainMenu():
                   'RunPlugin(%s?mode=getListMenu&url=%s&export=1)' % (sys.argv[0], library))]
 
         if multiuser:
-            cm_mu = [(getString(30130).split('.')[0], 'RunPlugin(%s?mode=LogIn)' % sys.argv[0]),
-                     (getString(30131).split('.')[0], 'RunPlugin(%s?mode=removeUser)' % sys.argv[0]),
+            cm_mu = [(getString(30130).split('…')[0], 'RunPlugin(%s?mode=LogIn)' % sys.argv[0]),
+                     (getString(30131).split('…')[0], 'RunPlugin(%s?mode=removeUser)' % sys.argv[0]),
                      (getString(30132), 'RunPlugin(%s?mode=renameUser)' % sys.argv[0])]
             addDir(getString(30134).format(addon.getSetting('login_acc')), 'switchUser', '', cm=cm_mu)
         addDir('Watchlist', 'getListMenu', watchlist, cm=cm_wl)
@@ -2403,7 +2403,7 @@ def MFACheck(br, email, soup):
         else:
             return False
     elif 'ap_captcha_img_label' in str(soup):
-        wnd = Captcha((getString(30008).split('.')[0]), soup, email)
+        wnd = Captcha((getString(30008).split('…')[0]), soup, email)
         wnd.doModal()
         if wnd.email and wnd.cap and wnd.pwd:
             xbmc.executebuiltin('ActivateWindow(busydialog)')
@@ -2967,7 +2967,7 @@ class Captcha(pyxbmct.AddonDialogWindow):
         self.username = pyxbmct.Edit('', _alignment=pyxbmct.ALIGN_LEFT | pyxbmct.ALIGN_CENTER_Y)
         self.password = pyxbmct.Edit('', _alignment=pyxbmct.ALIGN_LEFT | pyxbmct.ALIGN_CENTER_Y)
         self.captcha = pyxbmct.Edit('', _alignment=pyxbmct.ALIGN_LEFT | pyxbmct.ALIGN_CENTER_Y)
-        self.btn_submit = pyxbmct.Button(getString(30008).split('.')[0])
+        self.btn_submit = pyxbmct.Button(getString(30008).split('…')[0])
         self.btn_cancel = pyxbmct.Button(getString(30123))
         self.set_controls()
         self.set_navigation()
@@ -3065,7 +3065,7 @@ elif mode == 'openSettings':
     xbmcaddon.Addon(aid).openSettings()
 elif mode == 'ageSettings':
     if RequestPin():
-        AgeSettings(getString(30018).split('.')[0]).doModal()
+        AgeSettings(getString(30018).split('…')[0]).doModal()
 elif mode == 'PrimeVideo_Browse':
     PrimeVideo_Browse(None if 'path' not in args else args['path'])
 else:

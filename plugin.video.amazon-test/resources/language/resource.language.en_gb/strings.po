@@ -59,7 +59,7 @@ msgid "Remove Credentials and Cookie"
 msgstr ""
 
 msgctxt "#30008"
-msgid "Sign In..."
+msgid "Sign In…"
 msgstr ""
 
 msgctxt "#30009"
@@ -79,7 +79,7 @@ msgid "Playback with"
 msgstr ""
 
 msgctxt "#30013"
-msgid "Inputstream Addon Settings..."
+msgid "Inputstream Addon Settings…"
 msgstr ""
 
 msgctxt "#30014"
@@ -99,7 +99,7 @@ msgid "TV Show Fanart Source"
 msgstr ""
 
 msgctxt "#30018"
-msgid "Age restrictions..."
+msgid "Age restrictions…"
 msgstr ""
 
 msgctxt "#30019"
@@ -431,11 +431,11 @@ msgstr ""
 #empty strings from id 30128 to 30129
 
 msgctxt "#30130"
-msgid "Add User..."
+msgid "Add User…"
 msgstr ""
 
 msgctxt "#30131"
-msgid "Delete User..."
+msgid "Delete User…"
 msgstr ""
 
 msgctxt "#30132"

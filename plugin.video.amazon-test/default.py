@@ -349,6 +349,10 @@ def addVideo(name, asin, infoLabels, cm=[], export=False):
         item.addContextMenuItems(cm)
         xbmcplugin.addDirectoryItem(pluginhandle, url, item, isFolder=False)
 
+def ContextMenu_MultiUser():
+    return [(getString(30130).split('…')[0], 'RunPlugin(%s?mode=LogIn)' % sys.argv[0]),
+            (getString(30131).split('…')[0], 'RunPlugin(%s?mode=removeUser)' % sys.argv[0]),
+            (getString(30132), 'RunPlugin(%s?mode=renameUser)' % sys.argv[0])]
 
 def MainMenu():
     Log('Version: %s' % __version__, xbmc.LOGINFO)
@@ -367,10 +371,7 @@ def MainMenu():
                   'RunPlugin(%s?mode=getListMenu&url=%s&export=1)' % (sys.argv[0], library))]
 
         if multiuser:
-            cm_mu = [(getString(30130).split('…')[0], 'RunPlugin(%s?mode=LogIn)' % sys.argv[0]),
-                     (getString(30131).split('…')[0], 'RunPlugin(%s?mode=removeUser)' % sys.argv[0]),
-                     (getString(30132), 'RunPlugin(%s?mode=renameUser)' % sys.argv[0])]
-            addDir(getString(30134).format(addon.getSetting('login_acc')), 'switchUser', '', cm=cm_mu)
+            addDir(getString(30134).format(addon.getSetting('login_acc')), 'switchUser', '', cm=ContextMenu_MultiUser())
         addDir('Watchlist', 'getListMenu', watchlist, cm=cm_wl)
         addDir(getString(30104), 'listCategories', getNodeId('movies'), opt='30143')
         addDir(getString(30107), 'listCategories', getNodeId('tv_shows'), opt='30160')
@@ -427,8 +428,9 @@ def PrimeVideo_Browse(path, forceSort=None):
 
     # Add multiuser menu if needed
     if (multiuser) and ('root' == path) and (1 < len(loadUsers())):
-        xbmcplugin.addDirectoryItem(pluginhandle, u'{0}?mode=PrimeVideo_Browse&path=root-//-SwitchUser'.format(sys.argv[0]),
-                                    xbmcgui.ListItem(getString(30134).format(loadUser()['name'])), isFolder=False)
+        li = xbmcgui.ListItem(getString(30134).format(loadUser()['name']))
+        li.addContextMenuItems(ContextMenu_MultiUser())
+        xbmcplugin.addDirectoryItem(pluginhandle, u'{0}?mode=PrimeVideo_Browse&path=root-//-SwitchUser'.format(sys.argv[0]), li, isFolder=False)
     if 'root-//-SwitchUser' == path:
         if switchUser():
             PrimeVideo_BuildRoot()

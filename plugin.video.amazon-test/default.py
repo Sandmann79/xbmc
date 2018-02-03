@@ -382,13 +382,14 @@ def MainMenu():
         xbmcplugin.endOfDirectory(pluginhandle, updateListing=False)
 
 
-def BeautifyTitle(title):
+def BeautifyText(title):
     """ Correct stylistic errors in Amazon's titles """
     for t in [(r'\s+-\s*', u' – '), # Convert dash from small to medium where needed
               (r'\s*-\s+', u' – '), # Convert dash from small to medium where needed
               (r'^\s+', u''), # Remove leading spaces
               (r'\s+$', u''), # Remove trailing spaces
-              (r' {2,}', u' ')]: # Remove double spacing
+              (r' {2,}', u' '), # Remove double spacing
+              (r'\.\.\.', u'…')]: # Replace triple dots with ellipsis
         title = re.sub(t[0], t[1], title)
     return title
 
@@ -470,7 +471,7 @@ def PrimeVideo_Browse(path, forceSort=None):
             url += 'PrimeVideo_Browse&path={0}-//-{1}'.format(urllib.quote_plus(path), urllib.quote_plus(key.encode('utf-8')))
         else:
             url += node[key]['verb']
-        item = xbmcgui.ListItem(BeautifyTitle(node[key]['title']))
+        item = xbmcgui.ListItem(node[key]['title'])
         folder = True
         if 'metadata' in node[key]:
             m = node[key]['metadata']
@@ -490,7 +491,7 @@ def PrimeVideo_Browse(path, forceSort=None):
             if 'video' in m:
                 folder = False
                 item.setProperty('IsPlayable', 'true')
-                item.setInfo('video', {'title': BeautifyTitle(node[key]['title'])})
+                item.setInfo('video', {'title': node[key]['title']})
                 if 'runtime' in m:
                     item.setInfo('video', {'duration': m['runtime']})
         xbmcplugin.addDirectoryItem(pluginhandle, url, item, isFolder=folder)
@@ -540,7 +541,15 @@ def PrimeVideo_LazyLoad(obj):
         ret = re.sub("&#?\w+;", fixup, text)
         if ('"' == ret[0:1]) and ('"' == ret[-1:]):
             ret = ret[1:-1]
-        return ret
+        
+        # Try to correct text when Amazon returns latin-1 encoded utf-8 characters
+        # (with the help of https://ftfy.now.sh/)
+        try:
+            ret = ret.encode('latin-1').decode('utf-8')
+        except (UnicodeEncodeError, UnicodeDecodeError):
+            pass
+
+        return BeautifyText(ret)
 
     def MaxSize(imgUrl):
         """ Strip the dynamic resize triggers from the URL """

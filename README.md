@@ -1,8 +1,8 @@
 # Amazon Instant Video Addon for Kodi Media Center
-This Addon supports DE/JP/UK/US Amazon accounts and all the countries where Amazon's [PrimeVideo](https://www.primevideo.com/) is available.
+This Addon supports DE/JP/UK/US Amazon accounts, and since version 0.5.0 all the countries where Amazon's **[PrimeVideo](https://www.primevideo.com/)** is available in.
 
 ## Features
-* access and edit Amazons Watchlist and Video Library
+* access and edit Amazons Watchlist and Video Library (currently not available for primevideo)
 * export Movies, TV Shows to Kodi Library
 * loads Covers and Fanart from TMDB/TVDB
 
@@ -10,6 +10,7 @@ This Addon supports DE/JP/UK/US Amazon accounts and all the countries where Amaz
 * download my [Repo](https://github.com/Sandmann79/xbmc/releases) and add it to Kodi via Addon Browser > Install from ZIP
 * install **Amazon VOD** Addon from Sandmann79's Repository
 * after installation has finished go to Settings > Connection > Choose your Country and Sign In
+* primevideo users have to select the proper area as described here: https://github.com/Varstahl/xbmc/wiki#new-options
 * at Settings > General you have to choose one of the following Playback Method:
 
 ### Browser
@@ -48,8 +49,11 @@ Uses the Inputstream Interface, which is available since Kodi 17 for playback wi
 Here you can configure an age verification regardless from Amazon's one. To disable it, clear the fields.  
 The DRM Check is designed for Kodi 17 or Android. If enabled you can choose a fallback Method. They will be used, if the video isn't playable with internal player.  
 Due changes at Amazons DRM encryption, using Inputstream makes only sense with Kodi 18 alpha builds and up, because the most streams won't play in Kodi 17.  
-To encrypt the videos you need to place the Widevine Library at Kodis HOME/cdm folder and enable the Inputstream Adaptive Addon in Addon Browser > VideoPlayer Inputstream.
-#### Instructions to install Widevine Library:
+~~To encrypt the videos you need to place the Widevine Library at Kodis HOME/cdm folder and~~ enable the Inputstream Adaptive Addon in Addon Browser > VideoPlayer Inputstream.
+
+**Because of integration of the [Inpustream Helper](https://github.com/emilsvennesson/script.module.inputstreamhelper) script, it's not necessary to manually place/install the Widevine Library anymore.**
+
+#### Instructions for manual installation of Widevine Library:
 1) Windows:
 * download and install Kodi 18 [x86](http://mirrors.kodi.tv/nightlies/windows/win32/master/)/[64](http://mirrors.kodi.tv/nightlies/windows/win64/master/)
 * download [Google Chrome portable](https://portableapps.com/apps/internet/google_chrome_portable) use the same arch as Kodi (x86/x64) and install it
@@ -64,3 +68,4 @@ To encrypt the videos you need to place the Widevine Library at Kodis HOME/cdm f
 Please use the guides provided by Millhouse at kodi.tv:
 * [LibreELEC Testbuilds for RaspberryPi (Kodi 18.0)](https://forum.kodi.tv/showthread.php?tid=298461)
 * [LibreELEC Testbuilds for x86_64 (Kodi 18.0)](https://forum.kodi.tv/showthread.php?tid=298462)
+4) Android needs no Widevine Library - it's already included in the firmware

@@ -1,5 +1,6 @@
 # Amazon Instant Video Addon for Kodi Media Center
-This Addon supports German/UK/US/Japanese and since v0.5.0 **PrimeVideo** accounts.
+This Addon supports DE/JP/UK/US Amazon accounts, and since version 0.5.0 all the countries where Amazon's **[PrimeVideo](https://www.primevideo.com/)** is available in.
+
 ## Features
 * access and edit Amazons Watchlist and Video Library (currently not available for primevideo)
 * export Movies, TV Shows to Kodi Library

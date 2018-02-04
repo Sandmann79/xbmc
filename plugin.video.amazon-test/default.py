@@ -100,7 +100,7 @@ UsePrimeVideo = False
 sessions = {}  # Keep-Alive sessions
 
 MarketID_AV = ['A1PA6795UKMFR9', 'A1F83G8C2ARO7P', 'ATVPDKIKX0DER', 'A1VC38T7YXB528']
-MarketID_PV = ['A3K6Y4MI8GDYMT', 'A2MFUE2XK8ZSSY', 'A15PK738MTQHSO', 'ART4WZ8MWBX2Y'] # ROE_EU, ROW_EU, ROW_FE, ROW_NA
+MarketID_PV = ['A3K6Y4MI8GDYMT', 'A2MFUE2XK8ZSSY', 'A15PK738MTQHSO', 'ART4WZ8MWBX2Y']  # ROE_EU, ROW_EU, ROW_FE, ROW_NA
 
 if 4 > country:
     c_tld = ['de', 'co.uk', 'com', 'co.jp'][country]
@@ -2342,7 +2342,7 @@ def switchUser():
     users = loadUsers()
     sel = Dialog.select(getString(30133), [i['name'] for i in users])
     if sel > -1:
-        if (addon.getSetting('login_acc') == users[sel]['name']):
+        if addon.getSetting('login_acc') == users[sel]['name']:
             return False
         user = users[sel]
         addon.setSetting('save_login', user['save'])

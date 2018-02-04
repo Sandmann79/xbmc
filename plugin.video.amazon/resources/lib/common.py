@@ -533,7 +533,6 @@ def loadUsers():
     users = json.loads(getConfig('accounts.lst', '[]'))
     if not users:
         addon.setSetting('login_acc', '')
-        xbmc.executebuiltin('Container.Refresh')
     return users
 
 
@@ -560,15 +559,18 @@ def switchUser():
     users = loadUsers()
     sel = Dialog.select(getString(30177), [i['name'] for i in users])
     if sel > -1:
+        if addon.getSetting('login_acc') == users[sel]['name']:
+            return False
         user = users[sel]
         addon.setSetting('save_login', user['save'])
         addon.setSetting('login_acc', user['name'])
         xbmc.executebuiltin('Container.Refresh')
+    return -1 < sel
 
 
 def removeUser():
     cur_user = addon.getSetting('login_acc')
-    users = users = loadUsers()
+    users = loadUsers()
     sel = Dialog.select(getString(30177), [i['name'] for i in users])
     if sel > -1:
         user = users[sel]
@@ -576,7 +578,8 @@ def removeUser():
         writeConfig('accounts.lst', json.dumps(users))
         if user['name'] == cur_user:
             addon.setSetting('login_acc', '')
-            switchUser()
+            if not switchUser():
+                xbmc.executebuiltin('Container.Refresh')
 
 
 def renameUser():

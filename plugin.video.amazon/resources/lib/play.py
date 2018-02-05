@@ -256,7 +256,7 @@ def IStreamPlayback(trailer, isAdult, extern):
         Log(str(all_tracks).replace('},', '}\n'))
 
         count = 3
-        while count and len(all_tracks):
+        while count and len(all_tracks) > 1:
             cur_track = jsonRPC('Player.GetProperties', 'currentaudiostream', {'playerid': 0})['index']
             all_tracks = [i for i in all_tracks if i['index'] != cur_track]
             Log('Current AudioTrackID %d' % cur_track)

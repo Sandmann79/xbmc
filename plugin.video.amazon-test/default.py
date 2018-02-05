@@ -375,8 +375,7 @@ def MainMenu():
         if multiuser:
             addDir(getString(30134).format(addon.getSetting('login_acc')), 'switchUser', '', cm=ContextMenu_MultiUser())
         addDir('Watchlist', 'getListMenu', watchlist, cm=cm_wl)
-        addDir(getString(30104), 'listCategories', getNodeId('movies'), opt='30143')
-        addDir(getString(30107), 'listCategories', getNodeId('tv_shows'), opt='30160')
+        getRootNode()
         addDir(getString(30108), 'Search', '')
         addDir(getString(30100), 'getListMenu', library, cm=cm_lb)
         xbmcplugin.endOfDirectory(pluginhandle, updateListing=False)
@@ -934,19 +933,15 @@ def updateTime(savetime=True):
     c.close()
 
 
-def getNodeId(mainid):
+def getRootNode():
     c = menuDb.cursor()
-    menu_id = c.execute('select content from menu where id = (?)', (mainid,)).fetchone()
-    result = ''
-
-    if menu_id:
-        st = 'all' if payCont else 'prime'
-        result = c.execute('select content from menu where node = (?) and id = (?)', (menu_id[0], st)).fetchone()
+    st = 'all' if payCont else 'prime'
+    for title, nodeid, id in c.execute('select title, content, id from menu where node = (0)').fetchall():
+        result = c.execute('select content from menu where node = (?) and id = (?)', (nodeid, st)).fetchone()
+        nodeid = result[0] if result else nodeid
+        addDir(title, 'listCategories', str(nodeid), opt=id)
     c.close()
-
-    if result:
-        return result[0]
-    return '0'
+    return
 
 
 def parseNodes(data, node_id=''):
@@ -984,11 +979,11 @@ def getNode(node):
 def listCategories(node, root=None):
     loadCategories()
     cat = getNode(node)
+    all_vid = {'movies': [30143, 'movie'], 'tv_shows': [30160, 'tvseason,tvepisodes&RollUpToSeries=T']}
 
-    if root:
-        url = 'OrderBy=Title%s&contentType=' % OfferGroup
-        url += 'tvseason,tvepisodes&RollUpToSeries=T' if root == '30160' else 'movie'
-        addDir(getString(int(root)), 'listContent', url)
+    if root in all_vid.keys():
+        url = 'OrderBy=Title%s&contentType=%s' % (OfferGroup, all_vid[root][1])
+        addDir(getString(all_vid[root][0]), 'listContent', url)
 
     for node, title, category, content, menu_id, infolabel in cat:
         infolabel = json.loads(infolabel)

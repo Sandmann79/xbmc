@@ -1563,7 +1563,7 @@ def getInfos(item, export):
 
 def PlayVideo(name, asin, adultstr, trailer, forcefb=0):
     isAdult = adultstr == '1'
-    amazonUrl = BaseUrl + "/dp/" + name if UsePrimeVideo else asin
+    amazonUrl = BaseUrl + "/dp/" + (name if UsePrimeVideo else asin)
     playable = False
     fallback = int(addon.getSetting("fallback_method"))
     methodOW = fallback - 1 if forcefb and fallback else playMethod

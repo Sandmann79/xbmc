@@ -251,7 +251,7 @@ def IStreamPlayback(trailer, isAdult, extern):
     Log('Video ContentType Episode? %s' % xbmc.getCondVisibility('VideoPlayer.Content(episodes)'), 0)
 
     if not valid_track and at_check:
-        lang = addon.getSetting("at_lang")
+        lang = jsonRPC('Player.GetProperties', 'currentaudiostream', {'playerid': 0})['language']
         all_tracks = jsonRPC('Player.GetProperties', 'audiostreams', {'playerid': 0})
         Log(str(all_tracks).replace('},', '}\n'))
 
@@ -288,7 +288,7 @@ def validAudioTrack():
     sleeptm = 0.2
     Log('Checking AudioTrack')
 
-    while not player.isPlayingVideo():
+    while not player.isPlaying() or not player.isPlayingVideo():
         sleep(sleeptm)
 
     cac_s = time.time()

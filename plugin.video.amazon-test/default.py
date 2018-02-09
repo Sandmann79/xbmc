@@ -1969,6 +1969,11 @@ def getStreams(suc, data, retmpd=False):
     elif 'playbackUrls' in data.keys():
         defid = data['playbackUrls']['defaultUrlSetId']
         h_dict = data['playbackUrls']['urlSets']
+        '''
+        failover = h_dict[defid]['failover']
+        defid_dis = [failover[k]['urlSetId'] for k in failover if failover[k]['mode'] == 'discontinuous']
+        defid = defid_dis[0] if defid_dis else defid
+        '''
         hosts = [h_dict[k] for k in h_dict]
         hosts.insert(0, h_dict[defid])
 
@@ -2261,7 +2266,7 @@ def LogIn(ask=True):
         xbmc.executebuiltin('Dialog.Close(busydialog)')
         WriteLog(response, 'login')
 
-        while 'auth-mfa-form' in response or 'ap_dcq_form' in response or 'ap_captcha_img_label' in response:
+        while 'auth-mfa-form' in response or 'ap_dcq_form' in response or 'ap_captcha_img_label' in response or 'claimspicker' in response or 'fwcim-form' in response:
             br = MFACheck(br, email, soup)
             if not br:
                 return False
@@ -2462,6 +2467,32 @@ def MFACheck(br, email, soup):
         else:
             return False
         del wnd
+    elif 'claimspicker' in str(soup):
+        msg = soup.find('form', attrs={'name': 'claimspicker'})
+        cs_title = msg.find('div', attrs={'class': 'a-row a-spacing-small'})
+        cs_title = cs_title.h1.contents[0].strip()
+        cs_quest = msg.find('label', attrs={'class': 'a-form-label'}).contents[0].strip()
+        choices = []
+        for c in soup.findAll('div', attrs={'data-a-input-name': 'option'}):
+            choices.append((c.span.contents[0].strip(), c.input['name'], c.input['value']))
+
+        sel = Dialog.select('%s - %s' % (cs_title, cs_quest), [k[0] for k in choices])
+        if sel > -1:
+            xbmc.executebuiltin('ActivateWindow(busydialog)')
+            br.select_form(nr=0)
+            br[choices[sel][1]] = [choices[sel][2]]
+        else:
+            return False
+    elif 'fwcim-form' in str(soup):
+        msg = soup.find('div', attrs={'class': 'a-row a-spacing-micro cvf-widget-input-code-label'}).contents[0].strip()
+        ret = Dialog.input(msg)
+        if ret:
+            xbmc.executebuiltin('ActivateWindow(busydialog)')
+            br.select_form(nr=0)
+            Log(br)
+            br['code'] = ret
+        else:
+            return False
     return br
 
 

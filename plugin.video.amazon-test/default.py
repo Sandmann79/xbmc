@@ -2003,14 +2003,43 @@ def extrFr(data):
 
 
 def parseSubs(data):
+    localeConversion = {
+        'ar-001':'ar',
+        'cmn-hans':'zh HANS',
+        'cmn-hant':'zh HANT',
+        'da-dk':'da',
+        'es-419':'es LA',
+        'ja-jp':'ja',
+        'ko-kr':'ko',
+        'nb-no':'nb',
+        'sv-se':'sv',
+    } # Clean up language and locale information where needed
     subs = []
     if addon.getSetting('subtitles') == 'false' or 'subtitleUrls' not in data:
         return subs
 
     import codecs
     for sub in data['subtitleUrls']:
-        lang = sub['displayName'].split('(')[0].strip()
-        Log('Convert %s Subtitle' % lang)
+        lang = sub['languageCode'].strip()
+        if lang in localeConversion:
+            lang = localeConversion[lang]
+        # Clean up where needed
+        if '-' in lang:
+            p1 = re.split('-', lang)[0]
+            p2 = re.split('-', lang)[1]
+            if (p1 == p2): # Remove redundant locale information when not useful
+                lang = p1
+            else:
+                lang = '%s %s' % (p1, p2.upper())
+        # Amazon's en defaults to en_US, not en_UK
+        if 'en' == lang:
+            lang = 'en US'
+        # Readd close-caption information where needed
+        if '[' in sub['displayName']:
+            cc = re.search(r'(\[[^\]]+\])', sub['displayName'])
+            if None is not cc:
+                lang = lang + (' %s' % cc.group(1))
+        Log('Convert %s Subtitle (%s)' % (sub['displayName'].strip(), lang))
         srtfile = xbmc.translatePath('special://temp/%s.srt' % lang).decode('utf-8')
         with codecs.open(srtfile, 'w', encoding='utf-8') as srt:
             soup = BeautifulStoneSoup(getURL(sub['url'], rjson=False), convertEntities=BeautifulStoneSoup.XML_ENTITIES)

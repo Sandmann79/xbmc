@@ -1,5 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+from __future__ import unicode_literals
+from base64 import b64encode, b64decode
+from collections import OrderedDict
+from BeautifulSoup import BeautifulSoup, BeautifulStoneSoup, Tag
+from datetime import date
+from platform import node
+from random import randint
+from sqlite3 import dbapi2 as sqlite
 import hashlib
 import hmac
 import json
@@ -17,16 +25,10 @@ import threading
 import urllib
 import urlparse
 import uuid
-from base64 import b64encode, b64decode
-from collections import OrderedDict
-from datetime import date
-from platform import node
-from random import randint
-from sqlite3 import dbapi2 as sqlite
 
-import mechanize
 from BeautifulSoup import BeautifulSoup, BeautifulStoneSoup, Tag
 from pyDes import *
+import mechanize
 
 from inputstreamhelper import Helper
 import pyxbmct
@@ -101,19 +103,19 @@ verifySsl = addon.getSetting('ssl_verif') == 'false'
 UsePrimeVideo = False
 sessions = {}  # Keep-Alive sessions
 
+MarketID_AV = ['A1PA6795UKMFR9', 'A1F83G8C2ARO7P', 'ATVPDKIKX0DER', 'A1VC38T7YXB528']
+MarketID_PV = ['A3K6Y4MI8GDYMT', 'A2MFUE2XK8ZSSY', 'A15PK738MTQHSO', 'ART4WZ8MWBX2Y']  # ROE_EU, ROW_EU, ROW_FE, ROW_NA
+
 if 4 > country:
     c_tld = ['de', 'co.uk', 'com', 'co.jp'][country]
     BaseUrl = 'https://www.amazon.' + c_tld
     ATVUrl = 'https://atv-%s.amazon.%s' % (['ps-eu', 'ps-eu', 'ps', 'ps-fe'][country], c_tld)
-    MarketID_AV = ['A1PA6795UKMFR9', 'A1F83G8C2ARO7P', 'ATVPDKIKX0DER', 'A1VC38T7YXB528']
     MarketID = MarketID_AV[country]
     Language = ['de', 'en', 'en', 'jp'][country]
     AgeRating = ['FSK ', '', '', '', ''][country]
 else:
     UsePrimeVideo = True
     BaseUrl = 'https://www.primevideo.com'
-    # Market        ROE_EU,           ROW_EU,           ROW_FE,           ROW_NA
-    MarketID_PV = ['A3K6Y4MI8GDYMT', 'A2MFUE2XK8ZSSY', 'A15PK738MTQHSO', 'ART4WZ8MWBX2Y']
     MarketID = MarketID_PV[pvArea]
     # Endpoint = 'fls-%s.amazon.com' % (['eu', 'eu', 'fe', 'na'][pvArea])
     ATVUrl = 'https://atv-ps%s.primevideo.com' % (['-eu', '-eu', '-fe', ''][pvArea])
@@ -121,7 +123,7 @@ else:
     AgeRating = ''
 
 PrimeVideoCache = os.path.join(DataPath, 'PVCatalog{0}.pvcp'.format(MarketID))
-pvCatalog = {'root': OrderedDict()}
+pvCatalog = {}
 
 menuFile = os.path.join(DataPath, 'menu-%s.db' % MarketID)
 is_addon = 'inputstream.adaptive'
@@ -177,6 +179,8 @@ OfferGroup = '' if payCont else '&OfferGroups=B0043YVHMY'
 socket.setdefaulttimeout(30)
 
 EXPORT_PATH = DataPath
+if addon.getSetting('enablelibraryfolder') == 'true':
+    EXPORT_PATH = xbmc.translatePath(addon.getSetting('customlibraryfolder')).decode('utf-8')
 MOVIE_PATH = os.path.join(EXPORT_PATH, 'Movies')
 TV_SHOWS_PATH = os.path.join(EXPORT_PATH, 'TV')
 ms_mov = ms_mov if ms_mov else 'Amazon Movies'
@@ -352,18 +356,20 @@ def addVideo(name, asin, infoLabels, cm=[], export=False):
         xbmcplugin.addDirectoryItem(pluginhandle, url, item, isFolder=False)
 
 
+def ContextMenu_MultiUser():
+    return [(getString(30130).split('…')[0], 'RunPlugin(%s?mode=LogIn)' % sys.argv[0]),
+            (getString(30131).split('…')[0], 'RunPlugin(%s?mode=removeUser)' % sys.argv[0]),
+            (getString(30132), 'RunPlugin(%s?mode=renameUser)' % sys.argv[0])]
+
+
 def MainMenu():
-    Log('Version: %s' % __version__, xbmc.LOGINFO)
-    Log('Unicode support: %s' % os.path.supports_unicode_filenames, xbmc.LOGINFO)
+    Log('Version: %s' % __version__)
+    Log('Unicode filename support: %s' % os.path.supports_unicode_filenames)
     if False is not UsePrimeVideo:
-        if 0 == len(pvCatalog['root']):
+        if 0 == len(pvCatalog):
             ''' Build the root catalog '''
             if not PrimeVideo_BuildRoot():
                 return
-            # Expire in 11 hours
-            pvCatalog['expiration'] = 39600 + int(time.time())
-            with open(PrimeVideoCache, 'w+') as fp:
-                pickle.dump(pvCatalog, fp)
         PrimeVideo_Browse('root')
     else:
         loadCategories()
@@ -373,20 +379,29 @@ def MainMenu():
                   'RunPlugin(%s?mode=getListMenu&url=%s&export=1)' % (sys.argv[0], library))]
 
         if multiuser:
-            cm_mu = [(getString(30130).split('.')[0], 'RunPlugin(%s?mode=LogIn)' % sys.argv[0]),
-                     (getString(30131).split('.')[0], 'RunPlugin(%s?mode=removeUser)' % sys.argv[0]),
-                     (getString(30132), 'RunPlugin(%s?mode=renameUser)' % sys.argv[0])]
-            addDir(getString(30134) + addon.getSetting('login_acc'), 'switchUser', '', cm=cm_mu)
+            addDir(getString(30134).format(addon.getSetting('login_acc')), 'switchUser', '', cm=ContextMenu_MultiUser())
         addDir('Watchlist', 'getListMenu', watchlist, cm=cm_wl)
-        addDir(getString(30104), 'listCategories', getNodeId('movies'), opt='30143')
-        addDir(getString(30107), 'listCategories', getNodeId('tv_shows'), opt='30160')
+        getRootNode()
         addDir(getString(30108), 'Search', '')
         addDir(getString(30100), 'getListMenu', library, cm=cm_lb)
         xbmcplugin.endOfDirectory(pluginhandle, updateListing=False)
 
 
+def BeautifyText(title):
+    """ Correct stylistic errors in Amazon's titles """
+    for t in [(r'\s+-\s*', u' – '), # Convert dash from small to medium where needed
+              (r'\s*-\s+', u' – '), # Convert dash from small to medium where needed
+              (r'^\s+', u''), # Remove leading spaces
+              (r'\s+$', u''), # Remove trailing spaces
+              (r' {2,}', u' '), # Remove double spacing
+              (r'\.\.\.', u'…')]: # Replace triple dots with ellipsis
+        title = re.sub(t[0], t[1], title)
+    return title
+
+
 def PrimeVideo_BuildRoot():
     """ Parse the top menu on primevideo.com and build the root catalog """
+    pvCatalog['root'] = OrderedDict()
     home = getURL(BaseUrl, silent=True, useCookie=True, rjson=False)
     if None is home:
         Log('Unable to fetch the primevideo.com homepage', xbmc.LOGERROR)
@@ -399,18 +414,25 @@ def PrimeVideo_BuildRoot():
         item = re.search('<a href="([^"]+)"[^>]*>\s*(.*?)\s*</a>', item)
         if None is not re.match('/storefront/home/', item.group(1)):
             continue
-        if (not pvCatalog['root']) and multiuser:
-            pvCatalog['root']['User'] = {'title': getString(30134) + addon.getSetting('login_acc'), 'verb': 'switchUser'}
         pvCatalog['root'][item.group(2)] = {'title': item.group(2), 'lazyLoadURL': BaseUrl + item.group(1) + '?_encoding=UTF8&format=json'}
     if 0 == len(pvCatalog['root']):
         Log('Unable to build the root catalog from primevideo.com', xbmc.LOGERROR)
         return False
     ''' Add functionalities to the root catalog '''
     pvCatalog['root']['Search'] = {'title': getString(30108), 'verb': 'PrimeVideo_Search'}
+
+    # Set the expiration in 11 hours
+    pvCatalog['expiration'] = 39600 + int(time.time())
+
+    # Flush
+    with open(PrimeVideoCache, 'w+') as fp:
+        pickle.dump(pvCatalog, fp)
+
     return True
 
 
 def PrimeVideo_Search():
+    """ Provide search functionality for PrimeVideo """
     searchString = Dialog.input(getString(24121)).strip(' \t\n\r')
     if 0 == len(searchString):
         xbmcplugin.endOfDirectory(pluginhandle, succeeded=False)
@@ -421,22 +443,39 @@ def PrimeVideo_Search():
 
 
 def PrimeVideo_Browse(path, forceSort=None):
+    """ Display and navigate the menu for PrimeVideo users """
+
+    path = path.decode('utf-8')
+
+    # Add multiuser menu if needed
+    if (multiuser) and ('root' == path) and (1 < len(loadUsers())):
+        li = xbmcgui.ListItem(getString(30134).format(loadUser()['name']))
+        li.addContextMenuItems(ContextMenu_MultiUser())
+        xbmcplugin.addDirectoryItem(pluginhandle, '{0}?mode=PrimeVideo_Browse&path=root-//-SwitchUser'.format(sys.argv[0]), li, isFolder=False)
+    if 'root-//-SwitchUser' == path:
+        if switchUser():
+            PrimeVideo_BuildRoot()
+        return
+
     node = pvCatalog
-    for n in path.decode('utf-8').split('-//-'):
+    for n in path.split('-//-'):
         node = node[n]
     if 'lazyLoadURL' in node:
         PrimeVideo_LazyLoad(node)
+
+    # Start the playback if on a video leaf
     if ('metadata' in node) and ('video' in node['metadata']):
-        ''' Play the video '''
+        """ Play the video """
         PlayVideo(node['metadata']['video'], node['metadata']['asin'], '', 0)
         return
+
     folderType = 0 if 'root' == path else 1
     for key in node:
         if key in ['metadata', 'ref', 'title', 'verb']:
             continue
         url = u'{0}?mode='.format(sys.argv[0])
         if 'verb' not in node[key]:
-            url += 'PrimeVideo_Browse&path={0}-//-{1}'.format(urllib.quote_plus(path), urllib.quote_plus(key.encode('utf-8')))
+            url += 'PrimeVideo_Browse&path={0}-//-{1}'.format(urllib.quote_plus(path.encode('utf-8')), urllib.quote_plus(key.encode('utf-8')))
         else:
             url += node[key]['verb']
         item = xbmcgui.ListItem(node[key]['title'])
@@ -464,6 +503,8 @@ def PrimeVideo_Browse(path, forceSort=None):
                     item.setInfo('video', {'duration': m['runtime']})
         xbmcplugin.addDirectoryItem(pluginhandle, url, item, isFolder=folder)
         del item
+
+    # Set sort method and view
     # https://codedocs.xyz/xbmc/xbmc/group__python__xbmcplugin.html#ga85b3bff796fd644fb28f87b136025f40
     xbmcplugin.addSortMethod(pluginhandle, [
         xbmcplugin.SORT_METHOD_NONE,
@@ -507,7 +548,15 @@ def PrimeVideo_LazyLoad(obj):
         ret = re.sub("&#?\w+;", fixup, text)
         if ('"' == ret[0:1]) and ('"' == ret[-1:]):
             ret = ret[1:-1]
-        return ret
+        
+        # Try to correct text when Amazon returns latin-1 encoded utf-8 characters
+        # (with the help of https://ftfy.now.sh/)
+        try:
+            ret = ret.encode('latin-1').decode('utf-8')
+        except (UnicodeEncodeError, UnicodeDecodeError):
+            pass
+
+        return BeautifyText(ret)
 
     def MaxSize(imgUrl):
         """ Strip the dynamic resize triggers from the URL """
@@ -564,12 +613,15 @@ def PrimeVideo_LazyLoad(obj):
             requestURL = requestURLs[0][0]
             o = requestURLs[0][1]
         del requestURLs[0]
+        couldNotParse = False
         try:
             cnt = getURL(requestURL, silent=True, useCookie=True, rjson=False)
             if 'lazyLoadURL' in o:
                 o['ref'] = o['lazyLoadURL']
                 del o['lazyLoadURL']
         except:
+            couldNotParse = True
+        if couldNotParse or (0 == len(cnt)):
             Log('Unable to fetch the url: {0}'.format(requestURL), xbmc.LOGERROR)
             Dialog.notification(getString(30251), requestURL, xbmcgui.NOTIFICATION_ERROR)
             break
@@ -618,7 +670,7 @@ def PrimeVideo_LazyLoad(obj):
                     meta = o['metadata']
                     if None is not bgimg:
                         meta['artmeta']['fanart'] = bgimg
-                    NotifyUser(getString(30253).format(o['title'].encode('utf-8')))
+                    NotifyUser(getString(30253).format(o['title']))
                     meta['asin'] = re.search(r'"asin":"([^"]*)"', cnt, flags=re.DOTALL).group(1)
                     meta['video'] = ExtractURN(requestURL)
 
@@ -725,7 +777,7 @@ def PrimeVideo_LazyLoad(obj):
                             ''' Probably an extra trailer or something, remove episode information '''
                             del meta['videometa']['season']
                             del meta['videometa']['episode']
-                        NotifyUser(getString(30253).format(title.encode('utf-8')))
+                        NotifyUser(getString(30253).format(title))
                         if meta['video'] not in o:
                             o[meta['video']] = {'title': title}
                         o[meta['video']]['metadata'] = meta
@@ -752,7 +804,7 @@ def PrimeVideo_LazyLoad(obj):
                             else:
                                 res[i] = list(res[i])
                     title = Unescape(res[0][2])
-                    NotifyUser(getString(30253).format(title.encode('utf-8')))
+                    NotifyUser(getString(30253).format(title))
                     if None is not re.match(r'/[^/]', res[0][1]):
                         res[0][1] = BaseUrl + res[0][1]
                     meta = {'artmeta': {'thumb': MaxSize(res[0][0]), 'poster': MaxSize(res[0][0])}, 'videometa': {}}
@@ -812,7 +864,7 @@ def PrimeVideo_LazyLoad(obj):
                 section = re.split(r'","', section[2:-2])
                 if 'dvappend' == section[0]:
                     title = Unescape(re.sub(r'^.*<h2[^>]*>\s*<span[^>]*>\s*(.*?)\s*</span>.*$', r'\1', section[2], flags=re.DOTALL))
-                    NotifyUser(getString(30253).format(title.encode('utf-8')))
+                    NotifyUser(getString(30253).format(title))
                     o[title] = {'title': title}
                     if None is not re.search('<h2[^>]*>.*?<a\s+[^>]*\s+href="[^"]+"[^>]*>.*?</h2>', section[2], flags=re.DOTALL):
                         o[title]['lazyLoadURL'] = Unescape(
@@ -889,19 +941,15 @@ def updateTime(savetime=True):
     c.close()
 
 
-def getNodeId(mainid):
+def getRootNode():
     c = menuDb.cursor()
-    menu_id = c.execute('select content from menu where id = (?)', (mainid,)).fetchone()
-    result = ''
-
-    if menu_id:
-        st = 'all' if payCont else 'prime'
-        result = c.execute('select content from menu where node = (?) and id = (?)', (menu_id[0], st)).fetchone()
+    st = 'all' if payCont else 'prime'
+    for title, nodeid, id in c.execute('select title, content, id from menu where node = (0)').fetchall():
+        result = c.execute('select content from menu where node = (?) and id = (?)', (nodeid, st)).fetchone()
+        nodeid = result[0] if result else nodeid
+        addDir(title, 'listCategories', str(nodeid), opt=id)
     c.close()
-
-    if result:
-        return result[0]
-    return '0'
+    return
 
 
 def parseNodes(data, node_id=''):
@@ -939,11 +987,11 @@ def getNode(node):
 def listCategories(node, root=None):
     loadCategories()
     cat = getNode(node)
+    all_vid = {'movies': [30143, 'movie'], 'tv_shows': [30160, 'tvseason,tvepisodes&RollUpToSeries=T']}
 
-    if root:
-        url = 'OrderBy=Title%s&contentType=' % OfferGroup
-        url += 'tvseason,tvepisodes&RollUpToSeries=T' if root == '30160' else 'movie'
-        addDir(getString(int(root)), 'listContent', url)
+    if root in all_vid.keys():
+        url = 'OrderBy=Title%s&contentType=%s' % (OfferGroup, all_vid[root][1])
+        addDir(getString(all_vid[root][0]), 'listContent', url)
 
     for node, title, category, content, menu_id, infolabel in cat:
         infolabel = json.loads(infolabel)
@@ -1167,8 +1215,6 @@ def getArtWork(infoLabels, contentType):
         title = infoLabels['Title']
         if contentType == 'season':
             title = infoLabels['TVShowTitle']
-        if isinstance(title, unicode):
-            title = title.encode('utf-8')
         c.execute('insert or ignore into miss values (?,?,?,?)', (asins, title, infoLabels['Year'], contentType))
     c.close()
     return infoLabels
@@ -1229,7 +1275,7 @@ def getTVDBImages(title, tvdb_id=None):
     TVDB_URL = 'http://www.thetvdb.com/banners/'
 
     while not tvdb_id and title:
-        tv = urllib.quote_plus(title)
+        tv = urllib.quote_plus(title.encode('utf-8'))
         result = getURL('http://www.thetvdb.com/api/GetSeries.php?seriesname=%s&language=%s' % (tv, Language),
                         silent=True, rjson=False)
         if not result:
@@ -1278,17 +1324,17 @@ def getTMDBImages(title, content='movie', year=None):
 
     while not tmdb_id and title:
         str_year = '&year=' + str(year) if year else ''
-        movie = urllib.quote_plus(title)
+        movie = urllib.quote_plus(title.encode('utf-8'))
         data = getURL('http://api.themoviedb.org/3/search/%s?api_key=%s&language=%s&query=%s%s' % (
             content, tmdb, Language, movie, str_year), silent=True)
         if not data:
             continue
 
-        if data['total_results'] > 0:
+        if data.get('total_results', 0) > 0:
             result = data['results'][0]
-            if result['backdrop_path']:
+            if result.get('backdrop_path'):
                 fanart = TMDB_URL + result['backdrop_path']
-            tmdb_id = result['id']
+            tmdb_id = result.get('id')
         elif year:
             year = 0
         else:
@@ -1356,9 +1402,8 @@ def getList(listing, export, cont):
 def Log(msg, level=xbmc.LOGNOTICE):
     if level == xbmc.LOGDEBUG and verbLog:
         level = xbmc.LOGNOTICE
-    if isinstance(msg, unicode):
-        msg = msg.encode('utf-8')
-    xbmc.log('[%s] %s' % (__plugin__, msg.__str__()), level)
+    msg = '[%s] %s' % (__plugin__, msg)
+    xbmc.log(msg.encode('utf-8'), level)
 
 
 def WriteLog(data, fn=''):
@@ -1372,15 +1417,12 @@ def WriteLog(data, fn=''):
         data = data.encode('utf-8')
     logfile = xbmcvfs.File(path, 'w')
     logfile.write(data.__str__())
-    logfile.write('\n')
     logfile.close()
 
 
 def getString(string_id):
     src = xbmc if string_id < 30000 else addon
     locString = src.getLocalizedString(string_id)
-    if isinstance(locString, unicode):
-        locString = locString.encode('utf-8')
     return locString
 
 
@@ -1523,7 +1565,7 @@ def getInfos(item, export):
 
 def PlayVideo(name, asin, adultstr, trailer, forcefb=0):
     isAdult = adultstr == '1'
-    amazonUrl = BaseUrl + "/dp/" + name if UsePrimeVideo else asin
+    amazonUrl = BaseUrl + "/dp/" + (name if UsePrimeVideo else asin)
     playable = False
     fallback = int(addon.getSetting("fallback_method"))
     methodOW = fallback - 1 if forcefb and fallback else playMethod
@@ -1666,7 +1708,7 @@ def IStreamPlayback(asin, name, trailer, isAdult, extern):
     mpd, subs = getStreams(*getUrldata('catalog/GetPlaybackResources', asin, extra=True, vMT=vMT,
                                        opt='&titleDecorationScheme=primary-content', dRes=dRes, useCookie=cookie), retmpd=True)
 
-    cj_str = ';'.join([c.name + '=' + c.value for c in cookie])
+    cj_str = ';'.join(['%s=%s' % (k, v) for k, v in cookie.items()])
     opt = '|Content-Type=application%2Fx-www-form-urlencoded&Cookie=' + urllib.quote_plus(cj_str)
     opt += '|widevine2Challenge=B{SSM}&includeHdcpTestKeyInLicense=true'
     opt += '|JBlicense;hdcpEnforcementResolutionPixels'
@@ -1744,12 +1786,12 @@ def IStreamPlayback(asin, name, trailer, isAdult, extern):
     Log('Video ContentType Episode? %s' % xbmc.getCondVisibility('VideoPlayer.Content(episodes)'), 0)
 
     if not valid_track and at_check:
-        lang = addon.getSetting("at_lang")
+        lang = jsonRPC('Player.GetProperties', 'currentaudiostream', {'playerid': 0})['language']
         all_tracks = jsonRPC('Player.GetProperties', 'audiostreams', {'playerid': 0})
         Log(str(all_tracks).replace('},', '}\n'))
 
         count = 3
-        while count and len(all_tracks):
+        while count and len(all_tracks) > 1:
             cur_track = jsonRPC('Player.GetProperties', 'currentaudiostream', {'playerid': 0})['index']
             all_tracks = [i for i in all_tracks if i['index'] != cur_track]
             Log('Current AudioTrackID %d' % cur_track)
@@ -1781,7 +1823,7 @@ def validAudioTrack():
     sleeptm = 0.2
     Log('Checking AudioTrack')
 
-    while not player.isPlayingVideo():
+    while not player.isPlaying() or not player.isPlayingVideo():
         sleep(sleeptm)
 
     cac_s = time.time()
@@ -1929,6 +1971,11 @@ def getStreams(suc, data, retmpd=False):
     elif 'playbackUrls' in data.keys():
         defid = data['playbackUrls']['defaultUrlSetId']
         h_dict = data['playbackUrls']['urlSets']
+        '''
+        failover = h_dict[defid]['failover']
+        defid_dis = [failover[k]['urlSetId'] for k in failover if failover[k]['mode'] == 'discontinuous']
+        defid = defid_dis[0] if defid_dis else defid
+        '''
         hosts = [h_dict[k] for k in h_dict]
         hosts.insert(0, h_dict[defid])
 
@@ -1963,14 +2010,43 @@ def extrFr(data):
 
 
 def parseSubs(data):
+    localeConversion = {
+        'ar-001':'ar',
+        'cmn-hans':'zh HANS',
+        'cmn-hant':'zh HANT',
+        'da-dk':'da',
+        'es-419':'es LA',
+        'ja-jp':'ja',
+        'ko-kr':'ko',
+        'nb-no':'nb',
+        'sv-se':'sv',
+    } # Clean up language and locale information where needed
     subs = []
     if addon.getSetting('subtitles') == 'false' or 'subtitleUrls' not in data:
         return subs
 
     import codecs
     for sub in data['subtitleUrls']:
-        lang = sub['displayName'].split('(')[0].strip()
-        Log('Convert %s Subtitle' % lang)
+        lang = sub['languageCode'].strip()
+        if lang in localeConversion:
+            lang = localeConversion[lang]
+        # Clean up where needed
+        if '-' in lang:
+            p1 = re.split('-', lang)[0]
+            p2 = re.split('-', lang)[1]
+            if (p1 == p2): # Remove redundant locale information when not useful
+                lang = p1
+            else:
+                lang = '%s %s' % (p1, p2.upper())
+        # Amazon's en defaults to en_US, not en_UK
+        if 'en' == lang:
+            lang = 'en US'
+        # Readd close-caption information where needed
+        if '[' in sub['displayName']:
+            cc = re.search(r'(\[[^\]]+\])', sub['displayName'])
+            if None is not cc:
+                lang = lang + (' %s' % cc.group(1))
+        Log('Convert %s Subtitle (%s)' % (sub['displayName'].strip(), lang))
         srtfile = xbmc.translatePath('special://temp/%s.srt' % lang).decode('utf-8')
         with codecs.open(srtfile, 'w', encoding='utf-8') as srt:
             soup = BeautifulStoneSoup(getURL(sub['url'], rjson=False), convertEntities=BeautifulStoneSoup.XML_ENTITIES)
@@ -2192,7 +2268,7 @@ def LogIn(ask=True):
         xbmc.executebuiltin('Dialog.Close(busydialog)')
         WriteLog(response, 'login')
 
-        while 'auth-mfa-form' in response or 'ap_dcq_form' in response or 'ap_captcha_img_label' in response:
+        while 'auth-mfa-form' in response or 'ap_dcq_form' in response or 'ap_captcha_img_label' in response or 'claimspicker' in response or 'fwcim-form' in response:
             br = MFACheck(br, email, soup)
             if not br:
                 return False
@@ -2270,7 +2346,6 @@ def loadUsers():
     users = json.loads(getConfig('accounts.lst', '[]'))
     if not users:
         addon.setSetting('login_acc', '')
-        xbmc.executebuiltin('Container.Refresh')
     return users
 
 
@@ -2298,6 +2373,8 @@ def switchUser():
     users = loadUsers()
     sel = Dialog.select(getString(30133), [i['name'] for i in users])
     if sel > -1:
+        if addon.getSetting('login_acc') == users[sel]['name']:
+            return False
         user = users[sel]
         addon.setSetting('save_login', user['save'])
         addon.setSetting('login_acc', user['name'])
@@ -2307,6 +2384,7 @@ def switchUser():
             addon.setSetting('country', '4')
             addon.setSetting('primevideo_area', str(MarketID_PV.index(user['mid'])))
         xbmc.executebuiltin('Container.Refresh')
+    return -1 < sel
 
 
 def removeUser():
@@ -2319,7 +2397,8 @@ def removeUser():
         writeConfig('accounts.lst', json.dumps(users))
         if user['name'] == cur_user:
             addon.setSetting('login_acc', '')
-            switchUser()
+            if not switchUser():
+                xbmc.executebuiltin('Container.Refresh')
 
 
 def renameUser():
@@ -2379,7 +2458,7 @@ def MFACheck(br, email, soup):
         else:
             return False
     elif 'ap_captcha_img_label' in str(soup):
-        wnd = Captcha((getString(30008).split('.')[0]), soup, email)
+        wnd = Captcha((getString(30008).split('…')[0]), soup, email)
         wnd.doModal()
         if wnd.email and wnd.cap and wnd.pwd:
             xbmc.executebuiltin('ActivateWindow(busydialog)')
@@ -2390,6 +2469,32 @@ def MFACheck(br, email, soup):
         else:
             return False
         del wnd
+    elif 'claimspicker' in str(soup):
+        msg = soup.find('form', attrs={'name': 'claimspicker'})
+        cs_title = msg.find('div', attrs={'class': 'a-row a-spacing-small'})
+        cs_title = cs_title.h1.contents[0].strip()
+        cs_quest = msg.find('label', attrs={'class': 'a-form-label'}).contents[0].strip()
+        choices = []
+        for c in soup.findAll('div', attrs={'data-a-input-name': 'option'}):
+            choices.append((c.span.contents[0].strip(), c.input['name'], c.input['value']))
+
+        sel = Dialog.select('%s - %s' % (cs_title, cs_quest), [k[0] for k in choices])
+        if sel > -1:
+            xbmc.executebuiltin('ActivateWindow(busydialog)')
+            br.select_form(nr=0)
+            br[choices[sel][1]] = [choices[sel][2]]
+        else:
+            return False
+    elif 'fwcim-form' in str(soup):
+        msg = soup.find('div', attrs={'class': 'a-row a-spacing-micro cvf-widget-input-code-label'}).contents[0].strip()
+        ret = Dialog.input(msg)
+        if ret:
+            xbmc.executebuiltin('ActivateWindow(busydialog)')
+            br.select_form(nr=0)
+            Log(br)
+            br['code'] = ret
+        else:
+            return False
     return br
 
 
@@ -2487,11 +2592,10 @@ def cleanName(name, isfile=True):
     notallowed = ['<', '>', ':', '"', '\\', '/', '|', '*', '?']
     if not isfile:
         notallowed = ['<', '>', '"', '|', '*', '?']
-        if not os.path.supports_unicode_filenames:
-            name = name.encode('utf-8')
-
     for c in notallowed:
         name = name.replace(c, '')
+    if not os.path.supports_unicode_filenames and not isfile:
+        name = name.encode('utf-8')
     return name
 
 
@@ -2522,15 +2626,7 @@ def SetupLibrary():
     SetupAmazonLibrary()
 
 
-def CreateInfoFile(nfofile, path, content, Infol, language, hasSubtitles=False):
-    Info = {}
-    for k, v in Infol.items():
-        if isinstance(v, str):
-            v = unicode(v.decode('utf-8'))
-        if isinstance(v, list):
-            v = [i.decode('utf-8') for i in v if isinstance(i, str)]
-        Info.update({k: v})
-
+def CreateInfoFile(nfofile, path, content, Info, language, hasSubtitles=False):
     skip_keys = ('ishd', 'isadult', 'audiochannels', 'genre', 'cast', 'duration', 'asins', 'contentType')
     fileinfo = u'<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>'
     fileinfo += u'<%s>' % content
@@ -2943,7 +3039,7 @@ class Captcha(pyxbmct.AddonDialogWindow):
         self.username = pyxbmct.Edit('', _alignment=pyxbmct.ALIGN_LEFT | pyxbmct.ALIGN_CENTER_Y)
         self.password = pyxbmct.Edit('', _alignment=pyxbmct.ALIGN_LEFT | pyxbmct.ALIGN_CENTER_Y)
         self.captcha = pyxbmct.Edit('', _alignment=pyxbmct.ALIGN_LEFT | pyxbmct.ALIGN_CENTER_Y)
-        self.btn_submit = pyxbmct.Button(getString(30008).split('.')[0])
+        self.btn_submit = pyxbmct.Button(getString(30008).split('…')[0])
         self.btn_cancel = pyxbmct.Button(getString(30123))
         self.set_controls()
         self.set_navigation()
@@ -3003,7 +3099,6 @@ deviceID = genID()
 if not UsePrimeVideo:
     dbFile = os.path.join(DataPath, 'art.db')
     db = sqlite.connect(dbFile)
-    db.text_factory = str
     createDB()
 
     menuDb = sqlite.connect(menuFile)
@@ -3041,7 +3136,7 @@ elif mode == 'openSettings':
     xbmcaddon.Addon(aid).openSettings()
 elif mode == 'ageSettings':
     if RequestPin():
-        AgeSettings(getString(30018).split('.')[0]).doModal()
+        AgeSettings(getString(30018).split('…')[0]).doModal()
 elif mode == 'PrimeVideo_Browse':
     PrimeVideo_Browse(None if 'path' not in args else args['path'])
 else:

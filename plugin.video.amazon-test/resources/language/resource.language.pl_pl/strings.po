@@ -58,7 +58,7 @@ msgid "Remove Credentials and Cookie"
 msgstr "Usuń dane logowania i cookies"
 
 msgctxt "#30008"
-msgid "Sign In..."
+msgid "Sign In…"
 msgstr ""
 
 msgctxt "#30011"
@@ -70,7 +70,7 @@ msgid "Playback with"
 msgstr "Odtwarzanie"
 
 msgctxt "#30013"
-msgid "Inputstream Addon Settings..."
+msgid "Inputstream Addon Settings…"
 msgstr ""
 
 msgctxt "#30014"
@@ -90,7 +90,7 @@ msgid "TV Show Fanart Source"
 msgstr "Pobieraj brakujący Fanart TV przez TVDB (w tle)"
 
 msgctxt "#30018"
-msgid "Age restrictions..."
+msgid "Age restrictions…"
 msgstr ""
 
 msgctxt "#30019"

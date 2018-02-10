@@ -25,7 +25,6 @@
         <setting id="drm_check" type="bool" label="30020" visible="eq(-21,3)" enable="eq(2,false)" default="true"/>
         <setting id="fallback_method" type="enum" label="Fallback" values="None|Browser|Script/Batch|Android" default="0" visible="eq(-22,3)" enable="eq(-1,true)" subsetting="true"/>
         <setting id="at_check" type="bool" label="30021" default="false" visible="eq(-23,3)" enable="eq(-2,false)"/>
-        <setting id="at_lang" type="labelenum" label="30022" values="ger|eng|jpn" default="ger" visible="eq(-24,3)" enable="eq(-1,true)" subsetting="true"/>
     </category>
     <category label="30038">
         <setting id="country" type="enum" label="30080" lvalues="30081|30082|30083|30084|30085" default="0"/>

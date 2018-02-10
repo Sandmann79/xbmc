@@ -310,11 +310,11 @@ def getTMDBImages(title, content='movie', year=None):
         if not data:
             continue
 
-        if data['total_results'] > 0:
+        if data.get('total_results', 0) > 0:
             result = data['results'][0]
-            if result['backdrop_path']:
+            if result.get('backdrop_path'):
                 fanart = TMDB_URL + result['backdrop_path']
-            tmdbid = result['id']
+            tmdbid = result.get('id')
         elif year:
             year = 0
         else:

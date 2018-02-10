@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+from __future__ import unicode_literals
 from BeautifulSoup import BeautifulSoup, BeautifulStoneSoup, Tag
 from datetime import date
 from pyDes import *
@@ -175,6 +176,8 @@ OfferGroup = '' if payCont else '&OfferGroups=B0043YVHMY'
 socket.setdefaulttimeout(30)
 
 EXPORT_PATH = DataPath
+if addon.getSetting('enablelibraryfolder') == 'true':
+    EXPORT_PATH = xbmc.translatePath(addon.getSetting('customlibraryfolder')).decode('utf-8')
 MOVIE_PATH = os.path.join(EXPORT_PATH, 'Movies')
 TV_SHOWS_PATH = os.path.join(EXPORT_PATH, 'TV')
 ms_mov = ms_mov if ms_mov else 'Amazon Movies'
@@ -357,8 +360,8 @@ def ContextMenu_MultiUser():
 
 
 def MainMenu():
-    Log('Version: %s' % __version__, xbmc.LOGINFO)
-    Log('Unicode support: %s' % os.path.supports_unicode_filenames, xbmc.LOGINFO)
+    Log('Version: %s' % __version__)
+    Log('Unicode filename support: %s' % os.path.supports_unicode_filenames)
     if False is not UsePrimeVideo:
         if 0 == len(pvCatalog):
             ''' Build the root catalog '''
@@ -1207,8 +1210,6 @@ def getArtWork(infoLabels, contentType):
         title = infoLabels['Title']
         if contentType == 'season':
             title = infoLabels['TVShowTitle']
-        if isinstance(title, unicode):
-            title = title.encode('utf-8')
         c.execute('insert or ignore into miss values (?,?,?,?)', (asins, title, infoLabels['Year'], contentType))
     c.close()
     return infoLabels
@@ -1269,7 +1270,7 @@ def getTVDBImages(title, tvdb_id=None):
     TVDB_URL = 'http://www.thetvdb.com/banners/'
 
     while not tvdb_id and title:
-        tv = urllib.quote_plus(title)
+        tv = urllib.quote_plus(title.encode('utf-8'))
         result = getURL('http://www.thetvdb.com/api/GetSeries.php?seriesname=%s&language=%s' % (tv, Language),
                         silent=True, rjson=False)
         if not result:
@@ -1318,7 +1319,7 @@ def getTMDBImages(title, content='movie', year=None):
 
     while not tmdb_id and title:
         str_year = '&year=' + str(year) if year else ''
-        movie = urllib.quote_plus(title)
+        movie = urllib.quote_plus(title.encode('utf-8'))
         data = getURL('http://api.themoviedb.org/3/search/%s?api_key=%s&language=%s&query=%s%s' % (
             content, tmdb, Language, movie, str_year), silent=True)
         if not data:
@@ -1396,9 +1397,8 @@ def getList(listing, export, cont):
 def Log(msg, level=xbmc.LOGNOTICE):
     if level == xbmc.LOGDEBUG and verbLog:
         level = xbmc.LOGNOTICE
-    if isinstance(msg, unicode):
-        msg = msg.encode('utf-8')
-    xbmc.log('[%s] %s' % (__plugin__, msg.__str__()), level)
+    msg = '[%s] %s' % (__plugin__, msg)
+    xbmc.log(msg.encode('utf-8'), level)
 
 
 def WriteLog(data, fn=''):
@@ -1412,15 +1412,12 @@ def WriteLog(data, fn=''):
         data = data.encode('utf-8')
     logfile = xbmcvfs.File(path, 'w')
     logfile.write(data.__str__())
-    logfile.write('\n')
     logfile.close()
 
 
 def getString(string_id):
     src = xbmc if string_id < 30000 else addon
     locString = src.getLocalizedString(string_id)
-    if isinstance(locString, unicode):
-        locString = locString.encode('utf-8')
     return locString
 
 
@@ -1706,7 +1703,7 @@ def IStreamPlayback(asin, name, trailer, isAdult, extern):
     mpd, subs = getStreams(*getUrldata('catalog/GetPlaybackResources', asin, extra=True, vMT=vMT,
                                        opt='&titleDecorationScheme=primary-content', dRes=dRes, useCookie=cookie), retmpd=True)
 
-    cj_str = ';'.join([c.name + '=' + c.value for c in cookie])
+    cj_str = ';'.join(['%s=%s' % (k, v) for k, v in cookie.items()])
     opt = '|Content-Type=application%2Fx-www-form-urlencoded&Cookie=' + urllib.quote_plus(cj_str)
     opt += '|widevine2Challenge=B{SSM}&includeHdcpTestKeyInLicense=true'
     opt += '|JBlicense;hdcpEnforcementResolutionPixels'
@@ -2590,11 +2587,10 @@ def cleanName(name, isfile=True):
     notallowed = ['<', '>', ':', '"', '\\', '/', '|', '*', '?']
     if not isfile:
         notallowed = ['<', '>', '"', '|', '*', '?']
-        if not os.path.supports_unicode_filenames:
-            name = name.encode('utf-8')
-
     for c in notallowed:
         name = name.replace(c, '')
+    if not os.path.supports_unicode_filenames and not isfile:
+        name = name.encode('utf-8')
     return name
 
 
@@ -2625,15 +2621,7 @@ def SetupLibrary():
     SetupAmazonLibrary()
 
 
-def CreateInfoFile(nfofile, path, content, Infol, language, hasSubtitles=False):
-    Info = {}
-    for k, v in Infol.items():
-        if isinstance(v, str):
-            v = unicode(v.decode('utf-8'))
-        if isinstance(v, list):
-            v = [i.decode('utf-8') for i in v if isinstance(i, str)]
-        Info.update({k: v})
-
+def CreateInfoFile(nfofile, path, content, Info, language, hasSubtitles=False):
     skip_keys = ('ishd', 'isadult', 'audiochannels', 'genre', 'cast', 'duration', 'asins', 'contentType')
     fileinfo = u'<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>'
     fileinfo += u'<%s>' % content
@@ -3106,7 +3094,6 @@ deviceID = genID()
 if not UsePrimeVideo:
     dbFile = os.path.join(DataPath, 'art.db')
     db = sqlite.connect(dbFile)
-    db.text_factory = str
     createDB()
 
     menuDb = sqlite.connect(menuFile)

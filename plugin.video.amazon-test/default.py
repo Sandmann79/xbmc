@@ -665,7 +665,7 @@ def PrimeVideo_LazyLoad(obj):
                     meta = o['metadata']
                     if None is not bgimg:
                         meta['artmeta']['fanart'] = bgimg
-                    NotifyUser(getString(30253).format(o['title'].encode('utf-8')))
+                    NotifyUser(getString(30253).format(o['title']))
                     meta['asin'] = re.search(r'"asin":"([^"]*)"', cnt, flags=re.DOTALL).group(1)
                     meta['video'] = ExtractURN(requestURL)
 
@@ -772,7 +772,7 @@ def PrimeVideo_LazyLoad(obj):
                             ''' Probably an extra trailer or something, remove episode information '''
                             del meta['videometa']['season']
                             del meta['videometa']['episode']
-                        NotifyUser(getString(30253).format(title.encode('utf-8')))
+                        NotifyUser(getString(30253).format(title))
                         if meta['video'] not in o:
                             o[meta['video']] = {'title': title}
                         o[meta['video']]['metadata'] = meta
@@ -799,7 +799,7 @@ def PrimeVideo_LazyLoad(obj):
                             else:
                                 res[i] = list(res[i])
                     title = Unescape(res[0][2])
-                    NotifyUser(getString(30253).format(title.encode('utf-8')))
+                    NotifyUser(getString(30253).format(title))
                     if None is not re.match(r'/[^/]', res[0][1]):
                         res[0][1] = BaseUrl + res[0][1]
                     meta = {'artmeta': {'thumb': MaxSize(res[0][0]), 'poster': MaxSize(res[0][0])}, 'videometa': {}}
@@ -859,7 +859,7 @@ def PrimeVideo_LazyLoad(obj):
                 section = re.split(r'","', section[2:-2])
                 if 'dvappend' == section[0]:
                     title = Unescape(re.sub(r'^.*<h2[^>]*>\s*<span[^>]*>\s*(.*?)\s*</span>.*$', r'\1', section[2], flags=re.DOTALL))
-                    NotifyUser(getString(30253).format(title.encode('utf-8')))
+                    NotifyUser(getString(30253).format(title))
                     o[title] = {'title': title}
                     if None is not re.search('<h2[^>]*>.*?<a\s+[^>]*\s+href="[^"]+"[^>]*>.*?</h2>', section[2], flags=re.DOTALL):
                         o[title]['lazyLoadURL'] = Unescape(

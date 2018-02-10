@@ -442,18 +442,20 @@ def PrimeVideo_Search():
 def PrimeVideo_Browse(path, forceSort=None):
     """ Display and navigate the menu for PrimeVideo users """
 
+    path = path.decode('utf-8')
+
     # Add multiuser menu if needed
     if (multiuser) and ('root' == path) and (1 < len(loadUsers())):
         li = xbmcgui.ListItem(getString(30134).format(loadUser()['name']))
         li.addContextMenuItems(ContextMenu_MultiUser())
-        xbmcplugin.addDirectoryItem(pluginhandle, u'{0}?mode=PrimeVideo_Browse&path=root-//-SwitchUser'.format(sys.argv[0]), li, isFolder=False)
+        xbmcplugin.addDirectoryItem(pluginhandle, '{0}?mode=PrimeVideo_Browse&path=root-//-SwitchUser'.format(sys.argv[0]), li, isFolder=False)
     if 'root-//-SwitchUser' == path:
         if switchUser():
             PrimeVideo_BuildRoot()
         return
 
     node = pvCatalog
-    for n in path.decode('utf-8').split('-//-'):
+    for n in path.split('-//-'):
         node = node[n]
     if 'lazyLoadURL' in node:
         PrimeVideo_LazyLoad(node)
@@ -470,7 +472,7 @@ def PrimeVideo_Browse(path, forceSort=None):
             continue
         url = u'{0}?mode='.format(sys.argv[0])
         if 'verb' not in node[key]:
-            url += 'PrimeVideo_Browse&path={0}-//-{1}'.format(urllib.quote_plus(path), urllib.quote_plus(key.encode('utf-8')))
+            url += 'PrimeVideo_Browse&path={0}-//-{1}'.format(urllib.quote_plus(path.encode('utf-8')), urllib.quote_plus(key.encode('utf-8')))
         else:
             url += node[key]['verb']
         item = xbmcgui.ListItem(node[key]['title'])

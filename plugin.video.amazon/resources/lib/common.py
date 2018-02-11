@@ -121,7 +121,7 @@ class Captcha(pyxbmct.AddonDialogWindow):
         if not head:
             head = soup.find('div', attrs={'id': 'message_error'})
         title = soup.find('div', attrs={'id': 'ap_captcha_guess_alert'})
-        url = soup.find('div', attrs={'id': 'ap_captcha_img'}).img.get('src')
+        self.picurl = soup.find('div', attrs={'id': 'ap_captcha_img'}).img.get('src')
         self.setGeometry(500, 550, 9, 2)
         self.email = email
         self.pwd = ''
@@ -129,7 +129,7 @@ class Captcha(pyxbmct.AddonDialogWindow):
         self.head = head.p.renderContents().strip()
         self.head = re.sub('(?i)<[^>]*>', '', self.head)
         self.title = title.renderContents().strip()
-        self.image = pyxbmct.Image(url, aspectRatio=2)
+        self.image = pyxbmct.Image('', aspectRatio=2)
         self.tb_head = pyxbmct.TextBox()
         self.fl_title = pyxbmct.FadeLabel(_alignment=pyxbmct.ALIGN_CENTER)
         self.username = pyxbmct.Edit('', _alignment=pyxbmct.ALIGN_LEFT | pyxbmct.ALIGN_CENTER_Y)
@@ -157,6 +157,7 @@ class Captcha(pyxbmct.AddonDialogWindow):
         self.username.setText(self.email)
         self.tb_head.setText(self.head)
         self.fl_title.addLabel(self.title)
+        self.image.setImage(self.picurl, False)
 
     def set_navigation(self):
         self.username.controlUp(self.btn_submit)

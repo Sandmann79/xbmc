@@ -212,7 +212,7 @@ def delfromTVdb():
             delasins.append(asins)
         else:
             for asin in asins.split(','):
-                for item in lookupTVdb(asin, rvalue='asin', tbl='seasons', name='seriesasin'):
+                for item in lookupTVdb(asin, rvalue='asin', tbl='seasons', name='seriesasin', single=False):
                     if item:
                         delasins += item
 

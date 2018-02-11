@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+from __future__ import unicode_literals
 from BeautifulSoup import BeautifulStoneSoup
 from common import *
 from inputstreamhelper import Helper
@@ -184,7 +185,7 @@ def IStreamPlayback(trailer, isAdult, extern):
     mpd, subs = getStreams(*getUrldata('catalog/GetPlaybackResources', args.get('asin'), extra=True, vMT=vMT,
                                        opt='&titleDecorationScheme=primary-content', useCookie=cookie), retmpd=True)
 
-    cj_str = ';'.join([c.name + '=' + c.value for c in cookie])
+    cj_str = ';'.join(['%s=%s' % (k, v) for k, v in cookie.items()])
     opt = '|Content-Type=application%2Fx-www-form-urlencoded&Cookie=' + urllib.quote_plus(cj_str)
     opt += '|widevine2Challenge=B{SSM}&includeHdcpTestKeyInLicense=true'
     opt += '|JBlicense;hdcpEnforcementResolutionPixels'
@@ -320,23 +321,53 @@ def validAudioTrack():
 
 
 def parseSubs(data):
+    localeConversion = {
+        'ar-001': 'ar',
+        'cmn-hans': 'zh HANS',
+        'cmn-hant': 'zh HANT',
+        'da-dk': 'da',
+        'es-419': 'es LA',
+        'ja-jp': 'ja',
+        'ko-kr': 'ko',
+        'nb-no': 'nb',
+        'sv-se': 'sv',
+    }  # Clean up language and locale information where needed
     subs = []
     if addon.getSetting('subtitles') == 'false' or 'subtitleUrls' not in data:
         return subs
 
     for sub in data['subtitleUrls']:
-        lang = sub['displayName'].split('(')[0].strip()
-        Log('Convert %s Subtitle' % lang)
+        lang = sub['languageCode'].strip()
+        if lang in localeConversion:
+            lang = localeConversion[lang]
+        # Clean up where needed
+        if '-' in lang:
+            p1 = re.split('-', lang)[0]
+            p2 = re.split('-', lang)[1]
+            if p1 == p2: # Remove redundant locale information when not useful
+                lang = p1
+            else:
+                lang = '%s %s' % (p1, p2.upper())
+        # Amazon's en defaults to en_US, not en_UK
+        if 'en' == lang:
+            lang = 'en US'
+        # Readd close-caption information where needed
+        if '[' in sub['displayName']:
+            cc = re.search(r'(\[[^\]]+\])', sub['displayName'])
+            if None is not cc:
+                lang = lang + (' %s' % cc.group(1))
+        Log('Convert %s Subtitle (%s)' % (sub['displayName'].strip(), lang))
         srtfile = xbmc.translatePath('special://temp/%s.srt' % lang).decode('utf-8')
-        srt = codecs.open(srtfile, 'w', encoding='utf-8')
-        soup = BeautifulStoneSoup(getURL(sub['url'], rjson=False), convertEntities=BeautifulStoneSoup.XML_ENTITIES)
-        enc = soup.originalEncoding
-        num = 0
-        for caption in soup.findAll('tt:p'):
-            num += 1
-            subtext = caption.renderContents().decode(enc).replace('<tt:br>', '\n').replace('</tt:br>', '')
-            srt.write(u'%s\n%s --> %s\n%s\n\n' % (num, caption['begin'], caption['end'], subtext))
-        srt.close()
+        with codecs.open(srtfile, 'w', encoding='utf-8') as srt:
+            soup = BeautifulStoneSoup(getURL(sub['url'], rjson=False), convertEntities=BeautifulStoneSoup.XML_ENTITIES)
+            enc = soup.originalEncoding
+            if None is enc:
+                enc = 'utf-8'
+            num = 0
+            for caption in soup.findAll('tt:p'):
+                num += 1
+                subtext = caption.renderContents().decode(enc).replace('<tt:br>', '\n').replace('</tt:br>', '')
+                srt.write('%s\n%s --> %s\n%s\n\n' % (num, caption['begin'], caption['end'], subtext))
         subs.append(srtfile)
     return subs
 

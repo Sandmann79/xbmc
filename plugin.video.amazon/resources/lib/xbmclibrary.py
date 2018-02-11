@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+from __future__ import unicode_literals
 from common import *
 import movies as moviesDB
 import tv as tvDB
@@ -11,15 +12,13 @@ from BeautifulSoup import BeautifulSoup, Tag
 cr_nfo = addon.getSetting('cr_nfo') == 'true'
 ms_mov = addon.getSetting('mediasource_movie')
 ms_tv = addon.getSetting('mediasource_tv')
+EXPORT_PATH = pldatapath
+if addon.getSetting('enablelibraryfolder') == 'true':
+    EXPORT_PATH = xbmc.translatePath(addon.getSetting('customlibraryfolder')).decode('utf-8')
+MOVIE_PATH = os.path.join(EXPORT_PATH, 'Movies')
+TV_SHOWS_PATH = os.path.join(EXPORT_PATH, 'TV')
 ms_mov = ms_mov if ms_mov else 'Amazon Movies'
 ms_tv = ms_tv if ms_tv else 'Amazon TV'
-
-if addon.getSetting('enablelibraryfolder') == 'true':
-    MOVIE_PATH = os.path.join(xbmc.translatePath(addon.getSetting('customlibraryfolder')), 'Movies').decode('utf-8')
-    TV_SHOWS_PATH = os.path.join(xbmc.translatePath(addon.getSetting('customlibraryfolder')), 'TV').decode('utf-8')
-else:
-    MOVIE_PATH = os.path.join(pldatapath, 'Movies')
-    TV_SHOWS_PATH = os.path.join(pldatapath, 'TV')
 
 
 def UpdateLibrary():
@@ -39,57 +38,49 @@ def SetupLibrary():
     SetupAmazonLibrary()
 
 
-def streamDetails(Infol, language='ger', hasSubtitles=False):
-    Info = {}
-    for k,v in Infol.items():
-        if isinstance(v, str):
-            v = unicode(v.decode('utf-8'))
-        if isinstance(v, list):
-            v = [i.decode('utf-8') for i in v if isinstance(i, str)]
-        Info.update({k: v})
-
+def streamDetails(Info, language='ger', hasSubtitles=False):
     skip_keys = ('ishd', 'isadult', 'audiochannels', 'genre', 'cast', 'duration', 'trailer', 'asins')
-    fileinfo = u'<runtime>%s</runtime>' % Info['Duration']
+    fileinfo = '<runtime>%s</runtime>' % Info['Duration']
     if 'Genre' in Info.keys() and Info['Genre']:
         for genre in Info['Genre'].split('/'):
-            fileinfo += u'<genre>%s</genre>' % genre.strip()
+            fileinfo += '<genre>%s</genre>' % genre.strip()
     if 'Cast' in Info.keys():
         for actor in Info['Cast']:
-            fileinfo += u'<actor>'
-            fileinfo += u'<name>%s</name>' % actor.strip()
-            fileinfo += u'</actor>'
+            fileinfo += '<actor>'
+            fileinfo += '<name>%s</name>' % actor.strip()
+            fileinfo += '</actor>'
     for key, value in Info.items():
         lkey = key.lower()
         if lkey == 'premiered' and 'TVShowTitle' in Info.keys():
-            fileinfo += u'<aired>%s</aired>' % value
+            fileinfo += '<aired>%s</aired>' % value
         elif lkey == 'fanart':
-            fileinfo += u'<%s><thumb>%s</thumb></%s>' % (lkey, value, lkey)
+            fileinfo += '<%s><thumb>%s</thumb></%s>' % (lkey, value, lkey)
         elif lkey not in skip_keys:
-            fileinfo += u'<%s>%s</%s>' % (lkey, value, lkey)
-    fileinfo += u'<fileinfo>'
-    fileinfo += u'<streamdetails>'
-    fileinfo += u'<audio>'
-    fileinfo += u'<channels>%s</channels>' % Info['AudioChannels']
-    fileinfo += u'<codec>aac</codec>'
-    fileinfo += u'</audio>'
-    fileinfo += u'<video>'
-    fileinfo += u'<codec>h264</codec>'
-    fileinfo += u'<durationinseconds>%s</durationinseconds>' % Info['Duration']
+            fileinfo += '<%s>%s</%s>' % (lkey, value, lkey)
+    fileinfo += '<fileinfo>'
+    fileinfo += '<streamdetails>'
+    fileinfo += '<audio>'
+    fileinfo += '<channels>%s</channels>' % Info['AudioChannels']
+    fileinfo += '<codec>aac</codec>'
+    fileinfo += '</audio>'
+    fileinfo += '<video>'
+    fileinfo += '<codec>h264</codec>'
+    fileinfo += '<durationinseconds>%s</durationinseconds>' % Info['Duration']
     if Info['isHD']:
-        fileinfo += u'<height>1080</height>'
-        fileinfo += u'<width>1920</width>'
+        fileinfo += '<height>1080</height>'
+        fileinfo += '<width>1920</width>'
     else:
-        fileinfo += u'<height>480</height>'
-        fileinfo += u'<width>720</width>'
-    fileinfo += u'<language>%s</language>' % language
-    fileinfo += u'<scantype>Progressive</scantype>'
-    fileinfo += u'</video>'
+        fileinfo += '<height>480</height>'
+        fileinfo += '<width>720</width>'
+    fileinfo += '<language>%s</language>' % language
+    fileinfo += '<scantype>Progressive</scantype>'
+    fileinfo += '</video>'
     if hasSubtitles:
-        fileinfo += u'<subtitle>'
-        fileinfo += u'<language>ger</language>'
-        fileinfo += u'</subtitle>'
-    fileinfo += u'</streamdetails>'
-    fileinfo += u'</fileinfo>'
+        fileinfo += '<subtitle>'
+        fileinfo += '<language>ger</language>'
+        fileinfo += '</subtitle>'
+    fileinfo += '</streamdetails>'
+    fileinfo += '</fileinfo>'
     return fileinfo
 
 
@@ -105,7 +96,7 @@ def EXPORT_MOVIE(asin=False, makeNFO=cr_nfo):
         strm_file = filename + ".strm"
         u = '%s?%s' % (sys.argv[0], urllib.urlencode({'asin': asin,
                                                       'mode': 'play',
-                                                      'name': Info['Title'],
+                                                      'name': Info['Title'].encode('utf-8'),
                                                       'sitemode': 'PLAYVIDEO',
                                                       'adult': Info['isAdult'],
                                                       'trailer': 0,
@@ -171,9 +162,9 @@ def EXPORT_EPISODE(asin=None, makeNFO=cr_nfo, dispnotif=True):
 
         if makeNFO:
             nfo_file = filename + u".nfo"
-            nfo = u'<episodedetails>'
+            nfo = '<episodedetails>'
             nfo += streamDetails(Info)
-            nfo += u'</episodedetails>'
+            nfo += '</episodedetails>'
             SaveFile(nfo_file, nfo, seasonpath)
 
 

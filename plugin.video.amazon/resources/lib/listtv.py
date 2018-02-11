@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+from __future__ import unicode_literals
 from common import *
 import xbmclibrary
 import tv
@@ -124,7 +125,7 @@ def ADD_SHOW_ITEM(showdata, mode='listtv', submode='LIST_TV_SEASONS', cmmode=0, 
           (getString(30183), 'Container.Update(%s?mode=appfeed&sitemode=getSimilarities&asin=%s)' % (sys.argv[0], asin)),
           (getString(30186), 'RunPlugin(%s?mode=xbmclibrary&sitemode=UpdateLibrary)' % sys.argv[0]),
           (getString(30155) % getString(30166), 'RunPlugin(%s?mode=tv&sitemode=delfromTVdb&asins=%s&table=shows&title=%s)' % (
-           sys.argv[0], urllib.quote_plus(infoLabels['Asins']), urllib.quote_plus(seriestitle)))]
+           sys.argv[0], urllib.quote_plus(infoLabels['Asins']), urllib.quote_plus(seriestitle.encode('utf-8'))))]
 
     if onlyinfo:
         return infoLabels
@@ -199,7 +200,7 @@ def ADD_SEASON_ITEM(seasondata, mode='listtv', submode='LIST_EPISODES_DB', dispt
           (getString(30183), 'Container.Update(%s?mode=appfeed&sitemode=getSimilarities&asin=%s)' % (sys.argv[0], asin)),
           (getString(30186), 'RunPlugin(%s?mode=xbmclibrary&sitemode=UpdateLibrary)' % sys.argv[0]),
           (getString(30155) % getString(30167), 'RunPlugin(%s?mode=tv&sitemode=delfromTVdb&asins=%s&table=seasons&title=%s)' % (
-           sys.argv[0], urllib.quote_plus(infoLabels['Asins']), urllib.quote_plus(displayname)))]
+           sys.argv[0], urllib.quote_plus(infoLabels['Asins']), urllib.quote_plus(displayname.encode('utf-8'))))]
 
     if onlyinfo:
         return infoLabels

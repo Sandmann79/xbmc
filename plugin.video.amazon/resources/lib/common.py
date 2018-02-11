@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+from __future__ import unicode_literals
 from BeautifulSoup import BeautifulSoup
 from pyDes import *
 from platform import node
@@ -250,16 +251,14 @@ def WriteLog(data, fn=''):
         data = data.encode('utf-8')
     logfile = xbmcvfs.File(path, 'w')
     logfile.write(data.__str__())
-    logfile.write('\n')
     logfile.close()
 
 
 def Log(msg, level=xbmc.LOGNOTICE):
     if level == xbmc.LOGDEBUG and verbLog:
         level = xbmc.LOGNOTICE
-    if isinstance(msg, unicode):
-        msg = msg.encode('utf-8')
-    xbmc.log('[%s] %s' % (pluginname, msg.__str__()), level)
+    msg = '[%s] %s' % (pluginname, msg)
+    xbmc.log(msg.encode('utf-8'), level)
 
 
 def SaveFile(filename, data, dirname=None):
@@ -277,7 +276,7 @@ def SaveFile(filename, data, dirname=None):
 
 
 def addDir(name, mode, sitemode, url='', thumb='', fanart='', infoLabels=None, totalItems=0, cm=None, page=1, options=''):
-    u = {'url': url, 'mode': mode, 'sitemode': sitemode, 'name': name, 'page': page, 'opt': options}
+    u = {'url': url, 'mode': mode, 'sitemode': sitemode, 'name': name.encode('utf-8'), 'page': page, 'opt': options}
     url = '%s?%s' % (sys.argv[0], urllib.urlencode(u))
 
     if not fanart or fanart == na:
@@ -302,7 +301,7 @@ def addDir(name, mode, sitemode, url='', thumb='', fanart='', infoLabels=None, t
 
 def addVideo(name, asin, poster=None, fanart=None, infoLabels=None, totalItems=0, cm=[], trailer=False,
              isAdult=False, isHD=False):
-    u = {'asin': asin, 'mode': 'play', 'name': name, 'sitemode': 'PLAYVIDEO', 'adult': isAdult}
+    u = {'asin': asin, 'mode': 'play', 'name': name.encode('utf-8'), 'sitemode': 'PLAYVIDEO', 'adult': isAdult}
     url = '%s?%s' % (sys.argv[0], urllib.urlencode(u))
 
     if not infoLabels:
@@ -459,7 +458,7 @@ def LogIn(ask=True):
         xbmc.executebuiltin('Dialog.Close(busydialog)')
         WriteLog(response, 'login')
 
-        while 'auth-mfa-form' in response or 'ap_dcq_form' in response or 'ap_captcha_img_label' in response:
+        while any(s in response for s in ['auth-mfa-form', 'ap_dcq_form', 'ap_captcha_img_label', 'claimspicker', 'fwcim-form']):
             br = MFACheck(br, email, soup)
             if not br:
                 return False
@@ -649,6 +648,32 @@ def MFACheck(br, email, soup):
         else:
             return False
         del wnd
+    elif 'claimspicker' in str(soup):
+        msg = soup.find('form', attrs={'name': 'claimspicker'})
+        cs_title = msg.find('div', attrs={'class': 'a-row a-spacing-small'})
+        cs_title = cs_title.h1.contents[0].strip()
+        cs_quest = msg.find('label', attrs={'class': 'a-form-label'}).contents[0].strip()
+        choices = []
+        for c in soup.findAll('div', attrs={'data-a-input-name': 'option'}):
+            choices.append((c.span.contents[0].strip(), c.input['name'], c.input['value']))
+
+        sel = Dialog.select('%s - %s' % (cs_title, cs_quest), [k[0] for k in choices])
+        if sel > -1:
+            xbmc.executebuiltin('ActivateWindow(busydialog)')
+            br.select_form(nr=0)
+            br[choices[sel][1]] = [choices[sel][2]]
+        else:
+            return False
+    elif 'fwcim-form' in str(soup):
+        msg = soup.find('div', attrs={'class': 'a-row a-spacing-micro cvf-widget-input-code-label'}).contents[0].strip()
+        ret = Dialog.input(msg)
+        if ret:
+            xbmc.executebuiltin('ActivateWindow(busydialog)')
+            br.select_form(nr=0)
+            Log(br)
+            br['code'] = ret
+        else:
+            return False
     return br
 
 
@@ -688,21 +713,18 @@ def cleanData(data):
     elif not isinstance(data, unicode):
         return data
 
-    data = data.replace(u'\u00A0', ' ').replace(u'\u2013', '-').strip()
+    data = data.replace('\u00A0', ' ').replace('\u2013', '-').strip()
     return None if data == '' else data
 
 
 def cleanName(name, isfile=True):
-    if isfile:
-        notallowed = ['<', '>', ':', '"', '\\', '/', '|', '*', '?']
-        if isinstance(name, str):
-            name = name.decode('utf-8')
-    else:
+    notallowed = ['<', '>', ':', '"', '\\', '/', '|', '*', '?']
+    if not isfile:
         notallowed = ['<', '>', '"', '|', '*', '?']
-        if not os.path.supports_unicode_filenames and isinstance(name, unicode):
-            name = name.encode('utf-8')
     for c in notallowed:
         name = name.replace(c, '')
+    if not os.path.supports_unicode_filenames and not isfile:
+        name = name.encode('utf-8')
     return name
 
 
@@ -746,8 +768,6 @@ def SCRAP_ASINS(aurl, cj=True):
 def getString(string_id):
     src = xbmc if string_id < 30000 else addon
     locString = src.getLocalizedString(string_id)
-    if isinstance(locString, unicode):
-        return locString.encode('utf-8')
     return locString
 
 

@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+from __future__ import unicode_literals
 """AMAZON."""
 # main imports
-# from __future__ import unicode_literals
 from resources.lib.common import *
 from service import updateRunning
 
@@ -10,7 +10,7 @@ from service import updateRunning
 def modes():
     if not sys.argv[2]:
         Log('Version: %s' % addon.getAddonInfo('version'))
-        Log('Unicode support: %s' % os.path.supports_unicode_filenames)
+        Log('Unicode filename support: %s' % os.path.supports_unicode_filenames)
         cm = {}
 
         updateall = (getString(30103), 'RunPlugin(%s?mode=appfeed&sitemode=updateAll)' % sys.argv[0])

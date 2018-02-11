@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+from __future__ import unicode_literals
 from common import *
 import listtv
 import listmovie
@@ -103,7 +104,7 @@ def SEARCH_DB(searchString=None):
         keyboard = xbmc.Keyboard('', getString(24121))
         keyboard.doModal()
         if keyboard.isConfirmed():
-            searchString = keyboard.getText()
+            searchString = keyboard.getText().decode('utf-8')
             if searchString != '':
                 addText('          ----=== ' + getString(30104) + ' ===----')
                 if not listmovie.LIST_MOVIES('movietitle', searchString, search=True):
@@ -235,7 +236,7 @@ def getTVDBImages(title, tvdbid=None, seasons=False):
     langcodes = ['de', 'en']
     TVDB_URL = 'http://www.thetvdb.com/banners/'
     while not tvdbid and title:
-        tv = urllib.quote_plus(title)
+        tv = urllib.quote_plus(title.encode('utf-8'))
         result = getURL('http://www.thetvdb.com/api/GetSeries.php?seriesname=%s&language=de' % tv, silent=True, rjson=False)
         if not result:
             continue
@@ -304,7 +305,7 @@ def getTMDBImages(title, content='movie', year=None):
         if year:
             str_year = '&year=' + str(year)
 
-        movie = urllib.quote_plus(title)
+        movie = urllib.quote_plus(title.encode('utf-8'))
         data = getURL('http://api.themoviedb.org/3/search/%s?api_key=%s&language=de&query=%s%s' % (
             content, tmdb, movie, str_year), silent=True)
         if not data:

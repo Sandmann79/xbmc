@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # !/usr/bin/env python
 # -*- coding: utf-8 -*-
+from __future__ import unicode_literals
 from common import *
 from service import updateRunning
 import db
@@ -203,11 +204,9 @@ def delfromTVdb():
     asins = args.get('asins')
     title = args.get('title')
     table = args.get('table')
-    strid = 30166
-    if table == 'seasons':
-        strid = 30167
+    strid = 30167 if table == 'seasons' else 30166
 
-    if Dialog.yesno(getString(30155) % getString(strid), getString(30156) % title):
+    if Dialog.yesno(getString(30155) % getString(strid), getString(30156) % title.decode('utf-8')):
         delasins = []
         if table == 'seasons':
             delasins.append(asins)
@@ -676,7 +675,7 @@ def getIMDbID(asins, title):
             break
     if not url:
         while not imdbid:
-            data = getURL('http://www.omdbapi.com/?type=series&t=' + urllib.quote_plus(title))
+            data = getURL('http://www.omdbapi.com/?type=series&t=' + urllib.quote_plus(title.encode('utf-8')))
             if data['Response'] == 'True':
                 imdbid = data['imdbID']
             else:

@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+from __future__ import unicode_literals
 from common import xbmc, addon, xbmcvfs, xbmcgui, os, Dialog, Log, getString, getConfig, writeConfig, homepath, pluginname
 from BeautifulSoup import BeautifulSoup
 
@@ -63,8 +64,8 @@ def getDBlocation(retvar):
 def cur_exec(cur, query, param=None):
     syntax = {True: {'counttables': 'SELECT count(*) FROM sqlite_master WHERE type="table" AND name=(?)',
                      'insert ignore': 'insert or ignore'},
-              False:{'counttables': 'show tables like ?',
-                     "?": "%s"}}
+              False: {'counttables': 'show tables like ?',
+                      "?": "%s"}}
 
     for k, v in syntax[usesqlite].items():
         query = query.replace(k, v)
@@ -93,11 +94,9 @@ def connSQL(dbname):
         DBfile = getDBlocation(dbname)
         if not xbmcvfs.exists(DBfile):
             cnx = dbapi2.connect(DBfile)
-            cnx.text_factory = str
             createDatabase(cnx, dbname)
         else:
             cnx = dbapi2.connect(DBfile)
-            cnx.text_factory = str
     else:
         import mysql.connector
         from mysql.connector import errorcode
@@ -108,7 +107,7 @@ def connSQL(dbname):
             'user': addon.getSetting('dbuser'),
             'password': addon.getSetting('dbpass'),
             'database': dbname,
-            'use_unicode': False,
+            'use_unicode': True,
             'get_warnings': True,
             'buffered': True
         }
@@ -145,7 +144,7 @@ def loadSQLconfig():
         if videodb:
             for tag in videodb.findAll():
                 if tag.name in keys:
-                    addon.setSetting('db'+tag.name, tag.string)
+                    addon.setSetting('db' + tag.name, tag.string)
         else:
             Dialog.notification(pluginname, getString(30226))
     else:

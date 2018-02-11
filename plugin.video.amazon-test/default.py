@@ -1,39 +1,42 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
+from base64 import b64encode, b64decode
+from collections import OrderedDict
 from BeautifulSoup import BeautifulSoup, BeautifulStoneSoup, Tag
 from datetime import date
-from pyDes import *
 from platform import node
-from sqlite3 import dbapi2 as sqlite
 from random import randint
-from base64 import b64encode, b64decode
-from inputstreamhelper import Helper
-from collections import OrderedDict
-import uuid
-import mechanize
-import sys
-import urllib
-import requests
-import re
-import os
-import xbmcplugin
-import xbmcgui
-import xbmcaddon
-import xbmc
-import urlparse
-import time
-import subprocess
+from sqlite3 import dbapi2 as sqlite
 import hashlib
 import hmac
-import threading
 import json
-import xbmcvfs
-import pyxbmct
-import socket
-import shlex
 import locale
+import os
 import pickle
+import re
+import requests
+import shlex
+import socket
+import subprocess
+import sys
+import time
+import threading
+import urllib
+import urlparse
+import uuid
+
+from BeautifulSoup import BeautifulSoup, BeautifulStoneSoup, Tag
+from pyDes import *
+import mechanize
+
+from inputstreamhelper import Helper
+import pyxbmct
+import xbmc
+import xbmcaddon
+import xbmcgui
+import xbmcplugin
+import xbmcvfs
 
 # Save the language code for HTTP requests and set the locale for l10n
 Language = locale.getdefaultlocale()

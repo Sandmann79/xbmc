@@ -2263,19 +2263,17 @@ def LogIn(ask=True):
                          ('User-Agent', getConfig('UserAgent')),
                          ('Upgrade-Insecure-Requests', '1')]
         br.submit()
-        response = br.response().read()
-        soup = parseHTML(response)
+        response, soup = parseHTML(br)
         xbmc.executebuiltin('Dialog.Close(busydialog)')
         WriteLog(response, 'login')
 
-        while 'auth-mfa-form' in response or 'ap_dcq_form' in response or 'ap_captcha_img_label' in response or 'claimspicker' in response or 'fwcim-form' in response:
+        while any(s in response for s in ['auth-mfa-form', 'ap_dcq_form', 'ap_captcha_img_label', 'claimspicker', 'fwcim-form']):
             br = MFACheck(br, email, soup)
             if not br:
                 return False
             useMFA = 'otpCode' in str(list(br.forms())[0])
             br.submit()
-            response = br.response().read()
-            soup = parseHTML(response)
+            response, soup = parseHTML(br)
             WriteLog(response, 'login-mfa')
             xbmc.executebuiltin('Dialog.Close(busydialog)')
 
@@ -2419,7 +2417,8 @@ def renameUser():
 
 def MFACheck(br, email, soup):
     Log('MFA, DCQ or Captcha form')
-    if 'auth-mfa-form' in str(soup):
+    uni_soup = unicode(soup)
+    if 'auth-mfa-form' in uni_soup:
         msg = soup.find('form', attrs={'id': 'auth-mfa-form'})
         msgtxt = msg.p.renderContents().strip()
         kb = xbmc.Keyboard('', msgtxt)
@@ -2431,7 +2430,7 @@ def MFACheck(br, email, soup):
             # br.find_control('rememberDevice').items[0].selected = True
         else:
             return False
-    elif 'ap_dcq_form' in str(soup):
+    elif 'ap_dcq_form' in uni_soup:
         msg = soup.find('div', attrs={'id': 'message_warning'})
         Dialog.ok(__plugin__, msg.p.contents[0].strip())
         dcq = soup.find('div', attrs={'id': 'ap_dcq1a_pagelet'})
@@ -2457,7 +2456,7 @@ def MFACheck(br, email, soup):
             br[q_id[sel]] = ret
         else:
             return False
-    elif 'ap_captcha_img_label' in str(soup):
+    elif 'ap_captcha_img_label' in uni_soup:
         wnd = Captcha((getString(30008).split('…')[0]), soup, email)
         wnd.doModal()
         if wnd.email and wnd.cap and wnd.pwd:
@@ -2469,7 +2468,7 @@ def MFACheck(br, email, soup):
         else:
             return False
         del wnd
-    elif 'claimspicker' in str(soup):
+    elif 'claimspicker' in uni_soup:
         msg = soup.find('form', attrs={'name': 'claimspicker'})
         cs_title = msg.find('div', attrs={'class': 'a-row a-spacing-small'})
         cs_title = cs_title.h1.contents[0].strip()
@@ -2477,7 +2476,6 @@ def MFACheck(br, email, soup):
         choices = []
         for c in soup.findAll('div', attrs={'data-a-input-name': 'option'}):
             choices.append((c.span.contents[0].strip(), c.input['name'], c.input['value']))
-
         sel = Dialog.select('%s - %s' % (cs_title, cs_quest), [k[0] for k in choices])
         if sel > -1:
             xbmc.executebuiltin('ActivateWindow(busydialog)')
@@ -2485,7 +2483,7 @@ def MFACheck(br, email, soup):
             br[choices[sel][1]] = [choices[sel][2]]
         else:
             return False
-    elif 'fwcim-form' in str(soup):
+    elif 'fwcim-form' in uni_soup:
         msg = soup.find('div', attrs={'class': 'a-row a-spacing-micro cvf-widget-input-code-label'}).contents[0].strip()
         ret = Dialog.input(msg)
         if ret:
@@ -2784,10 +2782,11 @@ def insertLF(string, begin=70):
     return string[:spc] + '\n' + string[spc + 1:] if spc > 0 else string
 
 
-def parseHTML(response):
+def parseHTML(br):
+    response = br.response().read().decode('utf-8')
     response = re.sub(r'(?i)(<!doctype \w+).*>', r'\1>', response)
     soup = BeautifulSoup(response, convertEntities=BeautifulSoup.HTML_ENTITIES)
-    return soup
+    return response, soup
 
 
 def SetVol(step):
@@ -3024,8 +3023,6 @@ class Captcha(pyxbmct.AddonDialogWindow):
             head = soup.find('div', attrs={'id': 'message_error'})
         title = soup.find('div', attrs={'id': 'ap_captcha_guess_alert'})
         url = soup.find('div', attrs={'id': 'ap_captcha_img'}).img.get('src')
-        pic = xbmc.translatePath('special://temp/captcha%s.jpg' % randint(0, 99999999999999)).decode('utf-8')
-        SaveFile(pic, getURL(url, rjson=False))
         self.setGeometry(500, 550, 9, 2)
         self.email = email
         self.pwd = ''
@@ -3033,7 +3030,7 @@ class Captcha(pyxbmct.AddonDialogWindow):
         self.head = head.p.renderContents().strip()
         self.head = re.sub('(?i)<[^>]*>', '', self.head)
         self.title = title.renderContents().strip()
-        self.image = pyxbmct.Image(pic, aspectRatio=2)
+        self.image = pyxbmct.Image(url, aspectRatio=2)
         self.tb_head = pyxbmct.TextBox()
         self.fl_title = pyxbmct.FadeLabel(_alignment=pyxbmct.ALIGN_CENTER)
         self.username = pyxbmct.Edit('', _alignment=pyxbmct.ALIGN_LEFT | pyxbmct.ALIGN_CENTER_Y)
@@ -3043,7 +3040,6 @@ class Captcha(pyxbmct.AddonDialogWindow):
         self.btn_cancel = pyxbmct.Button(getString(30123))
         self.set_controls()
         self.set_navigation()
-        xbmcvfs.delete(pic)
 
     def set_controls(self):
         self.placeControl(self.tb_head, 0, 0, columnspan=2, rowspan=3)

@@ -2197,7 +2197,6 @@ def MechanizeLogin():
         return cj
 
     Log('Login')
-
     return LogIn(False)
 
 
@@ -2364,7 +2363,8 @@ def addUser(user):
     else:
         users.append(user)
     writeConfig('accounts.lst', json.dumps(users))
-    xbmc.executebuiltin('Container.Refresh')
+    if xbmc.getInfoLabel('Container.FolderPath') == sys.argv[0]:
+        xbmc.executebuiltin('Container.Refresh')
 
 
 def switchUser():
@@ -2512,7 +2512,7 @@ def setLoginPW():
 
 
 def encode(data):
-    k = triple_des(getmac(), CBC, "\0\0\0\0\0\0\0\0", padmode=PAD_PKCS5)
+    k = triple_des(getmac(), CBC, b"\0\0\0\0\0\0\0\0", padmode=PAD_PKCS5)
     d = k.encrypt(data)
     return b64encode(d)
 
@@ -2520,7 +2520,7 @@ def encode(data):
 def decode(data):
     if not data:
         return ''
-    k = triple_des(getmac(), CBC, "\0\0\0\0\0\0\0\0", padmode=PAD_PKCS5)
+    k = triple_des(getmac(), CBC, b"\0\0\0\0\0\0\0\0", padmode=PAD_PKCS5)
     d = k.decrypt(b64decode(data))
     return d
 

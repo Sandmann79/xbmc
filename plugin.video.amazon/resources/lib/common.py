@@ -648,16 +648,21 @@ def MFACheck(br, email, soup):
         msg = soup.find('form', attrs={'name': 'claimspicker'})
         cs_title = msg.find('div', attrs={'class': 'a-row a-spacing-small'})
         cs_title = cs_title.h1.contents[0].strip()
-        cs_quest = msg.find('label', attrs={'class': 'a-form-label'}).contents[0].strip()
+        cs_quest = msg.find('label', attrs={'class': 'a-form-label'})
+        cs_hint = msg.find('div', attrs={'class': 'a-row'}).contents[0].strip()
         choices = []
-        for c in soup.findAll('div', attrs={'data-a-input-name': 'option'}):
-            choices.append((c.span.contents[0].strip(), c.input['name'], c.input['value']))
+        if cs_quest:
+            for c in soup.findAll('div', attrs={'data-a-input-name': 'option'}):
+                choices.append((c.span.contents[0].strip(), c.input['name'], c.input['value']))
+            sel = Dialog.select('%s - %s' % (cs_title, cs_quest.contents[0].strip()), [k[0] for k in choices])
+        else:
+            sel = 100 if Dialog.ok(cs_title, cs_hint) else -1
 
-        sel = Dialog.select('%s - %s' % (cs_title, cs_quest), [k[0] for k in choices])
         if sel > -1:
             xbmc.executebuiltin('ActivateWindow(busydialog)')
             br.select_form(nr=0)
-            br[choices[sel][1]] = [choices[sel][2]]
+            if sel < 100:
+                br[choices[sel][1]] = [choices[sel][2]]
         else:
             return False
     elif 'fwcim-form' in uni_soup:

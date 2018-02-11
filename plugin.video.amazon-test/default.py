@@ -389,12 +389,12 @@ def MainMenu():
 
 def BeautifyText(title):
     """ Correct stylistic errors in Amazon's titles """
-    for t in [(r'\s+-\s*', u' – '), # Convert dash from small to medium where needed
-              (r'\s*-\s+', u' – '), # Convert dash from small to medium where needed
-              (r'^\s+', u''), # Remove leading spaces
-              (r'\s+$', u''), # Remove trailing spaces
-              (r' {2,}', u' '), # Remove double spacing
-              (r'\.\.\.', u'…')]: # Replace triple dots with ellipsis
+    for t in [(r'\s+-\s*', ' – '), # Convert dash from small to medium where needed
+              (r'\s*-\s+', ' – '), # Convert dash from small to medium where needed
+              (r'^\s+', ''), # Remove leading spaces
+              (r'\s+$', ''), # Remove trailing spaces
+              (r' {2,}', ' '), # Remove double spacing
+              (r'\.\.\.', '…')]: # Replace triple dots with ellipsis
         title = re.sub(t[0], t[1], title)
     return title
 
@@ -473,7 +473,7 @@ def PrimeVideo_Browse(path, forceSort=None):
     for key in node:
         if key in ['metadata', 'ref', 'title', 'verb']:
             continue
-        url = u'{0}?mode='.format(sys.argv[0])
+        url = '{0}?mode='.format(sys.argv[0])
         if 'verb' not in node[key]:
             url += 'PrimeVideo_Browse&path={0}-//-{1}'.format(urllib.quote_plus(path.encode('utf-8')), urllib.quote_plus(key.encode('utf-8')))
         else:
@@ -1096,7 +1096,7 @@ def listContent(catalog, url, page, parent, export=False):
 def cleanTitle(title):
     if title.isupper():
         title = title.title().replace('[Ov]', '[OV]').replace('Bc', 'BC')
-    title = title.replace(u'\u2013', '-').replace(u'\u00A0', ' ').replace('[dt./OV]', '').replace('_DUPLICATE_', '')
+    title = title.replace('\u2013', '-').replace('\u00A0', ' ').replace('[dt./OV]', '').replace('_DUPLICATE_', '')
     return title.strip()
 
 
@@ -2057,7 +2057,7 @@ def parseSubs(data):
             for caption in soup.findAll('tt:p'):
                 num += 1
                 subtext = caption.renderContents().decode(enc).replace('<tt:br>', '\n').replace('</tt:br>', '')
-                srt.write(u'%s\n%s --> %s\n%s\n\n' % (num, caption['begin'], caption['end'], subtext))
+                srt.write('%s\n%s --> %s\n%s\n\n' % (num, caption['begin'], caption['end'], subtext))
         subs.append(srtfile)
     return subs
 
@@ -2626,55 +2626,55 @@ def SetupLibrary():
 
 def CreateInfoFile(nfofile, path, content, Info, language, hasSubtitles=False):
     skip_keys = ('ishd', 'isadult', 'audiochannels', 'genre', 'cast', 'duration', 'asins', 'contentType')
-    fileinfo = u'<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>'
-    fileinfo += u'<%s>' % content
+    fileinfo = '<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>'
+    fileinfo += '<%s>' % content
     if 'Duration' in Info.keys():
-        fileinfo += u'<runtime>%s</runtime>' % Info['Duration']
+        fileinfo += '<runtime>%s</runtime>' % Info['Duration']
     if 'Genre' in Info.keys():
         for genre in Info['Genre'].split('/'):
-            fileinfo += u'<genre>%s</genre>' % genre.strip()
+            fileinfo += '<genre>%s</genre>' % genre.strip()
     if 'Cast' in Info.keys():
         for actor in Info['Cast']:
-            fileinfo += u'<actor>'
-            fileinfo += u'<name>%s</name>' % actor.strip()
-            fileinfo += u'</actor>'
+            fileinfo += '<actor>'
+            fileinfo += '<name>%s</name>' % actor.strip()
+            fileinfo += '</actor>'
     for key, value in Info.items():
         lkey = key.lower()
         if lkey == 'tvshowtitle':
-            fileinfo += u'<showtitle>%s</showtitle>' % value
+            fileinfo += '<showtitle>%s</showtitle>' % value
         elif lkey == 'premiered' and 'TVShowTitle' in Info:
-            fileinfo += u'<aired>%s</aired>' % value
+            fileinfo += '<aired>%s</aired>' % value
         elif lkey == 'fanart':
-            fileinfo += u'<%s><thumb>%s</thumb></%s>' % (lkey, value, lkey)
+            fileinfo += '<%s><thumb>%s</thumb></%s>' % (lkey, value, lkey)
         elif lkey not in skip_keys:
-            fileinfo += u'<%s>%s</%s>' % (lkey, value, lkey)
+            fileinfo += '<%s>%s</%s>' % (lkey, value, lkey)
     if content != 'tvshow':
-        fileinfo += u'<fileinfo>'
-        fileinfo += u'<streamdetails>'
-        fileinfo += u'<audio>'
-        fileinfo += u'<channels>%s</channels>' % Info['AudioChannels']
-        fileinfo += u'<codec>aac</codec>'
-        fileinfo += u'</audio>'
-        fileinfo += u'<video>'
-        fileinfo += u'<codec>h264</codec>'
-        fileinfo += u'<durationinseconds>%s</durationinseconds>' % Info['Duration']
+        fileinfo += '<fileinfo>'
+        fileinfo += '<streamdetails>'
+        fileinfo += '<audio>'
+        fileinfo += '<channels>%s</channels>' % Info['AudioChannels']
+        fileinfo += '<codec>aac</codec>'
+        fileinfo += '</audio>'
+        fileinfo += '<video>'
+        fileinfo += '<codec>h264</codec>'
+        fileinfo += '<durationinseconds>%s</durationinseconds>' % Info['Duration']
         if Info['isHD']:
-            fileinfo += u'<height>1080</height>'
-            fileinfo += u'<width>1920</width>'
+            fileinfo += '<height>1080</height>'
+            fileinfo += '<width>1920</width>'
         else:
-            fileinfo += u'<height>480</height>'
-            fileinfo += u'<width>720</width>'
+            fileinfo += '<height>480</height>'
+            fileinfo += '<width>720</width>'
         if language:
-            fileinfo += u'<language>%s</language>' % language
-        fileinfo += u'<scantype>Progressive</scantype>'
-        fileinfo += u'</video>'
+            fileinfo += '<language>%s</language>' % language
+        fileinfo += '<scantype>Progressive</scantype>'
+        fileinfo += '</video>'
         if hasSubtitles:
-            fileinfo += u'<subtitle>'
-            fileinfo += u'<language>ger</language>'
-            fileinfo += u'</subtitle>'
-        fileinfo += u'</streamdetails>'
-        fileinfo += u'</fileinfo>'
-    fileinfo += u'</%s>' % content
+            fileinfo += '<subtitle>'
+            fileinfo += '<language>ger</language>'
+            fileinfo += '</subtitle>'
+        fileinfo += '</streamdetails>'
+        fileinfo += '</fileinfo>'
+    fileinfo += '</%s>' % content
 
     SaveFile(nfofile + '.nfo', fileinfo, path)
     return

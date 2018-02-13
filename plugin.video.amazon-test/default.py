@@ -377,7 +377,7 @@ def MainMenu():
                   'RunPlugin(%s?mode=getListMenu&url=%s&export=1)' % (sys.argv[0], library))]
 
         if multiuser:
-            addDir(getString(30134).format(addon.getSetting('login_acc')), 'switchUser', '', cm=ContextMenu_MultiUser())
+            addDir(getString(30134).format(loadUser()['name']), 'switchUser', '', cm=ContextMenu_MultiUser())
         addDir('Watchlist', 'getListMenu', watchlist, cm=cm_wl)
         getRootNode()
         addDir(getString(30108), 'Search', '')
@@ -2345,7 +2345,7 @@ def loadUsers():
 
 
 def loadUser(empty=False):
-    cur_user = addon.getSetting('login_acc')
+    cur_user = addon.getSetting('login_acc').decode('utf-8')
     users = loadUsers()
     user = None if empty else [i for i in users if cur_user == i['name']]
     return user[0] if user else {'email': '', 'password': '', 'name': '', 'save': '', 'mid': '', 'cookie': ''}
@@ -2354,7 +2354,7 @@ def loadUser(empty=False):
 def addUser(user):
     user['save'] = addon.getSetting('save_login')
     user['mid'] = MarketID
-    users = json.loads(getConfig('accounts.lst', '[]')) if multiuser else []
+    users = loadUsers() if multiuser else []
     num = [n for n, i in enumerate(users) if user['name'] == i['name']]
     if num:
         users[num[0]] = user
@@ -2369,7 +2369,7 @@ def switchUser():
     users = loadUsers()
     sel = Dialog.select(getString(30133), [i['name'] for i in users])
     if sel > -1:
-        if addon.getSetting('login_acc') == users[sel]['name']:
+        if loadUser()['name'] == users[sel]['name']:
             return False
         user = users[sel]
         addon.setSetting('save_login', user['save'])
@@ -2384,7 +2384,7 @@ def switchUser():
 
 
 def removeUser():
-    cur_user = addon.getSetting('login_acc')
+    cur_user = loadUser()['name']
     users = loadUsers()
     sel = Dialog.select(getString(30133), [i['name'] for i in users])
     if sel > -1:
@@ -2398,7 +2398,7 @@ def removeUser():
 
 
 def renameUser():
-    cur_user = addon.getSetting('login_acc')
+    cur_user = loadUser()['name']
     users = loadUsers()
     sel = Dialog.select(getString(30133), [i['name'] for i in users])
     if sel > -1:

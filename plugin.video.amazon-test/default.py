@@ -294,7 +294,7 @@ def getATVData(pg_mode, query='', version=2, useCookie=False, site_id=None):
 
 
 def addDir(name, mode='', url='', infoLabels=None, opt='', catalog='Browse', cm=None, page=1, export=False, thumb=DefaultFanart):
-    u = {'mode': mode, 'url': url, 'page': page, 'opt': opt, 'cat': catalog}
+    u = {'mode': mode, 'url': url.encode('utf-8'), 'page': page, 'opt': opt, 'cat': catalog}
     url = '%s?%s' % (sys.argv[0], urllib.urlencode(u))
 
     if not mode:
@@ -1015,14 +1015,14 @@ def listCategories(node, root=None):
         elif category == 'play':
             addVideo(info['Title'], info['Asins'], info)
         if mode:
-            addDir(title, mode, urllib.quote_plus(url), info, opt)
+            addDir(title, mode, url, info, opt)
     xbmcplugin.endOfDirectory(pluginhandle)
 
 
 def listContent(catalog, url, page, parent, export=False):
     oldurl = url
     ResPage = 240 if export else MaxResults
-    url += '&NumberOfResults=%s&StartIndex=%s&Detailed=T' % (ResPage, (page - 1) * ResPage)
+    url = '%s&NumberOfResults=%s&StartIndex=%s&Detailed=T' % (url.decode('utf-8'), ResPage, (page - 1) * ResPage)
     titles = getATVData(catalog, url)
 
     if page != 1 and not export:
@@ -3106,10 +3106,7 @@ if not UsePrimeVideo:
     dbFile = os.path.join(DataPath, 'art.db')
     db = sqlite.connect(dbFile)
     createDB()
-
     menuDb = sqlite.connect(menuFile)
-    menuDb.text_factory = str
-
     loadCategories()
 else:
     if xbmcvfs.exists(PrimeVideoCache):

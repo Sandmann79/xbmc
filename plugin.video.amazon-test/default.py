@@ -245,6 +245,11 @@ def getURL(url, useCookie=False, silent=False, headers=None, rjson=True, attempt
         headers['Accept-Language'] = userAcceptLanguages
 
     try:
+        if sys.version_info[0:3] < (2, 7, 9):
+            Log('Using outdated Python version %d.%d.%d' % (sys.version_info[0:3]))
+            Dialog.ok('Python outdated', 'Your Python version (%d.%d.%d) is outdated. You need at least version 2.7.9 to use this Addon.' % (sys.version_info[0:3]),
+                      'If you\'re on Linux please follow this guide to update Python:', 'https://goo.gl/CKtygz')
+            exit()
         r = session.get(url, headers=headers, cookies=cj, verify=verifySsl)
         response = r.text if not check else 'OK'
     except (requests.exceptions.Timeout,

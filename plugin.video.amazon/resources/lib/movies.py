@@ -29,7 +29,7 @@ def lookupMoviedb(value, rvalue='distinct *', name='asin', single=True, exact=Fa
     sqlstring = 'select %s from %s where %s ' % (rvalue, table, name)
     retlen = len(rvalue.split(','))
     if not exact:
-        value = '%' + value + '%'
+        value = b"%{0}%".format(value)
         sqlstring += 'like (?)'
     else:
         sqlstring += '= (?)'
@@ -71,7 +71,7 @@ def loadMoviedb(filterobj=None, value=None, sortcol=False):
     db.waitforDB(MovieDB)
     c = MovieDB.cursor()
     if filterobj:
-        value = '%' + value + '%'
+        value = b"%{0}%".format(value)
         return db.cur_exec(c, 'select distinct * from movies where %s like (?)' % filterobj, (value,))
     elif sortcol:
         return db.cur_exec(c, 'select distinct * from movies where %s is not null order by %s asc' % (sortcol, sortcol))

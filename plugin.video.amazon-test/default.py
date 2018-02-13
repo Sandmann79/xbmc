@@ -19,14 +19,12 @@ import requests
 import shlex
 import socket
 import subprocess
-import sys
 import time
 import threading
 import urllib
 import urlparse
 import uuid
 
-from BeautifulSoup import BeautifulSoup, BeautifulStoneSoup, Tag
 from pyDes import *
 import mechanize
 
@@ -1008,11 +1006,11 @@ def listCategories(node, root=None):
         elif category == 'query':
             mode = 'listContent'
             opt = 'listcat'
-            url = content.replace('\n', '').replace("\n", '')
+            url = re.sub('\n|\\n', '', content)
         elif category == 'play':
             addVideo(info['Title'], info['Asins'], info)
         if mode:
-            addDir(title, mode, url, info, opt)
+            addDir(title, mode, urllib.quote_plus(url), info, opt)
     xbmcplugin.endOfDirectory(pluginhandle)
 
 
@@ -1586,10 +1584,10 @@ def PlayVideo(name, asin, adultstr, trailer, forcefb=0):
         elif platform != osAndroid:
             ExtPlayback(videoUrl, asin, isAdult, methodOW, fr)
 
-        if not playable or isinstance(playable, str):
+        if not playable or isinstance(playable, unicode):
             if fallback:
                 methodOW = fallback - 1
-                if isinstance(playable, str):
+                if isinstance(playable, unicode):
                     fr = playable
                     playable = False
             else:

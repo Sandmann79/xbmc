@@ -53,10 +53,10 @@ def PLAYVIDEO():
         elif platform != osAndroid:
             ExtPlayback(videoUrl, isAdult, methodOW, fr)
 
-        if not playable or isinstance(playable, str):
+        if not playable or isinstance(playable, unicode):
             if fallback:
                 methodOW = fallback - 1
-                if isinstance(playable, str):
+                if isinstance(playable, unicode):
                     fr = playable
                     playable = False
             else:
@@ -484,7 +484,7 @@ def getStreams(suc, data, retmpd=False):
 
     while hosts:
         for cdn in hosts:
-            prefHost = False if HostSet not in str(hosts) or HostSet == 'Auto' else HostSet
+            prefHost = False if HostSet not in unicode(hosts) or HostSet == 'Auto' else HostSet
             cdn_item = cdn
 
             if 'urls' in cdn:

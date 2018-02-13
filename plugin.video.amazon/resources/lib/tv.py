@@ -17,7 +17,7 @@ def loadTVShowdb(filterobj=None, value=None, sortcol=None):
     db.waitforDB(tvDB)
     c = tvDB.cursor()
     if filterobj:
-        value = '%' + value + '%'
+        value = b"%{0}%".format(value)
         return db.cur_exec(c, 'select distinct * from shows where %s like (?)' % filterobj, (value,))
     elif sortcol:
         return db.cur_exec(c, 'select distinct * from shows where %s is not null order by %s asc' % (sortcol, sortcol))
@@ -178,7 +178,7 @@ def lookupTVdb(value, rvalue='distinct *', tbl='episodes', name='asin', single=T
     sqlstring = 'select %s from %s where %s ' % (rvalue, tbl, name)
     retlen = len(rvalue.split(','))
     if not exact:
-        value = '%' + value + '%'
+        value = b"%{0}%".format(value)
         sqlstring += 'like (?)'
     else:
         sqlstring += '= (?)'

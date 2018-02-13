@@ -31,7 +31,7 @@ def modes():
             cm['mu'] = [(getString(30174).split('.')[0], 'RunPlugin(%s?mode=common&sitemode=LogIn)' % sys.argv[0]),
                      (getString(30175).split('.')[0], 'RunPlugin(%s?mode=common&sitemode=removeUser)' % sys.argv[0]),
                      (getString(30176), 'RunPlugin(%s?mode=common&sitemode=renameUser)' % sys.argv[0])]
-            addDir(getString(30178) + addon.getSetting('login_acc'), 'common', 'switchUser', '', cm=cm['mu'])
+            addDir(getString(30178) + loadUser()['name'], 'common', 'switchUser', '', cm=cm['mu'])
 
         addDir('Watchlist', 'appfeed', 'ListMenu', wl, cm=cm['wl'])
         addDir(getString(30104), 'listmovie', 'LIST_MOVIE_ROOT', cm=cm['movie'])

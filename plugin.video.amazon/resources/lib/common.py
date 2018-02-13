@@ -63,6 +63,7 @@ try:
 except IndexError:
     pluginhandle = -1
     params = ''
+
 args = dict(urlparse.parse_qsl(urlparse.urlparse(params).query))
 
 
@@ -274,7 +275,7 @@ def SaveFile(filename, data, dirname=None):
 
 
 def addDir(name, mode, sitemode, url='', thumb='', fanart='', infoLabels=None, totalItems=0, cm=None, page=1, options=''):
-    u = {'url': url, 'mode': mode, 'sitemode': sitemode, 'name': name.encode('utf-8'), 'page': page, 'opt': options}
+    u = {'url': url.encode('utf-8'), 'mode': mode, 'sitemode': sitemode, 'name': name.encode('utf-8'), 'page': page, 'opt': options}
     url = '%s?%s' % (sys.argv[0], urllib.urlencode(u))
 
     if not fanart or fanart == na:
@@ -532,7 +533,7 @@ def loadUsers():
 
 
 def loadUser(empty=False):
-    cur_user = addon.getSetting('login_acc')
+    cur_user = addon.getSetting('login_acc').decode('utf-8')
     users = loadUsers()
     user = None if empty else [i for i in users if cur_user == i['name']]
     return user[0] if user else {'email': '', 'password': '', 'name': '', 'save': '', 'cookie': ''}
@@ -540,7 +541,7 @@ def loadUser(empty=False):
 
 def addUser(user):
     user['save'] = addon.getSetting('save_login')
-    users = json.loads(getConfig('accounts.lst', '[]')) if multiuser else []
+    users = loadUsers() if multiuser else []
     num = [n for n, i in enumerate(users) if user['name'] == i['name']]
     if num:
         users[num[0]] = user
@@ -555,7 +556,7 @@ def switchUser():
     users = loadUsers()
     sel = Dialog.select(getString(30177), [i['name'] for i in users])
     if sel > -1:
-        if addon.getSetting('login_acc') == users[sel]['name']:
+        if loadUser()['name'] == users[sel]['name']:
             return False
         user = users[sel]
         addon.setSetting('save_login', user['save'])
@@ -565,7 +566,7 @@ def switchUser():
 
 
 def removeUser():
-    cur_user = addon.getSetting('login_acc')
+    cur_user = loadUser()['name']
     users = loadUsers()
     sel = Dialog.select(getString(30177), [i['name'] for i in users])
     if sel > -1:
@@ -579,7 +580,7 @@ def removeUser():
 
 
 def renameUser():
-    cur_user = addon.getSetting('login_acc')
+    cur_user = loadUser()['name']
     users = loadUsers()
     sel = Dialog.select(getString(30177), [i['name'] for i in users])
     if sel > -1:
@@ -858,7 +859,7 @@ def getTypes(items, col):
     lowlist = []
     for data in items:
         data = data[0]
-        if isinstance(data, str):
+        if isinstance(data, unicode):
             if 'Rated' in data:
                 item = data.split('for')[0]
                 if item not in studiolist and item != '' and item != 0 and item != 'Inc.' and item != 'LLC.':
@@ -873,11 +874,10 @@ def getTypes(items, col):
                     if item.lower() not in lowlist and item != '' and item != 0 and item != 'Inc.' and item != 'LLC.':
                         studiolist.append(item)
                         lowlist.append(item.lower())
-        elif data != 0:
-            if data is not None:
-                strdata = str(data)[0:-1] + '0 -'
-                if strdata not in studiolist:
-                    studiolist.append(strdata)
+        elif 1800 < data < 2200:
+            unidata = unicode(data)[0:-1] + '0 -'
+            if unidata not in studiolist:
+                studiolist.append(unidata)
     return studiolist
 
 

@@ -1708,6 +1708,12 @@ def IStreamPlayback(asin, name, trailer, isAdult, extern):
         return True
 
     cookie = MechanizeLogin()
+    if not cookie:
+        Dialog.notification(getString(30203), getString(30200), xbmcgui.NOTIFICATION_ERROR)
+        Log('Login error at playback')
+        playDummyVid()
+        return True
+
     mpd, subs = getStreams(*getUrldata('catalog/GetPlaybackResources', asin, extra=True, vMT=vMT,
                                        opt='&titleDecorationScheme=primary-content', dRes=dRes, useCookie=cookie), retmpd=True)
 

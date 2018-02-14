@@ -174,13 +174,18 @@ def IStreamPlayback(trailer, isAdult, extern):
     drm_check = addon.getSetting("drm_check") == 'true'
     at_check = addon.getSetting("at_check") == 'true'
     inputstream_helper = Helper('mpd', drm='com.widevine.alpha')
+    vMT = 'Trailer' if trailer else 'Feature'
 
     if not inputstream_helper.check_inputstream():
         Log('No Inputstream Addon found or activated')
         return True
 
     cookie = MechanizeLogin()
-    vMT = 'Trailer' if trailer else 'Feature'
+    if not cookie:
+        Dialog.notification(getString(30203), getString(30200), xbmcgui.NOTIFICATION_ERROR)
+        Log('Login error at playback')
+        playDummyVid()
+        return True
 
     mpd, subs = getStreams(*getUrldata('catalog/GetPlaybackResources', args.get('asin'), extra=True, vMT=vMT,
                                        opt='&titleDecorationScheme=primary-content', useCookie=cookie), retmpd=True)

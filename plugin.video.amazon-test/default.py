@@ -1022,7 +1022,7 @@ def listCategories(node, root=None):
 def listContent(catalog, url, page, parent, export=False):
     oldurl = url
     ResPage = 240 if export else MaxResults
-    url = '%s&NumberOfResults=%s&StartIndex=%s&Detailed=T' % (url.decode('utf-8'), ResPage, (page - 1) * ResPage)
+    url = '%s&NumberOfResults=%s&StartIndex=%s&Detailed=T' % (url, ResPage, (page - 1) * ResPage)
     titles = getATVData(catalog, url)
 
     if page != 1 and not export:
@@ -3130,7 +3130,7 @@ if None is mode:
 elif mode == 'listCategories':
     listCategories(args.get('url', ''), args.get('opt', ''))
 elif mode == 'listContent':
-    listContent(args.get('cat'), args.get('url', ''), int(args.get('page', '1')), args.get('opt', ''))
+    listContent(args.get('cat'), args.get('url', '').decode('utf-8'), int(args.get('page', '1')), args.get('opt', ''))
 elif mode == 'PlayVideo':
     PlayVideo(args.get('name'), args.get('asin'), args.get('adult'), int(args.get('trailer', '0')), int(args.get('selbitrate', '0')))
 elif mode == 'getList':

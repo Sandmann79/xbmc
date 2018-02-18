@@ -26,6 +26,7 @@ import socket
 import time
 import requests
 import pickle
+import warnings
 
 addon = xbmcaddon.Addon()
 pluginname = addon.getAddonInfo('name')
@@ -56,6 +57,9 @@ socket.setdefaulttimeout(30)
 is_addon = 'inputstream.adaptive'
 regex_ovf = "((?i)(\[|\()(omu|ov).*(\)|\]))|\sOmU"
 sessions = {}
+
+warnings.simplefilter('error', requests.packages.urllib3.exceptions.SNIMissingWarning)
+warnings.simplefilter('error', requests.packages.urllib3.exceptions.InsecurePlatformWarning)
 
 try:
     pluginhandle = int(sys.argv[1])
@@ -219,19 +223,29 @@ def getURL(url, useCookie=False, silent=False, headers=None, rjson=True, attempt
         headers['Accept-Language'] = 'de-de, en-gb;q=0.2, en;q=0.1'
 
     try:
-        if sys.version_info[0:3] < (2, 7, 9):
-            Log('Using outdated Python version %d.%d.%d' % (sys.version_info[0:3]))
-            Dialog.ok('Python outdated', 'Your Python version (%d.%d.%d) is outdated. You need at least version 2.7.9 to use this Addon.' % (sys.version_info[0:3]),
-                      'If you\'re on Linux please follow this guide to update Python:', 'https://goo.gl/CKtygz')
-            exit()
         r = session.get(url, headers=headers, cookies=cj, verify=verifySsl)
         response = r.text if not check else 'OK'
     except (requests.exceptions.Timeout,
             requests.exceptions.ConnectionError,
             requests.exceptions.SSLError,
-            requests.exceptions.HTTPError), e:
-        Log('Error reason: %s' % e, xbmc.LOGERROR)
-        if '429' or 'timed out' in e:
+            requests.exceptions.HTTPError,
+            requests.packages.urllib3.exceptions.SNIMissingWarning,
+            requests.packages.urllib3.exceptions.InsecurePlatformWarning), e:
+        eType = e.__class__.__name__
+        Log('Error reason: %s (%s)' % (e, eType), xbmc.LOGERROR)
+        if 'SNIMissingWarning' in eType:
+            Log('Using a Python/OpenSSL version which doesn\'t support SNI for TLS connections.', xbmc.LOGERROR)
+            Dialog.ok('No SNI for TLS', 'Your current Python/OpenSSL environment does not support SNI over TLS connections.',
+                      'You can find a Linux guide on how to update Python and its modules for Kodi here: https://goo.gl/CKtygz',
+                      'Additionally, follow this guide to update the required modules: https://goo.gl/ksbbU2')
+            exit()
+        if 'InsecurePlatformWarning' in eType:
+            Log('Using an outdated SSL module.', xbmc.LOGERROR)
+            Dialog.ok('SSL module outdated', 'The SSL module for Python is outdated.', 
+                      'You can find a Linux guide on how to update Python and its modules for Kodi here: https://goo.gl/CKtygz', 
+                      'Additionally, follow this guide to update the required modules: https://goo.gl/ksbbU2')
+            exit()
+        if ('429' in e) or ('Timeout' in eType):
             attempt += 1 if not check else 10
             logout = 'Attempt #%s' % attempt
             if '429' in e:

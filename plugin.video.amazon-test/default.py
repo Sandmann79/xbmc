@@ -24,6 +24,7 @@ import threading
 import urllib
 import urlparse
 import uuid
+import warnings
 
 from pyDes import *
 import mechanize
@@ -184,6 +185,8 @@ TV_SHOWS_PATH = os.path.join(EXPORT_PATH, 'TV')
 ms_mov = ms_mov if ms_mov else 'Amazon Movies'
 ms_tv = ms_tv if ms_tv else 'Amazon TV'
 
+warnings.simplefilter('error', requests.packages.urllib3.exceptions.SNIMissingWarning)
+warnings.simplefilter('error', requests.packages.urllib3.exceptions.InsecurePlatformWarning)
 
 def setView(content, updateListing=False):
     if content == 'movie':
@@ -255,19 +258,19 @@ def getURL(url, useCookie=False, silent=False, headers=None, rjson=True, attempt
             requests.packages.urllib3.exceptions.InsecurePlatformWarning), e:
         eType = e.__class__.__name__
         Log('Error reason: %s (%s)' % (e, eType), xbmc.LOGERROR)
-        if ('SNIMissingWarning' is eType):
+        if 'SNIMissingWarning' in eType:
             Log('Using a Python/OpenSSL version which doesn\'t support SNI for TLS connections.', xbmc.LOGERROR)
             Dialog.ok('No SNI for TLS', 'Your current Python/OpenSSL environment does not support SNI over TLS connections.',
-                    'You can find a Linux guide on how to update Python and its modules for Kodi here:', 'https://goo.gl/CKtygz',
-                    'Additionally, follow this guide to update the required modules:', 'https://goo.gl/ksbbU2')
+                      'You can find a Linux guide on how to update Python and its modules for Kodi here: https://goo.gl/CKtygz',
+                      'Additionally, follow this guide to update the required modules: https://goo.gl/ksbbU2')
             exit()
-        if ('InsecurePlatformWarning' is eType):
+        if 'InsecurePlatformWarning' in eType:
             Log('Using an outdated SSL module.', xbmc.LOGERROR)
-            Dialog.ok('SSL module outdated', 'The SSL module for Python is outdated.',
-                    'You can find a Linux guide on how to update Python and its modules for Kodi here:', 'https://goo.gl/CKtygz',
-                    'Additionally, follow this guide to update the required modules:', 'https://goo.gl/ksbbU2')
+            Dialog.ok('SSL module outdated', 'The SSL module for Python is outdated.', 
+                      'You can find a Linux guide on how to update Python and its modules for Kodi here: https://goo.gl/CKtygz', 
+                      'Additionally, follow this guide to update the required modules: https://goo.gl/ksbbU2')
             exit()
-        if ('429' in e) or ('Timeout' is eType):
+        if ('429' in e) or ('Timeout' in eType):
             attempt += 1 if not check else 10
             logout = 'Attempt #%s' % attempt
             if '429' in e:

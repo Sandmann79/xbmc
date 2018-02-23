@@ -2097,7 +2097,7 @@ def getUrldata(mode, asin, retformat='json', devicetypeid='AOAGZA014O5RE', versi
     if extra:
         url += '&resourceUsage=ImmediateConsumption&consumptionType=Streaming&deviceDrmOverride=CENC' \
                '&deviceStreamingTechnologyOverride=DASH&deviceProtocolOverride=Https' \
-               '&deviceBitrateAdaptationsOverride=CVBR%2CCBR&audioTrackId=all&gascEnabled=true'
+               '&deviceBitrateAdaptationsOverride=CVBR%2CCBR&audioTrackId=all'
         url += '&videoMaterialType=' + vMT
         url += '&desiredResources=' + dRes
         url += '&supportedDRMKeyScheme=DUAL_KEY' if platform != osAndroid and 'PlaybackUrls' in dRes else ''

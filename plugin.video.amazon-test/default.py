@@ -266,8 +266,8 @@ def getURL(url, useCookie=False, silent=False, headers=None, rjson=True, attempt
             exit()
         if 'InsecurePlatformWarning' in eType:
             Log('Using an outdated SSL module.', xbmc.LOGERROR)
-            Dialog.ok('SSL module outdated', 'The SSL module for Python is outdated.', 
-                      'You can find a Linux guide on how to update Python and its modules for Kodi here: https://goo.gl/CKtygz', 
+            Dialog.ok('SSL module outdated', 'The SSL module for Python is outdated.',
+                      'You can find a Linux guide on how to update Python and its modules for Kodi here: https://goo.gl/CKtygz',
                       'Additionally, follow this guide to update the required modules: https://goo.gl/ksbbU2')
             exit()
         if ('429' in e) or ('Timeout' in eType):
@@ -1803,7 +1803,6 @@ def IStreamPlayback(asin, name, trailer, isAdult, extern):
 
     valid_track = validAudioTrack()
 
-    Log('Playback started...', 0)
     Log('Video ContentType Movie? %s' % xbmc.getCondVisibility('VideoPlayer.Content(movies)'), 0)
     Log('Video ContentType Episode? %s' % xbmc.getCondVisibility('VideoPlayer.Content(episodes)'), 0)
 
@@ -2072,13 +2071,10 @@ def parseSubs(data):
         srtfile = xbmc.translatePath('special://temp/%s.srt' % lang).decode('utf-8')
         with codecs.open(srtfile, 'w', encoding='utf-8') as srt:
             soup = BeautifulStoneSoup(getURL(sub['url'], rjson=False), convertEntities=BeautifulStoneSoup.XML_ENTITIES)
-            enc = soup.originalEncoding
-            if None is enc:
-                enc = 'utf-8'
             num = 0
             for caption in soup.findAll('tt:p'):
                 num += 1
-                subtext = caption.renderContents().decode(enc).replace('<tt:br>', '\n').replace('</tt:br>', '')
+                subtext = caption.renderContents(None).replace('<tt:br>', '\n').replace('</tt:br>', '')
                 srt.write('%s\n%s --> %s\n%s\n\n' % (num, caption['begin'], caption['end'], subtext))
         subs.append(srtfile)
     return subs
@@ -2301,28 +2297,19 @@ def LogIn(ask=True):
             xbmc.executebuiltin('Dialog.Close(busydialog)')
 
         if 'action=sign-out' in response:
-            if not UsePrimeVideo:
-                try:
-                    msg = soup.body.findAll('center')
-                    if len(msg) > 1:
-                        wlc = msg[1].renderContents().strip()
-                        usr = wlc.split(',', 1)[1][:-1].strip()
-                    else:
-                        msg = soup.find('a', attrs={'data-nav-ref': 'nav_ya_signin'})
-                        wlc = msg.find('span').renderContents().strip()
-                        usr = wlc.split(',', 1)[1].strip()
-                except (IndexError, AttributeError):
-                    usr = wlc = getString(30215)
-            else:
-                usr = re.search(r'action=sign-out[^"]*"[^>]*>[^?]+\s+([^?]+?)\s*\?', response).group(1)
-                wlc = '{0} {1}'.format(getString(30250), usr)
+            regex = r'action=sign-out[^"]*"[^>]*>[^?]+\s+([^?]+?)\s*\?' if UsePrimeVideo else r'config.customerName[^"]*"([^"]*)'
+            try:
+                usr = re.search(regex, response).group(1)
+            except AttributeError:
+                usr = getString(30209)
+
+            if not ask:
+                usr = user['name']
 
             if multiuser and ask:
-                keyboard = xbmc.Keyboard(usr, getString(30135))
-                keyboard.doModal()
-                if not keyboard.isConfirmed() or not keyboard.getText():
+                usr = Dialog.input(getString(30135), usr).decode('utf-8')
+                if not usr:
                     return False
-                usr = keyboard.getText()
             if useMFA:
                 addon.setSetting('save_login', 'false')
                 savelogin = False
@@ -2340,7 +2327,7 @@ def LogIn(ask=True):
                 remLoginData(False)
                 addon.setSetting('login_acc', usr)
                 if not multiuser:
-                    Dialog.ok(getString(30215), wlc)
+                    Dialog.ok(getString(30215), '{0} {1}'.format(getString(30014), usr))
 
             addUser(user)
             genID()

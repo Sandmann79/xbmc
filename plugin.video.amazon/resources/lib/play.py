@@ -365,13 +365,10 @@ def parseSubs(data):
         srtfile = xbmc.translatePath('special://temp/%s.srt' % lang).decode('utf-8')
         with codecs.open(srtfile, 'w', encoding='utf-8') as srt:
             soup = BeautifulStoneSoup(getURL(sub['url'], rjson=False), convertEntities=BeautifulStoneSoup.XML_ENTITIES)
-            enc = soup.originalEncoding
-            if None is enc:
-                enc = 'utf-8'
             num = 0
             for caption in soup.findAll('tt:p'):
                 num += 1
-                subtext = caption.renderContents().decode(enc).replace('<tt:br>', '\n').replace('</tt:br>', '')
+                subtext = caption.renderContents(None).replace('<tt:br>', '\n').replace('</tt:br>', '')
                 srt.write('%s\n%s --> %s\n%s\n\n' % (num, caption['begin'], caption['end'], subtext))
         subs.append(srtfile)
     return subs

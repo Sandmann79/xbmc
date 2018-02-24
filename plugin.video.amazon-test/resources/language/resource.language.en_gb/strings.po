@@ -638,10 +638,6 @@ msgstr ""
 
 #empty strings from id 30218 to 30249
 
-msgctxt "#30250"
-msgid "Logged in as"
-msgstr ""
-
 msgctxt "#30251"
 msgid "Connection error"
 msgstr ""

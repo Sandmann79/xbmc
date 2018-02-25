@@ -1840,25 +1840,20 @@ def IStreamPlayback(asin, name, trailer, isAdult, extern):
 
 
 def validAudioTrack():
-    player = xbmc.Player()
     sleeptm = 0.2
     Log('Checking AudioTrack')
 
-    while not player.isPlaying() or not player.isPlayingVideo():
-        sleep(sleeptm)
-
+    PlayerInfo('Player Starting')
     cac_s = time.time()
-    Log('Player Starting: %s/%s' % (player.getTime(), player.getTotalTime()))
-    while xbmc.getCondVisibility('!Player.Caching') and cac_s + 1.2 > time.time():
+    while xbmc.getCondVisibility('!Player.Caching') and cac_s + 5 > time.time():
         sleep(sleeptm)
 
+    PlayerInfo('Player Caching')
     cac_s = time.time()
-    Log('Player Caching: %s/%s' % (player.getTime(), player.getTotalTime()))
-    while xbmc.getCondVisibility('Player.Caching') and cac_s + 2 > time.time():
+    while xbmc.getCondVisibility('Player.Caching') and cac_s + 15 > time.time():
         sleep(sleeptm)
 
-    Log('Player Resuming: %s/%s' % (player.getTime(), player.getTotalTime()))
-
+    PlayerInfo('Player Resuming')
     chan1_track = xbmc.getInfoLabel('VideoPlayer.AudioChannels')
     sr_track = int(xbmc.getInfoLabel('Player.Process(AudioSamplerate)').replace(',', ''))
     cc_track = xbmc.getInfoLabel('VideoPlayer.AudioCodec')
@@ -1873,6 +1868,17 @@ def validAudioTrack():
         retval = False
 
     return retval
+
+
+def PlayerInfo(msg, sleeptm=0.2):
+    player = xbmc.Player()
+    while not player.isPlayingVideo():
+        sleep(sleeptm)
+    while player.isPlayingVideo() and (player.getTime() >= player.getTotalTime()):
+        sleep(sleeptm)
+    if player.isPlayingVideo():
+        Log('%s: %s/%s' % (msg, player.getTime(), player.getTotalTime()))
+    del player
 
 
 def AddonEnabled(addon_id):

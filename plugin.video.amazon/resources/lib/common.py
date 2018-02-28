@@ -487,23 +487,17 @@ def LogIn(ask=True):
 
         if 'action=sign-out' in response:
             try:
-                msg = soup.body.findAll('center')
-                if len(msg) > 1:
-                    wlc = msg[1].renderContents().strip()
-                    usr = wlc.split(',', 1)[1][:-1].strip()
-                else:
-                    msg = soup.find('a', attrs={'data-nav-ref': 'nav_ya_signin'})
-                    wlc = msg.find('span').renderContents().strip()
-                    usr = wlc.split(',', 1)[1].strip()
-            except (IndexError, AttributeError):
-                usr = wlc = getString(30215)
+                usr = re.search(r'config.customerName[^"]*"([^"]*)', response).group(1)
+            except AttributeError:
+                usr = getString(30209)
+
+            if not ask:
+                usr = user['name']
 
             if multiuser and ask:
-                keyboard = xbmc.Keyboard(usr, getString(30179))
-                keyboard.doModal()
-                if not keyboard.isConfirmed() or not keyboard.getText():
+                usr = Dialog.input(getString(30179), usr).decode('utf-8')
+                if not usr:
                     return False
-                usr = keyboard.getText()
             if useMFA:
                 addon.setSetting('save_login', 'false')
                 savelogin = False
@@ -521,7 +515,7 @@ def LogIn(ask=True):
                 remLoginData(False)
                 addon.setSetting('login_acc', usr)
                 if not multiuser:
-                    Dialog.ok(getString(30215), wlc)
+                    Dialog.ok(getString(30215), '{0} {1}'.format(getString(30014), usr))
 
             addUser(user)
             gen_id()

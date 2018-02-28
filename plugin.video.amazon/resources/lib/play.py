@@ -252,7 +252,7 @@ def IStreamPlayback(trailer, isAdult, extern):
     xbmcplugin.setResolvedUrl(pluginhandle, True, listitem=listitem)
 
     valid_track = validAudioTrack()
-    Log('Playback started...', 0)
+
     Log('Video ContentType Movie? %s' % xbmc.getCondVisibility('VideoPlayer.Content(movies)'), 0)
     Log('Video ContentType Episode? %s' % xbmc.getCondVisibility('VideoPlayer.Content(episodes)'), 0)
 
@@ -290,25 +290,20 @@ def IStreamPlayback(trailer, isAdult, extern):
 
 
 def validAudioTrack():
-    player = xbmc.Player()
     sleeptm = 0.2
     Log('Checking AudioTrack')
 
-    while not player.isPlaying() or not player.isPlayingVideo():
-        sleep(sleeptm)
-
+    PlayerInfo('Player Starting')
     cac_s = time.time()
-    Log('Player Starting: %s/%s' % (player.getTime(), player.getTotalTime()))
-    while xbmc.getCondVisibility('!Player.Caching') and cac_s + 1.2 > time.time():
+    while xbmc.getCondVisibility('!Player.Caching') and cac_s + 5 > time.time():
         sleep(sleeptm)
 
+    PlayerInfo('Player Caching')
     cac_s = time.time()
-    Log('Player Caching: %s/%s' % (player.getTime(), player.getTotalTime()))
-    while xbmc.getCondVisibility('Player.Caching') and cac_s + 2 > time.time():
+    while xbmc.getCondVisibility('Player.Caching') and cac_s + 15 > time.time():
         sleep(sleeptm)
 
-    Log('Player Resuming: %s/%s' % (player.getTime(), player.getTotalTime()))
-
+    PlayerInfo('Player Resuming')
     chan1_track = xbmc.getInfoLabel('VideoPlayer.AudioChannels')
     sr_track = int(xbmc.getInfoLabel('Player.Process(AudioSamplerate)').replace(',', ''))
     cc_track = xbmc.getInfoLabel('VideoPlayer.AudioCodec')
@@ -323,6 +318,17 @@ def validAudioTrack():
         retval = False
 
     return retval
+
+
+def PlayerInfo(msg, sleeptm=0.2):
+    player = xbmc.Player()
+    while not player.isPlayingVideo():
+        sleep(sleeptm)
+    while player.isPlayingVideo() and (player.getTime() >= player.getTotalTime()):
+        sleep(sleeptm)
+    if player.isPlayingVideo():
+        Log('%s: %s/%s' % (msg, player.getTime(), player.getTotalTime()))
+    del player
 
 
 def parseSubs(data):
@@ -365,13 +371,10 @@ def parseSubs(data):
         srtfile = xbmc.translatePath('special://temp/%s.srt' % lang).decode('utf-8')
         with codecs.open(srtfile, 'w', encoding='utf-8') as srt:
             soup = BeautifulStoneSoup(getURL(sub['url'], rjson=False), convertEntities=BeautifulStoneSoup.XML_ENTITIES)
-            enc = soup.originalEncoding
-            if None is enc:
-                enc = 'utf-8'
             num = 0
             for caption in soup.findAll('tt:p'):
                 num += 1
-                subtext = caption.renderContents().decode(enc).replace('<tt:br>', '\n').replace('</tt:br>', '')
+                subtext = caption.renderContents(None).replace('<tt:br>', '\n').replace('</tt:br>', '')
                 srt.write('%s\n%s --> %s\n%s\n\n' % (num, caption['begin'], caption['end'], subtext))
         subs.append(srtfile)
     return subs

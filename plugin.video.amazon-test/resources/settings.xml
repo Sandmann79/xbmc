@@ -22,39 +22,47 @@
         <setting id="pref_host" type="labelenum" label="30019" visible="eq(-18,3)" values="Auto|Akamai|Cloudfront|Level3|Limelight" default="Auto"/>
         <setting id="is_settings" type="action" label="30013" visible="eq(-19,3)" action="RunPlugin(plugin://plugin.video.amazon-test/?mode=openSettings&url=is)" option="close"/>
         <setting id="age_settings" type="action" label="30018" visible="eq(-20,3)" action="RunPlugin(plugin://plugin.video.amazon-test/?mode=ageSettings)" option="close"/>
-        <setting id="fallback_method" type="enum" label="Fallback" values="None|Browser|Script/Batch|Android" default="0" visible="eq(-21,3)"/>
+        <setting id="drm_check" type="bool" label="30020" visible="eq(-21,3)" enable="eq(2,false)" default="true"/>
+        <setting id="fallback_method" type="enum" label="Fallback" values="None|Browser|Script/Batch|Android" default="0" visible="eq(-22,3)" enable="eq(-1,true)" subsetting="true"/>
+        <setting id="at_check" type="bool" label="30021" default="false" visible="eq(-23,3)" enable="eq(-2,false)"/>
     </category>
     <category label="30038">
-        <setting id="country" type="enum" label="30080" lvalues="30081|30082|30083|30084" default="0"/>
         <setting id="ssl_verif" type="bool" label="30037" default="false"/>
         <setting id="items_perpage" type="labelenum" values="20|30|40|60|80|100|140|180|220|250" label="30039" default="40"/>
         <setting label="30001" type="lsep"/>
-        <setting id="set_login" type="action" label="30008" action="RunPlugin(plugin://plugin.video.amazon-test/?mode=PairDevice)" option="close"/>
-        <setting label="30007" type="action" action="RunPlugin(plugin://plugin.video.amazon-test/?mode=remLoginData)" option="close"/>
+        <setting id="multiuser" type="bool" label="30009" default="false"/>
+        <setting type="action" label="30130" action="RunPlugin(plugin://plugin.video.amazon-test/?mode=PairDevice)" visible="eq(-1,true)" option="close" />
+        <setting type="action" label="30131" action="RunPlugin(plugin://plugin.video.amazon-test/?mode=removeUser)" visible="eq(-2,true)" option="close"/>
+        <setting type="action" label="30008" action="RunPlugin(plugin://plugin.video.amazon-test/?mode=PairDevice)" option="close" visible="eq(-3,false)"/>
+        <setting label="30007" type="action" action="RunPlugin(plugin://plugin.video.amazon-test/?mode=remLoginData)" option="close" visible="eq(-4,false)"/>
+        <setting label="30010" type="action" action="RunPlugin(plugin://plugin.video.amazon-test/?mode=remLoginData)" option="close" visible="eq(-5,true)"/>
     </category>
     <category label="30015">
         <setting id="viewenable" type ="bool" label="30035" default="false"/>
-        <setting id="movieview" type="enum" lvalues="30023|30024|30025|30026|30027|30028|30033" label="30029" default="5" enable="eq(-1,true)" />
-        <setting id="movieid" type="number" label="View ID" enable="eq(-1,6) + eq(-2,true)" subsetting="true"/>
-        <setting id="showview" type="enum" lvalues="30023|30024|30025|30026|30027|30034|30033" label="30030" default="4" enable="eq(-3,true)"/>
-        <setting id="showid" type="number" label="View ID" enable="eq(-1,6) + eq(-4,true)" subsetting="true" />
-        <setting id="seasonview" type="enum" lvalues="30023|30024|30025|30026|30027|30034|30033" label="30031" default="4" enable="eq(-5,true)"/>
-        <setting id="seasonid" type="number" label="View ID" enable="eq(-1,6) + eq(-6,true)" subsetting="true" />
-        <setting id="episodeview" type="enum" lvalues="30023|30024|30025|30026|30027|30034|30033" label="30032" default="3" enable="eq(-7,true)"/>
-        <setting id="episodeid" type="number" label="View ID" enable="eq(-1,6) + eq(-8,true)" subsetting="true" />
+        <setting id="movieview" type="enum" values="List|Poster|IconWall|Shift|InfoWall|WideList|Wall|Banner|FanArt|Custom" label="30029" default="5" enable="eq(-1,true)" />
+        <setting id="movieid" type="number" label="View ID" enable="eq(-1,9) + eq(-2,true)" subsetting="true"/>
+        <setting id="showview" type="enum" values="List|Poster|IconWall|Shift|InfoWall|WideList|Wall|Banner|FanArt|Custom" label="30030" default="4" enable="eq(-3,true)"/>
+        <setting id="showid" type="number" label="View ID" enable="eq(-1,9) + eq(-4,true)" subsetting="true" />
+        <setting id="seasonview" type="enum" values="List|Poster|IconWall|Shift|InfoWall|WideList|Wall|Banner|FanArt|Custom" label="30031" default="4" enable="eq(-5,true)"/>
+        <setting id="seasonid" type="number" label="View ID" enable="eq(-1,9) + eq(-6,true)" subsetting="true" />
+        <setting id="episodeview" type="enum" values="List|Poster|IconWall|Shift|InfoWall|WideList|Wall|Banner|FanArt|Custom" label="30032" default="3" enable="eq(-7,true)"/>
+        <setting id="episodeid" type="number" label="View ID" enable="eq(-1,9) + eq(-8,true)" subsetting="true" />
     </category>
-    <category label="30070">
-        <setting label="30060" type="lsep"/>
+    <category label="30060">
         <setting id="enablelibraryfolder" type="bool" label="30061" default="false" />
         <setting id="customlibraryfolder" type="folder" label="30062" enable="eq(-1,true)" default="special://profile/addon_data/plugin.video.amazon" source="auto" option="writeable" subsetting="true" />
         <setting id="cr_nfo" type="bool" label="30063" default="true" />
+        <setting id="mediasource_movie" type="text" label="30064" default="Amazon Movies" />
+        <setting id="mediasource_tv" type="text" label="30065" default="Amazon TV" />
+    </category>
+    <category label="30070">
         <setting label="Fanart" type="lsep"/>
         <setting id="tmdb_art" type="enum" lvalues="30050|30051|30052" label="30016" default="1"/>
         <setting id="tvdb_art" type="enum" lvalues="30050|30053|30054|30056" label="30017" default="1"/>
         <setting id="useshowfanart" type="bool" label="30055" default="true"/>
         <setting label="30070" type="lsep"/>
         <setting id="paycont" type="bool" label="30073" default="false"/>
-        <setting id="disptvshow" type="bool" label="30071" default="false" visible="false" />
+        <setting id="disptvshow" type="bool" label="30071" default="false"/>
         <setting id="wl_order" type="enum" label="30076" lvalues="30077|30079|30078" default="0"/>
         <setting id="remotectrl" type="bool" label="30074" default="false"/>
         <setting id="remote_vol" type="bool" label="30075" default="false" subsetting="true" enable="eq(-1,true)"/>

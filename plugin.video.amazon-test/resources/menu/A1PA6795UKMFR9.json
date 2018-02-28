@@ -1,0 +1,1348 @@
+{
+    "id": "root",
+    "categories": [
+        {
+            "title": "Filme",
+            "categories": [
+                {
+                    "id": "prime",
+                    "categories": [
+                        {
+                            "title": "Beliebte Filme",
+                            "query": "ContentType=Movie&Preorder=F&OrderBy=SalesRank,Rating&Preorder=F&OfferGroups=B0043YVHMY",
+                            "id": "prime-movie-1"
+                        },
+                        {
+                            "title": "Neue Filme bei Prime Video",
+                            "query": "OfferGroups=B0043YVHMY&ContentType=Movie&OrderBy=AvailabilityDate&MinAmazonRatingCount=40&HideNum=T&Preorder=F&Detailed=T&AID=1&ContractID=UX*",
+                            "id": "prime-movie-2"
+                        },
+                        {
+                            "title": "Bestbewertet",
+                            "query": "OfferGroups=B0043YVHMY&ContentType=Movie&OrderBy=Rating&MinAmazonRatingCount=30&Preorder=F",
+                            "id": "prime-movie-3"
+                        },
+                        {
+                            "title": "F\u00fcr Kinder",
+                            "query": "OfferGroups=B0043YVHMY&ContentType=Movie&Genre=KINDER_FAMILIE&OrderBy=MostPopular,Rating&Preorder=F",
+                            "id": "prime-movie-4"
+                        },
+                        {
+                            "title": "Empfehlungen",
+                            "id": "movies_prime_editors_picks",
+                            "categories": [
+                                {
+                                    "title": "Filme im Original",
+                                    "query": "OfferGroups=B0043YVHMY&OrderBy=MostPopular,Rating&ContentType=Movie&Preorder=F&ASINList=B00UXZ63NA,B00JV07MTW,B00V412TY4,B00K1A9CD0,B010A6092C,B00KRJHNZ4,B00ILIGEOY,B00YMRYIQE,B016E34AD4,B010A60G2K,B00H39RQ94,B00H39W3EW,B00IMEEKBQ,B00H39W3W4,B00X7P61E4,B00SV1J3OO,B01612G7GG,B00YB1EDNO,B00PHS1XC4,B00ZLPXX2G,B00TFWNTN4,B00ILIGD86,B00H39S32S,B00H3APLGS,B00IKEM57E,B00EQZPZ8C,B00QQ7DN5U,B00EQZJXWQ,B00O3UD0DC,B00H39U20Y,B00ESNH7BA,B00J4Z1VKA,B00KB1LR6O,B00N7O81C0,B00LC7A81G,B00H39YA52,B00HXG0Q6C,B00I3XOTTY,B00EQZQ3LK,B00ERLP4TA,B00FZ28FLY,B016J1KKVW,B00FLKQJ5O,B00YTWW0EY,B00P6XCDQA,B00FFU1RL6,B00K1KFXL0,B00H39YT0I,B00IFG2GIA,B00IH7AQZW,B00FYUH8RO,B00IYSEVMS,B00FFTGHLW,B00MOD9TS0,B012TQJC7Y,B00FFU5GEA,B00G0NDUE4,B00ILNFPCG,B00L0TZMXA,B016J355NI,B00HUYCUHU,B00H39XJYU,B00FFU4J3E,B00IM87XMA,B00EQB94XS,B00IGK6D7U,B00IGN9ERI,B00SXOXTUS,B00HOLVH5A,B00EQZOIU8,B00EQZNLPQ,B00IAK268G,B00FFTILSE,B00FFLBIOQ,B00ESNEY2A,B00I5235AW,B00HUXZSUM,B00H3A0YYW,B015QNDWCI,B00ILRIH36,B00H39UMPY,B016AVGC90,B00IPU1FKQ,B00H39WXEC,B016AVFYW6,B00FFVHY1C,B00ILRIIAI,B00G0OLLAI,B014I40ONQ,B00RH8P4QS,B00ESNEM7C,B00FFZ71Q6,B00RM26LA2,B00HCPJHCS,B00YHPZSX8",
+                                    "id": "prime-movie-editor-2"
+                                },
+                                {
+                                    "title": "Anspruchsvolle Filme",
+                                    "query": "OfferGroups=B0043YVHMY&ContentType=Movie&OrderBy=MostPopular&Preorder=F&ASINList=B00G0NDXM8,B00MY9QC6Q,B00IAJZ7AG,B00I84GPFE,B00ESNEH0E,B00EQZW4YU,B00EQZO5Z6,B00OCBCJFC,B00FYUORWS,B00NF8N8RQ,B00FYUJXPY,B00EQY9UIE,B00IM8DEWS,B00HUZYL4O,B00IGMCXVI,B00IFSL5BM,B00G0OF64A,B00FYYZI7W,B00EVARR7E,B00KNQKR3G,B00EVA9JCK,B00FFVPXPQ,B00EQZJTES,B00FYWSCU4,B00FYULVFY,B00JIOA5MC,B00KY1Z4X8,B00ESNFQJU,B00ESNKB4K,B00G0OLVYO,B00EXHJENK,B00FZIVDOY,B00EQZNOB2,B00EVAW4ZO,B00EQZRCDS,B00ESNF6HW,B00EV9YQNS,B00EVAW3LY,B00IM8CPGE,B00EQZQ98M,B00EQZQJ6E,B00ESURB9Q,B00HLXC7T6,B00EQZJP9W,B00ESNGX2E,B00FZKQBZ8,B00EQZPAIW,B00EQZK3WA,B00OCBC8EE,B00HDX5OVM,B00EQZJRDQ,B00IGKHUYK,B00EQZNFWU,B00EVA9Y9I,B00IFSPGBM,B00IAGPGDW,B00ERKI7JU,B00IGKHZR2,B00KX9GHNW,B00IFHIYX0,B00EQZP7Z8,B00HUZWBU0,B00EQZLV9O,B00EQZP096,B00EQZQVZ8,B00EQZK9IS,B00EQZNGXI,B00EQZNQXS,B00EQZMLMK,B00EVA0JKQ,B00EQZU9Z6,B00EVAKEWE,B00EVAIVGU,B00EQYVJGU,B00JXM9B10,B00FYV3GDI,B00EQYVG7M,B00EQZL2FC,B00EQZMZTY,B00EQZQVIA,B00KY1Y10U,B00FZN0Z2K,B00EQZL8NS,B00EVA53DY,B00ESURRQS,B00ESUS3M0,B00EVXP2HI,B00HI7AS7S,B00KY1X3JU,B00EQZVSZ6,B00EVATHMM,B00IGNACBK,B00G0NF03I,B00ESNH6MA,B00IK5Z9C6,B00I3RLR7M,B00EQYUIEY,B00IM8EUZS",
+                                    "id": "prime-movie-editor-5"
+                                },
+                                {
+                                    "title": "Exklusiv f\u00fcr Prime und Prime Video",
+                                    "query": "OfferGroups=B0043YVHMY&Preorder=F&ContentType=Movie&OrderBy=MostPopular,Rating&Preorder=F&IncludeASINList=B00ILRIFCY,B00IKBSMU6,B00IM2X9HY,B00I8WARGY,B00IK6JYTY,B00J8WNCQU,B00HX0N0BQ,B00I6WI9CK,B00ILIGH5A,B00N7O7586,B00OAJ8LL2,B00IU73IRM,B00I9LMXWU,B00JEE1CJQ,B00IU74CQS,B00MY9QAFO,B00QFVT45A,B00O9JT5IQ,B00UTIJLGM,B00OB0XUGG,B00HZL2UGE,B00I6Y8VP8,B00IU74F6U,B00IH67EQC,B00N3UTXLG,B00NF8N28G,B00P2S5GGI,B00SCBTHJO,B00I8WAUW0,B00I4TAQJO,B00SBZVCIK,B00ILR6M56,B00IK6OD68,B00IK6KB50,B00I4DWI6O,B00HXL6E8G,B00G0NPW1I,B00IU74G7S,B00K19SD8Q,B00SS0BKOY,B00MOD9L2O,B00G0OF8K2,B00HDZMP94,B00O4G7QQ2,B00I8VZOZO,B00N44THO4,B00LC79Y20,B00L0TZIMA,B00IAJXT60,B00HDZVFS6,B00HOLVISG,B00PWXEZOW,B00IK9THMA,B00FYWNIZI,B00OQQW5KM,B00RJ5EOQU,B00HFE0I6A,B00N3UUAE0,B00R6DQGTI,B00QHF7YTC,B00N7O66WM,B00M7ILT9E,B00IK9SYFQ,B00IK6OZ0M,B00KB1LOW6,B00OAS8KPK,B00ILNTQJY,B00IKBTRPU,B00JIO9RSA,B00JIOA2DE,B00OANWBBE,B00KB1BP1Q,B00N7PBA72,B00O2DH6C6,B00JLCZN8M,B00K2XLGLW,B00OM9Z85M,B00MY9Q3KG,B00ILFE8W2,B00IK6LAUA,B00IK9JG62,B00IK6LE3I,B00HFDXU8E,B00JM0JXYI,B00ILNAY5O,B00I9MSX4Q,B00IK6HLUI,B00L4HUWZ6,B00IH6MV8I,B00I84GPFE,B00EQZTHDG,B00ESNJWK4,B00EQZJAPQ,B00G0OB9X2,B00FYUHQEY",
+                                    "id": "prime-movie-editor-6"
+                                },
+                                {
+                                    "title": "Das Beste in HD",
+                                    "query": "OfferGroups=B0043YVHMY&ContentType=Movie&OrderBy=MostPopular&MinAmazonRatingCount=50&MinAmazonRating=4&HighDef=T&Preorder=F",
+                                    "id": "prime-movie-editor-7"
+                                },
+                                {
+                                    "title": "Filme 2010 bis heute",
+                                    "query": "OfferGroups=B0043YVHMY&ContentType=Movie&ReleaseDateStart=2010-01-01&OrderBy=MostPopular&Preorder=F",
+                                    "id": "prime-movie-editor-8"
+                                },
+                                {
+                                    "title": "Das Beste des 21. Jahrhunderts",
+                                    "query": "OfferGroups=B0043YVHMY&ContentType=Movie&ReleaseDateStart=2000-01-01&OrderBy=MostPopular,Rating&Preorder=F",
+                                    "id": "prime-movie-editor-9"
+                                },
+                                {
+                                    "title": "Herzensangelegenheiten",
+                                    "query": "OfferGroups=B0043YVHMY&ContentType=Movie&OrderBy=Rating,MostPopular&Genre=Romantik&Preorder=F",
+                                    "id": "prime-movie-editor-10"
+                                },
+                                {
+                                    "title": "Bettgefl\u00fcster",
+                                    "query": "OfferGroups=B0043YVHMY&ContentType=Movie&Preorder=F&Genre=Erotik&OrderBy=-ReleaseDate,MostPopular&CanonicalMaturityRating=fsk_rating%7Cages_12_and_over,fsk_rating%7Cages_16_and_over",
+                                    "id": "prime-movie-editor-11"
+                                },
+                                {
+                                    "title": "HD Kom\u00f6dien",
+                                    "query": "OfferGroups=B0043YVHMY&ContentType=Movie&Genre=KOM\u00d6DIE_UNTERHALTUNG&OrderBy=MostPopular,SalesRank,Rating&HighDef=T&Preorder=F",
+                                    "id": "prime-movie-editor-12"
+                                },
+                                {
+                                    "title": "Musikfilme",
+                                    "query": "OfferGroups=B0043YVHMY&ContentType=Movie&Genre=Musik,MUSIKFILM_TANZ_THEATER&OrderBy=MostPopular,SalesRank,Rating&Preorder=F",
+                                    "id": "prime-movie-editor-13"
+                                },
+                                {
+                                    "title": "Die Magie des Kinos",
+                                    "query": "OfferGroups=B0043YVHMY&ContentType=Movie&OrderBy=SalesRank,Rating&Preorder=F&ASINList=B00EQYVK5A,B00FFLC2XW,B00EQZRH6K,B00EQZJ9SE,B00EQZO696,B00EQZLAEA,B00FFIPV9W,B00EQZKBHM,B00FV4ILOM,B00EQZIQKQ,B00EQZNSXG,B00FFIF4XK,B00ESNEDQM,B00EQZTJ20,B00FFIK4AI,B00EQZW4YU,B00FFIGOCU,B00FFIN536,B00FV5V6WU,B00EQZJ3WG,B00FFIJO7W,B00EQYUR2C,B00EQZQIR4,B00FFIFM3W,B00EQYVK5A,B00FFLC2XW,B00EQZRH6K,B00EQZJ9SE,B00EQZO696,B00EQZLAEA,B00FFIPV9W,B00EQZKBHM,B00FV4ILOM,B00EQZIQKQ,B00EQZNSXG,B00FFIF4XK,B00ESNEDQM,B00EQZTJ20,B00FFIK4AI,B00EQZW4YU,B00FFIGOCU,B00FFIN536,B00FV5V6WU,B00EQZJ3WG,B00FFIJO7W,B00EQYUR2C,B00EQZQIR4,B00FFIFM3W",
+                                    "id": "prime-movie-editor-14"
+                                },
+                                {
+                                    "title": "Filme f\u00fcr Klein & Gro\u00df",
+                                    "query": "OfferGroups=B0043YVHMY&Genre=KINDER_FAMILIE&ContentType=Movie&Preorder=F&OrderBy=Rating&MinAmazonRatingCount=20&BlackList=B00LC8VRY2,B00LC8VTS6,B00LC8VQJ8,B00LC8VR3I",
+                                    "id": "prime-movie-editor-15"
+                                },
+                                {
+                                    "title": "HD Action & Abenteuer",
+                                    "query": "OfferGroups=B0043YVHMY&ContentType=Movie&Genre=ACTION_ABENTEUER&OrderBy=MostPopular,SalesRank,Rating&HighDef=T&Preorder=F",
+                                    "id": "prime-movie-editor-16"
+                                },
+                                {
+                                    "title": "Liebe und Leid",
+                                    "query": "OfferGroups=B0043YVHMY&Genre=Romantik&ContentType=Movie&Preorder=F&OrderBy=MostPopular,Rating,AvailabilityDate&CanonicalMaturityRating=fsk_rating%7Cwithout_age_limitation,fsk_rating%7Cages_6_and_over,fsk_rating%7Cages_12_and_over",
+                                    "id": "prime-movie-editor-17"
+                                },
+                                {
+                                    "title": "MEGAMOVIES",
+                                    "query": "OfferGroups=B0043YVHMY&ContentType=Movie&OrderBy=MostPopular,SalesRank,Rating&Preorder=F&ASINList=B00FV5UO9Q,B00FFUARYO,B00ERIZ7AY,B00EQZJ5OW,B00FFZR62A,B00EQYWEYG,B00ESNERGS,B00FFZ5PF0,B00FFV4P5K,B00FFYWTQ4,B00FFTJZA2,B00FFVLYFO,B00ESNF118,B00FFZR2LK,B00FFIVQFK,B00FFIGSQM,B00FGIWD6K,B00EQZT89E,B00FFLDSCQ,B00FFVITK2,B00EQZP5VE,B00EQZOIU8,B00EQZPKM8,B00EQZTA10,B00FFIFBFQ,B00FFZRS1E,B00FFIR25S,B00FFIQIZ8,B00FFVOVVS,B00FZJOJFI,B00FFVUHQG,B00FFIJT2W,B00ERLP5LW,B00EQZPYF6,B00ER07OL2,B00EQZV89W,B00EQZNE62,B00EQZSFV6,B00ESNJW8Q,B00ERL9LRQ,B00EQZUZDW,B00EQZJN08,B00FYWIU2Y,B00EQZUHBM",
+                                    "id": "prime-movie-editor-18"
+                                },
+                                {
+                                    "title": "Der Dokumentarfilm",
+                                    "query": "OfferGroups=B0043YVHMY&Genre=Dokumentation&ContentType=Movie&OrderBy=MostPopular,SalesRank,Rating&Preorder=F",
+                                    "id": "prime-movie-editor-19"
+                                },
+                                {
+                                    "title": "TOP Filme - IMDb",
+                                    "query": "OfferGroups=B0043YVHMY&ContentType=Movie&OrderBy=IMDbRating&Preorder=F&ASINList=B00FZJOJFI,B00FFWFAJY,B00FFU3NU4,B00FFUBPCM,B00FFUK1L8,B00FFZQYPK,B00FFTJZA2,B00FFZR3OQ,B00FFZR62A,B00FFIPCBY,B00EQZN6GU,B00FFIK4AI,B00ERLP5LW,B00EQZNLPQ,B00EQZU3UC,B00EQZUJ74,B00EQZSOGM,B00EQZIJSU,B00EQYVNMK,B00EQYVK5A,B00EQZIR82,B00EQZOIU8,B00EQZRDRS,B00EQYUR2C,B00FZJML5S,B00EQZK618,B00EQZT89E,B00EQYUCEK,B00FFIFCIW,B00EQY9WM8,B00FFIPF52,B00EQZN25U,B00EQZSFV6,B00ER07ZKM,B00EQYUR2C,B00FZNAH5U,B00EQZNLPQ,B00FFIPF52,B00EQZR19I,B00FFIK4AI,B00FFU5Z3M,B00FFIK5YS,B00EQZIR82,B00EQZQKG8",
+                                    "id": "prime-movie-editor-20"
+                                }
+                            ]
+                        },
+                        {
+                            "title": "Genres",
+                            "categories": [
+                                {
+                                    "title": "Action & Abenteuer",
+                                    "query": "OfferGroups=B0043YVHMY&Genre=ACTION_ABENTEUER&Preorder=F&ContentType=Movie&OrderBy=MostPopular,Rating",
+                                    "id": "prime-movie-genre-1"
+                                },
+                                {
+                                    "title": "Dokumentationen",
+                                    "query": "OfferGroups=B0043YVHMY&Genre=DOKUMENTATION&ContentType=Movie&Preorder=F&OrderBy=MostPopular,SalesRank,Rating",
+                                    "id": "prime-movie-genre-3"
+                                },
+                                {
+                                    "title": "Drama",
+                                    "query": "OfferGroups=B0043YVHMY&Genre=Drama&ContentType=Movie&Preorder=F&OrderBy=MostPopular,SalesRank,Rating",
+                                    "id": "prime-movie-genre-4"
+                                },
+                                {
+                                    "title": "Erotik",
+                                    "query": "OfferGroups=B0043YVHMY&Genre=Erotik&ContentType=Movie&Preorder=F&OrderBy=MostPopular,SalesRank,Rating",
+                                    "id": "prime-movie-genre-5"
+                                },
+                                {
+                                    "title": "Fantasy",
+                                    "query": "OfferGroups=B0043YVHMY&Genre=Fantasy&ContentType=Movie&Preorder=F&OrderBy=MostPopular,SalesRank,Rating",
+                                    "id": "prime-movie-genre-6"
+                                },
+                                {
+                                    "title": "Historienfilm",
+                                    "query": "OfferGroups=B0043YVHMY&Genre=Historienfilm&ContentType=Movie&Preorder=F&OrderBy=MostPopular,SalesRank,Rating",
+                                    "id": "prime-movie-genre-7"
+                                },
+                                {
+                                    "title": "Horror",
+                                    "query": "OfferGroups=B0043YVHMY&Genre=Horror&ContentType=Movie&Preorder=F&OrderBy=MostPopular,SalesRank,Rating",
+                                    "id": "prime-movie-genre-8"
+                                },
+                                {
+                                    "title": "Kinder & Familie",
+                                    "query": "OfferGroups=B0043YVHMY&Genre=KINDER_FAMILIE&ContentType=Movie&OrderBy=MostPopular,SalesRank,Rating&Preorder=F&CanonicalMaturityRating=fsk_rating%7Cwithout_age_limitation,fsk_rating%7Cages_6_and_over",
+                                    "id": "prime-movie-genre-10"
+                                },
+                                {
+                                    "title": "Kom\u00f6die & Unterhaltung",
+                                    "query": "OfferGroups=B0043YVHMY&Genre=KOM\u00d6DIE_UNTERHALTUNG&ContentType=Movie&Preorder=F&OrderBy=MostPopular,SalesRank,Rating",
+                                    "id": "prime-movie-genre-11"
+                                },
+                                {
+                                    "title": "Krimi",
+                                    "query": "OfferGroups=B0043YVHMY&Genre=Krimi&ContentType=Movie&Preorder=F&OrderBy=MostPopular,SalesRank,Rating",
+                                    "id": "prime-movie-genre-12"
+                                },
+                                {
+                                    "title": "Musikfilm, Tanz & Theater",
+                                    "query": "OfferGroups=B0043YVHMY&Genre=MUSIK,MUSIKFILM_TANZ_THEATER&ContentType=Movie&Preorder=F&OrderBy=MostPopular,SalesRank,Rating",
+                                    "id": "prime-movie-genre-13"
+                                },
+                                {
+                                    "title": "Romantik",
+                                    "query": "OfferGroups=B0043YVHMY&Genre=Romantik&ContentType=Movie&Preorder=F&OrderBy=MostPopular,SalesRank,Rating",
+                                    "id": "prime-movie-genre-15"
+                                },
+                                {
+                                    "title": "Science Fiction",
+                                    "query": "OfferGroups=B0043YVHMY&Genre=SCIENCEFICTION&Preorder=F&ContentType=Movie&OrderBy=MostPopular,SalesRank,Rating",
+                                    "id": "prime-movie-genre-16"
+                                },
+                                {
+                                    "title": "Sport",
+                                    "query": "OfferGroups=B0043YVHMY&Genre=Sport&ContentType=Movie&Preorder=F&OrderBy=MostPopular,SalesRank,Rating",
+                                    "id": "prime-movie-genre-17"
+                                },
+                                {
+                                    "title": "Thriller",
+                                    "query": "OfferGroups=B0043YVHMY&Genre=Thriller&ContentType=Movie&Preorder=F&OrderBy=MostPopular,SalesRank,Rating",
+                                    "id": "prime-movie-genre-18"
+                                },
+                                {
+                                    "title": "Western",
+                                    "query": "OfferGroups=B0043YVHMY&Genre=Western&ContentType=Movie&Preorder=F&OrderBy=MostPopular,SalesRank,Rating",
+                                    "id": "prime-movie-genre-19"
+                                },
+                                {
+                                    "title": "Zeichentrick",
+                                    "query": "OfferGroups=B0043YVHMY&Genre=Zeichentrick&ContentType=Movie&Preorder=F&OrderBy=MostPopular,SalesRank,Rating",
+                                    "id": "prime-movie-genre-20"
+                                }
+                            ],
+                            "id": "movies_prime_genres"
+                        },
+                        {
+                            "id": "movies_prime_ratings",
+                            "categories": [
+                                {
+                                    "title": "0",
+                                    "query": "OfferGroups=B0043YVHMY&ContentType=Movie&CanonicalMaturityRating=fsk_rating%7Cwithout_age_limitation&Preorder=F&OrderBy=MostPopular",
+                                    "id": "prime-movie-ratings-1"
+                                },
+                                {
+                                    "title": "6",
+                                    "query": "OfferGroups=B0043YVHMY&ContentType=Movie&Preorder=F&CanonicalMaturityRating=fsk_rating%7Cages_6_and_over&OrderBy=MostPopular",
+                                    "id": "prime-movie-ratings-2"
+                                },
+                                {
+                                    "title": "12",
+                                    "query": "OfferGroups=B0043YVHMY&ContentType=Movie&Preorder=F&CanonicalMaturityRating=fsk_rating%7Cages_12_and_over&OrderBy=MostPopular",
+                                    "id": "prime-movie-ratings-3"
+                                },
+                                {
+                                    "title": "16",
+                                    "query": "OfferGroups=B0043YVHMY&ContentType=Movie&CanonicalMaturityRating=fsk_rating%7Cages_16_and_over&Preorder=F&OrderBy=MostPopular",
+                                    "id": "prime-movie-ratings-4"
+                                },
+                                {
+                                    "title": "18",
+                                    "query": "OfferGroups=B0043YVHMY&ContentType=Movie&CanonicalMaturityRating=fsk_rating%7Cages_18_and_over&Preorder=F&OrderBy=MostPopular",
+                                    "id": "prime-movie-ratings-5"
+                                }
+                            ],
+                            "title": "FSK"
+                        },
+                        {
+                            "id": "movie_prime_channels",
+                            "categories": [
+                                {
+                                    "title": "Paramount",
+                                    "query": "OfferGroups=B0043YVHMY&OrderBy=MostPopular&ContentType=Movie&Studio=Paramount&Preorder=F",
+                                    "id": "prime-movie-channel-1"
+                                },
+                                {
+                                    "title": "Studiocanal",
+                                    "query": "OfferGroups=B0043YVHMY&OrderBy=MostPopular&Preorder=F&ContentType=Movie&Studio=STUDIOCANAL%20Germany",
+                                    "id": "prime-movie-channel-2"
+                                },
+                                {
+                                    "title": "Warner",
+                                    "query": "OfferGroups=B0043YVHMY&OrderBy=MostPopular,SalesRank&Preorder=F&ContentType=Movie&Studio=Warner%20Bros",
+                                    "id": "prime-movie-channel-3"
+                                },
+                                {
+                                    "title": "Sony",
+                                    "query": "OfferGroups=B0043YVHMY&OrderBy=MostPopular,SalesRank&ContentType=Movie&Studio=Sony&Preorder=F",
+                                    "id": "prime-movie-channel-4"
+                                },
+                                {
+                                    "title": "NBC Universal",
+                                    "query": "OfferGroups=B0043YVHMY&OrderBy=MostPopular,SalesRank&ContentType=Movie&Studio=NBC%20Universal&Preorder=F",
+                                    "id": "prime-movie-channel-5"
+                                },
+                                {
+                                    "title": "Ascot Elite",
+                                    "query": "OfferGroups=B0043YVHMY&OrderBy=MostPopular,SalesRank&Preorder=F&ContentType=Movie&Studio=Ascot%20Elite",
+                                    "id": "prime-movie-channel-6"
+                                },
+                                {
+                                    "title": "TMG",
+                                    "query": "OfferGroups=B0043YVHMY&OrderBy=MostPopular,SalesRank&ContentType=Movie&Studio=TMG&Preorder=F",
+                                    "id": "prime-movie-channel-7"
+                                },
+                                {
+                                    "title": "CLA",
+                                    "query": "OfferGroups=B0043YVHMY&OrderBy=MostPopular,SalesRank&ContentType=Movie&Studio=CLA&Preorder=F",
+                                    "id": "prime-movie-channel-8"
+                                },
+                                {
+                                    "title": "Eurovideo",
+                                    "query": "OfferGroups=B0043YVHMY&OrderBy=MostPopular,SalesRank&ContentType=Movie&Studio=Eurovideo&Preorder=F",
+                                    "id": "prime-movie-channel-10"
+                                },
+                                {
+                                    "title": "FilmConfect",
+                                    "query": "OfferGroups=B0043YVHMY&OrderBy=MostPopular,SalesRank&ContentType=Movie&Studio=FilmConfect&Preorder=F",
+                                    "id": "prime-movie-channel-11"
+                                },
+                                {
+                                    "title": "Lionsgate",
+                                    "query": "OfferGroups=B0043YVHMY&OrderBy=MostPopular,SalesRank&ContentType=Movie&Studio=Lionsgate&Preorder=F",
+                                    "id": "prime-movie-channel-12"
+                                },
+                                {
+                                    "title": "Splendid",
+                                    "query": "OfferGroups=B0043YVHMY&OrderBy=MostPopular,SalesRank&Preorder=F&ContentType=Movie&Studio=Splendid%20Film%20GmbH",
+                                    "id": "prime-movie-channel-16"
+                                },
+                                {
+                                    "title": "Tiberius",
+                                    "query": "OfferGroups=B0043YVHMY&OrderBy=MostPopular,SalesRank&ContentType=Movie&Studio=Tiberius&Preorder=F",
+                                    "id": "prime-movie-channel-17"
+                                },
+                                {
+                                    "title": "Tobis",
+                                    "query": "OfferGroups=B0043YVHMY&OrderBy=MostPopular,SalesRank&ContentType=Movie&Studio=Tobis&Preorder=F",
+                                    "id": "prime-movie-channel-18"
+                                },
+                                {
+                                    "title": "Falcom",
+                                    "query": "OfferGroups=B0043YVHMY&OrderBy=MostPopular,Rating&ContentType=Movie&Studio=Falcom&Preorder=F",
+                                    "id": "prime-movie-channel-21"
+                                },
+                                {
+                                    "title": "Koch Media",
+                                    "query": "OfferGroups=B0043YVHMY&OrderBy=MostPopular,Rating&ContentType=Movie&Studio=Koch%20Media&Preorder=F",
+                                    "id": "prime-movie-channel-22"
+                                }
+                            ],
+                            "title": "Studios"
+                        }
+                    ],
+                    "title": "Prime-Filme"
+                },
+                {
+                    "id": "all",
+                    "categories": [
+                        {
+                            "title": "Meist gesehen",
+                            "query": "ContentType=Movie&Preorder=F&OrderBy=SalesRank,Rating&Preorder=F",
+                            "id": "all-movie-1"
+                        },
+                        {
+                            "title": "Neuerscheinungen im Shop",
+                            "query": "ContentType=Movie&OrderBy=AvailabilityDate&MinAmazonRatingCount=40&HideNum=T&Preorder=F&Detailed=T&AID=1&ContractID=UX*",
+                            "id": "all-movie-2"
+                        },
+                        {
+                            "title": "Bestbewertet",
+                            "query": "ContentType=Movie&OrderBy=Rating&Preorder=F&MinAmazonRatingCount=30&amp;Preorder=F",
+                            "id": "all-movie-3"
+                        },
+                        {
+                            "title": "F\u00fcr Kinder",
+                            "query": "Genre=KINDER_FAMILIE&Preorder=F&ContentType=Movie&OrderBy=SalesRank,Rating&Preorder=F",
+                            "id": "all-movie-4"
+                        },
+                        {
+                            "id": "movies_all_editors_picks",
+                            "categories": [
+                                {
+                                    "title": "Filme im Original",
+                                    "query": "ContentType=Movie&Preorder=F&OrderBy=SalesRank,Rating&ASINList=B015ZM7XY8,B014LM2JSS,B015PXZJL6,B013C0G8KU,B015ZSCCL6,B014LNLLAE,B00YHRS5RC,B014PIFNO0,B013W772Y4,B00ZQMNSCE,B00TAPIDF0,B014LFSV9Q,B0105R4SW8,B00XQSJGDU,B01093XFJK,B014W84E8E,B0149933NS,B0148A93G4,B0108J09QW,B013W97BVG,B0141U4O6K,B014GI2LNU,B012BR8RAE,B00I8WAWXC,B00X4787CO,B0146RNJ1O,B0170VRF5E,B012HAP1O0,B0169E39KS,B013W5VBRU,B00US3KAPE,B00ZJKCLD0,B00W4Z7JIK,B00IK64WX2,B015OWPPAI,B010RQMWWK,B00XWDIBQ2,B015OWPMFG,B010FBVGQK,B0157MWB98,B00ZDU85UO,B015NI7E0M,B014SPM0IC,B00ZAP3PWU,B00JGV1JW2,B00VKYGV3A,B013W5VHJW,B00O161FQ2,B00TACZ51I,B00XIAPMWA,B00ILI94G4,B014VOIRLO,B015E7T158,B00EVAU29E,B016L9GK4I,B00IKBTWCS,B010R0BL7S,B013Y2539I,B00TENPE7S,B00IDEM9UO,B011A4RAEI,B00XQK36IY,B00IKEOUHM,B00MXF6BZS,B013JNHKGQ,B00SZ2WV0C,B00I8WBQQE,B01090RRTM,B0118UX5NY,B00X8JBSWE,B014SPLIKI,B00FZIVCLS,B00FYWINWG,B00J9O11TC,B010PELMHU,B014DZ10JM,B00ILNU7TM,B012OUTJGO,B016IJYD5O,B015N5KU88,B00ZCDPZZU,B00FFIRRJE,B0157K8Y3M,B00H39WJ1Y,B012U9TH1G,B012AP4G5W,B00FFIRV1I,B0170OLNMW,B014GUB1DO,B00ILWH73C,B00NMIK976,B00QFORHSS,B00IK6OI1S,B014RL8ES2,B00NSLE0DG,B0157K8MCK,B00YG3EPOY,B00IRH29HU",
+                                    "id": "all-movie-editor-2"
+                                },
+                                {
+                                    "title": "Anspruchsvolle Filme",
+                                    "query": "ContentType=Movie&Preorder=F&OrderBy=Rating,MostPopular&IncludeASINList=B00G0NDXM8,B00MY9QC6Q,B00IAJZ7AG,B00I84GPFE,B00ESNEH0E,B00EQZW4YU,B00EQZO5Z6,B00OCBCJFC,B00FYUORWS,B00NF8N8RQ,B00FYUJXPY,B00EQY9UIE,B00IM8DEWS,B00HUZYL4O,B00IGMCXVI,B00IFSL5BM,B00G0OF64A,B00FYYZI7W,B00EVARR7E,B00KNQKR3G,B00EVA9JCK,B00FFVPXPQ,B00EQZJTES,B00FYWSCU4,B00FYULVFY,B00JIOA5MC,B00KY1Z4X8,B00ESNFQJU,B00ESNKB4K,B00G0OLVYO,B00EXHJENK,B00FZIVDOY,B00EQZNOB2,B00EVAW4ZO,B00EQZRCDS,B00ESNF6HW,B00EV9YQNS,B00EVAW3LY,B00IM8CPGE,B00EQZQ98M,B00EQZQJ6E,B00ESURB9Q,B00HLXC7T6,B00EQZJP9W,B00ESNGX2E,B00FZKQBZ8,B00EQZPAIW,B00EQZK3WA,B00OCBC8EE,B00HDX5OVM,B00EQZJRDQ,B00IGKHUYK,B00EQZNFWU,B00EVA9Y9I,B00IFSPGBM,B00IAGPGDW,B00ERKI7JU,B00IGKHZR2,B00KX9GHNW,B00IFHIYX0,B00EQZP7Z8,B00HUZWBU0,B00EQZLV9O,B00EQZP096,B00EQZQVZ8,B00EQZK9IS,B00EQZNGXI,B00EQZNQXS,B00EQZMLMK,B00EVA0JKQ,B00EQZU9Z6,B00EVAKEWE,B00EVAIVGU,B00EQYVJGU,B00JXM9B10,B00FYV3GDI,B00EQYVG7M,B00EQZL2FC,B00EQZMZTY,B00EQZQVIA,B00KY1Y10U,B00FZN0Z2K,B00EQZL8NS,B00EVA53DY,B00ESURRQS,B00ESUS3M0,B00EVXP2HI,B00HI7AS7S,B00KY1X3JU,B00EQZVSZ6,B00EVATHMM,B00IGNACBK,B00G0NF03I,B00ESNH6MA,B00IK5Z9C6,B00I3RLR7M,B00EQYUIEY,B00IM8EUZS",
+                                    "id": "all-movie-editor-3"
+                                },
+                                {
+                                    "title": "Exklusiv f\u00fcr Prime und Prime Video",
+                                    "query": "OfferGroups=B0043YVHMY&Preorder=F&ContentType=Movie&OrderBy=MostPopular,Rating&Preorder=F&IncludeASINList=B00ILRIFCY,B00IKBSMU6,B00IM2X9HY,B00I8WARGY,B00IK6JYTY,B00J8WNCQU,B00HX0N0BQ,B00I6WI9CK,B00ILIGH5A,B00N7O7586,B00OAJ8LL2,B00IU73IRM,B00I9LMXWU,B00JEE1CJQ,B00IU74CQS,B00MY9QAFO,B00QFVT45A,B00O9JT5IQ,B00UTIJLGM,B00OB0XUGG,B00HZL2UGE,B00I6Y8VP8,B00IU74F6U,B00IH67EQC,B00N3UTXLG,B00NF8N28G,B00P2S5GGI,B00SCBTHJO,B00I8WAUW0,B00I4TAQJO,B00SBZVCIK,B00ILR6M56,B00IK6OD68,B00IK6KB50,B00I4DWI6O,B00HXL6E8G,B00G0NPW1I,B00IU74G7S,B00K19SD8Q,B00SS0BKOY,B00MOD9L2O,B00G0OF8K2,B00HDZMP94,B00O4G7QQ2,B00I8VZOZO,B00N44THO4,B00LC79Y20,B00L0TZIMA,B00IAJXT60,B00HDZVFS6,B00HOLVISG,B00PWXEZOW,B00IK9THMA,B00FYWNIZI,B00OQQW5KM,B00RJ5EOQU,B00HFE0I6A,B00N3UUAE0,B00R6DQGTI,B00QHF7YTC,B00N7O66WM,B00M7ILT9E,B00IK9SYFQ,B00IK6OZ0M,B00KB1LOW6,B00OAS8KPK,B00ILNTQJY,B00IKBTRPU,B00JIO9RSA,B00JIOA2DE,B00OANWBBE,B00KB1BP1Q,B00N7PBA72,B00O2DH6C6,B00JLCZN8M,B00K2XLGLW,B00OM9Z85M,B00MY9Q3KG,B00ILFE8W2,B00IK6LAUA,B00IK9JG62,B00IK6LE3I,B00HFDXU8E,B00JM0JXYI,B00ILNAY5O,B00I9MSX4Q,B00IK6HLUI,B00L4HUWZ6,B00IH6MV8I,B00I84GPFE,B00EQZTHDG,B00ESNJWK4,B00EQZJAPQ,B00G0OB9X2,B00FYUHQEY",
+                                    "id": "all-movie-editor-4"
+                                },
+                                {
+                                    "title": "Das Beste in HD",
+                                    "query": "ContentType=Movie&OrderBy=MostPopular&Preorder=F&MinAmazonRatingCount=50&MinAmazonRating=4&HighDef=T",
+                                    "id": "all-movie-editor-5"
+                                },
+                                {
+                                    "title": "Filme 2013 bis heute",
+                                    "query": "ContentType=Movie&ReleaseDateStart=2013-01-01&OrderBy=MostPopular,Rating&Preorder=F&ExcludeContractId=PDTSTDE&BlackList=B00LC8VRY2,B00LC8VTS6,B00LC8VQJ8,B00LC8VR3I",
+                                    "id": "all-movie-editor-6"
+                                },
+                                {
+                                    "title": "Das Beste des 21. Jahrhunderts",
+                                    "query": "ContentType=Movie&ReleaseDateStart=2000-01-01&OrderBy=SalesRank,Rating&Preorder=F",
+                                    "id": "all-movie-editor-7"
+                                },
+                                {
+                                    "title": "Herzensangelegenheiten",
+                                    "query": "ContentType=Movie&Preorder=F&OrderBy=Rating,SalesRank&Genre=Romantik",
+                                    "id": "all-movie-editor-8"
+                                },
+                                {
+                                    "title": "Bettgefl\u00fcster",
+                                    "query": "ContentType=Movie&Genre=Erotik&OrderBy=-ReleaseDate,MostPopular&Preorder=F&CanonicalMaturityRating=fsk_rating%7Cages_12_and_over,fsk_rating%7Cages_16_and_over",
+                                    "id": "all-movie-editor-9"
+                                },
+                                {
+                                    "title": "HD Kom\u00f6dien",
+                                    "query": "ContentType=Movie&Preorder=F&Genre=KOM\u00d6DIE_UNTERHALTUNG&OrderBy=SalesRank,Rating&HighDef=T&IncludeASINList=B00FZIVCLS,B00I9MSG5M,B00I8WAWXC,B00FZIVCLS,B00HLV4WVE,B00H39W6WG,B00HX0IWXW,B00HUDVG9E,B00I8S022M,B00I8WASKE,B00IH6MWXM,B00H39W6WG,B00H39RO46,B00I5T63AE,B00HE4SMLE,B00H39RO46,B00HE4U74Y,B00EQZM3UK,B00H39Y8NQ,B00HWWECOY,B00EQXGN0I,B00I87WBUY,B00IAK0FDY,B00I5T63AE,B00FZHJJQY,B00I70921I,B00HULT3ZU,B00HE4SMLE,B00FFYVY2Y,B00I9LVKQU,B00H39YT30,B00FLKJS7K,B00HUI10UE,B00I8WB4N4,B00HOLVE7Q,B00G0OBF7M,B00HFEDHUE,B00FNSOFT6,B00I0U83RO,B00HE4U74Y,B00HB8KTEQ,B00FLKLW2O,B00I5MFGCM,B00EQZM3UK,B00HE4UBDG,B00H39XWU6,B00H39YQEC,B00H39Y8NQ,B00ESNGCXO,B00EQZURE4,B00FFUK6RC,B00FZFHR9W,B00HZ1M9W4,B00HX0N020,B00H39YWN2,B00IAK0FDY,B00I522LJ8,B00IBMUAOU,B00I6W582Y,B00HOI3HLA,B00HFDNC8W,B00HX0IY9O,B00I87WIGG,B00FZHJJQY,B00H3A11LC,B00IFH43RG,B00HULT3ZU,B00HLXC8H2,B00HVL42C8,B00FYV5E2O,B00I05E7XI,B00FFYVY2Y,B00H39YLLK,B00I9LVKQU",
+                                    "id": "all-movie-editor-10"
+                                },
+                                {
+                                    "title": "Musikfilme",
+                                    "query": "ContentType=Movie&Preorder=F&Genre=Musik,MUSIKFILM_TANZ_THEATER&OrderBy=Rating,SalesRank",
+                                    "id": "all-movie-editor-11"
+                                },
+                                {
+                                    "title": "Die Magie des Kinos",
+                                    "query": "ContentType=Movie&Preorder=F&OrderBy=SalesRank&ASINList=B00EQYVK5A,B00FFLC2XW,B00EQZRH6K,B00EQZJ9SE,B00EQZO696,B00EQZLAEA,B00FFIPV9W,B00EQZKBHM,B00FV4ILOM,B00EQZIQKQ,B00EQZNSXG,B00FFIF4XK,B00ESNEDQM,B00EQZTJ20,B00FFIK4AI,B00EQZW4YU,B00FFIGOCU,B00FFIN536,B00FV5V6WU,B00EQZJ3WG,B00FFIJO7W,B00EQYUR2C,B00EQZQIR4,B00FFIFM3W",
+                                    "id": "all-movie-editor-13"
+                                },
+                                {
+                                    "title": "Filme f\u00fcr Klein & Gro\u00df",
+                                    "query": "Genre=KINDER_FAMILIE&Preorder=F&ContentType=Movie&OrderBy=Rating&MinAmazonRatingCount=20&BlackList=B00LC8VRY2,B00LC8VTS6,B00LC8VQJ8,B00LC8VR3I",
+                                    "id": "all-movie-editor-15"
+                                },
+                                {
+                                    "title": "HD Action & Abenteuer",
+                                    "query": "ContentType=Movie&Genre=ACTION_ABENTEUER&Preorder=F&OrderBy=SalesRank,Rating&HighDef=T",
+                                    "id": "all-movie-editor-16"
+                                },
+                                {
+                                    "title": "Liebe & Leid",
+                                    "query": "Genre=Romantik&ContentType=Movie&OrderBy=SalesRank,Rating,AvailabilityDate&Preorder=F&CanonicalMaturityRating=fsk_rating%7Cwithout_age_limitation,fsk_rating%7Cages_6_and_over,fsk_rating%7Cages_12_and_over",
+                                    "id": "all-movie-editor-17"
+                                },
+                                {
+                                    "title": "MEGAMOVIES",
+                                    "query": "ContentType=Movie&Preorder=F&OrderBy=MostPopular,SalesRank,Rating&IncludeASINList=B00J2TANXY,B00EV9XXDM,B00FNTRC54,B00FFJTZ3O,B00HFD6MJS,B00FYHVLIY,B00IFWCL16,B00IH7LJBC,B00H39WZKY,B00IM88W0M,B00IKBSMU6,B00I9MSR92,B00I4TAQJO,B00K7BNH66,B00HDZNQRY,B00FZITV7A,B00FZITWQU,B00FYULDLQ,B00HX0OG00,B00FYHVPL2,B00HZL2US2,B00FZ23CDK,B00HDZO7EU,B00FYUHQZS,B00FYWORJ4,B00FFZ8MPK,B00FFLJ95Q,B00EXHHXKG,B00I87KECQ,B00IAJZZXA,B00IKEP7W4,B00IM8CJVK,B00H39TFAC,B00EVA889U,B00FYUVNH0,B00HFE315U,B00HFE32WC,B00FV5ZCDE,B00LAOA64U,B00FYYZI7W,B00IK9T6KS,B00IK9U2ZG,B00HLVFJLQ,B00IK9706A,B00FYUIGXE,B00EVAPVXQ,B00FZ2A5RQ,B00FN1XOJ0,B00IKEKMME,B00FYUOSXG,B00I8S022M,B00FFTYCEQ,B00FZ23JGU,B00EVA7NH8,B00FZ4BHTY,B00HUI0ZJG,B00FYUOA1Q,B00FYU7JKK,B00FZJNLV6,B00ILRIHH2,B00FZ2B7UU,B00IK6L2WG,B00IGKIB0C,B00HUDVEOQ,B00IFWD20A,B00HZXEHTA,B00IU74BGO,B00H39VP0U,B00IAVGYYM,B00FYUQK9Q,B00IKBTRPU,B00FYXUW8S,B00FYUMWFM,B00JM0JXYI,B00FZ4KQEG,B00I882F90,B00FYYRLIQ,B00FYV47UO,B00IU5DKVI,B00FFLA1ZS,B00HFD7M2Y,B00FFZ6JTQ,B00ILNU1V6,B00IEZQ5IO,B00IH6MXS6,B00H39RM7A,B00FYU9QGK,B00FZN228A,B00JZMOE9M,B00HFDORPE,B00HE4TEFC,B00FFZROMW,B00IDGHVAU,B00JG03Z9I,B00EVAQ50E,B00HX0IWG4",
+                                    "id": "all-movie-editor-18"
+                                },
+                                {
+                                    "title": "Der Dokumentarfilm",
+                                    "query": "Genre=Dokumentation&Preorder=F&ContentType=Movie&OrderBy=Rating,SalesRank",
+                                    "id": "all-movie-editor-19"
+                                },
+                                {
+                                    "title": "TOP Filme - IMDb",
+                                    "query": "ContentType=Movie&Preorder=F&OrderBy=MostPopular,Rating&IncludeASINList=B00IGKIB0C,B00IGMLBGG,B00FYV7T72,B00J2TANXY,B00HX0IWG4,B00FNTRC54,B00FFJTZ3O,B00FYV674S,B00FYHVPL2,B00FZJNLV6,B00IK9U2ZG,B00I882F90,B00HDZO7EU,B00I5WRB9I,B00IFWCL16,B00FZN228A,B00IH7LJBC,B00FN1XOJ0,B00HE2BW90,B00FZ23CDK,B00FYVAOFG,B00IAJXXWA,B00HFDORPE,B00IK6L2WG,B00H39WZKY,B00HUDVEOQ,B00IKEKMME,B00IH6MXS6,B00IBRA252,B00IK9T6KS,B00IAVGYYM,B00FYUOA1Q,B00FYU7JKK,B00IU5DKVI,B00HX0OG00,B00FFZ8MPK,B00I8S022M,B00IKBSMU6,B00EVXPRO6,B00I84GPFE,B00FYYRLIQ,B00HV30GLW,B00FZ2B7UU,B00IU74F6U,B00IKBTRPU,B00FYHVLIY,B00FYYZI7W,B00I51OR9G,B00IM8D4MS,B00G2TUKZ8,B00IM88W0M,B00FYUIGXE,B00HCQCXM8,B00FFTYCEQ,B00J2WP55C,B00IK6KBIM,B00ILRIHR2,B00FYU9QGK,B00FZITV7A,B00FZITWQU,B00ILNUE8G,B00IKBR2ZC,B00IKEP7W4,B00EVAPVXQ,B00EV9XXDM,B00FTH07JS,B00EQZQTFK,B00FZ4KQEG,B00HFD6MJS,B00FFLJ95Q,B00K7BNH66,B00HDZNQRY,B00IK6LGWW,B00EVAQ50E,B00HFD7M2Y,B00HX0L2KW,B00LAOA64U,B00EVA6XEW,B00EVA7NH8,B00I8ZVVQ6,B00JKEXMES,B00H39VPSC,B00EQZJNXK,B00FYU6F0U,B00EVANG92,B00FFL6AEO,B00EVA5F9Q,B00FYUQK9Q",
+                                    "id": "all-movie-editor-20"
+                                }
+                            ],
+                            "title": "Empfehlungen"
+                        },
+                        {
+                            "id": "movies_all_deals",
+                            "categories": [
+                                {
+                                    "title": "Leihen unter 1\u20ac",
+                                    "query": "MinPrice=0.01&MaxPrice=0.99&Preorder=F&ContentType=Movie&OrderBy=SalesRank",
+                                    "id": "all-movie-deal-1"
+                                },
+                                {
+                                    "title": "Leihen unter 2\u20ac",
+                                    "query": "MinPrice=1&MaxPrice=1.99&Preorder=F&ContentType=Movie&OrderBy=SalesRank",
+                                    "id": "all-movie-deal-2"
+                                },
+                                {
+                                    "title": "Leihen unter 3\u20ac",
+                                    "query": "MinPrice=2&MaxPrice=2.99&Preorder=F&ContentType=Movie&OrderBy=SalesRank",
+                                    "id": "all-movie-deal-3"
+                                }
+                            ],
+                            "title": "Angebote"
+                        },
+                        {
+                            "title": "Genres",
+                            "categories": [
+                                {
+                                    "title": "Action & Abenteuer",
+                                    "query": "Genre=ACTION_ABENTEUER&Preorder=F&ContentType=Movie&OrderBy=SalesRank,Rating",
+                                    "id": "all-movie-genre-1"
+                                },
+                                {
+                                    "title": "Dokumentationen",
+                                    "query": "Genre=Dokumentation&Preorder=F&ContentType=Movie&OrderBy=SalesRank,Rating",
+                                    "id": "all-movie-genre-3"
+                                },
+                                {
+                                    "title": "Drama",
+                                    "query": "Genre=Drama&Preorder=F&ContentType=Movie&OrderBy=SalesRank,Rating",
+                                    "id": "all-movie-genre-4"
+                                },
+                                {
+                                    "title": "Erotik",
+                                    "query": "Genre=Erotik&ContentType=Movie&Preorder=F&OrderBy=SalesRank,Rating",
+                                    "id": "all-movie-genre-5"
+                                },
+                                {
+                                    "title": "Fantasy",
+                                    "query": "Genre=Fantasy&Preorder=F&ContentType=Movie&OrderBy=SalesRank,Rating",
+                                    "id": "all-movie-genre-6"
+                                },
+                                {
+                                    "title": "Historienfilm",
+                                    "query": "Genre=Historienfilm&ContentType=Movie&Preorder=F&OrderBy=SalesRank,Rating",
+                                    "id": "all-movie-genre-7"
+                                },
+                                {
+                                    "title": "Horror",
+                                    "query": "Genre=Horror&ContentType=Movie&Preorder=F&OrderBy=SalesRank,Rating",
+                                    "id": "all-movie-genre-8"
+                                },
+                                {
+                                    "title": "Kinder & Familie",
+                                    "query": "Genre=KINDER_FAMILIE&ContentType=Movie&Preorder=F&OrderBy=SalesRank,Rating&CanonicalMaturityRating=fsk_rating%7Cwithout_age_limitation,fsk_rating%7Cages_6_and_over",
+                                    "id": "all-movie-genre-10"
+                                },
+                                {
+                                    "title": "Kom\u00f6die & Unterhaltung",
+                                    "query": "Genre=KOM\u00d6DIE_UNTERHALTUNG&ContentType=Movie&Preorder=F&OrderBy=SalesRank,Rating",
+                                    "id": "all-movie-genre-11"
+                                },
+                                {
+                                    "title": "Krimi",
+                                    "query": "Genre=KRIMI&ContentType=Movie&Preorder=F&OrderBy=SalesRank,Rating",
+                                    "id": "all-movie-genre-12"
+                                },
+                                {
+                                    "title": "Musikfilm, Tanz & Theater",
+                                    "query": "Genre=MUSIKFILM_TANZ_THEATER&ContentType=Movie&Preorder=F&OrderBy=SalesRank,Rating",
+                                    "id": "all-movie-genre-13"
+                                },
+                                {
+                                    "title": "Romantik",
+                                    "query": "Genre=Romantik&ContentType=Movie&Preorder=F&OrderBy=SalesRank,Rating",
+                                    "id": "all-movie-genre-15"
+                                },
+                                {
+                                    "title": "Science Fiction",
+                                    "query": "Genre=SCIENCEFICTION&ContentType=Movie&OrderBy=SalesRank,Rating",
+                                    "id": "all-movie-genre-16"
+                                },
+                                {
+                                    "title": "Sport",
+                                    "query": "Genre=Sport&ContentType=Movie&Preorder=F&OrderBy=SalesRank,Rating",
+                                    "id": "all-movie-genre-17"
+                                },
+                                {
+                                    "title": "Thriller",
+                                    "query": "Genre=Thriller&ContentType=Movie&Preorder=F&OrderBy=SalesRank,Rating",
+                                    "id": "all-movie-genre-18"
+                                },
+                                {
+                                    "title": "Western",
+                                    "query": "Genre=Western&ContentType=Movie&Preorder=F&OrderBy=SalesRank,Rating",
+                                    "id": "all-movie-genre-19"
+                                },
+                                {
+                                    "title": "Zeichentrick",
+                                    "query": "Genre=Zeichentrick&ContentType=Movie&Preorder=F&OrderBy=SalesRank,Rating",
+                                    "id": "all-movie-genre-20"
+                                }
+                            ],
+                            "id": "movies_all_genres"
+                        },
+                        {
+                            "id": "movies_all_ratings",
+                            "categories": [
+                                {
+                                    "title": "0",
+                                    "query": "ContentType=Movie&Preorder=F&CanonicalMaturityRating=fsk_rating%7Cwithout_age_limitation",
+                                    "id": "all-movie-ratings-1"
+                                },
+                                {
+                                    "title": "6",
+                                    "query": "ContentType=Movie&Preorder=F&CanonicalMaturityRating=fsk_rating%7Cages_6_and_over",
+                                    "id": "all-movie-ratings-2"
+                                },
+                                {
+                                    "title": "12",
+                                    "query": "ContentType=Movie&Preorder=F&CanonicalMaturityRating=fsk_rating%7Cages_12_and_over",
+                                    "id": "all-movie-ratings-3"
+                                },
+                                {
+                                    "title": "16",
+                                    "query": "ContentType=Movie&Preorder=F&CanonicalMaturityRating=fsk_rating%7Cages_16_and_over",
+                                    "id": "all-movie-ratings-4"
+                                },
+                                {
+                                    "title": "18",
+                                    "query": "ContentType=Movie&Preorder=F&CanonicalMaturityRating=fsk_rating%7Cages_18_and_over&OrderBy=SalesRank",
+                                    "id": "all-movie-ratings-5"
+                                }
+                            ],
+                            "title": "FSK"
+                        },
+                        {
+                            "id": "movie_all_channels",
+                            "categories": [
+                                {
+                                    "title": "Paramount",
+                                    "query": "OrderBy=SalesRank&Preorder=F&ContentType=Movie&Studio=Paramount",
+                                    "id": "all-movie-channel-1"
+                                },
+                                {
+                                    "title": "Studiocanal",
+                                    "query": "OrderBy=SalesRank&Preorder=F&ContentType=Movie&Studio=STUDIOCANAL%20Germany",
+                                    "id": "all-movie-channel-2"
+                                },
+                                {
+                                    "title": "Warner",
+                                    "query": "OrderBy=SalesRank&Preorder=F&ContentType=Movie&Studio=Warner%20Bros",
+                                    "id": "all-movie-channel-3"
+                                },
+                                {
+                                    "title": "Sony",
+                                    "query": "OrderBy=SalesRank&Preorder=F&ContentType=Movie&Studio=Sony",
+                                    "id": "all-movie-channel-4"
+                                },
+                                {
+                                    "title": "NBC Universal",
+                                    "query": "OrderBy=SalesRank&Preorder=F&ContentType=Movie&Studio=NBC%20Universal",
+                                    "id": "all-movie-channel-5"
+                                },
+                                {
+                                    "title": "Disney",
+                                    "query": "OrderBy=SalesRank&Preorder=F&ContentType=Movie&Studio=Disney",
+                                    "id": "all-movie-channel-6"
+                                },
+                                {
+                                    "title": "TMG",
+                                    "query": "OrderBy=SalesRank&Preorder=F&ContentType=Movie&Studio=TMG",
+                                    "id": "all-movie-channel-7"
+                                },
+                                {
+                                    "title": "MGM",
+                                    "query": "OrderBy=SalesRank&Preorder=F&ContentType=Movie&Studio=MGM",
+                                    "id": "all-movie-channel-8"
+                                },
+                                {
+                                    "title": "Fox",
+                                    "query": "OrderBy=SalesRank&Preorder=F&ContentType=Movie&Studio=FOX",
+                                    "id": "all-movie-channel-10"
+                                }
+                            ],
+                            "title": "Studios"
+                        }
+                    ],
+                    "title": "Filme-Shop"
+                }
+            ],
+            "id": "movies"
+        },
+        {
+            "id": "tv_shows",
+            "categories": [
+                {
+                    "title": "Prime-Serien",
+                    "id": "prime",
+                    "categories": [
+                        {
+                            "title": "Meist gesehen",
+                            "query": "OfferGroups=B0043YVHMY&ContentType=TVEpisode&RollupToSeason=T&OrderBy=MostPopular",
+                            "id": "prime-tv-1"
+                        },
+                        {
+                            "title": "Neue Serien bei Prime Video",
+                            "query": "OfferGroups=B0043YVHMY&ContentType=TVEpisode&RollUpToSeason=T&OrderBy=AvailabilityDate&MinAmazonRatingCount=40&HideNum=T&Preorder=F&Detailed=T&AID=1&ContractID=UX*",
+                            "id": "prime-tv-2"
+                        },
+                        {
+                            "title": "Bestbewertet",
+                            "query": "OfferGroups=B0043YVHMY&ContentType=TVEpisode&RolluptoSeason=T&OrderBy=Rating&MinAmazonRatingCount=30",
+                            "id": "prime-tv-3"
+                        },
+                        {
+                            "title": "F\u00fcr Kinder",
+                            "query": "OfferGroups=B0043YVHMY&ContentType=TVEpisode&RollupToSeason=T&Genre=KINDER_FAMILIE&OrderBy=MostPopular,Rating",
+                            "id": "prime-tv-4"
+                        },
+                        {
+                            "id": "tv_shows_prime_editors_picks",
+                            "categories": [
+                                {
+                                    "title": "Prime-Serien als Download",
+                                    "query": "OfferGroups=B0043YVHMY&OrderBy=MostPopular,SalesRank&ContentType=TVSeason&Studio=Eurovideo,3L,Amazon%20Studios,ZDFE,Comedy%20Central,STUDIOCANAL%20Germany,Viacom,MTV,Nickelodeon,Miramax,Falcom,Kiddinx,Lionsgate,Aardman,Brainpool,CBS%20Studios%20International,CLA%20GmbH,DHX%20Media,Ascot%20Elite,FilmConfect,Kontor%20New%20Media%20GmbH,MFA,MGM,Prokino,Sony%20Music%20Entertainment%20Germany%20GmbH,Sony,Splendid%20Film%20GmbH,Studio%20Hamburg,Tiberius,Tobis,TOBIS,Diva%20AG,Warner%20Bros,Warner%20Bros.",
+                                    "id": "prime-tv-editor-2"
+                                },
+                                {
+                                    "title": "Alle HD Serien",
+                                    "query": "OfferGroups=B0043YVHMY&ContentType=TVEpisode&RollUpToSeason=T&HighDef=T&OrderBy=MostPopular,SalesRank,Rating",
+                                    "id": "prime-tv-editor-3"
+                                },
+                                {
+                                    "title": "Serien im Original",
+                                    "query": "OfferGroups=B0043YVHMY&OrderBy=MostPopular,Rating&ContentType=TVEpisode&RolluptoSeason=T&ASINList=B0164M0GQU,B016HCQ52Q,B015YGVBWU,B00JEE1GXS,B016VEMUOC,B00YZF5Y34,B016EJGXFQ,B016JH6GEG,B016XC2YN4,B0172AXQ9W,B00I0AKR46,B00ESUUFPI,B00TDBFM6Y,B00ET47XNU,B00FTNNFWS,B00FFXOVQG,B011842KNQ,B00ERN1STS,B015D3K0FI,B00FNTJINI,B00FGKKCFW,B00FGFTCBM,B00ETA0O3K,B00ZB7PSQS,B00FGG607A,B00MC5PQZ0,B00ESUTU86,B00HSM74WA,B00I6JE3OG,B00KXA1K2O,B00EVCAAG2,B00FGQ11Q0,B00ERJF5DM,B00ERMZF3E,B00ERM8MI4,B00JZK6EBU,B00MTVNXWA,B00ESV51QK,B00NKU61XM,B00O2HE8L4,B00H3CVO4E,B00SVL0QLS,B00HQI6RZ6,B013VXAG4M,B00ET4T1OE,B00IK011QE,B00G8NXUYG,B00IDF79HQ,B00NHYBGOK,B00ERL8OBK,B00NMQHHI2,B00ZWE2RPK,B00ESVFJSU,B00ESUUUHQ,B00ET97MDQ,B00ESUUJYU,B00HWULLU4,B013PT2JB0,B00JR7QVDM,B00FGL0878,B00JPH1YEU,B00Q3O92O2,B00ESUUUTE,B00I0YSE7O,B00ESV63F8,B00ESVBONO,B00FWJ358I,B00ERIOZNO,B00FGG6NRC,B00ESV9ASA,B00ESVCLW2,B00I0BRQQC,B00K5PB5XG,B00ESVC186,B00EWGDCLM,B00EUEAMUA,B00K32ZYNS,B00JEUFR5K,B00FGHZLJM,B00IMFLG58,B00PRQ0RXC,B00U47IIY4,B00FFZWNVY,B00IC6SSMQ,B00ET47K5Q,B012OUH33U,B00FGHQQ3C,B00K6HGH36,B00MTXLKE6,B00EUCLEF4,B00J8R9EH6,B00EWKYU0K,B00FGKLCTW,B00ET581XA,B00K5PBGN0",
+                                    "id": "prime-tv-editor-6"
+                                },
+                                {
+                                    "title": "Sitcom Alarm",
+                                    "query": "OfferGroups=B0043YVHMY&ContentType=TVSeason,TVEpisode&RollUpToSeason=T&OrderBy=MostPopular,SalesRank,Rating&ASINList=B00JEE19GC,B00J4ZOSGE,B00J4UYZIA,B00IB83BLI,B00IB7OO4W,B00FFZ74FY,B00JF5B334,B00ET0KSRW,B00ERL13X6,B00ET0NSXS,B00FFYUMFY,B00R8H4WW0,B00ET0JM3S,B00O2LQRM8,B00ERN24PU,B00JKNJ9S2,B00PRQ3VW6,B00LXNK6X4,B00O2I76LM,B00ERNKAN8,B00FFWB63I,B00FFZ9G5A,B00ERJ0E1K,B00EU7YPL4,B00ERLPSQY,B00ERNJKM0,B00FFZ68QA,B00ET0K6HY,B00ERKMC78,B00ERIG3UM,B00ET0ZEUI,B00ERJHUTY,B00ERL0RAG,B00ERLPS8M,B00ERLPVNY,B00ERM6OS4,B00ERM6WZ4,B00ERM7L2C,B00ERM9UMG,B00ERMAW8C,B00ERMCPNW,B00ERN1WLC,B00ERN2BUS,B00ERN2YVY,B00ERNJSIQ,B00ERNJT44,B00ERNJXYU,B00ERNKAA6,B00ESUSK64,B00ESUTWAM,B00ET09PKS,B00ET0GOZM,B00ET0K598,B00ET0KXZE,B00ET0LCUY,B00ET0LEJ8,B00ET0N9KK,B00ET0O378,B00ET0QPWE,B00ET0R0AK,B00ET0RDSO,B00ET0S43W,B00ET118H0,B00ET11KUU,B00ET16MGM,B00FFW9FDQ,B00FFZ9CFY,B00GSDN5WS,B00HWUL44M",
+                                    "id": "prime-tv-editor-7"
+                                },
+                                {
+                                    "title": "Serien 2010 bis heute",
+                                    "query": "OfferGroups=B0043YVHMY&ContentType=TVEpisode&RollUpToSeason=T&ReleaseDateStart=2010-01-01&OrderBy=MostPopular,Rating",
+                                    "id": "prime-tv-editor-8"
+                                },
+                                {
+                                    "title": "Deutsche Comedy",
+                                    "query": "OfferGroups=B0043YVHMY&ContentType=TVSeason,TVEpisode&RollUpToSeason=T&OrderBy=MostPopular,SalesRank,Rating&ASINList=B00NB9Y6G6,B00ET10PO2,B00ERJHUTY,B00ET0ZDX6,B00LF12NTE,B00ET0GYQ6,B00ERNJYNA,B00ERNJYNA,B00ESUSVYA,B00ERIG0FK,B00ET0Z85Y,B00ERMZ46C,B00QUC9WJ2,B00QXFNX7I,B00ETJ5C8S,B00FGL9PH2,B00ET5MLLI,B00ESV6IU8,B00ESUZLPM,B00ETGV1NQ,B00ESUXOGU,B00ESUSMP8,B00ESUV8CM,B00ET6CKWW,B00ET6QGOA,B00ETA0U3E,B00ET50S9K,B00ESUVQ10,B00ETI44DI,B00ETJ11AG,B00ESVCIRK,B00ET4DXT8,B00FGGZYLS,B00ESV5KMK,B00ESUVTQW,B00ESV7YJ2,B00ESV6EIO,B00ET9FURG,B00ESV7TSS,B00ERIZCWM,B00ESV3A7M,B00ESV7OLU",
+                                    "id": "prime-tv-editor-9"
+                                },
+                                {
+                                    "title": "Exklusiv bei Prime Video",
+                                    "query": "OfferGroups=B0043YVHMY&ContentType=TVEpisode&RollupToSeason=T&OrderBy=MostPopular,Rating,SalesRank&ASINList=B00WND458K,B00WRPXKGC,B00WT6Q55W,B00V8VIC1E,B00K32ZTO2,B00IKR1NR4,B00IM3YEFY,B00UK4SU5S,B00JACALU8,B00U1LLJ1C,B00I9MRO5U,B00U9OLEYI,B00U47I2LI,B00U47H9K8,B00U46X3QI,B00U46WR7E,B00T83VWAC,B00SM1H9B2,B00RWXLG9C,B00RX0L78E,B00RWYTQM0,B00RX0OKQU,B00RWYV18W,B00RTX4CSW,B00RPJ9IPM,B00RSVPZ4A,B00RPJTUOG,B00RU7GLNQ,B00RDL7SMW,B00RDL7Z84,B00RDLA4L4,B00RDL8EKW,B00RDL98ZM,B00NOGKKCK,B00NHYAYUW,B00R8E4S3Q,B00HXFN9US,B00I9K2YCU,B00IB1LLP8,B00ILOZMSC,B00LJEYPIY,B00IG5OLVK,B00R55ATJ0,B00QMOCBMS,B00O3UU19I,B00KRIBIRE,B00MOU7BFQ,B00MEV961M,B00QH17FOA,B00QH1SFF8,B00PYZ5A8I,B00OMBAHQA,B00ODADFEG,B00OS7WIJC,B00OSAZFTO,B00OS1QMCW,B00OQWXTD8,B00OBRTG1W,B00O2HFN2W,B00O2I09DO,B00K1IS25G,B00O2DULNW,B00O2KZY14,B00J4YQXQ8,B00O2I1Y7E,B00JZK7FIG,B00J24ZZPA,B00R88AKY8,B00NO1RYDI,B00NO1QQLE,B00NO1N3O2,B00MTXJ96C,B00MTXIPPI,B00MTXMA0E,B00J248RH8,B00I6JE2XS,B00MELF0Z8,B00M5G59IK,B00LW8BVX4,B00LW8CZ6G,B00KRIB3K6,B00KS3BG2A,B00JLG934I,B00JLG7RZU,B00JG1FKRW,B00JG1EV9K",
+                                    "id": "prime-tv-editor-10"
+                                },
+                                {
+                                    "title": "Kinderecke",
+                                    "query": "OfferGroups=B0043YVHMY&ContentType=TVEpisode&RollUpToSeason=T&Genre=KINDER_FAMILIE&OrderBy=MostPopular,Rating&CanonicalMaturityRating=fsk_rating%7Cwithout_age_limitation,fsk_rating%7Cages_6_and_over",
+                                    "id": "prime-tv-editor-11"
+                                },
+                                {
+                                    "title": "Die besten SciFi-Serien",
+                                    "query": "OfferGroups=B0043YVHMY&ContentType=TVSeason,TVEpisode&RollUpToSeason=T&OrderBy=Rating,MostPopular&Genre=SCIENCEFICTION&MinAmazonRatingCount=20",
+                                    "id": "prime-tv-editor-12"
+                                },
+                                {
+                                    "title": "HD Comedy-Serien",
+                                    "query": "OfferGroups=B0043YVHMY&ContentType=TVEpisode&RollUpToSeason=T&Genre=KOM\u00d6DIE_UNTERHALTUNG&OrderBy=MostPopular,SalesRank,Rating&HighDef=T",
+                                    "id": "prime-tv-editor-13"
+                                },
+                                {
+                                    "title": "Teenagerserien in HD",
+                                    "query": "OfferGroups=B0043YVHMY&ContentType=TVSeason,TVEpisode&RollUpToSeason=T&OrderBy=MostPopular,SalesRank,Rating&ASINList=B00ET16B9U,B00ERMC3A2,B00ERN2TVO,B00ERNMPX6,B00ERN2AO0,B00ERMWNR0,B00ERMZY26,B00ERK2H8W,B00ET10ZWE,B00ET0ZHZU,B00ERMA4IU,B00ET09Z4O,B00ESUT05E,B00EU7YGE0,B00ERJNUUW,B00ERKIIYE",
+                                    "id": "prime-tv-editor-15"
+                                },
+                                {
+                                    "title": "Familienserien in HD",
+                                    "query": "OfferGroups=B0043YVHMY&ContentType=TVSeason&OderBy=MostPopular,SalesRank,Rating&ASINList=B00ET0GXCG,B00ET11UWI,B00ERNKNMQ,B00ERN9RKU,B00I9IK04Q,B00ET0JLES,B00ET11PKA,B00ERN3Z08,B00ET10SHQ,B00ERJ0E1K,B00ERLRUP6,B00ERLT4VE,B00ET0ZEUI,B00ET0QT4I",
+                                    "id": "prime-tv-editor-17"
+                                },
+                                {
+                                    "title": "Dokuserien",
+                                    "query": "OfferGroups=B0043YVHMY&ContentType=TVEpisode&RollUpToSeason=T&Genre=Dokumentation&OrderBy=MostPopular,Rating",
+                                    "id": "prime-tv-editor-18"
+                                },
+                                {
+                                    "title": "Lachknaller",
+                                    "query": "OfferGroups=B0043YVHMY&Genre=KOM\u00d6DIE_UNTERHALTUNG&ContentType=TVEpisode&RollUpToSeason=T&OrderBy=Rating,MostPopular,SalesRank&MinAmazonRatingCount=20",
+                                    "id": "prime-tv-editor-19"
+                                },
+                                {
+                                    "title": "Das Beste an Zeichentrick",
+                                    "query": "OfferGroups=B0043YVHMY&Genre=Zeichentrick&ContentType=TVEpisode&RollUpToSeason=T&OrderBy=MostPopular,SalesRank,Rating",
+                                    "id": "prime-tv-editor-20"
+                                },
+                                {
+                                    "title": "Taffe Mamas",
+                                    "query": "OfferGroups=B0043YVHMY&ContentType=TVSeason,TVEpisode&RollUpToSeason=T&OrderBy=MostPopular,SalesRank,Rating&ASINList=B00ERL16I8,B00ET10CRC,B00FG8AS8K,B00ET0GXCG,B00ERLRRJU,B00FFZ75VC,B00ERN46RY,B00FFYUTXE,B00ET10J3Y,B00ERNJOJY,B00ET0L4GG,B00ERLT4VE,B00ET0JUSA,B00ERL1NYA,B00ET0RA1Y,B00ET16UIW,B00ET0G4XO,B00ET0NFTU,B00ERKK7L6,B00ERJ0E1K,B00ERN0QXW,B00ET109OI",
+                                    "id": "prime-tv-editor-21"
+                                },
+                                {
+                                    "title": "Taffe Kerle",
+                                    "query": "OfferGroups=B0043YVHMY&ContentType=TVSeason,TVEpisode&RollUpToSeason=T&OrderBy=MostPopular,SalesRank,Rating&ASINList=B00FFVW9C6,B00ET0K4T4,B00ET0LARE,B00ESUT05E,B00ERL0VHK,B00FFW38E8,B00ESV7MTO,B00ET0R8FM,B00ERN2UPE,B00ERJI4DA,B00ET0RLG8,B00ET0ZGDS,B00ET0L8AI,B00ESUSSUW,B00ERM9Q34,B00ET0NTLY,B00ERNJYW6,B00ERN3PP8,B00ET0SILA,B00ET09MB0,B00ET0GNC6,B00ET10Z4C,B00ET11DAM,B00ESUW7EU,B00ET0LGDM,B00ERNKO0M",
+                                    "id": "prime-tv-editor-22"
+                                }
+                            ],
+                            "title": "Empfehlungen"
+                        },
+                        {
+                            "title": "Genres",
+                            "categories": [
+                                {
+                                    "title": "Action & Abenteuer",
+                                    "query": "OfferGroups=B0043YVHMY&Genre=ACTION_ABENTEUER&ContentType=TVEpisode&RollUpToSeason=T&OrderBy=MostPopular,SalesRank,Rating",
+                                    "id": "prime-tv-genre-1"
+                                },
+                                {
+                                    "title": "Dokumentationen",
+                                    "query": "OfferGroups=B0043YVHMY&Genre=Dokumentation&ContentType=TVEpisode&RollUpToSeason=T&OrderBy=MostPopular,SalesRank,Rating",
+                                    "id": "prime-tv-genre-3"
+                                },
+                                {
+                                    "title": "Drama",
+                                    "query": "OfferGroups=B0043YVHMY&Genre=Drama&ContentType=TVEpisode&RollUpToSeason=T&OrderBy=MostPopular,SalesRank,Rating",
+                                    "id": "prime-tv-genre-4"
+                                },
+                                {
+                                    "title": "Fantasy",
+                                    "query": "OfferGroups=B0043YVHMY&Genre=Fantasy&ContentType=TVEpisode&RollUpToSeason=T&OrderBy=MostPopular,SalesRank,Rating",
+                                    "id": "prime-tv-genre-6"
+                                },
+                                {
+                                    "title": "Historienfilm",
+                                    "query": "OfferGroups=B0043YVHMY&Genre=Historienfilm&ContentType=TVEpisode&RollUpToSeason=T&OrderBy=MostPopular,SalesRank,Rating",
+                                    "id": "prime-tv-genre-7"
+                                },
+                                {
+                                    "title": "Horror",
+                                    "query": "OfferGroups=B0043YVHMY&Genre=Horror&ContentType=TVEpisode&RollUpToSeason=T&OrderBy=MostPopular,SalesRank,Rating",
+                                    "id": "prime-tv-genre-8"
+                                },
+                                {
+                                    "title": "Kinder & Familie",
+                                    "query": "OfferGroups=B0043YVHMY&Genre=KINDER_FAMILIE&ContentType=TVEpisode&RollUpToSeason=T&OrderBy=MostPopular,SalesRank,Rating&CanonicalMaturityRating=fsk_rating%7Cwithout_age_limitation,fsk_rating%7Cages_6_and_over",
+                                    "id": "prime-tv-genre-10"
+                                },
+                                {
+                                    "title": "Kom\u00f6die & Unterhaltung",
+                                    "query": "OfferGroups=B0043YVHMY&Genre=KOM\u00d6DIE_UNTERHALTUNG&ContentType=TVEpisode&RollUpToSeason=T&OrderBy=MostPopular,SalesRank,Rating",
+                                    "id": "prime-tv-genre-11"
+                                },
+                                {
+                                    "title": "Krimi",
+                                    "query": "OfferGroups=B0043YVHMY&Genre=Krimi&ContentType=TVEpisode&RollUpToSeason=T&OrderBy=MostPopular,SalesRank,Rating",
+                                    "id": "prime-tv-genre-12"
+                                },
+                                {
+                                    "title": "Musikfilm, Tanz & Theater",
+                                    "query": "OfferGroups=B0043YVHMY&Genre=MUSIK,MUSIKFILM_TANZ_THEATER&ContentType=TVEpisode&RollUpToSeason=T&OrderBy=MostPopular,SalesRank,Rating",
+                                    "id": "prime-tv-genre-14"
+                                },
+                                {
+                                    "title": "Romantik",
+                                    "query": "OfferGroups=B0043YVHMY&Genre=Romantik&ContentType=TVEpisode&RollUpToSeason=T&OrderBy=MostPopular,SalesRank,Rating",
+                                    "id": "prime-tv-genre-15"
+                                },
+                                {
+                                    "title": "Science Fiction",
+                                    "query": "OfferGroups=B0043YVHMY&Genre=SCIENCEFICTION&ContentType=TVEpisode&RollUpToSeason=T&OrderBy=MostPopular,SalesRank,Rating",
+                                    "id": "prime-tv-genre-16"
+                                },
+                                {
+                                    "title": "Thriller",
+                                    "query": "OfferGroups=B0043YVHMY&Genre=Thriller&ContentType=TVEpisode&RollUpToSeason=T&OrderBy=MostPopular,SalesRank,Rating",
+                                    "id": "prime-tv-genre-18"
+                                },
+                                {
+                                    "title": "Zeichentrick",
+                                    "query": "OfferGroups=B0043YVHMY&Genre=Zeichentrick&ContentType=TVEpisode&RollUpToSeason=T&OrderBy=MostPopular,SalesRank,Rating",
+                                    "id": "prime-tv-genre-20"
+                                }
+                            ],
+                            "id": "tv_shows_prime_genres"
+                        },
+                        {
+                            "id": "tv_shows_prime_ratings",
+                            "categories": [
+                                {
+                                    "title": "0",
+                                    "query": "OfferGroups=B0043YVHMY&ContentType=TVSeason&CanonicalMaturityRating=fsk_rating%7Cwithout_age_limitation&OrderBy=MostPopular",
+                                    "id": "prime-tv-ratings-1"
+                                },
+                                {
+                                    "title": "6",
+                                    "query": "OfferGroups=B0043YVHMY&ContentType=TVSeason&CanonicalMaturityRating=fsk_rating%7Cages_6_and_over&OrderBy=MostPopular",
+                                    "id": "prime-tv-ratings-2"
+                                },
+                                {
+                                    "title": "12",
+                                    "query": "OfferGroups=B0043YVHMY&ContentType=TVSeason&CanonicalMaturityRating=fsk_rating%7Cages_12_and_over&OrderBy=MostPopular",
+                                    "id": "prime-tv-ratings-3"
+                                },
+                                {
+                                    "title": "16",
+                                    "query": "OfferGroups=B0043YVHMY&ContentType=TVSeason&CanonicalMaturityRating=fsk_rating%7Cages_16_and_over&OrderBy=MostPopular",
+                                    "id": "prime-tv-ratings-4"
+                                },
+                                {
+                                    "title": "18",
+                                    "query": "OfferGroups=B0043YVHMY&ContentType=TVSeason&CanonicalMaturityRating=fsk_rating%7Cages_18_and_over&OrderBy=MostPopular",
+                                    "id": "prime-tv-ratings-5"
+                                }
+                            ],
+                            "title": "FSK"
+                        },
+                        {
+                            "id": "tv_shows_prime_channels",
+                            "categories": [
+                                {
+                                    "title": "Warner",
+                                    "query": "OfferGroups=B0043YVHMY&OrderBy=MostPopular,SalesRank&ContentType=TVEpisode&RollUpToSeason=T&Studio=Warner%20Bros",
+                                    "id": "prime-tv-channel-1"
+                                },
+                                {
+                                    "title": "Sony",
+                                    "query": "OfferGroups=B0043YVHMY&OrderBy=MostPopular,SalesRank&ContentType=TVEpisode&RollUpToSeason=T&Studio=Sony",
+                                    "id": "prime-tv-channel-2"
+                                },
+                                {
+                                    "title": "MGM",
+                                    "query": "OfferGroups=B0043YVHMY&OrderBy=MostPopular,SalesRank&ContentType=TVSeason,TVEpisode&RollUpToSeason=T&Studio=MGM,MGM%20UA,MGM%2FColumbia",
+                                    "id": "prime-tv-channel-3"
+                                },
+                                {
+                                    "title": "Amazon Studios",
+                                    "query": "OfferGroups=B0043YVHMY&OrderBy=MostPopular,Rating&ContentType=TVEpisode&RollUpToSeason=T&Studio=Amazon%20Studios",
+                                    "id": "prime-tv-channel-4"
+                                },
+                                {
+                                    "title": "TMG",
+                                    "query": "OfferGroups=B0043YVHMY&OrderBy=MostPopular,Rating&ContentType=TVEpisode&RollUpToSeason=T&Studio=TMG",
+                                    "id": "prime-tv-channel-5"
+                                },
+                                {
+                                    "title": "Aardman",
+                                    "query": "OfferGroups=B0043YVHMY&OrderBy=MostPopular,Rating&ContentType=TVEpisode&RollUpToSeason=T&Studio=Aardman",
+                                    "id": "prime-tv-channel-6"
+                                },
+                                {
+                                    "title": "CBS",
+                                    "query": "OfferGroups=B0043YVHMY&OrderBy=MostPopular,SalesRank&ContentType=TVEpisode&RollUpToSeason=T&Studio=CBS%20Studios%20International",
+                                    "id": "prime-tv-channel-7"
+                                },
+                                {
+                                    "title": "ABC",
+                                    "query": "OfferGroups=B0043YVHMY&OrderBy=MostPopular,SalesRank&ContentType=TVEpisode&RollUpToSeason=T&Studio=ABC%20Studios",
+                                    "id": "prime-tv-channel-8"
+                                },
+                                {
+                                    "title": "BBC",
+                                    "query": "OfferGroups=B0043YVHMY&OrderBy=MostPopular,SalesRank&ContentType=TVEpisode&RollUpToSeason=T&Studio=BBC%20Worldwide",
+                                    "id": "prime-tv-channel-9"
+                                },
+                                {
+                                    "title": "Comedy Central",
+                                    "query": "OfferGroups=B0043YVHMY&OrderBy=MostPopular,SalesRank&ContentType=TVEpisode&RollUpToSeason=T&Studio=Comedy%20Central",
+                                    "id": "prime-tv-channel-10"
+                                },
+                                {
+                                    "title": "MTV",
+                                    "query": "OfferGroups=B0043YVHMY&OrderBy=MostPopular,SalesRank&ContentType=TVEpisode&RollUpToSeason=T&Studio=MTV,Viacom",
+                                    "id": "prime-tv-channel-12"
+                                },
+                                {
+                                    "title": "Nickelodeon",
+                                    "query": "OfferGroups=B0043YVHMY&OrderBy=MostPopular,SalesRank&ContentType=TVEpisode&RollUpToSeason=T&Studio=Nickelodeon,Nick%20Jr.",
+                                    "id": "prime-tv-channel-13"
+                                },
+                                {
+                                    "title": "Auch im Ausland ansehen",
+                                    "query": "ASINList=B01973WFS0,B017JGLUSI,B016J7PVX8,B015SGZFQE,B01COEQ79W,B01B27U47I,B017AS8K24,B00RWYVETI,B010EEELTM,B017AS89YI,B017AS9G6S,B017AS84BQ,B00ZVQJ036,B00RWVTG2S,B017AS99K6",
+                                    "id": "prime-tv-channel-14"
+                                }
+                            ],
+                            "title": "Studios"
+                        },
+                        {
+                            "title": "Thursday Night Football",
+                            "id": "tv_shows_football",
+                            "infolabel": {"Fanart": "http://sportsstudio.net/wp-content/uploads/2014/07/Thursday-Night-Football-Logo-in-Graphic.jpg", "Thumb": "http://www.rttnews.com/ArticleImages/USTopStories/2017/April/Amazon-NFL-040517-lt.jpg"},
+                            "categorie_dis": [
+                                {"play": "", "infolabel": {"Asins": "B074Q6G6HN", "Title": "4. Woche: Chicago Bears gegen Green Bay Packers", "Plot": "Sehen Sie die Chicago Bears gegen die Green Bay Packers im Lambeau Field, Green Bay, Wisconsin, am 29. September 2017 um 01:25 Uhr mit Kickoff um 02:25 Uhr.", "contentType": "live", "Fanart": "http://sportsstudio.net/wp-content/uploads/2014/07/Thursday-Night-Football-Logo-in-Graphic.jpg", "Thumb": "https://images-na.ssl-images-amazon.com/images/I/81YavojEJYL._UY500_UX667_PJPrime-Sash-Extra-Large-2017,TopLeft,0,0_RI_.jpg"}}, 
+                                {"play": "", "infolabel": {"Asins": "B074Q6KQWM", "Title": "5. Woche: New England Patriots gegen Tampa Bay Buccaneers", "Plot": "Sehen Sie die New England Patriots gegen die Tampa Bay Buccaneers im Raymond James Stadium, Tampa Bay, Florida, am 6. Oktober 2017 um 01:25 Uhr mit Kickoff um 02:25 Uhr.", "contentType": "live", "Fanart": "http://sportsstudio.net/wp-content/uploads/2014/07/Thursday-Night-Football-Logo-in-Graphic.jpg", "Thumb": "https://images-na.ssl-images-amazon.com/images/I/811rrDhwjRL._UY500_UX667_PJPrime-Sash-Extra-Large-2017,TopLeft,0,0_RI_.jpg"}}, 
+                                {"play": "", "infolabel": {"Asins": "B074QFF2BN", "Title": "6. Woche: Philadelphia Eagles gegen Carolina Panthers", "Plot": "Sehen Sie die Philadelphia Eagles gegen Carolina Panthers im Bank of America Stadium, Charlotte, North Carolina, am 13. Oktober 2017 um 01:25 Uhr mit Kickoff um 02:25 Uhr.", "contentType": "live", "Fanart": "http://sportsstudio.net/wp-content/uploads/2014/07/Thursday-Night-Football-Logo-in-Graphic.jpg", "Thumb": "https://images-na.ssl-images-amazon.com/images/I/81FpzKhVSWL._UY500_UX667_PJPrime-Sash-Extra-Large-2017,TopLeft,0,0_RI_.jpg"}}, 
+                                {"play": "", "infolabel": {"Asins": "B074Q6GSJL", "Title": "7. Woche: Kansas City Chiefs gegen Oakland Raiders", "Plot": "Sehen Sie die Kansas City Chiefs gegen die Oakland Raiders im Oakland Alameda Coliseum, Oakland, Kalifornien, am 20. Oktober 2017 um 01:25 Uhr mit Kickoff um 02:25 Uhr.", "contentType": "live", "Fanart": "http://sportsstudio.net/wp-content/uploads/2014/07/Thursday-Night-Football-Logo-in-Graphic.jpg", "Thumb": "https://images-na.ssl-images-amazon.com/images/I/81SGD4OnIdL._UY500_UX667_PJPrime-Sash-Extra-Large-2017,TopLeft,0,0_RI_.jpg"}}, 
+                                {"play": "", "infolabel": {"Asins": "B074Q6GCDF", "Title": "8. Woche: Miami Dolphins gegen Baltimore Ravens", "Plot": "Sehen Sie die Miami Dolphins gegen die Baltimore Ravens im M&T Bank Stadium, Baltimore, Maryland, am 27. Oktober 2017 um 01:25 Uhr mit Kickoff um 02:25 Uhr.", "contentType": "live", "Fanart": "http://sportsstudio.net/wp-content/uploads/2014/07/Thursday-Night-Football-Logo-in-Graphic.jpg", "Thumb": "https://images-na.ssl-images-amazon.com/images/I/813kmjBFxNL._UY500_UX667_PJPrime-Sash-Extra-Large-2017,TopLeft,0,0_RI_.jpg"}}, 
+                                {"play": "", "infolabel": {"Asins": "B074QH92VD", "Title": "10. Woche: Seattle Seahawks gegen Arizona Cardinals", "Plot": "Sehen Sie die Seattle Seahawks gegen die Arizona Cardinals im University of Phoenix Stadium, Glendale, Arizona, am 10. November 2017 um 01:25 Uhr mit Kickoff um 02:25 Uhr.", "contentType": "live", "Fanart": "http://sportsstudio.net/wp-content/uploads/2014/07/Thursday-Night-Football-Logo-in-Graphic.jpg", "Thumb": "https://images-na.ssl-images-amazon.com/images/I/814OuMqkldL._UY500_UX667_PJPrime-Sash-Extra-Large-2017,TopLeft,0,0_RI_.jpg"}}, 
+                                {"play": "", "infolabel": {"Asins": "B074Q6FJN9", "Title": "11. Woche: Tennessee Titans gegen Pittsburgh Steelers", "Plot": "Sehen Sie die Tennessee Titans gegen Pittsburg Steelers im Heinz Field, Pittsburg, Pennsylvania, am 17. November 2017 um 01:25 Uhr mit Kickoff um 02:25 Uhr.", "contentType": "live", "Fanart": "http://sportsstudio.net/wp-content/uploads/2014/07/Thursday-Night-Football-Logo-in-Graphic.jpg", "Thumb": "https://images-na.ssl-images-amazon.com/images/I/81KQpRMA+nL._UY500_UX667_PJPrime-Sash-Extra-Large-2017,TopLeft,0,0_RI_.jpg"}}, 
+                                {"play": "", "infolabel": {"Asins": "B074Q71FMH", "Title": "13. Woche: Washington Redskins gegen Dallas Cowboys", "Plot": "Sehen Sie die Washington Redskins gegen die Dallas Cowboys im AT&T Stadium, Arlington, Texas am 1. Dezember  2017 um 01:25 Uhr mit Kickoff um 02:25 Uhr.", "contentType": "live", "Fanart": "http://sportsstudio.net/wp-content/uploads/2014/07/Thursday-Night-Football-Logo-in-Graphic.jpg", "Thumb": "https://images-na.ssl-images-amazon.com/images/I/810ROzfOCjL._UY500_UX667_PJPrime-Sash-Extra-Large-2017,TopLeft,0,0_RI_.jpg"}}, 
+                                {"play": "", "infolabel": {"Asins": "B074Q6R6WJ", "Title": "14. Woche: New Orleans Saints gegen Atlanta Falcons", "Plot": "Sehen Sie die New Orleans Saints gegen die Atlanta Falcons im Mercedes-Benz Stadium, Atlanta, Georgia, am 8. Dezember 2017 um 01:25 Uhr mit Kickoff um 02:25 Uhr.", "contentType": "live", "Fanart": "http://sportsstudio.net/wp-content/uploads/2014/07/Thursday-Night-Football-Logo-in-Graphic.jpg", "Thumb": "https://images-na.ssl-images-amazon.com/images/I/81zAF7XjwZL._UY500_UX667_PJPrime-Sash-Extra-Large-2017,TopLeft,0,0_RI_.jpg"}}, 
+                                {"play": "", "infolabel": {"Asins": "B074Q6FB6N", "Title": "15. Woche: Denver Broncos gegen Indianapolis Colts", "Plot": "Sehen Sie die Denver Broncos gegen die Indianapolis Colts im Lucas Oil Stadium, Indianapolis, Indiana, am 15. Dezember 2017 um 01:25 Uhr mit Kickoff um 02:25 Uhr.", "contentType": "live", "Fanart": "http://sportsstudio.net/wp-content/uploads/2014/07/Thursday-Night-Football-Logo-in-Graphic.jpg", "Thumb": "https://images-na.ssl-images-amazon.com/images/I/81NgrXfrBdL._UY500_UX667_PJPrime-Sash-Extra-Large-2017,TopLeft,0,0_RI_.jpg"}}, 
+                                {"play": "", "infolabel": {"Asins": "B074Q6DQBL", "Title": "16. Woche: Pittsburgh Steelers gegen Houston Texans", "Plot": "Sehen Sie die Pittsburgh Steelers gegen die Houston Texans im NRG Stadium, Houston, Texas, am 25. Dezember 2017 um 21:30  Uhr mit Kickoff um 22:25 Uhr.", "contentType": "live", "Fanart": "http://sportsstudio.net/wp-content/uploads/2014/07/Thursday-Night-Football-Logo-in-Graphic.jpg", "Thumb": "https://images-na.ssl-images-amazon.com/images/I/817h-pOt86L._UY500_UX667_PJPrime-Sash-Extra-Large-2017,TopLeft,0,0_RI_.jpg"}}
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "title": "Filme-Serien",
+                    "id": "all",
+                    "categories": [
+                        {
+                            "title": "Meist gesehen",
+                            "query": "ContentType=TVEpisode&RollupToSeason=T&OrderBy=SalesRank",
+                            "id": "all-tv-1"
+                        },
+                        {
+                            "title": "Neuerscheinungen",
+                            "query": "ContentType=TVEpisode&RollUpToSeason=T&OrderBy=AvailabilityDate,SalesRank&ExcludeContractId=PDTSTDE,season-pass-test-contract&ExcludeStudio=Phoenix%20Film,ARD,Jonathan%20M.%20Shiff%20Productions%20Pty.%20Ltd.%20&BlackList=B00IKEO09K,B00IKEQNOA",
+                            "id": "all-tv-2"
+                        },
+                        {
+                            "title": "Bestbewertet",
+                            "query": "ContentType=TVEpisode&RollupToSeason=T&OrderBy=Rating&MinAmazonRatingCount=30",
+                            "id": "all-tv-3"
+                        },
+                        {
+                            "title": "F\u00fcr Kinder",
+                            "query": "ContentType=TVEpisode&RollupToSeason=T&Genre=KINDER_FAMILIE&OrderBy=SalesRank,Rating",
+                            "id": "all-tv-4"
+                        },
+                        {
+                            "id": "tv_shows_all_editors_picks",
+                            "categories": [
+                                {
+                                    "title": "Die besten HD Serien",
+                                    "query": "ContentType=TVEpisode&RollupToSeason=T&HighDef=T&OrderBy=Rating,SalesRank&MinAmazonRatingCount=100",
+                                    "id": "all-tv-editor-2"
+                                },
+                                {
+                                    "title": "Sitcom Alarm",
+                                    "query": "ContentType=TVSeason,TVEpisode&RollupToSeason=T&OrderBy=SalesRank,Rating&ASINList=B00JEE19GC,B00J4ZOSGE,B00J4UYZIA,B00IB83BLI,B00IB7OO4W,B00FFZ74FY,B00JF5B334,B00ET0KSRW,B00ERL13X6,B00ET0NSXS,B00FFYUMFY,B00R8H4WW0,B00ET0JM3S,B00O2LQRM8,B00ERN24PU,B00JKNJ9S2,B00PRQ3VW6,B00LXNK6X4,B00O2I76LM,B00ERNKAN8,B00FFWB63I,B00FFZ9G5A,B00ERJ0E1K,B00EU7YPL4,B00ERLPSQY,B00ERNJKM0,B00FFZ68QA,B00ET0K6HY,B00ERKMC78,B00ERIG3UM,B00ET0ZEUI,B00ERJHUTY,B00ERL0RAG,B00ERLPS8M,B00ERLPVNY,B00ERM6OS4,B00ERM6WZ4,B00ERM7L2C,B00ERM9UMG,B00ERMAW8C,B00ERMCPNW,B00ERN1WLC,B00ERN2BUS,B00ERN2YVY,B00ERNJSIQ,B00ERNJT44,B00ERNJXYU,B00ERNKAA6,B00ESUSK64,B00ESUTWAM,B00ET09PKS,B00ET0GOZM,B00ET0K598,B00ET0KXZE,B00ET0LCUY,B00ET0LEJ8,B00ET0N9KK,B00ET0O378,B00ET0QPWE,B00ET0R0AK,B00ET0RDSO,B00ET0S43W,B00ET118H0,B00ET11KUU,B00ET16MGM,B00FFW9FDQ,B00FFZ9CFY,B00GSDN5WS,B00HWUL44M",
+                                    "id": "all-tv-editor-3"
+                                },
+                                {
+                                    "title": "Serien 2010 bis heute",
+                                    "query": "ContentType=TVEpisode&RollupToSeason=T&ReleaseDateStart=2010-01-01&OrderBy=-ReleaseDate,SalesRank",
+                                    "id": "all-tv-editor-5"
+                                },
+                                {
+                                    "title": "Deutsche Comedy",
+                                    "query": "ContentType=TVEpisode,TVSeason&RollupToSeason=T&OrderBy=MostPopular,SalesRank,Rating&ASINList=B00NB9Y6G6,B00ET10PO2,B00ERJHUTY,B00ET0ZDX6,B00LF12NTE,B00ET0GYQ6,B00ERNJYNA,B00ERNJYNA,B00ESUSVYA,B00ERIG0FK,B00ET0Z85Y,B00ERMZ46C,B00QUC9WJ2,B00QXFNX7I,B00ETJ5C8S,B00FGL9PH2,B00ET5MLLI,B00ESV6IU8,B00ESUZLPM,B00ETGV1NQ,B00ESUXOGU,B00ESUSMP8,B00ESUV8CM,B00ET6CKWW,B00ET6QGOA,B00ETA0U3E,B00ET50S9K,B00ESUVQ10,B00ETI44DI,B00ETJ11AG,B00ESVCIRK,B00ET4DXT8,B00FGGZYLS,B00ESV5KMK,B00ESUVTQW,B00ESV7YJ2,B00ESV6EIO,B00ET9FURG,B00ESV7TSS,B00ERIZCWM,B00ESV3A7M,B00ESV7OLU",
+                                    "id": "all-tv-editor-6"
+                                },
+                                {
+                                    "title": "Exklusiv bei Prime Video",
+                                    "query": "OfferGroups=B0043YVHMY&ContentType=TVEpisode&RollupToSeason=T&OrderBy=MostPopular,Rating,SalesRank&ASINList=B00WND458K,B00WRPXKGC,B00WT6Q55W,B00V8VIC1E,B00K32ZTO2,B00IKR1NR4,B00IM3YEFY,B00UK4SU5S,B00JACALU8,B00U1LLJ1C,B00I9MRO5U,B00U9OLEYI,B00U47I2LI,B00U47H9K8,B00U46X3QI,B00U46WR7E,B00T83VWAC,B00SM1H9B2,B00RWXLG9C,B00RX0L78E,B00RWYTQM0,B00RX0OKQU,B00RWYV18W,B00RTX4CSW,B00RPJ9IPM,B00RSVPZ4A,B00RPJTUOG,B00RU7GLNQ,B00RDL7SMW,B00RDL7Z84,B00RDLA4L4,B00RDL8EKW,B00RDL98ZM,B00NOGKKCK,B00NHYAYUW,B00R8E4S3Q,B00HXFN9US,B00I9K2YCU,B00IB1LLP8,B00ILOZMSC,B00LJEYPIY,B00IG5OLVK,B00R55ATJ0,B00QMOCBMS,B00O3UU19I,B00KRIBIRE,B00MOU7BFQ,B00MEV961M,B00QH17FOA,B00QH1SFF8,B00PYZ5A8I,B00OMBAHQA,B00ODADFEG,B00OS7WIJC,B00OSAZFTO,B00OS1QMCW,B00OQWXTD8,B00OBRTG1W,B00O2HFN2W,B00O2I09DO,B00K1IS25G,B00O2DULNW,B00O2KZY14,B00J4YQXQ8,B00O2I1Y7E,B00JZK7FIG,B00J24ZZPA,B00R88AKY8,B00NO1RYDI,B00NO1QQLE,B00NO1N3O2,B00MTXJ96C,B00MTXIPPI,B00MTXMA0E,B00J248RH8,B00I6JE2XS,B00MELF0Z8,B00M5G59IK,B00LW8BVX4,B00LW8CZ6G,B00KRIB3K6,B00KS3BG2A,B00JLG934I,B00JLG7RZU,B00JG1FKRW,B00JG1EV9K",
+                                    "id": "all-tv-editor-7"
+                                },
+                                {
+                                    "title": "Kinderecke",
+                                    "query": "ContentType=TVEpisode&RollupToSeason=T&Genre=KINDER_FAMILIE&OrderBy=SalesRank,Rating&CanonicalMaturityRating=fsk_rating%7Cwithout_age_limitation,fsk_rating%7Cages_6_and_over",
+                                    "id": "all-tv-editor-8"
+                                },
+                                {
+                                    "title": "Die besten SciFi-Serien",
+                                    "query": "ContentType=TVSeason,TVEpisode&RollupToSeason=T&OrderBy=Rating,SalesRank&Genre=SCIENCEFICTION&MinAmazonRatingCount=20",
+                                    "id": "all-tv-editor-9"
+                                },
+                                {
+                                    "title": "HD Comedy-Serien",
+                                    "query": "ContentType=TVSeason,TVEpisode&RollupToSeason=T&Genre=KOM\u00d6DIE_UNTERHALTUNG&OrderBy=SalesRank,Rating&HighDef=T",
+                                    "id": "all-tv-editor-10"
+                                },
+                                {
+                                    "title": "Very British",
+                                    "query": "ContentType=TVEpisode&RollupToSeason=T&OrderBy=SalesRank&IncludeASINList=B00ET6DNGO,B00IC6UHJS,B00ESV09VW,B00IDCHTGK,B00ET5L5BK,B00FLRPEKI,B00I9I4P92,B00IGVJYGG,B00FFO35BW,B00EUE1MD6,B00ESV84YQ,B00ERKRQYC,B00N9YHKEI,B00ESV3FYA,B00ESVE2TW,B00ESUX0V4,B00ERN2VVC,B00K185GQO,B00ESVD2W0,B00ET59E04,B00M9AFOEQ,B00EWP4ESS,B00EWJTJRK,B00ESV1XPS,B00ERIZ2TA,B00ET51EMA,B00ETJ1TZS,B00ET5RNJI,B00HWUKC8Q,B00FGG6N6S,B00I90J1XA,B00JVT8X3M,B00I0YVNFE,B00MTUMTM6,B00ESVCWWG,B00EWPJQ04,B00HSHTZWC,B00EWH9QXE,B00EWJDEF8,B00ESV19LQ,B00EVCB20A,B00FFO3MTC,B00IB2S196,B00NCGRZ7U,B00HFHKKEW,B00K1GRBBE,B00M95AV08,B00IC6UVO4,B00K7ENEDE,B00EUCL1DE,B00ERN1TDS,B00I4DWEHM,B00HQ8FAMM,B00FFJUZN8,B00ERMC5MS",
+                                    "id": "all-tv-editor-11"
+                                },
+                                {
+                                    "title": "Teenagerserien in HD",
+                                    "query": "ContentType=TVSeason,TVEpisode&RollupToSeason=T&ASINList=B00ET16B9U,B00ERMC3A2,B00ERN2TVO,B00ERNMPX6,B00ERN2AO0,B00ERMWNR0,B00ERMZY26,B00ERK2H8W,B00ET10ZWE,B00ET0ZHZU,B00ERMA4IU,B00ET09Z4O,B00ESUT05E,B00EU7YGE0,B00ERJNUUW,B00ERKIIYE",
+                                    "id": "all-tv-editor-12"
+                                },
+                                {
+                                    "title": "Serien im Original",
+                                    "query": "ContentType=TVEpisode&RollUptoSeason=T&OrderBy=SalesRank,Rating&ASINList=B015G4B6X4,B0172CAN5U,B0172GJQEA,B0172GJM2G,B016CGLON2,B016EA5AYK,B0176ZNY9A,B0172GJOMO,B014T1AJVK,B0178BBDHM,B016JRG4LQ,B016VFC9UG,B00I8ZVMK6,B01757R9FY,B0172GJMW6,B00MABHDSE,B00R8F2U5S,B017BZBR4E,B00KQOIM9G,B0178FCTBC,B00RYBXQJ0,B017AHU5J6,B014QS4OSK,B00I8ZVDUA,B017A7PCLC,B00OJG574U,B01775HJ7C,B017C8I4RI,B00IB4C05A,B00WH4UNMW,B00VXPW2J8,B013XQY12A,B01769PU7K,B00YQJHPKO,B00Y3AOLEY,B0178FE5X2,B00Q5DUDG2,B01761WNJG,B016J6WVJG,B00UJXAWII,B00OTOG0JI,B00XLVSG2O,B015HS8UP6,B0159B2ZFM,B00ERKPHZ2,B015P01KM6,B017BZBLYK,B017BR5C4S,B00LDDTRPM,B016CHKGLM,B015RWN728,B015DBIRJQ,B00OZYBF7Y,B00K89EAIQ,B016LLD8VE,B00OBLFADQ,B010E3DOI2,B01775G77U,B016XC3O2Y,B00HFHRRHK,B015XUSXSW,B00O1GS56K,B014X5AGIS,B011AFY1GC,B017E8UOGK,B016ATENPC,B012PHU4TC,B00XK0DIG0,B00O8607KK,B00IK24ATC,B00O2929VI,B00NRHZ4UE,B0176VWH7O,B00PGO92JK,B00WFG4KR6,B017BOX2GG,B014G9ZMWQ,B012P6F5QA,B00XFB5CSG,B014WVRNIY,B00KX9SIFC,B0173PTG7C,B017A2EFJM,B00VS27TTO,B00UIKNHAM,B00ZGDWZJU,B016J6WOFW,B00PYZSI3M,B00TYOHO66,B00MXC8EG0,B00HOK8V3C,B015P18SD4,B00JEGPSK8,B00X885Y02,B015Z8PF2O,B00P4GEC2M,B00ERLE33S,B00QMNSACY",
+                                    "id": "all-tv-editor-13"
+                                },
+                                {
+                                    "title": "Familienserien in HD",
+                                    "query": "ContentType=TVSeason,TVEpisode&RollupToSeason=T&Genre=KINDER_FAMILIE&HighDef=T&ASINList=B00ET11UWI,B00ERNKNMQ,B00ET11PKA,B00ERN3Z08,B00ET10SHQ,B00ERJ0E1K,B00ERLRUP6,B00ERLT4VE,B00ET0ZEUI,B00ET0QT4I,B00ERNJQU6,B00ET0GXCG,B00ET11UWI,B00ERNKNMQ,B00ERN9RKU,B00I9IK04Q,B00ET0JLES,B00ET11PKA,B00ERN3Z08,B00ET10SHQ,B00ERJ0E1K,B00ERLRUP6,B00ERLT4VE,B00ET0ZEUI,B00ET0QT4I",
+                                    "id": "all-tv-editor-14"
+                                },
+                                {
+                                    "title": "Wunder Erde",
+                                    "query": "ContentType=TVEpisode&RollupToSeason=T&Genre=Dokumentation&OrderBy=Rating,SalesRank",
+                                    "id": "all-tv-editor-17"
+                                },
+                                {
+                                    "title": "Dokuserien",
+                                    "query": "ContentType=TVEpisode&RollupToSeason=T&Genre=Dokumentation&OrderBy=SalesRank,Rating",
+                                    "id": "all-tv-editor-18"
+                                },
+                                {
+                                    "title": "Lachknaller",
+                                    "query": "Genre=KOM\u00d6DIE_UNTERHALTUNG&ContentType=TVEpisode&RollupToSeason=T&OrderBy=SalesRank,Rating",
+                                    "id": "all-tv-editor-19"
+                                },
+                                {
+                                    "title": "Das Beste an Zeichentrick",
+                                    "query": "Genre=Zeichentrick&ContentType=TVEpisode&RollupToSeason=T&OrderBy=SalesRank,Rating&CanonicalMaturityRating=fsk_rating%7Cwithout_age_limitation,fsk_rating%7Cages_6_and_over",
+                                    "id": "all-tv-editor-20"
+                                },
+                                {
+                                    "title": "Taffe Mamas",
+                                    "query": "ContentType=TVSeason,TVEpisode&RollupToSeason=T&OrderBy=SalesRank,Rating&ASINList=B00ERL16I8,B00ET10CRC,B00FG8AS8K,B00ET0GXCG,B00ERLRRJU,B00FFZ75VC,B00ERN46RY,B00FFYUTXE,B00ET10J3Y,B00ERNJOJY,B00ET0L4GG,B00ERLT4VE,B00ET0JUSA,B00ERL1NYA,B00ET0RA1Y,B00ET16UIW,B00ET0G4XO,B00ET0NFTU,B00ERKK7L6,B00ERJ0E1K,B00ERN0QXW,B00ET109OI",
+                                    "id": "all-tv-editor-21"
+                                }
+                            ],
+                            "title": "Empfehlungen"
+                        },
+                        {
+                            "id": "tv_shows_all_deals",
+                            "categories": [
+                                {
+                                    "title": "TV-Staffeln unter 10\u20ac",
+                                    "query": "MinPrice=0.01&MaxPrice=9.99&OfferType=Purchase&ContentType=TVSeason&OrderBy=SalesRank",
+                                    "id": "all-tv-deal-1"
+                                },
+                                {
+                                    "title": "TV-Staffeln unter 15\u20ac",
+                                    "query": "MinPrice=10.00&MaxPrice=14.99&OfferType=Purchase&ContentType=TVSeason",
+                                    "id": "all-tv-deal-2"
+                                },
+                                {
+                                    "title": "TV-Staffeln unter 20\u20ac",
+                                    "query": "MinPrice=15.00&MaxPrice=19.99&OfferType=Purchase&ContentType=TVSeason",
+                                    "id": "all-tv-deal-3"
+                                }
+                            ],
+                            "title": "Angebote"
+                        },
+                        {
+                            "title": "Genres",
+                            "id": "tv_shows_all_genres",
+                            "categories": [
+                                {
+                                    "title": "Action & Abenteuer",
+                                    "query": "Genre=ACTION_ABENTEUER&ContentType=TVEpisode&RollupToSeason=T&OrderBy=SalesRank,Rating",
+                                    "id": "all-tv-genre-1"
+                                },
+                                {
+                                    "title": "Dokumentationen",
+                                    "query": "Genre=Dokumentation&ContentType=TVEpisode&RollupToSeason=T&OrderBy=SalesRank,Rating",
+                                    "id": "all-tv-genre-3"
+                                },
+                                {
+                                    "title": "Drama",
+                                    "query": "Genre=Drama&ContentType=TVEpisode&RollupToSeason=T&OrderBy=SalesRank,Rating",
+                                    "id": "all-tv-genre-4"
+                                },
+                                {
+                                    "title": "Fantasy",
+                                    "query": "Genre=Fantasy&ContentType=TVEpisode&RollupToSeason=T&OrderBy=SalesRank,Rating",
+                                    "id": "all-tv-genre-6"
+                                },
+                                {
+                                    "title": "Historienfilm",
+                                    "query": "Genre=Historienfilm&ContentType=TVEpisode&RollupToSeason=T&OrderBy=SalesRank,Rating",
+                                    "id": "all-tv-genre-7"
+                                },
+                                {
+                                    "title": "Horror",
+                                    "query": "Genre=Horror&ContentType=TVEpisode&RollupToSeason=T&OrderBy=SalesRank,Rating",
+                                    "id": "all-tv-genre-8"
+                                },
+                                {
+                                    "title": "Kinder & Familie",
+                                    "query": "Genre=KINDER_FAMILIE&ContentType=TVEpisode&RollupToSeason=T&OrderBy=SalesRank,Rating&CanonicalMaturityRating=fsk_rating%7Cwithout_age_limitation,fsk_rating%7Cages_6_and_over",
+                                    "id": "all-tv-genre-10"
+                                },
+                                {
+                                    "title": "Kom\u00f6die & Unterhaltung",
+                                    "query": "Genre=KOM\u00d6DIE_UNTERHALTUNG&ContentType=TVEpisode&RollupToSeason=T&OrderBy=SalesRank,Rating",
+                                    "id": "all-tv-genre-11"
+                                },
+                                {
+                                    "title": "Krimi",
+                                    "query": "Genre=Krimi&ContentType=TVEpisode&RollupToSeason=T&OrderBy=SalesRank,Rating",
+                                    "id": "all-tv-genre-12"
+                                },
+                                {
+                                    "title": "Musikfilm, Tanz & Theater",
+                                    "query": "Genre=MUSIK&ContentType=TVEpisode&RollupToSeason=T&OrderBy=MostPopular",
+                                    "id": "all-tv-genre-14"
+                                },
+                                {
+                                    "title": "Romantik",
+                                    "query": "Genre=Romantik&ContentType=TVEpisode&RollupToSeason=T&OrderBy=MostPopular",
+                                    "id": "all-tv-genre-15"
+                                },
+                                {
+                                    "title": "Science Fiction",
+                                    "query": "Genre=SCIENCEFICTION&ContentType=TVEpisode&RollupToSeason=T&OrderBy=SalesRank",
+                                    "id": "all-tv-genre-16"
+                                },
+                                {
+                                    "title": "Sport",
+                                    "query": "Genre=Sport&ContentType=TVEpisode&RollupToSeason=T&OrderBy=MostPopular",
+                                    "id": "all-tv-genre-17"
+                                },
+                                {
+                                    "title": "Thriller",
+                                    "query": "Genre=Thriller&ContentType=TVEpisode&RollupToSeason=T&OrderBy=MostPopular",
+                                    "id": "all-tv-genre-18"
+                                },
+                                {
+                                    "title": "Zeichentrick",
+                                    "query": "Genre=Zeichentrick&ContentType=TVEpisode&RollupToSeason=T&OrderBy=MostPopular",
+                                    "id": "all-tv-genre-20"
+                                }
+                            ]
+                        },
+                        {
+                            "id": "tv_shows_all_ratings",
+                            "categories": [
+                                {
+                                    "title": "0",
+                                    "query": "ContentType=TVSeason&CanonicalMaturityRating=fsk_rating%7Cwithout_age_limitation&OrderBy=SalesRank",
+                                    "id": "all-tv-ratings-1"
+                                },
+                                {
+                                    "title": "6",
+                                    "query": "ContentType=TVSeason&CanonicalMaturityRating=fsk_rating%7Cages_6_and_over&OrderBy=SalesRank",
+                                    "id": "all-tv-ratings-2"
+                                },
+                                {
+                                    "title": "12",
+                                    "query": "ContentType=TVSeason&CanonicalMaturityRating=fsk_rating%7Cages_12_and_over&OrderBy=SalesRank",
+                                    "id": "all-tv-ratings-3"
+                                },
+                                {
+                                    "title": "16",
+                                    "query": "ContentType=TVSeason&CanonicalMaturityRating=fsk_rating%7Cages_16_and_over&OrderBy=SalesRank",
+                                    "id": "all-tv-ratings-4"
+                                },
+                                {
+                                    "title": "18",
+                                    "query": "ContentType=TVSeason&CanonicalMaturityRating=fsk_rating%7Cages_18_and_over&OrderBy=SalesRank",
+                                    "id": "all-tv-ratings-5"
+                                }
+                            ],
+                            "title": "FSK"
+                        },
+                        {
+                            "id": "tv_shows_all_channels",
+                            "categories": [
+                                {
+                                    "title": "Aardman",
+                                    "query": "OrderBy=SalesRank&ContentType=TVSeason&Studio=Aardman",
+                                    "id": "all-tv-channel-1"
+                                },
+                                {
+                                    "title": "Sony",
+                                    "query": "Studio=Sony&ContentType=TVEpisode&RollupToSeason=T&OrderBy=SalesRank",
+                                    "id": "all-tv-channel-2"
+                                },
+                                {
+                                    "title": "CBS",
+                                    "query": "Studio=CBS%20Studios%20International&ContentType=TVEpisode&RollupToSeason=T&OrderBy=SalesRank",
+                                    "id": "all-tv-channel-7"
+                                },
+                                {
+                                    "title": "ABC",
+                                    "query": "Studio=ABC%20Studios&ContentType=TVEpisode&RollupToSeason=T&OrderBy=SalesRank",
+                                    "id": "all-tv-channel-8"
+                                },
+                                {
+                                    "title": "BBC",
+                                    "query": "Studio=BBC%20Worldwide&ContentType=TVEpisode&RollupToSeason=T&OrderBy=SalesRank",
+                                    "id": "all-tv-channel-9"
+                                },
+                                {
+                                    "title": "MTV",
+                                    "query": "Studio=MTV&ContentType=TVEpisode&RollupToSeason=T&OrderBy=SalesRank",
+                                    "id": "all-tv-channel-12"
+                                },
+                                {
+                                    "title": "Nickelodeon",
+                                    "query": "Studio=Nickelodeon,Nick%20Jr%2E,Nicktoons&ContentType=TVEpisode&RollupToSeason=T&OrderBy=SalesRank",
+                                    "id": "all-tv-channel-13"
+                                },
+                                {
+                                    "title": "Discovery",
+                                    "query": "OrderBy=SalesRank&ContentType=TVSeason&Studio=Discovery",
+                                    "id": "all-tv-channel-15"
+                                },
+                                {
+                                    "title": "FilmConfect",
+                                    "query": "OrderBy=SalesRank&ContentType=TVSeason&Studio=FilmConfect",
+                                    "id": "all-tv-channel-17"
+                                },
+                                {
+                                    "title": "HBO",
+                                    "query": "OrderBy=SalesRank&ContentType=TVSeason&Studio=HBO",
+                                    "id": "all-tv-channel-18"
+                                },
+                                {
+                                    "title": "Kiddinx",
+                                    "query": "OrderBy=SalesRank&ContentType=TVSeason&Studio=Kiddinx",
+                                    "id": "all-tv-channel-19"
+                                },
+                                {
+                                    "title": "Kontor New Media",
+                                    "query": "OrderBy=SalesRank&ContentType=TVSeason&Studio=Kontor%20New%20Media%20GmbH",
+                                    "id": "all-tv-channel-20"
+                                },
+                                {
+                                    "title": "MFA",
+                                    "query": "OrderBy=SalesRank&ContentType=TVSeason&Studio=MFA",
+                                    "id": "all-tv-channel-25"
+                                },
+                                {
+                                    "title": "NBC Universal",
+                                    "query": "Studio=NBC%20Universal&ContentType=TVEpisode&RollupToSeason=T&OrderBy=SalesRank",
+                                    "id": "all-tv-channel-26"
+                                },
+                                {
+                                    "title": "Studio Hamburg",
+                                    "query": "OrderBy=SalesRank&ContentType=TVSeason&Studio=Studio%20Hamburg",
+                                    "id": "all-tv-channel-27"
+                                },
+                                {
+                                    "title": "TMG",
+                                    "query": "OrderBy=SalesRank&ContentType=TVSeason&Studio=TMG",
+                                    "id": "all-tv-channel-28"
+                                },
+                                {
+                                    "title": "Warner",
+                                    "query": "OrderBy=SalesRank&ContentType=TVEpisode&RollupToSeason=T&Studio=Warner%20Bros",
+                                    "id": "all-tv-channel-30"
+                                }
+                            ],
+                            "title": "Studios"
+                        },
+                        {
+                            "title": "Thursday Night Football",
+                            "id": "tv_shows_football",
+                            "infolabel": {"Fanart": "http://sportsstudio.net/wp-content/uploads/2014/07/Thursday-Night-Football-Logo-in-Graphic.jpg", "Thumb": "http://www.rttnews.com/ArticleImages/USTopStories/2017/April/Amazon-NFL-040517-lt.jpg"},
+                            "categorie_dis": [
+                                {"play": "", "infolabel": {"Asins": "B074Q6G6HN", "Title": "4. Woche: Chicago Bears gegen Green Bay Packers", "Plot": "Sehen Sie die Chicago Bears gegen die Green Bay Packers im Lambeau Field, Green Bay, Wisconsin, am 29. September 2017 um 01:25 Uhr mit Kickoff um 02:25 Uhr.", "contentType": "live", "Fanart": "http://sportsstudio.net/wp-content/uploads/2014/07/Thursday-Night-Football-Logo-in-Graphic.jpg", "Thumb": "https://images-na.ssl-images-amazon.com/images/I/81YavojEJYL._UY500_UX667_PJPrime-Sash-Extra-Large-2017,TopLeft,0,0_RI_.jpg"}}, 
+                                {"play": "", "infolabel": {"Asins": "B074Q6KQWM", "Title": "5. Woche: New England Patriots gegen Tampa Bay Buccaneers", "Plot": "Sehen Sie die New England Patriots gegen die Tampa Bay Buccaneers im Raymond James Stadium, Tampa Bay, Florida, am 6. Oktober 2017 um 01:25 Uhr mit Kickoff um 02:25 Uhr.", "contentType": "live", "Fanart": "http://sportsstudio.net/wp-content/uploads/2014/07/Thursday-Night-Football-Logo-in-Graphic.jpg", "Thumb": "https://images-na.ssl-images-amazon.com/images/I/811rrDhwjRL._UY500_UX667_PJPrime-Sash-Extra-Large-2017,TopLeft,0,0_RI_.jpg"}}, 
+                                {"play": "", "infolabel": {"Asins": "B074QFF2BN", "Title": "6. Woche: Philadelphia Eagles gegen Carolina Panthers", "Plot": "Sehen Sie die Philadelphia Eagles gegen Carolina Panthers im Bank of America Stadium, Charlotte, North Carolina, am 13. Oktober 2017 um 01:25 Uhr mit Kickoff um 02:25 Uhr.", "contentType": "live", "Fanart": "http://sportsstudio.net/wp-content/uploads/2014/07/Thursday-Night-Football-Logo-in-Graphic.jpg", "Thumb": "https://images-na.ssl-images-amazon.com/images/I/81FpzKhVSWL._UY500_UX667_PJPrime-Sash-Extra-Large-2017,TopLeft,0,0_RI_.jpg"}}, 
+                                {"play": "", "infolabel": {"Asins": "B074Q6GSJL", "Title": "7. Woche: Kansas City Chiefs gegen Oakland Raiders", "Plot": "Sehen Sie die Kansas City Chiefs gegen die Oakland Raiders im Oakland Alameda Coliseum, Oakland, Kalifornien, am 20. Oktober 2017 um 01:25 Uhr mit Kickoff um 02:25 Uhr.", "contentType": "live", "Fanart": "http://sportsstudio.net/wp-content/uploads/2014/07/Thursday-Night-Football-Logo-in-Graphic.jpg", "Thumb": "https://images-na.ssl-images-amazon.com/images/I/81SGD4OnIdL._UY500_UX667_PJPrime-Sash-Extra-Large-2017,TopLeft,0,0_RI_.jpg"}}, 
+                                {"play": "", "infolabel": {"Asins": "B074Q6GCDF", "Title": "8. Woche: Miami Dolphins gegen Baltimore Ravens", "Plot": "Sehen Sie die Miami Dolphins gegen die Baltimore Ravens im M&T Bank Stadium, Baltimore, Maryland, am 27. Oktober 2017 um 01:25 Uhr mit Kickoff um 02:25 Uhr.", "contentType": "live", "Fanart": "http://sportsstudio.net/wp-content/uploads/2014/07/Thursday-Night-Football-Logo-in-Graphic.jpg", "Thumb": "https://images-na.ssl-images-amazon.com/images/I/813kmjBFxNL._UY500_UX667_PJPrime-Sash-Extra-Large-2017,TopLeft,0,0_RI_.jpg"}}, 
+                                {"play": "", "infolabel": {"Asins": "B074QH92VD", "Title": "10. Woche: Seattle Seahawks gegen Arizona Cardinals", "Plot": "Sehen Sie die Seattle Seahawks gegen die Arizona Cardinals im University of Phoenix Stadium, Glendale, Arizona, am 10. November 2017 um 01:25 Uhr mit Kickoff um 02:25 Uhr.", "contentType": "live", "Fanart": "http://sportsstudio.net/wp-content/uploads/2014/07/Thursday-Night-Football-Logo-in-Graphic.jpg", "Thumb": "https://images-na.ssl-images-amazon.com/images/I/814OuMqkldL._UY500_UX667_PJPrime-Sash-Extra-Large-2017,TopLeft,0,0_RI_.jpg"}}, 
+                                {"play": "", "infolabel": {"Asins": "B074Q6FJN9", "Title": "11. Woche: Tennessee Titans gegen Pittsburgh Steelers", "Plot": "Sehen Sie die Tennessee Titans gegen Pittsburg Steelers im Heinz Field, Pittsburg, Pennsylvania, am 17. November 2017 um 01:25 Uhr mit Kickoff um 02:25 Uhr.", "contentType": "live", "Fanart": "http://sportsstudio.net/wp-content/uploads/2014/07/Thursday-Night-Football-Logo-in-Graphic.jpg", "Thumb": "https://images-na.ssl-images-amazon.com/images/I/81KQpRMA+nL._UY500_UX667_PJPrime-Sash-Extra-Large-2017,TopLeft,0,0_RI_.jpg"}}, 
+                                {"play": "", "infolabel": {"Asins": "B074Q71FMH", "Title": "13. Woche: Washington Redskins gegen Dallas Cowboys", "Plot": "Sehen Sie die Washington Redskins gegen die Dallas Cowboys im AT&T Stadium, Arlington, Texas am 1. Dezember  2017 um 01:25 Uhr mit Kickoff um 02:25 Uhr.", "contentType": "live", "Fanart": "http://sportsstudio.net/wp-content/uploads/2014/07/Thursday-Night-Football-Logo-in-Graphic.jpg", "Thumb": "https://images-na.ssl-images-amazon.com/images/I/810ROzfOCjL._UY500_UX667_PJPrime-Sash-Extra-Large-2017,TopLeft,0,0_RI_.jpg"}}, 
+                                {"play": "", "infolabel": {"Asins": "B074Q6R6WJ", "Title": "14. Woche: New Orleans Saints gegen Atlanta Falcons", "Plot": "Sehen Sie die New Orleans Saints gegen die Atlanta Falcons im Mercedes-Benz Stadium, Atlanta, Georgia, am 8. Dezember 2017 um 01:25 Uhr mit Kickoff um 02:25 Uhr.", "contentType": "live", "Fanart": "http://sportsstudio.net/wp-content/uploads/2014/07/Thursday-Night-Football-Logo-in-Graphic.jpg", "Thumb": "https://images-na.ssl-images-amazon.com/images/I/81zAF7XjwZL._UY500_UX667_PJPrime-Sash-Extra-Large-2017,TopLeft,0,0_RI_.jpg"}}, 
+                                {"play": "", "infolabel": {"Asins": "B074Q6FB6N", "Title": "15. Woche: Denver Broncos gegen Indianapolis Colts", "Plot": "Sehen Sie die Denver Broncos gegen die Indianapolis Colts im Lucas Oil Stadium, Indianapolis, Indiana, am 15. Dezember 2017 um 01:25 Uhr mit Kickoff um 02:25 Uhr.", "contentType": "live", "Fanart": "http://sportsstudio.net/wp-content/uploads/2014/07/Thursday-Night-Football-Logo-in-Graphic.jpg", "Thumb": "https://images-na.ssl-images-amazon.com/images/I/81NgrXfrBdL._UY500_UX667_PJPrime-Sash-Extra-Large-2017,TopLeft,0,0_RI_.jpg"}}, 
+                                {"play": "", "infolabel": {"Asins": "B074Q6DQBL", "Title": "16. Woche: Pittsburgh Steelers gegen Houston Texans", "Plot": "Sehen Sie die Pittsburgh Steelers gegen die Houston Texans im NRG Stadium, Houston, Texas, am 25. Dezember 2017 um 21:30  Uhr mit Kickoff um 22:25 Uhr.", "contentType": "live", "Fanart": "http://sportsstudio.net/wp-content/uploads/2014/07/Thursday-Night-Football-Logo-in-Graphic.jpg", "Thumb": "https://images-na.ssl-images-amazon.com/images/I/817h-pOt86L._UY500_UX667_PJPrime-Sash-Extra-Large-2017,TopLeft,0,0_RI_.jpg"}}
+                            ]
+                        }
+                    ]
+                }
+            ],
+            "title": "Serien"
+        },
+        {"title": "Amazon Channels", "id": "channels", "categories": 
+            [
+                {"play": "", "infolabel": {"Asins": "amzn1.dv.lcid.2e48b38e-0287-4f78-a92a-1d5c6f2951f0", "Title": "AXN", "Plot": "", "contentType": "live", "Fanart": "", "Thumb": "https://m.media-amazon.com/images/G/03/digital/video/merch/subs/benefit-id/a-f/axnsony/live/web_live-channels-tile._CB529561243_UR267,200_FMPNG_.png"}},
+                {"play": "", "infolabel": {"Asins": "amzn1.dv.lcid.fafc98d9-fcf6-4482-8edd-d12c35957622", "Title": "Discovery Channel", "Plot": "", "contentType": "live", "Fanart": "", "Thumb": "https://m.media-amazon.com/images/G/03/digital/video/merch/subs/benefit-id/a-f/discoverychannel/heroes/roku_3p-featured-offers-tile_192x192._CB515577429_UR267,200_FMJPG_.jpg"}},
+                {"play": "", "infolabel": {"Asins": "amzn1.dv.lcid.0e9e91f8-2481-4805-b5a0-a0648dcaf273", "Title": "E! Entertainment", "Plot": "", "contentType": "live", "Fanart": "", "Thumb": "https://m.media-amazon.com/images/G/03/digital/video/merch/subs/benefit-id/a-f/eentertainment/live/web_live-channels-tile._CB529559993_UR267,200_FMPNG_.png"}},
+                {"play": "", "infolabel": {"Asins": "amzn1.dv.lcid.ed46da90-5c4f-4d6d-bc77-0c61514855af", "Title": "EDGEsport", "Plot": "", "contentType": "live", "Fanart": "", "Thumb": "https://m.media-amazon.com/images/G/03/digital/video/merch/subs/benefit-id/a-f/edge/live/web_live-channels-tile._V529560020_UR267,200_FMPNG_.png"}},
+                {"play": "", "infolabel": {"Asins": "amzn1.dv.lcid.48da1d64-c45c-41c1-b515-f489f173578a", "Title": "Eurosport 1 HD", "Plot": "", "contentType": "live", "Fanart": "", "Thumb": "https://m.media-amazon.com/images/G/03/digital/video/merch/subs/benefit-id/a-f/eurosport/live/movietiles/web_live-channels-tile._V503921243_UR267,200_FMPNG_.png"}},
+                {"play": "", "infolabel": {"Asins": "amzn1.dv.lcid.776a6ee8-a53a-4f1b-9586-8ccf8a7d0752", "Title": "Eurosport 2 HD Xtra", "Plot": "", "contentType": "live", "Fanart": "", "Thumb": "https://m.media-amazon.com/images/G/03/digital/video/merch/subs/benefit-id/a-f/eurosport/live/movietiles/e2extra._V503921242_UR267,200_FMPNG_.png"}},
+                {"play": "", "infolabel": {"Asins": "amzn1.dv.lcid.c9c9c4eb-c6e9-4427-bc42-c2c3c702204a", "Title": "Geo TV", "Plot": "Preisgekrönte Dokumentationen und Reportagen zu aktuellen Themen aus aller Welt", "contentType": "live", "Fanart": "https://upload.wikimedia.org/wikipedia/commons/thumb/5/55/GEO_Television.png/1200px-GEO_Television.png", "Thumb": "https://www.geo-television.de/images/layout/logo.png"}},
+                {"play": "", "infolabel": {"Asins": "amzn1.dv.lcid.e59b6fe6-3d67-4b1e-8d82-4a4949506595", "Title": "Goldstar TV", "Plot": "", "contentType": "live", "Fanart": "", "Thumb": "https://m.media-amazon.com/images/G/02/digital/video/merch/subs/benefit-id/g-l/goldstartv/logos/desktop_carousel-logo._CB493256480_.png"}},
+                {"play": "", "infolabel": {"Asins": "amzn1.dv.lcid.78645e65-6a7c-4089-bdbd-18844b54ab09", "Title": "Horse & Country", "Plot": "", "contentType": "live", "Fanart": "", "Thumb": "https://m.media-amazon.com/images/G/03/digital/video/merch/subs/benefit-id/g-l/horsecountry/live/square/web_live-channels-tile._V510633899_UR267,200_FMPNG_.png"}},
+                {"play": "", "infolabel": {"Asins": "amzn1.dv.lcid.878f3b81-f315-4919-a107-3e3414e05f78", "Title": "Motorvision", "Plot": "", "contentType": "live", "Fanart": "", "Thumb": "https://m.media-amazon.com/images/G/03/digital/video/merch/subs/benefit-id/m-r/motorvision/live/square/web_live-channels-tile._V510633738_UR267,200_FMPNG_.png"}},
+                {"play": "", "infolabel": {"Asins": "amzn1.dv.lcid.a4ddd91a-f91f-4a57-b9bc-ab846ead0e1c", "Title": "Nautical Channel", "Plot": "", "contentType": "live", "Fanart": "", "Thumb": "https://m.media-amazon.com/images/G/03/digital/video/merch/subs/benefit-id/m-r/nauticalchannel/live/square/web_live-channels-tile._V510633932_UR267,200_FMPNG_.png"}},
+                {"play": "", "infolabel": {"Asins": "amzn1.dv.lcid.17f9382c-6a3c-44d1-832d-7b01714c7a5d", "Title": "Romance TV", "Plot": "", "contentType": "live", "Fanart": "", "Thumb": "https://m.media-amazon.com/images/G/03/digital/video/merch/subs/benefit-id/m-r/romancetv/logos/desktop_carousel-logo._CB494167225.png"}},
+                {"play": "", "infolabel": {"Asins": "amzn1.dv.lcid.4ebe5d2a-6134-4fc2-8949-553d1d07869e", "Title": "Silverline", "Plot": "", "contentType": "live", "Fanart": "", "Thumb": "https://m.media-amazon.com/images/G/03/digital/video/merch/subs/benefit-id/s-z/silverline/live/web_live-channels-tile._V529560461_UR267,200_FMPNG_.png"}},
+                {"play": "", "infolabel": {"Asins": "amzn1.dv.lcid.405e60b1-96f2-466f-9805-1152776e9fc2", "Title": "Sony Channel", "Plot": "", "contentType": "live", "Fanart": "", "Thumb": "https://m.media-amazon.com/images/G/03/digital/video/merch/subs/benefit-id/s-z/sonyentv/live/web_live-channels-tile._CB529560172_UR267,200_FMPNG_.png"}},
+                {"play": "", "infolabel": {"Asins": "amzn1.dv.lcid.8502574b-9af0-4812-848b-b1fa613950bf", "Title": "sportdigital", "Plot": "", "contentType": "live", "Fanart": "", "Thumb": "https://m.media-amazon.com/images/G/03/digital/video/merch/subs/benefit-id/s-z/sportdigital/live/square/web_live-channels-tile._V510633770_UR267,200_FMPNG_.png"}},
+                {"play": "", "infolabel": {"Asins": "amzn1.dv.lcid.ae7dee38-2f9d-4a84-b69e-64e304d5e5db", "Title": "Stingray Classica", "Plot": "", "contentType": "live", "Fanart": "", "Thumb": "https://m.media-amazon.com/images/G/03/digital/video/merch/subs/benefit-id/s-z/stingrayclassica/live/movietiles/web_live-channels-tile._CB494877602_UR267,200_FMPNG_.png"}},
+                {"play": "", "infolabel": {"Asins": "amzn1.dv.lcid.3fed19cc-5e2d-45bb-9579-652a77bfe2f1", "Title": "Xplore", "Plot": "", "contentType": "live", "Fanart": "", "Thumb": "https://m.media-amazon.com/images/G/03/digital/video/merch/subs/benefit-id/s-z/xplore/live/square/web_live-channels-tile._V510633597_UR267,200_FMPNG_.png"}},
+                {"play": "", "infolabel": {"Asins": "amzn1.dv.lcid.6f0cecbb-6de9-49e4-b3ed-497f551208a1", "Title": "Gute Laune", "Plot": "", "contentType": "live", "Fanart": "", "Thumb": "https://m.media-amazon.com/images/G/03/digital/video/merch/subs/benefit-id/g-l/gutelaune/live/square/web_live-channels-tile._V510633885_UR267,200_FMPNG_.png"}}
+            ]
+        }
+    ],
+    "title": "Amazon Video On Demand DE Kindle 2013"
+}

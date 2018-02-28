@@ -1,0 +1,964 @@
+{
+    "title": "Amazon Video On Demand",
+    "id": "root",
+    "categories": [
+        {
+            "title": "Movies",
+            "categories": [
+                {
+                    "id": "prime",
+                    "categories": [
+                        {
+                            "title": "Top Movies",
+                            "query": "OfferGroups=B0043YVHMY&ContentType=Movie&OrderBy=MostPopular&ExcludeContentRating=G,TV-Y,TV-Y7,TV-Y7-FV,TV-G&ExcludeContractId=UXCF1&HasImage=T&SuppressBlackedoutEST=T&Detailed=T&HideNum=T&AID=1&IncludeNonWeb=T&Preorder=F",
+                            "id": "prime-movie-1"
+                        },
+                        {
+                            "title": "Recently Added",
+                            "query": "OfferGroups=B0043YVHMY&ContentType=Movie&OrderBy=AvailabilityDate&MinAmazonRatingCount=40&HideNum=T&Preorder=F&Detailed=T&AID=1&ContractID=UX*",
+                            "id": "prime-movie-2"
+                        },
+                        {
+                            "title": "IMDb Top Prime Movies",
+                            "query": "OfferGroups=B0043YVHMY&Detailed=T&OrderBy=BoxOffice&HasImage=T&ExcludeContentRating=G&ContentType=Movie&MinIMDbRating=8&MinIMDbRatingCount=8300&Preorder=F",
+                            "id": "prime-movie-3"
+                        },
+                        {
+                            "title": "Best of Prime Movies",
+                            "query": "OfferGroups=B0043YVHMY&ContentType=Movie&ASINList=B009GEEMLY,B00IUBM8PQ,B00COGY2P2,B00DU6OIKE,B00CL66FEQ,B00F91G5BS,B00BETX5PS,B00F35B8F8,B00BB8SKPW,B00ECU2SGS,B00E8B1358,B00H8AXO1W,B00F91FRTO,B00DBSZEH2,B003YVEIY6,B007R11DKQ,B00EQ1187S,B00CWVFPGO,B00BP4XHZU,B00EIA63ZY,B0029VUV70,B00AA7O6QC,B004ADF7RO,B00BSBXA98,B00KG2Q8US,B004S57QJ6,B007QA3AH2,B006RXQDH8,B008578PRK",
+                            "id": "prime-movie-4"
+                        },
+                        {
+                            "title": "Editor's Picks",
+                            "id": "movies_prime_editors_picks",
+                            "categories": [
+                                {
+                                    "title": "IMDB Top Rated",
+                                    "query": "OfferGroups=B0043YVHMY&ContentType=Movie&ASINList=B005T3AYAE,B006LG7MWG,B00101ZOTA,B00BB8VRPM,B0037NVM2C,B0045INOD8,B006S08RLU,B001DM1V52,B003WQT2YY,B0030MDS36,B002XZNHG4,B008NCSZQ8,B00AMZXZPK,B0012PDVQ2,B0041XZ0PM,B00DKXISRQ,B006RXSGLE,B005DNPJKU,B000IZ50X4,B00HYDXT5E,B00EGI3DVA,B001NEXEEG,B006HTAN32,B00DUYH60U,B00BN4UWE6,B00LX90ZWU,B0043GDKT0,B0010WF6K6,B007V4LBLU,B001NVU1OK",
+                                    "id": "prime-movie-editor-1"
+                                },
+                                {
+                                    "title": "Oscar Winners",
+                                    "query": "OfferGroups=B0043YVHMY&ContentType=Movie&OrderBy=SalesRank&Preorder=F&HideNum=T&Detailed=T&AID=1&ASINList=B005T3AYAE,B00101ZOTA,B0030MDS36,B00B5HQKNI,B0045INOD8,B0037NVM2C,B0017VT5E8,B0073PPNE8,B00BB8VRPM,B0077EC5VY,B003WQT2YY,B000VHXBIU,B00ABOLNVK,B002XZNHG4,B000P6PVLC,B00AMZXZPK,B001H1UQZU,B00BB8Q1RQ,B001EYK16Y,B002YUB2OW,B001SKB1Y0,B008IGANGO,B003U2Q3ME,B0063WZWCA,B004LQGXPA,B000IZ6P8I,B00BB8Q13A,B007QJB8LI,B002BQ381E,B001K3KK0Q,B000I66JQA,B001VEE5KK",
+                                    "id": "prime-movie-editor-2"
+                                },
+                                {
+                                    "title": "Visually sumptuous",
+                                    "query": "OfferGroups=B0043YVHMY&ContentType=Movie&OrderBy=SalesRank&Preorder=F&ASINList=B005TJ7EFG,B008ODZEQ0,B00DU6PJX4,B00AHSKXG6,B00I6Z9NAE,B00BN2NQFU,B00HR0P9XE,B004TPTHCO,B0042840G6,B003L4Q0UQ,B008GM1G70,B00J3DU0W8,B009HNDIAU,B0046XJH5Q",
+                                    "id": "prime-movie-editor-5"
+                                },
+                                {
+                                    "title": "Our Picks",
+                                    "query": "OfferGroups=B0043YVHMY&ContentType=Movie&OrderBy=SalesRank&Preorder=F&ASINList=B001SKB1Y0,B008GM1G70,B005JE7WKI,B00H8AXJR6,B001VEE5KK,B000I9UA7Q,B00F91H15W,B00EY7KCM6,B005HGKXLS,B002NNA9N0,B004TPTHCO,B003WQT2YY,B003B6OPNI,B0051ANG7S,B00E3OU07W,B007V1YG1A,B00IY5TL4E,B00AHSKXG6,B00J3DU0W8,B006MNH0DO,B00D2C73G2,B004UP3D8M,B008ODZEQ0,B001OSIV62,B005TJ7EFG,B00ESH04LQ,B00BN4ZF98,B006RXQASA,B0026T61VK,B0043GDKT0,B002XZNHG4,",
+                                    "id": "prime-movie-editor-7"
+                                },
+                                {
+                                    "title": "Midnight Movies",
+                                    "query": "OfferGroups=B0043YVHMY&ContentType=Movie&OrderBy=SalesRank&Preorder=F&ASINList=B00EY73NKY,B004ZISVWC,B00CL4BPV6,B007IQXM4A,B00B8PMWJI,B001NB5PF0,B00DK56VOQ,B004UP3D8M,B0035JLW9Q,B00IY5TL4E,B005JE7WKI,B0054NQVXI,B000VSYDRM,B00944CS3A",
+                                    "id": "prime-movie-editor-9"
+                                },
+                                {
+                                    "title": "Brave Struggle",
+                                    "query": "OfferGroups=B0043YVHMY&ContentType=Movie&OrderBy=SalesRank&Preorder=F&&HideNum=T&Detailed=T&AID=1&ASINList=B00HYTNBU6,B007CUQA7S,B00BB8VRPM,B001RMYWG8,B0043GDKT0,B001OSIV62,B008MYXE2W,B0037NVM2C,B000P6PVLC,B0017VT5E8,B00HV8TN7K,B008ODZEQ0,B00BN4ZF98,B00G71SS3C,B00AHSKXG6",
+                                    "id": "prime-movie-editor-10"
+                                },
+                                {
+                                    "title": "Hallucinatory fun",
+                                    "query": "OfferGroups=B0043YVHMY&ContentType=Movie&OrderBy=SalesRank&Preorder=F&ASINList=B008Q00U24,B00BT2V48U,B008VVET4S,B0095D547M,B008Y5UADK,B008Y6OS64,B00A8OW22W,B001G393Z8,B008PZGSKS,B00IAL0IKS",
+                                    "id": "prime-movie-editor-11"
+                                }
+                            ]
+                        },
+                        {
+                            "title": "For the Kids",
+                            "query": "OfferGroups=B0043YVHMY&ContentType=Movie&Genre=Family&OrderBy=SalesRank&ExcludeContentRating=PG-13,R,NC-17,NR,Unrated,TV-Y7-FV&ExcludeContractId=UXCF1&HasImage=T&SuppressBlackedoutEST=T&Detailed=T&HideNum=T&AID=1&Preorder=F",
+                            "id": "prime-movie-5"
+                        },
+                        {
+                            "title": "Top Prime Movie Downloads",
+                            "query": "OfferGroups=B0043YVHMY&OrderBy=MostPopular&ContentType=Movie&Preorder=F&ASINList=B002QNBRX8,B00MFDMLK2,B007KWAUA6,B006RXSBY6,B00JPPJ6ZG,B009DBAPZ2,B00L9LOXNO,B0094YVOV2,B003CWVDKO,B00H4M3216,B0038N6SPC,B00KA598KS,B00DU6U146,B004U8VUQG,B00ES3UN2K,B00KGJR1LG,B00F91HNPK,B00N2KZZ46,B00J3DU0W8,B00ATTB4UC,B00D6BWGL6,B000RKZDYG,B003OX9B6E,B00DD2BK2O,B005HOLFNU,B003XIA5EW,B005HGK1BA,B00KGJRAZ8,B004P03FBW,B003AIC6GK,B005SFZYP8,B00IK9N30C,B00KAUF1D6,B0076HM486,B008EEHRAU,B001TH44VY,B007L93ZE6,B00D1234SY,B005SFZNUY,B006M6NLR0,B004LQJQ9A,B001GS2L20,B00FGD75V8,B0042800WE,B00ES2K90M,B00A2YBDTQ,B00628RFPM,B006RXQAKS,B001JF68EC,B00GNKGERE,B009ZM74F8,B00MJ1149O,B00GAGQ7YG,B00KG2S00O,B005V0J122,B006HBAJWA,B005SFYT5E,B005SG0GZA,B00ESE86D2,B001FVD3CA,B00KL5K5SG,B00DU6UD5I,B00JJH3VDI,B003MUQSK6,B00AC8ZA3M,B006M3JJL0,B003Z6XSUK,B00B32X786,B004AGI2L4,B00LNN0RZQ,B00J7UVMPG,B0094PYJHC,B00EEN7CAK,B002RIFIP0,B003CJH8YM,B007AGSMN4,B005T3AX6E,B00LQ9DM8Q,B002P7BHUS,B004LQJQ9K,B007Q3527K,B005LT849O,B0026TBE30,B00C51H1DG,B000RLKXEK,B006RXSGLE,B0076HMMCY,B005SG0AA6,B00AI5R7D0,B00A8D136Y,B00MQP2I70,B002YNGNG6,B006HGRAEA,B00N1Q4GGE,B001QC6QRC,B0083GQVXI,B003Y6PWJQ,B006RXQA5I,B001QKHVMI,B0061WCXUQ,B0048B7RUI,B00GLZZ0VW,B00I5H7PFS,B00N1Q4GGE,B00GBDXR8C,B00JH49OTS,B00JXD1LDK,B002B2IOLC,B000YED61M",
+                            "id": "prime-movie-7"
+                        },
+                        {
+                            "title": "Genres",
+                            "categories": [
+                                {
+                                    "title": "Action & Adventure",
+                                    "query": "OfferGroups=B0043YVHMY&Genre=Action,Adventure&ContentType=Movie&OrderBy=MostPopular&ExcludeContentRating=G,PG,TV-Y,TV-Y7,TV-Y7-FV,TV-G,TV-PG&ExcludeContractId=UXCF1&HasImage=T&SuppressBlackedoutEST=T&Detailed=T&HideNum=T&AID=1&includeNonWeb=T&Preorder=F",
+                                    "id": "prime-movie-genre-1"
+                                },
+                                {
+                                    "title": "Comedy",
+                                    "query": "OfferGroups=B0043YVHMY&Genre=Comedy&ContentType=Movie&OrderBy=MostPopular&ExcludeContentRating=G,PG,TV-Y,TV-Y7,TV-Y7-FV,TV-G,TV-PG,NR&ExcludeContractId=UXCF1&HasImage=T&SuppressBlackedoutEST=T&Detailed=T&HideNum=T&AID=1&Preorder=F&includeNonWeb=T",
+                                    "id": "prime-movie-genre-3"
+                                },
+                                {
+                                    "title": "Documentary",
+                                    "query": "OfferGroups=B0043YVHMY&Genre=Nonfiction&ContentType=Movie&OrderBy=MostPopular&ExcludeContentRating=G,TV-Y,TV-Y7,TV-Y7-FV,TV-G,TV-PG&ExcludeContractId=UXCF1&HasImage=T&SuppressBlackedoutEST=T&Detailed=T&HideNum=T&AID=1&Preorder=F&includeNonWeb=T",
+                                    "id": "prime-movie-genre-4"
+                                },
+                                {
+                                    "title": "Drama",
+                                    "query": "OfferGroups=B0043YVHMY&Genre=Drama&ContentType=Movie&OrderBy=MostPopular&ExcludeContentRating=G,PG,TV-Y,TV-Y7,TV-Y7-FV,TV-G,TV-PG,NR&ExcludeContractId=UXCF1&HasImage=T&SuppressBlackedoutEST=T&Detailed=T&HideNum=T&AID=1&Preorder=F&includeNonWeb=T",
+                                    "id": "prime-movie-genre-5"
+                                },
+                                {
+                                    "title": "Horror",
+                                    "query": "OfferGroups=B0043YVHMY&Genre=Horror&ContentType=Movie&OrderBy=MostPopular&ExcludeContentRating=G,PG,TV-Y,TV-Y7,TV-Y7-FV,TV-G,TV-PG&ExcludeContractId=UXCF1&HasImage=T&SuppressBlackedoutEST=T&Detailed=T&HideNum=T&AID=1&Preorder=F&includeNonWeb=T",
+                                    "id": "prime-movie-genre-7"
+                                },
+                                {
+                                    "title": "International",
+                                    "query": "OfferGroups=B0043YVHMY&Genre=International&ContentType=Movie&OrderBy=MostPopular&ExcludeContentRating=G,PG,TV-Y,TV-Y7,TV-Y7-FV,TV-G,TV-PG&ExcludeContractId=UXCF1&HasImage=T&SuppressBlackedoutEST=T&Detailed=T&HideNum=T&AID=1&Preorder=F&includeNonWeb=T",
+                                    "id": "prime-movie-genre-9"
+                                },
+                                {
+                                    "title": "Kids & Family",
+                                    "query": "OfferGroups=B0043YVHMY&Genre=Family&ContentType=Movie&OrderBy=MostPopular&ExcludeContentRating=PG-13,R,NC-17,NR,Unrated,TV-PG,TV-14,TV-MA&ExcludeContractId=UXCF1&HasImage=T&SuppressBlackedoutEST=T&Detailed=T&HideNum=T&AID=1&Preorder=F&includeNonWeb=T",
+                                    "id": "prime-movie-genre-10"
+                                },
+                                {
+                                    "title": "Military & War",
+                                    "query": "OfferGroups=B0043YVHMY&Genre=War&ContentType=Movie&OrderBy=MostPopular&ExcludeContentRating=G,PG,TV-Y,TV-Y7,TV-Y7-FV,TV-G,TV-PG&ExcludeContractId=UXCF1&HasImage=T&SuppressBlackedoutEST=T&Detailed=T&HideNum=T&AID=1&Preorder=F&includeNonWeb=T",
+                                    "id": "prime-movie-genre-11"
+                                },
+                                {
+                                    "title": "Musicals",
+                                    "query": "OrderBy=MostPopular&Genre=Musical&ContentType=Movie&HideNum=T&Detailed=T&AID=1&IncludeNonWeb=T&OfferGroups=B0043YVHMY&IncludeAll=T&Preorder=F&includeNonWeb=T",
+                                    "id": "prime-movie-genre-13"
+                                },
+                                {
+                                    "title": "Mystery & Thriller",
+                                    "query": "OfferGroups=B0043YVHMY&Genre=Mystery,Thriller&ContentType=Movie&OrderBy=MostPopular&ExcludeContentRating=G,TV-Y,TV-Y7,TV-Y7-FV,TV-G&ExcludeContractId=UXCF1&HasImage=T&SuppressBlackedoutEST=T&Detailed=T&HideNum=T&AID=1&Preorder=F&includeNonWeb=T",
+                                    "id": "prime-movie-genre-14"
+                                },
+                                {
+                                    "title": "Romance",
+                                    "query": "OfferGroups=B0043YVHMY&Genre=Romance&ContentType=Movie&OrderBy=MostPopular&ExcludeContentRating=G,TV-Y,TV-Y7,TV-Y7-FV,TV-G&ExcludeContractId=UXCF1&HasImage=T&SuppressBlackedoutEST=T&Detailed=T&HideNum=T&AID=1&Preorder=F&includeNonWeb=T",
+                                    "id": "prime-movie-genre-15"
+                                },
+                                {
+                                    "title": "Sci-Fi & Fantasy",
+                                    "query": "OfferGroups=B0043YVHMY&Genre=SciFi,Fantasy&ContentType=Movie&OrderBy=MostPopular&ExcludeContentRating=G,PG,TV-Y,TV-Y7,TV-Y7-FV,TV-G,TV-PG,NR&ExcludeContractId=UXCF1&HasImage=T&SuppressBlackedoutEST=T&Detailed=T&HideNum=T&AID=1&Preorder=F&&includeNonWeb=T",
+                                    "id": "prime-movie-genre-16"
+                                },
+                                {
+                                    "title": "Sports",
+                                    "query": "OrderBy=MostPopular&Genre=Sport&ContentType=Movie&HideNum=T&Detailed=T&AID=1&IncludeNonWeb=T&Preorder=F&SuppressBlackedoutEST=T&OfferGroups=B0043YVHMY&ContentRating=PG,PG-13,R&includeNonWeb=T",
+                                    "id": "prime-movie-genre-17"
+                                },
+                                {
+                                    "title": "Westerns",
+                                    "query": "OrderBy=MostPopular&Genre=Western&ContentType=Movie&HideNum=T&Detailed=T&AID=1&IncludeNonWeb=T&Preorder=F&SuppressBlackedoutEST=T&OfferGroups=B0043YVHMY&ContentRating=PG,PG-13,R&includeNonWeb=T",
+                                    "id": "prime-movie-genre-18"
+                                }
+                            ],
+                            "id": "movies_prime_genres"
+                        }
+                    ],
+                    "title": "Prime Movies"
+                },
+                {
+                    "id": "all",
+                    "categories": [
+                        {
+                            "title": "Popular Movies",
+                            "query": "OrderBy=SalesRank&ContentType=Movie&HideNum=T&Detailed=T&AID=1&ExcludeContentRating=R,NC-17,NR,Unrated&ExcludeContractId=UXCF1&IncludeNonWeb=T&Preorder=F",
+                            "id": "all-movie-1"
+                        },
+                        {
+                            "title": "Movie Rentals",
+                            "query": "OrderBy=SalesRank&ContentType=Movie&HideNum=T&Detailed=T&AID=1&ExcludeContentRating=NC-17,NR,Unrated&ExcludeContractId=UXCF1&IncludeNonWeb=T&Preorder=F;Rental=T&MaxPrice4.99;",
+                            "id": "all-movie-3"
+                        },
+                        {
+                            "title": "Shop New Release Movies",
+                            "query": "ContentType=Movie&OrderBy=AvailabilityDate&MinAmazonRatingCount=40&HideNum=T&Preorder=F&Detailed=T&AID=1&ContractID=UX*",
+                            "id": "all-movie-4"
+                        },
+                        {
+                            "id": "movies_all_editors_picks",
+                            "categories": [
+                                {
+                                    "title": "Aliens",
+                                    "query": "ContentType=Movie&OrderBy=SalesRank&HideNum=T&Detailed=T&AID=1&includeNonWeb=T&Preorder=F&IncludeASINList=B00589BMF0,B004LQA6MQ,B0049GSBSY,B00BP4W3WI,B00FJUBTIS,B004FWT88Y,B009NX3U20,B002WS54G8,B0040B1ITC,B006QPVGKG,B00AVF8USS,B0099RFVXQ,B0094M0DJS,B009CG3M1C,B00BLPP52G,B0035JGZAC,B002EYH0FS,B00271FONI,B006INDTAQ,B00CKH2E46,B00352PXZ2,B00F9LHXY6,B00AEV0BSQ,B00AYB1KHW,B0030HW274,B009NYF3T2,B0052BZ6X8,B007HJ84WS,B003YVCJQ0,B00GIXZK9Y,B001NOJC92,B002XO3SSW,B0088RQ4TI,B006RZZ9YY,B003CE5CK4,B00A4SJ61W,B00GH4R95C,B0094LV1D6,B009NOGSQE,B009HEN7LY,B0044C22BA,B005ML0OLW,B00FWLSLJ4,B0030SZ2D4,B004NDHFWQ,B003PFJFF8,B003UAHIM0,B003DS9ECQ,B00FJNPGAW,B001EMVUXE,B001EMU2ZG,B008Y7HABI,B002Y0TGOU,B00F35B8F8,B0026KTJ7C,B0094K1PW4,B003L4S2O8,B00AZ15WVQ,B002H0YRGO,B005MMY9A8,B0095P3ULC,B003QTWR08,B0085OEJPK,B0094MFI52,B0055X0DFO",
+                                    "id": "all-movie-editor-1"
+                                },
+                                {
+                                    "title": "And the Oscar Goes to",
+                                    "query": "ContentType=Movie&&HideNum=T&Detailed=T&AID=1&Preorder=F&includeNonWeb=T&IncludeASINList=B007D3HND4,B001XUJMZK,B002XXRI84,B001XVD21Y,B009SBP83Q,B0098G67TU,B00A0SJJUO,B007CJOXPK,B005DNPHN4,B004LQGZ7G,B00A27NN50,B001K51Z2Q,B0095IDYME,B009NLC1D6,B002XXQ6W8,B003FMASF2,B002KZ02UQ,B008PZZAB6,B006H8JPH8,B002M80918,B00BP4XDNQ,B00BHMEOP2,B004X4R3FE,B009EELBIS,B0094M2Z9O,B002WTWQ72,B0094LZMT0,B005SHTXN0,B00A5IXURC,B00CJ4OMO0,B008WFAHWG,B004LQI0QK",
+                                    "id": "all-movie-editor-2"
+                                },
+                                {
+                                    "title": "Animal Companions",
+                                    "query": "ContentType=Movie&&HideNum=T&Detailed=T&AID=1&Preorder=F&includeNonWeb=T&IncludeASINList=B002Q5L024,B0032KUW4Y,B006G35JYW,B006G3DOS0,B002OKTJKQ,B006S03YF4,B009EERT8O,B00CIGX3B2,B007R0Y7VO,B0084T5C1Q,B003ZBJHJQ,B006G35O9W,B009NUVWH8,B00FHME91M,B00DIUH64M,B00AVZ8RWM,B00DHPD81I,B004FWPYMS,B004G7TYOG,B008GVSLGA,B006G3DM2I,B006IRTW8K,B006DYV0N8,B00AVIM60S,B003SI5KM4",
+                                    "id": "all-movie-editor-3"
+                                },
+                                {
+                                    "title": "Apocalyptic",
+                                    "query": "ContentType=Movie&&HideNum=T&Detailed=T&AID=1&Preorder=F&includeNonWeb=T&IncludeASINList=B00EP0MVGW,B00GK5BPUI,B009GN6EDE,B00AHI15AO,B004SIOP2E,B00ENYU7VQ,B0094M4NBW,B002KF2HWM,B005TJ7DVQ,B008Y7DDBE,B008GJV2OA,B004FWT88Y,B001LXO38K,B002DJPR5O,B0053EZWOW,B002DU7026,B000IZ3OYQ,B008S2BZ10,B005DNBDXM,B003YVCJQ0,B001XVD2Z0,B003YU2HSQ,B002ZBPPHA,B003KRLKHC,B003QTWR08,B00DP3IESY,B00FWLSLJ4,B006SVHOL8,B002SPU9FQ",
+                                    "id": "all-movie-editor-4"
+                                },
+                                {
+                                    "title": "Bromances",
+                                    "query": "&includeNonWeb=T&ContentType=Movie&OrderBy=SalesRank&HideNum=T&Detailed=T&AID=1&Preorder=F&IncludeASINList=B002MSPXLO,B001XUJNJ0,B004LQGXLE,B008Y6XTE6,B002VSS3P8,B002RRXGKA,B002WXLJ58,B003FC1IOM,B0035QUXWQ,B007WEP6II,B002Y0TGOU,B0035JNSKW,B002XXFKCK,B002717P1C,B002H6ZQRM,B002BRGEMS,B0091XOCM4,B003FCL6W6,B002N7RAH4,B00AFBLT5Y,B008Y7CSOC,B005T5MYXC,B0094M4OW0,B00A2IUDO8,B006LT0RW0,B0039YZPZ4,B004N75H54,B00AOQ8IZE,B0070YR7ZK,B0037WHC4K",
+                                    "id": "all-movie-editor-6"
+                                },
+                                {
+                                    "title": "Classics",
+                                    "query": "ContentType=Movie&&HideNum=T&Detailed=T&AID=1&Preorder=F&includeNonWeb=T&IncludeASINList=B005MMZ63C,B001EC0OQ8,B007D3HND4,B002XXRI84,B004LQGZ7G,B001K51Z2Q,B0094M2Z9O,B002WTWQ72,B0094LZMT0,B00CJ4OMO0,B004LLDN3A,B002QRBB30,B001M432XA,B000ID37RM,B000J0XJC2,B000HEBCZQ,B000NI8F5G,B000ICXQXI,B000ICXQXI,B001H1UQDW,B001MLWLHG,B0011XBLUS,B009VB7UHK,B000IZZS5O,B00124LYHQ,B001QJUX24,B004778YJG,B002BXRCV4,B001EC2IXK,B004D1CK32,B004LQGXKU,B002BDGSIW,B001NVIZ3E,B001PL1P3E,B003KUA5HU,B001EBWIUO,B000HF0KLM,B000JJH7VM,B002EC0RFK,B004LQEYAG,B005SE8BCM,B004HGDV2C,B000I5R96A,B0041G3YIY,B004DH7XLK,B000MQKGOW,B004DHNQGQ,B004ATIIDS,B002QWDG4W,B001707FCI,B001B152E6,B00AGE3OZS",
+                                    "id": "all-movie-editor-7"
+                                },
+                                {
+                                    "title": "Disaster",
+                                    "query": "includeNonWeb=T&ContentType=Movie&OrderBy=SalesRank&HideNum=T&Detailed=T&AID=1&Preorder=F&IncludeASINList=B008PZZFVG,B001NIA27E,B003YZ0E04,B00BU8QOII,B0034F004E,B003FC1752,B0098G67TU,B003Y5T0X6,B003YU2HSQ,B00EY74PJM,B002FOAVGC,B006SVHOL8,B002DJPR5O,B002EXEGTW,B001M0FC5K,B003675OA0,B005DNBDXM,B004IFZYPO",
+                                    "id": "all-movie-editor-8"
+                                },
+                                {
+                                    "title": "Flights of Fancy",
+                                    "query": "ContentType=Movie&OrderBy=SalesRank&HideNum=T&Detailed=T&AID=1&Preorder=F&includeNonWeb=T&IncludeASINList=B003Y19E3Q,B002QRC5DU,B00CLZ48FA,B004IQHF0K,B003QTNFHW,B002WXLJ58,B003FM1MNO,B003FMASF2,B009KWU6Q2,B0094LZY2A,B002EX7GBC,B006S00I7G,B00364NVKS,B005U9REFA,B002YNKLJG,B002IJ9YR6,B002HLM4E0,B002HL3PN4,B002QBZHMC,B001YEYWB4,B00271HTLI,B002RRWWQ4,B004WMKXWM,B00669MFA2,B003QSGXHC,B004XKXOF6,B003VDE4H8,B007PJFFWC,B006S043TA,B00BN4VS6M,B0094MFI52,B003MXB3R6,B00APQ1F8A,B003XZ0WPM,B003QSE26Q,B004IFGORQ,B003926JD8,B00BP4W3WI,B00945XDMO,B00BGZ8OLA",
+                                    "id": "all-movie-editor-9"
+                                },
+                                {
+                                    "title": "From Page to Screen",
+                                    "query": "includeNonWeb=T&ContentType=Movie&OrderBy=SalesRank&HideNum=T&Detailed=T&AID=1&Preorder=F&IncludeASINList=B004IAH7UE,B007R11DKQ,B002N21UKM,B002VRNR1Y,B002I090YC,B0091VQORC,B002APS61I,B009CG91QM,B00A2FSSHK,B001MKQS4O,B007W4F6M4,B0035QUXWQ,B002H0DX96,B0026SB292,B002NXZY8K,B0094M4MSG,B008Y6WMEY,B002XZHDJG,B003PUOTKE,B004K80RCE,B002LFX4ZK,B001XUYA0W,B002QYUVY8,B0097HBF74,B001YEYWB4,B0027ZCQ4E,B0088T36BA,B0053EZWOW,B002FOAVGC,B002WXLJ58,B007D3HND4,B001XUJNJ0,B00BP4XDNQ,B00271B6XA,B0094M2Z9O,B00945XDMO,B00AAIHAGO,B002ZM74Y6,B006H8JPH8,B002KZ02UQ,B00ENYKLIK,B003YV0A02,B003A3UWIE,B00AHGT52Q,B009CPJ20S,B00HQ1FECU,B008Y73XTQ,B002ZBVM1S,B004YRWA62,B0040FMG2G",
+                                    "id": "all-movie-editor-10"
+                                },
+                                {
+                                    "title": "Game On",
+                                    "query": "ContentType=Movie&&HideNum=T&Detailed=T&AID=1&Preorder=F&includeNonWeb=T&IncludeASINList=B00A0SJJUO,B00165Y3TM,B000ICXQUQ,B002XWXPC8,B0094M4MSG,B006PPOCE4,B001CMMRYW,B004LQLKO4,B002H22MCS,B00DDF5090,B0091W5UPS,B00EW7AHJG,B0094LYP66,B004S5BPAC,B008Y6QZ56,B002S3YXQY,B00AGDW7J8,B006DKSQDY,B0094M4O3O,B00HFFD230,B003V5EDQ8,B004ALB8OM,B003QSNFCS,B009CG91QM,B002EXKMXG,B005GZQB0C,B00D3FS2DG,B002YLX532,B002NK4KYM",
+                                    "id": "all-movie-editor-11"
+                                },
+                                {
+                                    "title": "Quentin Tarantino",
+                                    "query": "ContentType=Movie&&HideNum=T&Detailed=T&AID=1&Preorder=F&includeNonWeb=T&IncludeASINList=B002YCVWXQ,B00BJS7LHC,B002J2PB10,B005T3AYAE,B00P2TB1JS,B001DM1V52,B006RXQDH8,B00FJV0DQG,B006SAR6P8,B006RXQ968,B003SHZPCK,B003SHYX3M,B006RWT5YM",
+                                    "id": "all-movie-editor-12"
+                                },
+                                {
+                                    "title": "IMDb Top Rated",
+                                    "query": "ContentType=Movie&OrderBy=IMDbRating&MinIMDbRating=7&MinIMDbRatingCount=100&ExcludeContentRating=G,TV-Y,TV-Y7,TV-Y7-FV,TV-G&ExcludeContractId=UXCF1&HasImage=T&SuppressBlackedoutEST=T&Detailed=T&HideNum=T&AID=1&Preorder=F&includeNonWeb=T&BlackList=B003HIFU5C,B003HIC3VG,B001R4DHUS,B001R4175U,B003HIHXIE,B003HIDXYC,B001R4RXVW,B001R4Q6A6,B001R2XQ8S,B001R2TU92,B001RIGQZW,B001RIIFLA,B003VKOVTM,B003VKS6DE,B003HIJ8PK,B003HIA8UE,B003HIDZD6,B003HIA91C,B003HIC4H4,B003HICAS2,B003HIFSUO,B003HIFUDY,B000TK0YWA,B000TJZ7PK,B000TK56SC,B000TJZH6O,B000TK0Z7O,B000TK4X18,B000TK56UK,B000TK7CDE,B001R2NP66,B001R2PZ00",
+                                    "id": "all-movie-editor-13"
+                                },
+                                {
+                                    "title": "Remember the 80's",
+                                    "query": "ContentType=Movie&&HideNum=T&Detailed=T&AID=1&Preorder=F&includeNonWeb=T&IncludeASINList=B0018RA6DK,B000SW4DR6,B004IF8TLU,B000T412LI,B000K8EP6M,B000M2O1U6,B001K37CT8,B001609SQA,B002R1QQAI,B000NI9UMS,B0040ZHHIY,B001CAWYJM,B001EBWIUY,B00439FV0S,B00GDLKJ6U,B001MQZX7G,B00519YRH2,B004GJ1XU2,B000SW2EQS,B002BRGEMS,B000I9TXXI,B000SW4DLM,B001OCET0K,B0032HQ9DU,B001OD8MX4,B003U74NQW,B001BR3P3U,B002YVDT0G,B000HF6Z9I,B00D6C0D42,B001BR5NN0,B000I8EGHM,B000SW2F44,B00C0IYPRY,B000I14XLS,B000RL1G2I,B002XZOZQA,B001E8WNNO,B000KJQ4Q0,B000ICXQQK,B000SW16E4,B001VM7DYC,B004KAVAOQ,B0094PQCG8,B004FHYQK4,B0026IYLS6,B0018RA6C6,B00170I7KC,B0073XYN6E,B000KJW3M4,B002BL0RT0,B000SZK41M,B000I64V3I,B000IDEORY,B000ICXQTC,B001N3MY34,B000I9S64U,B00BP4ZNFM,B005DNPJKU,B001N3P6SY,B000I9YXOC,B002PJN59M,B002ZCLH5S,B00622DF9I,B000I667JY,B003PUQ5CO,B001B2CPK4,B000ICXQUQ,B000VHXBIU,B002BRRTUO,B002L9N8TS,B006UUK612,B009GJBATQ,B003COE90S,B000WN4MVS,B001AMNL2Q,B000PEX1IE,B000SOZXFU,B000IZ607E,B006QF61VA,B00AVRO1Q6,B008S1C6QY,B000I9WW90,B009NX2H0G,B007JTJ6OQ,B00G7ZRPUA,B002BU4HWE,B003K5U0ZM,B00DMF8PCK,B0021GS3JG,B00GIWJXY8,B004LBUPAO,B000OLROWC,B00128PQGW,B00CJVH786,B000H12ISY,B000MDAUIC,B000ID1Q02,B005U9REU0,B003PIS5XI,B009CG7WE0,B003WJ81MA,B00DQ4IOJ6,B001EBV0L2,B001IWZ126,B000J3FY18,B000KJZWMW,B000I9UA08,B000IDCJL2,B000IKM8T8,B00A2YB9OA,B000IEVW82,B003U2Q3ME,B000I9X4YC,B005SAZ8GI,B008V6QBKS,B001D0BLS6,B001L528A8,B000TA1JWO,B001GZSHQW,B002R1UTAQ,B0035LSXDW,B006QV9KRQ,B0018RE7GM,B001VLKWUA,B0093Q9QMK,B00C4QPYJU,B002WWKM0C,B000ID1J22,B000HF0IWI,B003GAFA8S,B00EWCV7QS,B000IYUIPK,B000VEPL2M,B004FWPK8G,B003JCEVQ0",
+                                    "id": "all-movie-editor-14"
+                                },
+                                {
+                                    "title": "Super Heroes",
+                                    "query": "ContentType=Movie&&HideNum=T&Detailed=T&AID=1&Preorder=F&includeNonWeb=T&IncludeASINList=B009LREA1S,B001M0HGR2,B009B0JQ8M,B00GH4R95C,B0045XGRQE,B002SS8S7E,B004UPAN6W,B005MMY9A8,B00FEJHPRI,B001XUPF2O,B003KJF2WE,B008Y6T5VW,B005NFWCSK,B00GIXWHZ4,B002RZCQCQ,B004IM8ZBC,B003MAS9S0,B003MXGNX0,B003MAQLVM,B003Y6EL5W,B006S08FUS,B00AZ15WVQ,B002IXA5KW,B0010BQCIW,B003F7Y0VU,B006S0800S,B009EEP8P0,B0040CVEF4,B0026KZ39A,B002EXGQXQ",
+                                    "id": "all-movie-editor-15"
+                                },
+                                {
+                                    "title": "Vampire Flicks",
+                                    "query": "ContentType=Movie&OrderBy=SalesRank&HideNum=T&Detailed=T&AID=1&Preorder=F&includeNonWeb=T&IncludeASINList=B001V7WC1Q,B000PUQTWS,B003DDKAT2,B003F44QRQ,B008Y6W5SM,B005FJ7EIC,B009JZWYKQ,B005ZUOR4K,B00EM6N528,B003FCOLIM,B002WSAST6,B0093QE1YS,B0094M2SCI,B002750TFM,B0095ZEAAM,B003LPRRYI,B00266OGH4,B003D97MME,B00942Y94I,B00942V1J4,B00B0TNX2M,B002H5JHUA",
+                                    "id": "all-movie-editor-17"
+                                },
+                                {
+                                    "title": "Zombies & Monsters",
+                                    "query": "ContentType=Movie&OrderBy=SalesRank&HideNum=T&Detailed=T&AID=1&Preorder=F&includeNonWeb=T&IncludeASINList=B002H6ZQRM,B002O1I64U,B001QI4ORK,B003AMEWDG,B00C4QL5V6,B002I7IC5I,B00FJNOXXI,B002ZBPPHA,B00F91G0K4,B00CL50KDY,B0040BIK0M,B003VMVR3S,B00A9XLVCY,B009CPJLHW,B00F91SCXC,B009GRMH7C,B005JE7XW0,B008Y6SA36,B0095ZEDTU,B008XWFGII,B008Y6WO88,B009AHWM5A,B00APUQMD4",
+                                    "id": "all-movie-editor-18"
+                                },
+                                {
+                                    "title": "Staff Picks",
+                                    "query": "ContentType=Movie&OrderBy=SalesRank&HideNum=T&Detailed=T&AID=1&Preorder=F&includeNonWeb=T&IncludeASINList=B00IA3MX9A,B005T5MYXC,B0055B7K7A,B00KVLQT6M,B00TYB95I4,B00TF8DYCO,B0073PQ720,B003X5YAPU,B0095R3C6S,B009NXV51S,B003FM1MNO,B009RI4ZKC,B00IXXT26Y,B002NXZY8K,B003AI71SI",
+                                    "id": "all-movie-editor-19"
+                                },
+                                {
+                                    "title": "Robert Downey Jr.",
+                                    "query": "includeNonWeb=T&ContentType=Movie&OrderBy=SalesRank&HideNum=T&Detailed=T&AID=1&Preorder=F&IncludeASINList=B0030TX7P8,B001M0HGR2,B001XUKFAQ,B0039YZPZ4,B002LVM9KU,B004OVX256,B0091P69CI,B00FK9SG7K,B0099RFVXQ,B00A0SZI7W,B002QYUVY8",
+                                    "id": "all-movie-editor-20"
+                                },
+                                {
+                                    "title": "Meryl Streep",
+                                    "query": "ContentType=Movie&OrderBy=SalesRank&HideNum=T&Detailed=T&AID=1&Preorder=F&includeNonWeb=T&IncludeASINList=B007SSEU9O,B003ZLV8T8,B008WFAHWG,B000K3M1VI,B0094LTWDM,B009CGGCSC,B006RXQ5WQ,B002N7JIMY,B00AHSKRJ4,B008Y6SB3A,B004ETCMQI,B009X7SKDU,B008KOBM5A,B003JFMFKG,B002MG0NYS",
+                                    "id": "all-movie-editor-21"
+                                },
+                                {
+                                    "title": "Ryan Gosling",
+                                    "query": "ContentType=Movie&includeNonWeb=T&OrderBy=SalesRank&HideNum=T&Detailed=T&AID=1&Preorder=F&IncludeASINList=B008Y7J3UY,B00ECU2X9U,B00E1BIQSM,B003DBOS7Y,B00622D3BS,B0050JCBN0,B00CBKVGGY,B0094M7YFY,B00EUNTVKI,B008Y6XDZQ,B004AUNSX2,B004LOQ7O4,B009OJ01HA,B003QSNFCS,B00DUKS4V4",
+                                    "id": "all-movie-editor-22"
+                                },
+                                {
+                                    "title": "Natalie Portman",
+                                    "query": "ContentType=Movie&OrderBy=SalesRank&HideNum=T&Detailed=T&AID=1&Preorder=F&includeNonWeb=T&IncludeASINList=B004U8VWIM,B005MMY9A8,B00AVIQPJQ,B00503C226,B002KYGLVQ,B0094M2GXE,B005GIS2UQ,B003MXB3X0,B0039NAN0M,B008Y7IVXO,B00BB8V2V6,B0040FN7CY,B009NY1SLO,B0036SUQK2,B008GJUPNE,B004GIWJH4,B008Y76OOC,B003MXIOMI,B0073PPXLG,B003CE5CK4,B003MX97GK",
+                                    "id": "all-movie-editor-23"
+                                },
+                                {
+                                    "title": "McConaughey",
+                                    "query": "ContentType=Movie&includeNonWeb=T&HideNum=T&Detailed=T&AID=1&Preorder=F&ASINList=B00ECUARO8,B00AFEQ4B0,B005C8ENI0,B002L268R4,B003X5YAPU,B0039ZQTXU,B002NK4KYM,B00B47LT1M,B0096HI226,B005DN5BE4,B002N4MNVK,B001XUKFAQ,B0090EIPIQ,B00AW1QLDW,B008PZYZH6,B001XV3LSS,B002PZDM9Y,B0088CYVO8,B004JBN3ZU,B001QZM5DI",
+                                    "id": "all-movie-editor-24"
+                                },
+                                {
+                                    "title": "Scorsese",
+                                    "query": "ContentType=Movie&includeNonWeb=T&HideNum=T&Detailed=T&AID=1&Preorder=F&IncludeASINList=B008Y6UOQW,B002ZM74Y6,B004GF0SNO,B002NXZY8K,B000NGTJTY,B0094K1NYE,B005WQ4QW0,B00CJVHK4W,B006RXQBUC,B0091W6QZG,B007ZSE1M8,B0094POXRI,B003QF8E4A,B005898DDO,B001G0INIE,B0035TCZKG,B000NHWMH4,B0094LCHMA,B0043517LY,B005F3VOGQ",
+                                    "id": "all-movie-editor-25"
+                                },
+                                {
+                                    "title": "Woody Allen",
+                                    "query": "ContentType=Movie&includeNonWeb=T&OrderBy=SalesRank&HideNum=T&Detailed=T&AID=1&Preorder=F&IncludeASINList=B00AVWNZ1S,B00948EPOQ,B008Y6S9RI,B0094M1DG0,B0026977EK,B00A355RO6,B002MXO6L2,B004GB5G62,B00HALR6E0,B00ACY8S30,B001EUJHFO,B00A27NN50,B005Q7O5DA,B00F6I7KJK,B00950W1LM,B00BGG92OM",
+                                    "id": "all-movie-editor-26"
+                                }
+                            ],
+                            "title": "Editor's Picks"
+                        },
+                        {
+                            "title": "For the Kids",
+                            "query": "Genre=Family&ContentType=Movie&OrderBy=SalesRank&ExcludeContentRating=PG-13,R,NC-17,NR,Unrated,TV-14,TV-MA&ExcludeContractId=UXCF1&HasImage=T&SuppressBlackedoutEST=T&Detailed=T&HideNum=T&AID=1&Preorder=F",
+                            "id": "all-movie-5"
+                        },
+                        {
+                            "title": "Genres",
+                            "categories": [
+                                {
+                                    "title": "Action & Adventure",
+                                    "query": "Genre=Action,Adventure&ContentType=Movie&OrderBy=SalesRank&ExcludeContentRating=G,PG,TV-Y,TV-Y7,TV-Y7-FV,TV-G,TV-PG&ExcludeContractId=UXCF1&HasImage=T&SuppressBlackedoutEST=T&Detailed=T&HideNum=T&AID=1&Preorder=F&includeNonWeb=T",
+                                    "id": "all-movie-genre-1"
+                                },
+                                {
+                                    "title": "Animation",
+                                    "query": "Genre=Animation&ContentType=Movie&OrderBy=SalesRank&ExcludeContentRating=G,TV-Y,TV-Y7,TV-Y7-FV,TV-G,NR&HasImage=T&SuppressBlackedoutEST=T&Detailed=T&HideNum=T&AID=1&Preorder=F",
+                                    "id": "all-movie-genre-2"
+                                },
+                                {
+                                    "title": "Comedy",
+                                    "query": "Genre=Comedy&ContentType=Movie&OrderBy=SalesRank&ExcludeContentRating=G,PG,TV-Y,TV-Y7,TV-Y7-FV,TV-G,TV-PG,NR&ExcludeContractId=UXCF1&HasImage=T&SuppressBlackedoutEST=T&Detailed=T&HideNum=T&AID=1&Preorder=F",
+                                    "id": "all-movie-genre-3"
+                                },
+                                {
+                                    "title": "Documentary",
+                                    "query": "Genre=Nonfiction&ContentType=Movie&OrderBy=SalesRank&ExcludeContentRating=G,PG,TV-Y,TV-Y7,TV-Y7-FV,TV-G,TV-PG&ExcludeContractId=UXCF1&HasImage=T&SuppressBlackedoutEST=T&Detailed=T&HideNum=T&AID=1&Preorder=F",
+                                    "id": "all-movie-genre-4"
+                                },
+                                {
+                                    "title": "Drama",
+                                    "query": "Genre=Drama&ContentType=Movie&OrderBy=SalesRank&ExcludeContentRating=G,PG,TV-Y,TV-Y7,TV-Y7-FV,TV-G,TV-PG,NR&ExcludeContractId=UXCF1&HasImage=T&SuppressBlackedoutEST=T&Detailed=T&HideNum=T&AID=1&Preorder=F",
+                                    "id": "all-movie-genre-5"
+                                },
+                                {
+                                    "title": "LGBT",
+                                    "query": "Genre=GayLesbian&ContentType=Movie&OrderBy=SalesRank&ExcludeContentRating=G,PG,TV-Y,TV-Y7,TV-Y7-FV,TV-G,TV-PG,NR&ExcludeContractId=UXCF1&HasImage=T&SuppressBlackedoutEST=T&Detailed=T&HideNum=T&AID=1&Preorder=F",
+                                    "id": "all-movie-genre-6"
+                                },
+                                {
+                                    "title": "Horror",
+                                    "query": "Genre=Horror&ContentType=Movie&OrderBy=SalesRank&ExcludeContentRating=G,PG,TV-Y,TV-Y7,TV-Y7-FV,TV-G,TV-PG&ExcludeContractId=UXCF1&HasImage=T&SuppressBlackedoutEST=T&Detailed=T&HideNum=T&AID=1&Preorder=F",
+                                    "id": "all-movie-genre-7"
+                                },
+                                {
+                                    "title": "Independent",
+                                    "query": "OrderBy=SalesRank&ContentType=Movie&ContractID=UXAA1,UXAC1,UXAT1,UXCI1,UXCR1,UXDM1,UXEB1,UXEG1,UXFL1,UXFM1,UXFR1,UXGV1,UXIF1,UXKH1,UXMA1,UXNE1,UXSM1,UXSP1,UXST1,UXTB1,UXVI1,UXWC1&HideNum=T&Detailed=T&AID=1&IncludeNonWeb=T&Preorder=F",
+                                    "id": "all-movie-genre-8"
+                                },
+                                {
+                                    "title": "International",
+                                    "query": "OrderBy=SalesRank&Genre=International&ContentType=Movie&HideNum=T&Detailed=T&AID=1&IncludeNonWeb=T&Preorder=F",
+                                    "id": "all-movie-genre-9"
+                                },
+                                {
+                                    "title": "Kids & Family",
+                                    "query": "ContentRating=G,PG,TV-Y,TV-Y7,TV-G&ExcludeContractId=UXCF1&OrderBy=SalesRank&Genre=Family&ContentType=Movie&HideNum=T&Detailed=T&AID=1&IncludeNonWeb=T&Preorder=F",
+                                    "id": "all-movie-genre-10"
+                                },
+                                {
+                                    "title": "Military & War",
+                                    "query": "OrderBy=SalesRank&Genre=War&ContentType=Movie&HideNum=T&Detailed=T&AID=1&IncludeNonWeb=T&Preorder=F",
+                                    "id": "all-movie-genre-11"
+                                },
+                                {
+                                    "title": "Music Videos & Concerts",
+                                    "query": "OrderBy=SalesRank&Genre=Music&Studio=Egami,Egami%20Media,Warner%20Music%20Inc.,Eagle%20Vision,Shout%20Factory,Image%20Entertainment&ContentType=Movie&HideNum=T&Detailed=T&AID=1&IncludeNonWeb=T&Preorder=F",
+                                    "id": "all-movie-genre-12"
+                                },
+                                {
+                                    "title": "Musicals",
+                                    "query": "OrderBy=SalesRank&Genre=Musical&ContentType=Movie&HideNum=T&Detailed=T&AID=1&IncludeNonWeb=T&Preorder=F",
+                                    "id": "all-movie-genre-13"
+                                },
+                                {
+                                    "title": "Mystery & Thriller",
+                                    "query": "Genre=Mystery,Thriller&ContentType=Movie&OrderBy=SalesRank&ExcludeContentRating=G,TV-Y,TV-Y7,TV-Y7-FV,TV-G&ExcludeContractId=UXCF1&HasImage=T&SuppressBlackedoutEST=T&Detailed=T&HideNum=T&AID=1&Preorder=F",
+                                    "id": "all-movie-genre-14"
+                                },
+                                {
+                                    "title": "Romance",
+                                    "query": "Genre=Romance&ContentType=Movie&OrderBy=SalesRank&ExcludeContentRating=G,TV-Y,TV-Y7,TV-Y7-FV,TV-G&ExcludeContractId=UXCF1&HasImage=T&SuppressBlackedoutEST=T&Detailed=T&HideNum=T&AID=1&Preorder=F",
+                                    "id": "all-movie-genre-15"
+                                },
+                                {
+                                    "title": "Sports",
+                                    "query": "Genre=Sport&ContentType=Movie&OrderBy=SalesRank&ExcludeContentRating=G,PG,TV-Y,TV-Y7,TV-Y7-FV,TV-G,TV-PG,NR&ExcludeContractId=UXCF1&HasImage=T&SuppressBlackedoutEST=T&Detailed=T&HideNum=T&AID=1&Preorder=F",
+                                    "id": "all-movie-genre-17"
+                                },
+                                {
+                                    "title": "Westerns",
+                                    "query": "Genre=Western&ContentType=Movie&OrderBy=SalesRank&ExcludeContentRating=G,PG,TV-Y,TV-Y7,TV-Y7-FV,TV-G,TV-PG,NR&ExcludeContractId=UXCF1&HasImage=T&SuppressBlackedoutEST=T&Detailed=T&HideNum=T&AID=1&Preorder=F",
+                                    "id": "all-movie-genre-18"
+                                }
+                            ],
+                            "id": "movies_all_genres"
+                        },
+                        {
+                            "id": "movies_all_deals",
+                            "categories": [
+                                {
+                                    "title": "Rent for Under $1",
+                                    "query": "MinPrice=0.01&MaxPrice=0.99&OfferType=Rental&ContentType=Movie&OrderBy=SalesRank&ExcludeContractId=UXCF1&ExcludeStudio=PRODTEST&HasImage=T&SuppressBlackedoutEST=T&Detailed=T&HideNum=T&AID=1",
+                                    "id": "all-movie-deal-1"
+                                },
+                                {
+                                    "title": "Rent for Under $2",
+                                    "query": "MinPrice=1.00&MaxPrice=1.99&OfferType=Rental&ContentType=Movie&OrderBy=SalesRank&ExcludeContractId=UXCF1&HasImage=T&SuppressBlackedoutEST=T&Detailed=T&HideNum=T&AID=1",
+                                    "id": "all-movie-deal-2"
+                                },
+                                {
+                                    "title": "Rent for Under $3",
+                                    "query": "MinPrice=2.00&MaxPrice=2.99&OfferType=Rental&ContentType=Movie&OrderBy=SalesRank&ExcludeContractId=UXCF1&HasImage=T&SuppressBlackedoutEST=T&Detailed=T&HideNum=T&AID=1",
+                                    "id": "all-movie-deal-3"
+                                }
+                            ],
+                            "title": "Deals"
+                        }
+                    ],
+                    "title": "Shop Movies"
+                }
+            ],
+            "id": "movies"
+        },
+        {
+            "id": "tv_shows",
+            "categories": [
+                {
+                    "title": "Prime TV Shows",
+                    "id": "prime",
+                    "categories": [
+                        {
+                            "title": "Top TV Shows",
+                            "query": "OfferGroups=B0043YVHMY&OrderBy=MostPopular&Preorder=F&ContentType=TVEpisode&RollupToSeason=T&HideNum=T&Detailed=T&AID=1&SuppressBlackedoutEST=T&ContentRating=TV-PG,TV-14,TV-MA&BlackList=B00DKS3QZU,B00DKS0N4C,B00HOJ3DZO,B00HOJ1G6C,B00337ZGIS,B00IIWUWGY,B003M6SRFO,B00IIX71ZI,B00B2LNMI8,B00IIWOXK0,B00B2LGSXO,B00IIXDSEG",
+                            "id": "prime-tv-1"
+                        },
+                        {
+                            "title": "Recently Added TV Shows",
+                            "query": "OfferGroups=B0043YVHMY&ContentType=TVEpisode&RollUpToSeason=T&OrderBy=AvailabilityDate&MinAmazonRatingCount=40&HideNum=T&Preorder=F&Detailed=T&AID=1&ContractID=UX*",
+                            "id": "prime-tv-2"
+                        },
+                        {
+                            "title": "Best of Prime TV",
+                            "query": "OfferGroups=B0043YVHMY&ContentType=TVEpisode&RollupToSeason=T&HideNum=T&Detailed=T&AID=1&SuppressBlackedoutEST=T&ASINList=B007SQAIN8,B00I3MNF6S,B00BOL22GY,B00CDBTQCW,B00B8QQU2M,B006GLQ092,B00DOWMH1G,B006GQHLOK,B00C49GQD0,B006IVYGC8,B0031KC8OM,B0057VY45O,B00AXVHHTI,B00DKRXM7S,B006IX9NQU,B00C7L2QCA,B00J2G1Z2U,B00LLHKLPK,B00821OUT6,B00LFTMX5K,B00LG0DKBO,B00I3MP3SG,B006VA3ZEG,B0060TG0U4,B00HANG7RK,B00BMKJR5Q,B006886U48,B0077QNJEY",
+                            "id": "prime-tv-3"
+                        },
+                        {
+                            "id": "tv_shows_prime_editors_picks",
+                            "categories": [
+                                {
+                                    "title": "Delightfully Unusual",
+                                    "query": "OfferGroups=B0043YVHMY&amp;ContentType=TVSeason&ASINList=B005PK56TA,B00I3MOU4Y,B00I3MPZUW,B00BVYNSLC,B005U9RM0W,B00C7KXUOE,B0031KC8OC",
+                                    "id": "prime-tv-editor-3"
+                                },
+                                {
+                                    "title": "Crime Time",
+                                    "query": "OfferGroups=B0043YVHMY&Genre=Crime&ContentType=TVSeason&OrderBy=SalesRank&ExcludeContentRating=G,TV-Y,TV-Y7,TV-G&ExcludeContractId=UXCF1&HasImage=T&SuppressBlackedoutEST=T&Detailed=T&HideNum=T&AID=1",
+                                    "id": "prime-tv-editor-4"
+                                },
+                                {
+                                    "title": "Strong Female Characters",
+                                    "query": "OfferGroups=B0043YVHMY&ContentType=TVSeason&OrderBy=SalesRank&ASINList=B00LI0VA4Q,B000HCYN18,B0031KC8OC,B0064MPXFA,B00BVYNSLC,B00I3MPZUW,B00HY7VU60",
+                                    "id": "prime-tv-editor-5"
+                                },
+                                {
+                                    "title": "I Love the 90's",
+                                    "query": "OfferGroups=B0043YVHMY&ContentType=TVSeason&ReleaseDateStart=1990-01-01&ReleaseDateEnd=2000-01-01&OrderBy=SalesRank&ExcludeContentRating=G,TV-Y,TV-Y7,TV-Y7-FV,TV-G&ExcludeContractId=UXCF1&HasImage=T&SuppressBlackedoutEST=T&Detailed=T&HideNum=T&AID=1&BlackList=B0031N5YU4",
+                                    "id": "prime-tv-editor-6"
+                                },
+                                {
+                                    "title": "IMDb Top Rated",
+                                    "query": "OfferGroups=B0043YVHMY&ContentType=TVEpisode&OrderBy=MostPopular&RollUpToSeason=T&MinIMDbRating=7&MinIMDbRatingCount=100&ExcludeContentRating=G,TV-Y,TV-Y7,TV-Y7-FV,TV-G&ExcludeContractId=UXCF1&HasImage=T&SuppressBlackedoutEST=T&Detailed=T&HideNum=T&AID=1&BlackList=B003HIFU5C,B003HIC3VG,B001R4DHUS,B001R4175U,B003HIHXIE,B003HIDXYC,B001R4RXVW,B001R4Q6A6,B001R2XQ8S,B001R2TU92,B001RIGQZW,B001RIIFLA,B003VKOVTM,B003VKS6DE,B003HIJ8PK,B003HIA8UE,B003HIDZD6,B003HIA91C,B003HIC4H4,B003HICAS2,B003HIFSUO,B003HIFUDY,B000TK0YWA,B000TJZ7PK,B000TK56SC,B000TJZH6O,B000TK0Z7O,B000TK4X18,B000TK56UK,B000TK7CDE,B001R2NP66,B001R2PZ00",
+                                    "id": "prime-tv-editor-7"
+                                },
+                                {
+                                    "title": "What We're Watching",
+                                    "query": "OfferGroups=B0043YVHMY&ContentType=TVSeason&ASINList=B00DAHSYLC,B0079W9QDE,B000GFD4C0,B001V9IXLM,B00BVYNSLC,B00I3MQNWG,B00I3MOU4Y,B00I3MPZUW,B00NL5R7NO,B003AZCYCE,B00B8PCLTY,B00CBZYPTY,B00I3MNGCG",
+                                    "id": "prime-tv-editor-10"
+                                }
+                            ],
+                            "title": "Editor's Picks"
+                        },
+                        {
+                            "title": "For the Kids",
+                            "query": "MoveToFrontList=B00I3MPMPA,B00CB6SU5I,B00CB6P4DY,B00CC00JDE&OfferGroups=B0043YVHMY&ContentType=TVEpisode&Preorder=F&RollupToSeason=T&Genre=Family&OrderBy=MostPopular&ExcludeContentRating=PG-13,R,NC-17,NR,Unrated,TV-PG,TV-MA,TV-14&ExcludeContractId=UXCF1&HasImage=T&SuppressBlackedoutEST=T&Detailed=T&HideNum=T&AID=1&Blacklist=B00O5AVCEO,B00O5AUCCC,B00O5AV4HY,B00O5ATHEQ",
+                            "id": "prime-tv-5"
+                        },
+                        {
+                            "title": "Prime Originals and Exclusives",
+                            "query": "OfferGroups=B0043YVHMY&OrderBy=MostPopular&Preorder=F&ContentType=TVSeason&includeASINList=\nB06XJCLRZR,B073X9R3TQ,B01G98ZPQU,B0727Z57YX,B071F334D4,B071W7Q45W,B071DPRB9M,B0713QVL59,B01J77H8YC,B06XRJ8KTN,B06WVFKQCY,B06XNLVMVJ,B06XNKVQVZ,B01MTEMDSR,B06W9JY1D1,B01NA0Q5J9,B01N9VINWU,B017APV4KW,B01N0VH95S,B01347V50Y,B01N2YI6EO,B01LYM3K5Y,B01IS2RDJ2,B01NB8KCJ3,B01J4SRJFW,B01J4STMP2,B00Z89MYTI,B01MCYUT8A,B01M29SIU2,B01MFDPZ2H,B01J94A5GQ,B01LXC9F79,B01LZDGBB8,B017AOY4WS,B01L34IQ20,B01LWMYJK4,B01J4SS7NA,B01J4SST1K,B01K06EMNO,B017APUVI8,B00RSI66VY,B00Z89L6JW,B01GIU9E84,B01HFKXA4U,B01FQ8DVTM,B01EN8FBG2,B01D5LQ216,B01AB17IGQ,B00RR12SS2,B00RSGHX3Q,B00RSGJ0DW,B017I3KWX6,B018F4GDQW,B00I3MNGCG,B00RSGFRY8,B017N3DLAM,B0176UVAQ4,B00MR9VDDA,B00I3MPZUW,B00I3MQNWG,B00MR9UY8A,B00X8UKOUK,B00CBZYPTY,B00CB6VTDS,B00I3MOM7Y,B00I3MOU4Y,B00YW6QB0Q,B00PSLQYWE,B00ZP9PPMO,B010AI9YCG,B00N9STWJA,B00N8MBYA2,B0088W9PD0,B00COW65YC,B00O5ATHEQ,B00CDBR1P6,B00IK9I6XG,B00ADSOKW8,B00J7JY812,B00BS4L6YG,B00I9AHY2K,B00COW65YC,B00688628M,B00EC7VQX2,B0095QZLLS,B003M6EAXM,B006IX9C6G,B00OOKUC46,B006885LZM,B007FHHLJO,B00OFQ7M42,B00IWYG68Q,B00H7NEXYC,B00HY7VU60,B00KKGTPRI,B00C7KXUOE,B00KPZIEFS,B000GFD4C0&MoveToFrontList=B06XJCLRZR,B01G98ZPQU,B0727Z57YX,B071F334D4,B071W7Q45W,B071DPRB9M,B0713QVL59,B01J77H8YC,B06XRJ8KTN,B06WVFKQCY,B06XNLVMVJ,B06XNKVQVZ,B01MTEMDSR,B06W9JY1D1,B01NA0Q5J9,B01N9VINWU,B017APV4KW,B01N0VH95S,B01347V50Y,B01N2YI6EO,B01LYM3K5Y,B01IS2RDJ2,B01NB8KCJ3,B01J4SRJFW,B01J4STMP2,B00Z89MYTI,B01MCYUT8A,B01M29SIU2,B01MFDPZ2H,B01J94A5GQ,B01LXC9F79,B01LZDGBB8,B017AOY4WS,B01L34IQ20,B01LWMYJK4,B01J4SS7NA,B01J4SST1K,B01K06EMNO,B017APUVI8,B01HFR71RA,B00RSI66VY,B00Z89L6JW,B01GIU9E84,B01HFKXA4U,B01FQ8DVTM,B01EN8FBG2,B00I3MNF6S,B018F4GDQW,B01D5LQ216,B01CDUCO2Q,B01AB17IGQ,B00RR12SS2,B00RSGHX3Q,B00RSGJ0DW,B017I3KWX6,B00I3MNGCG,B00RSGFRY8,B017N3DLAM,B0176UVAQ4,B00MR9VDDA,B00I3MPZUW,B00I3MQNWG,B00MR9UY8A,B00X8UKOUK,B00CBZYPTY,B00CB6VTDS,B00I3MOM7Y,B00I3MOU4Y,B00YW6QB0Q,B00PSLQYWE,B00ZP9PPMO,B010AI9YCG,B00N9STWJA,B00N8MBYA2,B0088W9PD0,B00COW65YC,B00O5ATHEQ,B00CDBR1P6,B00IK9I6XG,B00ADSOKW8,B00J7JY812,B00BS4L6YG,B00I9AHY2K,B00COW65YC,B00688628M,B00EC7VQX2,B0095QZLLS,B003M6EAXM,B006IX9C6G,B00OOKUC46,B006885LZM,B007FHHLJO,B00OFQ7M42,B00IWYG68Q,B00H7NEXYC,B00HY7VU60,B00KKGTPRI,B00C7KXUOE,B00KPZIEFS,B000GFD4C0",
+                            "id": "prime-tv-6"
+                        },
+                        {
+                            "title": "Genres",
+                            "categories": [
+                                {
+                                    "title": "Action & Adventure",
+                                    "query": "OfferGroups=B0043YVHMY&Genre=Action,Adventure&ContentType=TVSeason&OrderBy=SalesRank&ExcludeContentRating=G,PG,TV-Y,TV-Y7,TV-Y7-FV,TV-G,TV-PG&ExcludeContractId=UXCF1&HasImage=T&SuppressBlackedoutEST=T&Detailed=T&HideNum=T&AID=1&Preorder=F",
+                                    "id": "prime-tv-genre-1"
+                                },
+                                {
+                                    "title": "Comedy",
+                                    "query": "OfferGroups=B0043YVHMY&Genre=Comedy&ContentType=TVSeason&OrderBy=MostPopular&ExcludeContentRating=G,TV-Y,TV-Y7,TV-G,TV-Y7-FV&ExcludeContractId=UXCF1&HasImage=T&SuppressBlackedoutEST=T&Detailed=T&HideNum=T&AID=1&Preorder=F&MoveToFrontList=B00NH8JOQI",
+                                    "id": "prime-tv-genre-2"
+                                },
+                                {
+                                    "title": "Documentary",
+                                    "query": "OfferGroups=B0043YVHMY&Genre=Nonfiction&ContentType=TVSeason&OrderBy=SalesRank&ExcludeContractId=UXCF1,UXBB1&HasImage=T&SuppressBlackedoutEST=T&Detailed=T&HideNum=T&AID=1&Preorder=F",
+                                    "id": "prime-tv-genre-3"
+                                },
+                                {
+                                    "title": "Drama",
+                                    "query": "OfferGroups=B0043YVHMY&Genre=Drama&ContentType=TVSeason&OrderBy=SalesRank&ExcludeContentRating=G,TV-Y,TV-Y7,TV-Y7-FV,TV-G&ExcludeContractId=UXCF1&HasImage=T&SuppressBlackedoutEST=T&Detailed=T&HideNum=T&AID=1&Preorder=F",
+                                    "id": "prime-tv-genre-4"
+                                },
+                                {
+                                    "title": "Kids & Family",
+                                    "query": "OfferGroups=B0043YVHMY&Genre=Family&ContentType=TVSeason&OrderBy=SalesRank&ExcludeContentRating=PG-13,R,NC-17,NR,Unrated,TV-PG,TV-14,TV-MA&ExcludeContractId=UXCF1&HasImage=T&SuppressBlackedoutEST=T&Detailed=T&HideNum=T&AID=1&Preorder=F&MoveToFrontList=B00CB6VTDS,B00CB6FHKE,B00CBZYPTY",
+                                    "id": "prime-tv-genre-5"
+                                },
+                                {
+                                    "title": "Mystery & Thrillers",
+                                    "query": "OfferGroups=B0043YVHMY&Genre=Mystery,Thriller&ContentType=TVSeason&OrderBy=SalesRank&ExcludeContentRating=G,TV-Y,TV-Y7,TV-Y7-FV,TV-G&ExcludeContractId=UXCF1&HasImage=T&SuppressBlackedoutEST=T&Detailed=T&HideNum=T&AID=1&Preorder=F",
+                                    "id": "prime-tv-genre-6"
+                                },
+                                {
+                                    "title": "Reality TV",
+                                    "query": "OfferGroups=B0043YVHMY&Genre=RealityTV&ContentType=TVEpisode&RollUpToSeason=T&OrderBy=SalesRank&ExcludeContractId=UXCF1&HasImage=T&SuppressBlackedoutEST=T&Detailed=T&HideNum=T&AID=1&Preorder=F",
+                                    "id": "prime-tv-genre-7"
+                                },
+                                {
+                                    "title": "Romance",
+                                    "query": "OfferGroups=B0043YVHMY&Genre=Romance&ContentType=TVSeason&OrderBy=SalesRank&ExcludeContentRating=G,TV-Y,TV-Y7,TV-Y7-FV,TV-G&ExcludeContractId=UXCF1&HasImage=T&SuppressBlackedoutEST=T&Detailed=T&HideNum=T&AID=1&Preorder=F",
+                                    "id": "prime-tv-genre-8"
+                                },
+                                {
+                                    "title": "Sci-Fi & Fantasy",
+                                    "query": "OfferGroups=B0043YVHMY&Genre=SciFi,Fantasy&ContentType=TVSeason&OrderBy=SalesRank&ExcludeContentRating=G,PG,TV-Y,TV-Y7,TV-Y7-FV,TV-G,TV-PG&ExcludeContractId=UXCF1&HasImage=T&SuppressBlackedoutEST=T&Detailed=T&HideNum=T&AID=1&Preorder=F",
+                                    "id": "prime-tv-genre-9"
+                                }
+                            ],
+                            "id": "tv_shows_prime_genres"
+                        },
+                        {
+                            "title": "Top Prime TV Downloads",
+                            "query": "OfferGroups=B0043YVHMY&ContentType=TVSeason&Preorder=F&ASINList=B00I3MOT0Y,B00CDBTVM2,B00NSGE4BO,B004KAJLNS,B00HNEDIZ0,B00LI1DYRG,B005U9ROYQ,B0064MGU98,B00JF986CG,B004AJ6IAS,B00N47S7XI,B00DAHSYLC,B005PK553C,B0063ONN9C,B00JIL4OWM,B00M3E3J54,B00O1BV0C6,B0037KH0WQ,B003V8DHN0,B00BLCHYKU,B007429BV6,B0083IJKUW,B00L2GPYKW,B001JGECT4,B00CBZYOAO,B003AYU23I,B00IIT9B28,B00FN41KO8,B002CHLG84,B00BVYLBP2,B001JJ4H2I,B000GFD4C0,B005544V6A,B00HHGPMGC,B00DKS0N4C,B00KY51DNO,B00JIL4XIC,B00IWYI0SA,B00F3WB7FM,B00EZJUDFE,B00OEMGEZA,B00OGLHE4Y",
+                            "id": "prime-tv-9"
+                        },
+                        {
+                            "id": "tv_shows_prime_channels",
+                            "categories": [
+                                {
+                                    "title": "ABC",
+                                    "query": "OrderBy=SalesRank&ContentType=TVSeason&Studio=ABC,ABC%20Family&HideNum=T&Detailed=T&AID=1&SuppressBlackedoutEST=T&OfferGroups=B0043YVHMY",
+                                    "id": "prime-tv-channel-1"
+                                },
+                                {
+                                    "title": "BBC",
+                                    "query": "OfferGroups=B0043YVHMY&OrderBy=SalesRank&ContentType=TVSeason&Studio=BBC,BBC%20America,BBC%20Earth&HideNum=T&Detailed=T&AID=1&SuppressBlackedoutEST=T",
+                                    "id": "prime-tv-channel-3"
+                                },
+                                {
+                                    "title": "CBS",
+                                    "query": "OfferGroups=B0043YVHMY&OrderBy=SalesRank&ContentType=TVSeason&Studio=CBS&HideNum=T&Detailed=T&AID=1&SuppressBlackedoutEST=T",
+                                    "id": "prime-tv-channel-5"
+                                },
+                                {
+                                    "title": "Comedy Central",
+                                    "query": "OfferGroups=B0043YVHMY&Studio=Comedy%20Central,COMEDY%20CENTRAL&ContentType=TVSeason&OrderBy=SalesRank&ExcludeContractId=UXCF1&HasImage=T&SuppressBlackedoutEST=T&Detailed=T&parentalControlsFilter=true&HideNum=T&AID=1",
+                                    "id": "prime-tv-channel-6"
+                                },
+                                {
+                                    "title": "Fox",
+                                    "query": "OfferGroups=B0043YVHMY&OrderBy=SalesRank&ContentType=TVSeason&Studio=Fox,FOX&HideNum=T&Detailed=T&AID=1&SuppressBlackedoutEST=T",
+                                    "id": "prime-tv-channel-8"
+                                },
+                                {
+                                    "title": "FX",
+                                    "query": "OfferGroups=B0043YVHMY&Studio=FX&ContentType=TVSeason&OrderBy=SalesRank&ExcludeContractId=UXCF1&HasImage=T&SuppressBlackedoutEST=T&Detailed=T&HideNum=T&AID=1",
+                                    "id": "prime-tv-channel-9"
+                                },
+                                {
+                                    "title": "MTV",
+                                    "query": "OfferGroups=B0043YVHMY&Studio=MTV,mtv&ContentType=TVSeason&OrderBy=SalesRank&ExcludeContractId=UXCF1&HasImage=T&SuppressBlackedoutEST=T&Detailed=T&parentalControlsFilter=true&HideNum=T&AID=1",
+                                    "id": "prime-tv-channel-11"
+                                },
+                                {
+                                    "title": "NBC",
+                                    "query": "OfferGroups=B0043YVHMY&OrderBy=SalesRank&ContentType=TVSeason&Studio=NBC&HideNum=T&Detailed=T&AID=1&SuppressBlackedoutEST=T",
+                                    "id": "prime-tv-channel-12"
+                                },
+                                {
+                                    "title": "Nickelodeon/Nick Jr.",
+                                    "query": "OfferGroups=B0043YVHMY&Studio=Nickelodeon,NICKELODEON,Nick%20Jr,NICK%20JR,TeenNick,TEENNICK&ContentType=TVEpisode&RollupToSeason=T&OrderBy=MostPopular&ExcludeContractId=UXCF1&HasImage=T&SuppressBlackedoutEST=T&Detailed=T&parentalControlsFilter=true&HideNum=T&AID=1",
+                                    "id": "prime-tv-channel-13"
+                                },
+                                {
+                                    "title": "PBS",
+                                    "query": "OfferGroups=B0043YVHMY&OrderBy=SalesRank&ContentType=TVSeason&Studio=PBS&HideNum=T&Detailed=T&AID=1&SuppressBlackedoutEST=T",
+                                    "id": "prime-tv-channel-14"
+                                },
+                                {
+                                    "title": "Showtime",
+                                    "query": "OrderBy=SalesRank&ContentType=TVSeason&Studio=Showtime&HideNum=T&Detailed=T&AID=1&SuppressBlackedoutEST=T&OfferGroups=B0043YVHMY",
+                                    "id": "prime-tv-channel-15"
+                                },
+                                {
+                                    "title": "SyFy",
+                                    "query": "OfferGroups=B0043YVHMY&Studio=SciFi%20Channel,Syfy&ContentType=TVSeason&OrderBy=SalesRank&ExcludeContractId=UXCF1&HasImage=T&SuppressBlackedoutEST=T&Detailed=T&HideNum=T&AID=1",
+                                    "id": "prime-tv-channel-16"
+                                },
+                                {
+                                    "title": "Starz",
+                                    "query": "OfferGroups=B0043YVHMY&Studio=Starz&ContentType=TVSeason&OrderBy=SalesRank&ExcludeContractId=UXCF1&HasImage=T&SuppressBlackedoutEST=T&Detailed=T&HideNum=T&AID=1",
+                                    "id": "prime-tv-channel-17"
+                                },
+                                {
+                                    "title": "TNT",
+                                    "query": "OfferGroups=B0043YVHMY&Studio=TNT&ContentType=TVSeason&OrderBy=SalesRank&ExcludeContractId=UXCF1&HasImage=T&SuppressBlackedoutEST=T&Detailed=T&HideNum=T&AID=1",
+                                    "id": "prime-tv-channel-18"
+                                },
+                                {
+                                    "title": "USA",
+                                    "query": "OfferGroups=B0043YVHMY&Studio=USA%20Networks,USA&ContentType=TVSeason&OrderBy=SalesRank&ExcludeContractId=UXCF1&HasImage=T&SuppressBlackedoutEST=T&Detailed=T&HideNum=T&AID=1",
+                                    "id": "prime-tv-channel-20"
+                                }
+                            ],
+                            "title": "TV Channels"
+                        }
+                    ]
+                },
+                {
+                    "title": "Shop TV Shows",
+                    "id": "all",
+                    "categories": [
+                        {
+                            "title": "Popular TV Shows",
+                            "query": "OrderBy=SalesRank&ContentType=TVSeason&HideNum=T&Detailed=T&AID=1&SuppressBlackedoutEST=T&Preorder=F&ContentRating=TV-PG,TV-14,TV-MA",
+                            "id": "all-tv-1"
+                        },
+                        {
+                            "title": "Shop Latest Shows",
+                            "query": "ExcludeContractId=UXAS1&HasImage=T&OrderBy=-ReleaseDate&ContentType=TVEpisode&NextDayAir=T&ReleaseDateStart=28&HideNum=T&Detailed=T&AID=1&Preorder=F",
+                            "id": "all-tv-2"
+                        },
+                        {
+                            "title": "Popular Kids TV",
+                            "query": "MoveToFrontList=B00CB6SU5I,B00CB6P4DY,B00CC00JDE&ContentType=TVEpisode&RollupToSeason=T&Genre=Family&OrderBy=MostPopular&ExcludeContentRating=PG-13,TV-NR,R,NC-17,NR,Unrated,TV-PG,TV-MA,TV-14&ExcludeContractId=UXCF1&HasImage=T&SuppressBlackedoutEST=T&Detailed=T&HideNum=T&AID=1&Blacklist=B00O5AVCEO,B00O5AUCCC,B00O5AV4HY,B00O5ATHEQ",
+                            "id": "all-tv-4"
+                        },
+                        {
+                            "id": "tv_shows_all_editors_picks",
+                            "categories": [
+                                {
+                                    "title": "Animation Nation",
+                                    "query": "ContentType=TVSeason&OrderBy=SalesRank&HasImage=T&Detailed=T&HideNum=T&AID=1&IncludeASINList=B0082CY56S,B000YFWJFU,B000QTBD8S,B001ACPEBC,B000H3TPI8,B003M6SRFO,B0017SPRFW,B001BXQ97I,B000GZA02C,B008NZS3N0,B002XG4RCG,B004I0C0QK,B00ETB1118,B0084134D2,B003M6QUXK,B0011UIVDG,B000UUKS7U,B003BI52WY,B001DDQRGY,B002ELOBC6,B0015QV4BM,B008IYPT7Y,B00CO0MTIU,B0046XKXZ4,B003BW24B2,B000W453I8,B006289PYQ,B00199N0OY,B00AEVHFTO,B003V9IHK2,B00A70WN8U,B000GDBOPQ,B000VDCVJ4,B009FUPKHY,B000HVEU5S,B009JW4LQO,B001N0GZ14,B007NEZDP8,B002XZOZPQ,B009XSY88K,B002FARAZ6,B004GWUR7Y,B0015PM91C,B00A7116RI,B001AM0RLY,B006GLUPOS",
+                                    "id": "all-tv-editor-1"
+                                },
+                                {
+                                    "title": "Beyond the Basic",
+                                    "query": "ContentType=TVseason&OrderBy=SalesRank&HasImage=T&Detailed=T&HideNum=T&AID=1&IncludeASINList=B00688628M,B00E3WN0TY,B00EC7VQX2,B0088W9PD0,B00BWJ89YW,B0071O7WDG,B00H921DK8,B00EIA7Z2E,B008ASL8UU,B003OUXJNI,B006IYN3IS,B00AN0KGWE,B008XFACU2,B0095R45VE,B0095R6IBE,B0078VVK8A,B00E8ANEQA,B00CW8DRU8,B006GLM2IA,B006IX9C6G,B0078YWR5M,B007FHHLJO,B00HY7YIYQ,B00COW65YC,B00BS4L6YG,B00FOILW2S,B00EC81JME,B002737FGA,B00AH8U4OW,B00GQ051NY,B00APROUU4,B00HMA5CJ0,B002GKQ5MY,B0044R5J9M,B005IF2AYQ,B00BESBZ0G",
+                                    "id": "all-tv-editor-2"
+                                },
+                                {
+                                    "title": "British Invasion",
+                                    "query": "ContractId=UXBB1&ContentType=TVSeason&OrderBy=SalesRank&ExcludeContentRating=G,TV-Y,TV-Y7,TV-Y7-FV,TV-G&ExcludeContractId=UXCF1&HasImage=T&Detailed=T&HideNum=T&AID=1",
+                                    "id": "all-tv-editor-3"
+                                },
+                                {
+                                    "title": "Classics",
+                                    "query": "ContentType=TVSeason&HideNum=T&Detailed=T&AID=1&ASINlist=B000H422VY,B000HKYNQ0,B000HPIG6S,B000ITHM1I,B000NZZXEK,B000O7Z7IE,B000QUK8O2,B000RL08AO,B000RVKX68,B000RVNFJ0,B000VHSB3A,B000W3SGDI,B000WU2I94,B000WU6WSW,B000YEILKS,B000YRL1SE,B0018YDUFE,B0019QXQMI,B001AM4QWU,B001B0U7Y2,B001C9KWEW,B001Q5NL3Q,B002XVJ4EW,B003RZ1X2E,B004F1HOAY,B0057V4ITQ,B005HED11Y,B005HFQXHM,B005HQKUGG,B006I0E6UQ,B00870ZQGI,B008SA8FPG,B00AWMHDNI,B00EC828DI,B00FLWTQOI,B00G3JB0Q0",
+                                    "id": "all-tv-editor-4"
+                                },
+                                {
+                                    "title": "Crime Time",
+                                    "query": "ContentType=TVSeason&OrderBy=SalesRank&ExcludeContractId=UXCF1&HasImage=T&SuppressBlackedoutEST=T&Detailed=T&HideNum=T&AID=1&IncludeASINlist=B005PK4YNO,B009JBF4D4,B00ESNE560,B00ESWN5LM,B00FEC4PN2,B00EY8MCOQ,B002O08VMI,B004YVAUMY,B00EY7YWOA,B00FZJY336,B00DMY29V4,B00HTYU2XK,B00FDWGUJA,B00DTOYMGW,B006GLM8PM,B00GQ051NY,B00BFQ1OFI,B00IC9X09O,B007FHHLJO,B00EC7VQX2,B003M6EAXM,B00ESNDQWY,B00HY7Z2WI,B00F3WC65W,B00F0XPJH6,B00F49E8O6,B00H7NEXYC,B00ESNDQ2E,B00ESNK3IY,B00ESNKDHA,B0044IABFS,B00ESND9HQ,B00BESBZ0G,B00D5P3HAM,B003XTYDMQ,B00EYYJKVS,B00EC81JME,B00COBMSNU,B0045XL3I6,B00A8D0VPS,B00DZKQRKE",
+                                    "id": "all-tv-editor-5"
+                                },
+                                {
+                                    "title": "Emmy Winners",
+                                    "query": "ContentType=TVseason&OrderBy=SalesRank&ExcludeContractId=UXCF1&HasImage=T&SuppressBlackedoutEST=T&Detailed=T&HideNum=T&AID=1&IncludeASINList=B006Y5H74W,B006PS3VMK,B005PK5LTK,B007X15RAM,B005R9U1NK,B007TMHFUU,B004UUA1YG,B008ADMORQ,B005PK553C,B008CSO5BW,B007BVOEPI,B008QTVNUI,B007ZLKK9I,B0095NWD9O,B006L4I04W,B006THXRIA,B009SVSM9I,B009XQ6LR8,B005C0DHEY,B004HYBMKC,B007Q35B8K,B0050MYARM,B00646VJZY,B0049VZ222,B006VREHRS,B004KAJLNS,B003AYU23I,B004H78YFK,B003U9Y9ZK,B005VFT4V0,B002Q83F3S,B0069YE7KA,B0041KBWM0,B007Q35982,B002NVTSGQ,B00296A4F4,B002N7CTKM,B0026MLCS4,B009PI7C4U,B0064MGU98,B0012QRPU4,B006GLM5EQ,B001O22ELQ,B002W65HIA,B000VZYPB4,B001A5HBAG,B0012H0DBG,B009NN2TTU,B000VUA2MK,B006GM4JNU,B000JO9JHW,B000V5RUES,B000U6C35O,B0010SJN4K,B007P2DGS4,B000WDSZ8E,B000U7O8LA,B008EKSCCQ,B000GFD4C0,B001DZMZ6I,B003U53GWG,B000WCT7M8,B000UU2YKE,B006GLLTU2,B009FUNU6M,B000N2X5CK,B006GLMMUS,B000H4TX9I,B000JQYE4I,B000VB0CH4,B000H10GSS,B000HPF85A,B002GNDXY4,B003ZC9TXE,B0067GLODI,B006GLM7IK,B003A6VPS2,B000KZPG04,B008F9SRTO,B000GDBOPQ,B000HCYN18,B007P2Q1Y0,B000QUI9G6,B001BYY3HA,B005HEVBGG,B000W4QRVU,B000N8GL34,B000I5SYHS,B001BWQ0XM,B005HFLBDI,B000V5Y1SQ,B007K0E7CA,B004FOCSFC,B001S23MUE,B000VHXQ5I,B001BXQ97I",
+                                    "id": "all-tv-editor-6"
+                                },
+                                {
+                                    "title": "Family Affairs",
+                                    "query": "ContentType=TVSeason&OrderBy=SalesRank&ExcludeContractId=UXCF1&HasImage=T&SuppressBlackedoutEST=T&Detailed=T&HideNum=T&AID=1&IncludeASINlist=B004RDDXDC,B00CWLDM8C,B00BFFI20O,B00EY7M6ES,B00FFV9VAO,B00627P7KS,B00BENU7DM,B00CWM37FY,B0081LPP64,B00IBCEUYQ,B003Q5ERF0,B000QUFQ58,B00F2CFHRC,B0076URN7A,B00AT36NQS,B005HFNAUK,B00FFXYT54,B00FI9KDO6,B00BY3MVCW,B00F2CX6XY,B009ZQC7MY",
+                                    "id": "all-tv-editor-7"
+                                },
+                                {
+                                    "title": "From Page to Screen",
+                                    "query": "ContentType=TVSeason&HideNum=T&Detailed=T&AID=1&ASINlist=B003AZCYCE,B00H89ML6W,B00DAHSY58,B00FELQ14E,B007BVMVDU,B002ELIXCA,B0024ZGAXA,B004EF65QA,B000SLTU02,B00499NHLC,B003VN3YN8,B00F880BWG,B006GLLXXK,B00FVS44GC,B00ETKG8AI,B00FS6RG7Q,B009IJJB8G,B002NHIJTW,B008947J8U,B005HGK3PO,B003VDX6N6,B00AN0KGWE",
+                                    "id": "all-tv-editor-8"
+                                },
+                                {
+                                    "title": "Gone Too Soon",
+                                    "query": "ContentType=TVSeason&HideNum=T&Detailed=T&AID=1&ASINlist=B0071O7WDG,B0076V8MWO,B007FUI0DC,B001V7J7NW,B005MMY4SU,B005JR4B54,B004XUMMFE,B002CHB8I2,B00DU36ACG,B000IVC518,B008F9SM0S,B003XTYDMQ,B0040J69W0,B0077RUCRK,B001GSHBV6,B003YDK5F0,B0042GW7Z4,B005FJ77IY,B000WHIIOQ,B0076HL29S,B00B0TNVPG,B0076HL29S",
+                                    "id": "all-tv-editor-9"
+                                },
+                                {
+                                    "title": "Guilty Pleasures",
+                                    "query": "ContentType=TVSeason&OrderBy=SalesRank&ExcludeContractId=UXCF1&HasImage=T&SuppressBlackedoutEST=T&Detailed=T&HideNum=T&AID=1&IncludeASINList=B004W4AB2W,B00AWM9RX2,B00AMZ4JLY,B003YBYTPE,B003H54ZKG,B007PATA7M,B000V9RJOU,B009HNDERC,B005CRVDR0,B007Y36WDA,B000UOF0T2,B0042RKEO4,B00509KC0O,B00FEALYOW,B009D423MC,B008V6QEMS,B009YOD906,B00ANVAENO,B003075T38,B008Q5U13C,B008JSP2A8,B00B3Q74H2,B000GZC3KY,B008CUI80E,B007ORU4VC,B004WYXHHI,B009ZQFQ2M,B008K3XQEQ,B00BP4VSME,B00C6WX2EG,B009NMZJY8,B00FKR823U,B0047C8BGW,B004P1DZXY,B00354T4R8,B007JF8DWQ,B009AP503I,B007JF9U78,B001PTEQDC,B003NVI41U,B001OMILF4,B000NMHNWS,B001F7FKKC,B001UO82K0,B00AY5B5OQ,B00GSZ8HH4",
+                                    "id": "all-tv-editor-10"
+                                },
+                                {
+                                    "title": "Half Hour Laughs",
+                                    "query": "ContentType=TVSeason&OrderBy=SalesRank&ExcludeContractId=UXCF1&HasImage=T&SuppressBlackedoutEST=T&Detailed=T&HideNum=T&AID=1&IncludeASINlist=B0095QZLLS,B00BESC09Q,B00EY89ZHI,B00ESB75FA,B0095R3JV6,B00EZJVREA,B0040J69W0,B00HASYDK8,B009HOO28G,B00FFV9VAO,B00FGN2HZW,B00F2CX6XY,B00627P7KS,B003TGV04W,B00CW88QX6,B008ASL8UUS08,B0088W9PD0,B006IX9S2E,B00FEEQVUK,B00F2CFHRC,B00HUFALRK,B003M6I4UW,B00F3ARKBY,B00F2CZ55G,B00AHTYQC2,B00628QVFC,B008FWICJ6,B00ETRANIO,B00I5S7GME,B00HNYSYRW,B0024DXFIA,B00BBVASHM,B00DIXFXHQ,B00HZKJMV6,B00IA56DR6",
+                                    "id": "all-tv-editor-11"
+                                },
+                                {
+                                    "title": "Head to Head",
+                                    "query": "ContentType=TVSeason&OrderBy=SalesRank&ExcludeContractId=UXCF1&HasImage=T&SuppressBlackedoutEST=T&Detailed=T&HideNum=T&AID=1&IncludeASINlist=B00EUFOZ52,B00EW0JJ7O,B00I60WSII,B00DYZGII6,B000X2INZE,B00CQ5KQSS,B00BT4NXJQ,B00FXMFHWQ,B00FUX932I,B0078YW194,B00DYGTXUU,B00GY8IYN2,B00F4PUG1Y,B00DNTW8W8,B00ICH546I,B00FEC48BG,B00DRHLRVE,B00F58A8PY",
+                                    "id": "all-tv-editor-12"
+                                },
+                                {
+                                    "title": "Hungry Yet?",
+                                    "query": "ContentType=TVSeason&OrderBy=SalesRank&ExcludeContractId=UXCF1&HasImage=T&SuppressBlackedoutEST=T&Detailed=T&HideNum=T&AID=1&IncludeASINlist=B00BXBER4A,B00FDMVRDE,B008P958OQ,B00HM99CLA,B00F4PUG1Y,B005AP25VW,B006226680,B00BXKHFCM,B00BT4NXJQ,B00CEK8NZ8,B00FUX932I,B00B0GM646,B00FEC48BG,B0080LN95E,B0030QW0TA,B006I0IJAY,B00CQL4FXE,B00C361WQK,B006Y5DDBS,B00HAR2YZK,B00FMNF622,B00B3CSBD2",
+                                    "id": "all-tv-editor-13"
+                                },
+                                {
+                                    "title": "Lost & Found",
+                                    "query": "ContentType=TVSeason&OrderBy=SalesRank&ASINlist=B006G0YSK6,B00GL0N2QW,B00BWZQGIM,B00D76G5XK,B009A4WOBK,B00CJ39ORG,B00BLG6MO0,B00I2JZC54,B00EU708GU,B00D5POZ6W,B00ALQWTBQ,B00BWULW5E,B007YP5888,B0089U12GO,B00HQMWE40,B00GLOA54U,B00D5P4GUC,B00DRH66FG,B00AVTKBKY,B0095R7GTC,B00HTJ699Q,B00FZK03L6,B00BWUK6DS,B0083QN154,B00FEB11ZI",
+                                    "id": "all-tv-editor-14"
+                                },
+                                {
+                                    "title": "Moms & Dads",
+                                    "query": "ContentType=TVSeason&OrderBy=SalesRank&ExcludeContractId=UXCF1&HasImage=T&SuppressBlackedoutEST=T&Detailed=T&HideNum=T&AID=1&IncludeASINList=B007MJKO5S,B000QTBD8S,B0093WR9I2,B00EY7ZPU0,B00CCLNX9K,B0090T71JU,B000UUKS7U,B003QF6RKS,B00AFUFBT0,B002DEI4NG,B004G5RYRW,B008V6QEMS,B00DUIH93U,B008M359YO,B00FJ051BY,B0021PHH4E,B005KOAW6S,B003RZ1X2E,B0098BRNLQ,B00EPBWFE4,B003M6WERG,B00F4PP30S,B009KWGTI6,B009KY4B7U,B00452283Q,B0038L41A8,B009OB3W2O,B004VCYMD4,B00D7URXIW,B000XHGYXW,B000M4Y8MU,B009NZQ4B2,B005FDW4KG,B00601HCGS,B00EC828DI,B003ZXSO2K,B003M6QUXK,B000M4WK66,B002BCKT2E,B00F2W3MK6,B004FS3SIO,B004GWUR7Y,B0041CRBZK,B00F350W0K,B0095R69Z4",
+                                    "id": "all-tv-editor-16"
+                                },
+                                {
+                                    "title": "90s",
+                                    "query": "ContentType=TVSeason&OrderBy=SalesRank&ExcludeContractId=UXCF1&HasImage=T&SuppressBlackedoutEST=T&Detailed=T&HideNum=T&AID=1&IncludeASINList=B000R91NRS,B007MJKO5S,B005IF0LPG,B0046RBKQQ,B001ACPEBC,B005WGB9HK,B007LGPSX0,B0081LMCJM,B000HCYN18,B007I7X366,B003TKSS8E,B0037L8AOC,B007KMM8PQ,B003M2L7O6,B003QF6RKS,B00AFUFBT0,B005HFLCSC,B001DDQRGY,B00ACAKTZE,B004ZWHPLQ,B004FVNQI8,B002DEI4NG,B004G5RYRW,B003LK41JM,B000QUK8PG,B005I9BOJO,B001ABODW4,B004GN8HI4,B007NUWN1Y,B000HVEU5S,B003O7VP8W,B000VEMM3S,B003V9IHK2,B00AWMGNNO,B00FJUCX7E,B00C5PBP8Y,B003Q5K3IK,B002AB1PZQ,B003CF12U2,B004GWUR7Y,B001BWQ0XM,B00DGMW372",
+                                    "id": "all-tv-editor-17"
+                                },
+                                {
+                                    "title": "OMG & LOL",
+                                    "query": "ContentType=TVSeason&OrderBy=SalesRank&ExcludeContractId=UXCF1&HasImage=T&SuppressBlackedoutEST=T&Detailed=T&HideNum=T&AID=1&IncludeASINList=B00D3ZPOJ6,B0095MO5E6,B005DJREGQ,B0081LMCJM,B00932B28A,B007IVN8QW,B009PXLIVS,B002DEI4NG,B009GEEC00,B00C5O0F72,B00CSJHY6O,B005IF0NK4,B004HTAGOK,B00BOKKCZ8,B009FUOEZS,B0095MNXIA,B00F88GO36,B009FUKQUK,B0098BRNLQ,B00EGWD50K,B00452283Q,B005XN2ZUC,B00FS6RG7Q,B003Q93YBO,B00FBMSMUW,B00D5P45WG,B009QVNOI4,B0040FTKNY,B0095R52CK,B0054TKAZW,B00B19FFOU,B00D6MRKVG,B00DXI313Y,B00AYT15HO,B00FWLT7QA,B00F49A3A4,B002NHIJTW,B00E4H2N8M,B00DCM5BZC,B00F350W0K,B009PI7C4U",
+                                    "id": "all-tv-editor-18"
+                                },
+                                {
+                                    "title": "Remember the 80's",
+                                    "query": "ContentType=TVSeason&HideNum=T&Detailed=T&AID=1&ASINlist=B000M4WK66,B005SH5CA8,B004G5RYRW,B00BFF1NNW,B000W4JMEO,B00AWMCZPY,B0053ATLUC,B0093SKX8O,B0088W7PFK,B001AF065I,B006VA4JRS,B002UJAFO0,B000MPQ8XG,B005787B0M,B00C30QVV2,B005HFB2M8,B0091CLCO6,B000ITHM1I,B000M4Y8MU,B000W4Q9TU,B000O06O42,B000WCT3WC,B000HL2J0G,B00170I7U2,B001JDUAT8,B00HALREOC,B001IA96WY,B0010HYINW,B006I0E6UQ,B000RL08AO,B004FVGX60,B0010R29CE,B000V72ECY",
+                                    "id": "all-tv-editor-20"
+                                },
+                                {
+                                    "title": "Superheroes",
+                                    "query": "ContentType=TVSeason&HideNum=T&Detailed=T&AID=1&ASINlist=B00EY7MFKS,B007PAQ6KG,B007NEZDP8,B007NEZCC2,B00727Z51S,B00727Z4GO,B0055MQUM0,B004GLTKHI,B003VLU154,B003VLD6H4,B002SC0E9U,B002JAXVRI,B002I742EI,B002GNNNP8,B001T58QWY,B001LM7M0C,B001LLGA7E,B001C9P62A,B001C9KWEW,B001BY12P6,B001BXQ97I,B000WFSLPY,B000OP2EQY,B000OH2XQS,B000NZZXEK,B0013SL6WE",
+                                    "id": "all-tv-editor-21"
+                                },
+                                {
+                                    "title": "Was Once a Movie",
+                                    "query": "ContentType=TVSeason&OrderBy=SalesRank&ASINlist=B0088WEZQC,B004W1GC46,B003WQNAFG,B001V6SEY6,B000RVNFJ0,B009K72RRS,B002WS8TZQ,B005XE001W,B00IC9X09O,B00BSG69FA,B001OAY0OC,B004OQMB5S,B00C5O7W6O,B00EHDFI3K,B00EY7M6ES",
+                                    "id": "all-tv-editor-22"
+                                },
+                                {
+                                    "title": "What We're Watching",
+                                    "query": "ContentType=TVSeason&OrderBy=SalesRank&ExcludeContractId=UXCF1&HasImage=T&SuppressBlackedoutEST=T&Detailed=T&HideNum=T&AID=1&IncludeASINList=B00GDPU7G8,B00HNXZ3AE,B00EY7Y8VC,B00H71PBQ8,B00F880BWG,B00H7NEXYC,B00HTYU2XK,B00AN0KGWE,B00EY7M6ES,B00FMO9QDG,B00GCG8SBO,B00GCEVU3E,B00GCG9KHK,B00F3WO0NS,B00F0XPJH6,B00FFV9VAO,B00ETRANIO,B00EE3FTNM",
+                                    "id": "all-tv-editor-23"
+                                },
+                                {
+                                    "title": "Staff Picks",
+                                    "query": "ContentType=TVSeason&OrderBy=SalesRank&ExcludeContractId=UXCF1&HasImage=T&SuppressBlackedoutEST=T&Detailed=T&HideNum=T&AID=1&IncludeASINList=B002MFV0JQ,B00F49E8O6,B00EY89ZHI,B00HY7Z2WI,B00DVFRN9M,B00GDPU7G8,B00HNXZ3AE,B00EY7Y8VC,B00H71PBQ8,B00F880BWG,B00H7NEXYC,B00HTYU2XK,B00AN0KGWE,B00EY7M6ES,B00FMO9QDG",
+                                    "id": "all-tv-editor-25"
+                                }
+                            ],
+                            "title": "Editor's Picks"
+                        },
+                        {
+                            "title": "For the Kids",
+                            "query": "OrderBy=SalesRank&Genre=Family&ContentType=TVSeason&ContentRating=G,PG,TV-Y,TV-Y7,TV-G&ExcludeContractId=UXCF1&HideNum=T&Detailed=T&AID=1&IncludeNonWeb=T&SuppressBlackedoutEST=T&Preorder=F&MoveToFrontList=B000I9S58M,B000HJ4WLC",
+                            "id": "all-tv-5"
+                        },
+                        {
+                            "title": "Genres",
+                            "id": "tv_shows_all_genres",
+                            "categories": [
+                                {
+                                    "title": "Action & Adventure",
+                                    "query": "Genre=Action,Adventure&ContentType=TVSeason&OrderBy=SalesRank&ExcludeContentRating=G,PG,TV-Y,TV-Y7,TV-Y7-FV,TV-G,TV-PG&ExcludeContractId=UXCF1&HasImage=T&SuppressBlackedoutEST=T&Detailed=T&HideNum=T&AID=1",
+                                    "id": "all-tv-genre-1"
+                                },
+                                {
+                                    "title": "Animation",
+                                    "query": "Genre=Animation&ContentType=TVSeason&OrderBy=SalesRank&ExcludeContentRating=G,TV-Y,TV-Y7,TV-G&ExcludeContractId=UXCF1&HasImage=T&SuppressBlackedoutEST=T&Detailed=T&HideNum=T&AID=1",
+                                    "id": "all-tv-genre-2"
+                                },
+                                {
+                                    "title": "Comedy",
+                                    "query": "Genre=Comedy&ContentType=TVSeason&OrderBy=SalesRank&ExcludeContentRating=G,TV-Y,TV-Y7,TV-G&ExcludeContractId=UXCF1&HasImage=T&SuppressBlackedoutEST=T&Detailed=T&HideNum=T&AID=1",
+                                    "id": "all-tv-genre-3"
+                                },
+                                {
+                                    "title": "Documentary",
+                                    "query": "Genre=Nonfiction&ContentType=TVSeason&OrderBy=SalesRank&ExcludeContentRating=G,TV-Y,TV-Y7,TV-Y7-FV,TV-G&ExcludeContractId=UXCF1,UXBB1&HasImage=T&SuppressBlackedoutEST=T&Detailed=T&HideNum=T&AID=1",
+                                    "id": "all-tv-genre-4"
+                                },
+                                {
+                                    "title": "Drama",
+                                    "query": "Genre=Drama&ContentType=TVSeason&OrderBy=SalesRank&ExcludeContentRating=G,TV-Y,TV-Y7,TV-Y7-FV,TV-G&ExcludeContractId=UXCF1&HasImage=T&SuppressBlackedoutEST=T&Detailed=T&HideNum=T&AID=1",
+                                    "id": "all-tv-genre-5"
+                                },
+                                {
+                                    "title": "Kids & Family",
+                                    "query": "ContentRating=G,PG,TV-Y,TV-Y7,TV-G&ExcludeContractId=UXCF1&OrderBy=SalesRank&Genre=Family&ContentType=TVSeason&AdditionList=B0019R3NB&HideNum=T&Detailed=T&AID=1",
+                                    "id": "all-tv-genre-6"
+                                },
+                                {
+                                    "title": "Mystery & Thrillers",
+                                    "query": "Genre=Mystery,Thriller&ContentType=TVSeason&OrderBy=SalesRank&ExcludeContentRating=G,TV-Y,TV-Y7,TV-Y7-FV,TV-G&ExcludeContractId=UXCF1&HasImage=T&SuppressBlackedoutEST=T&Detailed=T&HideNum=T&AID=1",
+                                    "id": "all-tv-genre-7"
+                                },
+                                {
+                                    "title": "Reality TV",
+                                    "query": "Genre=RealityTV&ContentType=TVSeason&OrderBy=SalesRank&ExcludeContractId=UXCF1&HasImage=T&SuppressBlackedoutEST=T&Detailed=T&HideNum=T&AID=1",
+                                    "id": "all-tv-genre-8"
+                                },
+                                {
+                                    "title": "Sci-Fi & Fantasy",
+                                    "query": "Genre=SciFi,Fantasy&ContentType=TVSeason&OrderBy=SalesRank&ExcludeContentRating=G,PG,TV-Y,TV-Y7,TV-Y7-FV,TV-G,TV-PG&ExcludeContractId=UXCF1&HasImage=T&SuppressBlackedoutEST=T&Detailed=T&HideNum=T&AID=1",
+                                    "id": "all-tv-genre-9"
+                                },
+                                {
+                                    "title": "TV Talk Shows",
+                                    "query": "OrderBy=SalesRank&Genre=TalkShow&ContentType=TVSeason&HideNum=T&Detailed=T&AID=1",
+                                    "id": "all-tv-genre-10"
+                                }
+                            ]
+                        },
+                        {
+                            "id": "tv_shows_all_deals",
+                            "categories": [
+                                {
+                                    "title": "Own TV Seasons for Under $10",
+                                    "query": "MinPrice=0.01&MaxPrice=9.99&OfferType=Purchase&ContentType=TVSeason&OrderBy=SalesRank&ExcludeContractId=UXCF1&HasImage=T&SuppressBlackedoutEST=T&Detailed=T&HideNum=T&AID=1",
+                                    "id": "all-tv-deal-1"
+                                },
+                                {
+                                    "title": "Own TV Seasons for Under $15",
+                                    "query": "MinPrice=8.00&MaxPrice=12.99&OfferType=Purchase&ContentType=TVSeason&OrderBy=SalesRank&ExcludeContractId=UXCF1&HasImage=T&SuppressBlackedoutEST=T&Detailed=T&HideNum=T&AID=1",
+                                    "id": "all-tv-deal-2"
+                                },
+                                {
+                                    "title": "Own TV Seasons for Under $20",
+                                    "query": "MinPrice=15.00&MaxPrice=19.99&OfferType=Purchase&ContentType=TVSeason&OrderBy=SalesRank&ExcludeContractId=UXCF1&HasImage=T&SuppressBlackedoutEST=T&Detailed=T&HideNum=T&AID=1",
+                                    "id": "all-tv-deal-3"
+                                }
+                            ],
+                            "title": "Deals"
+                        },
+                        {
+                            "id": "tv_shows_all_channels",
+                            "categories": [
+                                {
+                                    "title": "ABC",
+                                    "query": "OrderBy=SalesRank&ContentType=TVSeason&Studio=ABC,ABC%20Family&HideNum=T&Detailed=T&AID=1&SuppressBlackedoutEST=T",
+                                    "id": "all-tv-channel-1"
+                                },
+                                {
+                                    "title": "AMC",
+                                    "query": "OrderBy=SalesRank&ContentType=TVSeason&Studio=AMC&HideNum=T&Detailed=T&AID=1&SuppressBlackedoutEST=T",
+                                    "id": "all-tv-channel-2"
+                                },
+                                {
+                                    "title": "BBC",
+                                    "query": "OrderBy=SalesRank&ContentType=TVSeason&Studio=BBC,BBC%20America,BBC%20Earth&HideNum=T&Detailed=T&AID=1&SuppressBlackedoutEST=T",
+                                    "id": "all-tv-channel-3"
+                                },
+                                {
+                                    "title": "Bravo",
+                                    "query": "OrderBy=SalesRank&ContentType=TVSeason&Studio=Bravo&HideNum=T&Detailed=T&AID=1&SuppressBlackedoutEST=T",
+                                    "id": "all-tv-channel-4"
+                                },
+                                {
+                                    "title": "CBS",
+                                    "query": "OrderBy=SalesRank&ContentType=TVSeason&Studio=CBS&HideNum=T&Detailed=T&AID=1&SuppressBlackedoutEST=T",
+                                    "id": "all-tv-channel-5"
+                                },
+                                {
+                                    "title": "Comedy Central",
+                                    "query": "Studio=Comedy%20Central,COMEDY%20CENTRAL&ContentType=TVSeason&OrderBy=SalesRank&ExcludeContractId=UXCF1&HasImage=T&SuppressBlackedoutEST=T&Detailed=T&HideNum=T&AID=1",
+                                    "id": "all-tv-channel-6"
+                                },
+                                {
+                                    "title": "Discovery",
+                                    "query": "OrderBy=SalesRank&ContentType=TVSeason&Studio=Discovery%20Channel&HideNum=T&Detailed=T&AID=1&SuppressBlackedoutEST=T",
+                                    "id": "all-tv-channel-7"
+                                },
+                                {
+                                    "title": "Fox",
+                                    "query": "OrderBy=SalesRank&ContentType=TVSeason&Studio=Fox,FOX&HideNum=T&Detailed=T&AID=1&SuppressBlackedoutEST=T",
+                                    "id": "all-tv-channel-8"
+                                },
+                                {
+                                    "title": "FX",
+                                    "query": "OrderBy=SalesRank&ContentType=TVSeason&Studio=FX&HideNum=T&Detailed=T&AID=1&SuppressBlackedoutEST=T",
+                                    "id": "all-tv-channel-9"
+                                },
+                                {
+                                    "title": "HBO",
+                                    "query": "OrderBy=SalesRank&ContentType=TVSeason&Studio=HBO&HideNum=T&Detailed=T&AID=1&SuppressBlackedoutEST=T",
+                                    "id": "all-tv-channel-10"
+                                },
+                                {
+                                    "title": "MTV",
+                                    "query": "Studio=MTV,mtv&ContentType=TVSeason&OrderBy=SalesRank&ExcludeContractId=UXCF1&HasImage=T&SuppressBlackedoutEST=T&Detailed=T&HideNum=T&AID=1",
+                                    "id": "all-tv-channel-11"
+                                },
+                                {
+                                    "title": "NBC",
+                                    "query": "OrderBy=SalesRank&ContentType=TVSeason&Studio=NBC&HideNum=T&Detailed=T&AID=1&SuppressBlackedoutEST=T",
+                                    "id": "all-tv-channel-12"
+                                },
+                                {
+                                    "title": "Nickelodeon/Nick Jr.",
+                                    "query": "Studio=Nickelodeon,NICKELODEON,Nick%20Jr,NICK%20JR,TeenNick,TEENNICK&ContentType=TVSeason&OrderBy=SalesRank&ExcludeContractId=UXCF1&HasImage=T&SuppressBlackedoutEST=T&Detailed=T&HideNum=T&AID=1",
+                                    "id": "all-tv-channel-13"
+                                },
+                                {
+                                    "title": "PBS",
+                                    "query": "OrderBy=SalesRank&ContentType=TVSeason&Studio=PBS&HideNum=T&Detailed=T&AID=1&SuppressBlackedoutEST=T",
+                                    "id": "all-tv-channel-14"
+                                },
+                                {
+                                    "title": "Showtime",
+                                    "query": "OrderBy=SalesRank&ContentType=TVSeason&Studio=Showtime&HideNum=T&Detailed=T&AID=1&SuppressBlackedoutEST=T",
+                                    "id": "all-tv-channel-15"
+                                },
+                                {
+                                    "title": "SyFy",
+                                    "query": "OrderBy=SalesRank&ContentType=TVSeason&Studio=SciFi%20Channel,Syfy&HideNum=T&Detailed=T&AID=1&SuppressBlackedoutEST=T",
+                                    "id": "all-tv-channel-16"
+                                },
+                                {
+                                    "title": "Starz",
+                                    "query": "OrderBy=SalesRank&ContentType=TVSeason&Studio=Starz&HideNum=T&Detailed=T&AID=1&SuppressBlackedoutEST=T",
+                                    "id": "all-tv-channel-17"
+                                },
+                                {
+                                    "title": "TNT",
+                                    "query": "OrderBy=SalesRank&ContentType=TVSeason&Studio=TNT&HideNum=T&Detailed=T&AID=1&SuppressBlackedoutEST=T",
+                                    "id": "all-tv-channel-18"
+                                },
+                                {
+                                    "title": "Travel Channel",
+                                    "query": "OrderBy=SalesRank&ContentType=TVSeason&Studio=Travel%20Channel&HideNum=T&Detailed=T&AID=1&SuppressBlackedoutEST=T",
+                                    "id": "all-tv-channel-19"
+                                },
+                                {
+                                    "title": "USA Network",
+                                    "query": "OrderBy=SalesRank&ContentType=TVSeason&Studio=USA%20Networks&HideNum=T&Detailed=T&AID=1&SuppressBlackedoutEST=T",
+                                    "id": "all-tv-channel-20"
+                                }
+                            ],
+                            "title": "TV Channels"
+                        }
+                    ]
+                }
+            ],
+            "title": "TV Shows"
+        }
+    ]
+}

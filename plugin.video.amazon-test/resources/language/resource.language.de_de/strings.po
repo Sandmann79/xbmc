@@ -114,8 +114,8 @@ msgid "Switch Audiotrack, if not valid (experimental)"
 msgstr "Ungültige Tonspur autom. wechseln (experimentell)"
 
 msgctxt "#30022"
-msgid "Language"
-msgstr "Sprache"
+msgid "Keep me logged in"
+msgstr "Angemeldet bleiben"
 
 msgctxt "#30029"
 msgid "Movie View"

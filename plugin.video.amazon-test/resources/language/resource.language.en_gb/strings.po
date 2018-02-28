@@ -115,14 +115,10 @@ msgid "Switch Audiotrack, if not valid (experimental)"
 msgstr ""
 
 msgctxt "#30022"
-msgid "Language"
-msgstr ""
-
-msgctxt "#30023"
 msgid "Keep me logged in"
 msgstr ""
 
-#empty strings from id 30024 to 30028
+#empty strings from id 30023 to 30028
 
 msgctxt "#30029"
 msgid "Movie View"

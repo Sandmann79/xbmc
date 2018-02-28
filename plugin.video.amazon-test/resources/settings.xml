@@ -27,13 +27,11 @@
         <setting id="at_check" type="bool" label="30021" default="false" visible="eq(-23,3)" enable="eq(-2,false)"/>
     </category>
     <category label="30038">
-        <setting id="country" type="enum" label="30080" lvalues="30081|30082|30083|30084|30085" default="0"/>
-        <setting id="primevideo_area" type="enum" label="30090" lvalues="30091|30092|30093|30094" default="0" enable="eq(-1,4)" subsetting="true"/>
         <setting id="ssl_verif" type="bool" label="30037" default="false"/>
         <setting id="items_perpage" type="labelenum" values="20|30|40|60|80|100|140|180|220|250" label="30039" default="40"/>
         <setting label="30001" type="lsep"/>
         <setting id="multiuser" type="bool" label="30009" default="false"/>
-        <setting id="rememberme" type="bool" label="30023" default="true" visible="eq(-6,4)"/>
+        <setting id="rememberme" type="bool" label="30022" default="true"/>
         <setting type="action" label="30130" action="RunPlugin(plugin://plugin.video.amazon-test/?mode=LogIn)" visible="eq(-2,true)" option="close" />
         <setting type="action" label="30131" action="RunPlugin(plugin://plugin.video.amazon-test/?mode=removeUser)" visible="eq(-3,true)" option="close"/>
         <setting type="action" label="30008" action="RunPlugin(plugin://plugin.video.amazon-test/?mode=LogIn)" option="close" visible="eq(-4,false)"/>

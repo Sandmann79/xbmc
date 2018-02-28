@@ -95,49 +95,20 @@ tvdb = b64decode('MUQ2MkYyRjkwMDMwQzQ0NA==')
 DefaultFanart = os.path.join(PluginPath, 'fanart.jpg')
 NextIcon = os.path.join(PluginPath, 'resources', 'next.png')
 HomeIcon = os.path.join(PluginPath, 'resources', 'home.png')
-country = int(addon.getSetting('country'))
-pvArea = int(addon.getSetting('primevideo_area'))
 wl_order = ['DATE_ADDED_DESC', 'TITLE_DESC', 'TITLE_ASC'][int('0' + addon.getSetting("wl_order"))]
 verifySsl = addon.getSetting('ssl_verif') == 'false'
-UsePrimeVideo = False
 sessions = {}  # Keep-Alive sessions
-
-MarketID_AV = ['A1PA6795UKMFR9', 'A1F83G8C2ARO7P', 'ATVPDKIKX0DER', 'A1VC38T7YXB528']
-MarketID_PV = ['A3K6Y4MI8GDYMT', 'A2MFUE2XK8ZSSY', 'A15PK738MTQHSO', 'ART4WZ8MWBX2Y']  # ROE_EU, ROW_EU, ROW_FE, ROW_NA
-
-if 4 > country:
-    c_tld = ['de', 'co.uk', 'com', 'co.jp'][country]
-    BaseUrl = 'https://www.amazon.' + c_tld
-    ATVUrl = 'https://atv-%s.amazon.%s' % (['ps-eu', 'ps-eu', 'ps', 'ps-fe'][country], c_tld)
-    MarketID = MarketID_AV[country]
-    Language = ['de', 'en', 'en', 'jp'][country]
-    AgeRating = ['FSK ', '', '', '', ''][country]
-else:
-    UsePrimeVideo = True
-    BaseUrl = 'https://www.primevideo.com'
-    MarketID = MarketID_PV[pvArea]
-    # Endpoint = 'fls-%s.amazon.com' % (['eu', 'eu', 'fe', 'na'][pvArea])
-    ATVUrl = 'https://atv-ps%s.primevideo.com' % (['-eu', '-eu', '-fe', ''][pvArea])
-    ''' Temporarily Hardcoded '''
-    AgeRating = ''
-
-PrimeVideoCache = os.path.join(DataPath, 'PVCatalog{0}.pvcp'.format(MarketID))
-pvCatalog = {}
-
-menuFile = os.path.join(DataPath, 'menu-%s.db' % MarketID)
 is_addon = 'inputstream.adaptive'
 na = 'not available'
 watchlist = 'watchlist'
 library = 'video-library'
 DBVersion = 1.4
 PayCol = 'FFE95E01'
-Ages = [[('FSK 0', 'FSK 0'), ('FSK 6', 'FSK 6'), ('FSK 12', 'FSK 12'), ('FSK 16', 'FSK 16'), ('FSK 18', 'FSK 18')],
-        [('Universal', 'U'), ('Parental Guidance', 'PG'), ('12 and older', '12,12A'), ('15 and older', '15'),
-         ('18 and older', '18')],
-        [('General Audiences', 'G,TV-G,TV-Y'), ('Family', 'PG,NR,TV-Y7,TV-Y7-FV,TV-PG'),
-         ('Teen', 'PG-13,TV-14'), ('Mature', 'R,NC-17,TV-MA,Unrated,Not rated')],
-        [('全ての観客', 'g'), ('親の指導・助言', 'pg12'), ('R-15指定', 'r15+'), ('成人映画', 'r18+,nr')],
-        [('全ての観客', 'g'), ('親の指導・助言', 'pg12'), ('R-15指定', 'r15+'), ('成人映画', 'r18+,nr')]]
+AgesCfg = {'A1PA6795UKMFR9': ['FSK', ('FSK 0', 'FSK 0'), ('FSK 6', 'FSK 6'), ('FSK 12', 'FSK 12'), ('FSK 16', 'FSK 16'), ('FSK 18', 'FSK 18')],
+           'A1F83G8C2ARO7P': ['', ('Universal', 'U'), ('Parental Guidance', 'PG'), ('12 and older', '12,12A'), ('15 and older', '15'), ('18 and older', '18')],
+           'ATVPDKIKX0DER': ['', ('General Audiences', 'G,TV-G,TV-Y'), ('Family', 'PG,NR,TV-Y7,TV-Y7-FV,TV-PG'), ('Teen', 'PG-13,TV-14'),
+                              ('Mature', 'R,NC-17,TV-MA,Unrated,Not rated')],
+           'A1VC38T7YXB528': ['', ('全ての観客', 'g'), ('親の指導・助言', 'pg12'), ('R-15指定', 'r15+'), ('成人映画', 'r18+,nr')]}
 
 dateParserData = {
     'de_DE': {'deconstruct': r'^([0-9]+)\.\s+([^\s]+)\s+([0-9]+)', 'reassemble': '{2}-{1:0>2}-{0:0>2}', 'month': 1,
@@ -187,6 +158,7 @@ ms_tv = ms_tv if ms_tv else 'Amazon TV'
 
 warnings.simplefilter('error', requests.packages.urllib3.exceptions.SNIMissingWarning)
 warnings.simplefilter('error', requests.packages.urllib3.exceptions.InsecurePlatformWarning)
+
 
 def setView(content, updateListing=False):
     if content == 'movie':
@@ -381,6 +353,7 @@ def ContextMenu_MultiUser():
 def MainMenu():
     Log('Version: %s' % __version__)
     Log('Unicode filename support: %s' % os.path.supports_unicode_filenames)
+    Log('Locale: %s' % Language)
     if False is not UsePrimeVideo:
         if 0 == len(pvCatalog):
             ''' Build the root catalog '''
@@ -395,7 +368,7 @@ def MainMenu():
                   'RunPlugin(%s?mode=getListMenu&url=%s&export=1)' % (sys.argv[0], library))]
 
         if multiuser:
-            addDir(getString(30134).format(loadUser()['name']), 'switchUser', '', cm=ContextMenu_MultiUser())
+            addDir(getString(30134).format(loadUser('name')), 'switchUser', '', cm=ContextMenu_MultiUser())
         addDir('Watchlist', 'getListMenu', watchlist, cm=cm_wl)
         getRootNode()
         addDir(getString(30108), 'Search', '')
@@ -465,7 +438,7 @@ def PrimeVideo_Browse(path, forceSort=None):
 
     # Add multiuser menu if needed
     if (multiuser) and ('root' == path) and (1 < len(loadUsers())):
-        li = xbmcgui.ListItem(getString(30134).format(loadUser()['name']))
+        li = xbmcgui.ListItem(getString(30134).format(loadUser('name')))
         li.addContextMenuItems(ContextMenu_MultiUser())
         xbmcplugin.addDirectoryItem(pluginhandle, '{0}?mode=PrimeVideo_Browse&path=root-//-SwitchUser'.format(sys.argv[0]), li, isFolder=False)
     if 'root-//-SwitchUser' == path:
@@ -1118,7 +1091,7 @@ def cleanTitle(title):
 
 def Export(infoLabels, url):
     isEpisode = infoLabels['contentType'] != 'movie'
-    language = ['ger', 'eng', 'eng', 'jpn'][country]
+    language = Language.split('_')[0]
     ExportPath = MOVIE_PATH
     nfoType = 'movie'
     title = infoLabels['Title']
@@ -1284,10 +1257,8 @@ def getTVDBImages(title, tvdb_id=None):
     Log('searching fanart for %s at thetvdb.com' % title.upper())
     posterurl = fanarturl = None
     splitter = [' - ', ': ', ', ']
-    if country == 0 or country == 3:
-        langcodes = [Language, 'en']
-    else:
-        langcodes = ['en']
+    langcodes = [Language.split('_')[0]]
+    langcodes += ['en'] if 'en' not in langcodes else []
     TVDB_URL = 'http://www.thetvdb.com/banners/'
 
     while not tvdb_id and title:
@@ -2216,10 +2187,10 @@ def genID(renew=False):
 
 def MechanizeLogin():
     cj = requests.cookies.RequestsCookieJar()
-    user = loadUser()
+    cookie = loadUser('cookie')
 
-    if user['cookie']:
-        cj.update(pickle.loads(user['cookie']))
+    if cookie:
+        cj.update(pickle.loads(cookie))
         return cj
 
     Log('Login')
@@ -2227,13 +2198,14 @@ def MechanizeLogin():
 
 
 def LogIn(ask=True):
-    user = loadUser()
+    user = loadUser(empty=ask)
     email = user['email']
     password = decode(user['password'])
     savelogin = addon.getSetting('save_login') == 'true'
     useMFA = False
-    if ask and multiuser:
-        email = ''
+
+    if not user['baseurl']:
+        user = getTerritory(user)
 
     if ask:
         keyboard = xbmc.Keyboard(email, getString(30002))
@@ -2258,7 +2230,7 @@ def LogIn(ask=True):
         while caperr:
             Log('Connect to SignIn Page %s attempts left' % -caperr)
             br.addheaders = [('User-Agent', getConfig('UserAgent'))]
-            br.open(BaseUrl + ('/gp/aw/si.html' if not UsePrimeVideo else '/auth-redirect/'))
+            br.open(user['baseurl'] + ('/gp/aw/si.html' if not user['pv'] else '/auth-redirect/'))
             response = br.response().read()
             if mobileUA(response) or 'signIn' not in [i.name for i in br.forms()]:
                 getUA(True)
@@ -2275,7 +2247,7 @@ def LogIn(ask=True):
         br.select_form(name='signIn')
         br['email'] = email
         br['password'] = password
-        if 'true' == addon.getSetting('rememberme') and UsePrimeVideo:
+        if 'true' == addon.getSetting('rememberme') and user['pv']:
             br.find_control(name='rememberMe').items[0].selected = True
         br.addheaders = [('Accept', 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8'),
                          ('Accept-Encoding', 'gzip, deflate'),
@@ -2283,8 +2255,8 @@ def LogIn(ask=True):
                          ('Cache-Control', 'max-age=0'),
                          ('Connection', 'keep-alive'),
                          ('Content-Type', 'application/x-www-form-urlencoded'),
-                         ('Host', BaseUrl.split('//')[1]),
-                         ('Origin', BaseUrl),
+                         ('Host', user['baseurl'].split('//')[1]),
+                         ('Origin', user['baseurl']),
                          ('User-Agent', getConfig('UserAgent')),
                          ('Upgrade-Insecure-Requests', '1')]
         br.submit()
@@ -2303,14 +2275,11 @@ def LogIn(ask=True):
             xbmc.executebuiltin('Dialog.Close(busydialog)')
 
         if 'action=sign-out' in response:
-            regex = r'action=sign-out[^"]*"[^>]*>[^?]+\s+([^?]+?)\s*\?' if UsePrimeVideo else r'config.customerName[^"]*"([^"]*)'
+            regex = r'action=sign-out[^"]*"[^>]*>[^?]+\s+([^?]+?)\s*\?' if user['pv'] else r'config.customerName[^"]*"([^"]*)'
             try:
                 usr = re.search(regex, response).group(1)
             except AttributeError:
                 usr = getString(30209)
-
-            if not ask:
-                usr = user['name']
 
             if multiuser and ask:
                 usr = Dialog.input(getString(30135), usr).decode('utf-8')
@@ -2320,8 +2289,8 @@ def LogIn(ask=True):
                 addon.setSetting('save_login', 'false')
                 savelogin = False
 
-            user = loadUser(True)
             user['name'] = usr
+            user['email'] = user['password'] = user['cookie'] = ''
 
             if savelogin:
                 user['email'] = email
@@ -2341,14 +2310,14 @@ def LogIn(ask=True):
         elif 'message_error' in response:
             writeConfig('login_pass', '')
             msg = soup.find('div', attrs={'id': 'message_error'})
-            Log('Login Error: %s' % msg.p.renderContents().strip())
+            Log('Login Error: %s' % msg.p.renderContents(None).strip())
             Dialog.ok(getString(30200), getString(30201))
         elif 'message_warning' in response:
             msg = soup.find('div', attrs={'id': 'message_warning'})
-            Log('Login Warning: %s' % msg.p.renderContents().strip())
+            Log('Login Warning: %s' % msg.p.renderContents(None).strip())
         elif 'auth-error-message-box' in response:
             msg = soup.find('div', attrs={'class': 'a-alert-content'})
-            Log('Login MFA: %s' % msg.ul.li.span.renderContents().strip())
+            Log('Login MFA: %s' % msg.ul.li.span.renderContents(None).strip())
             Dialog.ok(getString(30200), getString(30214))
         else:
             Dialog.ok(getString(30200), getString(30213))
@@ -2363,16 +2332,23 @@ def loadUsers():
     return users
 
 
-def loadUser(empty=False):
+def loadUser(key='', empty=False):
+    def_keys = {'email': '', 'password': '', 'name': '', 'save': '', 'atvurl': '', 'baseurl': '', 'pv': False, 'mid': '', 'cookie': ''}
     cur_user = addon.getSetting('login_acc').decode('utf-8')
     users = loadUsers()
     user = None if empty else [i for i in users if cur_user == i['name']]
-    return user[0] if user else {'email': '', 'password': '', 'name': '', 'save': '', 'mid': '', 'cookie': ''}
+    if user:
+        user = user[0]
+        if key and key not in user.keys():
+            user = getTerritory(user)
+            addUser(user)
+        return user.get(key, user)
+    else:
+        return def_keys.get(key, def_keys)
 
 
 def addUser(user):
     user['save'] = addon.getSetting('save_login')
-    user['mid'] = MarketID
     users = loadUsers() if multiuser else []
     num = [n for n, i in enumerate(users) if user['name'] == i['name']]
     if num:
@@ -2384,26 +2360,21 @@ def addUser(user):
         xbmc.executebuiltin('Container.Refresh')
 
 
-def switchUser():
+def switchUser(sel=-1):
     users = loadUsers()
-    sel = Dialog.select(getString(30133), [i['name'] for i in users])
+    sel = Dialog.select(getString(30133), [i['name'] for i in users]) if sel < 0 else sel
     if sel > -1:
-        if loadUser()['name'] == users[sel]['name']:
+        if loadUser('name') == users[sel]['name']:
             return False
         user = users[sel]
         addon.setSetting('save_login', user['save'])
         addon.setSetting('login_acc', user['name'])
-        if user['mid'] in MarketID_AV:
-            addon.setSetting('country', str(MarketID_AV.index(user['mid'])))
-        else:
-            addon.setSetting('country', '4')
-            addon.setSetting('primevideo_area', str(MarketID_PV.index(user['mid'])))
         xbmc.executebuiltin('Container.Refresh')
     return -1 < sel
 
 
 def removeUser():
-    cur_user = loadUser()['name']
+    cur_user = loadUser('name')
     users = loadUsers()
     sel = Dialog.select(getString(30133), [i['name'] for i in users])
     if sel > -1:
@@ -2417,7 +2388,7 @@ def removeUser():
 
 
 def renameUser():
-    cur_user = loadUser()['name']
+    cur_user = loadUser('name')
     users = loadUsers()
     sel = Dialog.select(getString(30133), [i['name'] for i in users])
     if sel > -1:
@@ -2430,6 +2401,22 @@ def renameUser():
                 xbmc.executebuiltin('Container.Refresh')
             users[sel]['name'] = usr
             writeConfig('accounts.lst', json.dumps(users))
+
+
+def getTerritory(user):
+    Log('Retrieve territoral config')
+
+    data = getURL('https://na.api.amazonvideo.com/cdp/usage/v2/GetAppStartupConfig?deviceTypeID=A28RQHJKHM2A2W&deviceID=%s&firmware=1&version=1&format=json'
+                  % deviceID)
+    if 'customerConfig' in data.keys():
+        host = data['territoryConfig']['defaultVideoWebsite']
+        reg = data['customerConfig']['homeRegion'].lower()
+        reg = '' if 'na' in reg else '-' + reg
+        user['atvurl'] = host.replace('www.', '').replace('//', '//atv-ps%s.' % reg)
+        user['baseurl'] = data['territoryConfig']['primeSignupBaseUrl']
+        user['mid'] = data['territoryConfig']['avMarketplace']
+        user['pv'] = 'primevideo' in host
+    return user
 
 
 def MFACheck(br, email, soup):
@@ -2995,7 +2982,7 @@ class window(xbmcgui.WindowDialog):
 class AgeSettings(pyxbmct.AddonDialogWindow):
     def __init__(self, title=''):
         super(AgeSettings, self).__init__(title)
-        self.age_list = [age[0] for age in Ages[country]]
+        self.age_list = [age[0] for age in Ages]
         self.pin_req = PinReq
         self.pin = pyxbmct.Edit('', _alignment=pyxbmct.ALIGN_CENTER)
         self.btn_ages = pyxbmct.Button(self.age_list[self.pin_req])
@@ -3107,31 +3094,51 @@ class Captcha(pyxbmct.AddonDialogWindow):
         self.close()
 
 
+args = dict(urlparse.parse_qsl(urlparse.urlparse(sys.argv[2]).query))
+
+Log(args, xbmc.LOGDEBUG)
+mode = args.get('mode', None)
+
 if not getConfig('UserAgent'):
     getUA()
 
-AgePin = getConfig('age_pin')
-PinReq = int(getConfig('pin_req', '0'))
-RestrAges = ','.join(a[1] for a in Ages[country][PinReq:]) if AgePin else ''
-
 deviceID = genID()
+if loadUsers():
+    if not loadUser('mid'):
+        switchUser(0)
+    MarketID = loadUser('mid')
+    BaseUrl = loadUser('baseurl')
+    ATVUrl = loadUser('atvurl')
+    UsePrimeVideo = loadUser('pv')
 
-if not UsePrimeVideo:
-    dbFile = os.path.join(DataPath, 'art.db')
-    db = sqlite.connect(dbFile)
-    createDB()
-    menuDb = sqlite.connect(menuFile)
-    loadCategories()
-else:
-    if xbmcvfs.exists(PrimeVideoCache):
-        with open(PrimeVideoCache, 'r') as fp:
-            cached = pickle.load(fp)
-        if time.time() < cached['expiration']:
-            pvCatalog = cached
+    AgePin = getConfig('age_pin')
+    PinReq = int(getConfig('pin_req', '0'))
+    Ages = ['', ''] if MarketID not in AgesCfg.keys() else AgesCfg[MarketID]
+    AgeRating = Ages[0]
+    Ages = Ages[1:]
+    RestrAges = ','.join(a[1] for a in Ages[PinReq:]) if AgePin else ''
 
-args = dict(urlparse.parse_qsl(urlparse.urlparse(sys.argv[2]).query))
-Log(args, xbmc.LOGDEBUG)
-mode = args.get('mode', None)
+    PrimeVideoCache = os.path.join(DataPath, 'PVCatalog{0}.pvcp'.format(MarketID))
+    pvCatalog = {}
+
+    menuFile = os.path.join(DataPath, 'menu-%s.db' % MarketID)
+
+    if not UsePrimeVideo:
+        dbFile = os.path.join(DataPath, 'art.db')
+        db = sqlite.connect(dbFile)
+        createDB()
+        menuDb = sqlite.connect(menuFile)
+        loadCategories()
+    else:
+        if xbmcvfs.exists(PrimeVideoCache):
+            with open(PrimeVideoCache, 'r') as fp:
+                cached = pickle.load(fp)
+            if time.time() < cached['expiration']:
+                pvCatalog = cached
+elif mode != 'LogIn':
+    Dialog.notification(getString(30200), getString(30216))
+    xbmc.executebuiltin('Addon.OpenSettings(%s)' % addon.getAddonInfo('id'))
+    exit()
 
 if None is mode:
     MainMenu()

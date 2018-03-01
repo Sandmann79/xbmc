@@ -2551,7 +2551,10 @@ def scrapAsins(aurl, cj):
     WriteLog(content, 'watchlist')
     if mobileUA(content):
         getUA(True)
-    asins += re.compile('data-asinlist="(.+?)"', re.DOTALL).findall(content)
+
+    for asin in re.compile('(?:data-asin|data-asinlist)="(.+?)"', re.DOTALL).findall(content):
+        if asin not in asins:
+            asins.append(asin)
     return ','.join(asins)
 
 

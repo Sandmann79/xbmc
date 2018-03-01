@@ -37,17 +37,6 @@ import xbmcgui
 import xbmcplugin
 import xbmcvfs
 
-# Save the language code for HTTP requests and set the locale for l10n
-Language = locale.getdefaultlocale()
-if isinstance(Language, tuple):
-    Language = Language[0]
-if None is Language:
-    ''' By Kodi standards, en_GB is the default lang '''
-    Language = 'en_GB'
-    userAcceptLanguages = 'en-gb, en;q=0.5'
-else:
-    userAcceptLanguages = '{0}, en-gb;q=0.2, en;q=0.1'.format(re.sub('_', '-', Language.lower()))
-
 addon = xbmcaddon.Addon()
 Dialog = xbmcgui.Dialog()
 pDialog = xbmcgui.DialogProgress()
@@ -130,6 +119,11 @@ dateParserData = {
               'months': {'janeiro': 1, 'fevereiro': 2, 'março': 3, 'abril': 4, 'maio': 5, 'junho': 6, 'julho': 7, 'agosto': 8, 'setembro': 9, 'outubro': 10,
                          'novembro': 11, 'dezembro': 12}},
 }
+
+# Save the language code for HTTP requests and set the locale for l10n
+userAcceptLanguages = 'en-gb, en;q=0.5'
+if locale.getdefaultlocale():
+    userAcceptLanguages = '%s, %s' % (locale.getdefaultlocale()[0].lower().replace('_', '-'), userAcceptLanguages)
 
 # ids: A28RQHJKHM2A2W - ps3 / AFOQV1TK6EU6O - ps4 / A1IJNVP3L4AY8B - samsung / A2E0SNTXJVT7WK - firetv1 /
 #      ADVBD696BHNV5 - montoya / A3VN4E5F7BBC7S - roku / A1MPSLFC7L5AFK - kindle / A2M4YX06LWP8WI - firetv2 /
@@ -215,7 +209,7 @@ def getURL(url, useCookie=False, silent=False, headers=None, rjson=True, attempt
     if 'User-Agent' not in headers:
         headers['User-Agent'] = getConfig('UserAgent')
     if 'Host' not in headers:
-        headers['Host'] = host if None is not host else BaseUrl.split('//')[1]
+        headers['Host'] = host
     if 'Accept-Language' not in headers:
         headers['Accept-Language'] = userAcceptLanguages
 
@@ -353,7 +347,7 @@ def ContextMenu_MultiUser():
 def MainMenu():
     Log('Version: %s' % __version__)
     Log('Unicode filename support: %s' % os.path.supports_unicode_filenames)
-    Log('Locale: %s' % Language)
+    Log('Locale: %s / Language: %s' % (userAcceptLanguages.split(',')[0], Language))
     if False is not UsePrimeVideo:
         if 0 == len(pvCatalog):
             ''' Build the root catalog '''
@@ -1091,7 +1085,7 @@ def cleanTitle(title):
 
 def Export(infoLabels, url):
     isEpisode = infoLabels['contentType'] != 'movie'
-    language = Language.split('_')[0]
+    language = xbmc.convertLanguage(Language, xbmc.ISO_639_2)
     ExportPath = MOVIE_PATH
     nfoType = 'movie'
     title = infoLabels['Title']
@@ -2865,11 +2859,11 @@ def jsonRPC(method, props='', param=None):
         rpc['params']['properties'] = props.split(',')
     if param:
         rpc['params'].update(param)
-    if 'playerid' in param.keys():
-        res_pid = xbmc.executeJSONRPC('{"jsonrpc":"2.0","method":"Player.GetActivePlayers","id": 1}')
-        pid = [i['playerid'] for i in json.loads(res_pid)['result'] if i['type'] == 'video']
-        pid = pid[0] if pid else 0
-        rpc['params']['playerid'] = pid
+        if 'playerid' in param.keys():
+            res_pid = xbmc.executeJSONRPC('{"jsonrpc":"2.0","method":"Player.GetActivePlayers","id": 1}')
+            pid = [i['playerid'] for i in json.loads(res_pid)['result'] if i['type'] == 'video']
+            pid = pid[0] if pid else 0
+            rpc['params']['playerid'] = pid
 
     res = json.loads(xbmc.executeJSONRPC(json.dumps(rpc)))
     if 'error' in res.keys():
@@ -3117,6 +3111,10 @@ if loadUsers():
     AgeRating = Ages[0]
     Ages = Ages[1:]
     RestrAges = ','.join(a[1] for a in Ages[PinReq:]) if AgePin else ''
+
+    Language = jsonRPC('Settings.GetSettingValue', param={'setting': 'locale.audiolanguage'})
+    Language = xbmc.convertLanguage(Language['value'], xbmc.ISO_639_1)
+    Language = Language if Language else xbmc.getLanguage(xbmc.ISO_639_1, False)
 
     PrimeVideoCache = os.path.join(DataPath, 'PVCatalog{0}.pvcp'.format(MarketID))
     pvCatalog = {}

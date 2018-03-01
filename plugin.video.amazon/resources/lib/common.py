@@ -218,7 +218,7 @@ def getURL(url, useCookie=False, silent=False, headers=None, rjson=True, attempt
     if 'User-Agent' not in headers:
         headers['User-Agent'] = getConfig('UserAgent')
     if 'Host' not in headers:
-        headers['Host'] = host if None is not host else BaseUrl.split('//')[1]
+        headers['Host'] = host
     if 'Accept-Language' not in headers:
         headers['Accept-Language'] = 'de-de, en-gb;q=0.2, en;q=0.1'
 
@@ -523,14 +523,14 @@ def LogIn(ask=True):
         elif 'message_error' in response:
             writeConfig('login_pass', '')
             msg = soup.find('div', attrs={'id': 'message_error'})
-            Log('Login Error: %s' % msg.p.renderContents().strip())
+            Log('Login Error: %s' % msg.p.renderContents(None).strip())
             Dialog.ok(getString(30200), getString(30201))
         elif 'message_warning' in response:
             msg = soup.find('div', attrs={'id': 'message_warning'})
-            Log('Login Warning: %s' % msg.p.renderContents().strip())
+            Log('Login Warning: %s' % msg.p.renderContents(None).strip())
         elif 'auth-error-message-box' in response:
             msg = soup.find('div', attrs={'class': 'a-alert-content'})
-            Log('Login MFA: %s' % msg.ul.li.span.renderContents().strip())
+            Log('Login MFA: %s' % msg.ul.li.span.renderContents(None).strip())
             Dialog.ok(getString(30200), getString(30214))
         else:
             Dialog.ok(getString(30200), getString(30213))
@@ -770,15 +770,17 @@ def GET_ASINS(content):
 
 
 def SCRAP_ASINS(aurl, cj=True):
-    wl_order = ['DATE_ADDED_DESC', 'TITLE_DESC', 'TITLE_ASC'][int('0'+addon.getSetting("wl_order"))]
     asins = []
+    wl_order = ['DATE_ADDED_DESC', 'TITLE_DESC', 'TITLE_ASC'][int('0'+addon.getSetting("wl_order"))]
     url = BaseUrl + aurl + '?ie=UTF8&sort=' + wl_order
     content = getURL(url, useCookie=cj, rjson=False)
     WriteLog(content, 'watchlist')
     if content:
         if mobileUA(content):
             getUA(True)
-        asins += re.compile('data-asinlist="(.+?)"', re.DOTALL).findall(content)
+        for asin in re.compile('(?:data-asin|data-asinlist)="(.+?)"', re.DOTALL).findall(content):
+            if asin not in asins:
+                asins.append(asin)
     return asins
 
 

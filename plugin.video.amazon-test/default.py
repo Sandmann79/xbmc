@@ -121,9 +121,9 @@ dateParserData = {
 }
 
 # Save the language code for HTTP requests and set the locale for l10n
-userAcceptLanguages = 'en-gb, en;q=0.5'
-if locale.getdefaultlocale():
-    userAcceptLanguages = '%s, %s' % (locale.getdefaultlocale()[0].lower().replace('_', '-'), userAcceptLanguages)
+loc = locale.getdefaultlocale()[0]
+userAcceptLanguages = 'en-gb%s, en;q=0.5'
+userAcceptLanguages = '%s, %s' % (loc.lower().replace('_', '-'), userAcceptLanguages % ';q=0.75') if loc else userAcceptLanguages % ''
 
 # ids: A28RQHJKHM2A2W - ps3 / AFOQV1TK6EU6O - ps4 / A1IJNVP3L4AY8B - samsung / A2E0SNTXJVT7WK - firetv1 /
 #      ADVBD696BHNV5 - montoya / A3VN4E5F7BBC7S - roku / A1MPSLFC7L5AFK - kindle / A2M4YX06LWP8WI - firetv2 /

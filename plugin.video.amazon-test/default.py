@@ -121,9 +121,9 @@ dateParserData = {
 }
 
 # Save the language code for HTTP requests and set the locale for l10n
-userAcceptLanguages = 'en-gb, en;q=0.5'
-if locale.getdefaultlocale():
-    userAcceptLanguages = '%s, %s' % (locale.getdefaultlocale()[0].lower().replace('_', '-'), userAcceptLanguages)
+loc = locale.getdefaultlocale()[0]
+userAcceptLanguages = 'en-gb%s, en;q=0.5'
+userAcceptLanguages = '%s, %s' % (loc.lower().replace('_', '-'), userAcceptLanguages % ';q=0.75') if loc else userAcceptLanguages % ''
 
 # ids: A28RQHJKHM2A2W - ps3 / AFOQV1TK6EU6O - ps4 / A1IJNVP3L4AY8B - samsung / A2E0SNTXJVT7WK - firetv1 /
 #      ADVBD696BHNV5 - montoya / A3VN4E5F7BBC7S - roku / A1MPSLFC7L5AFK - kindle / A2M4YX06LWP8WI - firetv2 /
@@ -1724,13 +1724,13 @@ def IStreamPlayback(asin, name, trailer, isAdult, extern):
     Log(mpd, xbmc.LOGDEBUG)
 
     if (not extern) or UsePrimeVideo:
-        mpaa_check = xbmc.getInfoLabel('ListItem.MPAA') in mpaa_str or isAdult
-        title = xbmc.getInfoLabel('ListItem.Label')
-        thumb = xbmc.getInfoLabel('ListItem.Art(season.poster)')
+        mpaa_check = getListItem('MPAA') in mpaa_str or isAdult
+        title = getListItem('Label')
+        thumb = getListItem('Art(season.poster)')
         if not thumb:
-            thumb = xbmc.getInfoLabel('ListItem.Art(tvshow.poster)')
+            thumb = getListItem('Art(tvshow.poster)')
             if not thumb:
-                thumb = xbmc.getInfoLabel('ListItem.Art(thumb)')
+                thumb = getListItem('Art(thumb)')
     else:
         content = getATVData('GetASINDetails', 'ASINList=' + asin)['titles'][0]
         ct, Info = getInfos(content, False)
@@ -1740,7 +1740,7 @@ def IStreamPlayback(asin, name, trailer, isAdult, extern):
 
     if trailer == 1:
         title += ' (Trailer)'
-        Info = {'Plot': xbmc.getInfoLabel('ListItem.Plot')}
+        Info = {'Plot': getListItem('Plot')}
     if not title:
         title = name
 
@@ -1846,9 +1846,8 @@ def PlayerInfo(msg, sleeptm=0.2):
     del player
 
 
-def AddonEnabled(addon_id):
-    res = jsonRPC('Addons.GetAddonDetails', 'enabled', {'addonid': addon_id})
-    return res['addon'].get('enabled', False) if 'addon' in res.keys() else False
+def getListItem(li):
+    return xbmc.getInfoLabel('ListItem.%s' % li).decode('utf-8')
 
 
 def playDummyVid():

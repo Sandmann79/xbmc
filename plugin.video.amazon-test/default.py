@@ -1724,13 +1724,13 @@ def IStreamPlayback(asin, name, trailer, isAdult, extern):
     Log(mpd, xbmc.LOGDEBUG)
 
     if (not extern) or UsePrimeVideo:
-        mpaa_check = xbmc.getInfoLabel('ListItem.MPAA') in mpaa_str or isAdult
-        title = xbmc.getInfoLabel('ListItem.Label')
-        thumb = xbmc.getInfoLabel('ListItem.Art(season.poster)')
+        mpaa_check = getListItem('MPAA') in mpaa_str or isAdult
+        title = getListItem('Label')
+        thumb = getListItem('Art(season.poster)')
         if not thumb:
-            thumb = xbmc.getInfoLabel('ListItem.Art(tvshow.poster)')
+            thumb = getListItem('Art(tvshow.poster)')
             if not thumb:
-                thumb = xbmc.getInfoLabel('ListItem.Art(thumb)')
+                thumb = getListItem('Art(thumb)')
     else:
         content = getATVData('GetASINDetails', 'ASINList=' + asin)['titles'][0]
         ct, Info = getInfos(content, False)
@@ -1740,7 +1740,7 @@ def IStreamPlayback(asin, name, trailer, isAdult, extern):
 
     if trailer == 1:
         title += ' (Trailer)'
-        Info = {'Plot': xbmc.getInfoLabel('ListItem.Plot')}
+        Info = {'Plot': getListItem('Plot')}
     if not title:
         title = name
 
@@ -1846,9 +1846,8 @@ def PlayerInfo(msg, sleeptm=0.2):
     del player
 
 
-def AddonEnabled(addon_id):
-    res = jsonRPC('Addons.GetAddonDetails', 'enabled', {'addonid': addon_id})
-    return res['addon'].get('enabled', False) if 'addon' in res.keys() else False
+def getListItem(li):
+    return xbmc.getInfoLabel('ListItem.%s' % li).decode('utf-8')
 
 
 def playDummyVid():

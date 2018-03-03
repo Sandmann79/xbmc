@@ -387,10 +387,12 @@ def PrimeVideo_BuildRoot():
     pvCatalog['root'] = OrderedDict()
     home = getURL(BaseUrl, silent=True, useCookie=True, rjson=False)
     if None is home:
+        Dialog.notification('Connection error', 'Unable to fetch the primevideo.com homepage', xbmcgui.NOTIFICATION_ERROR)
         Log('Unable to fetch the primevideo.com homepage', xbmc.LOGERROR)
         return False
     home = re.search('<div id="av-nav-main-menu".*?<ul role="navigation"[^>]*>\s*(.*?)\s*</ul>', home)
     if None is home:
+        Dialog.notification('PrimeVideo error', 'Unable to find the main primevideo.com navigation section', xbmcgui.NOTIFICATION_ERROR)
         Log('Unable to find the main primevideo.com navigation section', xbmc.LOGERROR)
         return False
     for item in re.findall('<li[^>]*>\s*(.*?)\s*</li>', home.group(1)):
@@ -399,6 +401,7 @@ def PrimeVideo_BuildRoot():
             continue
         pvCatalog['root'][item.group(2)] = {'title': item.group(2), 'lazyLoadURL': BaseUrl + item.group(1) + '?_encoding=UTF8&format=json'}
     if 0 == len(pvCatalog['root']):
+        Dialog.notification('PrimeVideo error', 'Unable to build the root catalog from primevideo.com', xbmcgui.NOTIFICATION_ERROR)
         Log('Unable to build the root catalog from primevideo.com', xbmc.LOGERROR)
         return False
     ''' Add functionalities to the root catalog '''
@@ -441,30 +444,54 @@ def PrimeVideo_Browse(path, forceSort=None):
         return
 
     node = pvCatalog
+    nodeName = None
     for n in path.split('-//-'):
+        nodeName = n
         node = node[n]
-    if 'lazyLoadURL' in node:
-        PrimeVideo_LazyLoad(node)
 
-    # Start the playback if on a video leaf
-    if ('metadata' in node) and ('video' in node['metadata']):
-        """ Play the video """
-        PlayVideo(node['metadata']['video'], node['metadata']['asin'], '', 0)
+    if (nodeName in pvVideoData) and ('metadata' in pvVideoData[nodeName]) and ('video' in pvVideoData[nodeName]['metadata']):
+        """ Start the playback if on a video leaf """
+        PlayVideo(pvVideoData[nodeName]['metadata']['video'], pvVideoData[nodeName]['metadata']['asin'], '', 0)
+        return
+
+    if (None is not node) and ('lazyLoadURL' in node):
+        PrimeVideo_LazyLoad(node, nodeName)
+
+    if None is node:
+        Dialog.notification('General error', 'Something went terribly wrong…', xbmcgui.NOTIFICATION_ERROR)
         return
 
     folderType = 0 if 'root' == path else 1
     for key in node:
-        if key in ['metadata', 'ref', 'title', 'verb']:
+        if key in ['metadata', 'ref', 'title', 'verb', 'children']:
             continue
         url = '{0}?mode='.format(sys.argv[0])
-        if 'verb' not in node[key]:
+        entry = node[key] if key not in pvVideoData else pvVideoData[key]
+        if 'verb' not in entry:
             url += 'PrimeVideo_Browse&path={0}-//-{1}'.format(urllib.quote_plus(path.encode('utf-8')), urllib.quote_plus(key.encode('utf-8')))
+            # Squash season number folder when only one season is available
+            if ('metadata' not in entry) and ('children' in entry) and (1 == len(entry['children'])):
+                url += '-//-{0}'.format(urllib.quote_plus(entry['children'][0].encode('utf-8')))
         else:
-            url += node[key]['verb']
-        item = xbmcgui.ListItem(node[key]['title'])
+            url += entry['verb']
+        title = entry['title'] if 'title' in entry else nodeName
+        item = xbmcgui.ListItem(title)
         folder = True
-        if 'metadata' in node[key]:
-            m = node[key]['metadata']
+        # In case of series find the oldest series and apply its art, also update metadata in case of squashed series
+        if ('metadata' not in entry) and ('children' in entry) and (0 < len(entry['children'])):
+            if 1 == len(entry['children']):
+                entry['metadata'] = { 'artmeta': pvVideoData[entry['children'][0]]['metadata']['artmeta'], 'videometa': pvVideoData[entry['children'][0]]['metadata']['videometa'] }
+            else:
+                sn = 90001
+                snid = None
+                for child in entry['children']:
+                    if ('season' in pvVideoData[child]['metadata']['videometa']) and (sn > pvVideoData[child]['metadata']['videometa']['season']):
+                        sn = pvVideoData[child]['metadata']['videometa']['season']
+                        snid = child
+                if None is not snid:
+                    entry['metadata'] = { 'artmeta': pvVideoData[snid]['metadata']['artmeta'], 'videometa': { 'mediatype': 'tvshow' } }
+        if 'metadata' in entry:
+            m = entry['metadata']
             if 'artmeta' in m: item.setArt(m['artmeta'])
             if 'videometa' in m:
                 # https://codedocs.xyz/xbmc/xbmc/group__python__xbmcgui__listitem.html#ga0b71166869bda87ad744942888fb5f14
@@ -481,7 +508,7 @@ def PrimeVideo_Browse(path, forceSort=None):
             if 'video' in m:
                 folder = False
                 item.setProperty('IsPlayable', 'true')
-                item.setInfo('video', {'title': node[key]['title']})
+                item.setInfo('video', {'title': title})
                 if 'runtime' in m:
                     item.setInfo('video', {'duration': m['runtime']})
         xbmcplugin.addDirectoryItem(pluginhandle, url, item, isFolder=folder)
@@ -503,7 +530,7 @@ def PrimeVideo_Browse(path, forceSort=None):
         setView(['movie', 'episode', 'season', 'series'][folderType - 2])
 
 
-def PrimeVideo_LazyLoad(obj):
+def PrimeVideo_LazyLoad(obj, objName):
     def Unescape(text):
         """ Unescape various html/xml entities, courtesy of Fredrik Lundh """
 
@@ -588,13 +615,20 @@ def PrimeVideo_LazyLoad(obj):
         if cj:
             amzLang = cj.get('lc-main-av', domain='.primevideo.com', path='/')
 
+    bUpdatedVideoData = False  # Whether or not the pvData has been updated
+
     while 0 < len(requestURLs):
+        # We linearize and avoid recursion through requestURLs differentiation
+        # - String: request url, the obj parameter is the root object
+        # - Tuple(URL, object, [urn]): request url, object reference and its urn
         if not isinstance(requestURLs[0], tuple):
             requestURL = requestURLs[0]
             o = obj
+            refUrn = objName
         else:
             requestURL = requestURLs[0][0]
             o = requestURLs[0][1]
+            refUrn = requestURLs[0][2]
         del requestURLs[0]
         couldNotParse = False
         try:
@@ -605,8 +639,8 @@ def PrimeVideo_LazyLoad(obj):
         except:
             couldNotParse = True
         if couldNotParse or (0 == len(cnt)):
-            Log('Unable to fetch the url: {0}'.format(requestURL), xbmc.LOGERROR)
             Dialog.notification(getString(30251), requestURL, xbmcgui.NOTIFICATION_ERROR)
+            Log('Unable to fetch the url: {0}'.format(requestURL), xbmc.LOGERROR)
             break
 
         for t in [('\\\\n', '\n'), ('\\n', '\n'), ('\\\\"', '"'), (r'^\s+', '')]:
@@ -620,7 +654,6 @@ def PrimeVideo_LazyLoad(obj):
                 bgimg = re.search(r'<div class="av-hero-background-size av-bgimg av-bgimg-' + imageSizes + r'">.*?url\(([^)]+)\)', cnt, flags=re.DOTALL)
                 if None is not bgimg:
                     bgimg = MaxSize(bgimg.group(2))
-                    o['metadata']['artmeta']['fanart'] = bgimg
 
                 # Extract the global data
                 rx = [
@@ -650,30 +683,33 @@ def PrimeVideo_LazyLoad(obj):
                 results = re.search(r'<ol\s+[^>]*class="[^"]*av-episode-list[^"]*"[^>]*>\s*(.*?)\s*</ol>', cnt, flags=re.DOTALL)
                 if None is results:
                     ''' Standalone movie '''
-                    meta = o['metadata']
-                    if None is not bgimg:
-                        meta['artmeta']['fanart'] = bgimg
-                    NotifyUser(getString(30253).format(o['title']))
-                    meta['asin'] = re.search(r'"asin":"([^"]*)"', cnt, flags=re.DOTALL).group(1)
-                    meta['video'] = ExtractURN(requestURL)
+                    if 'video' not in pvVideoData[refUrn]['metadata']:
+                        bUpdatedVideoData = True
 
-                    # Insert movie information
-                    if None is not gres[0]: meta['videometa']['year'] = gres[0]
-                    if None is not gres[1]: meta['videometa']['rating'] = int(gres[1][0]) + (int(gres[1][1]) / 10.0)
-                    if None is not gres[2]: meta['videometa']['mpaa'] = gres[2]
-                    if None is not gres[3]: meta['videometa']['cast'] = gres[3]
-                    if None is not gres[4]: meta['videometa']['genre'] = gres[4]
-                    if None is not gres[5]: meta['videometa']['director'] = gres[5]
-                    if None is not gres[6]: meta['videometa']['plot'] = gres[6]
+                        meta = pvVideoData[refUrn]['metadata']
+                        if None is not bgimg:
+                            meta['artmeta']['fanart'] = bgimg
+                        NotifyUser(getString(30253).format(pvVideoData[refUrn]['title']))
+                        meta['asin'] = re.search(r'"asin":"([^"]*)"', cnt, flags=re.DOTALL).group(1)
+                        meta['video'] = ExtractURN(requestURL)
 
-                    # Extract the runtime
-                    success, gpr = getUrldata('catalog/GetPlaybackResources', meta['asin'], useCookie=True, extra=True,
-                                              opt='&titleDecorationScheme=primary-content', dRes='CatalogMetadata')
-                    if not success:
-                        gpr = None
-                    else:
-                        if 'runtimeSeconds' in gpr['catalogMetadata']['catalog']:
-                            meta['runtime'] = gpr['catalogMetadata']['catalog']['runtimeSeconds']
+                        # Insert movie information
+                        if None is not gres[0]: meta['videometa']['year'] = gres[0]
+                        if None is not gres[1]: meta['videometa']['rating'] = int(gres[1][0]) + (int(gres[1][1]) / 10.0)
+                        if None is not gres[2]: meta['videometa']['mpaa'] = gres[2]
+                        if None is not gres[3]: meta['videometa']['cast'] = gres[3]
+                        if None is not gres[4]: meta['videometa']['genre'] = gres[4]
+                        if None is not gres[5]: meta['videometa']['director'] = gres[5]
+                        if None is not gres[6]: meta['videometa']['plot'] = gres[6]
+
+                        # Extract the runtime
+                        success, gpr = getUrldata('catalog/GetPlaybackResources', meta['asin'], useCookie=True, extra=True,
+                                                opt='&titleDecorationScheme=primary-content', dRes='CatalogMetadata')
+                        if not success:
+                            gpr = None
+                        else:
+                            if 'runtimeSeconds' in gpr['catalogMetadata']['catalog']:
+                                meta['runtime'] = gpr['catalogMetadata']['catalog']['runtimeSeconds']
                 else:
                     ''' Episode list '''
                     for entry in re.findall(r'<li[^>]*>\s*(.*?)\s*</li>', results.group(1), flags=re.DOTALL):
@@ -706,64 +742,77 @@ def PrimeVideo_LazyLoad(obj):
                         if None is not re.match(r'/[^/]', meta['videoURL']):
                             meta['videoURL'] = BaseUrl + meta['videoURL']
                         meta['video'] = ExtractURN(meta['videoURL'])
+                        eid = meta['video']
+                        #if None is not res[7]:
+                        #    eid = res[7]
 
-                        # Extract the runtime
-                        success, gpr = getUrldata('catalog/GetPlaybackResources', res[7], useCookie=True, extra=True,
-                                                  opt='&titleDecorationScheme=primary-content', dRes='CatalogMetadata')
-                        if not success:
-                            gpr = None
-                        else:
-                            if 'runtimeSeconds' in gpr['catalogMetadata']['catalog']:
-                                meta['runtime'] = gpr['catalogMetadata']['catalog']['runtimeSeconds']
-
-                        # Insert series information
-                        if None is not gres[0]: meta['videometa']['year'] = gres[0]
-                        if None is not gres[1]: meta['videometa']['rating'] = int(gres[1][0]) + (int(gres[1][1]) / 10.0)
-                        if None is not gres[2]: meta['videometa']['mpaa'] = gres[2]
-                        if None is not gres[3]:
-                            meta['videometa']['cast'] = gres[3]
-                            o['metadata']['videometa']['cast'] = gres[3]
-                        if None is not gres[4]:
-                            meta['videometa']['genre'] = gres[4]
-                            o['metadata']['videometa']['genre'] = gres[4]
-                        if None is not gres[5]:
-                            meta['videometa']['director'] = gres[5]
-                            o['metadata']['videometa']['director'] = gres[5]
-
-                        # Insert episode specific information
-                        if None is not res[3]: meta['videometa']['premiered'] = DelocalizeDate(amzLang, res[3])
-                        if None is not res[4]: meta['videometa']['mpaa'] = res[4]
-                        if None is not res[5]: meta['videometa']['plot'] = res[5]
-                        if None is not res[6]:
-                            if 'season' in o['metadata']['videometa']:
-                                meta['videometa']['season'] = o['metadata']['videometa']['season']
+                        if (eid not in pvVideoData) or ('videometa' not in pvVideoData[eid]) or (0 == len(pvVideoData[eid]['videometa'])):
+                            # Extract the runtime
+                            success, gpr = getUrldata('catalog/GetPlaybackResources', res[7], useCookie=True, extra=True,
+                                                    opt='&titleDecorationScheme=primary-content', dRes='CatalogMetadata')
+                            if not success:
+                                gpr = None
                             else:
-                                ''' We're coming from a widow carousel '''
-                                o['metadata']['videometa']['mediatype'] = 'tvshow'
-                                # Try with page season selector
-                                ssn = re.search(r'<a class="av-droplist--selected"[^>]*>[^0-9]*([0-9]+)[^0-9]*</a>', cnt)
-                                if None is ssn:
-                                    # Try with single season
-                                    ssn = re.search(r'<span class="av-season-single av-badge-text">[^0-9]*([0-9]+)[^0-9]*</span>', cnt)
-                                if None is not ssn:
-                                    ssn = ssn.group(1)
-                                    meta['videometa']['season'] = ssn
-                                    o['metadata']['videometa']['season'] = ssn
-                            meta['videometa']['episode'] = int(res[6])
+                                if 'runtimeSeconds' in gpr['catalogMetadata']['catalog']:
+                                    meta['runtime'] = gpr['catalogMetadata']['catalog']['runtimeSeconds']
 
-                        # Episode title cleanup
-                        title = res[2]
-                        if None is not re.match(r'[0-9]+[.]\s*', title):
-                            ''' Strip the episode number '''
-                            title = re.sub(r'^[0-9]+.\s*', '', title)
-                        else:
-                            ''' Probably an extra trailer or something, remove episode information '''
-                            del meta['videometa']['season']
-                            del meta['videometa']['episode']
-                        NotifyUser(getString(30253).format(title))
-                        if meta['video'] not in o:
-                            o[meta['video']] = {'title': title}
-                        o[meta['video']]['metadata'] = meta
+                            # Sometimes the chicken comes before the egg
+                            #if refUrn not in pvVideoData:
+                            #    pvVideoData[refUrn] = { 'metadata': { 'videometa': {} }, 'children': [] }
+
+                            # Insert series information
+                            if None is not gres[0]: meta['videometa']['year'] = gres[0]
+                            if None is not gres[1]: meta['videometa']['rating'] = int(gres[1][0]) + (int(gres[1][1]) / 10.0)
+                            if None is not gres[2]: meta['videometa']['mpaa'] = gres[2]
+                            if None is not gres[3]:
+                                meta['videometa']['cast'] = gres[3]
+                                pvVideoData[refUrn]['metadata']['videometa']['cast'] = gres[3]
+                            if None is not gres[4]:
+                                meta['videometa']['genre'] = gres[4]
+                                pvVideoData[refUrn]['metadata']['videometa']['genre'] = gres[4]
+                            if None is not gres[5]:
+                                meta['videometa']['director'] = gres[5]
+                                pvVideoData[refUrn]['metadata']['videometa']['director'] = gres[5]
+
+                            # Insert episode specific information
+                            if None is not res[3]: meta['videometa']['premiered'] = DelocalizeDate(amzLang, res[3])
+                            if None is not res[4]: meta['videometa']['mpaa'] = res[4]
+                            if None is not res[5]: meta['videometa']['plot'] = res[5]
+                            if None is not res[6]:
+                                if 'season' in pvVideoData[refUrn]['metadata']['videometa']:
+                                    meta['videometa']['season'] = pvVideoData[refUrn]['metadata']['videometa']['season']
+                                else:
+                                    ''' We're coming from a widow carousel '''
+                                    pvVideoData[refUrn]['metadata']['videometa']['mediatype'] = 'tvshow'
+                                    # Try with page season selector
+                                    ssn = re.search(r'<a class="av-droplist--selected"[^>]*>[^0-9]*([0-9]+)[^0-9]*</a>', cnt)
+                                    if None is ssn:
+                                        # Try with single season
+                                        ssn = re.search(r'<span class="av-season-single av-badge-text">[^0-9]*([0-9]+)[^0-9]*</span>', cnt)
+                                    if None is not ssn:
+                                        ssn = ssn.group(1)
+                                        meta['videometa']['season'] = ssn
+                                        pvVideoData[refUrn]['metadata']['videometa']['season'] = ssn
+                                meta['videometa']['episode'] = int(res[6])
+
+                            # Episode title cleanup
+                            title = res[2]
+                            if None is not re.match(r'[0-9]+[.]\s*', title):
+                                ''' Strip the episode number '''
+                                title = re.sub(r'^[0-9]+.\s*', '', title)
+                            else:
+                                ''' Probably an extra trailer or something, remove episode information '''
+                                del meta['videometa']['season']
+                                del meta['videometa']['episode']
+
+                            bUpdatedVideoData = True
+                            pvVideoData[eid] = { 'metadata': meta, 'title': title, 'parent': refUrn }
+                            NotifyUser(getString(30253).format(title))
+                        if eid not in o:
+                            o[eid] = {}
+                        if (refUrn in pvVideoData) and ('children' in pvVideoData[refUrn]) and (eid not in pvVideoData[refUrn]['children']):
+                            pvVideoData[refUrn]['children'].append(eid)
+
             else:
                 ''' Movie and series list '''
                 results = re.search(r'<ol\s+[^>]*class="[^"]*av-result-cards[^"]*"[^>]*>\s*(.*?)\s*</ol>', cnt, flags=re.DOTALL)
@@ -801,15 +850,24 @@ def PrimeVideo_LazyLoad(obj):
                         ''' Movie '''
                         # Queue the movie page instead of parsing partial information here
                         urn = ExtractURN(res[0][1])
-                        o[urn] = {'metadata': meta, 'title': title}
-                        requestURLs.append((res[0][1], o[urn]))
+                        if urn not in o:
+                            o[urn] = {}
+                        if (urn not in pvVideoData) or ('metadata' not in pvVideoData[urn]) or ('video' not in pvVideoData[urn]['metadata']):
+                            bUpdatedVideoData = True
+                            pvVideoData[urn] = {'metadata': meta, 'title': title}
+                            requestURLs.append((res[0][1], o[urn], urn))
                     else:
                         ''' Series '''
                         id = title
                         sid = ExtractURN(res[0][1])
 
+                        if sid not in pvVideoData:
+                            pvVideoData[sid] = { 'children': [] }
+
                         # Extract video metadata
-                        if None is not res[6]:
+                        if 'parent' in pvVideoData[sid]:
+                            id = pvVideoData[sid]['parent']
+                        elif (id is title) and (None is not res[6]):
                             success, gpr = getUrldata('catalog/GetPlaybackResources', res[6], useCookie=True, extra=True,
                                                       opt='&titleDecorationScheme=primary-content', dRes='CatalogMetadata')
                             if not success:
@@ -819,17 +877,29 @@ def PrimeVideo_LazyLoad(obj):
                                 for d in gpr['catalogMetadata']['family']['tvAncestors']:
                                     if 'SHOW' == d['catalog']['type']:
                                         id = d['catalog']['id']
+                                        pvVideoData[sid]['parent'] = id
                                         break
-                        sn = res[3]
-                        n = int(re.sub(r'^[^0-9]*([0-9]+)[^0-9]*$', r'\1', sn))
-                        meta['videometa']['season'] = n
                         if id not in o:
-                            o[id] = {'title': title}
-                        o[id][sid] = {'title': sn, 'metadata': meta, 'lazyLoadURL': res[0][1]}
-                        # Update the parent (Series name) with few meta information
-                        if 'metadata' not in o[id].keys():
-                            o[id]['metadata'] = {'artmeta': {'thumb': meta['artmeta']['thumb'], 'poster': meta['artmeta']['thumb']},
-                                                 'videometa': {'mediatype': 'tvshow'}}
+                            o[id] = { 'title': title }
+                        if (sid in pvVideoData) and ('children' in pvVideoData[sid]) and (0 < len(pvVideoData[sid]['children'])):
+                            o[id][sid] = { k: {} for k in pvVideoData[sid]['children'] }
+                        else:
+                            # Save tree information if id is a URN and not a title name
+                            if (id is not title):
+                                if id not in pvVideoData:
+                                    pvVideoData[id] = { 'children': [] }
+                                if sid not in pvVideoData[id]['children']:
+                                    pvVideoData[id]['children'].append(sid)
+                                if 'title' not in pvVideoData[id]:
+                                    pvVideoData[id]['title'] = title
+                            sn = res[3]
+                            n = int(re.sub(r'^[^0-9]*([0-9]+)[^0-9]*$', r'\1', sn))
+                            meta['videometa']['season'] = n
+                            o[id][sid] = { 'lazyLoadURL': res[0][1] }
+                            bUpdatedVideoData = True
+                            pvVideoData[sid]['title'] = sn
+                            pvVideoData[sid]['metadata'] = meta
+
                 # Next page
                 pagination = re.search(
                     r'<ol\s+[^>]*id="[^"]*av-pagination[^"]*"[^>]*>.*?<li\s+[^>]*class="[^"]*av-pagination-current-page[^"]*"[^>]*>.*?</li>\s*<li\s+[^>]*class="av-pagination[^>]*>\s*(.*?)\s*</li>\s*</ol>',
@@ -865,17 +935,25 @@ def PrimeVideo_LazyLoad(obj):
                             else:
                                 ''' Movie/Series list '''
                                 urn = ExtractURN(parts.group(1))
-                                o[title][urn] = {
+                                o[title][urn] = {}
+                                if urn not in pvVideoData:
+                                    bUpdatedVideoData = True
+                                    pvVideoData[urn] = {
                                     'metadata': {'artmeta': {'thumb': MaxSize(parts.group(3)), 'poster': MaxSize(parts.group(3))}, 'videometa': {}},
                                     'title': Unescape(parts.group(4))}
-                                requestURLs.append((parts.group(1), o[title][urn]))
+                                    requestURLs.append((parts.group(1), o[title][urn], urn))
                 pagination = re.search(r'data-ajax-pagination="{&quot;href&quot;:&quot;([^}]+)&quot;}"', section[2], flags=re.DOTALL)
                 if ('dvupdate' == section[0]) and (None is not pagination):
                     requestURLs.append(re.sub(r'(&quot;,&quot;|&amp;)', '&', re.sub('&quot;:&quot;', '=', pagination.group(1) + '&format=json')))
         if 0 < len(requestURLs):
             NotifyUser(getString(30252))
+
+    # Flush catalog and data
     with open(PrimeVideoCache, 'w+') as fp:
         pickle.dump(pvCatalog, fp)
+    if bUpdatedVideoData:
+        with open(PrimeVideoData, 'w+') as fp:
+            pickle.dump(pvVideoData, fp)
 
 
 def Search():
@@ -3119,7 +3197,9 @@ if loadUsers():
     Language = Language if Language else xbmc.getLanguage(xbmc.ISO_639_1, False)
 
     PrimeVideoCache = os.path.join(DataPath, 'PVCatalog{0}.pvcp'.format(MarketID))
+    PrimeVideoData = os.path.join(DataPath, 'PVVideoData{0}.pvdp'.format(MarketID))
     pvCatalog = {}
+    pvVideoData = {}
 
     menuFile = os.path.join(DataPath, 'menu-%s.db' % MarketID)
 
@@ -3130,6 +3210,9 @@ if loadUsers():
         menuDb = sqlite.connect(menuFile)
         loadCategories()
     else:
+        if xbmcvfs.exists(PrimeVideoData):
+            with open(PrimeVideoData, 'r') as fp:
+                pvVideoData = pickle.load(fp)
         if xbmcvfs.exists(PrimeVideoCache):
             with open(PrimeVideoCache, 'r') as fp:
                 cached = pickle.load(fp)

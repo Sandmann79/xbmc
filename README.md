@@ -9,8 +9,6 @@ This Addon supports DE/JP/UK/US Amazon accounts, and since version 0.5.0 all the
 ## Setup instructions
 * download my [Repo](https://github.com/Sandmann79/xbmc/releases) and add it to Kodi via Addon Browser > Install from ZIP
 * install **Amazon VOD** Addon from Sandmann79's Repository
-* after installation has finished go to Settings > Connection > Choose your Country and Sign In
-* primevideo users have to select the proper area as described here: https://github.com/Varstahl/xbmc/wiki#new-options
 * at Settings > General you have to choose one of the following Playback Method:
 
 ### Browser

@@ -20,7 +20,7 @@
 </addon>
 <addon id="plugin.video.amazon"
        name="Amazon"
-       version="1.9.4"
+       version="1.9.5"
        provider-name="Sandmann79 + BlueCop + Romans I XVI">
   <requires>
     <import addon="xbmc.python" version="2.24.0"/>
@@ -56,7 +56,7 @@ Diese Addon verwendet pyDes von Todd Whiteman</disclaimer>
 </addon>
 <addon id="plugin.video.amazon-test"
        name="Amazon VOD"
-       version="0.5.2"
+       version="0.5.3"
        provider-name="Sandmann79, Varstahl">
   <requires>
     <import addon="xbmc.python" version="2.24.0"/>

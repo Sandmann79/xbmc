@@ -2079,6 +2079,14 @@ def extrFr(data):
 
 
 def parseSubs(data):
+    down_lang = int('0' + addon.getSetting('sub_lang'))
+    kodi_lang = jsonRPC('Settings.GetSettingValue', param={'setting': 'locale.subtitlelanguage'})
+    kodi_lang = xbmc.convertLanguage(kodi_lang['value'], xbmc.ISO_639_1)
+    kodi_lang = kodi_lang if kodi_lang else xbmc.getLanguage(xbmc.ISO_639_1, False)
+
+    kodi_lang = '' if down_lang < 2 else kodi_lang
+    en_lang = '' if down_lang == 3 else 'en '
+
     localeConversion = {
         'ar-001':'ar',
         'cmn-hans':'zh HANS',
@@ -2091,10 +2099,12 @@ def parseSubs(data):
         'sv-se':'sv',
     } # Clean up language and locale information where needed
     subs = []
-    if addon.getSetting('subtitles') == 'false' or 'subtitleUrls' not in data:
+    if not down_lang or 'subtitleUrls' not in data:
         return subs
 
-    import codecs
+    def_subs = []
+    fb_subs = []
+
     for sub in data['subtitleUrls']:
         lang = sub['languageCode'].strip()
         if lang in localeConversion:
@@ -2115,8 +2125,19 @@ def parseSubs(data):
             cc = re.search(r'(\[[^\]]+\])', sub['displayName'])
             if None is not cc:
                 lang = lang + (' %s' % cc.group(1))
-        Log('Convert %s Subtitle (%s)' % (sub['displayName'].strip(), lang))
-        srtfile = xbmc.translatePath('special://temp/%s.srt' % lang).decode('utf-8')
+        sub['languageCode'] = lang
+        if kodi_lang in lang:
+            def_subs.append(sub)
+        if en_lang in lang:
+            fb_subs.append(sub)
+
+    if not def_subs:
+        def_subs = fb_subs
+
+    import codecs
+    for sub in def_subs:
+        Log('Convert %s Subtitle (%s)' % (sub['displayName'].strip(), sub['languageCode']))
+        srtfile = xbmc.translatePath('special://temp/%s.srt' % sub['languageCode']).decode('utf-8')
         with codecs.open(srtfile, 'w', encoding='utf-8') as srt:
             soup = BeautifulStoneSoup(getURL(sub['url'], rjson=False), convertEntities=BeautifulStoneSoup.XML_ENTITIES)
             num = 0
@@ -2822,15 +2843,16 @@ def RequestPin():
     return True
 
 
-def getConfig(cfile, value=''):
+def getConfig(cfile, defvalue=''):
     cfgfile = os.path.join(ConfigPath, cfile)
 
+    value = ''
     if xbmcvfs.exists(cfgfile):
         f = xbmcvfs.File(cfgfile, 'r')
         value = f.read()
         f.close()
 
-    return value
+    return value if value else defvalue
 
 
 def writeConfig(cfile, value):

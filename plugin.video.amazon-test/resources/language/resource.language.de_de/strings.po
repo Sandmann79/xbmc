@@ -46,8 +46,8 @@ msgid "Stream Bitrate (0 - Ask)"
 msgstr "Stream Bitrate (0 - Fragen)"
 
 msgctxt "#30005"
-msgid "Enable Subtitles"
-msgstr "Untertitel aktivieren"
+msgid "Subtitles languages"
+msgstr "Untertitel Sprachen"
 
 msgctxt "#30006"
 msgid "Store Credentials instead of using the Cookie?"
@@ -116,6 +116,22 @@ msgstr "Ungültige Tonspur autom. wechseln (experimentell)"
 msgctxt "#30022"
 msgid "Keep me logged in"
 msgstr "Angemeldet bleiben"
+
+msgctxt "#30023"
+msgid "None"
+msgstr "Keine"
+
+msgctxt "#30024"
+msgid "All"
+msgstr "Alle"
+
+msgctxt "#30025"
+msgid "Kodi setting otherwise english"
+msgstr "Kodi Einstellungen ansonsten Englisch"
+
+msgctxt "#30026"
+msgid "Kodi setting otherwise all"
+msgstr "Kodi Einstellungen ansonsten alle"
 
 msgctxt "#30029"
 msgid "Movie View"

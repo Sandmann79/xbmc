@@ -29,7 +29,6 @@ msgctxt "Addon Disclaimer"
 msgid "Some parts of this addon may not be legal in your country of residence - please check with your local laws before installing.\nThis Addon uses pyDes by Todd Whiteman"
 msgstr ""
 
-
 msgctxt "#30001"
 msgid "Amazon Account"
 msgstr ""
@@ -47,7 +46,7 @@ msgid "Stream Bitrate (0 - Ask)"
 msgstr ""
 
 msgctxt "#30005"
-msgid "Enable Subtitles"
+msgid "Subtitles languages"
 msgstr ""
 
 msgctxt "#30006"
@@ -118,7 +117,23 @@ msgctxt "#30022"
 msgid "Keep me logged in"
 msgstr ""
 
-#empty strings from id 30023 to 30028
+msgctxt "#30023"
+msgid "None"
+msgstr ""
+
+msgctxt "#30024"
+msgid "All"
+msgstr ""
+
+msgctxt "#30025"
+msgid "Kodi setting otherwise english"
+msgstr ""
+
+msgctxt "#30026"
+msgid "Kodi setting otherwise all"
+msgstr ""
+
+#empty strings from id 30027 to 30029
 
 msgctxt "#30029"
 msgid "Movie View"

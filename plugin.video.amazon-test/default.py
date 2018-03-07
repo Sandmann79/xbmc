@@ -2083,6 +2083,7 @@ def parseSubs(data):
     kodi_lang = jsonRPC('Settings.GetSettingValue', param={'setting': 'locale.subtitlelanguage'})
     kodi_lang = xbmc.convertLanguage(kodi_lang['value'], xbmc.ISO_639_1)
     kodi_lang = kodi_lang if kodi_lang else xbmc.getLanguage(xbmc.ISO_639_1, False)
+    kodi_lang = kodi_lang if kodi_lang else 'en'
 
     kodi_lang = '' if down_lang < 2 else kodi_lang
     en_lang = '' if down_lang == 3 else 'en '
@@ -2136,15 +2137,21 @@ def parseSubs(data):
 
     import codecs
     for sub in def_subs:
+        escape_chars = [('&amp;', '&'), ('&quot;', '"'), ('&lt;', '<'), ('&gt;', '>'), ('&apos;', "'")]
         Log('Convert %s Subtitle (%s)' % (sub['displayName'].strip(), sub['languageCode']))
         srtfile = xbmc.translatePath('special://temp/%s.srt' % sub['languageCode']).decode('utf-8')
         with codecs.open(srtfile, 'w', encoding='utf-8') as srt:
-            soup = BeautifulStoneSoup(getURL(sub['url'], rjson=False), convertEntities=BeautifulStoneSoup.XML_ENTITIES)
             num = 0
-            for caption in soup.findAll('tt:p'):
-                num += 1
-                subtext = caption.renderContents(None).replace('<tt:br>', '\n').replace('</tt:br>', '')
-                srt.write('%s\n%s --> %s\n%s\n\n' % (num, caption['begin'], caption['end'], subtext))
+            content = getURL(sub['url'], rjson=False)
+            for tt in re.compile('<tt:p(.*)').findall(content):
+                tt = re.sub('<tt:br[^>]*>', '\n', tt)
+                tt = re.search(r'begin="([^"]*).*end="([^"]*).*>([^<]*).', tt)
+                subtext = tt.group(3)
+                for ec in escape_chars:
+                    subtext = subtext.replace(ec[0], ec[1])
+                if tt:
+                    num += 1
+                    srt.write('%s\n%s --> %s\n%s\n\n' % (num, tt.group(1), tt.group(2), subtext))
         subs.append(srtfile)
     return subs
 
@@ -3217,6 +3224,7 @@ if loadUsers():
     Language = jsonRPC('Settings.GetSettingValue', param={'setting': 'locale.audiolanguage'})
     Language = xbmc.convertLanguage(Language['value'], xbmc.ISO_639_1)
     Language = Language if Language else xbmc.getLanguage(xbmc.ISO_639_1, False)
+    Language = Language if not Language else 'en'
 
     PrimeVideoCache = os.path.join(DataPath, 'PVCatalog{0}.pvcp'.format(MarketID))
     PrimeVideoData = os.path.join(DataPath, 'PVVideoData{0}.pvdp'.format(MarketID))

@@ -72,7 +72,7 @@ def LIST_TVSHOWS(filterobj='', value=None, sortcol=False, sortaz=True, search=Fa
     if 'year' in filterobj:
         value = value.replace('0 -', '')
 
-    shows = tv.loadTVShowdb(filterobj=filterobj, value=value, sortcol=sortcol)
+    shows = tv.loadTVShowdb(filterobj, value, sortcol)
     count = 0
     for showdata in shows:
         count += 1

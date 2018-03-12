@@ -17,7 +17,7 @@ def loadTVShowdb(filterobj=None, value=None, sortcol=None):
     db.waitforDB(tvDB)
     c = tvDB.cursor()
     if filterobj:
-        value = b"%{0}%".format(value)
+        value = "%{0}%".format(value.decode('utf-8'))
         return db.cur_exec(c, 'select distinct * from shows where %s like (?)' % filterobj, (value,))
     elif sortcol:
         return db.cur_exec(c, 'select distinct * from shows where %s is not null order by %s asc' % (sortcol, sortcol))
@@ -172,13 +172,14 @@ def addDB(table, data):
 def lookupTVdb(value, rvalue='distinct *', tbl='episodes', name='asin', single=True, exact=False):
     db.waitforDB(tvDB)
     c = tvDB.cursor()
+    value = value.decode('utf-8')
     if not db.cur_exec(c, 'counttables', (tbl,)).fetchone():
         return '' if single else []
 
     sqlstring = 'select %s from %s where %s ' % (rvalue, tbl, name)
     retlen = len(rvalue.split(','))
     if not exact:
-        value = b"%{0}%".format(value)
+        value = "%{0}%".format(value)
         sqlstring += 'like (?)'
     else:
         sqlstring += '= (?)'
@@ -717,5 +718,6 @@ def setNewest(compList=False):
         else:
             db.cur_exec(c, 'insert ignore into categories values (?,?)', [catid, catList[catid]])
     tvDB.commit()
+
 
 tvDB = db.connSQL('tv')

@@ -23,13 +23,14 @@ def addMoviedb(moviedata):
 def lookupMoviedb(value, rvalue='distinct *', name='asin', single=True, exact=False, table='movies'):
     db.waitforDB(MovieDB)
     c = MovieDB.cursor()
+    value = value.decode('utf-8')
     if not db.cur_exec(c, 'counttables', (table,)).fetchone():
         return '' if single else []
 
     sqlstring = 'select %s from %s where %s ' % (rvalue, table, name)
     retlen = len(rvalue.split(','))
     if not exact:
-        value = b"%{0}%".format(value)
+        value = "%{0}%".format(value)
         sqlstring += 'like (?)'
     else:
         sqlstring += '= (?)'
@@ -71,7 +72,7 @@ def loadMoviedb(filterobj=None, value=None, sortcol=False):
     db.waitforDB(MovieDB)
     c = MovieDB.cursor()
     if filterobj:
-        value = b"%{0}%".format(value)
+        value = "%{0}%".format(value.decode('utf-8'))
         return db.cur_exec(c, 'select distinct * from movies where %s like (?)' % filterobj, (value,))
     elif sortcol:
         return db.cur_exec(c, 'select distinct * from movies where %s is not null order by %s asc' % (sortcol, sortcol))
@@ -345,5 +346,6 @@ def ASIN_ADD(title):
                       audio]]
         titelnum += addMoviedb(moviedata)
     return titelnum
+
 
 MovieDB = db.connSQL('movie')

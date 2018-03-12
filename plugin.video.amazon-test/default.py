@@ -3224,7 +3224,7 @@ if loadUsers():
     Language = jsonRPC('Settings.GetSettingValue', param={'setting': 'locale.audiolanguage'})
     Language = xbmc.convertLanguage(Language['value'], xbmc.ISO_639_1)
     Language = Language if Language else xbmc.getLanguage(xbmc.ISO_639_1, False)
-    Language = Language if not Language else 'en'
+    Language = Language if Language else 'en'
 
     PrimeVideoCache = os.path.join(DataPath, 'PVCatalog{0}.pvcp'.format(MarketID))
     PrimeVideoData = os.path.join(DataPath, 'PVVideoData{0}.pvdp'.format(MarketID))

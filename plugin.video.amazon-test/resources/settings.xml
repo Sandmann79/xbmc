@@ -53,7 +53,7 @@
     </category>
     <category label="30060">
         <setting id="enablelibraryfolder" type="bool" label="30061" default="false" />
-        <setting id="customlibraryfolder" type="folder" label="30062" enable="eq(-1,true)" default="special://profile/addon_data/plugin.video.amazon" source="auto" option="writeable" subsetting="true" />
+        <setting id="customlibraryfolder" type="folder" label="30062" enable="eq(-1,true)" default="special://profile/addon_data/plugin.video.amazon-test" source="auto" option="writeable" subsetting="true" />
         <setting id="cr_nfo" type="bool" label="30063" default="true" />
         <setting id="mediasource_movie" type="text" label="30064" default="Amazon Movies" />
         <setting id="mediasource_tv" type="text" label="30065" default="Amazon TV" />

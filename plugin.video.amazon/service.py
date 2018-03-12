@@ -1,3 +1,4 @@
+from __future__ import unicode_literals
 import xbmc
 import xbmcaddon
 import time
@@ -6,14 +7,20 @@ monitor = xbmc.Monitor()
 
 
 def strp(value, form):
-    while True:
+    Log('strp value: %s' % value)
+    Log('strp hasattr: %s' % hasattr(datetime, 'strptime'))
+    def_value = datetime.utcfromtimestamp(0)
+    try:
+        return datetime.strptime(value, form)
+    except TypeError:
         try:
             return datetime(*(time.strptime(value, form)[0:6]))
-        except AttributeError:
-            return datetime.strptime(value, form)
-        except:
-            if monitor.waitForAbort(1):
-                exit()
+        except ValueError, e:
+            Log('time.strp error: %s' % e, xbmc.LOGERROR)
+            return def_value
+    except Exception, e:
+        Log('datetime.strp error: %s' % e, xbmc.LOGERROR)
+        return def_value
 
 
 def updateRunning():
@@ -29,25 +36,23 @@ def updateRunning():
     return False
 
 
-while True:
-    try:
-        from datetime import datetime, timedelta
-        datetime.today()
-        strp('1970-01-01 00:00', '%Y-%m-%d %H:%M')
-        timedelta()
-        break
-    except ImportError(datetime), e:
-        Log('Importerror: %s' % e, xbmc.LOGERROR)
-        if monitor.waitForAbort(1):
-            exit()
-
-
 if __name__ == '__main__':
+    while True:
+        try:
+            from datetime import datetime, timedelta
+            break
+        except ImportError(datetime), e:
+            Log('Importerror: %s' % e, xbmc.LOGERROR)
+            if monitor.waitForAbort(1):
+                exit()
     Log('AmazonDB: Service Start')
     addon = xbmcaddon.Addon()
+    addonid = addon.getAddonInfo('id')
+    datetime.today()
+    strp('1970-01-01 00:00', '%Y-%m-%d %H:%M')
+    timedelta()
     writeConfig('update_running', 'false')
     freq = int('0' + addon.getSetting('auto_update'))
-    addonid = addon.getAddonInfo('id')
     checkfreq = 60
     idleupdate = 300
     startidle = 0
@@ -83,4 +88,4 @@ if __name__ == '__main__':
 
             if monitor.waitForAbort(checkfreq):
                 break
-    xbmc.log('AmazonDB: Service End')
+    Log('AmazonDB: Service End')

@@ -99,20 +99,16 @@ def ASIN_LOOKUP(ASINLIST):
     return getURL(url)
 
 
-def SEARCH_DB(searchString=None):
-    if not searchString:
-        keyboard = xbmc.Keyboard('', getString(24121))
-        keyboard.doModal()
-        if keyboard.isConfirmed():
-            searchString = keyboard.getText().decode('utf-8')
-            if searchString != '':
-                addText('          ----=== ' + getString(30104) + ' ===----')
-                if not listmovie.LIST_MOVIES('movietitle', searchString, search=True):
-                    addText(getString(30202))
-                addText('          ----=== ' + getString(30107) + ' ===----')
-                if not listtv.LIST_TVSHOWS('seriestitle', searchString, search=True):
-                    addText(getString(30202))
-                SetView('tvshows', 'showview')
+def SEARCH_DB():
+    searchString = Dialog.input(getString(24121), '')
+    if searchString != '':
+        addText('          ----=== ' + getString(30104) + ' ===----')
+        if not listmovie.LIST_MOVIES('movietitle', searchString, search=True):
+            addText(getString(30202))
+        addText('          ----=== ' + getString(30107) + ' ===----')
+        if not listtv.LIST_TVSHOWS('seriestitle', searchString, search=True):
+            addText(getString(30202))
+        SetView('tvshows', 'showview')
 
 
 def ExportList():

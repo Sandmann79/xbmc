@@ -916,15 +916,16 @@ def ageSettings():
         del window
 
 
-def getConfig(cfile, value=''):
+def getConfig(cfile, defvalue=''):
     cfgfile = os.path.join(configpath, cfile)
 
+    value = ''
     if xbmcvfs.exists(cfgfile):
         f = xbmcvfs.File(cfgfile, 'r')
         value = f.read()
         f.close()
 
-    return value
+    return value if value else defvalue
 
 
 def writeConfig(cfile, value):
@@ -1039,11 +1040,11 @@ def jsonRPC(method, props='', param=None):
         rpc['params']['properties'] = props.split(',')
     if param:
         rpc['params'].update(param)
-    if 'playerid' in param.keys():
-        res_pid = xbmc.executeJSONRPC('{"jsonrpc":"2.0","method":"Player.GetActivePlayers","id": 1}')
-        pid = [i['playerid'] for i in json.loads(res_pid)['result'] if i['type'] == 'video']
-        pid = pid[0] if pid else 0
-        rpc['params']['playerid'] = pid
+        if 'playerid' in param.keys():
+            res_pid = xbmc.executeJSONRPC('{"jsonrpc":"2.0","method":"Player.GetActivePlayers","id": 1}')
+            pid = [i['playerid'] for i in json.loads(res_pid)['result'] if i['type'] == 'video']
+            pid = pid[0] if pid else 0
+            rpc['params']['playerid'] = pid
 
     res = json.loads(xbmc.executeJSONRPC(json.dumps(rpc)))
     if 'error' in res.keys():

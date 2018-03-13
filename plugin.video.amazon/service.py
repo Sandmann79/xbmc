@@ -7,8 +7,6 @@ monitor = xbmc.Monitor()
 
 
 def strp(value, form):
-    Log('strp value: %s' % value)
-    Log('strp hasattr: %s' % hasattr(datetime, 'strptime'))
     def_value = datetime.utcfromtimestamp(0)
     try:
         return datetime.strptime(value, form)
@@ -36,21 +34,22 @@ def updateRunning():
     return False
 
 
+while True:
+    try:
+        from datetime import datetime, timedelta
+        datetime.today()
+        strp('1970-01-01 00:00', '%Y-%m-%d %H:%M')
+        timedelta()
+        break
+    except ImportError(datetime), e:
+        Log('Importerror: %s' % e, xbmc.LOGERROR)
+        if monitor.waitForAbort(1):
+            exit()
+
 if __name__ == '__main__':
-    while True:
-        try:
-            from datetime import datetime, timedelta
-            break
-        except ImportError(datetime), e:
-            Log('Importerror: %s' % e, xbmc.LOGERROR)
-            if monitor.waitForAbort(1):
-                exit()
     Log('AmazonDB: Service Start')
     addon = xbmcaddon.Addon()
     addonid = addon.getAddonInfo('id')
-    datetime.today()
-    strp('1970-01-01 00:00', '%Y-%m-%d %H:%M')
-    timedelta()
     writeConfig('update_running', 'false')
     freq = int('0' + addon.getSetting('auto_update'))
     checkfreq = 60

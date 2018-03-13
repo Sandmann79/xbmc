@@ -225,6 +225,9 @@ def getURL(url, useCookie=False, silent=False, headers=None, rjson=True, attempt
     try:
         r = session.get(url, headers=headers, cookies=cj, verify=verifySsl)
         response = r.text if not check else 'OK'
+        if r.status_code >= 400:
+            Log('Error %s' % r.status_code)
+            raise requests.exceptions.HTTPError('429')
     except (requests.exceptions.Timeout,
             requests.exceptions.ConnectionError,
             requests.exceptions.SSLError,
@@ -252,7 +255,7 @@ def getURL(url, useCookie=False, silent=False, headers=None, rjson=True, attempt
                 logout += '. Too many requests - Pause 10 sec'
                 sleep(10)
             Log(logout)
-            if attempt < 3:
+            if attempt < 4:
                 return getURL(url, useCookie, silent, headers, rjson, attempt)
         return retval
     return json.loads(response) if rjson else response

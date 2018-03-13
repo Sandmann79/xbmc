@@ -216,6 +216,9 @@ def getURL(url, useCookie=False, silent=False, headers=None, rjson=True, attempt
     try:
         r = session.get(url, headers=headers, cookies=cj, verify=verifySsl)
         response = r.text if not check else 'OK'
+        if r.status_code >= 400:
+            Log('Error %s' % r.status_code)
+            raise requests.exceptions.HTTPError('429')
     except (requests.exceptions.Timeout,
             requests.exceptions.ConnectionError,
             requests.exceptions.SSLError,

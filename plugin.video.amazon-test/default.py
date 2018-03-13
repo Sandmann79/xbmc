@@ -684,32 +684,34 @@ def PrimeVideo_LazyLoad(obj, objName):
                 if None is results:
                     ''' Standalone movie '''
                     if 'video' not in pvVideoData[refUrn]['metadata']:
-                        bUpdatedVideoData = True
+                        asin = re.search(r'"asin":"([^"]*)"', cnt, flags=re.DOTALL)
+                        if None is not asin:
+                            bUpdatedVideoData = True
 
-                        meta = pvVideoData[refUrn]['metadata']
-                        if None is not bgimg:
-                            meta['artmeta']['fanart'] = bgimg
-                        NotifyUser(getString(30253).format(pvVideoData[refUrn]['title']))
-                        meta['asin'] = re.search(r'"asin":"([^"]*)"', cnt, flags=re.DOTALL).group(1)
-                        meta['video'] = ExtractURN(requestURL)
+                            meta = pvVideoData[refUrn]['metadata']
+                            if None is not bgimg:
+                                meta['artmeta']['fanart'] = bgimg
+                            NotifyUser(getString(30253).format(pvVideoData[refUrn]['title']))
+                            meta['asin'] = asin.group(1)
+                            meta['video'] = ExtractURN(requestURL)
 
-                        # Insert movie information
-                        if None is not gres[0]: meta['videometa']['year'] = gres[0]
-                        if None is not gres[1]: meta['videometa']['rating'] = int(gres[1][0]) + (int(gres[1][1]) / 10.0)
-                        if None is not gres[2]: meta['videometa']['mpaa'] = gres[2]
-                        if None is not gres[3]: meta['videometa']['cast'] = gres[3]
-                        if None is not gres[4]: meta['videometa']['genre'] = gres[4]
-                        if None is not gres[5]: meta['videometa']['director'] = gres[5]
-                        if None is not gres[6]: meta['videometa']['plot'] = gres[6]
+                            # Insert movie information
+                            if None is not gres[0]: meta['videometa']['year'] = gres[0]
+                            if None is not gres[1]: meta['videometa']['rating'] = int(gres[1][0]) + (int(gres[1][1]) / 10.0)
+                            if None is not gres[2]: meta['videometa']['mpaa'] = gres[2]
+                            if None is not gres[3]: meta['videometa']['cast'] = gres[3]
+                            if None is not gres[4]: meta['videometa']['genre'] = gres[4]
+                            if None is not gres[5]: meta['videometa']['director'] = gres[5]
+                            if None is not gres[6]: meta['videometa']['plot'] = gres[6]
 
-                        # Extract the runtime
-                        success, gpr = getUrldata('catalog/GetPlaybackResources', meta['asin'], useCookie=True, extra=True,
-                                                opt='&titleDecorationScheme=primary-content', dRes='CatalogMetadata')
-                        if not success:
-                            gpr = None
-                        else:
-                            if 'runtimeSeconds' in gpr['catalogMetadata']['catalog']:
-                                meta['runtime'] = gpr['catalogMetadata']['catalog']['runtimeSeconds']
+                            # Extract the runtime
+                            success, gpr = getUrldata('catalog/GetPlaybackResources', meta['asin'], useCookie=True, extra=True,
+                                                    opt='&titleDecorationScheme=primary-content', dRes='CatalogMetadata')
+                            if not success:
+                                gpr = None
+                            else:
+                                if 'runtimeSeconds' in gpr['catalogMetadata']['catalog']:
+                                    meta['runtime'] = gpr['catalogMetadata']['catalog']['runtimeSeconds']
                 else:
                     ''' Episode list '''
                     for entry in re.findall(r'<li[^>]*>\s*(.*?)\s*</li>', results.group(1), flags=re.DOTALL):

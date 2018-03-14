@@ -330,18 +330,21 @@ def getTMDBImages(title, content='movie', year=None):
 
 def updateAll():
     from service import updateRunning
+    from datetime import datetime
+
     if updateRunning():
         return
 
+    writeConfig('update_running', datetime.today().strftime('%Y-%m-%d %H:%M'))
+
     cj = MechanizeLogin()
     if not cj:
+        writeConfig('update_running', 'false')
         return
 
     import movies
     import tv
-    from datetime import datetime
 
-    writeConfig('update_running', datetime.today().strftime('%Y-%m-%d %H:%M'))
     Log('Starting DBUpdate')
     Notif(getString(30106))
     xbmc.executebuiltin('Container.Refresh')

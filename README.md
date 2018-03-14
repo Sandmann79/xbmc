@@ -68,6 +68,6 @@ Please use the guides provided by Millhouse at kodi.tv:
 * [LibreELEC Testbuilds for x86_64 (Kodi 18.0)](https://forum.kodi.tv/showthread.php?tid=298462)
 4) OSMC
 Please use the guides provided by gcm at osmc.tv:
- * [OSMC Testbuilds Kodi 18 (Leia) for Raspberry Pi]https://discourse.osmc.tv/t/testing-kodi-18-leia-builds-for-raspberry-pi/20631
- * [OSMC Testbuilds Kodi 18 (Leia) for Vero 2 & 4K]https://discourse.osmc.tv/t/testing-kodi-18-leia-builds-for-vero-2-4k/23059
+ * [OSMC Testbuilds Kodi 18 (Leia) for Raspberry Pi](https://discourse.osmc.tv/t/testing-kodi-18-leia-builds-for-raspberry-pi/20631)
+ * [OSMC Testbuilds Kodi 18 (Leia) for Vero 2 & 4K](https://discourse.osmc.tv/t/testing-kodi-18-leia-builds-for-vero-2-4k/23059)
 5) Android needs no Widevine Library - it's already included in the firmware

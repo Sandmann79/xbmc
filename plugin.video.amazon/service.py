@@ -1,18 +1,18 @@
 from __future__ import unicode_literals
 import xbmc
 import xbmcaddon
-import time
 from resources.lib.common import getConfig, writeConfig, Log
-monitor = xbmc.Monitor()
 
 
 def strp(value, form):
+    from time import strptime
+    from datetime import datetime
     def_value = datetime.utcfromtimestamp(0)
     try:
         return datetime.strptime(value, form)
     except TypeError:
         try:
-            return datetime(*(time.strptime(value, form)[0:6]))
+            return datetime(*(strptime(value, form)[0:6]))
         except ValueError, e:
             Log('time.strp error: %s' % e, xbmc.LOGERROR)
             return def_value
@@ -22,6 +22,7 @@ def strp(value, form):
 
 
 def updateRunning():
+    from datetime import datetime, timedelta
     update = getConfig('update_running', 'false')
     if update != 'false':
         starttime = strp(update, '%Y-%m-%d %H:%M')
@@ -34,22 +35,10 @@ def updateRunning():
     return False
 
 
-while True:
-    try:
-        from datetime import datetime, timedelta
-        datetime.today()
-        strp('1970-01-01 00:00', '%Y-%m-%d %H:%M')
-        timedelta()
-        break
-    except ImportError(datetime), e:
-        Log('Importerror: %s' % e, xbmc.LOGERROR)
-        if monitor.waitForAbort(1):
-            exit()
-
 if __name__ == '__main__':
-    Log('AmazonDB: Service Start')
     addon = xbmcaddon.Addon()
-    addonid = addon.getAddonInfo('id')
+    monitor = xbmc.Monitor()
+    Log('AmazonDB: Service Start')
     writeConfig('update_running', 'false')
     freq = int('0' + addon.getSetting('auto_update'))
     checkfreq = 60
@@ -58,6 +47,7 @@ if __name__ == '__main__':
 
     if freq:
         while not monitor.abortRequested():
+            from datetime import datetime, timedelta
             addon = xbmcaddon.Addon()
             today = datetime.today()
             freq = addon.getSetting('auto_update')
@@ -83,7 +73,7 @@ if __name__ == '__main__':
             if dtlast + timedelta(days=freqdays) <= today and idletime >= idleupdate:
                 if not update_run:
                     Log('AmazonDB: Starting DBUpdate (%s / %s)' % (dtlast, today))
-                    xbmc.executebuiltin('XBMC.RunPlugin(plugin://%s/?mode=appfeed&sitemode=updateAll)' % addonid)
+                    xbmc.executebuiltin('XBMC.RunPlugin(plugin://%s/?mode=appfeed&sitemode=updateAll)' % addon.getAddonInfo('id'))
 
             if monitor.waitForAbort(checkfreq):
                 break

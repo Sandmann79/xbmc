@@ -107,7 +107,7 @@ msgstr "Bevorzugter Host"
 
 msgctxt "#30020"
 msgid "Enable DRM check"
-msgstr "DRM Check aktivieren"
+msgstr "DRM-Überprüfung aktivieren"
 
 msgctxt "#30021"
 msgid "Switch Audiotrack, if not valid (experimental)"
@@ -199,7 +199,7 @@ msgstr "Skriptpfad"
 
 msgctxt "#30049"
 msgid "Detect Framerate"
-msgstr "Bildwiederholfrequenz ermitteln"
+msgstr "Bildwechselfrequenz ermitteln"
 
 msgctxt "#30050"
 msgid "Amazon"
@@ -475,11 +475,11 @@ msgstr "Bibliothek aktualisieren"
 
 msgctxt "#30187"
 msgid "Source folders added/changed"
-msgstr "Amazon Video-Quellen hinzugefügt/geändert"
+msgstr "Video-Quellen hinzugefügt/geändert"
 
 msgctxt "#30188"
 msgid "To complete the setup:"
-msgstr "Zum Abschluss der Installation:"
+msgstr "Zum Abschluss der Exportierung:"
 
 msgctxt "#30189"
 msgid " 1) Restart Kodi"
@@ -487,7 +487,7 @@ msgstr " 1) XBMC/Kodi neustarten"
 
 msgctxt "#30190"
 msgid " 2) Set the content type of added folders"
-msgstr " 2) den Inhalt der Ordner festlegen"
+msgstr " 2) Den Inhalt der Ordner festlegen"
 
 msgctxt "#30191"
 msgid "Restart"

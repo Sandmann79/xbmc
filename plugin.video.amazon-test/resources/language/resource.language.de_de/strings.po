@@ -19,7 +19,7 @@ msgstr ""
 
 msgctxt "Addon Summary"
 msgid "Amazon Prime Video Streaming"
-msgstr "Prime Video"
+msgstr "Amazon Prime Video"
 
 msgctxt "Addon Description"
 msgid "Movies and Television Shows for Prime Members"
@@ -27,7 +27,7 @@ msgstr "Filme und Serien für Prime-Mitglieder"
 
 msgctxt "Addon Disclaimer"
 msgid "Some parts of this addon may not be legal in your country of residence - please check with your local laws before installing.\nThis Addon uses pyDes by Todd Whiteman"
-msgstr "Möglicherweise sind einge Teile dieser Erweiterung in Ihrem Land illegal, Sie sollten dies unbedingt vor der Installation überprüfen.\nDiese Erweiterung verwendet pyDes von Todd Whiteman"
+msgstr "Möglicherweise sind einge Teile dieses Addons in Ihrem Land illegal, Sie sollten dies unbedingt vor der Installation überprüfen.\nDiese Erweiterung verwendet pyDes von Todd Whiteman"
 
 msgctxt "#30001"
 msgid "Amazon Account"
@@ -79,7 +79,7 @@ msgstr "Wiedergabemethode"
 
 msgctxt "#30013"
 msgid "Inputstream Addon Settings…"
-msgstr "Inputstream-Erweiterung einstellen…"
+msgstr "Inputstream-Addon konfigurieren…"
 
 msgctxt "#30014"
 msgid "Logged in as"
@@ -131,11 +131,11 @@ msgstr "Kodi-Einstellungen sonst Englisch"
 
 msgctxt "#30026"
 msgid "Kodi setting otherwise all"
-msgstr "Kodi-Einstellungen sonsr alle"
+msgstr "Kodi-Einstellungen sonst alle"
 
 msgctxt "#30029"
 msgid "Movie View"
-msgstr "Film-Ansicht"
+msgstr "Filmansicht"
 
 msgctxt "#30030"
 msgid "Show View"
@@ -199,7 +199,7 @@ msgstr "Skriptpfad"
 
 msgctxt "#30049"
 msgid "Detect Framerate"
-msgstr "Bildwechselfrequenz ermitteln"
+msgstr "Bildwiederholfrequenz ermitteln"
 
 msgctxt "#30050"
 msgid "Amazon"
@@ -479,7 +479,7 @@ msgstr "Video-Quellen hinzugefügt/geändert"
 
 msgctxt "#30188"
 msgid "To complete the setup:"
-msgstr "Zum Abschluss der Exportierung:"
+msgstr "Zum Abschluss der Einrichtung:"
 
 msgctxt "#30189"
 msgid " 1) Restart Kodi"

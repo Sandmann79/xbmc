@@ -19,11 +19,11 @@ msgstr ""
 
 msgctxt "Addon Summary"
 msgid "Amazon Prime Video Streaming"
-msgstr "Amazon Prime Instant Video"
+msgstr "Amazon Prime Video"
 
 msgctxt "Addon Description"
 msgid "Movies and Television Shows for Prime Members"
-msgstr "Filme und Serien für Amazon Prime Mitglieder"
+msgstr "Filme und Serien für Prime-Mitglieder"
 
 msgctxt "Addon Disclaimer"
 msgid "Some parts of this addon may not be legal in your country of residence - please check with your local laws before installing.\nThis Addon uses pyDes by Todd Whiteman"
@@ -31,11 +31,11 @@ msgstr "Möglicherweise sind einge Teile dieses Addons in Ihrem Land illegal, Si
 
 msgctxt "#30001"
 msgid "Amazon Account"
-msgstr "Amazon Zugangsdaten"
+msgstr "Amazon-Konto"
 
 msgctxt "#30002"
 msgid "Email Adress"
-msgstr "E-Mail Adresse"
+msgstr "E-Mail-Adresse"
 
 msgctxt "#30003"
 msgid "Password"
@@ -91,11 +91,11 @@ msgstr "Ansicht"
 
 msgctxt "#30016"
 msgid "Movie Fanart Source"
-msgstr "Film-Fanart Quelle"
+msgstr "Film-Fanart-Quelle"
 
 msgctxt "#30017"
 msgid "TV Show Fanart Source"
-msgstr "Serien-Fanart Quelle"
+msgstr "Serien-Fanart-Quelle"
 
 msgctxt "#30018"
 msgid "Daily"
@@ -127,7 +127,7 @@ msgstr "Sprache"
 
 msgctxt "#30027"
 msgid "Multi User Support"
-msgstr "Mehrbenutzer Unterstützung"
+msgstr "Mehrbenutzer-Unterstützung"
 
 msgctxt "#30028"
 msgid "Remove all Users"
@@ -135,19 +135,19 @@ msgstr "Alle Benutzer entfernen"
 
 msgctxt "#30029"
 msgid "Movie View"
-msgstr "Film Ansicht"
+msgstr "Filmansicht"
 
 msgctxt "#30030"
 msgid "Show View"
-msgstr "Serien Ansicht"
+msgstr "Serienansicht"
 
 msgctxt "#30031"
 msgid "Season View"
-msgstr "Staffel Ansicht"
+msgstr "Staffelansicht"
 
 msgctxt "#30032"
 msgid "Episode View"
-msgstr "Episoden Ansicht"
+msgstr "Episodenansicht"
 
 msgctxt "#30035"
 msgid "Enable Views"
@@ -155,7 +155,7 @@ msgstr "Ansichten aktivieren"
 
 msgctxt "#30036"
 msgid "Inputstream Addon Settings..."
-msgstr "Inputstream Addon Einstellungen..."
+msgstr "Inputstream-Addon konfigurieren..."
 
 msgctxt "#30037"
 msgid "Disable SSL Certificate Verification"
@@ -179,7 +179,7 @@ msgstr "Vollbild aktivieren"
 
 msgctxt "#30042"
 msgid "Browser Kiosk Mode"
-msgstr "Browser Kiosk Modus"
+msgstr "Browser-Kioskmodus"
 
 msgctxt "#30043"
 msgid "Use custom Browser path"
@@ -191,7 +191,7 @@ msgstr "Wartezeit für Vollbild (sek)"
 
 msgctxt "#30045"
 msgid "Automatic PIN Input"
-msgstr "Automatische PIN Eingabe"
+msgstr "Automatische PIN-Eingabe"
 
 msgctxt "#30046"
 msgid "PIN"
@@ -199,15 +199,15 @@ msgstr "PIN"
 
 msgctxt "#30047"
 msgid "Wait after PIN Input"
-msgstr "Wartezeit nach PIN Eingabe"
+msgstr "Wartezeit nach PIN-Eingabe"
 
 msgctxt "#30048"
 msgid "Script path"
-msgstr "Scriptpfad"
+msgstr "Skriptpfad"
 
 msgctxt "#30049"
 msgid "Detect Framerate"
-msgstr "Framerate ermitteln"
+msgstr "Bildwiederholfrequenz ermitteln"
 
 msgctxt "#30050"
 msgid "Amazon"
@@ -215,7 +215,7 @@ msgstr "Amazon"
 
 msgctxt "#30051"
 msgid "Load missing from TMDb"
-msgstr "Fehlende von TMDb"
+msgstr "Fehlende von TMDb laden"
 
 msgctxt "#30052"
 msgid "TMDb"
@@ -223,7 +223,7 @@ msgstr "Komplett von TMDb"
 
 msgctxt "#30053"
 msgid "Load missing from TVDb"
-msgstr "Fehlende von TVDb"
+msgstr "Fehlende von TVDb laden"
 
 msgctxt "#30054"
 msgid "TVDb"
@@ -271,7 +271,7 @@ msgstr "Bevorzugter Host"
 
 msgctxt "#30065"
 msgid "Enable DRM check"
-msgstr "DRM Check aktivieren"
+msgstr "DRM-Überprüfung aktivieren"
 
 msgctxt "#30066"
 msgid "Database system"
@@ -299,7 +299,7 @@ msgstr "Ausführliches Logging"
 
 msgctxt "#30073"
 msgid "Enable Remote Control"
-msgstr "Remote-Steuerung zulassen"
+msgstr "Fernsteuerung zulassen"
 
 msgctxt "#30074"
 msgid "Create Video Information File"
@@ -307,11 +307,11 @@ msgstr "Videoinfo-Datei erstellen"
 
 msgctxt "#30075"
 msgid "UP/DOWN controls Kodi Volume"
-msgstr "HOCH/RUNTER regelt Kodi Lautstärke"
+msgstr "HOCH/RUNTER regelt Kodi-Lautstärke"
 
 msgctxt "#30076"
 msgid "Watchlist/Library Order"
-msgstr "Watchlist/Bibliothek Sortierung"
+msgstr "Watchlist-/Bibliothekssortierung"
 
 msgctxt "#30077"
 msgid "Recently Added"
@@ -339,7 +339,7 @@ msgstr "Beliebt"
 
 msgctxt "#30101"
 msgid "Toggle watched state"
-msgstr "Gesehen Status ändern"
+msgstr "Gesehen-Status ändern"
 
 msgctxt "#30102"
 msgid "Full Movie Refresh(DB)"
@@ -555,7 +555,7 @@ msgstr "%s umbenennen"
 
 msgctxt "#30164"
 msgid "Refresh TVDB Data"
-msgstr "TVDB Daten aktualisieren"
+msgstr "TVDB-Daten aktualisieren"
 
 msgctxt "#30165"
 msgid "Lookup Show in TVDB"
@@ -635,11 +635,11 @@ msgstr "Bibliothek aktualisieren"
 
 msgctxt "#30187"
 msgid "Source folders added/changed"
-msgstr "Amazon Video-Quellen hinzugefügt/geändert"
+msgstr "Video-Quellen hinzugefügt/geändert"
 
 msgctxt "#30188"
 msgid "To complete the setup:"
-msgstr "Zum Abschluß des Setups:"
+msgstr "Zum Abschluß der Einrichtung:"
 
 msgctxt "#30189"
 msgid " 1) Restart Kodi"
@@ -647,7 +647,7 @@ msgstr " 1) Kodi neustarten"
 
 msgctxt "#30190"
 msgid " 2) Set the content type of added folders"
-msgstr " 2) den Inhalt der Ordner festlegen"
+msgstr " 2) Den Inhalt der Ordner festlegen"
 
 msgctxt "#30191"
 msgid "Restart"
@@ -679,7 +679,7 @@ msgstr "Fehler bei der Anmeldung"
 
 msgctxt "#30201"
 msgid "Wrong Email Adress or Password"
-msgstr "E-Mail Adresse oder Passwort falsch"
+msgstr "E-Mail-Adresse oder Passwort falsch"
 
 msgctxt "#30202"
 msgid "No Search Results"
@@ -703,7 +703,7 @@ msgstr "Produkt nicht erworben"
 
 msgctxt "#30207"
 msgid "This Video is unavailable in your Country"
-msgstr "Dieses Video ist in Ihren Land nicht verfügbar"
+msgstr "Dieses Video ist in Ihrem Land nicht verfügbar"
 
 msgctxt "#30208"
 msgid "Playback currently not possible, try again later"
@@ -723,7 +723,7 @@ msgstr "Zugangsdaten und Cookie(s) entfernt"
 
 msgctxt "#30212"
 msgid "Captcha Request, please change IP or try again later"
-msgstr "Captcha Abfrage, bitte IP ändern oder später erneut versuchen"
+msgstr "Captcha Abfrage, bitte IP-Adresse ändern oder später erneut versuchen"
 
 msgctxt "#30213"
 msgid "Unknown Error, please enable advanced debugging in settings and check amazon-login.log/amazon-login-si.log/amazon-login-mfa.log"
@@ -739,15 +739,15 @@ msgstr "Anmeldung erfolgreich"
 
 msgctxt "#30216"
 msgid "No credentials present, please go to Settings-Connection and sign in"
-msgstr "Keine Zugangsdaten, bitte unter Einstellungen-Verbindung anmelden"
+msgstr "Keine Zugangsdaten, bitte unter Einstellungen>Verbindung anmelden"
 
 msgctxt "#30217"
 msgid "No stream hoster reachable"
-msgstr "Kein Stream Hoster verfügbar"
+msgstr "Kein Stream-Hoster verfügbar"
 
 msgctxt "#30218"
 msgid "Due changes at Amazon's DRM encryption, it's not possible to use Inputstream for this video.\nPlease configure the fallback option in Settings, to use another Playback method."
-msgstr "Wegen Änderung der DRM Verschlüsselung bei Amazon, ist es nicht möglich dieses Video mittels Inputstream wiederzugeben.\nBitte eine alternative Wiedergabemethode in den Einstellungen unter Fallback konfigurieren."
+msgstr "Wegen Änderung der DRM-Verschlüsselung bei Amazon, ist es nicht möglich dieses Video mittels Inputstream wiederzugeben.\nBitte eine alternative Wiedergabemethode in den Einstellungen unter Fallback konfigurieren."
 
 msgctxt "#30220"
 msgid "PIN (empty for no restriction)"
@@ -755,7 +755,7 @@ msgstr "PIN (leer für keine Abfrage)"
 
 msgctxt "#30221"
 msgid "PIN Request at"
-msgstr "PIN Abfrage ab"
+msgstr "PIN-Abfrage ab"
 
 msgctxt "#30222"
 msgid "Apply"

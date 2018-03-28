@@ -133,7 +133,11 @@ msgctxt "#30026"
 msgid "Kodi setting otherwise all"
 msgstr ""
 
-#empty strings from id 30027 to 30029
+msgctxt "#30027"
+msgid "Kodi setting otherwise only forced"
+msgstr ""
+
+#empty strings from id 30028 to 30029
 
 msgctxt "#30029"
 msgid "Movie View"

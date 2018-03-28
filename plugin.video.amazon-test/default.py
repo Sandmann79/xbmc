@@ -1757,7 +1757,7 @@ def AndroidPlayback(asin, trailer):
 
 def IStreamPlayback(asin, name, trailer, isAdult, extern):
     vMT = ['Feature', 'Trailer', 'LiveStreaming'][trailer]
-    dRes = 'PlaybackUrls' if trailer == 2 else 'PlaybackUrls,SubtitleUrls'
+    dRes = 'PlaybackUrls' if trailer == 2 else 'PlaybackUrls,SubtitleUrls,ForcedNarratives'
     mpaa_str = RestrAges + getString(30171)
     drm_check = addon.getSetting("drm_check") == 'true'
     at_check = addon.getSetting("at_check") == 'true'
@@ -2087,11 +2087,15 @@ def parseSubs(data):
     down_lang = int('0' + addon.getSetting('sub_lang'))
     kodi_lang = jsonRPC('Settings.GetSettingValue', param={'setting': 'locale.subtitlelanguage'})
     kodi_lang = xbmc.convertLanguage(kodi_lang['value'], xbmc.ISO_639_1)
-    kodi_lang = kodi_lang if kodi_lang else xbmc.getLanguage(xbmc.ISO_639_1, False)
-    kodi_lang = kodi_lang if kodi_lang else 'en'
 
-    kodi_lang = '' if down_lang < 2 else kodi_lang
-    en_lang = '' if down_lang == 3 else 'en '
+    if down_lang < 2:
+        sub_lang = ''
+    elif down_lang == 2:
+        sub_lang = kodi_lang if kodi_lang else 'en'
+    elif down_lang == 3:
+        sub_lang = kodi_lang if kodi_lang else ''
+    elif down_lang == 4:
+        sub_lang = kodi_lang if kodi_lang else 'forced'
 
     localeConversion = {
         'ar-001':'ar',
@@ -2105,13 +2109,12 @@ def parseSubs(data):
         'sv-se':'sv',
     } # Clean up language and locale information where needed
     subs = []
-    if not down_lang or 'subtitleUrls' not in data:
+    if not down_lang or ('subtitleUrls' not in data and 'forcedNarratives' not in data):
         return subs
 
     def_subs = []
-    fb_subs = []
 
-    for sub in data['subtitleUrls']:
+    for sub in data['subtitleUrls'] + data['forcedNarratives']:
         lang = sub['languageCode'].strip()
         if lang in localeConversion:
             lang = localeConversion[lang]
@@ -2131,14 +2134,12 @@ def parseSubs(data):
             cc = re.search(r'(\[[^\]]+\])', sub['displayName'])
             if None is not cc:
                 lang = lang + (' %s' % cc.group(1))
+        # Add forced subs information
+        if 'forced' in sub['displayName']:
+            lang = lang + '.forced'
         sub['languageCode'] = lang
-        if kodi_lang in lang:
+        if sub_lang in lang:
             def_subs.append(sub)
-        if en_lang in lang:
-            fb_subs.append(sub)
-
-    if not def_subs:
-        def_subs = fb_subs
 
     import codecs
     for sub in def_subs:
@@ -2162,7 +2163,7 @@ def parseSubs(data):
 
 
 def getUrldata(mode, asin, retformat='json', devicetypeid='AOAGZA014O5RE', version=1, firmware='1', opt='', extra=False,
-               useCookie=False, retURL=False, vMT='Feature', dRes='PlaybackUrls,SubtitleUrls'):
+               useCookie=False, retURL=False, vMT='Feature', dRes='PlaybackUrls,SubtitleUrls,ForcedNarratives'):
     url = ATVUrl + '/cdp/' + mode
     url += '?asin=' + asin
     url += '&deviceTypeID=' + devicetypeid

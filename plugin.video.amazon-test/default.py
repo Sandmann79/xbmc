@@ -402,7 +402,9 @@ def PrimeVideo_BuildRoot():
         item = re.search('<a href="([^"]+)"[^>]*>\s*(.*?)\s*</a>', item)
         if None is not re.match('/storefront/home/', item.group(1)):
             continue
-        pvCatalog['root'][item.group(2)] = {'title': item.group(2), 'lazyLoadURL': BaseUrl + item.group(1) + '?_encoding=UTF8&format=json'}
+        # Remove react comments
+        title = re.sub('^<!--\s*[^>]+\s*-->', '', re.sub('<!--\s*[^>]+\s*-->$', '', item.group(2)))
+        pvCatalog['root'][title] = {'title': title, 'lazyLoadURL': BaseUrl + item.group(1) + '?_encoding=UTF8&format=json'}
     if 0 == len(pvCatalog['root']):
         Dialog.notification('PrimeVideo error', 'Unable to build the root catalog from primevideo.com', xbmcgui.NOTIFICATION_ERROR)
         Log('Unable to build the root catalog from primevideo.com', xbmc.LOGERROR)

@@ -2111,11 +2111,7 @@ def parseSubs(data):
         'sv-se':'sv',
     } # Clean up language and locale information where needed
     subs = []
-<<<<<<< Updated upstream
-    if not down_lang or ('subtitleUrls' not in data and 'forcedNarratives' not in data):
-=======
     if (not down_lang) or (('subtitleUrls' not in data) and ('forcedNarratives' not in data)):
->>>>>>> Stashed changes
         return subs
 
     def_subs = []

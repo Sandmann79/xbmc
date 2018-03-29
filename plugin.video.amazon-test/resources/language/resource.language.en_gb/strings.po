@@ -126,11 +126,11 @@ msgid "All"
 msgstr ""
 
 msgctxt "#30025"
-msgid "Kodi setting otherwise english"
+msgid "From settings, fallback to english"
 msgstr ""
 
 msgctxt "#30026"
-msgid "Kodi setting otherwise all"
+msgid "From settings, fallback to all"
 msgstr ""
 
 msgctxt "#30027"

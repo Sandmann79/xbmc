@@ -2086,9 +2086,37 @@ def extrFr(data):
 
 
 def parseSubs(data):
+    bForcedOnly = False  # Whether or not we should only download forced subtitles
     down_lang = int('0' + addon.getSetting('sub_lang'))
     kodi_lang = jsonRPC('Settings.GetSettingValue', param={'setting': 'locale.subtitlelanguage'})
-    kodi_lang = xbmc.convertLanguage(kodi_lang['value'], xbmc.ISO_639_1)
+    kodi_lang = kodi_lang['value'] if 'value' in kodi_lang else ''
+    
+    # Locale.SubtitleLanguage (and .AudioLanguage) can either return a language or:
+    # [ S] none: no subtitles
+    # [ S] forced_only: forced subtitles only
+    # [AS] original: the stream's original language
+    # [AS] default: Kodi's UI
+    #
+    # For simplicity's sake (and temporarily) we will treat original as AudioLanguage, and
+    # AudioLanguage 'original' as 'default'
+    if kodi_lang not in ['none', 'forced_only', 'original', 'default']:
+        kodi_lang = xbmc.convertLanguage(kodi_lang, xbmc.ISO_639_1)
+    if 'none' == kodi_lang:
+        return []
+    if 'forced_only' == kodi_lang:
+        bForcedOnly = True
+    if ('forced_only' == kodi_lang) or ('original' == kodi_lang):
+        kodi_lang = jsonRPC('Settings.GetSettingValue', param={'setting': 'locale.audiolanguage'})
+        kodi_lang = kodi_lang['value'] if 'value' in kodi_lang else ''
+        if kodi_lang not in ['original', 'default']:
+            kodi_lang = xbmc.convertLanguage(kodi_lang, xbmc.ISO_639_1)
+        if kodi_lang == 'original':
+            kodi_lang = 'default'
+    if 'default' == kodi_lang:
+        kodi_lang = xbmc.getLanguage(xbmc.ISO_639_1, False)
+
+    # At this point we should have the user's selected language or a valid fallback, although
+    # we further sanitize for safety
     kodi_lang = kodi_lang if kodi_lang else xbmc.getLanguage(xbmc.ISO_639_1, False)
     kodi_lang = kodi_lang if kodi_lang else 'en'
 
@@ -2134,13 +2162,14 @@ def parseSubs(data):
             if None is not cc:
                 lang = lang + (' %s' % cc.group(1))
         # Add forced subs information
-        if 'forced' in sub['displayName']:
-            lang = lang + '.forced'
-        sub['languageCode'] = lang
-        if kodi_lang in lang:
-            def_subs.append(sub)
-        if en_lang in lang:
-            fb_subs.append(sub)
+        if ' forced ' in sub['displayName']:
+            lang = lang + '.Forced'
+        if (' forced ' in sub['displayName']) or (False is bForcedOnly):
+            sub['languageCode'] = lang
+            if kodi_lang in lang:
+                def_subs.append(sub)
+            if en_lang in lang:
+                fb_subs.append(sub)
 
     if not def_subs:
         def_subs = fb_subs

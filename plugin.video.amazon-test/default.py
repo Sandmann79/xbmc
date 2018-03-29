@@ -2089,15 +2089,11 @@ def parseSubs(data):
     down_lang = int('0' + addon.getSetting('sub_lang'))
     kodi_lang = jsonRPC('Settings.GetSettingValue', param={'setting': 'locale.subtitlelanguage'})
     kodi_lang = xbmc.convertLanguage(kodi_lang['value'], xbmc.ISO_639_1)
+    kodi_lang = kodi_lang if kodi_lang else xbmc.getLanguage(xbmc.ISO_639_1, False)
+    kodi_lang = kodi_lang if kodi_lang else 'en'
 
-    if down_lang < 2:
-        sub_lang = ''
-    elif down_lang == 2:
-        sub_lang = kodi_lang if kodi_lang else 'en'
-    elif down_lang == 3:
-        sub_lang = kodi_lang if kodi_lang else ''
-    elif down_lang == 4:
-        sub_lang = kodi_lang if kodi_lang else 'forced'
+    kodi_lang = '' if down_lang < 2 else kodi_lang
+    en_lang = '' if down_lang == 3 else 'en '
 
     localeConversion = {
         'ar-001':'ar',
@@ -2115,6 +2111,7 @@ def parseSubs(data):
         return subs
 
     def_subs = []
+    fb_subs = []
 
     for sub in data['subtitleUrls'] + data['forcedNarratives']:
         lang = sub['languageCode'].strip()
@@ -2140,8 +2137,13 @@ def parseSubs(data):
         if 'forced' in sub['displayName']:
             lang = lang + '.forced'
         sub['languageCode'] = lang
-        if sub_lang in lang:
+        if kodi_lang in lang:
             def_subs.append(sub)
+        if en_lang in lang:
+            fb_subs.append(sub)
+
+    if not def_subs:
+        def_subs = fb_subs
 
     import codecs
     for sub in def_subs:

@@ -591,8 +591,11 @@ def PrimeVideo_LazyLoad(obj, objName):
             return datestr
         p = re.search(dateParserData[lang]['deconstruct'], datestr)
         if None is p:
-            Log('Unable to parse date "{0}" with language "{1}": format changed?'.format(datestr, lang), xbmc.LOGWARNING)
-            return datestr
+            # Sometimes Amazon returns english everything, let's try to figure out if this is the case
+            p = re.search(dateParserData['en_US']['deconstruct'], datestr)
+            if None is p:
+                Log('Unable to parse date "{0}" with language "{1}": format changed?'.format(datestr, lang), xbmc.LOGWARNING)
+                return datestr
         p = list(p.groups())
         p[dateParserData[lang]['month']] = dateParserData[lang]['months'][p[dateParserData[lang]['month']]]
         return dateParserData[lang]['reassemble'].format(p[0], p[1], p[2])

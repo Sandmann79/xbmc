@@ -2312,6 +2312,9 @@ def LogIn(ask=True):
 
     if not user['baseurl']:
         user = getTerritory(user)
+        if False is user[1]:
+            return False
+        user = user[0]
 
     if ask:
         keyboard = xbmc.Keyboard(email, getString(30002))
@@ -2447,6 +2450,9 @@ def loadUser(key='', empty=False):
         user = user[0]
         if key and key not in user.keys():
             user = getTerritory(user)
+            if False is user[1]:
+                Dialog.notification(__plugin__, getString(30219), xbmcgui.NOTIFICATION_ERROR)
+            user = user[0]
             addUser(user)
         return user.get(key, user)
     else:
@@ -2514,6 +2520,8 @@ def getTerritory(user):
 
     data = getURL('https://na.api.amazonvideo.com/cdp/usage/v2/GetAppStartupConfig?deviceTypeID=A28RQHJKHM2A2W&deviceID=%s&firmware=1&version=1&format=json'
                   % deviceID)
+    if not hasattr(data, 'keys'):
+        return (user, False)
     if 'customerConfig' in data.keys():
         host = data['territoryConfig']['defaultVideoWebsite']
         reg = data['customerConfig']['homeRegion'].lower()
@@ -2522,7 +2530,7 @@ def getTerritory(user):
         user['baseurl'] = data['territoryConfig']['primeSignupBaseUrl']
         user['mid'] = data['territoryConfig']['avMarketplace']
         user['pv'] = 'primevideo' in host
-    return user
+    return (user, True)
 
 
 def MFACheck(br, email, soup):

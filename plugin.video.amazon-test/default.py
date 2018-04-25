@@ -239,15 +239,14 @@ def getURL(url, useCookie=False, silent=False, headers=None, rjson=True, attempt
                       'You can find a Linux guide on how to update Python and its modules for Kodi here: https://goo.gl/CKtygz',
                       'Additionally, follow this guide to update the required modules: https://goo.gl/ksbbU2')
             exit()
-        if ('429' in e) or ('Timeout' in eType):
+        if (('429' in e) or ('Timeout' in eType)) and (3 > attempt):
             attempt += 1 if not check else 10
             logout = 'Attempt #%s' % attempt
             if '429' in e:
                 logout += '. Too many requests - Pause 10 sec'
                 sleep(10)
             Log(logout)
-            if attempt < 3:
-                return getURL(url, useCookie, silent, headers, rjson, attempt)
+            return getURL(url, useCookie, silent, headers, rjson, attempt)
         return retval
     return json.loads(response) if rjson else response
 
@@ -2180,21 +2179,34 @@ def parseSubs(data):
     import codecs
     for sub in def_subs:
         escape_chars = [('&amp;', '&'), ('&quot;', '"'), ('&lt;', '<'), ('&gt;', '>'), ('&apos;', "'")]
-        Log('Convert %s Subtitle (%s)' % (sub['displayName'].strip(), sub['languageCode']))
         srtfile = xbmc.translatePath('special://temp/%s.srt' % sub['languageCode']).decode('utf-8')
+        subDisplayLang = '“%s” subtitle (%s)' % (sub['displayName'].strip(), sub['languageCode'])
+        content = ''
         with codecs.open(srtfile, 'w', encoding='utf-8') as srt:
             num = 0
-            content = getURL(sub['url'], rjson=False)
-            for tt in re.compile('<tt:p(.*)').findall(content):
-                tt = re.sub('<tt:br[^>]*>', '\n', tt)
-                tt = re.search(r'begin="([^"]*).*end="([^"]*).*>([^<]*).', tt)
-                subtext = tt.group(3)
-                for ec in escape_chars:
-                    subtext = subtext.replace(ec[0], ec[1])
-                if tt:
-                    num += 1
-                    srt.write('%s\n%s --> %s\n%s\n\n' % (num, tt.group(1), tt.group(2), subtext))
-        subs.append(srtfile)
+            # Since .srt are available on amazon's servers, we strip the default extension and try downloading it just once
+            subUrl = re.search(r'^(.*?\.)[^.]{1,}$', sub['url'])
+            content = '' if None is subUrl else getURL(subUrl.group(1) + 'srt', rjson=False, attempt=777)
+            if 0 < len(content):
+                Log('Downloaded %s' % subDisplayLang)
+                srt.write(content)
+            else:
+                content = getURL(sub['url'], rjson=False, attempt=3)
+                if 0 < len(content):
+                    Log('Converting %s' % subDisplayLang)
+                    for tt in re.compile('<tt:p(.*)').findall(content):
+                        tt = re.sub('<tt:br[^>]*>', '\n', tt)
+                        tt = re.search(r'begin="([^"]*).*end="([^"]*).*>([^<]*).', tt)
+                        subtext = tt.group(3)
+                        for ec in escape_chars:
+                            subtext = subtext.replace(ec[0], ec[1])
+                        if tt:
+                            num += 1
+                            srt.write('%s\n%s --> %s\n%s\n\n' % (num, tt.group(1), tt.group(2), subtext))
+        if 0 == len(content):
+            Log('Unable to download %s' % subDisplayLang)
+        else:
+            subs.append(srtfile)
     return subs
 
 

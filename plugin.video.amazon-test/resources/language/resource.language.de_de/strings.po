@@ -126,11 +126,15 @@ msgid "All"
 msgstr "Alle"
 
 msgctxt "#30025"
-msgid "Kodi setting otherwise english"
-msgstr "Kodi-Einstellungen sonst Englisch"
+msgid "From Kodi player language settings"
+msgstr ""
 
 msgctxt "#30026"
-msgid "Kodi setting otherwise all"
+msgid "From settings, fallback to english"
+msgstr "Kodi-Einstellungen sonst Englisch"
+
+msgctxt "#30027"
+msgid "From settings, fallback to all"
 msgstr "Kodi-Einstellungen sonst alle"
 
 msgctxt "#30029"
@@ -300,26 +304,6 @@ msgstr "Titel aufsteigend"
 msgctxt "#30079"
 msgid "Title Descending"
 msgstr "Titel absteigend"
-
-msgctxt "#30080"
-msgid "Choose Country"
-msgstr "Land auswählen"
-
-msgctxt "#30081"
-msgid "Germany"
-msgstr "Deutschland"
-
-msgctxt "#30082"
-msgid "United Kingdom"
-msgstr "Großbritannien"
-
-msgctxt "#30083"
-msgid "USA"
-msgstr "USA"
-
-msgctxt "#30084"
-msgid "Japan"
-msgstr "Japan"
 
 msgctxt "#30100"
 msgid "Library"
@@ -579,4 +563,15 @@ msgstr "Wegen Änderung von Amazons DRM-Verschlüsselung, ist es nicht möglich 
 
 msgctxt "#30219"
 msgid "Unable to retrieve Amazon's territorial configuration."
+
+msgctxt "#30251"
+msgid "Connection error"
+msgstr ""
+
+msgctxt "#30252"
+msgid "Loading next page…"
+msgstr ""
+
+msgctxt "#30253"
+msgid "Found “{0}”"
 msgstr ""

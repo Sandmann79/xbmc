@@ -561,6 +561,9 @@ msgctxt "#30218"
 msgid "Due changes at Amazon's DRM encryption, it's not possible to use Inputstream for this video.\nPlease configure the fallback option in Settings, to use another Playback method."
 msgstr "Wegen Änderung von Amazons DRM-Verschlüsselung, ist es nicht möglich dieses Video mittels Inputstream wiederzugeben.\nBitte eine alternative Wiedergabemethode in den Einstellungen unter Fallback konfigurieren."
 
+msgctxt "#30219"
+msgid "Unable to retrieve Amazon's territorial configuration."
+
 msgctxt "#30251"
 msgid "Connection error"
 msgstr ""

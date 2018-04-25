@@ -126,14 +126,18 @@ msgid "All"
 msgstr ""
 
 msgctxt "#30025"
-msgid "Kodi setting otherwise english"
+msgid "From Kodi player language settings"
 msgstr ""
 
 msgctxt "#30026"
-msgid "Kodi setting otherwise all"
+msgid "From settings, fallback to english"
 msgstr ""
 
-#empty strings from id 30027 to 30029
+msgctxt "#30027"
+msgid "From settings, fallback to all"
+msgstr ""
+
+#empty string with id 30028
 
 msgctxt "#30029"
 msgid "Movie View"
@@ -313,53 +317,7 @@ msgctxt "#30079"
 msgid "Title Descending"
 msgstr ""
 
-msgctxt "#30080"
-msgid "Choose Country"
-msgstr ""
-
-msgctxt "#30081"
-msgid "Germany"
-msgstr ""
-
-msgctxt "#30082"
-msgid "United Kingdom"
-msgstr ""
-
-msgctxt "#30083"
-msgid "USA"
-msgstr ""
-
-msgctxt "#30084"
-msgid "Japan"
-msgstr ""
-
-msgctxt "#30085"
-msgid "Other (primevideo.com)"
-msgstr ""
-
-#empty strings from id 30086 to 30089
-
-msgctxt "#30090"
-msgid "PrimeVideo Area"
-msgstr ""
-
-msgctxt "#30091"
-msgid "ROE_EU"
-msgstr ""
-
-msgctxt "#30092"
-msgid "ROW_EU"
-msgstr ""
-
-msgctxt "#30093"
-msgid "ROW_FE"
-msgstr ""
-
-msgctxt "#30094"
-msgid "ROW_NA"
-msgstr ""
-
-#empty strings from id 30095 to 30099
+#empty strings from id 30080 to 30099
 
 msgctxt "#30100"
 msgid "Library"

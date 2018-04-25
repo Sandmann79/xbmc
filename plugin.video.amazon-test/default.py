@@ -239,15 +239,14 @@ def getURL(url, useCookie=False, silent=False, headers=None, rjson=True, attempt
                       'You can find a Linux guide on how to update Python and its modules for Kodi here: https://goo.gl/CKtygz',
                       'Additionally, follow this guide to update the required modules: https://goo.gl/ksbbU2')
             exit()
-        if ('429' in e) or ('Timeout' in eType):
+        if (('429' in e) or ('Timeout' in eType)) and (3 > attempt):
             attempt += 1 if not check else 10
             logout = 'Attempt #%s' % attempt
             if '429' in e:
                 logout += '. Too many requests - Pause 10 sec'
                 sleep(10)
             Log(logout)
-            if attempt < 3:
-                return getURL(url, useCookie, silent, headers, rjson, attempt)
+            return getURL(url, useCookie, silent, headers, rjson, attempt)
         return retval
     return json.loads(response) if rjson else response
 
@@ -1762,7 +1761,7 @@ def AndroidPlayback(asin, trailer):
 
 def IStreamPlayback(asin, name, trailer, isAdult, extern):
     vMT = ['Feature', 'Trailer', 'LiveStreaming'][trailer]
-    dRes = 'PlaybackUrls' if trailer == 2 else 'PlaybackUrls,SubtitleUrls'
+    dRes = 'PlaybackUrls' if trailer == 2 else 'PlaybackUrls,SubtitleUrls,ForcedNarratives'
     mpaa_str = RestrAges + getString(30171)
     drm_check = addon.getSetting("drm_check") == 'true'
     at_check = addon.getSetting("at_check") == 'true'
@@ -2089,14 +2088,45 @@ def extrFr(data):
 
 
 def parseSubs(data):
+    bForcedOnly = False  # Whether or not we should only download forced subtitles
     down_lang = int('0' + addon.getSetting('sub_lang'))
-    kodi_lang = jsonRPC('Settings.GetSettingValue', param={'setting': 'locale.subtitlelanguage'})
-    kodi_lang = xbmc.convertLanguage(kodi_lang['value'], xbmc.ISO_639_1)
-    kodi_lang = kodi_lang if kodi_lang else xbmc.getLanguage(xbmc.ISO_639_1, False)
-    kodi_lang = kodi_lang if kodi_lang else 'en'
+    if 0 == down_lang:
+        return []  # Return if the sub_lang is set to None
+    lang_main = jsonRPC('Settings.GetSettingValue', param={'setting': 'locale.subtitlelanguage'})
+    lang_main = lang_main['value'] if 'value' in lang_main else ''
+    
+    # Locale.SubtitleLanguage (and .AudioLanguage) can either return a language or:
+    # [ S] none: no subtitles
+    # [ S] forced_only: forced subtitles only
+    # [AS] original: the stream's original language
+    # [AS] default: Kodi's UI
+    #
+    # For simplicity's sake (and temporarily) we will treat original as AudioLanguage, and
+    # AudioLanguage 'original' as 'default'
+    if lang_main not in ['none', 'forced_only', 'original', 'default']:
+        lang_main = xbmc.convertLanguage(lang_main, xbmc.ISO_639_1)
+    if 'none' == lang_main:
+        return []
+    if 'forced_only' == lang_main:
+        bForcedOnly = True
+    if ('forced_only' == lang_main) or ('original' == lang_main):
+        lang_main = jsonRPC('Settings.GetSettingValue', param={'setting': 'locale.audiolanguage'})
+        lang_main = lang_main['value'] if 'value' in lang_main else ''
+        if lang_main not in ['original', 'default']:
+            lang_main = xbmc.convertLanguage(lang_main, xbmc.ISO_639_1)
+        if lang_main == 'original':
+            lang_main = 'default'
+    if 'default' == lang_main:
+        lang_main = xbmc.getLanguage(xbmc.ISO_639_1, False)
 
-    kodi_lang = '' if down_lang < 2 else kodi_lang
-    en_lang = '' if down_lang == 3 else 'en '
+    # At this point we should have the user's selected language or a valid fallback, although
+    # we further sanitize for safety
+    lang_main = lang_main if lang_main else xbmc.getLanguage(xbmc.ISO_639_1, False)
+    lang_main = lang_main if lang_main else 'en'
+
+    # down_lang: None | All | From Kodi player language settings | From settings, fallback to english | From settings, fallback to all
+    lang_main = '' if 1 == down_lang else lang_main
+    lang_fallback = None if 3 > down_lang else ('' if 4 == down_lang else 'en')
 
     localeConversion = {
         'ar-001':'ar',
@@ -2110,13 +2140,13 @@ def parseSubs(data):
         'sv-se':'sv',
     } # Clean up language and locale information where needed
     subs = []
-    if not down_lang or 'subtitleUrls' not in data:
+    if (not down_lang) or (('subtitleUrls' not in data) and ('forcedNarratives' not in data)):
         return subs
 
     def_subs = []
     fb_subs = []
 
-    for sub in data['subtitleUrls']:
+    for sub in data['subtitleUrls'] + data['forcedNarratives']:
         lang = sub['languageCode'].strip()
         if lang in localeConversion:
             lang = localeConversion[lang]
@@ -2131,16 +2161,20 @@ def parseSubs(data):
         # Amazon's en defaults to en_US, not en_UK
         if 'en' == lang:
             lang = 'en US'
-        # Readd close-caption information where needed
+        # Read close-caption information where needed
         if '[' in sub['displayName']:
             cc = re.search(r'(\[[^\]]+\])', sub['displayName'])
             if None is not cc:
                 lang = lang + (' %s' % cc.group(1))
-        sub['languageCode'] = lang
-        if kodi_lang in lang:
-            def_subs.append(sub)
-        if en_lang in lang:
-            fb_subs.append(sub)
+        # Add forced subs information
+        if ' forced ' in sub['displayName']:
+            lang = lang + '.Forced'
+        if (' forced ' in sub['displayName']) or (False is bForcedOnly):
+            sub['languageCode'] = lang
+            if lang_main in lang:
+                def_subs.append(sub)
+            if (None is not lang_fallback) and (lang_fallback in lang):
+                fb_subs.append(sub)
 
     if not def_subs:
         def_subs = fb_subs
@@ -2148,26 +2182,39 @@ def parseSubs(data):
     import codecs
     for sub in def_subs:
         escape_chars = [('&amp;', '&'), ('&quot;', '"'), ('&lt;', '<'), ('&gt;', '>'), ('&apos;', "'")]
-        Log('Convert %s Subtitle (%s)' % (sub['displayName'].strip(), sub['languageCode']))
         srtfile = xbmc.translatePath('special://temp/%s.srt' % sub['languageCode']).decode('utf-8')
+        subDisplayLang = '“%s” subtitle (%s)' % (sub['displayName'].strip(), sub['languageCode'])
+        content = ''
         with codecs.open(srtfile, 'w', encoding='utf-8') as srt:
             num = 0
-            content = getURL(sub['url'], rjson=False)
-            for tt in re.compile('<tt:p(.*)').findall(content):
-                tt = re.sub('<tt:br[^>]*>', '\n', tt)
-                tt = re.search(r'begin="([^"]*).*end="([^"]*).*>([^<]*).', tt)
-                subtext = tt.group(3)
-                for ec in escape_chars:
-                    subtext = subtext.replace(ec[0], ec[1])
-                if tt:
-                    num += 1
-                    srt.write('%s\n%s --> %s\n%s\n\n' % (num, tt.group(1), tt.group(2), subtext))
-        subs.append(srtfile)
+            # Since .srt are available on amazon's servers, we strip the default extension and try downloading it just once
+            subUrl = re.search(r'^(.*?\.)[^.]{1,}$', sub['url'])
+            content = '' if None is subUrl else getURL(subUrl.group(1) + 'srt', rjson=False, attempt=777)
+            if 0 < len(content):
+                Log('Downloaded %s' % subDisplayLang)
+                srt.write(content)
+            else:
+                content = getURL(sub['url'], rjson=False, attempt=3)
+                if 0 < len(content):
+                    Log('Converting %s' % subDisplayLang)
+                    for tt in re.compile('<tt:p(.*)').findall(content):
+                        tt = re.sub('<tt:br[^>]*>', '\n', tt)
+                        tt = re.search(r'begin="([^"]*).*end="([^"]*).*>([^<]*).', tt)
+                        subtext = tt.group(3)
+                        for ec in escape_chars:
+                            subtext = subtext.replace(ec[0], ec[1])
+                        if tt:
+                            num += 1
+                            srt.write('%s\n%s --> %s\n%s\n\n' % (num, tt.group(1), tt.group(2), subtext))
+        if 0 == len(content):
+            Log('Unable to download %s' % subDisplayLang)
+        else:
+            subs.append(srtfile)
     return subs
 
 
 def getUrldata(mode, asin, retformat='json', devicetypeid='AOAGZA014O5RE', version=1, firmware='1', opt='', extra=False,
-               useCookie=False, retURL=False, vMT='Feature', dRes='PlaybackUrls,SubtitleUrls'):
+               useCookie=False, retURL=False, vMT='Feature', dRes='PlaybackUrls,SubtitleUrls,ForcedNarratives'):
     url = ATVUrl + '/cdp/' + mode
     url += '?asin=' + asin
     url += '&deviceTypeID=' + devicetypeid

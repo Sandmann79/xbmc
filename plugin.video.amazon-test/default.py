@@ -154,7 +154,7 @@ warnings.simplefilter('error', requests.packages.urllib3.exceptions.SNIMissingWa
 warnings.simplefilter('error', requests.packages.urllib3.exceptions.InsecurePlatformWarning)
 
 
-def setView(content, updateListing=False):
+def setContentAndView(content, updateListing=False):
     if content == 'movie':
         ctype = 'movies'
         cview = 'movieview'
@@ -164,14 +164,23 @@ def setView(content, updateListing=False):
     elif content == 'season':
         ctype = 'seasons'
         cview = 'seasonview'
-    else:
+    elif content == 'episode':
         ctype = 'episodes'
         cview = 'episodeview'
+    elif content == 'videos':
+        ctype = 'videos'
+        cview = None
+    elif content == 'files':
+        ctype = 'files'
+        cview = None
+    else:
+        ctype = None
+        cview = None
 
-    views = [50, 51, 52, 53, 54, 55, 500, 501, 502, -1]
-    xbmcplugin.setContent(pluginhandle, ctype)
-    viewenable = addon.getSetting("viewenable") == 'true'
-    if viewenable:
+    if None is not ctype:
+        xbmcplugin.setContent(pluginhandle, ctype)
+    if (None is not cview) and ('true' == addon.getSetting("viewenable")):
+        views = [50, 51, 52, 53, 54, 55, 500, 501, 502, -1]
         viewid = views[int(addon.getSetting(cview))]
         if viewid == -1:
             viewid = int(addon.getSetting(cview.replace('view', 'id')))
@@ -501,20 +510,21 @@ def PrimeVideo_Browse(path, forceSort=None):
                 # https://codedocs.xyz/xbmc/xbmc/group__python__xbmcgui__listitem.html#ga0b71166869bda87ad744942888fb5f14
                 item.setInfo('video', m['videometa'])
                 if 'episode' in m['videometa']:
-                    folderType = 3  # Episode
+                    folderType = 4  # Episode
                 elif 'season' in m['videometa']:
                     if 'tvshow' == m['videometa']['mediatype']:
-                        folderType = 5  # Series list
+                        folderType = 2  # Series list
                     else:
-                        folderType = 4  # Season
-                elif 2 > folderType:  # If it's not been declared season or episode yet…
-                    folderType = 2  # … it's a Movie
+                        folderType = 3  # Season
+                elif 2 > folderType:  # If it's not been declared series, season or episode yet…
+                    folderType = 5  # … it's a Movie
             if 'video' in m:
                 folder = False
                 item.setProperty('IsPlayable', 'true')
                 item.setInfo('video', {'title': title})
                 if 'runtime' in m:
                     item.setInfo('video', {'duration': m['runtime']})
+                    item.addStreamInfo('video', {'duration': m['runtime']})
         xbmcplugin.addDirectoryItem(pluginhandle, url, item, isFolder=folder)
         del item
 
@@ -524,14 +534,19 @@ def PrimeVideo_Browse(path, forceSort=None):
         xbmcplugin.SORT_METHOD_NONE,
         xbmcplugin.SORT_METHOD_LABEL_IGNORE_THE,
         xbmcplugin.SORT_METHOD_LABEL_IGNORE_THE,
+        xbmcplugin.SORT_METHOD_LABEL_IGNORE_THE,
         xbmcplugin.SORT_METHOD_EPISODE,
         xbmcplugin.SORT_METHOD_LABEL_IGNORE_THE,
-        xbmcplugin.SORT_METHOD_LABEL_IGNORE_THE,
     ][folderType if None is forceSort else forceSort])
-    if ('false' == addon.getSetting("viewenable")) or (2 > folderType):
-        xbmcplugin.endOfDirectory(pluginhandle, updateListing=False)
+
+    if 'false' == addon.getSetting("viewenable"):
+        # Only vfs and videos to keep Kodi's watched functionalities
+        folderType = 0 if 2 > folderType else 1
     else:
-        setView(['movie', 'episode', 'season', 'series'][folderType - 2])
+        # Actual views, set the main categories as vfs
+        folderType = 0 if 2 > folderType else 2
+
+    setContentAndView([None, 'videos', 'series', 'season', 'episode', 'movie'][folderType])
 
 
 def PrimeVideo_LazyLoad(obj, objName):
@@ -1158,9 +1173,9 @@ def listContent(catalog, url, page, parent, export=False):
         db.commit()
         xbmc.executebuiltin('RunPlugin(%s?mode=checkMissing)' % sys.argv[0])
         if 'search' in parent:
-            setView('season')
+            setContentAndView('season')
         else:
-            setView(contentType)
+            setContentAndView(contentType)
 
 
 def cleanTitle(title):

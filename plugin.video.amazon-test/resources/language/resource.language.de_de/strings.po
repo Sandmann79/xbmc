@@ -127,7 +127,7 @@ msgstr "Alle"
 
 msgctxt "#30025"
 msgid "From Kodi player language settings"
-msgstr ""
+msgstr "Spracheinstellung vom Kodi Player"
 
 msgctxt "#30026"
 msgid "From settings, fallback to english"
@@ -563,15 +563,16 @@ msgstr "Wegen Änderung von Amazons DRM-Verschlüsselung, ist es nicht möglich 
 
 msgctxt "#30219"
 msgid "Unable to retrieve Amazon's territorial configuration."
+msgstr "Die territoriale Konfiguration von Amazon konnte nicht abgerufen werden."
 
 msgctxt "#30251"
 msgid "Connection error"
-msgstr ""
+msgstr "Verbindungsfehler"
 
 msgctxt "#30252"
 msgid "Loading next page…"
-msgstr ""
+msgstr "Lade nächste Seite…"
 
 msgctxt "#30253"
 msgid "Found “{0}”"
-msgstr ""
+msgstr "Gefunden “{0}”"

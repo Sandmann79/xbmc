@@ -2088,8 +2088,10 @@ def extrFr(data):
 def parseSubs(data):
     bForcedOnly = False  # Whether or not we should only download forced subtitles
     down_lang = int('0' + addon.getSetting('sub_lang'))
-    kodi_lang = jsonRPC('Settings.GetSettingValue', param={'setting': 'locale.subtitlelanguage'})
-    kodi_lang = kodi_lang['value'] if 'value' in kodi_lang else ''
+    if 0 == down_lang:
+        return []  # Return if the sub_lang is set to None
+    lang_main = jsonRPC('Settings.GetSettingValue', param={'setting': 'locale.subtitlelanguage'})
+    lang_main = lang_main['value'] if 'value' in lang_main else ''
     
     # Locale.SubtitleLanguage (and .AudioLanguage) can either return a language or:
     # [ S] none: no subtitles
@@ -2099,29 +2101,30 @@ def parseSubs(data):
     #
     # For simplicity's sake (and temporarily) we will treat original as AudioLanguage, and
     # AudioLanguage 'original' as 'default'
-    if kodi_lang not in ['none', 'forced_only', 'original', 'default']:
-        kodi_lang = xbmc.convertLanguage(kodi_lang, xbmc.ISO_639_1)
-    if 'none' == kodi_lang:
+    if lang_main not in ['none', 'forced_only', 'original', 'default']:
+        lang_main = xbmc.convertLanguage(lang_main, xbmc.ISO_639_1)
+    if 'none' == lang_main:
         return []
-    if 'forced_only' == kodi_lang:
+    if 'forced_only' == lang_main:
         bForcedOnly = True
-    if ('forced_only' == kodi_lang) or ('original' == kodi_lang):
-        kodi_lang = jsonRPC('Settings.GetSettingValue', param={'setting': 'locale.audiolanguage'})
-        kodi_lang = kodi_lang['value'] if 'value' in kodi_lang else ''
-        if kodi_lang not in ['original', 'default']:
-            kodi_lang = xbmc.convertLanguage(kodi_lang, xbmc.ISO_639_1)
-        if kodi_lang == 'original':
-            kodi_lang = 'default'
-    if 'default' == kodi_lang:
-        kodi_lang = xbmc.getLanguage(xbmc.ISO_639_1, False)
+    if ('forced_only' == lang_main) or ('original' == lang_main):
+        lang_main = jsonRPC('Settings.GetSettingValue', param={'setting': 'locale.audiolanguage'})
+        lang_main = lang_main['value'] if 'value' in lang_main else ''
+        if lang_main not in ['original', 'default']:
+            lang_main = xbmc.convertLanguage(lang_main, xbmc.ISO_639_1)
+        if lang_main == 'original':
+            lang_main = 'default'
+    if 'default' == lang_main:
+        lang_main = xbmc.getLanguage(xbmc.ISO_639_1, False)
 
     # At this point we should have the user's selected language or a valid fallback, although
     # we further sanitize for safety
-    kodi_lang = kodi_lang if kodi_lang else xbmc.getLanguage(xbmc.ISO_639_1, False)
-    kodi_lang = kodi_lang if kodi_lang else 'en'
+    lang_main = lang_main if lang_main else xbmc.getLanguage(xbmc.ISO_639_1, False)
+    lang_main = lang_main if lang_main else 'en'
 
-    kodi_lang = '' if down_lang < 2 else kodi_lang
-    en_lang = '' if down_lang == 3 else 'en '
+    # down_lang: None | All | From Kodi player language settings | From settings, fallback to english | From settings, fallback to all
+    lang_main = '' if 1 == down_lang else lang_main
+    lang_fallback = None if 3 > down_lang else ('' if 4 == down_lang else 'en')
 
     localeConversion = {
         'ar-001':'ar',
@@ -2156,7 +2159,7 @@ def parseSubs(data):
         # Amazon's en defaults to en_US, not en_UK
         if 'en' == lang:
             lang = 'en US'
-        # Readd close-caption information where needed
+        # Read close-caption information where needed
         if '[' in sub['displayName']:
             cc = re.search(r'(\[[^\]]+\])', sub['displayName'])
             if None is not cc:
@@ -2166,9 +2169,9 @@ def parseSubs(data):
             lang = lang + '.Forced'
         if (' forced ' in sub['displayName']) or (False is bForcedOnly):
             sub['languageCode'] = lang
-            if kodi_lang in lang:
+            if lang_main in lang:
                 def_subs.append(sub)
-            if en_lang in lang:
+            if (None is not lang_fallback) and (lang_fallback in lang):
                 fb_subs.append(sub)
 
     if not def_subs:

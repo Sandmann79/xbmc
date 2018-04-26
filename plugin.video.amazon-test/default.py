@@ -401,6 +401,9 @@ def PrimeVideo_BuildRoot():
         Dialog.notification('Connection error', 'Unable to fetch the primevideo.com homepage', xbmcgui.NOTIFICATION_ERROR)
         Log('Unable to fetch the primevideo.com homepage', xbmc.LOGERROR)
         return False
+    watchlist = re.search(r'<a[^>]* href="(/watchlist/)[^"]*"[^>]*>(.*?)</a>', home)
+    if None is not watchlist:
+        pvCatalog['root']['Watchlist'] = { 'title': watchlist.group(2), 'lazyLoadURL': BaseUrl + watchlist.group(1) }
     home = re.search('<div id="av-nav-main-menu".*?<ul role="navigation"[^>]*>\s*(.*?)\s*</ul>', home)
     if None is home:
         Dialog.notification('PrimeVideo error', 'Unable to find the main primevideo.com navigation section', xbmcgui.NOTIFICATION_ERROR)
@@ -669,7 +672,16 @@ def PrimeVideo_LazyLoad(obj, objName):
             cnt = re.sub(t[0], t[1], cnt, flags=re.DOTALL)
         if None is not re.search('<html[^>]*>', cnt):
             ''' If there's an HTML tag it's no JSON-AmazonUI-Streaming object '''
-            if None is re.search('"[^"]*av-result-cards[^"]*"', cnt, flags=re.DOTALL):
+            if None is not re.search(r'<div[^>]* id="Watchlist"[^>]*>', cnt, flags=re.DOTALL):
+                ''' Watchlist '''
+                Log('Path: %s' % objName)
+                if ('Watchlist' == objName):
+                    for entry in re.findall(r'<a href="([^"]+/)[^"/]+" class="DigitalVideoUI_TabHeading__tab([^"]*DigitalVideoUI_TabHeading__active)?">(.*?)</a>', cnt, flags=re.DOTALL):
+                        obj[entry[2]] = { 'title': entry[2], 'lazyLoadURL': BaseUrl + entry[0] + '?sort=DATE_ADDED_DESC' }
+                    continue
+                for entry in re.findall(r'<div[^>]* class="[^"]*DigitalVideoWebNodeLists_Item__item[^"]*"[^>]*>\s*<a href="(/detail/([^/]+)/)[^"]*"[^>]*>*.*?"[^"]*DigitalVideoWebNodeLists_Item__coreTitle[^"]*"[^>]*>\s*(.*?)\s*</', cnt):
+                    obj[entry[1]] = { 'title': entry[2], 'lazyLoadURL': BaseUrl + entry[0] }
+            elif None is re.search(r'"[^"]*av-result-cards[^"]*"', cnt, flags=re.DOTALL):
                 ''' Movie/series page '''
 
                 # Find the biggest fanart available

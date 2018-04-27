@@ -674,16 +674,27 @@ def PrimeVideo_LazyLoad(obj, objName):
             ''' If there's an HTML tag it's no JSON-AmazonUI-Streaming object '''
             if None is not re.search(r'<div[^>]* id="Watchlist"[^>]*>', cnt, flags=re.DOTALL):
                 ''' Watchlist '''
-                Log('Path: %s' % objName)
+                if not hasattr(PrimeVideo_LazyLoad, 'WatchlistPages'):
+                    PrimeVideo_LazyLoad.WatchlistPages = {}
                 if ('Watchlist' == objName):
                     for entry in re.findall(r'<a href="([^"]+/)[^"/]+" class="DigitalVideoUI_TabHeading__tab([^"]*DigitalVideoUI_TabHeading__active)?">(.*?)</a>', cnt, flags=re.DOTALL):
-                        obj[entry[2]] = { 'title': entry[2], 'lazyLoadURL': BaseUrl + entry[0] + '?sort=DATE_ADDED_DESC' }
+                        obj[Unescape(entry[2])] = { 'title': Unescape(entry[2]), 'lazyLoadURL': BaseUrl + entry[0] + '?sort=DATE_ADDED_DESC' }
                     continue
                 for entry in re.findall(r'<div[^>]* class="[^"]*DigitalVideoWebNodeLists_Item__item[^"]*"[^>]*>\s*<a href="(/detail/([^/]+)/)[^"]*"[^>]*>*.*?"[^"]*DigitalVideoWebNodeLists_Item__coreTitle[^"]*"[^>]*>\s*(.*?)\s*</', cnt):
-                    obj[entry[1]] = { 'title': entry[2], 'lazyLoadURL': BaseUrl + entry[0] }
+                    obj[entry[1]] = { 'title': Unescape(entry[2]), 'lazyLoadURL': BaseUrl + entry[0] }
+                pagination = re.search(r'<ol[^>]* class="[^"]*DigitalVideoUI_Pagination__pagination[^"]*"[^>]*>(.*?)</ol>', cnt)
+                if None is not pagination:
+                    # We save a semi-static list of scraped pages, to avoid circular loops
+                    if (refUrn not in PrimeVideo_LazyLoad.WatchlistPages):
+                        PrimeVideo_LazyLoad.WatchlistPages[refUrn] = []
+                    currentPage = re.search(r'<a[^>]* href="#"[^>]*>\s*<span>\s*([0-9]+)\s*</span>', pagination.group(0), flags=re.DOTALL).group(1)
+                    if currentPage not in PrimeVideo_LazyLoad.WatchlistPages[refUrn]:
+                        PrimeVideo_LazyLoad.WatchlistPages[refUrn].append(currentPage)
+                    for entry in re.findall(r'<li[^>]*>\s*<a href="(/[^"]+)"[^>]*>\s*<span>\s*([0-9]+)\s*', pagination.group(0)):
+                        if entry[1] not in PrimeVideo_LazyLoad.WatchlistPages[refUrn]:
+                            requestURLs.append((BaseUrl + entry[0], o, refUrn))
             elif None is re.search(r'"[^"]*av-result-cards[^"]*"', cnt, flags=re.DOTALL):
                 ''' Movie/series page '''
-
                 # Find the biggest fanart available
                 bgimg = re.search(r'<div class="av-hero-background-size av-bgimg av-bgimg-' + imageSizes + r'">.*?url\(([^)]+)\)', cnt, flags=re.DOTALL)
                 if None is not bgimg:

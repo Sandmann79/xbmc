@@ -626,6 +626,19 @@ def PrimeVideo_LazyLoad(obj, objName):
             NotifyUser.lastNotification = 1 + time.time()
             Dialog.notification(__plugin__, msg, time=1000, sound=False)
 
+    def PopulateInlineMovieSeries(obj, rq, title, image, url):
+        """ Takes a sequence of Movies or TV Series such as in watchlist and carousels and fetches the metadata """
+        Log('PIMS: %s %s %s %s %s' % (obj, rq, title, image, url))
+        urn = ExtractURN(url)
+        obj[urn] = {}
+        if urn in pvVideoData:
+            return False
+        pvVideoData[urn] = {
+        'metadata': {'artmeta': {'thumb': MaxSize(image), 'poster': MaxSize(image)}, 'videometa': {}},
+        'title': Unescape(title)}
+        rq.append((url, obj[urn], urn))
+        return True
+
     # Set up the fetch order to find the best quality image possible
     imageSizes = r'(large-screen-double|desktop-double|tablet-landscape-double|phone-landscape-double|phablet-double|phone-double|large-screen|desktop|tablet-landscape|tablet|phone-landscape|phablet|phone)'
 
@@ -680,8 +693,8 @@ def PrimeVideo_LazyLoad(obj, objName):
                     for entry in re.findall(r'<a href="([^"]+/)[^"/]+" class="DigitalVideoUI_TabHeading__tab([^"]*DigitalVideoUI_TabHeading__active)?">(.*?)</a>', cnt, flags=re.DOTALL):
                         obj[Unescape(entry[2])] = { 'title': Unescape(entry[2]), 'lazyLoadURL': BaseUrl + entry[0] + '?sort=DATE_ADDED_DESC' }
                     continue
-                for entry in re.findall(r'<div[^>]* class="[^"]*DigitalVideoWebNodeLists_Item__item[^"]*"[^>]*>\s*<a href="(/detail/([^/]+)/)[^"]*"[^>]*>*.*?"[^"]*DigitalVideoWebNodeLists_Item__coreTitle[^"]*"[^>]*>\s*(.*?)\s*</', cnt):
-                    obj[entry[1]] = { 'title': Unescape(entry[2]), 'lazyLoadURL': BaseUrl + entry[0] }
+                for entry in re.findall(r'<div[^>]* class="[^"]*DigitalVideoWebNodeLists_Item__item[^"]*"[^>]*>\s*<a href="(/detail/[^/]+/)[^"]*"[^>]*>*.*?<img src="([^"]+)".*?"[^"]*DigitalVideoWebNodeLists_Item__coreTitle[^"]*"[^>]*>\s*(.*?)\s*</', cnt):
+                    bUpdatedVideoData = True if PopulateInlineMovieSeries(obj, requestURLs, entry[2], entry[1], BaseUrl + entry[0]) else bUpdatedVideoData
                 pagination = re.search(r'<ol[^>]* class="[^"]*DigitalVideoUI_Pagination__pagination[^"]*"[^>]*>(.*?)</ol>', cnt)
                 if None is not pagination:
                     # We save a semi-static list of scraped pages, to avoid circular loops
@@ -981,14 +994,7 @@ def PrimeVideo_LazyLoad(obj, objName):
                                                             'lazyLoadURL': parts.group(1), 'title': parts.group(4)}
                             else:
                                 ''' Movie/Series list '''
-                                urn = ExtractURN(parts.group(1))
-                                o[title][urn] = {}
-                                if urn not in pvVideoData:
-                                    bUpdatedVideoData = True
-                                    pvVideoData[urn] = {
-                                    'metadata': {'artmeta': {'thumb': MaxSize(parts.group(3)), 'poster': MaxSize(parts.group(3))}, 'videometa': {}},
-                                    'title': Unescape(parts.group(4))}
-                                    requestURLs.append((parts.group(1), o[title][urn], urn))
+                                bUpdatedVideoData = True if PopulateInlineMovieSeries(o[title], requestURLs, parts.group(4), parts.group(3), parts.group(1)) else bUpdatedVideoData
                 pagination = re.search(r'data-ajax-pagination="{&quot;href&quot;:&quot;([^}]+)&quot;}"', section[2], flags=re.DOTALL)
                 if ('dvupdate' == section[0]) and (None is not pagination):
                     requestURLs.append(re.sub(r'(&quot;,&quot;|&amp;)', '&', re.sub('&quot;:&quot;', '=', pagination.group(1) + '&format=json')))

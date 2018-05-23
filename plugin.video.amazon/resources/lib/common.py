@@ -188,7 +188,7 @@ class Captcha(pyxbmct.AddonDialogWindow):
         self.close()
 
 
-def getURL(url, useCookie=False, silent=False, headers=None, rjson=True, attempt=1, check=False):
+def getURL(url, useCookie=False, silent=False, headers=None, rjson=True, attempt=1, check=False, postdata=None):
     # Try to extract the host from the URL
     host = re.search('://([^/]+)/', url)
 
@@ -223,7 +223,8 @@ def getURL(url, useCookie=False, silent=False, headers=None, rjson=True, attempt
         headers['Accept-Language'] = 'de-de, en-gb;q=0.2, en;q=0.1'
 
     try:
-        r = session.get(url, headers=headers, cookies=cj, verify=verifySsl)
+        method = 'POST' if postdata else 'GET'
+        r = session.request(method, url, data=postdata, headers=headers, cookies=cj, verify=verifySsl)
         response = r.text if not check else 'OK'
         if r.status_code >= 400:
             Log('Error %s' % r.status_code)
@@ -256,7 +257,7 @@ def getURL(url, useCookie=False, silent=False, headers=None, rjson=True, attempt
                 sleep(10)
             Log(logout)
             if attempt < 4:
-                return getURL(url, useCookie, silent, headers, rjson, attempt)
+                return getURL(url, useCookie, silent, headers, rjson, attempt, check, postdata)
         return retval
     return json.loads(response) if rjson else response
 
@@ -370,10 +371,15 @@ def toogleWatchlist(asin=None, action='add'):
     if not cookie:
         return
 
-    token = getToken(asin, cookie)
-    url = BaseUrl + '/gp/video/watchlist/ajax/addRemove.html?ASIN=%s&dataType=json&csrfToken=%s&action=%s' % (
-        asin, token, action)
-    data = getURL(url, useCookie=cookie)
+    par = getParams(asin, cookie)
+    data = getURL(par['data-%s-url' % action],
+                  postdata={'ASIN': asin,
+                            'dataType': 'json',
+                            'csrfToken': par['data-csrf-token'],
+                            'action': action,
+                            'pageType': par['data-page-type'],
+                            'subPageType': par['data-sub-page-type']},
+                  useCookie=cookie, headers={'x-requested-with': 'XMLHttpRequest'})
 
     if data['success'] == 1:
         Log(asin + ' ' + data['status'])
@@ -383,14 +389,13 @@ def toogleWatchlist(asin=None, action='add'):
         Log(data['status'] + ': ' + data['reason'])
 
 
-def getToken(asin, cookie):
-    url = BaseUrl + '/dp/video/' + asin
+def getParams(asin, cookie):
+    url = BaseUrl + '/gp/video/hover/%s?format=json&refTag=dv-hover&requesterPageType=Detail' % asin
     data = getURL(url, useCookie=cookie, rjson=False)
     if data:
-        tree = BeautifulSoup(data, convertEntities=BeautifulSoup.HTML_ENTITIES)
-        form = tree.find('form', attrs={'class': 'dv-watchlist-toggle'})
-        token = form.find('input', attrs={'name': 'csrfToken'})['value']
-        return urllib.quote_plus(token)
+        data = re.compile('(<form.*</form>)').findall(data)[0]
+        form = BeautifulSoup(data.replace('\\\"', '"'), convertEntities=BeautifulSoup.HTML_ENTITIES)
+        return form.button
     return ''
 
 

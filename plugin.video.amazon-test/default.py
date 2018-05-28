@@ -108,7 +108,7 @@ AgesCfg = {'A1PA6795UKMFR9': ['FSK', ('FSK 0', 'FSK 0'), ('FSK 6', 'FSK 6'), ('F
                               ('Mature', 'R,NC-17,TV-MA,Unrated,Not rated')],
            'A1VC38T7YXB528': ['', ('全ての観客', 'g'), ('親の指導・助言', 'pg12'), ('R-15指定', 'r15+'), ('成人映画', 'r18+,nr')]}
 
-user_dict = {'active': False, 'name': '', 'var.ATVUrl': '', 'var.BaseUrl': '', 'var.APIUrl': '', 'pv': False, 'mid': '', 'token': pickle.dumps('')}
+user_dict = {'active': False, 'name': '', 'atvurl': '', 'baseurl': '', 'apiurl': '', 'pv': False, 'mid': '', 'token': pickle.dumps(''), 'did': ''}
 
 dateParserData = {
     'de_DE': {'deconstruct': r'^([0-9]+)\.\s+([^\s]+)\s+([0-9]+)', 'reassemble': '{2}-{1:0>2}-{0:0>2}', 'month': 1,
@@ -290,7 +290,7 @@ def getATVData(pg_mode, query='', version=2, auth=False, site_id=None):
     if '/' not in pg_mode:
         pg_mode = 'catalog/' + pg_mode
     parameter = '%s&deviceID=%s&format=json&version=%s&marketplaceId=%s&uxLocale=%s&osLocale=%s' % (
-        deviceTypeID, deviceID, version, var.MarketID, Language, Language)
+        deviceTypeID, var.deviceID, version, var.MarketID, Language, Language)
     if site_id:
         parameter += '&id=' + site_id
     jsondata = getURL('%s/cdp/%s?%s%s' % (var.ATVUrl, pg_mode, parameter, query), auth=auth)
@@ -370,7 +370,7 @@ def addVideo(name, asin, infoLabels, cm=[], export=False):
 
 
 def ContextMenu_MultiUser():
-    return [(getString(30130).split('…')[0], 'RunPlugin(%s?mode=LogIn)' % sys.argv[0]),
+    return [(getString(30130).split('…')[0], 'RunPlugin(%s?mode=PairDevice)' % sys.argv[0]),
             (getString(30131).split('…')[0], 'RunPlugin(%s?mode=removeUser)' % sys.argv[0]),
             (getString(30132), 'RunPlugin(%s?mode=renameUser)' % sys.argv[0])]
 
@@ -1546,7 +1546,7 @@ def getInfos(item, export):
 
 def PlayVideo(name, asin, adultstr, trailer, forcefb=0):
     isAdult = adultstr == '1'
-    amazonUrl = var.BaseUrl + "/dp/" + (name if UsePrimeVideo else asin)
+    amazonUrl = "%s/dp/%s" % (var.BaseUrl, name if UsePrimeVideo else asin)
     playable = False
     fallback = int(addon.getSetting("fallback_method"))
     methodOW = fallback - 1 if forcefb and fallback else playMethod
@@ -1686,7 +1686,7 @@ def IStreamPlayback(asin, name, trailer, isAdult, extern):
         return True
 
     mpd, subs = getStreams(*getUrldata('catalog/GetPlaybackResources', asin, extra=True, vMT=vMT,
-                                       opt='&titleDecorationScheme=primary-content', auth=True, dRes=dRes), retmpd=True)
+                                       opt='&titleDecorationScheme=primary-content', dRes=dRes), retmpd=True)
     licURL = getUrldata('catalog/GetPlaybackResources', asin, extra=True, vMT=vMT, dRes='Widevine2License', retURL=True)
     licURL += '|Content-Type=application%2Fx-www-form-urlencoded&Authorization=' + urllib.quote_plus('Bearer ' + getAccesToken())
     licURL += '|widevine2Challenge=B{SSM}&includeHdcpTestKeyInLicense=true'
@@ -1700,7 +1700,7 @@ def IStreamPlayback(asin, name, trailer, isAdult, extern):
     is_version = xbmcaddon.Addon(is_addon).getAddonInfo('version') if is_addon else '0'
     is_binary = xbmc.getCondVisibility('System.HasAddon(kodi.binary.instance.inputstream)')
     orgmpd = mpd
-    if trailer != 2:
+    if trailer != 2 and devData['device_type'] == 'AOAGZA014O5RE':
         mpd = re.sub(r'~', '', mpd)
 
     if drm_check:
@@ -1755,6 +1755,7 @@ def IStreamPlayback(asin, name, trailer, isAdult, extern):
     listitem.setProperty('inputstreamaddon', is_addon)
     listitem.setMimeType('application/dash+xml')
     listitem.setContentLookup(False)
+    #xbmc.executebuiltin('Dialog.Close(busydialog)')
     xbmcplugin.setResolvedUrl(pluginhandle, True, listitem=listitem)
 
     valid_track = validAudioTrack()
@@ -1879,7 +1880,7 @@ def getCmdLine(videoUrl, asin, method, fr):
             return False, nobr_str
 
         if frdetect:
-            suc, fr = getStreams(*getUrldata('catalog/GetPlaybackResources', asin, extra=True, useCookie=True)) if not fr else (True, fr)
+            suc, fr = getStreams(*getUrldata('catalog/GetPlaybackResources', asin, extra=True)) if not fr else (True, fr)
             if not suc:
                 return False, fr
         else:
@@ -1942,6 +1943,7 @@ def getStartupInfo():
 def getStreams(suc, data, retmpd=False):
     HostSet = addon.getSetting("pref_host")
     subUrls = []
+    hosts = []
 
     if not suc:
         return False, data
@@ -1961,6 +1963,8 @@ def getStreams(suc, data, retmpd=False):
         '''
         hosts = [h_dict[k] for k in h_dict]
         hosts.insert(0, h_dict[defid])
+    else:
+        Log(data)
 
     while hosts:
         for cdn in hosts:
@@ -2042,20 +2046,19 @@ def parseSubs(data):
     return subs
 
 
-def getUrldata(mode, asin, retformat='json', devicetypeid='AOAGZA014O5RE', version=1, firmware='1', opt='', extra=False,
-               auth=False, retURL=False, vMT='Feature', dRes='PlaybackUrls,SubtitleUrls'):
-    url = var.ATVUrl + '/cdp/' + mode
-    url += '?asin=' + asin
-    url += '&deviceTypeID=' + devicetypeid
-    url += '&firmware=' + firmware
-    url += '&deviceID=' + deviceID
-    url += '&marketplaceID=' + var.MarketID
-    url += '&format=' + retformat
-    url += '&version=' + str(version)
+def getUrldata(mode, asin, version='1', opt='', extra=False, retURL=False, vMT='Feature', dRes='PlaybackUrls,SubtitleUrls'):
+    url = '%s/cdp/%s' % (var.ATVUrl, mode)
+    url += '?titleId=' + asin
+    url += '&deviceTypeID=' + devData['device_type']
+    url += '&firmware=default'
+    url += '&deviceID=' + var.deviceID
+    url += '&format=json'
+    url += '&version=' + version
     if extra:
         url += '&resourceUsage=ImmediateConsumption&consumptionType=Streaming&deviceDrmOverride=CENC' \
                '&deviceStreamingTechnologyOverride=DASH&deviceProtocolOverride=Https' \
-               '&deviceBitrateAdaptationsOverride=CVBR%2CCBR&audioTrackId=all'
+               '&deviceBitrateAdaptationsOverride=CVBR%2CCBR&audioTrackId=all' \
+               '&deviceCodecOverride=H264'
         if UsePrimeVideo:
             url += '&gascEnabled=true'
         url += '&videoMaterialType=' + vMT
@@ -2064,16 +2067,20 @@ def getUrldata(mode, asin, retformat='json', devicetypeid='AOAGZA014O5RE', versi
     url += opt
     if retURL:
         return url
-    data = getURL(url, auth=auth, silent=True)
+    data = getURL(url, auth=True)
     if data:
-        if 'error' in data.keys():
-            return False, Error(data['error'])
-        elif 'AudioVideoUrls' in data.get('errorsByResource', ''):
-            return False, Error(data['errorsByResource']['AudioVideoUrls'])
-        elif 'PlaybackUrls' in data.get('errorsByResource', ''):
-            return False, Error(data['errorsByResource']['PlaybackUrls'])
-        else:
-            return True, data
+        error = data.get('message', {})
+        if error.get('statusCode') == 'ERROR':
+            if 'Device type id' in str(error):
+                user = loadUser()
+                user['token'] = pickle.dumps("")
+                addUser(user)
+            return False, Error(error['body'])
+
+        error = re.findall('{[^"]*\"errorCode\"[^}]*}', json.dumps(data))
+        if error:
+            return False, Error(json.loads(error[0]))
+        return True, data
     return False, 'HTTP Error'
 
 
@@ -2162,11 +2169,11 @@ def Input(mousex=0, mousey=0, click=0, keys=None, delay='200'):
         Log('Returncode: %s' % rcode)
 
 
-def genID(renew=False):
-    guid = getConfig("GendeviceID") if not renew else False
-    if not guid or len(guid) != 56:
+def genID():
+    if devData['device_type'] == 'AOAGZA014O5RE':
         guid = hmac.new(getConfig('UserAgent'), uuid.uuid4().bytes, hashlib.sha224).hexdigest()
-        writeConfig("GendeviceID", guid)
+    else:
+        guid = str(randint(1000000000000, 9999999999999))
     return guid
 
 
@@ -2247,12 +2254,12 @@ def getTerritory():
     Log('Retrieve territoral config')
     user = user_dict
     data = getURL('https://na.api.amazonvideo.com/cdp/usage/v2/GetAppStartupConfig?deviceTypeID=A28RQHJKHM2A2W&deviceID=%s&firmware=1&version=1&format=json'
-                  % deviceID)
+                  % var.deviceID)
     if 'customerConfig' in data.keys():
-        user['var.ATVUrl'] = 'https://' + data['customerConfig']['var.BaseUrl']
-        user['var.BaseUrl'] = data['territoryConfig']['primeSignupvar.BaseUrl']
+        user['atvurl'] = 'https://' + data['customerConfig']['baseUrl']
+        user['baseurl'] = data['territoryConfig']['primeSignupBaseUrl']
         user['mid'] = data['territoryConfig']['avMarketplace']
-        user['var.APIUrl'] = user['var.BaseUrl'].replace('www.', '').replace('://', '://api.')
+        user['apiurl'] = user['baseurl'].replace('www.', '').replace('://', '://api.')
     return user
 
 
@@ -2576,9 +2583,11 @@ def jsonRPC(method, props='', param=None):
 
 def PairDevice():
     Log('Start pairing')
+    if not devData['device_serial']:
+        devData['device_serial'] = genID()
     pairdata = {"code_data": devData}
     user = getTerritory()
-    response = getURL(user['var.APIUrl'] + '/auth/create/codepair', postdata=json.dumps(pairdata), headers={'Content-Type': 'application/json'})
+    response = getURL(user['apiurl'] + '/auth/create/codepair', postdata=json.dumps(pairdata), headers={'Content-Type': 'application/json'})
 
     if response:
         Log(response['public_code'])
@@ -2588,16 +2597,17 @@ def PairDevice():
         lastchk = 0
         regdata = json.dumps({"auth_data": {"code_pair": {"public_code": response['public_code'], "private_code": response['private_code']}},
                               "registration_data": devData, "requested_token_type": ["bearer"]})
-        pDialog.create(getString(30008).replace('…', ''), getString(30212) % (user['var.BaseUrl'], response['public_code']), None,
+        pDialog.create(getString(30008).replace('…', ''), getString(30212) % (user['baseurl'], response['public_code']), None,
                        getString(30213) % response['expires_in'])
         while time.time() < timeout:
             if time.time() - lastchk >= polling:
                 lastchk = time.time()
-                response = getURL(user['var.APIUrl'] + '/auth/register', postdata=regdata, headers={'Content-Type': 'application/json'})
+                response = getURL(user['apiurl'] + '/auth/register', postdata=regdata, headers={'Content-Type': 'application/json'})
                 if 'success' in str(response):
                     result = response['response']['success']['tokens']['bearer']
                     result['expires'] = int(time.time() + int(result['expires_in']))
                     user['token'] = pickle.dumps(result)
+                    user['did'] = devData['device_serial']
                     addUser(user)
                     Log('Got token')
                     pDialog.close()
@@ -2770,6 +2780,7 @@ class variables:
         self.BaseUrl = loadUser('baseurl')
         self.ATVUrl = loadUser('atvurl')
         self.APIUrl = loadUser('apiurl')
+        self.deviceID = loadUser('did')
 
             
 var = variables()
@@ -2781,18 +2792,51 @@ mode = args.get('mode', None)
 if not getConfig('UserAgent'):
     getUA()
 
-deviceID = 'default' 
+devData = {"domain": "Device",
+           "app_name": "AIV",
+           "app_version": "4.1.115",
+           "device_model": "default",
+           "os_version": "Ruby",
+           "device_type": "A1KAXIG6VXSG8Y",
+           "device_serial": "",
+           "device_name": "%FIRST_NAME%'s%DUPE_STRATEGY_1ST% Shield",
+           "software_version": "999"}
+
+'''
+# default
 devData = {"domain": "Device",
            "app_name": "AIV",
            "app_version": "3.5.0",
            "device_model": "default",
            "os_version": "Ruby",
            "device_type": "AOAGZA014O5RE",
-           "device_serial": deviceID,
+           "device_serial": "default",
            "device_name": "%FIRST_NAME%'s%DUPE_STRATEGY_1ST% undefined",
            "software_version": "999"}
 
-'''
+
+# lg webos
+devData = {"domain": "Device",
+           "app_name": "AIV",
+           "app_version": "3.5.1",
+           "device_model": "default",
+           "os_version": "Ruby",
+           "device_type": "A71I8788P1ZV8",
+           "device_serial": "",
+           "device_name": "%FIRST_NAME%'s%DUPE_STRATEGY_1ST% LG TV WebOS",
+           "software_version": "999"}
+
+# shield
+devData = {"domain": "Device",
+           "app_name": "AIV",
+           "app_version": "3.5.1",
+           "device_model": "default",
+           "os_version": "Ruby",
+           "device_type": "A1KAXIG6VXSG8Y",
+           "device_serial": "",
+           "device_name": "%FIRST_NAME%'s%DUPE_STRATEGY_1ST% Shield",
+           "software_version": "999"}
+
 # tivo5
 devData = {
     "domain": "Device",

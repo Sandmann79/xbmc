@@ -172,7 +172,6 @@ def check_output(*popenargs, **kwargs):
 
 def IStreamPlayback(trailer, isAdult, extern):
     drm_check = addon.getSetting("drm_check") == 'true'
-    at_check = addon.getSetting("at_check") == 'true'
     inputstream_helper = Helper('mpd', drm='com.widevine.alpha')
     vMT = 'Trailer' if trailer else 'Feature'
 
@@ -200,7 +199,6 @@ def IStreamPlayback(trailer, isAdult, extern):
         Dialog.notification(getString(30203), subs, xbmcgui.NOTIFICATION_ERROR)
         return True
 
-    orgmpd = mpd
     is_version = xbmcaddon.Addon(is_addon).getAddonInfo('version') if is_addon else '0'
     is_binary = xbmc.getCondVisibility('System.HasAddon(kodi.binary.instance.inputstream)')
     mpd = re.sub(r'~', '', mpd)
@@ -210,9 +208,6 @@ def IStreamPlayback(trailer, isAdult, extern):
         if 'avc1.4D00' in mpdcontent and platform != osAndroid and not is_binary:
             xbmc.executebuiltin('ActivateWindow(busydialog)')
             return extrFr(mpdcontent)
-        if mpdcontent.count('EDEF8BA9-79D6-4ACE-A3C8-27DCD51D21ED') > 1 and (platform == osAndroid or is_binary):
-            mpd = orgmpd
-            at_check = False
 
     Log(mpd)
 
@@ -251,73 +246,11 @@ def IStreamPlayback(trailer, isAdult, extern):
     listitem.setContentLookup(False)
     xbmcplugin.setResolvedUrl(pluginhandle, True, listitem=listitem)
 
-    valid_track = validAudioTrack()
-
+    PlayerInfo('Starting Playback...')
     Log('Video ContentType Movie? %s' % xbmc.getCondVisibility('VideoPlayer.Content(movies)'), 0)
     Log('Video ContentType Episode? %s' % xbmc.getCondVisibility('VideoPlayer.Content(episodes)'), 0)
 
-    if not valid_track and at_check:
-        lang = jsonRPC('Player.GetProperties', 'currentaudiostream', {'playerid': 0})['language']
-        all_tracks = jsonRPC('Player.GetProperties', 'audiostreams', {'playerid': 0})
-        Log(str(all_tracks).replace('},', '}\n'))
-
-        count = 3
-        while count and len(all_tracks) > 1:
-            cur_track = jsonRPC('Player.GetProperties', 'currentaudiostream', {'playerid': 0})['index']
-            all_tracks = [i for i in all_tracks if i['index'] != cur_track]
-            Log('Current AudioTrackID %d' % cur_track)
-            tracks = all_tracks
-            if lang in str(tracks):
-                tracks = [i for i in tracks if i['language'] == lang]
-            if 'eac3' in str(tracks):
-                tracks = [i for i in tracks if i['codec'] == 'eac3']
-            chan = max([i['channels'] for i in tracks])
-            trackid = -1
-            trackbr = 0
-
-            for at in tracks:
-                if at['channels'] == chan and at['bitrate'] > trackbr:
-                    trackid = at['index']
-                    trackbr = at['bitrate']
-
-            if trackid > -1:
-                Log('Switching to AudioTrackID %d' % trackid)
-                xbmc.Player().setAudioStream(trackid)
-                if validAudioTrack():
-                    break
-            count -= 1
     return True
-
-
-def validAudioTrack():
-    sleeptm = 0.2
-    Log('Checking AudioTrack')
-
-    PlayerInfo('Player Starting')
-    cac_s = time.time()
-    while xbmc.getCondVisibility('!Player.Caching') and cac_s + 5 > time.time():
-        sleep(sleeptm)
-
-    PlayerInfo('Player Caching')
-    cac_s = time.time()
-    while xbmc.getCondVisibility('Player.Caching') and cac_s + 15 > time.time():
-        sleep(sleeptm)
-
-    PlayerInfo('Player Resuming')
-    chan1_track = xbmc.getInfoLabel('VideoPlayer.AudioChannels')
-    sr_track = int(xbmc.getInfoLabel('Player.Process(AudioSamplerate)').replace(',', ''))
-    cc_track = xbmc.getInfoLabel('VideoPlayer.AudioCodec')
-    ch_track = xbmc.getInfoLabel('Player.Process(AudioChannels)	')
-    Log('Codec:%s Samplerate:%s Channels:I(%s)R(%s)' % (cc_track, sr_track, chan1_track, len(ch_track.split(','))))
-
-    if cc_track == 'eac3' and sr_track >= 48000:
-        retval = True
-    elif cc_track != 'eac3' and sr_track >= 22050:
-        retval = True
-    else:
-        retval = False
-
-    return retval
 
 
 def PlayerInfo(msg, sleeptm=0.2):

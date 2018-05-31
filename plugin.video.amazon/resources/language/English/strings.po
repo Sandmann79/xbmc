@@ -118,15 +118,7 @@ msgctxt "#30022"
 msgid "Start after 5 minutes of idle"
 msgstr ""
 
-msgctxt "#30023"
-msgid "Switch Audiotrack, if not valid (experimental)"
-msgstr ""
-
-msgctxt "#30024"
-msgid "Language"
-msgstr ""
-
-#empty strings from id 30025 to 30026
+#empty strings from id 30023 to 30026
 
 msgctxt "#30027"
 msgid "Multi User Support"

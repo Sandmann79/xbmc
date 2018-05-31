@@ -117,14 +117,6 @@ msgctxt "#30022"
 msgid "Start after 5 minutes of idle"
 msgstr "Nach 5 Minuten Leerlauf starten"
 
-msgctxt "#30023"
-msgid "Switch Audiotrack, if not valid (experimental)"
-msgstr "Ungültige Tonspur autom. wechseln (experimentell)"
-
-msgctxt "#30024"
-msgid "Language"
-msgstr "Sprache"
-
 msgctxt "#30027"
 msgid "Multi User Support"
 msgstr "Mehrbenutzer-Unterstützung"

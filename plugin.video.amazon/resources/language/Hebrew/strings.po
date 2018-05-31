@@ -126,15 +126,7 @@ msgctxt "#30022"
 msgid "Start after 5 minutes of idle"
 msgstr "לאחר 5 דקות של חוסר פעילות"
 
-msgctxt "#30023"
-msgid "Switch Audiotrack, if not valid (experimental)"
-msgstr "עבור פס קול, אם לא תקין (ניסיוני)"
-
-msgctxt "#30024"
-msgid "Language"
-msgstr "שפה"
-
-# empty strings from id 30025 to 30028
+# empty strings from id 30023 to 30028
 msgctxt "#30029"
 msgid "Movie View"
 msgstr "תצוגת סרט"

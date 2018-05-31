@@ -107,10 +107,6 @@ msgctxt "#30020"
 msgid "Enable DRM check"
 msgstr "אפשר בדיקתDRM"
 
-msgctxt "#30021"
-msgid "Switch Audiotrack, if not valid (experimental)"
-msgstr "עבור פס קול, אם לא תקין (ניסיוני)"
-
 msgctxt "#30022"
 msgid "Language"
 msgstr "שפה"

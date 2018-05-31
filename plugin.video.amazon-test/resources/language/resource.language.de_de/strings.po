@@ -109,10 +109,6 @@ msgctxt "#30020"
 msgid "Enable DRM check"
 msgstr "DRM-Überprüfung aktivieren"
 
-msgctxt "#30021"
-msgid "Switch Audiotrack, if not valid (experimental)"
-msgstr "Ungültige Tonspur autom. wechseln (experimentell)"
-
 msgctxt "#30022"
 msgid "Keep me logged in"
 msgstr "Angemeldet bleiben"

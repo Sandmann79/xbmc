@@ -109,9 +109,7 @@ msgctxt "#30020"
 msgid "Enable DRM check"
 msgstr ""
 
-msgctxt "#30021"
-msgid "Switch Audiotrack, if not valid (experimental)"
-msgstr ""
+#empty string with id 30021
 
 msgctxt "#30022"
 msgid "Keep me logged in"

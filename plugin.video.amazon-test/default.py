@@ -212,7 +212,7 @@ def getURL(url, useCookie=False, silent=False, headers=None, rjson=True, attempt
     if (not silent) or verbLog:
         dispurl = url
         dispurl = re.sub('(?i)%s|%s|&token=\w+|&customerId=\w+' % (tvdb, tmdb), '', url).strip()
-        Log('%sURL: %s' % ('check' if check else 'get', dispurl))
+        Log('%sURL: %s' % ('check' if check else 'post' if postdata is not None else 'get', dispurl))
 
     headers = {} if not headers else headers
     if 'User-Agent' not in headers:
@@ -223,7 +223,7 @@ def getURL(url, useCookie=False, silent=False, headers=None, rjson=True, attempt
         headers['Accept-Language'] = userAcceptLanguages
 
     try:
-        method = 'POST' if postdata else 'GET'
+        method = 'POST' if postdata is not None else 'GET'
         r = session.request(method, url, data=postdata, headers=headers, cookies=cj, verify=verifySsl)
         response = r.text if not check else 'OK'
         if r.status_code >= 400:
@@ -1828,8 +1828,7 @@ def IStreamPlayback(asin, name, trailer, isAdult, extern):
         playDummyVid()
         return True
 
-    mpd, subs = getStreams(*getUrldata('catalog/GetPlaybackResources', asin, extra=True, vMT=vMT,
-                                       opt='&titleDecorationScheme=primary-content', dRes=dRes, useCookie=cookie), retmpd=True)
+    mpd, subs = getStreams(*getUrldata('catalog/GetPlaybackResources', asin, extra=True, vMT=vMT, dRes=dRes, useCookie=cookie), retmpd=True)
 
     cj_str = ';'.join(['%s=%s' % (k, v) for k, v in cookie.items()])
     opt = '|Content-Type=application%2Fx-www-form-urlencoded&Cookie=' + urllib.quote_plus(cj_str)
@@ -1848,9 +1847,9 @@ def IStreamPlayback(asin, name, trailer, isAdult, extern):
     if trailer != 2:
         mpd = re.sub(r'~', '', mpd)
 
-    if drm_check:
+    if drm_check and platform != osAndroid and not is_binary:
         mpdcontent = getURL(mpd, useCookie=cookie, rjson=False)
-        if 'avc1.4D00' in mpdcontent and platform != osAndroid and not is_binary:
+        if 'avc1.4D00' in mpdcontent:
             xbmc.executebuiltin('ActivateWindow(busydialog)')
             return extrFr(mpdcontent)
 
@@ -1897,25 +1896,24 @@ def IStreamPlayback(asin, name, trailer, isAdult, extern):
     listitem.setProperty('inputstreamaddon', is_addon)
     listitem.setMimeType('application/dash+xml')
     listitem.setContentLookup(False)
-    #xbmc.executebuiltin('Dialog.Close(busydialog)')
-    xbmcplugin.setResolvedUrl(pluginhandle, True, listitem=listitem)
+    xbmc.executebuiltin('Dialog.Close(busydialog)')
+    player = AmazonPlayer()
+    player.extern = extern
+    player.asin = asin
+    player.url = mpd
+    player.cookie = cookie
+    player.resolve(listitem)
+    starttime = time.time()
 
-    PlayerInfo('Starting Playback...')
-    Log('Video ContentType Movie? %s' % xbmc.getCondVisibility('VideoPlayer.Content(movies)'), 0)
-    Log('Video ContentType Episode? %s' % xbmc.getCondVisibility('VideoPlayer.Content(episodes)'), 0)
+    while not xbmc.abortRequested and player.isPlayingVideo():
+        player.video_lastpos = player.getTime()
+        if time.time() > starttime + player.interval:
+            starttime = time.time()
+            player.updateStream('PLAY')
+        sleep(1)
 
-    return True
-
-
-def PlayerInfo(msg, sleeptm=0.2):
-    player = xbmc.Player()
-    while not player.isPlayingVideo():
-        sleep(sleeptm)
-    while player.isPlayingVideo() and (player.getTime() >= player.getTotalTime()):
-        sleep(sleeptm)
-    if player.isPlayingVideo():
-        Log('%s: %s/%s' % (msg, player.getTime(), player.getTotalTime()))
     del player
+    return True
 
 
 def getListItem(li):
@@ -2208,19 +2206,18 @@ def getUrldata(mode, asin, retformat='json', devicetypeid='AOAGZA014O5RE', versi
     url += '&marketplaceID=' + MarketID
     url += '&format=' + retformat
     url += '&version=' + str(version)
+    url += '&gascEnabled=' + str(UsePrimeVideo).lower()
     if extra:
         url += '&resourceUsage=ImmediateConsumption&consumptionType=Streaming&deviceDrmOverride=CENC' \
                '&deviceStreamingTechnologyOverride=DASH&deviceProtocolOverride=Https' \
                '&deviceBitrateAdaptationsOverride=CVBR%2CCBR&audioTrackId=all'
-        if UsePrimeVideo:
-            url += '&gascEnabled=true'
         url += '&videoMaterialType=' + vMT
         url += '&desiredResources=' + dRes
         url += '&supportedDRMKeyScheme=DUAL_KEY' if platform != osAndroid and 'PlaybackUrls' in dRes else ''
     url += opt
     if retURL:
         return url
-    data = getURL(url, useCookie=useCookie, silent=True)
+    data = getURL(url, useCookie=useCookie, postdata='')
     if data:
         if 'error' in data.keys():
             return False, Error(data['error'])
@@ -3029,7 +3026,8 @@ def jsonRPC(method, props='', param=None):
         Log(res['error'])
         return res['error']
 
-    return res['result'].get(props, res['result'])
+    result = res['result']
+    return result if type(result) == unicode else res['result'].get(props, res['result'])
 
 
 class window(xbmcgui.WindowDialog):
@@ -3247,6 +3245,74 @@ class Captcha(pyxbmct.AddonDialogWindow):
         self.close()
 
 
+class AmazonPlayer(xbmc.Player):
+    def __init__(self):
+        super(AmazonPlayer, self).__init__()
+        self.sleeptm = 0.2
+        self.video_lastpos = 0
+        self.video_totaltime = 0
+        self.dbid = 0
+        self.url = ''
+        self.extern = ''
+        self.asin = ''
+        self.cookie = None
+        self.interval = 180
+
+    def resolve(self, li):
+        xbmcplugin.setResolvedUrl(pluginhandle, True, li)
+        self.dbid = int('0' + getListItem('DBID'))
+        Log(self.dbid)
+        self.PlayerInfo('Starting Playback')
+        self.updateStream('START')
+        Log('Video ContentType Movie? %s' % xbmc.getCondVisibility('VideoPlayer.Content(movies)'), 0)
+        Log('Video ContentType Episode? %s' % xbmc.getCondVisibility('VideoPlayer.Content(episodes)'), 0)
+
+    def onPlayBackEnded(self):
+        self.finished()
+
+    def onPlayBackStopped(self):
+        self.finished()
+
+    def onPlayBackError(self):
+        self.finished()
+
+    def updateStream(self, event):
+        suc, msg = getUrldata('usage/UpdateStream', self.asin, useCookie=self.cookie, opt='&event=%s&timecode=%s' % (event, self.video_lastpos))
+        if suc and 'statusCallbackIntervalSeconds' in str(msg):
+            self.interval = msg['message']['body']['statusCallbackIntervalSeconds']
+
+    def finished(self):
+        self.updateStream('STOP')
+        if self.extern:
+            playcount = 1 if ((self.video_lastpos * 100) / self.video_totaltime) >= 90 else 0
+            watched = getListItem('PlayCount')
+
+            if self.dbid:
+                dbtype = getListItem('DBTYPE')
+                Log(jsonRPC('VideoLibrary.Get%sDetails' % dbtype, 'resume,playcount', {'%sid' % dbtype: self.dbid}))
+                params = {'%sid' % dbtype: self.dbid,
+                          'resume': {'position': 0 if playcount else self.video_lastpos,
+                                     'total': self.video_totaltime},
+                          'playcount': playcount}
+                res = ''if jsonRPC('VideoLibrary.Set%sDetails' % dbtype, '', params) is 'OK' else 'NOT '
+                Log('%sUpdated %sid(%s) with: pos(%s) total(%s) playcount(%s)' % (res, dbtype, self.dbid, self.video_lastpos, self.video_totaltime, playcount))
+                xbmc.executebuiltin('Container.Refresh')
+            else:
+                Log('No DBID returned')
+                if playcount and not watched:
+                    xbmc.executebuiltin("Action(ToggleWatched)")
+
+    def PlayerInfo(self, msg):
+        while not self.isPlayingVideo():
+            sleep(self.sleeptm)
+        while self.isPlayingVideo() and (self.getTime() >= self.getTotalTime()):
+            sleep(self.sleeptm)
+        if self.isPlayingVideo():
+            Log('%s: %s/%s' % (msg, self.getTime(), self.getTotalTime()))
+            self.video_totaltime = self.getTotalTime()
+            self.video_lastpos = self.getTime()
+
+
 args = dict(urlparse.parse_qsl(urlparse.urlparse(sys.argv[2]).query))
 
 Log(args, xbmc.LOGDEBUG)
@@ -3310,7 +3376,7 @@ elif mode == 'listCategories':
 elif mode == 'listContent':
     listContent(args.get('cat'), args.get('url', '').decode('utf-8'), int(args.get('page', '1')), args.get('opt', ''))
 elif mode == 'PlayVideo':
-    PlayVideo(args.get('name'), args.get('asin'), args.get('adult'), int(args.get('trailer', '0')), int(args.get('selbitrate', '0')))
+    PlayVideo(args.get('name', ''), args.get('asin'), args.get('adult', '0'), int(args.get('trailer', '0')), int(args.get('selbitrate', '0')))
 elif mode == 'getList':
     getList(args.get('url', ''), int(args.get('export', '0')), [args.get('opt')])
 elif mode == 'getListMenu':

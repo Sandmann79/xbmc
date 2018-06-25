@@ -1102,11 +1102,11 @@ def getNode(node):
 def listCategories(node, root=None):
     loadCategories()
     cat = getNode(node)
-    all_vid = {'movies': [30143, 'movie'], 'tv_shows': [30160, 'tvseason,tvepisodes&RollUpToSeries=T']}
+    all_vid = {'movies': [30143, 'Movie', 'root'], 'tv_shows': [30160, 'TVSeason&RollupToSeason=T', 'root_show']}
 
     if root in all_vid.keys():
         url = 'OrderBy=Title%s&contentType=%s' % (OfferGroup, all_vid[root][1])
-        addDir(getString(all_vid[root][0]), 'listContent', url)
+        addDir(getString(all_vid[root][0]), 'listContent', url, opt=all_vid[root][2])
 
     for node, title, category, content, menu_id, infolabel in cat:
         infolabel = json.loads(infolabel)
@@ -1136,6 +1136,7 @@ def listContent(catalog, url, page, parent, export=False):
     ResPage = 240 if export else MaxResults
     url = '%s&NumberOfResults=%s&StartIndex=%s&Detailed=T' % (url, ResPage, (page - 1) * ResPage)
     titles = getATVData(catalog, url)
+    titlelist = []
 
     if page != 1 and not export:
         addDir(' --= %s =--' % getString(30112), thumb=HomeIcon)
@@ -1158,6 +1159,9 @@ def listContent(catalog, url, page, parent, export=False):
     for item in titles['titles']:
         if 'title' not in item:
             continue
+        if '_show' in parent:
+            item.update(item['ancestorTitles'][0])
+            url = 'SeriesASIN=%s&ContentType=TVSeason&IncludeBlackList=T' % item['titleId']
         contentType, infoLabels = getInfos(item, export)
         name = infoLabels['DisplayTitle']
         asin = item['titleId']
@@ -1175,13 +1179,14 @@ def listContent(catalog, url, page, parent, export=False):
             addVideo(name, asin, infoLabels, cm, export)
         else:
             mode = 'listContent'
-            url = item['childTitles'][0]['feedUrl']
+            url = item['childTitles'][0]['feedUrl'] if '_show' not in parent else url
+
             if watchlist in parent:
                 url += OfferGroup
             if contentType == 'season':
                 name = formatSeason(infoLabels, parent)
                 if library not in parent and parent != '':
-                    curl = 'SeriesASIN=%s&ContentType=TVEpisode,TVSeason&RollUpToSeason=T&IncludeBlackList=T%s' % (
+                    curl = 'SeriesASIN=%s&ContentType=TVSeason&IncludeBlackList=T%s' % (
                         infoLabels['SeriesAsin'], OfferGroup)
                     cm.insert(0, (getString(30182), 'Container.Update(%s?mode=listContent&cat=Browse&url=%s&page=1)' % (
                         sys.argv[0], urllib.quote_plus(curl))))
@@ -1191,7 +1196,9 @@ def listContent(catalog, url, page, parent, export=False):
                 url = re.sub(r'(?i)&rollupto\w+=\w+', '', url)
                 listContent('Browse', url, 1, '', export)
             else:
-                addDir(name, mode, url, infoLabels, cm=cm, export=export)
+                if name not in titlelist:
+                    titlelist.append(name)
+                    addDir(name, mode, url, infoLabels, cm=cm, export=export)
 
     if endIndex > 0:
         if export:
@@ -1513,8 +1520,8 @@ def getList(listing, export, cont):
         SetupLibrary()
 
     url = 'ASINList=' + asins
-    extraArgs = '&RollUpToSeries=T' if dispShowOnly and 'movie' not in cont and not export else ''
-    listContent('GetASINDetails', url + extraArgs, 1, listing, export)
+    listing += '_show' if dispShowOnly and 'movie' not in cont and not export else ''
+    listContent('GetASINDetails', url, 1, listing, export)
 
 
 def Log(msg, level=xbmc.LOGNOTICE):
@@ -1552,7 +1559,7 @@ def getAsins(content, crIL=True):
                       'AudioChannels': 1, 'TrailerAvailable': False}
     asins = content.get('titleId', '')
 
-    for offerformat in content['formats']:
+    for offerformat in content.get('formats', []):
         for offer in offerformat['offers']:
             if offerformat['videoFormatType'] == 'HD' and offerformat['hasEncode'] and crIL:
                 infoLabels['isHD'] = True
@@ -1593,7 +1600,7 @@ def getInfos(item, export):
     infoLabels['isAdult'] = 1 if 'ageVerificationRequired' in str(item.get('restrictions')) else 0
     infoLabels['Genre'] = ' / '.join(item.get('genres', '')).replace('_', ' & ').replace('Musikfilm & Tanz',
                                                                                          'Musikfilm, Tanz')
-    if 'images' in item['formats'][0].keys():
+    if 'formats' in item and'images' in item['formats'][0].keys():
         try:
             thumbnailUrl = item['formats'][0]['images'][0]['uri']
             thumbnailFilename = thumbnailUrl.split('/')[-1]
@@ -3283,6 +3290,7 @@ class AmazonPlayer(xbmc.Player):
 
     def finished(self):
         self.updateStream('STOP')
+        """
         if self.extern:
             playcount = 1 if ((self.video_lastpos * 100) / self.video_totaltime) >= 90 else 0
             watched = getListItem('PlayCount')
@@ -3301,6 +3309,7 @@ class AmazonPlayer(xbmc.Player):
                 Log('No DBID returned')
                 if playcount and not watched:
                     xbmc.executebuiltin("Action(ToggleWatched)")
+        """
 
     def PlayerInfo(self, msg):
         while not self.isPlayingVideo():

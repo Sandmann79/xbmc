@@ -32,6 +32,7 @@ This Addon uses pyDes by Todd Whiteman</disclaimer>
 Diese Addon verwendet pyDes von Todd Whiteman</disclaimer>
     <license>GNU GENERAL PUBLIC LICENSE. Version 2, June 1991</license>
     <forum>http://www.kodinerds.net/index.php/Thread/44211-Release-Amazon-Prime-Instant-Video</forum>
-    <source>https://github.com/Sandmann79/xbmc</source>    
+    <source>https://github.com/Sandmann79/xbmc</source>   
+    <reuselanguageinvoker>false</reuselanguageinvoker>	  
   </extension>
 </addon>

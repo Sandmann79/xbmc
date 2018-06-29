@@ -2413,7 +2413,7 @@ def LogIn(ask=True):
         xbmc.executebuiltin('Dialog.Close(busydialog)')
         WriteLog(response, 'login')
 
-        while any(s in response for s in ['auth-mfa-form', 'ap_dcq_form', 'ap_captcha_img_label', 'claimspicker', 'fwcim-form']):
+        while any(s in response for s in ['auth-mfa-form', 'ap_dcq_form', 'ap_captcha_img_label', 'claimspicker', 'fwcim-form', 'auth-captcha-image-container']):
             br = MFACheck(br, email, soup)
             if not br:
                 return False
@@ -2614,7 +2614,7 @@ def MFACheck(br, email, soup):
             br[q_id[sel]] = ret
         else:
             return False
-    elif 'ap_captcha_img_label' in uni_soup:
+    elif 'ap_captcha_img_label' in uni_soup or 'auth-captcha-image-container' in uni_soup:
         wnd = Captcha((getString(30008).split('…')[0]), soup, email)
         wnd.doModal()
         if wnd.email and wnd.cap and wnd.pwd:
@@ -3187,17 +3187,23 @@ class AgeSettings(pyxbmct.AddonDialogWindow):
 class Captcha(pyxbmct.AddonDialogWindow):
     def __init__(self, title='', soup=None, email=None):
         super(Captcha, self).__init__(title)
-        head = soup.find('div', attrs={'id': 'message_warning'})
-        if not head:
-            head = soup.find('div', attrs={'id': 'message_error'})
-        title = soup.find('div', attrs={'id': 'ap_captcha_guess_alert'})
-        self.picurl = soup.find('div', attrs={'id': 'ap_captcha_img'}).img.get('src')
+        if 'ap_captcha_img_label' in unicode(soup):
+            head = soup.find('div', attrs={'id': 'message_warning'})
+            if not head:
+                head = soup.find('div', attrs={'id': 'message_error'})
+            title = soup.find('div', attrs={'id': 'ap_captcha_guess_alert'})
+            self.head = head.p.renderContents().strip()
+            self.head = re.sub('(?i)<[^>]*>', '', self.head)
+            self.picurl = soup.find('div', attrs={'id': 'ap_captcha_img'}).img.get('src')
+        else:
+            self.head = soup.find('span', attrs={'class': 'a-list-item'}).renderContents().strip()
+            title = soup.find('div', attrs={'id': 'auth-guess-missing-alert'}).div.div
+            self.picurl = soup.find('div', attrs={'id': 'auth-captcha-image-container'}).img.get('src')
+            pass
         self.setGeometry(500, 550, 9, 2)
         self.email = email
         self.pwd = ''
         self.cap = ''
-        self.head = head.p.renderContents().strip()
-        self.head = re.sub('(?i)<[^>]*>', '', self.head)
         self.title = title.renderContents().strip()
         self.image = pyxbmct.Image('', aspectRatio=2)
         self.tb_head = pyxbmct.TextBox()

@@ -1,8 +1,9 @@
 from __future__ import unicode_literals
 import xbmc
 import xbmcaddon
-from resources.lib.common import getConfig, writeConfig, Log
+from resources.lib.common import getConfig, writeConfig, Log, init_common
 
+init_common()
 
 def strp(value, form):
     from time import strptime

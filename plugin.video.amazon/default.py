@@ -4,12 +4,14 @@ from __future__ import unicode_literals
 """AMAZON."""
 # main imports
 from resources.lib.common import *
+init_common()
+
 from service import updateRunning
 
 
 def modes():
     if not sys.argv[2]:
-        Log('Version: %s' % addon.getAddonInfo('version'))
+        Log('Version: %s' % get_addon().getAddonInfo('version'))
         Log('Unicode filename support: %s' % os.path.supports_unicode_filenames)
         cm = {}
 
@@ -27,7 +29,7 @@ def modes():
             updaterun = json.dumps((getString(30135), 'RunPlugin(%s?mode=appfeed&sitemode=updateAll)' % sys.argv[0]))
             cm = json.loads(json.dumps(cm).replace(json.dumps(updateall), updaterun))
 
-        if multiuser:
+        if is_multiuser():
             cm['mu'] = [(getString(30174).split('.')[0], 'RunPlugin(%s?mode=common&sitemode=LogIn)' % sys.argv[0]),
                      (getString(30175).split('.')[0], 'RunPlugin(%s?mode=common&sitemode=removeUser)' % sys.argv[0]),
                      (getString(30176), 'RunPlugin(%s?mode=common&sitemode=renameUser)' % sys.argv[0])]
@@ -39,13 +41,13 @@ def modes():
         addDir(getString(30108), 'appfeed', 'SEARCH_DB', cm=cm['search'])
         addDir(getString(30060), 'appfeed', 'ListMenu', lib, cm=cm['lib'])
 
-        if addon.getSetting('update_mm') == 'true':
+        if get_addon().getSetting('update_mm') == 'true':
             addDir(cm['search'][0][0], 'appfeed', 'updateAll')
 
-        xbmcplugin.endOfDirectory(pluginhandle)
+        xbmcplugin.endOfDirectory(get_pluginhandle())
     else:
-        exec 'import resources.lib.%s as sitemodule' % args.get('mode')
-        exec 'sitemodule.%s()' % args.get('sitemode')
+        exec 'import resources.lib.%s as sitemodule' % get_args().get('mode')
+        exec 'sitemodule.%s()' % get_args().get('sitemode')
 
 
 modes()

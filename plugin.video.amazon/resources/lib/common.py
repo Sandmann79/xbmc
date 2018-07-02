@@ -28,16 +28,8 @@ import requests
 import pickle
 import warnings
 
-addon = xbmcaddon.Addon()
-pluginname = addon.getAddonInfo('name')
-pluginpath = addon.getAddonInfo('path').decode('utf-8')
-pldatapath = xbmc.translatePath(addon.getAddonInfo('profile')).decode('utf-8')
-configpath = os.path.join(pldatapath, 'config')
-homepath = xbmc.translatePath('special://home').decode('utf-8')
 tmdb = b64decode('YjM0NDkwYzA1NmYwZGQ5ZTNlYzlhZjIxNjdhNzMxZjQ=')
 tvdb = b64decode('MUQ2MkYyRjkwMDMwQzQ0NA==')
-CookieFile = os.path.join(pldatapath, 'cookies.lwp')
-def_fanart = os.path.join(pluginpath, 'fanart.jpg')
 na = 'not available'
 BaseUrl = 'https://www.amazon.de'
 ATV_URL = 'https://atv-ps-eu.amazon.de'
@@ -46,30 +38,88 @@ tvlib = '/gp/video/%s/tv/'
 lib = 'video-library'
 wl = 'watchlist'
 Ages = [('FSK 0', 'FSK 0'), ('FSK 6', 'FSK 6'), ('FSK 12', 'FSK 12'), ('FSK 16', 'FSK 16'), ('FSK 18', 'FSK 18')]
-verbLog = addon.getSetting('logging') == 'true'
-playMethod = int(addon.getSetting("playmethod"))
-onlyGer = addon.getSetting('content_filter') == 'true'
-kodi_mjver = int(xbmc.getInfoLabel('System.BuildVersion')[0:2])
-multiuser = addon.getSetting('multiuser') == 'true'
-verifySsl = addon.getSetting('ssl_verif') == 'false'
-Dialog = xbmcgui.Dialog()
-socket.setdefaulttimeout(30)
 is_addon = 'inputstream.adaptive'
 regex_ovf = "((?i)(\[|\()(omu|ov).*(\)|\]))|\sOmU"
-sessions = {}
+
+socket.setdefaulttimeout(30)
 
 warnings.simplefilter('error', requests.packages.urllib3.exceptions.SNIMissingWarning)
 warnings.simplefilter('error', requests.packages.urllib3.exceptions.InsecurePlatformWarning)
 
-try:
-    pluginhandle = int(sys.argv[1])
-    params = re.sub('<|>', '', sys.argv[2])
-except IndexError:
-    pluginhandle = -1
-    params = ''
+def init_common():
+    global addon
+    global pluginname
+    global pluginpath
+    global pldatapath
+    global configpath
+    global homepath
+    global CookieFile
+    global def_fanart
+    global verbLog
+    global playMethod
+    global onlyGer
+    global kodi_mjver
+    global multiuser
+    global verifySsl
+    global Dialog
+    global sessions
+    global UserAgent
+    global AgePin
+    global PinReq
+    global RestrAges
+    global pluginhandle
+    global params
+    global args
 
-args = dict(urlparse.parse_qsl(urlparse.urlparse(params).query))
+    addon = xbmcaddon.Addon()
+    pluginname = addon.getAddonInfo('name')
+    pluginpath = addon.getAddonInfo('path').decode('utf-8')
+    pldatapath = xbmc.translatePath(addon.getAddonInfo('profile')).decode('utf-8')
+    configpath = os.path.join(pldatapath, 'config')
+    homepath = xbmc.translatePath('special://home').decode('utf-8')
+    CookieFile = os.path.join(pldatapath, 'cookies.lwp')
+    def_fanart = os.path.join(pluginpath, 'fanart.jpg')
+    verbLog = addon.getSetting('logging') == 'true'
+    playMethod = int(addon.getSetting("playmethod"))
+    onlyGer = addon.getSetting('content_filter') == 'true'
+    kodi_mjver = int(xbmc.getInfoLabel('System.BuildVersion')[0:2])
+    multiuser = addon.getSetting('multiuser') == 'true'
+    verifySsl = addon.getSetting('ssl_verif') == 'false'
+    Dialog = xbmcgui.Dialog()
+    is_addon = 'inputstream.adaptive'
+    regex_ovf = "((?i)(\[|\()(omu|ov).*(\)|\]))|\sOmU"
+    sessions = {}
 
+    try:
+        pluginhandle = int(sys.argv[1])
+        params = re.sub('<|>', '', sys.argv[2])
+    except IndexError:
+        pluginhandle = -1
+        params = ''
+
+    args = dict(urlparse.parse_qsl(urlparse.urlparse(params).query))
+
+    if not getConfig('UserAgent'):
+        getUA()
+
+    UserAgent = getConfig('UserAgent')
+    AgePin = getConfig('age_pin')
+    PinReq = int(getConfig('pin_req', '0'))
+    RestrAges = ','.join(a[1] for a in Ages[PinReq:]) if AgePin else ''
+
+    Log('Args: %s' % args)
+
+def get_args():
+    return args
+
+def get_pluginhandle():
+    return pluginhandle
+
+def get_addon():
+    return addon
+
+def is_multiuser():
+    return multiuser
 
 class AgeSettings(pyxbmct.AddonDialogWindow):
 
@@ -1060,14 +1110,3 @@ def jsonRPC(method, props='', param=None):
         return res['error']
 
     return res['result'].get(props, res['result'])
-
-
-if not getConfig('UserAgent'):
-    getUA()
-
-UserAgent = getConfig('UserAgent')
-AgePin = getConfig('age_pin')
-PinReq = int(getConfig('pin_req', '0'))
-RestrAges = ','.join(a[1] for a in Ages[PinReq:]) if AgePin else ''
-
-Log('Args: %s' % args)

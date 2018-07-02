@@ -21,6 +21,7 @@
   <extension point="xbmc.service" library="service.py" start="startup" />
   <extension point="xbmc.addon.metadata">
     <platform>all</platform>
+    <reuselanguageinvoker>true</reuselanguageinvoker>
     <summary lang="en">Amazon Prime Video Streaming</summary>
     <summary lang="de">Amazon Prime Instant Video</summary>
     <description lang="en">Movies and Television Shows for German Prime Members.

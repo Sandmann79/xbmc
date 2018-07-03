@@ -7,7 +7,7 @@ from service import updateRunning
 import db
 import appfeed
 
-tvdb_art = addon.getSetting("tvdb_art")
+tvdb_art = get_addon().getSetting("tvdb_art")
 Dialog = xbmcgui.Dialog()
 DialogPG = xbmcgui.DialogProgress()
 MAX = 140
@@ -202,9 +202,9 @@ def countDB(tbl):
 
 
 def delfromTVdb():
-    asins = args.get('asins')
-    title = args.get('title')
-    table = args.get('table')
+    asins = get_args().get('asins')
+    title = get_args().get('title')
+    table = get_args().get('table')
     strid = 30167 if table == 'seasons' else 30166
 
     if Dialog.yesno(getString(30155) % getString(strid), getString(30156) % title.decode('utf-8')):
@@ -347,7 +347,7 @@ def addTVdb(full_update=True, libasins=None, cj=True):
                     break
                 SEASONS_ASIN = title['titleId']
 
-                if onlyGer and not libasins and re.compile(regex_ovf).search(title['title']):
+                if get_only_ger and not libasins and re.compile(regex_ovf).search(title['title']):
                     Log('Season Ignored: %s' % title['title'], xbmc.LOGDEBUG)
                     found = True
                 else:

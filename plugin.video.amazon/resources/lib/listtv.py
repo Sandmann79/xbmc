@@ -5,7 +5,7 @@ from common import *
 import xbmclibrary
 import tv
 
-showfanart = addon.getSetting("useshowfanart") == 'true'
+showfanart = get_addon().getSetting("useshowfanart") == 'true'
 
 
 def LIST_TV_ROOT():
@@ -22,7 +22,7 @@ def LIST_TV_ROOT():
 
 
 def LIST_TVSHOWS_CATS():
-    catid = args.get('url')
+    catid = get_args().get('url')
     if catid:
         asins = tv.lookupTVdb(catid, rvalue='asins', name='title', tbl='categories')
         epidb = tv.lookupTVdb('', name='asin', rvalue='asin, seasonasin', tbl='episodes', single=False)
@@ -52,7 +52,7 @@ def LIST_TVSHOWS_CATS():
 
 def LIST_TVSHOWS_TYPES(tvtype=None):
     if not tvtype:
-        tvtype = args.get('url')
+        tvtype = get_args().get('url')
     if tvtype:
         for item in tv.getShowTypes(tvtype):
             addDir(item, 'listtv', 'LIST_TVSHOWS_FILTERED', tvtype)
@@ -61,11 +61,11 @@ def LIST_TVSHOWS_TYPES(tvtype=None):
 
 
 def LIST_TVSHOWS_FILTERED():
-    LIST_TVSHOWS(args.get('url'), args.get('name'))
+    LIST_TVSHOWS(get_args().get('url'), get_args().get('name'))
 
 
 def LIST_TVSHOWS_SORTED():
-    LIST_TVSHOWS(sortaz=False, sortcol=args.get('url'))
+    LIST_TVSHOWS(sortaz=False, sortcol=get_args().get('url'))
 
 
 def LIST_TVSHOWS(filterobj='', value=None, sortcol=False, sortaz=True, search=False, cmmode=0, export=False):
@@ -134,7 +134,7 @@ def ADD_SHOW_ITEM(showdata, mode='listtv', submode='LIST_TV_SEASONS', cmmode=0, 
 
 
 def LIST_TV_SEASONS():
-    seriesasin = args.get('url')
+    seriesasin = get_args().get('url')
     for asin in seriesasin.split(','):
         seasons = tv.loadTVSeasonsdb(seriesasin=asin).fetchall()
         for seasondata in seasons:
@@ -145,7 +145,7 @@ def LIST_TV_SEASONS():
 
 def LIST_TVSEASON_SORTED(seasons=False, cmmode=0):
     if not seasons:
-        seasons = tv.loadTVSeasonsdb(sortcol=args.get('url')).fetchall()
+        seasons = tv.loadTVSeasonsdb(sortcol=get_args().get('url')).fetchall()
     for seasondata in seasons:
         ADD_SEASON_ITEM(seasondata, disptitle=True, cmmode=cmmode)
     SetView('seasons', 'seasonview')
@@ -209,7 +209,7 @@ def ADD_SEASON_ITEM(seasondata, mode='listtv', submode='LIST_EPISODES_DB', dispt
 
 
 def LIST_EPISODES_DB():
-    seriestitle = args.get('url')
+    seriestitle = get_args().get('url')
     for asin in seriestitle.split(','):
         episodes = tv.loadTVEpisodesdb(asin)
         for episodedata in episodes:

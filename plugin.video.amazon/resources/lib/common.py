@@ -28,6 +28,7 @@ import requests
 import pickle
 import warnings
 
+# statics which never change
 tmdb = b64decode('YjM0NDkwYzA1NmYwZGQ5ZTNlYzlhZjIxNjdhNzMxZjQ=')
 tvdb = b64decode('MUQ2MkYyRjkwMDMwQzQ0NA==')
 na = 'not available'
@@ -41,54 +42,46 @@ Ages = [('FSK 0', 'FSK 0'), ('FSK 6', 'FSK 6'), ('FSK 12', 'FSK 12'), ('FSK 16',
 is_addon = 'inputstream.adaptive'
 regex_ovf = "((?i)(\[|\()(omu|ov).*(\)|\]))|\sOmU"
 
+# things which has to be evaluated only once
+addon = xbmcaddon.Addon()
+pluginname = addon.getAddonInfo('name')
+pluginpath = addon.getAddonInfo('path').decode('utf-8')
+pldatapath = xbmc.translatePath(addon.getAddonInfo('profile')).decode('utf-8')
+configpath = os.path.join(pldatapath, 'config')
+homepath = xbmc.translatePath('special://home').decode('utf-8')
+CookieFile = os.path.join(pldatapath, 'cookies.lwp')
+def_fanart = os.path.join(pluginpath, 'fanart.jpg')
+kodi_mjver = int(xbmc.getInfoLabel('System.BuildVersion')[0:2])
+Dialog = xbmcgui.Dialog()
+sessions = {}
+
+
 socket.setdefaulttimeout(30)
 
 warnings.simplefilter('error', requests.packages.urllib3.exceptions.SNIMissingWarning)
 warnings.simplefilter('error', requests.packages.urllib3.exceptions.InsecurePlatformWarning)
 
+
 def init_common():
     global addon
-    global pluginname
-    global pluginpath
-    global pldatapath
-    global configpath
-    global homepath
-    global CookieFile
-    global def_fanart
     global verbLog
     global playMethod
     global onlyGer
     global kodi_mjver
     global multiuser
     global verifySsl
-    global Dialog
-    global sessions
-    global UserAgent
-    global AgePin
-    global PinReq
-    global RestrAges
     global pluginhandle
-    global params
     global args
 
+    #get new addon instance to reflect setting changes
     addon = xbmcaddon.Addon()
-    pluginname = addon.getAddonInfo('name')
-    pluginpath = addon.getAddonInfo('path').decode('utf-8')
-    pldatapath = xbmc.translatePath(addon.getAddonInfo('profile')).decode('utf-8')
-    configpath = os.path.join(pldatapath, 'config')
-    homepath = xbmc.translatePath('special://home').decode('utf-8')
-    CookieFile = os.path.join(pldatapath, 'cookies.lwp')
-    def_fanart = os.path.join(pluginpath, 'fanart.jpg')
+
+    #get current settings
     verbLog = addon.getSetting('logging') == 'true'
     playMethod = int(addon.getSetting("playmethod"))
     onlyGer = addon.getSetting('content_filter') == 'true'
-    kodi_mjver = int(xbmc.getInfoLabel('System.BuildVersion')[0:2])
     multiuser = addon.getSetting('multiuser') == 'true'
     verifySsl = addon.getSetting('ssl_verif') == 'false'
-    Dialog = xbmcgui.Dialog()
-    is_addon = 'inputstream.adaptive'
-    regex_ovf = "((?i)(\[|\()(omu|ov).*(\)|\]))|\sOmU"
-    sessions = {}
 
     try:
         pluginhandle = int(sys.argv[1])
@@ -98,16 +91,10 @@ def init_common():
         params = ''
 
     args = dict(urlparse.parse_qsl(urlparse.urlparse(params).query))
-
-    if not getConfig('UserAgent'):
-        getUA()
-
-    UserAgent = getConfig('UserAgent')
-    AgePin = getConfig('age_pin')
-    PinReq = int(getConfig('pin_req', '0'))
-    RestrAges = ','.join(a[1] for a in Ages[PinReq:]) if AgePin else ''
-
     Log('Args: %s' % args)
+
+def get_addon():
+    return addon
 
 def get_args():
     return args
@@ -115,11 +102,18 @@ def get_args():
 def get_pluginhandle():
     return pluginhandle
 
-def get_addon():
-    return addon
-
-def is_multiuser():
+def get_multiuser():
     return multiuser
+
+def get_play_method():
+    return playMethod
+
+def get_verb_log():
+    return verbLog
+
+def get_only_ger():
+    return onlyGer
+
 
 class AgeSettings(pyxbmct.AddonDialogWindow):
 
@@ -1110,3 +1104,12 @@ def jsonRPC(method, props='', param=None):
         return res['error']
 
     return res['result'].get(props, res['result'])
+
+
+if not getConfig('UserAgent'):
+    getUA()
+
+UserAgent = getConfig('UserAgent')
+AgePin = getConfig('age_pin')
+PinReq = int(getConfig('pin_req', '0'))
+RestrAges = ','.join(a[1] for a in Ages[PinReq:]) if AgePin else ''

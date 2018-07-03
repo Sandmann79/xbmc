@@ -112,14 +112,14 @@ def SEARCH_DB():
 
 
 def ExportList():
-    asinlist = args.get('url')
+    asinlist = get_args().get('url')
     ListCont(movielib % asinlist)
     ListCont(tvlib % asinlist)
 
 
 def getSimilarities():
     import tv
-    data = getList(NumberOfResults=250, catalog='GetSimilarities', asin=args.get('asin'))
+    data = getList(NumberOfResults=250, catalog='GetSimilarities', asin=get_args().get('asin'))
     for title in data['message']['body']['titles']:
         asin = title['titleId']
         if not listmovie.LIST_MOVIES('asin', asin, search=True):
@@ -131,7 +131,7 @@ def getSimilarities():
 
 
 def ListMenu():
-    l = args.get('url')
+    l = get_args().get('url')
     addDir(getString(30104), 'appfeed', 'ListCont', movielib % l)
     addDir(getString(30107), 'appfeed', 'ListCont', tvlib % l)
     xbmcplugin.endOfDirectory(pluginhandle)
@@ -145,11 +145,11 @@ def ListCont(export=False):
         url = export
         export = True
     else:
-        url = args.get('url')
+        url = get_args().get('url')
 
     mov = True if 'movie' in url else False
 
-    if addon.getSetting('disptvshow') == 'true':
+    if get_addon().getSetting('disptvshow') == 'true':
         showonly = True
         rvalue = 'seriesasin'
 
@@ -197,7 +197,7 @@ def RefreshList():
 
     import tv
     import movies
-    l = args.get('url')
+    l = get_args().get('url')
     mvlist = []
     tvlist = []
     pDialog = xbmcgui.DialogProgress()

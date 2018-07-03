@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
-from common import xbmc, addon, xbmcvfs, xbmcgui, os, Dialog, Log, getString, getConfig, writeConfig, homepath, pluginname
+from common import xbmc, addon, xbmcvfs, xbmcgui, os, Dialog, Log, getString, getConfig, writeConfig, homepath, pluginname, get_addon
 from BeautifulSoup import BeautifulSoup
 
-usesqlite = addon.getSetting('dbsystem') == '0'
+usesqlite = get_addon().getSetting('dbsystem') == '0'
 dbplugin = 'script.module.amazon.database'
 dbpath = os.path.join(homepath, 'addons', dbplugin, 'lib')
 
@@ -28,16 +28,16 @@ def waitforDB(cnx):
 
 
 def getDBlocation(retvar):
-    custdb = addon.getSetting('customdbfolder') == 'true'
+    custdb = get_addon().getSetting('customdbfolder') == 'true'
     old_dbpath = xbmc.translatePath(getConfig('old_dbfolder')).decode('utf-8')
     cur_dbpath = dbpath
 
     if not old_dbpath:
         old_dbpath = cur_dbpath
     if custdb:
-        cur_dbpath = xbmc.translatePath(addon.getSetting('dbfolder')).decode('utf-8')
+        cur_dbpath = xbmc.translatePath(get_addon().getSetting('dbfolder')).decode('utf-8')
     else:
-        addon.setSetting('dbfolder', dbpath)
+        get_addon().setSetting('dbfolder', dbpath)
 
     orgDBfile = {'tv': os.path.join(dbpath, 'tv.db'), 'movie': os.path.join(dbpath, 'movies.db')}
     oldDBfile = {'tv': os.path.join(old_dbpath, 'tv.db'), 'movie': os.path.join(old_dbpath, 'movies.db')}
@@ -102,10 +102,10 @@ def connSQL(dbname):
         from mysql.connector import errorcode
         dbname = 'amazon_' + dbname
         mysql_config = {
-            'host': addon.getSetting('dbhost'),
-            'port': addon.getSetting('dbport'),
-            'user': addon.getSetting('dbuser'),
-            'password': addon.getSetting('dbpass'),
+            'host': get_addon().getSetting('dbhost'),
+            'port': get_addon().getSetting('dbport'),
+            'user': get_addon().getSetting('dbuser'),
+            'password': get_addon().getSetting('dbpass'),
             'database': dbname,
             'use_unicode': True,
             'get_warnings': True,
@@ -144,7 +144,7 @@ def loadSQLconfig():
         if videodb:
             for tag in videodb.findAll():
                 if tag.name in keys:
-                    addon.setSetting('db' + tag.name, tag.string)
+                    get_addon().setSetting('db' + tag.name, tag.string)
         else:
             Dialog.notification(pluginname, getString(30226))
     else:

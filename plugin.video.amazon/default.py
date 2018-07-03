@@ -29,7 +29,7 @@ def modes():
             updaterun = json.dumps((getString(30135), 'RunPlugin(%s?mode=appfeed&sitemode=updateAll)' % sys.argv[0]))
             cm = json.loads(json.dumps(cm).replace(json.dumps(updateall), updaterun))
 
-        if is_multiuser():
+        if get_multiuser():
             cm['mu'] = [(getString(30174).split('.')[0], 'RunPlugin(%s?mode=common&sitemode=LogIn)' % sys.argv[0]),
                      (getString(30175).split('.')[0], 'RunPlugin(%s?mode=common&sitemode=removeUser)' % sys.argv[0]),
                      (getString(30176), 'RunPlugin(%s?mode=common&sitemode=renameUser)' % sys.argv[0])]

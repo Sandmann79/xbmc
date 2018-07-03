@@ -24,18 +24,25 @@ if xbmc.getCondVisibility('system.platform.android'):
     platform = osAndroid
 
 hasExtRC = xbmc.getCondVisibility('System.HasAddon(script.chromium_remotecontrol)')
-useIntRC = addon.getSetting("remotectrl") == 'true'
-browser = int(addon.getSetting("browser"))
-RMC_vol = addon.getSetting("remote_vol") == 'true'
+
+
+def __useIntRC():
+    return get_addon().getSetting("remotectrl") == 'true'
+
+def __browser():
+    return int(get_addon().getSetting("browser"))
+
+def __RMC_vol():
+    return get_addon().getSetting("remote_vol") == 'true'
 
 
 def PLAYVIDEO():
-    amazonUrl = BaseUrl + "/dp/" + args.get('asin')
-    trailer = args.get('trailer') == '1'
-    isAdult = args.get('adult') == '1'
+    amazonUrl = BaseUrl + "/dp/" + get_args().get('asin')
+    trailer = get_args().get('trailer') == '1'
+    isAdult = get_args().get('adult') == '1'
     playable = False
-    fallback = int(addon.getSetting("fallback_method"))
-    methodOW = fallback - 1 if args.get('forcefb') and fallback else playMethod
+    fallback = int(get_addon().getSetting("fallback_method"))
+    methodOW = fallback - 1 if get_args().get('forcefb') and fallback else get_play_method()
     videoUrl = "%s/?autoplay=%s" % (amazonUrl, ('trailer' if trailer == '1' else '1'))
     extern = not xbmc.getInfoLabel('Container.PluginName').startswith('plugin.video.amazon')
     fr = ''
@@ -47,7 +54,7 @@ def PLAYVIDEO():
         playable = True
 
         if methodOW == 2 and platform == osAndroid:
-            AndroidPlayback(args.get('asin'), trailer)
+            AndroidPlayback(get_args().get('asin'), trailer)
         elif methodOW == 3:
             playable = IStreamPlayback(trailer, isAdult, extern)
         elif platform != osAndroid:
@@ -69,13 +76,13 @@ def PLAYVIDEO():
 
 
 def ExtPlayback(videoUrl, isAdult, method, fr):
-    waitsec = int(addon.getSetting("clickwait")) * 1000
-    pin = addon.getSetting("pin")
-    waitpin = int(addon.getSetting("waitpin")) * 1000
-    waitprepin = int(addon.getSetting("waitprepin")) * 1000
-    pininput = addon.getSetting("pininput") == 'true'
-    fullscr = addon.getSetting("fullscreen") == 'true'
-    videoUrl += '&playerDebug=true' if verbLog else ''
+    waitsec = int(get_addon().getSetting("clickwait")) * 1000
+    pin = get_addon().getSetting("pin")
+    waitpin = int(get_addon().getSetting("waitpin")) * 1000
+    waitprepin = int(get_addon().getSetting("waitprepin")) * 1000
+    pininput = get_addon().getSetting("pininput") == 'true'
+    fullscr = get_addon().getSetting("fullscreen") == 'true'
+    videoUrl += '&playerDebug=true' if get_verb_log() else ''
     osLE = False
 
     xbmc.Player().stop()
@@ -113,7 +120,7 @@ def ExtPlayback(videoUrl, isAdult, method, fr):
 
     if fullscr:
         xbmc.sleep(int(waitsec))
-        if browser != 0:
+        if __browser() != 0:
             Input(keys='f')
         else:
             Input(mousex=-1, mousey=350, click=2)
@@ -149,7 +156,7 @@ def AndroidPlayback(asin, trailer):
     subprocess.Popen(['log', '-p', 'v', '-t', 'Kodi-Amazon', 'Starting App: %s Video: %s' % (pkg, url)])
     Log('Manufacturer: %s' % manu)
     Log('Starting App: %s Video: %s' % (pkg, url))
-    if verbLog:
+    if get_verb_log():
         if os.access('/system/xbin/su', os.X_OK) or os.access('/system/bin/su', os.X_OK):
             Log('Logcat:\n' + check_output(['su', '-c', 'logcat -d | grep -i com.amazon.avod']))
         Log('Properties:\n' + check_output(['sh', '-c', 'getprop | grep -iE "(ro.product|ro.build|google)"']))
@@ -171,7 +178,7 @@ def check_output(*popenargs, **kwargs):
 
 
 def IStreamPlayback(trailer, isAdult, extern):
-    drm_check = addon.getSetting("drm_check") == 'true'
+    drm_check = get_addon().getSetting("drm_check") == 'true'
     inputstream_helper = Helper('mpd', drm='com.widevine.alpha')
     vMT = 'Trailer' if trailer else 'Feature'
 
@@ -186,14 +193,14 @@ def IStreamPlayback(trailer, isAdult, extern):
         playDummyVid()
         return True
 
-    mpd, subs = getStreams(*getUrldata('catalog/GetPlaybackResources', args.get('asin'), extra=True, vMT=vMT,
+    mpd, subs = getStreams(*getUrldata('catalog/GetPlaybackResources', get_args().get('asin'), extra=True, vMT=vMT,
                                        opt='&titleDecorationScheme=primary-content', useCookie=cookie), retmpd=True)
 
     cj_str = ';'.join(['%s=%s' % (k, v) for k, v in cookie.items()])
     opt = '|Content-Type=application%2Fx-www-form-urlencoded&Cookie=' + urllib.quote_plus(cj_str)
     opt += '|widevine2Challenge=B{SSM}&includeHdcpTestKeyInLicense=true'
     opt += '|JBlicense;hdcpEnforcementResolutionPixels'
-    licURL = getUrldata('catalog/GetPlaybackResources', args.get('asin'), extra=True, vMT=vMT, dRes='Widevine2License', opt=opt, retURL=True)
+    licURL = getUrldata('catalog/GetPlaybackResources', get_args().get('asin'), extra=True, vMT=vMT, dRes='Widevine2License', opt=opt, retURL=True)
 
     if not mpd:
         Dialog.notification(getString(30203), subs, xbmcgui.NOTIFICATION_ERROR)
@@ -211,7 +218,7 @@ def IStreamPlayback(trailer, isAdult, extern):
 
     Log(mpd)
 
-    infoLabels = GetStreamInfo(args.get('asin'))
+    infoLabels = GetStreamInfo(get_args().get('asin'))
     mpaa_str = RestrAges + getString(30171)
     mpaa_check = infoLabels.get('MPAA', mpaa_str) in mpaa_str or isAdult
     if mpaa_check and not RequestPin():
@@ -277,7 +284,7 @@ def parseSubs(data):
         'sv-se': 'sv',
     }  # Clean up language and locale information where needed
     subs = []
-    if addon.getSetting('subtitles') == 'false' or 'subtitleUrls' not in data:
+    if get_addon().getSetting('subtitles') == 'false' or 'subtitleUrls' not in data:
         return subs
 
     for sub in data['subtitleUrls']:
@@ -329,21 +336,21 @@ def GetStreamInfo(asin):
 
 
 def getCmdLine(videoUrl, method, fr):
-    scr_path = addon.getSetting("scr_path")
-    br_path = addon.getSetting("br_path").strip()
-    scr_param = addon.getSetting("scr_param").strip()
-    kiosk = addon.getSetting("kiosk") == 'true'
-    appdata = addon.getSetting("ownappdata") == 'true'
-    cust_br = addon.getSetting("cust_path") == 'true'
+    scr_path = get_addon().getSetting("scr_path")
+    br_path = get_addon().getSetting("br_path").strip()
+    scr_param = get_addon().getSetting("scr_param").strip()
+    kiosk = get_addon().getSetting("kiosk") == 'true'
+    appdata = get_addon().getSetting("ownappdata") == 'true'
+    cust_br = get_addon().getSetting("cust_path") == 'true'
     nobr_str = getString(30198)
-    frdetect = addon.getSetting("framerate") == 'true'
+    frdetect = get_addon().getSetting("framerate") == 'true'
 
     if method == 1:
         if not xbmcvfs.exists(scr_path):
             return False, nobr_str
 
         if frdetect:
-            suc, fr = getStreams(*getUrldata('catalog/GetPlaybackResources', args.get('asin'), extra=True, useCookie=True)) if not fr else (True, fr)
+            suc, fr = getStreams(*getUrldata('catalog/GetPlaybackResources', get_args().get('asin'), extra=True, useCookie=True)) if not fr else (True, fr)
             if not suc:
                 return False, fr
         else:
@@ -368,7 +375,7 @@ def getCmdLine(videoUrl, method, fr):
 
     if platform != osOSX and not cust_br:
         for path in os_paths[platform]:
-            for brfile in br_config[browser][0][platform]:
+            for brfile in br_config[__browser()][0][platform]:
                 if xbmcvfs.exists(os.path.join(path, brfile)):
                     br_path = path + brfile
                     break
@@ -380,16 +387,16 @@ def getCmdLine(videoUrl, method, fr):
     if not xbmcvfs.exists(br_path) and platform != osOSX:
         return False, nobr_str
 
-    br_args = br_config[browser][3]
+    br_args = br_config[__browser()][3]
     if kiosk:
-        br_args += br_config[browser][1]
+        br_args += br_config[__browser()][1]
 
-    if appdata and br_config[browser][2]:
-        br_args += br_config[browser][2] + '"' + os.path.join(pldatapath, str(browser)) + '" '
+    if appdata and br_config[__browser()][2]:
+        br_args += br_config[__browser()][2] + '"' + os.path.join(pldatapath, str(__browser())) + '" '
 
     if platform == osOSX:
         if not cust_br:
-            br_path = os_paths[osOSX] + br_config[browser][0][osOSX]
+            br_path = os_paths[osOSX] + br_config[__browser()][0][osOSX]
 
         if br_args.strip():
             br_args = '--args ' + br_args
@@ -406,7 +413,7 @@ def getStartupInfo():
 
 
 def getStreams(suc, data, retmpd=False):
-    HostSet = addon.getSetting("pref_host")
+    HostSet = get_addon().getSetting("pref_host")
     subUrls = []
 
     if not suc:
@@ -617,7 +624,7 @@ class window(xbmcgui.WindowDialog):
                 return sum(i * int(t) for i, t in zip([3600, 60, 1], li_dur.split(":")))
             return int(li_dur) * 60
         else:
-            infoLabels = GetStreamInfo(args.get('asin'))
+            infoLabels = GetStreamInfo(get_args().get('asin'))
             return int(infoLabels.get('Duration', 0))
 
     def close(self):
@@ -632,7 +639,7 @@ class window(xbmcgui.WindowDialog):
             xbmc.executebuiltin("Action(ToggleWatched)")
 
     def onAction(self, action):
-        if not useIntRC:
+        if not __useIntRC():
             return
 
         ACTION_SELECT_ITEM = 7
@@ -673,9 +680,9 @@ class window(xbmcgui.WindowDialog):
             Input(keys='{RGT}')
             showinfo = True
         elif action == ACTION_MOVE_UP:
-            SetVol(+2) if RMC_vol else Input(keys='{U}')
+            SetVol(+2) if __RMC_vol() else Input(keys='{U}')
         elif action == ACTION_MOVE_DOWN:
-            SetVol(-2) if RMC_vol else Input(keys='{DWN}')
+            SetVol(-2) if __RMC_vol() else Input(keys='{DWN}')
         # numkeys for pin input
         elif 57 < actionId < 68:
             strKey = str(actionId - 58)

@@ -21,7 +21,7 @@ def LIST_MOVIE_ROOT():
 
 
 def LIST_MOVIES_CATS():
-    catid = args.get('url')
+    catid = get_args().get('url')
     if catid:
         asins = moviesDB.lookupMoviedb(catid, rvalue='asins', name='title', table='categories')
         for asin in asins.split(','):
@@ -37,7 +37,7 @@ def LIST_MOVIES_CATS():
 
 def LIST_MOVIE_TYPES(movtype=None):
     if not movtype:
-        movtype = args.get('url')
+        movtype = get_args().get('url')
     if movtype:
         for item in moviesDB.getMovieTypes(movtype):
             addDir(item, 'listmovie', 'LIST_MOVIES_FILTERED', movtype)
@@ -46,11 +46,11 @@ def LIST_MOVIE_TYPES(movtype=None):
 
 
 def LIST_MOVIES_FILTERED():
-    LIST_MOVIES(args.get('url'), args.get('name'))
+    LIST_MOVIES(get_args().get('url'), get_args().get('name'))
 
 
 def LIST_MOVIES_SORTED():
-    LIST_MOVIES(sortaz=False, sortcol=args.get('url'))
+    LIST_MOVIES(sortaz=False, sortcol=get_args().get('url'))
 
 
 def LIST_MOVIES(filterobj='', value=None, sortcol=False, sortaz=True, search=False, cmmode=0, export=False):

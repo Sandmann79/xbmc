@@ -6,16 +6,34 @@ import pickle
 import json
 import pyxbmct
 from BeautifulSoup import BeautifulSoup
+from resources.lib.l10n import *
 from resources.lib.logging import *
 from resources.lib.configs import *
 from resources.lib.common import Globals, sleep
 
 
-def parseHTML(br):
+def _parseHTML(br):
     response = br.response().read().decode('utf-8')
     response = re.sub(r'(?i)(<!doctype \w+).*>', r'\1>', response)
     soup = BeautifulSoup(response, convertEntities=BeautifulSoup.HTML_ENTITIES)
     return response, soup
+
+
+def _Error(data):
+    code = data['errorCode'].lower()
+    Log('%s (%s) ' % (data['message'], code), Log.ERROR)
+    if 'invalidrequest' in code:
+        return getString(30204)
+    elif 'noavailablestreams' in code:
+        return getString(30205)
+    elif 'notowned' in code:
+        return getString(30206)
+    elif 'invalidgeoip' or 'dependency' in code:
+        return getString(30207)
+    elif 'temporarilyunavailable' in code:
+        return getString(30208)
+    else:
+        return '%s (%s) ' % (data['message'], code)
 
 
 def getURL(url, useCookie=False, silent=False, headers=None, rjson=True, attempt=1, check=False, postdata=None):
@@ -123,11 +141,11 @@ def getURLData(mode, asin, retformat='json', devicetypeid='AOAGZA014O5RE', versi
     data = getURL(url, useCookie=useCookie, postdata='')
     if data:
         if 'error' in data.keys():
-            return False, Error(data['error'])
+            return False, _Error(data['error'])
         elif 'AudioVideoUrls' in data.get('errorsByResource', ''):
-            return False, Error(data['errorsByResource']['AudioVideoUrls'])
+            return False, _Error(data['errorsByResource']['AudioVideoUrls'])
         elif 'PlaybackUrls' in data.get('errorsByResource', ''):
-            return False, Error(data['errorsByResource']['PlaybackUrls'])
+            return False, _Error(data['errorsByResource']['PlaybackUrls'])
         else:
             return True, data
     return False, 'HTTP Error'
@@ -336,7 +354,7 @@ def LogIn(ask=True):
                          ('User-Agent', getConfig('UserAgent')),
                          ('Upgrade-Insecure-Requests', '1')]
         br.submit()
-        response, soup = parseHTML(br)
+        response, soup = _parseHTML(br)
         xbmc.executebuiltin('Dialog.Close(busydialog)')
         WriteLog(response, 'login')
 
@@ -346,7 +364,7 @@ def LogIn(ask=True):
                 return False
             useMFA = 'otpCode' in str(list(br.forms())[0])
             br.submit()
-            response, soup = parseHTML(br)
+            response, soup = _parseHTML(br)
             WriteLog(response, 'login-mfa')
             xbmc.executebuiltin('Dialog.Close(busydialog)')
 

@@ -793,23 +793,6 @@ def extrFr(data):
     return str(fr).replace('.0', '')
 
 
-def Error(data):
-    code = data['errorCode'].lower()
-    Log('%s (%s) ' % (data['message'], code), Log.ERROR)
-    if 'invalidrequest' in code:
-        return getString(30204)
-    elif 'noavailablestreams' in code:
-        return getString(30205)
-    elif 'notowned' in code:
-        return getString(30206)
-    elif 'invalidgeoip' or 'dependency' in code:
-        return getString(30207)
-    elif 'temporarilyunavailable' in code:
-        return getString(30208)
-    else:
-        return '%s (%s) ' % (data['message'], code)
-
-
 def Input(mousex=0, mousey=0, click=0, keys=None, delay='200'):
     screenWidth = int(xbmc.getInfoLabel('System.ScreenWidth'))
     screenHeight = int(xbmc.getInfoLabel('System.ScreenHeight'))

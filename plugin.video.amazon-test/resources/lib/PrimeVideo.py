@@ -149,7 +149,7 @@ class PrimeVideo(Singleton):
         if (self._s.multiuser) and ('root' == path) and (1 < len(loadUsers())):
             li = xbmcgui.ListItem(getString(30134).format(loadUser('name')))
             li.addContextMenuItems(self._g.CONTEXTMENU_MULTIUSER)
-            xbmcplugin.addDirectoryItem(self._g.pluginhandle, '{0}?mode=PrimeVideo_Browse&path=root-//-SwitchUser'.format(sys.argv[0]), li, isFolder=False)
+            xbmcplugin.addDirectoryItem(self._g.pluginhandle, '{0}?mode=PrimeVideo_Browse&path=root-//-SwitchUser'.format(self._g.pluginid), li, isFolder=False)
         if 'root-//-SwitchUser' == path:
             if switchUser():
                 self.BuildRoot()
@@ -177,7 +177,7 @@ class PrimeVideo(Singleton):
         for key in node:
             if key in ['metadata', 'ref', 'title', 'verb', 'children']:
                 continue
-            url = '{0}?mode='.format(sys.argv[0])
+            url = '{0}?mode='.format(self._g.pluginid)
             entry = node[key] if key not in self._videodata else self._videodata[key]
             if 'verb' not in entry:
                 url += 'PrimeVideo_Browse&path={0}-//-{1}'.format(quote_plus(path.encode('utf-8')), quote_plus(key.encode('utf-8')))

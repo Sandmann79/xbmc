@@ -44,40 +44,6 @@ from resources.lib.common import Globals, Settings, jsonRPC
 from resources.lib.playback import ParseStreams, PlayVideo
 from resources.lib.ages import AgeRestrictions
 
-g = Globals()
-s = Settings()
-
-if not xbmcvfs.exists(os.path.join(g.DATA_PATH, 'settings.xml')):
-    g.addon.openSettings()
-
-socket.setdefaulttimeout(30)
-
-warnings.simplefilter('error', requests.packages.urllib3.exceptions.SNIMissingWarning)
-warnings.simplefilter('error', requests.packages.urllib3.exceptions.InsecurePlatformWarning)
-
-
-def MainMenu():
-    Log('Version: %s' % g.__version__)
-    Log('Unicode filename support: %s' % os.path.supports_unicode_filenames)
-    Log('Locale: %s / Language: %s' % (g.userAcceptLanguages.split(',')[0], s.Language))
-    if False is not g.UsePrimeVideo:
-        g.pv.BrowseRoot()
-    else:
-        loadCategories()
-
-        cm_wl = [(getString(30185) % 'Watchlist', 'RunPlugin(%s?mode=getListMenu&url=%s&export=1)' % (sys.argv[0], watchlist))]
-        cm_lb = [(getString(30185) % getString(30100),
-                  'RunPlugin(%s?mode=getListMenu&url=%s&export=1)' % (sys.argv[0], library))]
-
-        if s.multiuser:
-            addDir(getString(30134).format(loadUser('name')), 'switchUser', '', cm=g.CONTEXTMENU_MULTIUSER)
-        addDir('Watchlist', 'getListMenu', watchlist, cm=cm_wl)
-        getRootNode()
-        addDir(getString(30108), 'Search', '')
-        addDir(getString(30100), 'getListMenu', library, cm=cm_lb)
-        xbmcplugin.endOfDirectory(g.pluginhandle, updateListing=False)
-
-
 def Search():
     searchString = g.dialog.input(getString(24121))
     if searchString:
@@ -236,11 +202,11 @@ def listContent(catalog, url, page, parent, export=False):
         wlmode = 1 if watchlist in parent else 0
         simiUrl = urllib.quote_plus('ASIN=' + asin + s.OfferGroup)
         cm = [(getString(30183),
-               'Container.Update(%s?mode=listContent&cat=GetSimilarities&url=%s&page=1&opt=gs)' % (sys.argv[0], simiUrl)),
+               'Container.Update(%s?mode=listContent&cat=GetSimilarities&url=%s&page=1&opt=gs)' % (g.pluginid, simiUrl)),
               (getString(wlmode + 30180) % getString(g.langID[contentType]),
-               'RunPlugin(%s?mode=WatchList&url=%s&opt=%s)' % (sys.argv[0], asin, wlmode)),
+               'RunPlugin(%s?mode=WatchList&url=%s&opt=%s)' % (g.pluginid, asin, wlmode)),
               (getString(30185) % getString(g.langID[contentType]),
-               'RunPlugin(%s?mode=getListMenu&url=%s&export=1)' % (sys.argv[0], asin)),
+               'RunPlugin(%s?mode=getListMenu&url=%s&export=1)' % (g.pluginid, asin)),
               (getString(30186), 'UpdateLibrary(video)')]
 
         if contentType == 'movie' or contentType == 'episode':
@@ -257,7 +223,7 @@ def listContent(catalog, url, page, parent, export=False):
                     curl = 'SeriesASIN=%s&ContentType=TVSeason&IncludeBlackList=T%s' % (
                         infoLabels['SeriesAsin'], s.OfferGroup)
                     cm.insert(0, (getString(30182), 'Container.Update(%s?mode=listContent&cat=Browse&url=%s&page=1)' % (
-                        sys.argv[0], urllib.quote_plus(curl))))
+                        g.pluginid, urllib.quote_plus(curl))))
 
             if export:
                 url = re.sub(r'(?i)contenttype=\w+', 'ContentType=TVEpisode', url)
@@ -276,7 +242,7 @@ def listContent(catalog, url, page, parent, export=False):
                    catalog=catalog, opt=parent, thumb=s.NextIcon)
     if not export:
         db.commit()
-        xbmc.executebuiltin('RunPlugin(%s?mode=checkMissing)' % sys.argv[0])
+        xbmc.executebuiltin('RunPlugin(%s?mode=checkMissing)' % g.pluginid)
         if 'search' in parent:
             setContentAndView('season')
         else:
@@ -1324,6 +1290,17 @@ class window(xbmcgui.WindowDialog):
             Input(9999, -1)
 
 
+g = Globals()
+s = Settings()
+
+if not xbmcvfs.exists(os.path.join(g.DATA_PATH, 'settings.xml')):
+    g.addon.openSettings()
+
+socket.setdefaulttimeout(30)
+
+warnings.simplefilter('error', requests.packages.urllib3.exceptions.SNIMissingWarning)
+warnings.simplefilter('error', requests.packages.urllib3.exceptions.InsecurePlatformWarning)
+
 args = dict(urlparse.parse_qsl(urlparse.urlparse(sys.argv[2]).query))
 
 Log(args, Log.DEBUG)
@@ -1356,7 +1333,25 @@ elif mode != 'LogIn':
     exit()
 
 if None is mode:
-    MainMenu()
+    Log('Version: %s' % g.__version__)
+    Log('Unicode filename support: %s' % os.path.supports_unicode_filenames)
+    Log('Locale: %s / Language: %s' % (g.userAcceptLanguages.split(',')[0], s.Language))
+    if False is not g.UsePrimeVideo:
+        g.pv.BrowseRoot()
+    else:
+        loadCategories()
+
+        cm_wl = [(getString(30185) % 'Watchlist', 'RunPlugin(%s?mode=getListMenu&url=%s&export=1)' % (g.pluginid, watchlist))]
+        cm_lb = [(getString(30185) % getString(30100),
+                  'RunPlugin(%s?mode=getListMenu&url=%s&export=1)' % (g.pluginid, library))]
+
+        if s.multiuser:
+            addDir(getString(30134).format(loadUser('name')), 'switchUser', '', cm=g.CONTEXTMENU_MULTIUSER)
+        addDir('Watchlist', 'getListMenu', watchlist, cm=cm_wl)
+        getRootNode()
+        addDir(getString(30108), 'Search', '')
+        addDir(getString(30100), 'getListMenu', library, cm=cm_lb)
+        xbmcplugin.endOfDirectory(g.pluginhandle, updateListing=False)
 elif mode == 'listCategories':
     listCategories(args.get('url', ''), args.get('opt', ''))
 elif mode == 'listContent':

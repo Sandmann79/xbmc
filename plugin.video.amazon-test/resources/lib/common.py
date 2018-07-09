@@ -6,7 +6,7 @@
 from __future__ import unicode_literals
 from os.path import join as OSPJoin
 from locale import getdefaultlocale
-import sys
+from sys import argv
 import xbmc
 import xbmcaddon
 import xbmcgui
@@ -41,7 +41,8 @@ class Globals(Singleton):
     PayCol = 'FFE95E01'
     tmdb = b'b34490c056f0dd9e3ec9af2167a731f4' # b64decode('YjM0NDkwYzA1NmYwZGQ5ZTNlYzlhZjIxNjdhNzMxZjQ=')
     tvdb = b'1D62F2F90030C444' # b64decode('MUQ2MkYyRjkwMDMwQzQ0NA==')
-    pluginhandle = int(sys.argv[1])
+    pluginid = argv[0]
+    pluginhandle = int(argv[1])
     langID = {'movie': 30165, 'series': 30166, 'season': 30167, 'episode': 30173}
 
     ''' Allow the usage of dot notation for data inside the _globals dictionary, without explicit function call '''
@@ -95,9 +96,9 @@ class Globals(Singleton):
         self._globals['userAcceptLanguages'] = userAcceptLanguages % '' if not loc else '%s, %s' % (loc.lower().replace('_', '-'), userAcceptLanguages % ';q=0.75')
 
         self._globals['CONTEXTMENU_MULTIUSER'] = [
-            (getString(30130, self._globals['addon']).split('…')[0], 'RunPlugin(%s?mode=LogIn)' % sys.argv[0]),
-            (getString(30131, self._globals['addon']).split('…')[0], 'RunPlugin(%s?mode=removeUser)' % sys.argv[0]),
-            (getString(30132, self._globals['addon']), 'RunPlugin(%s?mode=renameUser)' % sys.argv[0])
+            (getString(30130, self._globals['addon']).split('…')[0], 'RunPlugin(%s?mode=LogIn)' % self.pluginid),
+            (getString(30131, self._globals['addon']).split('…')[0], 'RunPlugin(%s?mode=removeUser)' % self.pluginid),
+            (getString(30132, self._globals['addon']), 'RunPlugin(%s?mode=renameUser)' % self.pluginid)
         ]
 
 

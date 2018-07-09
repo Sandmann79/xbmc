@@ -46,10 +46,10 @@ def addDir(name, mode='', url='', infoLabels=None, opt='', catalog='Browse', cm=
     if None is thumb:
         thumb = s.DefaultFanart
     u = {'mode': mode, 'url': url.encode('utf-8'), 'page': page, 'opt': opt, 'cat': catalog}
-    url = '%s?%s' % (sys.argv[0], urllib.urlencode(u))
+    url = '%s?%s' % (g.pluginid, urllib.urlencode(u))
 
     if not mode:
-        url = sys.argv[0]
+        url = g.pluginid
 
     if export:
         Export(infoLabels, url)
@@ -80,7 +80,7 @@ def addVideo(name, asin, infoLabels, cm=[], export=False):
     g = Globals()
     s = Settings()
     u = {'asin': asin, 'mode': 'PlayVideo', 'name': name.encode('utf-8'), 'adult': infoLabels['isAdult']}
-    url = '%s?%s' % (sys.argv[0], urllib.urlencode(u))
+    url = '%s?%s' % (g.pluginid, urllib.urlencode(u))
 
     item = xbmcgui.ListItem(name, thumbnailImage=infoLabels['Thumb'])
     item.setArt({'fanart': infoLabels['Fanart'], 'poster': infoLabels['Thumb']})

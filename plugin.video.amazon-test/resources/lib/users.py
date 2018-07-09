@@ -48,7 +48,7 @@ def addUser(user):
     else:
         users.append(user)
     writeConfig('accounts.lst', json.dumps(users))
-    if xbmc.getInfoLabel('Container.FolderPath') == sys.argv[0]:
+    if xbmc.getInfoLabel('Container.FolderPath') == addUser.g.pluginid:
         xbmc.executebuiltin('Container.Refresh')
 
 

@@ -4,9 +4,17 @@ import requests
 import re
 import pickle
 import json
+from BeautifulSoup import BeautifulSoup
 from resources.lib.logging import *
 from resources.lib.configs import *
 from resources.lib.common import Globals, sleep
+
+
+def parseHTML(br):
+    response = br.response().read().decode('utf-8')
+    response = re.sub(r'(?i)(<!doctype \w+).*>', r'\1>', response)
+    soup = BeautifulSoup(response, convertEntities=BeautifulSoup.HTML_ENTITIES)
+    return response, soup
 
 
 def getURL(url, useCookie=False, silent=False, headers=None, rjson=True, attempt=1, check=False, postdata=None):
@@ -174,6 +182,92 @@ def MechanizeLogin():
 
 
 def LogIn(ask=True):
+    def _MFACheck(br, email, soup):
+        Log('MFA, DCQ or Captcha form')
+        uni_soup = unicode(soup)
+        if 'auth-mfa-form' in uni_soup:
+            msg = soup.find('form', attrs={'id': 'auth-mfa-form'})
+            msgtxt = msg.p.renderContents().strip()
+            kb = xbmc.Keyboard('', msgtxt)
+            kb.doModal()
+            if kb.isConfirmed() and kb.getText():
+                xbmc.executebuiltin('ActivateWindow(busydialog)')
+                br.select_form(nr=0)
+                br['otpCode'] = kb.getText()
+                # br.find_control('rememberDevice').items[0].selected = True
+            else:
+                return False
+        elif 'ap_dcq_form' in uni_soup:
+            msg = soup.find('div', attrs={'id': 'message_warning'})
+            g.dialog.ok(__plugin__, msg.p.contents[0].strip())
+            dcq = soup.find('div', attrs={'id': 'ap_dcq1a_pagelet'})
+            dcq_title = dcq.find('div', attrs={'id': 'ap_dcq1a_pagelet_title'}).h1.contents[0].strip()
+            q_title = []
+            q_id = []
+            for q in dcq.findAll('div', attrs={'class': 'dcq_question'}):
+                if q.span.label:
+                    label = q.span.label.renderContents().strip().replace('  ', '').replace('\n', '')
+                    if q.span.label.span:
+                        label = label.replace(str(q.span.label.span), q.span.label.span.text)
+                    q_title.append(insertLF(label))
+                    q_id.append(q.input['id'])
+
+            sel = g.dialog.select(insertLF(dcq_title, 60), q_title) if len(q_title) > 1 else 0
+            if sel < 0:
+                return False
+
+            ret = g.dialog.input(q_title[sel])
+            if ret:
+                xbmc.executebuiltin('ActivateWindow(busydialog)')
+                br.select_form(nr=0)
+                br[q_id[sel]] = ret
+            else:
+                return False
+        elif 'ap_captcha_img_label' in uni_soup or 'auth-captcha-image-container' in uni_soup:
+            wnd = _Captcha((getString(30008).split('…')[0]), soup, email)
+            wnd.doModal()
+            if wnd.email and wnd.cap and wnd.pwd:
+                xbmc.executebuiltin('ActivateWindow(busydialog)')
+                br.select_form(nr=0)
+                br['email'] = wnd.email
+                br['password'] = wnd.pwd
+                br['guess'] = wnd.cap
+            else:
+                return False
+            del wnd
+        elif 'claimspicker' in uni_soup:
+            msg = soup.find('form', attrs={'name': 'claimspicker'})
+            cs_title = msg.find('div', attrs={'class': 'a-row a-spacing-small'})
+            cs_title = cs_title.h1.contents[0].strip()
+            cs_quest = msg.find('label', attrs={'class': 'a-form-label'})
+            cs_hint = msg.find('div', attrs={'class': 'a-row'}).contents[0].strip()
+            choices = []
+            if cs_quest:
+                for c in soup.findAll('div', attrs={'data-a-input-name': 'option'}):
+                    choices.append((c.span.contents[0].strip(), c.input['name'], c.input['value']))
+                sel = g.dialog.select('%s - %s' % (cs_title, cs_quest.contents[0].strip()), [k[0] for k in choices])
+            else:
+                sel = 100 if g.dialog.ok(cs_title, cs_hint) else -1
+
+            if sel > -1:
+                xbmc.executebuiltin('ActivateWindow(busydialog)')
+                br.select_form(nr=0)
+                if sel < 100:
+                    br[choices[sel][1]] = [choices[sel][2]]
+            else:
+                return False
+        elif 'fwcim-form' in uni_soup:
+            msg = soup.find('div', attrs={'class': 'a-row a-spacing-micro cvf-widget-input-code-label'}).contents[0].strip()
+            ret = g.dialog.input(msg)
+            if ret:
+                xbmc.executebuiltin('ActivateWindow(busydialog)')
+                br.select_form(nr=0)
+                Log(br)
+                br['code'] = ret
+            else:
+                return False
+        return br
+
     g = Globals()
     from resources.lib.users import loadUser
     user = loadUser(empty=ask)
@@ -246,7 +340,7 @@ def LogIn(ask=True):
         WriteLog(response, 'login')
 
         while any(s in response for s in ['auth-mfa-form', 'ap_dcq_form', 'ap_captcha_img_label', 'claimspicker', 'fwcim-form', 'auth-captcha-image-container']):
-            br = MFACheck(br, email, soup)
+            br = _MFACheck(br, email, soup)
             if not br:
                 return False
             useMFA = 'otpCode' in str(list(br.forms())[0])
@@ -304,3 +398,78 @@ def LogIn(ask=True):
             g.dialog.ok(getString(30200), getString(30213))
 
     return False
+
+
+class _Captcha(pyxbmct.AddonDialogWindow):
+    def __init__(self, title='', soup=None, email=None):
+        super(_Captcha, self).__init__(title)
+        if 'ap_captcha_img_label' in unicode(soup):
+            head = soup.find('div', attrs={'id': 'message_warning'})
+            if not head:
+                head = soup.find('div', attrs={'id': 'message_error'})
+            title = soup.find('div', attrs={'id': 'ap_captcha_guess_alert'})
+            self.head = head.p.renderContents().strip()
+            self.head = re.sub('(?i)<[^>]*>', '', self.head)
+            self.picurl = soup.find('div', attrs={'id': 'ap_captcha_img'}).img.get('src')
+        else:
+            self.head = soup.find('span', attrs={'class': 'a-list-item'}).renderContents().strip()
+            title = soup.find('div', attrs={'id': 'auth-guess-missing-alert'}).div.div
+            self.picurl = soup.find('div', attrs={'id': 'auth-captcha-image-container'}).img.get('src')
+            pass
+        self.setGeometry(500, 550, 9, 2)
+        self.email = email
+        self.pwd = ''
+        self.cap = ''
+        self.title = title.renderContents().strip()
+        self.image = pyxbmct.Image('', aspectRatio=2)
+        self.tb_head = pyxbmct.TextBox()
+        self.fl_title = pyxbmct.FadeLabel(_alignment=pyxbmct.ALIGN_CENTER)
+        self.username = pyxbmct.Edit('', _alignment=pyxbmct.ALIGN_LEFT | pyxbmct.ALIGN_CENTER_Y)
+        self.password = pyxbmct.Edit('', _alignment=pyxbmct.ALIGN_LEFT | pyxbmct.ALIGN_CENTER_Y)
+        self.captcha = pyxbmct.Edit('', _alignment=pyxbmct.ALIGN_LEFT | pyxbmct.ALIGN_CENTER_Y)
+        self.btn_submit = pyxbmct.Button(getString(30008).split('…')[0])
+        self.btn_cancel = pyxbmct.Button(getString(30123))
+        self.set_controls()
+        self.set_navigation()
+
+    def set_controls(self):
+        self.placeControl(self.tb_head, 0, 0, columnspan=2, rowspan=3)
+        self.placeControl(pyxbmct.Label(getString(30002), alignment=pyxbmct.ALIGN_CENTER_Y | pyxbmct.ALIGN_CENTER), 2, 0)
+        self.placeControl(pyxbmct.Label(getString(30003), alignment=pyxbmct.ALIGN_CENTER_Y | pyxbmct.ALIGN_CENTER), 3, 0)
+        self.placeControl(self.username, 2, 1, pad_y=8)
+        self.placeControl(self.password, 3, 1, pad_y=8)
+        self.placeControl(self.image, 4, 0, rowspan=2, columnspan=2)
+        self.placeControl(self.fl_title, 6, 0, columnspan=2)
+        self.placeControl(self.captcha, 7, 0, columnspan=2, pad_y=8)
+        self.placeControl(self.btn_submit, 8, 0)
+        self.placeControl(self.btn_cancel, 8, 1)
+        self.connect(self.btn_cancel, self.close)
+        self.connect(self.btn_submit, self.submit)
+        self.connect(pyxbmct.ACTION_NAV_BACK, self.close)
+        self.username.setText(self.email)
+        self.tb_head.setText(self.head)
+        self.fl_title.addLabel(self.title)
+        self.image.setImage(self.picurl, False)
+
+    def set_navigation(self):
+        self.username.controlUp(self.btn_submit)
+        self.username.controlDown(self.password)
+        self.password.controlUp(self.username)
+        self.password.controlDown(self.captcha)
+        self.captcha.controlUp(self.password)
+        self.captcha.controlDown(self.btn_submit)
+        self.btn_submit.controlUp(self.captcha)
+        self.btn_submit.controlDown(self.username)
+        self.btn_cancel.controlUp(self.captcha)
+        self.btn_cancel.controlDown(self.username)
+        self.btn_submit.controlRight(self.btn_cancel)
+        self.btn_submit.controlLeft(self.btn_cancel)
+        self.btn_cancel.controlRight(self.btn_submit)
+        self.btn_cancel.controlLeft(self.btn_submit)
+        self.setFocus(self.password)
+
+    def submit(self):
+        self.pwd = self.password.getText()
+        self.cap = self.captcha.getText()
+        self.email = self.username.getText()
+        self.close()

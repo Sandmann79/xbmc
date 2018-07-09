@@ -65,7 +65,7 @@ warnings.simplefilter('error', requests.packages.urllib3.exceptions.InsecurePlat
 def MainMenu():
     Log('Version: %s' % __version__)
     Log('Unicode filename support: %s' % os.path.supports_unicode_filenames)
-    Log('Locale: %s / Language: %s' % (g.userAcceptLanguages.split(',')[0], Language))
+    Log('Locale: %s / Language: %s' % (g.userAcceptLanguages.split(',')[0], s.Language))
     if False is not g.UsePrimeVideo:
         g.pv.BrowseRoot()
     else:
@@ -298,7 +298,7 @@ def cleanTitle(title):
 
 def Export(infoLabels, url):
     isEpisode = infoLabels['contentType'] != 'movie'
-    language = xbmc.convertLanguage(Language, xbmc.ISO_639_2)
+    language = xbmc.convertLanguage(s.Language, xbmc.ISO_639_2)
     ExportPath = s.MOVIE_PATH
     nfoType = 'movie'
     title = infoLabels['Title']
@@ -469,13 +469,13 @@ def getTVDBImages(title, tvdb_id=None):
     Log('searching fanart for %s at thetvdb.com' % title.upper())
     posterurl = fanarturl = None
     splitter = [' - ', ': ', ', ']
-    langcodes = [Language.split('_')[0]]
+    langcodes = [s.Language.split('_')[0]]
     langcodes += ['en'] if 'en' not in langcodes else []
     TVDB_URL = 'http://www.thetvdb.com/banners/'
 
     while not tvdb_id and title:
         tv = urllib.quote_plus(title.encode('utf-8'))
-        result = getURL('http://www.thetvdb.com/api/GetSeries.php?seriesname=%s&language=%s' % (tv, Language),
+        result = getURL('http://www.thetvdb.com/api/GetSeries.php?seriesname=%s&language=%s' % (tv, s.Language),
                         silent=True, rjson=False)
         if not result:
             continue
@@ -525,7 +525,7 @@ def getTMDBImages(title, content='movie', year=None):
         str_year = '&year=' + str(year) if year else ''
         movie = urllib.quote_plus(title.encode('utf-8'))
         data = getURL('http://api.themoviedb.org/3/search/%s?api_key=%s&language=%s&query=%s%s' % (
-            content, g.tmdb, Language, movie, str_year), silent=True)
+            content, g.tmdb, s.Language, movie, str_year), silent=True)
         if not data:
             continue
 
@@ -1346,12 +1346,6 @@ if users:
     # Set marketplace, base and atv urls, and prime video usage
     g.SetMarketplace(loadUser('mid', cachedUsers=users), loadUser('baseurl', cachedUsers=users),
             loadUser('atvurl', cachedUsers=users), loadUser('pv', cachedUsers=users))
-
-    # Language settings
-    Language = jsonRPC('Settings.GetSettingValue', param={'setting': 'locale.audiolanguage'})
-    Language = xbmc.convertLanguage(Language['value'], xbmc.ISO_639_1)
-    Language = Language if Language else xbmc.getLanguage(xbmc.ISO_639_1, False)
-    Language = Language if Language else 'en'
 
     if g.UsePrimeVideo:
         g.pv.LoadCache()

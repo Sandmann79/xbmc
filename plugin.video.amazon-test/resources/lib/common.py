@@ -111,6 +111,12 @@ class Settings(Singleton):
             if self._g.addon.getSetting('enablelibraryfolder') == 'true':
                 export = xbmc.translatePath(self._g.addon.getSetting('customlibraryfolder')).decode('utf-8')
             return OSPJoin(export, 'Movies' if 'MOVIE_PATH' == name else 'TV')
+        elif 'Language' == name:
+            # Language settings
+            l = jsonRPC('Settings.GetSettingValue', param={'setting': 'locale.audiolanguage'})
+            l = xbmc.convertLanguage(l['value'], xbmc.ISO_639_1)
+            l = l if l else xbmc.getLanguage(xbmc.ISO_639_1, False)
+            return l if l else 'en'
         elif 'playMethod' == name: return int(self._g.addon.getSetting("playmethod"))
         elif 'browser' == name: return int(self._g.addon.getSetting("browser"))
         elif 'MaxResults' == name: return int(self._g.addon.getSetting("items_perpage"))

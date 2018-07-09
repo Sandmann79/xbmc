@@ -41,6 +41,8 @@ def setContentAndView(content, updateListing=False):
 
 
 def addDir(name, mode='', url='', infoLabels=None, opt='', catalog='Browse', cm=None, page=1, export=False, thumb=None):
+    g = Globals()
+    s = Settings()
     if None is thumb:
         thumb = s.DefaultFanart
     u = {'mode': mode, 'url': url.encode('utf-8'), 'page': page, 'opt': opt, 'cat': catalog}
@@ -75,6 +77,8 @@ def addDir(name, mode='', url='', infoLabels=None, opt='', catalog='Browse', cm=
 
 
 def addVideo(name, asin, infoLabels, cm=[], export=False):
+    g = Globals()
+    s = Settings()
     u = {'asin': asin, 'mode': 'PlayVideo', 'name': name.encode('utf-8'), 'adult': infoLabels['isAdult']}
     url = '%s?%s' % (sys.argv[0], urllib.urlencode(u))
 

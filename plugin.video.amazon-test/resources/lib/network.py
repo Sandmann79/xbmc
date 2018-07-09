@@ -6,7 +6,7 @@ import pickle
 import json
 from resources.lib.logging import Log
 from resources.lib.configs import *
-from resources.lib.common import Globals
+from resources.lib.common import Globals, sleep
 
 
 def getURL(url, useCookie=False, silent=False, headers=None, rjson=True, attempt=1, check=False, postdata=None):

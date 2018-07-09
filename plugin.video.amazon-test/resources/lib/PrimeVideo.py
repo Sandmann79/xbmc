@@ -16,6 +16,7 @@ from resources.lib.logging import Log
 from resources.lib.itemlisting import setContentAndView
 from resources.lib.l10n import *
 from resources.lib.users import *
+from resources.lib.playback import PlayVideo
 
 class PrimeVideo(Singleton):
     _catalog = {} # Catalog cache

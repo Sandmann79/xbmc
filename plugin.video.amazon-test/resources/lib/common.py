@@ -1,5 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+'''
+    Provides: Globals, Settings, sleep, jsonRPC
+'''
 from __future__ import unicode_literals
 from os.path import join as OSPJoin
 from locale import getdefaultlocale
@@ -8,6 +11,7 @@ import xbmc
 import xbmcaddon
 import xbmcgui
 import xbmcvfs
+import json
 from Singleton import Singleton
 from resources.lib.l10n import *
 from resources.lib.configs import *
@@ -126,3 +130,32 @@ class Settings(Singleton):
         elif 'wl_order' == name: return ['DATE_ADDED_DESC', 'TITLE_DESC', 'TITLE_ASC'][int('0' + self._g.addon.getSetting("wl_order"))]
         elif 'verifySsl' == name: return self._g.addon.getSetting('ssl_verif') == 'false'
 
+
+def jsonRPC(method, props='', param=None):
+    rpc = {'jsonrpc': '2.0',
+           'method': method,
+           'params': {},
+           'id': 1}
+
+    if props:
+        rpc['params']['properties'] = props.split(',')
+    if param:
+        rpc['params'].update(param)
+        if 'playerid' in param.keys():
+            res_pid = xbmc.executeJSONRPC('{"jsonrpc":"2.0","method":"Player.GetActivePlayers","id": 1}')
+            pid = [i['playerid'] for i in json.loads(res_pid)['result'] if i['type'] == 'video']
+            pid = pid[0] if pid else 0
+            rpc['params']['playerid'] = pid
+
+    res = json.loads(xbmc.executeJSONRPC(json.dumps(rpc)))
+    if 'error' in res.keys():
+        Log(res['error'])
+        return res['error']
+
+    result = res['result']
+    return result if type(result) == unicode else res['result'].get(props, res['result'])
+
+
+def sleep(sec):
+    if xbmc.Monitor().waitForAbort(sec):
+        return

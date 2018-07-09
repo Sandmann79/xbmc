@@ -130,6 +130,7 @@ class Settings(Singleton):
         elif 'HomeIcon' == name: return OSPJoin(self._g.PLUGIN_PATH, 'resources', 'home.png')
         elif 'wl_order' == name: return ['DATE_ADDED_DESC', 'TITLE_DESC', 'TITLE_ASC'][int('0' + self._g.addon.getSetting("wl_order"))]
         elif 'verifySsl' == name: return self._g.addon.getSetting('ssl_verif') == 'false'
+        elif 'OfferGroup' == name: return '' if self.payCont else '&OfferGroups=B0043YVHMY'
 
 
 def jsonRPC(method, props='', param=None):

@@ -56,7 +56,6 @@ __version__ = g.addon.getAddonInfo('version')
 if not xbmcvfs.exists(os.path.join(g.DATA_PATH, 'settings.xml')):
     g.addon.openSettings()
 
-OfferGroup = '' if s.payCont else '&OfferGroups=B0043YVHMY'
 socket.setdefaulttimeout(30)
 
 warnings.simplefilter('error', requests.packages.urllib3.exceptions.SNIMissingWarning)
@@ -88,7 +87,7 @@ def MainMenu():
 def Search():
     searchString = g.dialog.input(getString(24121))
     if searchString:
-        url = 'searchString=%s%s' % (urllib.quote_plus(searchString), OfferGroup)
+        url = 'searchString=%s%s' % (urllib.quote_plus(searchString), s.OfferGroup)
         listContent('Search', url, 1, 'search')
 
 
@@ -180,7 +179,7 @@ def listCategories(node, root=None):
     all_vid = {'movies': [30143, 'Movie', 'root'], 'tv_shows': [30160, 'TVSeason&RollupToSeason=T', 'root_show']}
 
     if root in all_vid.keys():
-        url = 'OrderBy=Title%s&contentType=%s' % (OfferGroup, all_vid[root][1])
+        url = 'OrderBy=Title%s&contentType=%s' % (s.OfferGroup, all_vid[root][1])
         addDir(getString(all_vid[root][0]), 'listContent', url, opt=all_vid[root][2])
 
     for node, title, category, content, menu_id, infolabel in cat:
@@ -241,7 +240,7 @@ def listContent(catalog, url, page, parent, export=False):
         name = infoLabels['DisplayTitle']
         asin = item['titleId']
         wlmode = 1 if watchlist in parent else 0
-        simiUrl = urllib.quote_plus('ASIN=' + asin + OfferGroup)
+        simiUrl = urllib.quote_plus('ASIN=' + asin + s.OfferGroup)
         cm = [(getString(30183),
                'Container.Update(%s?mode=listContent&cat=GetSimilarities&url=%s&page=1&opt=gs)' % (sys.argv[0], simiUrl)),
               (getString(wlmode + 30180) % getString(g.langID[contentType]),
@@ -257,12 +256,12 @@ def listContent(catalog, url, page, parent, export=False):
             url = item['childTitles'][0]['feedUrl'] if '_show' not in parent else url
 
             if watchlist in parent:
-                url += OfferGroup
+                url += s.OfferGroup
             if contentType == 'season':
                 name = formatSeason(infoLabels, parent)
                 if library not in parent and parent != '':
                     curl = 'SeriesASIN=%s&ContentType=TVSeason&IncludeBlackList=T%s' % (
-                        infoLabels['SeriesAsin'], OfferGroup)
+                        infoLabels['SeriesAsin'], s.OfferGroup)
                     cm.insert(0, (getString(30182), 'Container.Update(%s?mode=listContent&cat=Browse&url=%s&page=1)' % (
                         sys.argv[0], urllib.quote_plus(curl))))
 
@@ -1516,9 +1515,6 @@ if users:
     # Set marketplace, base and atv urls, and prime video usage
     g.SetMarketplace(loadUser('mid', cachedUsers=users), loadUser('baseurl', cachedUsers=users),
             loadUser('atvurl', cachedUsers=users), loadUser('pv', cachedUsers=users))
-
-    # Age restrictions
-
 
     # Language settings
     Language = jsonRPC('Settings.GetSettingValue', param={'setting': 'locale.audiolanguage'})

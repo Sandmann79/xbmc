@@ -21,6 +21,7 @@ from resources.lib.configs import *
 #   v = _g.attribute
 #   v = _g.attribute.AttributeMemberFunction()
 
+
 class Globals(Singleton):
     """ A singleton instance of globals accessible through dot notation """
     _globals = {
@@ -39,17 +40,17 @@ class Globals(Singleton):
     library = 'video-library'
     DBVersion = 1.4
     PayCol = 'FFE95E01'
-    tmdb = b'b34490c056f0dd9e3ec9af2167a731f4' # b64decode('YjM0NDkwYzA1NmYwZGQ5ZTNlYzlhZjIxNjdhNzMxZjQ=')
-    tvdb = b'1D62F2F90030C444' # b64decode('MUQ2MkYyRjkwMDMwQzQ0NA==')
+    tmdb = b'b34490c056f0dd9e3ec9af2167a731f4'  # b64decode('YjM0NDkwYzA1NmYwZGQ5ZTNlYzlhZjIxNjdhNzMxZjQ=')
+    tvdb = b'1D62F2F90030C444'  # b64decode('MUQ2MkYyRjkwMDMwQzQ0NA==')
     pluginid = argv[0]
     pluginhandle = int(argv[1])
     langID = {'movie': 30165, 'series': 30166, 'season': 30167, 'episode': 30173}
 
     ''' Allow the usage of dot notation for data inside the _globals dictionary, without explicit function call '''
     def __getattr__(self, name): return self._globals[name]
-    #def __setattr__(self, name, value): self._globals[name] = value
-    #def __delattr__(self, name): self._globals.pop(name, None)
-    
+    # def __setattr__(self, name, value): self._globals[name] = value
+    # def __delattr__(self, name): self._globals.pop(name, None)
+
     def __init__(self):
         def _genID(renew=False):
             guid = getConfig("GenDeviceID", configPath=self._globals['CONFIG_PATH']) if not renew else False
@@ -62,7 +63,7 @@ class Globals(Singleton):
         self._globals['addon'] = xbmcaddon.Addon()
         self._globals['pv'] = PrimeVideo(self, Settings())
         self._globals['dialog'] = xbmcgui.Dialog()
-        #self._globals['dialogprogress'] = xbmcgui.DialogProgress()
+        # self._globals['dialogprogress'] = xbmcgui.DialogProgress()
         self._globals['hasExtRC'] = xbmc.getCondVisibility('System.HasAddon(script.chromium_remotecontrol)')
 
         self._globals['DATA_PATH'] = xbmc.translatePath(self.addon.getAddonInfo('profile')).decode('utf-8')
@@ -76,7 +77,6 @@ class Globals(Singleton):
         self._globals['__authors__'] = self._globals['addon'].getAddonInfo('author')
         self._globals['__credits__'] = ""
         self._globals['__version__'] = self._globals['addon'].getAddonInfo('version')
-
 
         # OS Detection
         if xbmc.getCondVisibility('system.platform.windows'):
@@ -100,7 +100,6 @@ class Globals(Singleton):
             (getString(30131, self._globals['addon']).split('…')[0], 'RunPlugin(%s?mode=removeUser)' % self.pluginid),
             (getString(30132, self._globals['addon']), 'RunPlugin(%s?mode=renameUser)' % self.pluginid)
         ]
-
 
     def SetMarketplace(self, mid, burl, atv, pv):
         self._globals['MarketID'] = mid

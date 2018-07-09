@@ -2,7 +2,8 @@
 # -*- coding: utf-8 -*-
 import xbmc
 
-def getString(string_id, addonInstance = None):
+
+def getString(string_id, addonInstance=None):
     from resources.lib.common import Globals
     if string_id < 30000:
         src = xbmc
@@ -14,4 +15,3 @@ def getString(string_id, addonInstance = None):
         src = addonInstance
     locString = src.getLocalizedString(string_id)
     return locString
-

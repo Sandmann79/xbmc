@@ -5,6 +5,7 @@ import xbmc
 import xbmcvfs
 from resources.lib.common import Globals, Settings
 
+
 def Log(msg, level=xbmc.LOGNOTICE):
     if not hasattr(Log, '_s'):
         Log._s = Settings()
@@ -16,10 +17,10 @@ def Log(msg, level=xbmc.LOGNOTICE):
     xbmc.log(msg.encode('utf-8'), level)
 Log.DEBUG = xbmc.LOGDEBUG
 Log.ERROR = xbmc.LOGERROR
-#Log.FATAL = xbmc.LOGFATAL
+# Log.FATAL = xbmc.LOGFATAL
 Log.INFO = xbmc.LOGINFO
-#Log.NOTICE = xbmc.LOGNOTICE
-#Log.SEVERE = xbmc.LOGSEVERE
+# Log.NOTICE = xbmc.LOGNOTICE
+# Log.SEVERE = xbmc.LOGSEVERE
 Log.WARNING = xbmc.LOGWARNING
 
 

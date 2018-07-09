@@ -95,14 +95,14 @@ def getURL(url, useCookie=False, silent=False, headers=None, rjson=True, attempt
         if 'SNIMissingWarning' in eType:
             Log('Using a Python/OpenSSL version which doesn\'t support SNI for TLS connections.', Log.ERROR)
             g.dialog.ok('No SNI for TLS', 'Your current Python/OpenSSL environment does not support SNI over TLS connections.',
-                      'You can find a Linux guide on how to update Python and its modules for Kodi here: https://goo.gl/CKtygz',
-                      'Additionally, follow this guide to update the required modules: https://goo.gl/ksbbU2')
+                        'You can find a Linux guide on how to update Python and its modules for Kodi here: https://goo.gl/CKtygz',
+                        'Additionally, follow this guide to update the required modules: https://goo.gl/ksbbU2')
             exit()
         if 'InsecurePlatformWarning' in eType:
             Log('Using an outdated SSL module.', Log.ERROR)
             g.dialog.ok('SSL module outdated', 'The SSL module for Python is outdated.',
-                      'You can find a Linux guide on how to update Python and its modules for Kodi here: https://goo.gl/CKtygz',
-                      'Additionally, follow this guide to update the required modules: https://goo.gl/ksbbU2')
+                        'You can find a Linux guide on how to update Python and its modules for Kodi here: https://goo.gl/CKtygz',
+                        'Additionally, follow this guide to update the required modules: https://goo.gl/ksbbU2')
             exit()
         if (('429' in e) or ('Timeout' in eType)) and (3 > attempt):
             attempt += 1 if not check else 10
@@ -117,7 +117,7 @@ def getURL(url, useCookie=False, silent=False, headers=None, rjson=True, attempt
 
 
 def getURLData(mode, asin, retformat='json', devicetypeid='AOAGZA014O5RE', version=1, firmware='1', opt='', extra=False,
-            useCookie=False, retURL=False, vMT='Feature', dRes='PlaybackUrls,SubtitleUrls,ForcedNarratives'):
+               useCookie=False, retURL=False, vMT='Feature', dRes='PlaybackUrls,SubtitleUrls,ForcedNarratives'):
     g = Globals()
     url = g.ATVUrl + '/cdp/' + mode
     url += '?asin=' + asin
@@ -162,7 +162,7 @@ def getATVData(pg_mode, query='', version=2, useCookie=False, site_id=None):
     #                        'All': 'firmware=fmw:045.01E01164A-app:4.7&deviceTypeID=A3VN4E5F7BBC7S'}
     # TypeIDs = {'All': 'firmware=fmw:17-app:2.0.45.1210&deviceTypeID=A2RJLFEH0UEKI9'}
     _TypeIDs = {'All': 'firmware=fmw:17-app:2.0.45.1210&deviceTypeID=A2M4YX06LWP8WI',
-            'GetCategoryList_ftv': 'firmware=fmw:17-app:2.0.45.1210&deviceTypeID=ADVBD696BHNV5'}
+                'GetCategoryList_ftv': 'firmware=fmw:17-app:2.0.45.1210&deviceTypeID=ADVBD696BHNV5'}
 
     g = Globals()
     if '?' in query:
@@ -185,7 +185,7 @@ def getATVData(pg_mode, query='', version=2, useCookie=False, site_id=None):
         Log('Error Code: ' + jsondata['message']['body']['code'], Log.ERROR)
         return None
     return jsondata['message']['body']
-   
+
 
 def MechanizeLogin():
     from resources.lib.users import loadUser

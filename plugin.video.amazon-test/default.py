@@ -44,6 +44,7 @@ from resources.lib.common import Globals, Settings, jsonRPC
 from resources.lib.playback import ParseStreams, PlayVideo
 from resources.lib.ages import AgeRestrictions
 
+
 def Search():
     searchString = g.dialog.input(getString(24121))
     if searchString:

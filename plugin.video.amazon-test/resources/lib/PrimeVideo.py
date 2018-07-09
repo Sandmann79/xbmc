@@ -18,11 +18,13 @@ from resources.lib.l10n import *
 from resources.lib.users import *
 from resources.lib.playback import PlayVideo
 
+
 class PrimeVideo(Singleton):
-    _catalog = {} # Catalog cache
-    _videodata = {} # Video data cache
-    _catalogCache = None # Catalog cache file name
-    _videodataCache = None # Video data cache file name
+    _catalog = {}  # Catalog cache
+    _videodata = {}  # Video data cache
+    _catalogCache = None  # Catalog cache file name
+    _videodataCache = None  # Video data cache file name
+    _WatchlistPages = {}  # Avoid LazyLoad infinite recursion on watchlist parsing
 
     def __init__(self, globalsInstance, settingsInstance):
         self._g = globalsInstance
@@ -30,27 +32,26 @@ class PrimeVideo(Singleton):
         self._dateParserData = {
             """ Data for date string deconstruction and reassembly """
             'de_DE': {'deconstruct': r'^([0-9]+)\.\s+([^\s]+)\s+([0-9]+)', 'reassemble': '{2}-{1:0>2}-{0:0>2}', 'month': 1,
-                    'months': {'Januar': 1, 'Februar': 2, 'März': 3, 'April': 4, 'Mai': 5, 'Juni': 6, 'Juli': 7, 'August': 8, 'September': 9, 'Oktober': 10,
-                                'November': 11, 'Dezember': 12}},
+                      'months': {'Januar': 1, 'Februar': 2, 'März': 3, 'April': 4, 'Mai': 5, 'Juni': 6, 'Juli': 7, 'August': 8, 'September': 9, 'Oktober': 10,
+                                 'November': 11, 'Dezember': 12}},
             'en_US': {'deconstruct': r'^([^\s]+)\s+([0-9]+),\s+([0-9]+)', 'reassemble': '{2}-{0:0>2}-{1:0>2}', 'month': 0,
-                    'months': {'January': 1, 'February': 2, 'March': 3, 'April': 4, 'May': 5, 'June': 6, 'July': 7, 'August': 8, 'September': 9, 'October': 10,
-                                'November': 11, 'December': 12}},
+                      'months': {'January': 1, 'February': 2, 'March': 3, 'April': 4, 'May': 5, 'June': 6, 'July': 7, 'August': 8, 'September': 9, 'October': 10,
+                                 'November': 11, 'December': 12}},
             'es_ES': {'deconstruct': r'^([0-9]+)\s+de\s+([^\s]+),\s+de\s+([0-9]+)', 'reassemble': '{2}-{1:0>2}-{0:0>2}', 'month': 1,
-                    'months': {'enero': 1, 'febrero': 2, 'marzo': 3, 'abril': 4, 'mayo': 5, 'junio': 6, 'julio': 7, 'agosto': 8, 'septiembre': 9, 'octubre': 10,
-                                'noviembre': 11, 'diciembre': 12}},
+                      'months': {'enero': 1, 'febrero': 2, 'marzo': 3, 'abril': 4, 'mayo': 5, 'junio': 6, 'julio': 7, 'agosto': 8, 'septiembre': 9, 'octubre': 10,
+                                 'noviembre': 11, 'diciembre': 12}},
             'fr_FR': {'deconstruct': r'^([0-9]+)\s+([^\s]+)\s+([0-9]+)', 'reassemble': '{2}-{1:0>2}-{0:0>2}', 'month': 1,
-                    'months': {'janvier': 1, 'février': 2, 'mars': 3, 'avril': 4, 'mai': 5, 'juin': 6, 'juillet': 7, 'aout': 8, 'septembre': 9, 'octobre': 10,
-                                'novembre': 11, 'décembre': 12}},
+                      'months': {'janvier': 1, 'février': 2, 'mars': 3, 'avril': 4, 'mai': 5, 'juin': 6, 'juillet': 7, 'aout': 8, 'septembre': 9, 'octobre': 10,
+                                 'novembre': 11, 'décembre': 12}},
             'it_IT': {'deconstruct': r'^([0-9]+)\s+([^\s]+)\s+([0-9]+)', 'reassemble': '{2}-{1:0>2}-{0:0>2}', 'month': 1,
-                    'months': {'gennaio': 1, 'febbraio': 2, 'marzo': 3, 'aprile': 4, 'maggio': 5, 'giugno': 6, 'luglio': 7, 'agosto': 8, 'settembre': 9,
-                                'ottobre': 10, 'novembre': 11, 'dicembre': 12}},
+                      'months': {'gennaio': 1, 'febbraio': 2, 'marzo': 3, 'aprile': 4, 'maggio': 5, 'giugno': 6, 'luglio': 7, 'agosto': 8, 'settembre': 9,
+                                 'ottobre': 10, 'novembre': 11, 'dicembre': 12}},
             'pt_BR': {'deconstruct': r'^([0-9]+)\s+de\s+([^\s]+),\s+de\s+([0-9]+)', 'reassemble': '{2}-{1:0>2}-{0:0>2}', 'month': 1,
-                    'months': {'janeiro': 1, 'fevereiro': 2, 'março': 3, 'abril': 4, 'maio': 5, 'junho': 6, 'julho': 7, 'agosto': 8, 'setembro': 9, 'outubro': 10,
-                                'novembro': 11, 'dezembro': 12}},
+                      'months': {'janeiro': 1, 'fevereiro': 2, 'março': 3, 'abril': 4, 'maio': 5, 'junho': 6, 'julho': 7, 'agosto': 8, 'setembro': 9, 'outubro': 10,
+                                 'novembro': 11, 'dezembro': 12}},
         }
 
-
-    def _flush(self, FlushVideoData = False):
+    def _flush(self, FlushVideoData=False):
         """ Cache catalog and video data """
 
         with open(self._catalogCache, 'w+') as fp:
@@ -58,7 +59,6 @@ class PrimeVideo(Singleton):
         if FlushVideoData:
             with open(self._videodataCache, 'w+') as fp:
                 pickle.dump(self._videodata, fp)
-
 
     def LoadCache(self):
         """ Load cached catalog and video data """
@@ -77,7 +77,6 @@ class PrimeVideo(Singleton):
             if time.time() < cached['expiration']:
                 self._catalog = cached
 
-
     def BrowseRoot(self):
         """ Build and load the root PrimeVideo menu """
         if 0 == len(self._catalog):
@@ -85,7 +84,6 @@ class PrimeVideo(Singleton):
             if not self.BuildRoot():
                 return
         self.Browse('root')
-
 
     def BuildRoot(self):
         """ Parse the top menu on primevideo.com and build the root catalog """
@@ -99,8 +97,8 @@ class PrimeVideo(Singleton):
         # Setup watchlist
         watchlist = re.search(r'<a[^>]* href="(/watchlist/)[^"]*"[^>]*>(.*?)</a>', home)
         if None is not watchlist:
-            self._catalog['root']['Watchlist'] = { 'title': watchlist.group(2), 'lazyLoadURL': self._g.BaseUrl + watchlist.group(1) }
-        
+            self._catalog['root']['Watchlist'] = {'title': watchlist.group(2), 'lazyLoadURL': self._g.BaseUrl + watchlist.group(1)}
+
         # PrimeVideo.com top navigation menu
         home = re.search('<div id="av-nav-main-menu".*?<ul role="navigation"[^>]*>\s*(.*?)\s*</ul>', home)
         if None is home:
@@ -128,7 +126,6 @@ class PrimeVideo(Singleton):
 
         return True
 
-
     def Search(self):
         """ Provide search functionality for PrimeVideo """
         searchString = self._g.dialog.input(getString(24121)).strip(' \t\n\r')
@@ -138,7 +135,6 @@ class PrimeVideo(Singleton):
         Log('Searching "{0}"…'.format(searchString), Log.INFO)
         self._catalog['search'] = OrderedDict([('lazyLoadURL', 'https://www.primevideo.com/search/ref=atv_nb_sr?ie=UTF8&phrase={0}'.format(searchString))])
         self.Browse('search', xbmcplugin.SORT_METHOD_NONE)
-
 
     def Browse(self, path, forceSort=None):
         """ Display and navigate the menu for PrimeVideo users """
@@ -192,7 +188,7 @@ class PrimeVideo(Singleton):
             # In case of series find the oldest series and apply its art, also update metadata in case of squashed series
             if ('metadata' not in entry) and ('children' in entry) and (0 < len(entry['children'])):
                 if 1 == len(entry['children']):
-                    entry['metadata'] = { 'artmeta': self._videodata[entry['children'][0]]['metadata']['artmeta'], 'videometa': self._videodata[entry['children'][0]]['metadata']['videometa'] }
+                    entry['metadata'] = {'artmeta': self._videodata[entry['children'][0]]['metadata']['artmeta'], 'videometa': self._videodata[entry['children'][0]]['metadata']['videometa']}
                 else:
                     sn = 90001
                     snid = None
@@ -201,7 +197,7 @@ class PrimeVideo(Singleton):
                             sn = self._videodata[child]['metadata']['videometa']['season']
                             snid = child
                     if None is not snid:
-                        entry['metadata'] = { 'artmeta': self._videodata[snid]['metadata']['artmeta'], 'videometa': { 'mediatype': 'tvshow' } }
+                        entry['metadata'] = {'artmeta': self._videodata[snid]['metadata']['artmeta'], 'videometa': {'mediatype': 'tvshow'}}
             if 'metadata' in entry:
                 m = entry['metadata']
                 if 'artmeta' in m: item.setArt(m['artmeta'])
@@ -247,8 +243,6 @@ class PrimeVideo(Singleton):
 
         setContentAndView([None, 'videos', 'series', 'season', 'episode', 'movie'][folderType])
 
-
-    _WatchlistPages = {}
     def _LazyLoad(self, obj, objName):
         """ Loader and parser of all the PrimeVideo.com queries """
 
@@ -279,7 +273,7 @@ class PrimeVideo(Singleton):
             ret = re.sub("&#?\w+;", fixup, text)
             if ('"' == ret[0:1]) and ('"' == ret[-1:]):
                 ret = ret[1:-1]
-            
+
             # Try to correct text when Amazon returns latin-1 encoded utf-8 characters
             # (with the help of https://ftfy.now.sh/)
             try:
@@ -289,12 +283,12 @@ class PrimeVideo(Singleton):
 
             def BeautifyText(title):
                 """ Correct stylistic errors in Amazon's titles """
-                for t in [(r'\s+-\s*', ' – '), # Convert dash from small to medium where needed
-                        (r'\s*-\s+', ' – '), # Convert dash from small to medium where needed
-                        (r'^\s+', ''), # Remove leading spaces
-                        (r'\s+$', ''), # Remove trailing spaces
-                        (r' {2,}', ' '), # Remove double spacing
-                        (r'\.\.\.', '…')]: # Replace triple dots with ellipsis
+                for t in [(r'\s+-\s*', ' – '),  # Convert dash from small to medium where needed
+                          (r'\s*-\s+', ' – '),  # Convert dash from small to medium where needed
+                          (r'^\s+', ''),  # Remove leading spaces
+                          (r'\s+$', ''),  # Remove trailing spaces
+                          (r' {2,}', ' '),  # Remove double spacing
+                          (r'\.\.\.', '…')]:  # Replace triple dots with ellipsis
                     title = re.sub(t[0], t[1], title)
                 return title
 
@@ -344,8 +338,9 @@ class PrimeVideo(Singleton):
             if urn in self._videodata:
                 return False
             self._videodata[urn] = {
-            'metadata': {'artmeta': {'thumb': MaxSize(image), 'poster': MaxSize(image)}, 'videometa': {}},
-            'title': Unescape(title)}
+                'metadata': {'artmeta': {'thumb': MaxSize(image), 'poster': MaxSize(image)}, 'videometa': {}},
+                'title': Unescape(title)
+            }
             rq.append((url, obj[urn], urn))
             return True
 
@@ -399,7 +394,7 @@ class PrimeVideo(Singleton):
                     ''' Watchlist '''
                     if ('Watchlist' == objName):
                         for entry in re.findall(r'<a href="([^"]+/)[^"/]+" class="DigitalVideoUI_TabHeading__tab([^"]*DigitalVideoUI_TabHeading__active)?">(.*?)</a>', cnt, flags=re.DOTALL):
-                            obj[Unescape(entry[2])] = { 'title': Unescape(entry[2]), 'lazyLoadURL': self._g.BaseUrl + entry[0] + '?sort=DATE_ADDED_DESC' }
+                            obj[Unescape(entry[2])] = {'title': Unescape(entry[2]), 'lazyLoadURL': self._g.BaseUrl + entry[0] + '?sort=DATE_ADDED_DESC'}
                         continue
                     for entry in re.findall(r'<div[^>]* class="[^"]*DigitalVideoWebNodeLists_Item__item[^"]*"[^>]*>\s*<a href="(/detail/[^/]+/)[^"]*"[^>]*>*.*?<img src="([^"]+)".*?"[^"]*DigitalVideoWebNodeLists_Item__coreTitle[^"]*"[^>]*>\s*(.*?)\s*</', cnt):
                         bUpdatedVideoData = True if PopulateInlineMovieSeries(obj, requestURLs, entry[2], entry[1], self._g.BaseUrl + entry[0]) else bUpdatedVideoData

@@ -4,6 +4,7 @@ import xbmc
 import xbmcplugin
 from resources.lib.common import Globals, Settings
 
+
 def setContentAndView(content, updateListing=False):
     if not hasattr(setContentAndView, 'g'):
         setContentAndView.g = Globals()

@@ -3,7 +3,8 @@
 import xbmcvfs
 from os.path import join as OSPJoin
 
-def getConfig(cfile, defvalue='', configPath = None):
+
+def getConfig(cfile, defvalue='', configPath=None):
     if (not hasattr(getConfig, 'configPath')) and (None is not configPath):
         getConfig.configPath = configPath
     cfgfile = OSPJoin(getConfig.configPath, cfile)
@@ -17,7 +18,7 @@ def getConfig(cfile, defvalue='', configPath = None):
     return value if value else defvalue
 
 
-def writeConfig(cfile, value, configPath = None):
+def writeConfig(cfile, value, configPath=None):
     if (not hasattr(getConfig, 'configPath')) and (None is not configPath):
         writeConfig.configPath = configPath
     cfgfile = OSPJoin(writeConfig.configPath, cfile)

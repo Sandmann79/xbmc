@@ -5,6 +5,7 @@ import xbmcgui
 from resources.lib.configs import *
 from resources.lib.l10n import *
 
+
 class AgeRestrictions:
     class _AgeSettings(pyxbmct.AddonDialogWindow):
         def __init__(self, title=''):
@@ -58,7 +59,7 @@ class AgeRestrictions:
             'A1PA6795UKMFR9': ['FSK', ('FSK 0', 'FSK 0'), ('FSK 6', 'FSK 6'), ('FSK 12', 'FSK 12'), ('FSK 16', 'FSK 16'), ('FSK 18', 'FSK 18')],
             'A1F83G8C2ARO7P': ['', ('Universal', 'U'), ('Parental Guidance', 'PG'), ('12 and older', '12,12A'), ('15 and older', '15'), ('18 and older', '18')],
             'ATVPDKIKX0DER': ['', ('General Audiences', 'G,TV-G,TV-Y'), ('Family', 'PG,NR,TV-Y7,TV-Y7-FV,TV-PG'), ('Teen', 'PG-13,TV-14'),
-                    ('Mature', 'R,NC-17,TV-MA,Unrated,Not rated')],
+                              ('Mature', 'R,NC-17,TV-MA,Unrated,Not rated')],
             'A1VC38T7YXB528': ['', ('全ての観客', 'g'), ('親の指導・助言', 'pg12'), ('R-15指定', 'r15+'), ('成人映画', 'r18+,nr')]
         }
         PinReq = int(getConfig('pin_req', '0'))
@@ -76,7 +77,7 @@ class AgeRestrictions:
 
     def GetRestrictedAges(self):
         return self._RestrAges
-    
+
     def GetAgeRating(self):
         return self._AgeRating
 

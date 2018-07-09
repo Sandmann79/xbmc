@@ -13,8 +13,10 @@ from resources.lib.logging import Log
 from resources.lib.network import *
 from common import Globals, Settings, jsonRPC, sleep
 
+
 def _getListItem(li):
     return xbmc.getInfoLabel('ListItem.%s' % li).decode('utf-8')
+
 
 def ParseStreams(suc, data, retmpd=False):
     g = Globals()
@@ -27,7 +29,7 @@ def ParseStreams(suc, data, retmpd=False):
             return []  # Return if the sub_lang is set to None
         lang_main = jsonRPC('Settings.GetSettingValue', param={'setting': 'locale.subtitlelanguage'})
         lang_main = lang_main['value'] if 'value' in lang_main else ''
-        
+
         # Locale.SubtitleLanguage (and .AudioLanguage) can either return a language or:
         # [ S] none: no subtitles
         # [ S] forced_only: forced subtitles only
@@ -62,16 +64,16 @@ def ParseStreams(suc, data, retmpd=False):
         lang_fallback = None if 3 > down_lang else ('' if 4 == down_lang else 'en')
 
         localeConversion = {
-            'ar-001':'ar',
-            'cmn-hans':'zh HANS',
-            'cmn-hant':'zh HANT',
-            'da-dk':'da',
-            'es-419':'es LA',
-            'ja-jp':'ja',
-            'ko-kr':'ko',
-            'nb-no':'nb',
-            'sv-se':'sv',
-        } # Clean up language and locale information where needed
+            'ar-001': 'ar',
+            'cmn-hans': 'zh HANS',
+            'cmn-hant': 'zh HANT',
+            'da-dk': 'da',
+            'es-419': 'es LA',
+            'ja-jp': 'ja',
+            'ko-kr': 'ko',
+            'nb-no': 'nb',
+            'sv-se': 'sv',
+        }  # Clean up language and locale information where needed
         subs = []
         if (not down_lang) or (('subtitleUrls' not in data) and ('forcedNarratives' not in data)):
             return subs
@@ -87,7 +89,7 @@ def ParseStreams(suc, data, retmpd=False):
             if '-' in lang:
                 p1 = re.split('-', lang)[0]
                 p2 = re.split('-', lang)[1]
-                if (p1 == p2): # Remove redundant locale information when not useful
+                if (p1 == p2):  # Remove redundant locale information when not useful
                     lang = p1
                 else:
                     lang = '%s %s' % (p1, p2.upper())

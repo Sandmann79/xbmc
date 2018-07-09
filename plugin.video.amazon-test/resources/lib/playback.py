@@ -199,7 +199,7 @@ def PlayVideo(name, asin, adultstr, trailer, forcefb=0):
     def _playDummyVid():
         dummy_video = OSPJoin(g.PLUGIN_PATH, 'resources', 'dummy.avi')
         xbmcplugin.setResolvedUrl(g.pluginhandle, True, xbmcgui.ListItem(path=dummy_video))
-        Log('Playing Dummy Video', xbmc.LOGDEBUG)
+        Log('Playing Dummy Video', Log.DEBUG)
         xbmc.Player().stop()
         return
 
@@ -333,7 +333,7 @@ def PlayVideo(name, asin, adultstr, trailer, forcefb=0):
                 xbmc.executebuiltin('ActivateWindow(busydialog)')
                 return extrFr(mpdcontent)
 
-        Log(mpd, xbmc.LOGDEBUG)
+        Log(mpd, Log.DEBUG)
 
         if (not extern) or g.UsePrimeVideo:
             mpaa_check = _getListItem('MPAA') in mpaa_str or isAdult
@@ -406,7 +406,7 @@ def PlayVideo(name, asin, adultstr, trailer, forcefb=0):
     fr = ''
 
     if extern:
-        Log('External Call', xbmc.LOGDEBUG)
+        Log('External Call', Log.DEBUG)
 
     while not playable:
         playable = True
@@ -462,19 +462,19 @@ class _AmazonPlayer(xbmc.Player):
             self.PlayerInfo('Resuming Playback')
 
         self.updateStream('START')
-        Log('Video ContentType Movie? %s' % xbmc.getCondVisibility('VideoPlayer.Content(movies)'), xbmc.LOGDEBUG)
-        Log('Video ContentType Episode? %s' % xbmc.getCondVisibility('VideoPlayer.Content(episodes)'), xbmc.LOGDEBUG)
+        Log('Video ContentType Movie? %s' % xbmc.getCondVisibility('VideoPlayer.Content(movies)'), Log.DEBUG)
+        Log('Video ContentType Episode? %s' % xbmc.getCondVisibility('VideoPlayer.Content(episodes)'), Log.DEBUG)
 
     def checkResume(self):
         self.dbid = int('0' + _getListItem('DBID'))
-        Log(self.dbid, xbmc.LOGDEBUG)
+        Log(self.dbid, Log.DEBUG)
         if not self.dbid:
             return True
         dbtype = _getListItem('DBTYPE')
         result = jsonRPC('VideoLibrary.Get%sDetails' % dbtype, 'resume,playcount', {'%sid' % dbtype: self.dbid})
         position = int(result['episodedetails']['resume']['position'])
         playcount = int(result['episodedetails']['playcount'])
-        Log(result, xbmc.LOGDEBUG)
+        Log(result, Log.DEBUG)
 
         if playcount:
             return True

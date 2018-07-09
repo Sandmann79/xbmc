@@ -93,7 +93,7 @@ class PrimeVideo(Singleton):
         home = getURL(self._g.BaseUrl, silent=True, useCookie=True, rjson=False)
         if None is home:
             self._g.dialog.notification('Connection error', 'Unable to fetch the primevideo.com homepage', xbmcgui.NOTIFICATION_ERROR)
-            Log('Unable to fetch the primevideo.com homepage', xbmc.LOGERROR)
+            Log('Unable to fetch the primevideo.com homepage', Log.ERROR)
             return False
 
         # Setup watchlist
@@ -105,7 +105,7 @@ class PrimeVideo(Singleton):
         home = re.search('<div id="av-nav-main-menu".*?<ul role="navigation"[^>]*>\s*(.*?)\s*</ul>', home)
         if None is home:
             self._g.dialog.notification('PrimeVideo error', 'Unable to find the main primevideo.com navigation section', xbmcgui.NOTIFICATION_ERROR)
-            Log('Unable to find the main primevideo.com navigation section', xbmc.LOGERROR)
+            Log('Unable to find the main primevideo.com navigation section', Log.ERROR)
             return False
         for item in re.findall('<li[^>]*>\s*(.*?)\s*</li>', home.group(1)):
             item = re.search('<a href="([^"]+)"[^>]*>\s*(.*?)\s*</a>', item)
@@ -116,7 +116,7 @@ class PrimeVideo(Singleton):
             self._catalog['root'][title] = {'title': title, 'lazyLoadURL': self._g.BaseUrl + item.group(1) + '?_encoding=UTF8&format=json'}
         if 0 == len(self._catalog['root']):
             self._g.dialog.notification('PrimeVideo error', 'Unable to build the root catalog from primevideo.com', xbmcgui.NOTIFICATION_ERROR)
-            Log('Unable to build the root catalog from primevideo.com', xbmc.LOGERROR)
+            Log('Unable to build the root catalog from primevideo.com', Log.ERROR)
             return False
 
         # Search method
@@ -135,7 +135,7 @@ class PrimeVideo(Singleton):
         if 0 == len(searchString):
             xbmcplugin.endOfDirectory(self._g.pluginhandle, succeeded=False)
             return
-        Log('Searching "{0}"…'.format(searchString), xbmc.LOGINFO)
+        Log('Searching "{0}"…'.format(searchString), Log.INFO)
         self._catalog['search'] = OrderedDict([('lazyLoadURL', 'https://www.primevideo.com/search/ref=atv_nb_sr?ie=UTF8&phrase={0}'.format(searchString))])
         self.Browse('search', xbmcplugin.SORT_METHOD_NONE)
 
@@ -314,14 +314,14 @@ class PrimeVideo(Singleton):
         def DelocalizeDate(lang, datestr):
             """ Convert language based timestamps into YYYY-MM-DD """
             if lang not in self._dateParserData:
-                Log('Unable decode date "{0}": language "{1}" not supported'.format(datestr, lang), xbmc.LOGWARNING)
+                Log('Unable decode date "{0}": language "{1}" not supported'.format(datestr, lang), Log.WARNING)
                 return datestr
             p = re.search(self._dateParserData[lang]['deconstruct'], datestr)
             if None is p:
                 # Sometimes Amazon returns english everything, let's try to figure out if this is the case
                 p = re.search(self._dateParserData['en_US']['deconstruct'], datestr)
                 if None is p:
-                    Log('Unable to parse date "{0}" with language "{1}": format changed?'.format(datestr, lang), xbmc.LOGWARNING)
+                    Log('Unable to parse date "{0}" with language "{1}": format changed?'.format(datestr, lang), Log.WARNING)
                     return datestr
             p = list(p.groups())
             p[self._dateParserData[lang]['month']] = self._dateParserData[lang]['months'][p[self._dateParserData[lang]['month']]]
@@ -388,7 +388,7 @@ class PrimeVideo(Singleton):
                 couldNotParse = True
             if couldNotParse or (0 == len(cnt)):
                 self._g.dialog.notification(getString(30251), requestURL, xbmcgui.NOTIFICATION_ERROR)
-                Log('Unable to fetch the url: {0}'.format(requestURL), xbmc.LOGERROR)
+                Log('Unable to fetch the url: {0}'.format(requestURL), Log.ERROR)
                 break
 
             for t in [('\\\\n', '\n'), ('\\n', '\n'), ('\\\\"', '"'), (r'^\s+', '')]:
@@ -639,7 +639,7 @@ class PrimeVideo(Singleton):
                                 success, gpr = getURLData('catalog/GetPlaybackResources', res[6], useCookie=True, extra=True,
                                                         opt='&titleDecorationScheme=primary-content', dRes='CatalogMetadata')
                                 if not success:
-                                    Log('Unable to get the video metadata for {0} ({1})'.format(title, res[0][1]), xbmc.LOGWARNING)
+                                    Log('Unable to get the video metadata for {0} ({1})'.format(title, res[0][1]), Log.WARNING)
                                 else:
                                     # Find the show Asin URN, if possible
                                     for d in gpr['catalogMetadata']['family']['tvAncestors']:

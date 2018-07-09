@@ -112,7 +112,7 @@ def loadCategories(force=False):
         if ctime - ftime < 8 * 3600:
             return
 
-    Log('Parse Menufile', xbmc.LOGDEBUG)
+    Log('Parse Menufile', Log.DEBUG)
     parseStart = time.time()
     data = getURL('https://raw.githubusercontent.com/Sandmann79/xbmc/master/plugin.video.amazon-test/resources/menu/%s.json' % g.MarketID)
     if not data:
@@ -123,7 +123,7 @@ def loadCategories(force=False):
     parseNodes(data)
     updateTime()
     menuDb.commit()
-    Log('Parse MenuTime: %s' % (time.time() - parseStart), xbmc.LOGDEBUG)
+    Log('Parse MenuTime: %s' % (time.time() - parseStart), Log.DEBUG)
 
 
 def updateTime(savetime=True):
@@ -773,7 +773,7 @@ def check_output(*popenargs, **kwargs):
             c = popenargs[0]
             e = subprocess.CalledProcessError(retcode, c)
             e.output = str(out) + str(err)
-            Log(e, xbmc.LOGERROR)
+            Log(e, Log.ERROR)
     return out.strip()
 
 
@@ -825,7 +825,7 @@ def getCmdLine(videoUrl, asin, method, fr):
                     br_path = path + exe_file
                     break
                 else:
-                    Log('Browser %s not found' % (path + exe_file), xbmc.LOGDEBUG)
+                    Log('Browser %s not found' % (path + exe_file), Log.DEBUG)
             if br_path:
                 break
 
@@ -863,7 +863,7 @@ def extrFr(data):
 
 def Error(data):
     code = data['errorCode'].lower()
-    Log('%s (%s) ' % (data['message'], code), xbmc.LOGERROR)
+    Log('%s (%s) ' % (data['message'], code), Log.ERROR)
     if 'invalidrequest' in code:
         return getString(30204)
     elif 'noavailablestreams' in code:
@@ -1396,7 +1396,7 @@ class window(xbmcgui.WindowDialog):
         xbmcgui.WindowDialog.close(self)
         watched = xbmc.getInfoLabel('Listitem.PlayCount')
         pBTime = time.time() - self._pbStart
-        Log('Dur:%s State:%s PlbTm:%s' % (self._vidDur, watched, pBTime), xbmc.LOGDEBUG)
+        Log('Dur:%s State:%s PlbTm:%s' % (self._vidDur, watched, pBTime), Log.DEBUG)
 
         if pBTime > self._vidDur * 0.9 and not watched:
             xbmc.executebuiltin("Action(ToggleWatched)")
@@ -1529,7 +1529,7 @@ class Captcha(pyxbmct.AddonDialogWindow):
 
 args = dict(urlparse.parse_qsl(urlparse.urlparse(sys.argv[2]).query))
 
-Log(args, xbmc.LOGDEBUG)
+Log(args, Log.DEBUG)
 mode = args.get('mode', None)
 
 if not getConfig('UserAgent'):

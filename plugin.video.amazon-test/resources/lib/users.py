@@ -29,7 +29,7 @@ def loadUser(key='', empty=False, cachedUsers=None):
         if key and key not in user.keys():
             user = getTerritory(user)
             if False is user[1]:
-                loadUser.g.dialog.notification(__plugin__, getString(30219), xbmcgui.NOTIFICATION_ERROR)
+                loadUser.g.dialog.notification(loadUser.g.__plugin__, getString(30219), xbmcgui.NOTIFICATION_ERROR)
             user = user[0]
             addUser(user)
         return user.get(key, user)

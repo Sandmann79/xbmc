@@ -61,14 +61,21 @@ class Globals(Singleton):
         self._globals['addon'] = xbmcaddon.Addon()
         self._globals['pv'] = PrimeVideo(self, Settings())
         self._globals['dialog'] = xbmcgui.Dialog()
-        self._globals['dialogprogress'] = xbmcgui.DialogProgress()
+        #self._globals['dialogprogress'] = xbmcgui.DialogProgress()
         self._globals['hasExtRC'] = xbmc.getCondVisibility('System.HasAddon(script.chromium_remotecontrol)')
 
         self._globals['DATA_PATH'] = xbmc.translatePath(self.addon.getAddonInfo('profile')).decode('utf-8')
         self._globals['CONFIG_PATH'] = OSPJoin(self._globals['DATA_PATH'], 'config')
         self._globals['HOME_PATH'] = xbmc.translatePath('special://home').decode('utf-8')
         self._globals['PLUGIN_PATH'] = self._globals['addon'].getAddonInfo('path').decode('utf-8')
+
         self._globals['deviceID'] = _genID()
+
+        self._globals['__plugin__'] = self._globals['addon'].getAddonInfo('name')
+        self._globals['__authors__'] = self._globals['addon'].getAddonInfo('author')
+        self._globals['__credits__'] = ""
+        self._globals['__version__'] = self._globals['addon'].getAddonInfo('version')
+
 
         # OS Detection
         if xbmc.getCondVisibility('system.platform.windows'):

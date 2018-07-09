@@ -1,16 +1,18 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+from os.path import join as OSPJoin
 import xbmc
+import xbmcvfs
 from resources.lib.common import Globals, Settings
 
 def Log(msg, level=xbmc.LOGNOTICE):
-    if not hasattr(Log, 's'):
-        Log.s = Settings()
-    if not hasattr(Log, 'p'):
-        Log.p = Globals().addon.getAddonInfo('name')
-    if level == xbmc.LOGDEBUG and Log.s.verbLog:
+    if not hasattr(Log, '_s'):
+        Log._s = Settings()
+    if not hasattr(Log, '_g'):
+        Log._g = Globals()
+    if level == xbmc.LOGDEBUG and Log._s.verbLog:
         level = xbmc.LOGNOTICE
-    msg = '[%s] %s' % (Log.p, msg)
+    msg = '[%s] %s' % (Log._g.__plugin__, msg)
     xbmc.log(msg.encode('utf-8'), level)
 Log.DEBUG = xbmc.LOGDEBUG
 Log.ERROR = xbmc.LOGERROR

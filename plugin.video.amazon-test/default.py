@@ -27,7 +27,6 @@ import warnings
 from pyDes import *
 import mechanize
 
-import pyxbmct
 import xbmc
 import xbmcaddon
 import xbmcgui
@@ -48,11 +47,6 @@ from resources.lib.ages import AgeRestrictions
 g = Globals()
 s = Settings()
 
-__plugin__ = g.addon.getAddonInfo('name')
-__authors__ = g.addon.getAddonInfo('author')
-__credits__ = ""
-__version__ = g.addon.getAddonInfo('version')
-
 if not xbmcvfs.exists(os.path.join(g.DATA_PATH, 'settings.xml')):
     g.addon.openSettings()
 
@@ -63,7 +57,7 @@ warnings.simplefilter('error', requests.packages.urllib3.exceptions.InsecurePlat
 
 
 def MainMenu():
-    Log('Version: %s' % __version__)
+    Log('Version: %s' % g.__version__)
     Log('Unicode filename support: %s' % os.path.supports_unicode_filenames)
     Log('Locale: %s / Language: %s' % (g.userAcceptLanguages.split(',')[0], s.Language))
     if False is not g.UsePrimeVideo:
@@ -217,7 +211,7 @@ def listContent(catalog, url, page, parent, export=False):
 
     if not titles or not len(titles['titles']):
         if 'search' in parent:
-            g.dialog.ok(__plugin__, getString(30202))
+            g.dialog.ok(g.__plugin__, getString(30202))
         else:
             xbmcplugin.endOfDirectory(g.pluginhandle)
         return
@@ -977,7 +971,7 @@ def remLoginData(info=True):
     if info:
         writeConfig('accounts.lst', '')
         g.addon.setSetting('login_acc', '')
-        g.dialog.notification(__plugin__, getString(30211), xbmcgui.NOTIFICATION_INFO)
+        g.dialog.notification(g.__plugin__, getString(30211), xbmcgui.NOTIFICATION_INFO)
 
 
 def scrapAsins(aurl, cj):

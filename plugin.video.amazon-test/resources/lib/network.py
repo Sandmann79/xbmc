@@ -4,6 +4,7 @@ import requests
 import re
 import pickle
 import json
+import pyxbmct
 from BeautifulSoup import BeautifulSoup
 from resources.lib.logging import *
 from resources.lib.configs import *
@@ -199,7 +200,7 @@ def LogIn(ask=True):
                 return False
         elif 'ap_dcq_form' in uni_soup:
             msg = soup.find('div', attrs={'id': 'message_warning'})
-            g.dialog.ok(__plugin__, msg.p.contents[0].strip())
+            g.dialog.ok(g.__plugin__, msg.p.contents[0].strip())
             dcq = soup.find('div', attrs={'id': 'ap_dcq1a_pagelet'})
             dcq_title = dcq.find('div', attrs={'id': 'ap_dcq1a_pagelet_title'}).h1.contents[0].strip()
             q_title = []

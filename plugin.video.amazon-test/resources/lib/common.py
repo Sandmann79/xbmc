@@ -42,6 +42,7 @@ class Globals(Singleton):
     tmdb = b'b34490c056f0dd9e3ec9af2167a731f4' # b64decode('YjM0NDkwYzA1NmYwZGQ5ZTNlYzlhZjIxNjdhNzMxZjQ=')
     tvdb = b'1D62F2F90030C444' # b64decode('MUQ2MkYyRjkwMDMwQzQ0NA==')
     pluginhandle = int(sys.argv[1])
+    langID = {'movie': 30165, 'series': 30166, 'season': 30167, 'episode': 30173}
 
     ''' Allow the usage of dot notation for data inside the _globals dictionary, without explicit function call '''
     def __getattr__(self, name): return self._globals[name]

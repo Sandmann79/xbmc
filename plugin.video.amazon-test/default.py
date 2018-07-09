@@ -29,6 +29,7 @@ import mechanize
 
 import pyxbmct
 import xbmc
+import xbmcaddon
 import xbmcgui
 import xbmcplugin
 import xbmcvfs
@@ -37,7 +38,7 @@ from resources.lib.network import *
 from resources.lib.users import *
 from resources.lib.l10n import *
 from resources.lib.itemlisting import *
-from resources.lib.logging import Log
+from resources.lib.logging import *
 from resources.lib.configs import *
 from resources.lib import PrimeVideo
 from resources.lib.common import Globals, Settings, jsonRPC
@@ -55,20 +56,6 @@ __version__ = g.addon.getAddonInfo('version')
 if not xbmcvfs.exists(os.path.join(g.DATA_PATH, 'settings.xml')):
     g.addon.openSettings()
 
-# ids: A28RQHJKHM2A2W - ps3 / AFOQV1TK6EU6O - ps4 / A1IJNVP3L4AY8B - samsung / A2E0SNTXJVT7WK - firetv1 /
-#      ADVBD696BHNV5 - montoya / A3VN4E5F7BBC7S - roku / A1MPSLFC7L5AFK - kindle / A2M4YX06LWP8WI - firetv2 /
-# PrimeVideo web device IDs:
-#      A63V4FRV3YUP9 / SILVERLIGHT_PC, A2G17C9GWLWFKO / SILVERLIGHT_MAC, AOAGZA014O5RE / HTML5
-# TypeIDs = {'GetCategoryList': 'firmware=fmw:15-app:1.1.23&deviceTypeID=A1MPSLFC7L5AFK',
-#            'GetSimilarities': 'firmware=fmw:15-app:1.1.23&deviceTypeID=A1MPSLFC7L5AFK',
-#                        'All': 'firmware=fmw:22-app:3.0.211.123001&deviceTypeID=A43PXU4ZN2AL1'}
-#                        'All': 'firmware=fmw:045.01E01164A-app:4.7&deviceTypeID=A3VN4E5F7BBC7S'}
-# TypeIDs = {'All': 'firmware=fmw:17-app:2.0.45.1210&deviceTypeID=A2RJLFEH0UEKI9'}
-
-TypeIDs = {'All': 'firmware=fmw:17-app:2.0.45.1210&deviceTypeID=A2M4YX06LWP8WI',
-           'GetCategoryList_ftv': 'firmware=fmw:17-app:2.0.45.1210&deviceTypeID=ADVBD696BHNV5'}
-
-langID = {'movie': 30165, 'series': 30166, 'season': 30167, 'episode': 30173}
 OfferGroup = '' if s.payCont else '&OfferGroups=B0043YVHMY'
 socket.setdefaulttimeout(30)
 
@@ -257,9 +244,9 @@ def listContent(catalog, url, page, parent, export=False):
         simiUrl = urllib.quote_plus('ASIN=' + asin + OfferGroup)
         cm = [(getString(30183),
                'Container.Update(%s?mode=listContent&cat=GetSimilarities&url=%s&page=1&opt=gs)' % (sys.argv[0], simiUrl)),
-              (getString(wlmode + 30180) % getString(langID[contentType]),
+              (getString(wlmode + 30180) % getString(g.langID[contentType]),
                'RunPlugin(%s?mode=WatchList&url=%s&opt=%s)' % (sys.argv[0], asin, wlmode)),
-              (getString(30185) % getString(langID[contentType]),
+              (getString(30185) % getString(g.langID[contentType]),
                'RunPlugin(%s?mode=getListMenu&url=%s&export=1)' % (sys.argv[0], asin)),
               (getString(30186), 'UpdateLibrary(video)')]
 
@@ -610,20 +597,6 @@ def getList(listing, export, cont):
     url = 'ASINList=' + asins
     listing += '_show' if s.dispShowOnly and 'movie' not in cont and not export else ''
     listContent('GetASINDetails', url, 1, listing, export)
-
-
-def WriteLog(data, fn=''):
-    if not s.verbLog:
-        return
-
-    fn = '-' + fn if fn else ''
-    fn = 'avod%s.log' % fn
-    path = os.path.join(g.HOME_PATH, fn)
-    if isinstance(data, unicode):
-        data = data.encode('utf-8')
-    logfile = xbmcvfs.File(path, 'w')
-    logfile.write(data.__str__())
-    logfile.close()
 
 
 def getAsins(content, crIL=True):
@@ -1583,8 +1556,8 @@ elif mode == 'WatchList':
     WatchList(args.get('url', ''), int(args.get('opt', '0')))
 elif mode == 'openSettings':
     aid = args.get('url')
-    aid = is_addon if aid == 'is' else aid
-    xbmcg.addon.Addon(aid).openSettings()
+    aid = g.is_addon if aid == 'is' else aid
+    xbmcaddon.Addon(aid).openSettings()
 elif mode == 'ageSettings':
     AgeRestrictions().Settings()
 elif mode == 'PrimeVideo_Browse':

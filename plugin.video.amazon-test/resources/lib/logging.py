@@ -19,3 +19,17 @@ Log.INFO = xbmc.LOGINFO
 #Log.NOTICE = xbmc.LOGNOTICE
 #Log.SEVERE = xbmc.LOGSEVERE
 Log.WARNING = xbmc.LOGWARNING
+
+
+def WriteLog(data, fn=''):
+    if not s.verbLog:
+        return
+
+    fn = '-' + fn if fn else ''
+    fn = 'avod%s.log' % fn
+    path = os.path.join(g.HOME_PATH, fn)
+    if isinstance(data, unicode):
+        data = data.encode('utf-8')
+    logfile = xbmcvfs.File(path, 'w')
+    logfile.write(data.__str__())
+    logfile.close()

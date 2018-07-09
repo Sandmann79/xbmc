@@ -4,7 +4,7 @@ import requests
 import re
 import pickle
 import json
-from resources.lib.logging import Log
+from resources.lib.logging import *
 from resources.lib.configs import *
 from resources.lib.common import Globals, sleep
 
@@ -125,12 +125,24 @@ def getURLData(mode, asin, retformat='json', devicetypeid='AOAGZA014O5RE', versi
 
 
 def getATVData(pg_mode, query='', version=2, useCookie=False, site_id=None):
+    # ids: A28RQHJKHM2A2W - ps3 / AFOQV1TK6EU6O - ps4 / A1IJNVP3L4AY8B - samsung / A2E0SNTXJVT7WK - firetv1 /
+    #      ADVBD696BHNV5 - montoya / A3VN4E5F7BBC7S - roku / A1MPSLFC7L5AFK - kindle / A2M4YX06LWP8WI - firetv2 /
+    # PrimeVideo web device IDs:
+    #      A63V4FRV3YUP9 / SILVERLIGHT_PC, A2G17C9GWLWFKO / SILVERLIGHT_MAC, AOAGZA014O5RE / HTML5
+    # TypeIDs = {'GetCategoryList': 'firmware=fmw:15-app:1.1.23&deviceTypeID=A1MPSLFC7L5AFK',
+    #            'GetSimilarities': 'firmware=fmw:15-app:1.1.23&deviceTypeID=A1MPSLFC7L5AFK',
+    #                        'All': 'firmware=fmw:22-app:3.0.211.123001&deviceTypeID=A43PXU4ZN2AL1'}
+    #                        'All': 'firmware=fmw:045.01E01164A-app:4.7&deviceTypeID=A3VN4E5F7BBC7S'}
+    # TypeIDs = {'All': 'firmware=fmw:17-app:2.0.45.1210&deviceTypeID=A2RJLFEH0UEKI9'}
+    _TypeIDs = {'All': 'firmware=fmw:17-app:2.0.45.1210&deviceTypeID=A2M4YX06LWP8WI',
+            'GetCategoryList_ftv': 'firmware=fmw:17-app:2.0.45.1210&deviceTypeID=ADVBD696BHNV5'}
+
     g = Globals()
     if '?' in query:
         query = query.split('?')[1]
     if query:
         query = '&IncludeAll=T&AID=1&' + query.replace('HideNum=T', 'HideNum=F')
-    deviceTypeID = TypeIDs[pg_mode] if pg_mode in TypeIDs else TypeIDs['All']
+    deviceTypeID = _TypeIDs[pg_mode] if pg_mode in _TypeIDs else _TypeIDs['All']
     pg_mode = pg_mode.split('_')[0]
     if '/' not in pg_mode:
         pg_mode = 'catalog/' + pg_mode

@@ -6,6 +6,7 @@ import json
 from .network import MechanizeLogin, getTerritory
 from .configs import *
 from .common import Globals
+from .l10n import *
 
 
 def loadUsers():

@@ -188,7 +188,8 @@ class PrimeVideo(Singleton):
             # In case of series find the oldest series and apply its art, also update metadata in case of squashed series
             if ('metadata' not in entry) and ('children' in entry) and (0 < len(entry['children'])):
                 if 1 == len(entry['children']):
-                    entry['metadata'] = {'artmeta': self._videodata[entry['children'][0]]['metadata']['artmeta'], 'videometa': self._videodata[entry['children'][0]]['metadata']['videometa']}
+                    entry['metadata'] = {'artmeta': self._videodata[entry['children'][0]]['metadata']['artmeta'],
+                                         'videometa': self._videodata[entry['children'][0]]['metadata']['videometa']}
                 else:
                     sn = 90001
                     snid = None
@@ -345,7 +346,7 @@ class PrimeVideo(Singleton):
             return True
 
         # Set up the fetch order to find the best quality image possible
-        imageSizes = r'(large-screen-double|desktop-double|tablet-landscape-double|phone-landscape-double|phablet-double|phone-double|large-screen|desktop|tablet-landscape|tablet|phone-landscape|phablet|phone)'
+        imageSizes = r'((large-screen|desktop|tablet-landscape|tablet|phone-landscape|phablet|phone)(-double)?)'
 
         if 'lazyLoadURL' not in obj:
             return
@@ -414,7 +415,7 @@ class PrimeVideo(Singleton):
                     # Find the biggest fanart available
                     bgimg = re.search(r'<div class="av-hero-background-size av-bgimg av-bgimg-' + imageSizes + r'">.*?url\(([^)]+)\)', cnt, flags=re.DOTALL)
                     if None is not bgimg:
-                        bgimg = MaxSize(bgimg.group(2))
+                        bgimg = MaxSize(bgimg.groups()[-1])
 
                     # Extract the global data
                     rx = [
@@ -467,7 +468,7 @@ class PrimeVideo(Singleton):
 
                                 # Extract the runtime
                                 success, gpr = getURLData('catalog/GetPlaybackResources', meta['asin'], useCookie=True, extra=True,
-                                                        opt='&titleDecorationScheme=primary-content', dRes='CatalogMetadata')
+                                                          opt='&titleDecorationScheme=primary-content', dRes='CatalogMetadata')
                                 if not success:
                                     gpr = None
                                 else:
@@ -494,9 +495,9 @@ class PrimeVideo(Singleton):
                                     # If holding a single result, don't provide a list
                                     if 1 == len(res[i]):
                                         res[i] = Unescape(res[i][0])
-                                    # We just need the image, not the type                            
+                                    # We just need the image, not the type
                                     if 1 == i:
-                                        res[i] = res[i][1]
+                                        res[i] = res[i][-1]
                             if (None is res[0]) or (None is res[2]):
                                 ''' Some episodes might be not playable until a later date or just N/A, although listed '''
                                 continue
@@ -506,13 +507,13 @@ class PrimeVideo(Singleton):
                                 meta['videoURL'] = self._g.BaseUrl + meta['videoURL']
                             meta['video'] = ExtractURN(meta['videoURL'])
                             eid = meta['video']
-                            #if None is not res[7]:
-                            #    eid = res[7]
+                            # if None is not res[7]:
+                            #     eid = res[7]
 
                             if (eid not in self._videodata) or ('videometa' not in self._videodata[eid]) or (0 == len(self._videodata[eid]['videometa'])):
                                 # Extract the runtime
                                 success, gpr = getURLData('catalog/GetPlaybackResources', res[7], useCookie=True, extra=True,
-                                                        opt='&titleDecorationScheme=primary-content', dRes='CatalogMetadata')
+                                                          opt='&titleDecorationScheme=primary-content', dRes='CatalogMetadata')
                                 if not success:
                                     gpr = None
                                 else:
@@ -520,8 +521,8 @@ class PrimeVideo(Singleton):
                                         meta['runtime'] = gpr['catalogMetadata']['catalog']['runtimeSeconds']
 
                                 # Sometimes the chicken comes before the egg
-                                #if refUrn not in self._videodata:
-                                #    self._videodata[refUrn] = { 'metadata': { 'videometa': {} }, 'children': [] }
+                                # if refUrn not in self._videodata:
+                                #     self._videodata[refUrn] = { 'metadata': { 'videometa': {} }, 'children': [] }
 
                                 # Insert series information
                                 if None is not gres[0]: meta['videometa']['year'] = gres[0]
@@ -569,7 +570,7 @@ class PrimeVideo(Singleton):
                                     del meta['videometa']['episode']
 
                                 bUpdatedVideoData = True
-                                self._videodata[eid] = { 'metadata': meta, 'title': title, 'parent': refUrn }
+                                self._videodata[eid] = {'metadata': meta, 'title': title, 'parent': refUrn}
                                 NotifyUser(getString(30253).format(title))
                             if eid not in o:
                                 o[eid] = {}
@@ -625,14 +626,14 @@ class PrimeVideo(Singleton):
                             sid = ExtractURN(res[0][1])
 
                             if sid not in self._videodata:
-                                self._videodata[sid] = { 'children': [] }
+                                self._videodata[sid] = {'children': []}
 
                             # Extract video metadata
                             if 'parent' in self._videodata[sid]:
                                 id = self._videodata[sid]['parent']
                             elif (id is title) and (None is not res[6]):
                                 success, gpr = getURLData('catalog/GetPlaybackResources', res[6], useCookie=True, extra=True,
-                                                        opt='&titleDecorationScheme=primary-content', dRes='CatalogMetadata')
+                                                          opt='&titleDecorationScheme=primary-content', dRes='CatalogMetadata')
                                 if not success:
                                     Log('Unable to get the video metadata for {0} ({1})'.format(title, res[0][1]), Log.WARNING)
                                 else:
@@ -643,14 +644,14 @@ class PrimeVideo(Singleton):
                                             self._videodata[sid]['parent'] = id
                                             break
                             if id not in o:
-                                o[id] = { 'title': title }
+                                o[id] = {'title': title}
                             if (sid in self._videodata) and ('children' in self._videodata[sid]) and (0 < len(self._videodata[sid]['children'])):
-                                o[id][sid] = { k: {} for k in self._videodata[sid]['children'] }
+                                o[id][sid] = {k: {} for k in self._videodata[sid]['children']}
                             else:
                                 # Save tree information if id is a URN and not a title name
                                 if (id is not title):
                                     if id not in self._videodata:
-                                        self._videodata[id] = { 'children': [] }
+                                        self._videodata[id] = {'children': []}
                                     if sid not in self._videodata[id]['children']:
                                         self._videodata[id]['children'].append(sid)
                                     if 'title' not in self._videodata[id]:
@@ -658,7 +659,7 @@ class PrimeVideo(Singleton):
                                 sn = res[3]
                                 n = int(re.sub(r'^[^0-9]*([0-9]+)[^0-9]*$', r'\1', sn))
                                 meta['videometa']['season'] = n
-                                o[id][sid] = { 'lazyLoadURL': res[0][1] }
+                                o[id][sid] = {'lazyLoadURL': res[0][1]}
                                 bUpdatedVideoData = True
                                 self._videodata[sid]['title'] = sn
                                 self._videodata[sid]['metadata'] = meta

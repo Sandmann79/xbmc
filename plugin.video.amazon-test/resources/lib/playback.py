@@ -309,7 +309,8 @@ def PlayVideo(name, asin, adultstr, trailer, forcefb=0):
             _playDummyVid()
             return True
 
-        mpd, subs = ParseStreams(*getURLData('catalog/GetPlaybackResources', asin, extra=True, vMT=vMT, dRes=dRes, useCookie=cookie), retmpd=True)
+        mpd, subs = ParseStreams(*getURLData('catalog/GetPlaybackResources', asin, extra=True, vMT=vMT, dRes=dRes, useCookie=cookie),
+                                 retmpd=True)
 
         cj_str = ';'.join(['%s=%s' % (k, v) for k, v in cookie.items()])
         opt = '|Content-Type=application%2Fx-www-form-urlencoded&Cookie=' + quote_plus(cj_str)
@@ -495,7 +496,8 @@ class _AmazonPlayer(xbmc.Player):
         self.finished()
 
     def updateStream(self, event):
-        suc, msg = getURLData('usage/UpdateStream', self.asin, useCookie=self.cookie, opt='&event=%s&timecode=%s' % (event, self.video_lastpos))
+        suc, msg = getURLData('usage/UpdateStream', self.asin, useCookie=self.cookie, opt='&event=%s&timecode=%s' %
+                              (event, self.video_lastpos))
         if suc and 'statusCallbackIntervalSeconds' in str(msg):
             self.interval = msg['message']['body']['statusCallbackIntervalSeconds']
 
@@ -511,7 +513,8 @@ class _AmazonPlayer(xbmc.Player):
                                      'total': self.video_totaltime},
                           'playcount': playcount}
                 res = '' if 'OK' in jsonRPC('VideoLibrary.Set%sDetails' % dbtype, '', params) else 'NOT '
-                Log('%sUpdated %sid(%s) with: pos(%s) total(%s) playcount(%s)' % (res, dbtype, self.dbid, self.video_lastpos, self.video_totaltime, playcount))
+                Log('%sUpdated %sid(%s) with: pos(%s) total(%s) playcount(%s)' % (res, dbtype, self.dbid, self.video_lastpos,
+                                                                                  self.video_totaltime, playcount))
             else:
                 Log('No DBID returned')
                 if playcount and not watched:

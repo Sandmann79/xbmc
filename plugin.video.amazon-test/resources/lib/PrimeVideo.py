@@ -10,16 +10,18 @@ import xbmcgui
 import xbmcplugin
 from urllib import quote_plus
 
-from resources.lib.Singleton import Singleton
-from resources.lib.network import getURL, getURLData
-from resources.lib.logging import Log
-from resources.lib.itemlisting import setContentAndView
-from resources.lib.l10n import *
-from resources.lib.users import *
-from resources.lib.playback import PlayVideo
+from .singleton import Singleton
+from .network import getURL, getURLData
+from .logging import Log
+from .itemlisting import setContentAndView
+from .l10n import *
+from .users import *
+from .playback import PlayVideo
 
 
 class PrimeVideo(Singleton):
+    """ Wrangler of all things PrimeVideo.com """
+
     _catalog = {}  # Catalog cache
     _videodata = {}  # Video data cache
     _catalogCache = None  # Catalog cache file name
@@ -50,6 +52,7 @@ class PrimeVideo(Singleton):
                       'months': {'janeiro': 1, 'fevereiro': 2, 'março': 3, 'abril': 4, 'maio': 5, 'junho': 6, 'julho': 7, 'agosto': 8, 'setembro': 9, 'outubro': 10,
                                  'novembro': 11, 'dezembro': 12}},
         }
+        self._LoadCache()
 
     def _flush(self, FlushVideoData=False):
         """ Cache catalog and video data """
@@ -60,7 +63,7 @@ class PrimeVideo(Singleton):
             with open(self._videodataCache, 'w+') as fp:
                 pickle.dump(self._videodata, fp)
 
-    def LoadCache(self):
+    def _LoadCache(self):
         """ Load cached catalog and video data """
         from os.path import join as OSPJoin
         from xbmcvfs import exists

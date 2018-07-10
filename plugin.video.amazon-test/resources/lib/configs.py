@@ -1,12 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+import time
 import xbmcvfs
 from os.path import join as OSPJoin
 
 
-def getConfig(cfile, defvalue='', configPath=None):
-    if (not hasattr(getConfig, 'configPath')) and (None is not configPath):
-        getConfig.configPath = configPath
+def getConfig(cfile, defvalue=''):
     cfgfile = OSPJoin(getConfig.configPath, cfile)
 
     value = ''
@@ -18,9 +17,7 @@ def getConfig(cfile, defvalue='', configPath=None):
     return value if value else defvalue
 
 
-def writeConfig(cfile, value, configPath=None):
-    if (not hasattr(getConfig, 'configPath')) and (None is not configPath):
-        writeConfig.configPath = configPath
+def writeConfig(cfile, value):
     cfgfile = OSPJoin(writeConfig.configPath, cfile)
     cfglockfile = OSPJoin(writeConfig.configPath, cfile + '.lock')
 

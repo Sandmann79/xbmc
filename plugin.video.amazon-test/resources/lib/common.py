@@ -7,23 +7,27 @@ from __future__ import unicode_literals
 from os.path import join as OSPJoin
 from locale import getdefaultlocale
 from sys import argv
+import hashlib
+import hmac
+import uuid
 import xbmc
 import xbmcaddon
 import xbmcgui
 import xbmcvfs
 import json
-from Singleton import Singleton
-from resources.lib.l10n import *
-from resources.lib.configs import *
+from .singleton import Singleton
+from .l10n import *
+from .configs import *
 
 # Usage:
-#   g = Globals()
-#   v = _g.attribute
-#   v = _g.attribute.AttributeMemberFunction()
+#   gs = Globals()/Settings()
+#   v = gs.attribute
+#   v = gs.attribute.AttributeMemberFunction()
 
 
 class Globals(Singleton):
     """ A singleton instance of globals accessible through dot notation """
+
     _globals = {
         'platform': 0
     }
@@ -46,22 +50,20 @@ class Globals(Singleton):
     pluginhandle = int(argv[1])
     langID = {'movie': 30165, 'series': 30166, 'season': 30167, 'episode': 30173}
 
-    ''' Allow the usage of dot notation for data inside the _globals dictionary, without explicit function call '''
+    """ Allow the usage of dot notation for data inside the _globals dictionary, without explicit function call """
     def __getattr__(self, name): return self._globals[name]
     # def __setattr__(self, name, value): self._globals[name] = value
     # def __delattr__(self, name): self._globals.pop(name, None)
 
     def __init__(self):
         def _genID(renew=False):
-            guid = getConfig("GenDeviceID", configPath=self._globals['CONFIG_PATH']) if not renew else False
+            guid = getConfig("GenDeviceID") if not renew else False
             if not guid or len(guid) != 56:
                 guid = hmac.new(getConfig('UserAgent'), uuid.uuid4().bytes, hashlib.sha224).hexdigest()
-                writeConfig("GenDeviceID", guid, self._globals['CONFIG_PATH'])
+                writeConfig("GenDeviceID")
             return guid
 
-        from PrimeVideo import PrimeVideo
         self._globals['addon'] = xbmcaddon.Addon()
-        self._globals['pv'] = PrimeVideo(self, Settings())
         self._globals['dialog'] = xbmcgui.Dialog()
         # self._globals['dialogprogress'] = xbmcgui.DialogProgress()
         self._globals['hasExtRC'] = xbmc.getCondVisibility('System.HasAddon(script.chromium_remotecontrol)')
@@ -71,6 +73,10 @@ class Globals(Singleton):
         self._globals['HOME_PATH'] = xbmc.translatePath('special://home').decode('utf-8')
         self._globals['PLUGIN_PATH'] = self._globals['addon'].getAddonInfo('path').decode('utf-8')
 
+        # With main PATHs configured, we initialise the get/write path attributes
+        # and generate/retrieve the device ID
+        getConfig.configPath = self._globals['CONFIG_PATH']
+        writeConfig.configPath = self._globals['CONFIG_PATH']
         self._globals['deviceID'] = _genID()
 
         self._globals['__plugin__'] = self._globals['addon'].getAddonInfo('name')
@@ -101,22 +107,33 @@ class Globals(Singleton):
             (getString(30132, self._globals['addon']), 'RunPlugin(%s?mode=renameUser)' % self.pluginid)
         ]
 
-    def SetMarketplace(self, mid, burl, atv, pv):
+    def InitialiseProvider(self, mid, burl, atv, pv):
         self._globals['MarketID'] = mid
         self._globals['BaseUrl'] = burl
         self._globals['ATVUrl'] = atv
         self._globals['UsePrimeVideo'] = pv
 
+        if self._globals['UsePrimeVideo']:
+            """ Initialise PrimeVideo """
+            from .PrimeVideo import PrimeVideo
+            if 'pv' not in self._globals:
+                self._globals['pv'] = PrimeVideo(self, Settings())
+        else:
+            """ Initialise AmazonTLD """
+            from .AmazonTLD import AmazonTLD
+            if 'amz' not in self._globals:
+                self._globals['amz'] = AmazonTLD(self, Settings())
+
 
 class Settings(Singleton):
+    """ A singleton instance of various settings that could be needed to reload during runtime """
     def __getattr__(self, name):
-        if not hasattr(self, '_g'):
-            self._g = Globals()
+        g = Globals()
 
         if name in ['MOVIE_PATH', 'TV_SHOWS_PATH']:
-            export = self._g.DATA_PATH
-            if self._g.addon.getSetting('enablelibraryfolder') == 'true':
-                export = xbmc.translatePath(self._g.addon.getSetting('customlibraryfolder')).decode('utf-8')
+            export = g.DATA_PATH
+            if g.addon.getSetting('enablelibraryfolder') == 'true':
+                export = xbmc.translatePath(g.addon.getSetting('customlibraryfolder')).decode('utf-8')
             return OSPJoin(export, 'Movies' if 'MOVIE_PATH' == name else 'TV')
         elif 'Language' == name:
             # Language settings
@@ -124,29 +141,30 @@ class Settings(Singleton):
             l = xbmc.convertLanguage(l['value'], xbmc.ISO_639_1)
             l = l if l else xbmc.getLanguage(xbmc.ISO_639_1, False)
             return l if l else 'en'
-        elif 'playMethod' == name: return int(self._g.addon.getSetting("playmethod"))
-        elif 'browser' == name: return int(self._g.addon.getSetting("browser"))
-        elif 'MaxResults' == name: return int(self._g.addon.getSetting("items_perpage"))
-        elif 'tvdb_art' == name: return self._g.addon.getSetting("tvdb_art")
-        elif 'tmdb_art' == name: return self._g.addon.getSetting("tmdb_art")
-        elif 'showfanart' == name: return self._g.addon.getSetting("useshowfanart") == 'true'
-        elif 'dispShowOnly' == name: return self._g.addon.getSetting("disptvshow") == 'true'
-        elif 'payCont' == name: return self._g.addon.getSetting('paycont') == 'true'
-        elif 'verbLog' == name: return self._g.addon.getSetting('logging') == 'true'
-        elif 'useIntRC' == name: return self._g.addon.getSetting("remotectrl") == 'true'
-        elif 'RMC_vol' == name: return self._g.addon.getSetting("remote_vol") == 'true'
-        elif 'ms_mov' == name: ms_mov = self._g.addon.getSetting('mediasource_movie'); return ms_mov if ms_mov else 'Amazon Movies'
-        elif 'ms_tv' == name: ms_tv = self._g.addon.getSetting('mediasource_tv'); return ms_tv if ms_tv else 'Amazon TV'
-        elif 'multiuser' == name: return self._g.addon.getSetting('multiuser') == 'true'
-        elif 'DefaultFanart' == name: return OSPJoin(self._g.PLUGIN_PATH, 'fanart.jpg')
-        elif 'NextIcon' == name: return OSPJoin(self._g.PLUGIN_PATH, 'resources', 'next.png')
-        elif 'HomeIcon' == name: return OSPJoin(self._g.PLUGIN_PATH, 'resources', 'home.png')
-        elif 'wl_order' == name: return ['DATE_ADDED_DESC', 'TITLE_DESC', 'TITLE_ASC'][int('0' + self._g.addon.getSetting("wl_order"))]
-        elif 'verifySsl' == name: return self._g.addon.getSetting('ssl_verif') == 'false'
+        elif 'playMethod' == name: return int(g.addon.getSetting("playmethod"))
+        elif 'browser' == name: return int(g.addon.getSetting("browser"))
+        elif 'MaxResults' == name: return int(g.addon.getSetting("items_perpage"))
+        elif 'tvdb_art' == name: return g.addon.getSetting("tvdb_art")
+        elif 'tmdb_art' == name: return g.addon.getSetting("tmdb_art")
+        elif 'showfanart' == name: return g.addon.getSetting("useshowfanart") == 'true'
+        elif 'dispShowOnly' == name: return g.addon.getSetting("disptvshow") == 'true'
+        elif 'payCont' == name: return g.addon.getSetting('paycont') == 'true'
+        elif 'verbLog' == name: return g.addon.getSetting('logging') == 'true'
+        elif 'useIntRC' == name: return g.addon.getSetting("remotectrl") == 'true'
+        elif 'RMC_vol' == name: return g.addon.getSetting("remote_vol") == 'true'
+        elif 'ms_mov' == name: ms_mov = g.addon.getSetting('mediasource_movie'); return ms_mov if ms_mov else 'Amazon Movies'
+        elif 'ms_tv' == name: ms_tv = g.addon.getSetting('mediasource_tv'); return ms_tv if ms_tv else 'Amazon TV'
+        elif 'multiuser' == name: return g.addon.getSetting('multiuser') == 'true'
+        elif 'DefaultFanart' == name: return OSPJoin(g.PLUGIN_PATH, 'fanart.jpg')
+        elif 'NextIcon' == name: return OSPJoin(g.PLUGIN_PATH, 'resources', 'next.png')
+        elif 'HomeIcon' == name: return OSPJoin(g.PLUGIN_PATH, 'resources', 'home.png')
+        elif 'wl_order' == name: return ['DATE_ADDED_DESC', 'TITLE_DESC', 'TITLE_ASC'][int('0' + g.addon.getSetting("wl_order"))]
+        elif 'verifySsl' == name: return g.addon.getSetting('ssl_verif') == 'false'
         elif 'OfferGroup' == name: return '' if self.payCont else '&OfferGroups=B0043YVHMY'
 
 
 def jsonRPC(method, props='', param=None):
+    """ Wrapper for Kodi's executeJSONRPC API """
     rpc = {'jsonrpc': '2.0',
            'method': method,
            'params': {},

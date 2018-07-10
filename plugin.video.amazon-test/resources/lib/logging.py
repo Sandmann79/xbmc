@@ -3,17 +3,15 @@
 from os.path import join as OSPJoin
 import xbmc
 import xbmcvfs
-from resources.lib.common import Globals, Settings
+from .common import Globals, Settings
 
 
 def Log(msg, level=xbmc.LOGNOTICE):
-    if not hasattr(Log, '_s'):
-        Log._s = Settings()
-    if not hasattr(Log, '_g'):
-        Log._g = Globals()
-    if level == xbmc.LOGDEBUG and Log._s.verbLog:
+    g = Globals()
+    s = Settings()
+    if level == xbmc.LOGDEBUG and s.verbLog:
         level = xbmc.LOGNOTICE
-    msg = '[%s] %s' % (Log._g.__plugin__, msg)
+    msg = '[%s] %s' % (g.__plugin__, msg)
     xbmc.log(msg.encode('utf-8'), level)
 Log.DEBUG = xbmc.LOGDEBUG
 Log.ERROR = xbmc.LOGERROR
@@ -25,12 +23,14 @@ Log.WARNING = xbmc.LOGWARNING
 
 
 def WriteLog(data, fn=''):
+    g = Globals()
+    s = Settings()
     if not s.verbLog:
         return
 
     fn = '-' + fn if fn else ''
     fn = 'avod%s.log' % fn
-    path = os.path.join(g.HOME_PATH, fn)
+    path = OSPJoin(g.HOME_PATH, fn)
     if isinstance(data, unicode):
         data = data.encode('utf-8')
     logfile = xbmcvfs.File(path, 'w')

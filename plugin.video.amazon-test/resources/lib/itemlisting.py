@@ -1,13 +1,14 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 import xbmc
+import xbmcgui
 import xbmcplugin
-from resources.lib.common import Globals, Settings
+from urllib import urlencode
+from .common import Globals, Settings
 
 
 def setContentAndView(content, updateListing=False):
-    if not hasattr(setContentAndView, 'g'):
-        setContentAndView.g = Globals()
+    g = Globals()
     if content == 'movie':
         ctype = 'movies'
         cview = 'movieview'
@@ -31,14 +32,14 @@ def setContentAndView(content, updateListing=False):
         cview = None
 
     if None is not ctype:
-        xbmcplugin.setContent(setContentAndView.g.pluginhandle, ctype)
-    if (None is not cview) and ('true' == setContentAndView.g.addon.getSetting("viewenable")):
+        xbmcplugin.setContent(g.pluginhandle, ctype)
+    if (None is not cview) and ('true' == g.addon.getSetting("viewenable")):
         views = [50, 51, 52, 53, 54, 55, 500, 501, 502, -1]
-        viewid = views[int(setContentAndView.g.addon.getSetting(cview))]
+        viewid = views[int(g.addon.getSetting(cview))]
         if viewid == -1:
-            viewid = int(setContentAndView.g.addon.getSetting(cview.replace('view', 'id')))
+            viewid = int(g.addon.getSetting(cview.replace('view', 'id')))
         xbmc.executebuiltin('Container.SetViewMode(%s)' % viewid)
-    xbmcplugin.endOfDirectory(setContentAndView.g.pluginhandle, updateListing=updateListing)
+    xbmcplugin.endOfDirectory(g.pluginhandle, updateListing=updateListing)
 
 
 def addDir(name, mode='', url='', infoLabels=None, opt='', catalog='Browse', cm=None, page=1, export=False, thumb=None):
@@ -47,7 +48,7 @@ def addDir(name, mode='', url='', infoLabels=None, opt='', catalog='Browse', cm=
     if None is thumb:
         thumb = s.DefaultFanart
     u = {'mode': mode, 'url': url.encode('utf-8'), 'page': page, 'opt': opt, 'cat': catalog}
-    url = '%s?%s' % (g.pluginid, urllib.urlencode(u))
+    url = '%s?%s' % (g.pluginid, urlencode(u))
 
     if not mode:
         url = g.pluginid
@@ -81,7 +82,7 @@ def addVideo(name, asin, infoLabels, cm=[], export=False):
     g = Globals()
     s = Settings()
     u = {'asin': asin, 'mode': 'PlayVideo', 'name': name.encode('utf-8'), 'adult': infoLabels['isAdult']}
-    url = '%s?%s' % (g.pluginid, urllib.urlencode(u))
+    url = '%s?%s' % (g.pluginid, urlencode(u))
 
     item = xbmcgui.ListItem(name, thumbnailImage=infoLabels['Thumb'])
     item.setArt({'fanart': infoLabels['Fanart'], 'poster': infoLabels['Thumb']})
@@ -111,3 +112,11 @@ def addVideo(name, asin, infoLabels, cm=[], export=False):
         item.setInfo(type='Video', infoLabels=getInfolabels(infoLabels))
         item.addContextMenuItems(cm)
         xbmcplugin.addDirectoryItem(g.pluginhandle, url, item, isFolder=False)
+
+
+def getInfolabels(Infos):
+    rem_keys = ('ishd', 'isprime', 'asins', 'audiochannels', 'banner', 'displaytitle', 'fanart', 'poster', 'seasonasin',
+                'thumb', 'traileravailable', 'contenttype', 'isadult', 'totalseasons', 'seriesasin', 'episodename')
+    if not Infos:
+        return
+    return {k: v for k, v in Infos.items() if k.lower() not in rem_keys}

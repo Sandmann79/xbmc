@@ -2,8 +2,8 @@
 # -*- coding: utf-8 -*-
 import pyxbmct
 import xbmcgui
-from resources.lib.configs import *
-from resources.lib.l10n import *
+from .configs import *
+from .l10n import *
 
 
 class AgeRestrictions:
@@ -53,7 +53,7 @@ class AgeRestrictions:
                 self.btn_ages.setLabel(self.age_list[self.pin_req])
 
     def __init__(self):
-        from resources.lib.common import Globals
+        from .common import Globals
         self._g = Globals()
         AgesCfg = {
             'A1PA6795UKMFR9': ['FSK', ('FSK 0', 'FSK 0'), ('FSK 6', 'FSK 6'), ('FSK 12', 'FSK 12'), ('FSK 16', 'FSK 16'), ('FSK 18', 'FSK 18')],

@@ -1,15 +1,21 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-import requests
-import re
-import pickle
+from base64 import b64encode, b64decode
 import json
+import mechanize
+import pickle
+from platform import node
 import pyxbmct
+import re
+import requests
+import uuid
+from pyDes import *
+from random import randint
 from BeautifulSoup import BeautifulSoup
-from resources.lib.l10n import *
-from resources.lib.logging import *
-from resources.lib.configs import *
-from resources.lib.common import Globals, sleep
+from .l10n import *
+from .logging import *
+from .configs import *
+from .common import Globals, sleep
 
 
 def _parseHTML(br):
@@ -34,6 +40,62 @@ def _Error(data):
         return getString(30208)
     else:
         return '%s (%s) ' % (data['message'], code)
+
+
+def getUA(blacklist=False):
+    Log('Switching UserAgent')
+    UAlist = json.loads(getConfig('UAlist', json.dumps([])))
+    UAblist = json.loads(getConfig('UABlacklist', json.dumps([])))
+
+    if blacklist:
+        UAcur = getConfig('UserAgent')
+        if UAcur not in UAblist:
+            UAblist.append(UAcur)
+            writeConfig('UABlacklist', json.dumps(UAblist))
+            Log('UA: %s blacklisted' % UAcur)
+
+    UAwlist = [i for i in UAlist if i not in UAblist]
+    if not UAlist or len(UAwlist) < 5:
+        Log('Loading list of common UserAgents')
+        html = getURL('https://techblog.willshouse.com/2012/01/03/most-common-user-agents/', rjson=False)
+        soup = BeautifulSoup(html, convertEntities=BeautifulSoup.HTML_ENTITIES)
+        text = soup.find('textarea')
+        UAlist = text.string.split('\n')
+        UAblist = []
+        writeConfig('UABlacklist', json.dumps(UAblist))
+        writeConfig('UAlist', json.dumps(UAlist[0:len(UAlist) - 1]))
+        UAwlist = UAlist
+
+    UAnew = UAwlist[randint(0, len(UAwlist) - 1)] if UAwlist else \
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/59.0.3071.115 Safari/537.36'
+    writeConfig('UserAgent', UAnew)
+    Log('Using UserAgent: ' + UAnew)
+    return
+
+
+def mobileUA(content):
+    soup = BeautifulSoup(content, convertEntities=BeautifulSoup.HTML_ENTITIES)
+    res = soup.find('html')
+    res = res.get('class', '') if res else ''
+    return True if 'a-mobile' in res or 'a-tablet' in res else False
+
+
+def getTerritory(user):
+    Log('Retrieve territoral config')
+
+    data = getURL('https://na.api.amazonvideo.com/cdp/usage/v2/GetAppStartupConfig?deviceTypeID=A28RQHJKHM2A2W&deviceID=%s&firmware=1&version=1&format=json'
+                  % g.deviceID)
+    if not hasattr(data, 'keys'):
+        return (user, False)
+    if 'customerConfig' in data.keys():
+        host = data['territoryConfig']['defaultVideoWebsite']
+        reg = data['customerConfig']['homeRegion'].lower()
+        reg = '' if 'na' in reg else '-' + reg
+        user['atvurl'] = host.replace('www.', '').replace('//', '//atv-ps%s.' % reg)
+        user['baseurl'] = data['territoryConfig']['primeSignupg.BaseUrl']
+        user['mid'] = data['territoryConfig']['avMarketplace']
+        user['pv'] = 'primevideo' in host
+    return (user, True)
 
 
 def getURL(url, useCookie=False, silent=False, headers=None, rjson=True, attempt=1, check=False, postdata=None):
@@ -61,7 +123,7 @@ def getURL(url, useCookie=False, silent=False, headers=None, rjson=True, attempt
         if isinstance(cj, bool):
             return retval
 
-    from resources.lib.common import Globals, Settings
+    from .common import Globals, Settings
     g = Globals()
     s = Settings()
     if (not silent) or s.verbLog:
@@ -174,7 +236,7 @@ def getATVData(pg_mode, query='', version=2, useCookie=False, site_id=None):
     if '/' not in pg_mode:
         pg_mode = 'catalog/' + pg_mode
     parameter = '%s&deviceID=%s&format=json&version=%s&formatVersion=3&marketplaceId=%s' % (
-        deviceTypeID, deviceID, version, g.MarketID)
+        deviceTypeID, g.deviceID, version, g.MarketID)
     if site_id:
         parameter += '&id=' + site_id
     jsondata = getURL('%s/cdp/%s?%s%s' % (g.ATVUrl, pg_mode, parameter, query), useCookie=useCookie)
@@ -188,7 +250,7 @@ def getATVData(pg_mode, query='', version=2, useCookie=False, site_id=None):
 
 
 def MechanizeLogin():
-    from resources.lib.users import loadUser
+    from .users import loadUser
     cj = requests.cookies.RequestsCookieJar()
     cookie = loadUser('cookie')
 
@@ -201,6 +263,10 @@ def MechanizeLogin():
 
 
 def LogIn(ask=True):
+    def _insertLF(string, begin=70):
+        spc = string.find(' ', begin)
+        return string[:spc] + '\n' + string[spc + 1:] if spc > 0 else string
+
     def _MFACheck(br, email, soup):
         Log('MFA, DCQ or Captcha form')
         uni_soup = unicode(soup)
@@ -228,10 +294,10 @@ def LogIn(ask=True):
                     label = q.span.label.renderContents().strip().replace('  ', '').replace('\n', '')
                     if q.span.label.span:
                         label = label.replace(str(q.span.label.span), q.span.label.span.text)
-                    q_title.append(insertLF(label))
+                    q_title.append(_insertLF(label))
                     q_id.append(q.input['id'])
 
-            sel = g.dialog.select(insertLF(dcq_title, 60), q_title) if len(q_title) > 1 else 0
+            sel = g.dialog.select(_insertLF(dcq_title, 60), q_title) if len(q_title) > 1 else 0
             if sel < 0:
                 return False
 
@@ -287,11 +353,37 @@ def LogIn(ask=True):
                 return False
         return br
 
+    def _setLoginPW():
+        keyboard = xbmc.Keyboard('', getString(30003))
+        keyboard.doModal(60000)
+        if keyboard.isConfirmed() and keyboard.getText():
+            password = keyboard.getText()
+            return password
+        return False
+
+    def _getmac():
+        mac = uuid.getnode()
+        if (mac >> 40) % 2:
+            mac = node()
+        return uuid.uuid5(uuid.NAMESPACE_DNS, str(mac)).bytes
+
+    def _encode(data):
+        k = triple_des(_getmac(), CBC, b"\0\0\0\0\0\0\0\0", padmode=PAD_PKCS5)
+        d = k.encrypt(data)
+        return b64encode(d)
+
+    def _decode(data):
+        if not data:
+            return ''
+        k = triple_des(_getmac(), CBC, b"\0\0\0\0\0\0\0\0", padmode=PAD_PKCS5)
+        d = k.decrypt(b64decode(data))
+        return d
+
     g = Globals()
-    from resources.lib.users import loadUser
+    from .users import loadUser
     user = loadUser(empty=ask)
     email = user['email']
-    password = decode(user['password'])
+    password = _decode(user['password'])
     savelogin = g.addon.getSetting('save_login') == 'true'
     useMFA = False
 
@@ -306,7 +398,7 @@ def LogIn(ask=True):
         keyboard.doModal()
         if keyboard.isConfirmed() and keyboard.getText():
             email = keyboard.getText()
-            password = setLoginPW()
+            password = _setLoginPW()
     else:
         if not email or not password:
             g.dialog.notification(getString(30200), getString(30216))
@@ -388,7 +480,7 @@ def LogIn(ask=True):
 
             if savelogin:
                 user['email'] = email
-                user['password'] = encode(password)
+                user['password'] = _encode(password)
             else:
                 user['cookie'] = pickle.dumps(cj)
 
@@ -417,6 +509,20 @@ def LogIn(ask=True):
             g.dialog.ok(getString(30200), getString(30213))
 
     return False
+
+
+def remLoginData(info=True):
+    for fn in xbmcvfs.listdir(g.DATA_PATH)[1]:
+        if fn.startswith('cookie'):
+            xbmcvfs.delete(os.path.join(g.DATA_PATH, fn))
+    writeConfig('accounts', '')
+    writeConfig('login_name', '')
+    writeConfig('login_pass', '')
+
+    if info:
+        writeConfig('accounts.lst', '')
+        g.addon.setSetting('login_acc', '')
+        g.dialog.notification(g.__plugin__, getString(30211), xbmcgui.NOTIFICATION_INFO)
 
 
 class _Captcha(pyxbmct.AddonDialogWindow):

@@ -13,6 +13,7 @@ import xbmc
 import xbmcplugin
 import xbmcvfs
 
+from .ages import AgeRestrictions
 from .singleton import Singleton
 from .itemlisting import setContentAndView
 from .l10n import *
@@ -796,7 +797,7 @@ class AmazonTLD(Singleton):
             if item['regulatoryRating'] == 'not_checked' or not item['regulatoryRating']:
                 infoLabels['MPAA'] = getString(30171)
             else:
-                infoLabels['MPAA'] = AgeRating + item['regulatoryRating']
+                infoLabels['MPAA'] = AgeRestrictions().GetAgeRating() + item['regulatoryRating']
 
         if 'customerReviewCollection' in item:
             infoLabels['Rating'] = float(item['customerReviewCollection']['customerReviewSummary']['averageOverallRating']) * 2

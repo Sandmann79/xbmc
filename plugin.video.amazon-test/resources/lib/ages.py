@@ -7,6 +7,8 @@ from .l10n import *
 
 
 class AgeRestrictions:
+    """ Provides age restriction settings and retrieval """
+
     class _AgeSettings(pyxbmct.AddonDialogWindow):
         def __init__(self, title=''):
             super(AgeSettings, self).__init__(title)

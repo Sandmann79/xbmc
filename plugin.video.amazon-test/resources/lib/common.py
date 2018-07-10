@@ -127,13 +127,15 @@ class Globals(Singleton):
 
 class Settings(Singleton):
     """ A singleton instance of various settings that could be needed to reload during runtime """
-    def __getattr__(self, name):
-        g = Globals()
 
+    def __init__(self):
+        self._g = Globals()
+
+    def __getattr__(self, name):
         if name in ['MOVIE_PATH', 'TV_SHOWS_PATH']:
-            export = g.DATA_PATH
-            if g.addon.getSetting('enablelibraryfolder') == 'true':
-                export = xbmc.translatePath(g.addon.getSetting('customlibraryfolder')).decode('utf-8')
+            export = self._g.DATA_PATH
+            if self._g.addon.getSetting('enablelibraryfolder') == 'true':
+                export = xbmc.translatePath(self._g.addon.getSetting('customlibraryfolder')).decode('utf-8')
             return OSPJoin(export, 'Movies' if 'MOVIE_PATH' == name else 'TV')
         elif 'Language' == name:
             # Language settings
@@ -141,25 +143,25 @@ class Settings(Singleton):
             l = xbmc.convertLanguage(l['value'], xbmc.ISO_639_1)
             l = l if l else xbmc.getLanguage(xbmc.ISO_639_1, False)
             return l if l else 'en'
-        elif 'playMethod' == name: return int(g.addon.getSetting("playmethod"))
-        elif 'browser' == name: return int(g.addon.getSetting("browser"))
-        elif 'MaxResults' == name: return int(g.addon.getSetting("items_perpage"))
-        elif 'tvdb_art' == name: return g.addon.getSetting("tvdb_art")
-        elif 'tmdb_art' == name: return g.addon.getSetting("tmdb_art")
-        elif 'showfanart' == name: return g.addon.getSetting("useshowfanart") == 'true'
-        elif 'dispShowOnly' == name: return g.addon.getSetting("disptvshow") == 'true'
-        elif 'payCont' == name: return g.addon.getSetting('paycont') == 'true'
-        elif 'verbLog' == name: return g.addon.getSetting('logging') == 'true'
-        elif 'useIntRC' == name: return g.addon.getSetting("remotectrl") == 'true'
-        elif 'RMC_vol' == name: return g.addon.getSetting("remote_vol") == 'true'
-        elif 'ms_mov' == name: ms_mov = g.addon.getSetting('mediasource_movie'); return ms_mov if ms_mov else 'Amazon Movies'
-        elif 'ms_tv' == name: ms_tv = g.addon.getSetting('mediasource_tv'); return ms_tv if ms_tv else 'Amazon TV'
-        elif 'multiuser' == name: return g.addon.getSetting('multiuser') == 'true'
-        elif 'DefaultFanart' == name: return OSPJoin(g.PLUGIN_PATH, 'fanart.jpg')
-        elif 'NextIcon' == name: return OSPJoin(g.PLUGIN_PATH, 'resources', 'next.png')
-        elif 'HomeIcon' == name: return OSPJoin(g.PLUGIN_PATH, 'resources', 'home.png')
-        elif 'wl_order' == name: return ['DATE_ADDED_DESC', 'TITLE_DESC', 'TITLE_ASC'][int('0' + g.addon.getSetting("wl_order"))]
-        elif 'verifySsl' == name: return g.addon.getSetting('ssl_verif') == 'false'
+        elif 'playMethod' == name: return int(self._g.addon.getSetting("playmethod"))
+        elif 'browser' == name: return int(self._g.addon.getSetting("browser"))
+        elif 'MaxResults' == name: return int(self._g.addon.getSetting("items_perpage"))
+        elif 'tvdb_art' == name: return self._g.addon.getSetting("tvdb_art")
+        elif 'tmdb_art' == name: return self._g.addon.getSetting("tmdb_art")
+        elif 'showfanart' == name: return self._g.addon.getSetting("useshowfanart") == 'true'
+        elif 'dispShowOnly' == name: return self._g.addon.getSetting("disptvshow") == 'true'
+        elif 'payCont' == name: return self._g.addon.getSetting('paycont') == 'true'
+        elif 'verbLog' == name: return self._g.addon.getSetting('logging') == 'true'
+        elif 'useIntRC' == name: return self._g.addon.getSetting("remotectrl") == 'true'
+        elif 'RMC_vol' == name: return self._g.addon.getSetting("remote_vol") == 'true'
+        elif 'ms_mov' == name: ms_mov = self._g.addon.getSetting('mediasource_movie'); return ms_mov if ms_mov else 'Amazon Movies'
+        elif 'ms_tv' == name: ms_tv = self._g.addon.getSetting('mediasource_tv'); return ms_tv if ms_tv else 'Amazon TV'
+        elif 'multiuser' == name: return self._g.addon.getSetting('multiuser') == 'true'
+        elif 'DefaultFanart' == name: return OSPJoin(self._g.PLUGIN_PATH, 'fanart.jpg')
+        elif 'NextIcon' == name: return OSPJoin(self._g.PLUGIN_PATH, 'resources', 'next.png')
+        elif 'HomeIcon' == name: return OSPJoin(self._g.PLUGIN_PATH, 'resources', 'home.png')
+        elif 'wl_order' == name: return ['DATE_ADDED_DESC', 'TITLE_DESC', 'TITLE_ASC'][int('0' + self._g.addon.getSetting("wl_order"))]
+        elif 'verifySsl' == name: return self._g.addon.getSetting('ssl_verif') == 'false'
         elif 'OfferGroup' == name: return '' if self.payCont else '&OfferGroups=B0043YVHMY'
 
 

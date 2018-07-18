@@ -4,16 +4,13 @@
     Provides: Globals, Settings, sleep, jsonRPC
 '''
 from __future__ import unicode_literals
-from os.path import join as OSPJoin
 from locale import getdefaultlocale
 from sys import argv
 import hashlib
 import hmac
 import uuid
-import xbmc
 import xbmcaddon
 import xbmcgui
-import xbmcvfs
 import json
 from .singleton import Singleton
 from .l10n import *
@@ -56,13 +53,6 @@ class Globals(Singleton):
     # def __delattr__(self, name): self._globals.pop(name, None)
 
     def __init__(self):
-        def _genID(renew=False):
-            guid = getConfig("GenDeviceID") if not renew else False
-            if not guid or len(guid) != 56:
-                guid = hmac.new(getConfig('UserAgent'), uuid.uuid4().bytes, hashlib.sha224).hexdigest()
-                writeConfig("GenDeviceID")
-            return guid
-
         self._globals['addon'] = xbmcaddon.Addon()
         self._globals['dialog'] = xbmcgui.Dialog()
         # self._globals['dialogprogress'] = xbmcgui.DialogProgress()
@@ -77,7 +67,7 @@ class Globals(Singleton):
         # and generate/retrieve the device ID
         getConfig.configPath = self._globals['CONFIG_PATH']
         writeConfig.configPath = self._globals['CONFIG_PATH']
-        self._globals['deviceID'] = _genID()
+        self._globals['deviceID'] = self.genID()
 
         self._globals['__plugin__'] = self._globals['addon'].getAddonInfo('name')
         self._globals['__authors__'] = self._globals['addon'].getAddonInfo('author')
@@ -107,6 +97,14 @@ class Globals(Singleton):
             (getString(30132, self._globals['addon']), 'RunPlugin(%s?mode=renameUser)' % self.pluginid)
         ]
 
+    @staticmethod
+    def genID(renew=False):
+        guid = getConfig("GenDeviceID") if not renew else False
+        if not guid or len(guid) != 56:
+            guid = hmac.new(getConfig('UserAgent'), uuid.uuid4().bytes, hashlib.sha224).hexdigest()
+            writeConfig("GenDeviceID", guid)
+        return guid
+
     def InitialiseProvider(self, mid, burl, atv, pv):
         self._globals['MarketID'] = mid
         self._globals['BaseUrl'] = burl
@@ -115,12 +113,12 @@ class Globals(Singleton):
 
         if self._globals['UsePrimeVideo']:
             """ Initialise PrimeVideo """
-            from .PrimeVideo import PrimeVideo
+            from .primevideo import PrimeVideo
             if 'pv' not in self._globals:
                 self._globals['pv'] = PrimeVideo(self, Settings())
         else:
             """ Initialise AmazonTLD """
-            from .AmazonTLD import AmazonTLD
+            from .amazontld import AmazonTLD
             if 'amz' not in self._globals:
                 self._globals['amz'] = AmazonTLD(self, Settings())
 

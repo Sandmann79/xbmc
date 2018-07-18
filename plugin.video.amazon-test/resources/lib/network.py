@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+from __future__ import unicode_literals
 from base64 import b64encode, b64decode
+from os.path import join as OSPJoin
 import json
 import mechanize
 import pickle
@@ -15,7 +17,7 @@ from BeautifulSoup import BeautifulSoup
 from .l10n import *
 from .logging import *
 from .configs import *
-from .common import Globals, sleep
+from .common import Globals, Settings, sleep
 
 
 def _parseHTML(br):
@@ -86,16 +88,16 @@ def getTerritory(user):
     data = getURL('https://na.api.amazonvideo.com/cdp/usage/v2/GetAppStartupConfig?deviceTypeID=A28RQHJKHM2A2W&deviceID=%s&firmware=1&version=1&format=json'
                   % g.deviceID)
     if not hasattr(data, 'keys'):
-        return (user, False)
+        return user, False
     if 'customerConfig' in data.keys():
         host = data['territoryConfig']['defaultVideoWebsite']
         reg = data['customerConfig']['homeRegion'].lower()
         reg = '' if 'na' in reg else '-' + reg
         user['atvurl'] = host.replace('www.', '').replace('//', '//atv-ps%s.' % reg)
-        user['baseurl'] = data['territoryConfig']['primeSignupg.BaseUrl']
+        user['baseurl'] = data['territoryConfig']['primeSignupBaseUrl']
         user['mid'] = data['territoryConfig']['avMarketplace']
         user['pv'] = 'primevideo' in host
-    return (user, True)
+    return user, True
 
 
 def getURL(url, useCookie=False, silent=False, headers=None, rjson=True, attempt=1, check=False, postdata=None):
@@ -380,7 +382,8 @@ def LogIn(ask=True):
         return d
 
     g = Globals()
-    from .users import loadUser
+    s = Settings()
+    from .users import loadUser, addUser
     user = loadUser(empty=ask)
     email = user['email']
     password = _decode(user['password'])
@@ -402,7 +405,7 @@ def LogIn(ask=True):
     else:
         if not email or not password:
             g.dialog.notification(getString(30200), getString(30216))
-            xbmc.executebuiltin('g.addon.OpenSettings(%s)' % g.addon.getAddonInfo('id'))
+            xbmc.executebuiltin('Addon.OpenSettings(%s)' % g.addon.getAddonInfo('id'))
             return False
 
     if password:
@@ -437,7 +440,7 @@ def LogIn(ask=True):
             br.find_control(name='rememberMe').items[0].selected = True
         br.addheaders = [('Accept', 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8'),
                          ('Accept-Encoding', 'gzip, deflate'),
-                         ('Accept-Language', userAcceptLanguages),
+                         ('Accept-Language', g.userAcceptLanguages),
                          ('Cache-Control', 'max-age=0'),
                          ('Connection', 'keep-alive'),
                          ('Content-Type', 'application/x-www-form-urlencoded'),
@@ -467,7 +470,7 @@ def LogIn(ask=True):
             except AttributeError:
                 usr = getString(30209)
 
-            if multiuser and ask:
+            if s.multiuser and ask:
                 usr = g.dialog.input(getString(30135), usr).decode('utf-8')
                 if not usr:
                     return False
@@ -487,11 +490,11 @@ def LogIn(ask=True):
             if ask:
                 remLoginData(False)
                 g.addon.setSetting('login_acc', usr)
-                if not multiuser:
+                if not s.multiuser:
                     g.dialog.ok(getString(30215), '{0} {1}'.format(getString(30014), usr))
 
             addUser(user)
-            genID()
+            g.genID()
             return cj
         elif 'message_error' in response:
             writeConfig('login_pass', '')
@@ -514,7 +517,7 @@ def LogIn(ask=True):
 def remLoginData(info=True):
     for fn in xbmcvfs.listdir(g.DATA_PATH)[1]:
         if fn.startswith('cookie'):
-            xbmcvfs.delete(os.path.join(g.DATA_PATH, fn))
+            xbmcvfs.delete(OSPJoin(g.DATA_PATH, fn))
     writeConfig('accounts', '')
     writeConfig('login_name', '')
     writeConfig('login_pass', '')

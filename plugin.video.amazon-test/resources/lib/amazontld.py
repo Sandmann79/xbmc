@@ -1,23 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
-from BeautifulSoup import BeautifulSoup, Tag
-from datetime import date
-import json
 import os.path
-import time
-import re
+from BeautifulSoup import Tag
+from datetime import date
 from urllib import quote_plus
-
-import xbmc
-import xbmcplugin
-import xbmcvfs
 
 from .ages import AgeRestrictions
 from .singleton import Singleton
-from .itemlisting import setContentAndView
-from .l10n import *
-from .logging import Log, WriteLog
 from .network import *
 from .itemlisting import *
 from .users import *
@@ -45,7 +35,8 @@ class AmazonTLD(Singleton):
         addDir(getString(30100), 'getListMenu', self._g.library, cm=cm_lb)
         xbmcplugin.endOfDirectory(self._g.pluginhandle, updateListing=False)
 
-    def _cleanName(self, name, isfile=True):
+    @staticmethod
+    def _cleanName(name, isfile=True):
         notallowed = ['<', '>', ':', '"', '\\', '/', '|', '*', '?']
         if not isfile:
             notallowed = ['<', '>', '"', '|', '*', '?']
@@ -137,7 +128,7 @@ class AmazonTLD(Singleton):
     def SetupAmazonLibrary(self):
         source_path = xbmc.translatePath('special://profile/sources.xml').decode('utf-8')
         source_added = False
-        source = {ms_mov: self._s.MOVIE_PATH, ms_tv: self._s.TV_SHOWS_PATH}
+        source = {self._s.ms_mov: self._s.MOVIE_PATH, self._s.ms_tv: self._s.TV_SHOWS_PATH}
 
         if xbmcvfs.exists(source_path):
             srcfile = xbmcvfs.File(source_path)
@@ -323,7 +314,7 @@ class AmazonTLD(Singleton):
             info = None
             opt = ''
             if infolabel:
-                info = getAsins({'formats': []}, True)
+                info = self.getAsins({'formats': []}, True)
                 info.update(infolabel)
 
             if category == 'node':
@@ -370,7 +361,7 @@ class AmazonTLD(Singleton):
             if '_show' in parent:
                 item.update(item['ancestorTitles'][0])
                 url = 'SeriesASIN=%s&ContentType=TVSeason&IncludeBlackList=T' % item['titleId']
-            contentType, infoLabels = getInfos(item, export)
+            contentType, infoLabels = self.getInfos(item, export)
             name = infoLabels['DisplayTitle']
             asin = item['titleId']
             wlmode = 1 if self._g.watchlist in parent else 0
@@ -392,7 +383,7 @@ class AmazonTLD(Singleton):
                 if self._g.watchlist in parent:
                     url += self._s.OfferGroup
                 if contentType == 'season':
-                    name = formatSeason(infoLabels, parent)
+                    name = self.formatSeason(infoLabels, parent)
                     if self._g.library not in parent and parent != '':
                         curl = 'SeriesASIN=%s&ContentType=TVSeason&IncludeBlackList=T%s' % (
                             infoLabels['SeriesAsin'], self._s.OfferGroup)
@@ -422,7 +413,8 @@ class AmazonTLD(Singleton):
             else:
                 setContentAndView(contentType)
 
-    def cleanTitle(self, title):
+    @staticmethod
+    def cleanTitle(title):
         if title.isupper():
             title = title.title().replace('[Ov]', '[OV]').replace('Bc', 'BC')
         title = title.replace('\u2013', '-').replace('\u00A0', ' ').replace('[dt./OV]', '').replace('_DUPLICATE_', '')
@@ -553,7 +545,7 @@ class AmazonTLD(Singleton):
         Log('Starting Fanart Update')
         c = self._db.cursor()
         for data in c.execute('select distinct * from miss').fetchall():
-            loadArtWork(*data)
+            self.loadArtWork(*data)
         c.execute('drop table if exists miss')
         c.close()
         self._db.commit()
@@ -571,15 +563,15 @@ class AmazonTLD(Singleton):
             return
 
         if contentType == 'movie':
-            fanart = getTMDBImages(title, year=year)
+            fanart = self.getTMDBImages(title, year=year)
         if contentType == 'season' or contentType == 'series':
-            seasons, poster, fanart = getTVDBImages(title)
+            seasons, poster, fanart = self.getTVDBImages(title)
             if not fanart:
-                fanart = getTMDBImages(title, content='tv')
+                fanart = self.getTMDBImages(title, content='tv')
             season_number = -1
             content = getATVData('GetASINDetails', 'ASINList=' + asins)['titles']
             if content:
-                asins = getAsins(content[0], False)
+                asins = self.getAsins(content[0], False)
                 del content
 
         cur = self._db.cursor()
@@ -695,7 +687,7 @@ class AmazonTLD(Singleton):
 
     def getListMenu(self, listing, export):
         if export:
-            getList(listing, export, ['movie', 'tv'])
+            self.getList(listing, export, ['movie', 'tv'])
         else:
             addDir(getString(30104), 'getList', listing, export, opt='movie')
             addDir(getString(30107), 'getList', listing, export, opt='tv')
@@ -765,7 +757,7 @@ class AmazonTLD(Singleton):
         return asins
 
     def getInfos(self, item, export):
-        infoLabels = getAsins(item)
+        infoLabels = self.getAsins(item)
         infoLabels['DisplayTitle'] = infoLabels['Title'] = self.cleanTitle(item['title'])
         infoLabels['contentType'] = contentType = item['contentType'].lower()
 

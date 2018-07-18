@@ -1,20 +1,17 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
-from os.path import join as OSPJoin
+import os
 from urllib import quote_plus
 import shlex
 import subprocess
 import threading
-import time
-import xbmc
 import xbmcgui
 import xbmcplugin
 from inputstreamhelper import Helper
-from .l10n import *
-from .logging import Log
 from .network import *
-from common import Globals, Settings, jsonRPC, sleep
+from .common import Globals, Settings, jsonRPC, sleep
+from .itemlisting import getInfolabels
 
 
 def _getListItem(li):
@@ -49,7 +46,7 @@ def _Input(mousex=0, mousey=0, click=0, keys=None, delay='200'):
         sc_only = keys.replace(keys_only, '').strip()
 
     if g.platform & g.OS_WINDOWS:
-        app = OSPJoin(g.PLUGIN_PATH, 'tools', 'userinput.exe')
+        app = os.path.join(g.PLUGIN_PATH, 'tools', 'userinput.exe')
         mouse = ' mouse %s %s' % (mousex, mousey)
         mclk = ' ' + str(click)
         keybd = ' key %s %s' % (keys, delay)
@@ -422,7 +419,7 @@ def PlayVideo(name, asin, adultstr, trailer, forcefb=0):
         _Input(mousex=9999, mousey=-1)
 
         xbmc.executebuiltin('Dialog.Close(busydialog)')
-        if hasExtRC:
+        if s.hasExtRC:
             return
 
         myWindow = _window(process, asin)
@@ -505,7 +502,7 @@ def PlayVideo(name, asin, adultstr, trailer, forcefb=0):
         Log(mpd, Log.DEBUG)
 
         if (not extern) or g.UsePrimeVideo:
-            mpaa_check = _getListItem('MPAA') in mpaa_str or isAdult
+            mpaa_check = _getListItem('MPAA') in mpaa_str + mpaa_str.replace(' ', '') or isAdult
             title = _getListItem('Label')
             thumb = _getListItem('Art(season.poster)')
             if not thumb:
@@ -514,7 +511,7 @@ def PlayVideo(name, asin, adultstr, trailer, forcefb=0):
                     thumb = _getListItem('Art(thumb)')
         else:
             content = getATVData('GetASINDetails', 'ASINList=' + asin)['titles'][0]
-            ct, Info = getInfos(content, False)
+            ct, Info = g.amz.getInfos(content, False)
             title = Info['DisplayTitle']
             thumb = Info.get('Poster', Info['Thumb'])
             mpaa_check = str(Info.get('MPAA', mpaa_str)) in mpaa_str or isAdult
@@ -525,7 +522,7 @@ def PlayVideo(name, asin, adultstr, trailer, forcefb=0):
         if not title:
             title = name
 
-        if mpaa_check and not RequestPin():
+        if mpaa_check and not AgeRestrictions().RequestPin():
             return True
 
         listitem = xbmcgui.ListItem(label=title, path=mpd)
@@ -610,6 +607,7 @@ class _window(xbmcgui.WindowDialog):
         self._wakeUpThread = threading.Thread(target=self._wakeUpThreadProc, args=(process,))
         self._vidDur = self.getDuration(asin)
 
+    @staticmethod
     def _SetVol(step):
         vol = jsonRPC('Application.GetProperties', 'volume')
         xbmc.executebuiltin('SetVolume(%d,showVolumeBar)' % (vol + step))
@@ -641,7 +639,7 @@ class _window(xbmcgui.WindowDialog):
             return int(li_dur) * 60
         else:
             content = getATVData('GetASINDetails', 'ASINList=' + asin)['titles'][0]
-            ct, Info = getInfos(content, False)
+            ct, Info = g.amz.getInfos(content, False)
             return int(Info.get('Duration', 0))
 
     def close(self):
@@ -692,9 +690,9 @@ class _window(xbmcgui.WindowDialog):
             _Input(keys='{RGT}')
             showinfo = True
         elif action == ACTION_MOVE_UP:
-            _SetVol(+2) if s.RMC_vol else _Input(keys='{U}')
+            self._SetVol(+2) if s.RMC_vol else _Input(keys='{U}')
         elif action == ACTION_MOVE_DOWN:
-            _SetVol(-2) if s.RMC_vol else _Input(keys='{DWN}')
+            self._SetVol(-2) if s.RMC_vol else _Input(keys='{DWN}')
         # numkeys for pin input
         elif 57 < actionId < 68:
             strKey = str(actionId - 58)
@@ -752,7 +750,7 @@ class _AmazonPlayer(xbmc.Player):
         if playcount:
             return True
         if position > 180:
-            sel = Dialog.contextmenu([getString(12022).format(time.strftime("%H:%M:%S", time.gmtime(position))), getString(12021)])
+            sel = g.dialog.contextmenu([getString(12022).format(time.strftime("%H:%M:%S", time.gmtime(position))), getString(12021)])
             if sel > -1:
                 self.seek = position if sel == 0 else 0
             else:

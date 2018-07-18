@@ -1,10 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-import xbmc
+from __future__ import unicode_literals
 import xbmcgui
 import xbmcplugin
 from urllib import urlencode
 from .common import Globals, Settings
+from .l10n import *
 
 
 def setContentAndView(content, updateListing=False):
@@ -54,7 +55,7 @@ def addDir(name, mode='', url='', infoLabels=None, opt='', catalog='Browse', cm=
         url = g.pluginid
 
     if export:
-        Export(infoLabels, url)
+        g.amz.Export(infoLabels, url)
         return
     if infoLabels:
         thumb = infoLabels['Thumb']
@@ -104,7 +105,7 @@ def addVideo(name, asin, infoLabels, cm=[], export=False):
 
     if export:
         url += '&selbitrate=0'
-        Export(infoLabels, url)
+        g.amz.Export(infoLabels, url)
     else:
         cm.insert(0, (getString(30101), 'Action(ToggleWatched)'))
         cm.insert(1, (getString(30102), 'RunPlugin(%s)' % (url + '&selbitrate=1')))

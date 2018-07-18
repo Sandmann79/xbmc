@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-import requests
-import re
+from __future__ import unicode_literals
+import xbmcgui
 import json
-from .network import MechanizeLogin, getTerritory
+from .network import getTerritory
 from .configs import *
-from .common import Globals
+from .common import Globals, Settings
 from .l10n import *
 
 
@@ -38,8 +38,9 @@ def loadUser(key='', empty=False, cachedUsers=None):
 
 def addUser(user):
     g = Globals()
-    addUser.user['save'] = g.addon.getSetting('save_login')
-    users = loadUsers() if multiuser else []
+    s = Settings()
+    user['save'] = g.addon.getSetting('save_login')
+    users = loadUsers() if s.multiuser else []
     num = [n for n, i in enumerate(users) if user['name'] == i['name']]
     if num:
         users[num[0]] = user

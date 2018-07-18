@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+from __future__ import unicode_literals
 import time
 import xbmcvfs
 from os.path import join as OSPJoin
@@ -43,3 +44,4 @@ def writeConfig(cfile, value):
             l.close()
             if time.time() - modified > 0.1:
                 xbmcvfs.delete(cfglockfile)
+

@@ -11,7 +11,7 @@ import xbmcplugin
 from urllib import quote_plus
 
 from .singleton import Singleton
-from .network import getURL, getURLData
+from .network import getURL, getURLData, MechanizeLogin
 from .logging import Log
 from .itemlisting import setContentAndView
 from .l10n import *

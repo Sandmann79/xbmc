@@ -90,4 +90,3 @@ class _AgeSettings(pyxbmct.AddonDialogWindow):
         if sel > -1:
             self.pin_req = sel
             self.btn_ages.setLabel(self.age_list[self.pin_req])
-

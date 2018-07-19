@@ -3,6 +3,7 @@
 from __future__ import unicode_literals
 from base64 import b64encode, b64decode
 from os.path import join as OSPJoin
+import xbmcgui
 import json
 import mechanize
 import pickle

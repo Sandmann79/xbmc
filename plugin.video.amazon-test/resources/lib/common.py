@@ -105,10 +105,6 @@ class Globals(Singleton):
             writeConfig("GenDeviceID", guid)
         return guid
 
-    def Callbacks():
-        """ Return a list of exec-utable commands """
-        return []
-
     def InitialiseProvider(self, mid, burl, atv, pv):
         self._globals['MarketID'] = mid
         self._globals['BaseUrl'] = burl

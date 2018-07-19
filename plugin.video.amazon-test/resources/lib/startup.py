@@ -83,8 +83,7 @@ def EntryPoint():
         g.pv.Browse(None if 'path' not in args else args['path'])
     elif mode == 'PrimeVideo_Search':
         g.pv.Search()
-    elif mode in dir(g.amz) + g.Callbacks():
-        cmd = mode + '()'
-        if mode in dir(g.amz):
-            cmd = 'g.amz.' + cmd
-        exec cmd
+    elif mode in ['LogIn', 'remLoginData', 'removeUser', 'renameUser', 'switchUser']:
+        exec '%s()' % mode
+    elif mode in ['checkMissing', 'Search']:
+        exec 'g.amz.%s()' % mode

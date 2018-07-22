@@ -5,7 +5,6 @@ import pyxbmct
 import xbmcgui
 from .configs import *
 from .l10n import *
-from logging import Log
 from .common import Globals
 
 

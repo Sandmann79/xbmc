@@ -378,7 +378,7 @@ def PlayVideo(name, asin, adultstr, trailer, forcefb=0):
         videoUrl += '&playerDebug=true' if s.verbLog else ''
 
         xbmc.Player().stop()
-        xbmc.executebuiltin('ActivateWindow(busydialog)')
+        # xbmc.executebuiltin('ActivateWindow(busydialog)')
 
         suc, url = _getCmdLine(videoUrl, asin, method, fr)
         if not suc:
@@ -418,7 +418,7 @@ def PlayVideo(name, asin, adultstr, trailer, forcefb=0):
 
         _Input(mousex=9999, mousey=-1)
 
-        xbmc.executebuiltin('Dialog.Close(busydialog)')
+        # xbmc.executebuiltin('Dialog.Close(busydialog)')
         if s.hasExtRC:
             return
 
@@ -496,7 +496,7 @@ def PlayVideo(name, asin, adultstr, trailer, forcefb=0):
         if drm_check and (not g.platform & g.OS_ANDROID) and (not is_binary):
             mpdcontent = getURL(mpd, useCookie=cookie, rjson=False)
             if 'avc1.4D00' in mpdcontent:
-                xbmc.executebuiltin('ActivateWindow(busydialog)')
+                # xbmc.executebuiltin('ActivateWindow(busydialog)')
                 return _extrFr(mpdcontent)
 
         Log(mpd, Log.DEBUG)
@@ -542,7 +542,7 @@ def PlayVideo(name, asin, adultstr, trailer, forcefb=0):
         listitem.setProperty('inputstreamaddon', g.is_addon)
         listitem.setMimeType('application/dash+xml')
         listitem.setContentLookup(False)
-        xbmc.executebuiltin('Dialog.Close(busydialog)')
+        # xbmc.executebuiltin('Dialog.Close(busydialog)')
         player = _AmazonPlayer()
         player.extern = extern
         player.asin = asin

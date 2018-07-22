@@ -76,7 +76,7 @@ def addDir(name, mode='', url='', infoLabels=None, opt='', catalog='Browse', cm=
 
     if cm:
         item.addContextMenuItems(cm)
-    xbmcplugin.addDirectoryItem(g.pluginhandle, url, item, isFolder=True)
+    xbmcplugin.addDirectoryItem(g.pluginhandle, url, item, isFolder=mode != 'switchUser')
 
 
 def addVideo(name, asin, infoLabels, cm=[], export=False):

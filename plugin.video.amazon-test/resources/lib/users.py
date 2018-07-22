@@ -8,9 +8,10 @@ from .configs import *
 from .common import Globals, Settings
 from .l10n import *
 
+g = Globals()
+
 
 def loadUsers():
-    g = Globals()
     users = json.loads(getConfig('accounts.lst', '[]'))
     if not users:
         g.addon.setSetting('login_acc', '')
@@ -18,7 +19,6 @@ def loadUsers():
 
 
 def loadUser(key='', empty=False, cachedUsers=None):
-    g = Globals()
     def_keys = {'email': '', 'password': '', 'name': '', 'save': '', 'atvurl': '', 'baseurl': '', 'pv': False, 'mid': '', 'cookie': ''}
     cur_user = g.addon.getSetting('login_acc').decode('utf-8')
     users = cachedUsers if cachedUsers else loadUsers()
@@ -37,7 +37,6 @@ def loadUser(key='', empty=False, cachedUsers=None):
 
 
 def addUser(user):
-    g = Globals()
     s = Settings()
     user['save'] = g.addon.getSetting('save_login')
     users = loadUsers() if s.multiuser else []
@@ -52,21 +51,22 @@ def addUser(user):
 
 
 def switchUser(sel=-1):
-    g = Globals()
+    cur_user = loadUser('name')
     users = loadUsers()
     sel = g.dialog.select(getString(30133), [i['name'] for i in users]) if sel < 0 else sel
     if sel > -1:
-        if loadUser('name') == users[sel]['name']:
+        if cur_user == users[sel]['name']:
             return False
         user = users[sel]
         g.addon.setSetting('save_login', user['save'])
         g.addon.setSetting('login_acc', user['name'])
-        xbmc.executebuiltin('Container.Refresh')
+        if xbmc.getInfoLabel('Container.FolderPath') == g.pluginid:
+            xbmc.executebuiltin('RunPlugin(%s)' % g.pluginid)
+            xbmc.executebuiltin('Container.Refresh')
     return -1 < sel
 
 
 def removeUser():
-    g = Globals()
     cur_user = loadUser('name')
     users = loadUsers()
     sel = g.dialog.select(getString(30133), [i['name'] for i in users])
@@ -81,7 +81,6 @@ def removeUser():
 
 
 def renameUser():
-    g = Globals()
     cur_user = loadUser('name')
     users = loadUsers()
     sel = g.dialog.select(getString(30133), [i['name'] for i in users])

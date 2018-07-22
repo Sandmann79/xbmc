@@ -72,55 +72,57 @@ class AmazonTLD(Singleton):
 
     def CreateInfoFile(self, nfofile, path, content, Info, language, hasSubtitles=False):
         skip_keys = ('ishd', 'isadult', 'audiochannels', 'genre', 'cast', 'duration', 'asins', 'contentType')
-        fileinfo = '<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>'
-        fileinfo += '<%s>' % content
+        fileinfo = '<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>\n'
+        fileinfo += '<%s>\n' % content
         if 'Duration' in Info.keys():
-            fileinfo += '<runtime>%s</runtime>' % Info['Duration']
+            fileinfo += '<runtime>%s</runtime>\n' % Info['Duration']
         if 'Genre' in Info.keys():
             for genre in Info['Genre'].split('/'):
-                fileinfo += '<genre>%s</genre>' % genre.strip()
+                fileinfo += '<genre>%s</genre>\n' % genre.strip()
         if 'Cast' in Info.keys():
             for actor in Info['Cast']:
-                fileinfo += '<actor>'
-                fileinfo += '<name>%s</name>' % actor.strip()
-                fileinfo += '</actor>'
+                fileinfo += '<actor>\n'
+                fileinfo += '    <name>%s</name>\n' % actor.strip()
+                fileinfo += '</actor>\n'
         for key, value in Info.items():
             lkey = key.lower()
             if lkey == 'tvshowtitle':
-                fileinfo += '<showtitle>%s</showtitle>' % value
+                fileinfo += '<showtitle>%s</showtitle>\n' % value
             elif lkey == 'premiered' and 'TVShowTitle' in Info:
-                fileinfo += '<aired>%s</aired>' % value
+                fileinfo += '<aired>%s</aired>\n' % value
+            elif lkey == 'thumb':
+                fileinfo += '<%s aspect="poster" >%s</%s>\n' % (lkey, value, lkey)
             elif lkey == 'fanart':
-                fileinfo += '<%s><thumb>%s</thumb></%s>' % (lkey, value, lkey)
+                fileinfo += '<%s>\n    <thumb>%s</thumb>\n</%s>\n' % (lkey, value, lkey)
             elif lkey not in skip_keys:
-                fileinfo += '<%s>%s</%s>' % (lkey, value, lkey)
+                fileinfo += '<%s>%s</%s>\n' % (lkey, value, lkey)
         if content != 'tvshow':
-            fileinfo += '<fileinfo>'
-            fileinfo += '<streamdetails>'
-            fileinfo += '<audio>'
-            fileinfo += '<channels>%s</channels>' % Info['AudioChannels']
-            fileinfo += '<codec>aac</codec>'
-            fileinfo += '</audio>'
-            fileinfo += '<video>'
-            fileinfo += '<codec>h264</codec>'
-            fileinfo += '<durationinseconds>%s</durationinseconds>' % Info['Duration']
+            fileinfo += '<fileinfo>\n'
+            fileinfo += '   <streamdetails>\n'
+            fileinfo += '       <audio>\n'
+            fileinfo += '           <channels>%s</channels>\n' % Info['AudioChannels']
+            fileinfo += '           <codec>aac</codec>\n'
+            fileinfo += '       </audio>\n'
+            fileinfo += '       <video>\n'
+            fileinfo += '           <codec>h264</codec>\n'
+            fileinfo += '           <durationinseconds>%s</durationinseconds>\n' % Info['Duration']
             if Info['isHD']:
-                fileinfo += '<height>1080</height>'
-                fileinfo += '<width>1920</width>'
+                fileinfo += '           <height>1080</height>\n'
+                fileinfo += '           <width>1920</width>\n'
             else:
-                fileinfo += '<height>480</height>'
-                fileinfo += '<width>720</width>'
+                fileinfo += '           <height>480</height>\n'
+                fileinfo += '           <width>720</width>\n'
             if language:
-                fileinfo += '<language>%s</language>' % language
-            fileinfo += '<scantype>Progressive</scantype>'
-            fileinfo += '</video>'
+                fileinfo += '           <language>%s</language>\n' % language
+            fileinfo += '           <scantype>Progressive</scantype>\n'
+            fileinfo += '       </video>\n'
             if hasSubtitles:
-                fileinfo += '<subtitle>'
-                fileinfo += '<language>ger</language>'
-                fileinfo += '</subtitle>'
-            fileinfo += '</streamdetails>'
-            fileinfo += '</fileinfo>'
-        fileinfo += '</%s>' % content
+                fileinfo += '       <subtitle>\n'
+                fileinfo += '           <language>ger</language>\n'
+                fileinfo += '       </subtitle>\n'
+            fileinfo += '   </streamdetails>\n'
+            fileinfo += '</fileinfo>\n'
+        fileinfo += '</%s>\n' % content
 
         self.SaveFile(nfofile + '.nfo', fileinfo, path)
         return

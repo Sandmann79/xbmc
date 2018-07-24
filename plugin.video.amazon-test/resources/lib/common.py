@@ -41,8 +41,8 @@ class Globals(Singleton):
     library = 'video-library'
     DBVersion = 1.4
     PayCol = 'FFE95E01'
-    tmdb = b'b34490c056f0dd9e3ec9af2167a731f4'  # b64decode('YjM0NDkwYzA1NmYwZGQ5ZTNlYzlhZjIxNjdhNzMxZjQ=')
-    tvdb = b'1D62F2F90030C444'  # b64decode('MUQ2MkYyRjkwMDMwQzQ0NA==')
+    tmdb = 'b34490c056f0dd9e3ec9af2167a731f4'  # b64decode('YjM0NDkwYzA1NmYwZGQ5ZTNlYzlhZjIxNjdhNzMxZjQ=')
+    tvdb = '1D62F2F90030C444'  # b64decode('MUQ2MkYyRjkwMDMwQzQ0NA==')
     pluginid = argv[0]
     pluginhandle = int(argv[1])
     langID = {'movie': 30165, 'series': 30166, 'season': 30167, 'episode': 30173}

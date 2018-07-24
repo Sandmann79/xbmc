@@ -6,7 +6,6 @@ from urllib import quote_plus
 import shlex
 import subprocess
 import threading
-import xbmcgui
 import xbmcplugin
 from inputstreamhelper import Helper
 from .network import *
@@ -90,7 +89,6 @@ def _Input(mousex=0, mousey=0, click=0, keys=None, delay='200'):
 
 
 def PlayVideo(name, asin, adultstr, trailer, forcefb=0):
-    from common import Globals, Settings
     g = Globals()
     s = Settings()
 
@@ -316,12 +314,10 @@ def PlayVideo(name, asin, adultstr, trailer, forcefb=0):
 
             return True, scr_path + ' ' + scr_param.replace('{f}', fr).replace('{u}', videoUrl)
 
-        os_path = None
-        if g.OS_WINDOWS & g.platform: os_path = ('C:\\Program Files\\', 'C:\\Program Files (x86)\\')
-        if g.OS_LINUX & g.platform: os_path = ('/usr/bin/', '/usr/local/bin/')
-        if g.OS_OSX & g.platform: os_path = 'open -a '
-        # path(0,win,lin,osx), kiosk, profile, args
+        br_platform = (g.platform & -g.platform).bit_length()
+        os_paths = [None, ('C:\\Program Files\\', 'C:\\Program Files (x86)\\'), ('/usr/bin/', '/usr/local/bin/'), 'open -a '][br_platform]
 
+        # path(0,win,lin,osx), kiosk, profile, args
         br_config = [[(None, ['Internet Explorer\\iexplore.exe'], '', ''), '-k ', '', ''],
                      [(None, ['Google\\Chrome\\Application\\chrome.exe'],
                        ['google-chrome', 'google-chrome-stable', 'google-chrome-beta', 'chromium-browser'], '"/Applications/Google Chrome.app"'),
@@ -334,8 +330,8 @@ def PlayVideo(name, asin, adultstr, trailer, forcefb=0):
             br_path = ''
 
         if (not g.platform & g.OS_OSX) and (not cust_br):
-            for path in os_path:
-                for exe_file in br_config[s.browser][0][g.platform]:
+            for path in os_paths:
+                for exe_file in br_config[s.browser][0][br_platform]:
                     if xbmcvfs.exists(OSPJoin(path, exe_file)):
                         br_path = path + exe_file
                         break
@@ -355,7 +351,7 @@ def PlayVideo(name, asin, adultstr, trailer, forcefb=0):
 
         if g.platform & g.OS_OSX:
             if not cust_br:
-                br_path = os_path + br_config[s.browser][0][g.OS_OSX]
+                br_path = os_paths + br_config[s.browser][0][3]
             if br_args.strip():
                 br_args = '--args ' + br_args
 

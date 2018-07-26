@@ -28,91 +28,62 @@ import requests
 import pickle
 import warnings
 
-# statics which never change
-tmdb = b64decode('YjM0NDkwYzA1NmYwZGQ5ZTNlYzlhZjIxNjdhNzMxZjQ=')
-tvdb = b64decode('MUQ2MkYyRjkwMDMwQzQ0NA==')
-na = 'not available'
+
+class variables:
+    def __init__(self):
+        self.addon = xbmcaddon.Addon()
+        self.multiuser = self.addon.getSetting('multiuser') == 'true'
+        self.verifySsl = self.addon.getSetting('ssl_verif') == 'false'
+        self.playMethod = int(self.addon.getSetting('playmethod'))
+        self.onlyGer = self.addon.getSetting('content_filter') == 'true'
+        self.hasExtRC = xbmc.getCondVisibility('System.HasAddon(script.chromium_remotecontrol)')
+        self.useIntRC = self.addon.getSetting("remotectrl") == 'true'
+        self.browser = int(self.addon.getSetting("browser"))
+        self.RMC_vol = self.addon.getSetting("remote_vol") == 'true'
+        self.verbLog = self.addon.getSetting('logging') == 'true'
+        self.usesqlite = self.addon.getSetting('dbsystem') == '0'
+        self.showfanart = self.addon.getSetting("useshowfanart") == 'true'
+        self.tvdb_art = self.addon.getSetting("tvdb_art")
+        self.tmdb_art = self.addon.getSetting("tmdb_art")
+
+        self.sessions = {}
+
+        try:
+            self.pluginhandle = int(sys.argv[1])
+            params = re.sub('<|>', '', sys.argv[2])
+        except IndexError:
+            self.pluginhandle = -1
+            params = ''
+
+        self.args = dict(urlparse.parse_qsl(urlparse.urlparse(params).query))
+
+
+var = variables()
+pluginname = var.addon.getAddonInfo('name')
+pluginpath = var.addon.getAddonInfo('path').decode('utf-8')
+pldatapath = xbmc.translatePath(var.addon.getAddonInfo('profile')).decode('utf-8')
+configpath = os.path.join(pldatapath, 'config')
+homepath = xbmc.translatePath('special://home').decode('utf-8')
+kodi_mjver = int(xbmc.getInfoLabel('System.BuildVersion')[0:2])
+CookieFile = os.path.join(pldatapath, 'cookies.lwp')
+def_fanart = os.path.join(pluginpath, 'fanart.jpg')
 BaseUrl = 'https://www.amazon.de'
 ATV_URL = 'https://atv-ps-eu.amazon.de'
 movielib = '/gp/video/%s/movie/'
 tvlib = '/gp/video/%s/tv/'
 lib = 'video-library'
 wl = 'watchlist'
-Ages = [('FSK 0', 'FSK 0'), ('FSK 6', 'FSK 6'), ('FSK 12', 'FSK 12'), ('FSK 16', 'FSK 16'), ('FSK 18', 'FSK 18')]
 is_addon = 'inputstream.adaptive'
-regex_ovf = "((?i)(\[|\()(omu|ov).*(\)|\]))|\sOmU"
-
-# things which has to be evaluated only once
-addon = xbmcaddon.Addon()
-pluginname = addon.getAddonInfo('name')
-pluginpath = addon.getAddonInfo('path').decode('utf-8')
-pldatapath = xbmc.translatePath(addon.getAddonInfo('profile')).decode('utf-8')
-configpath = os.path.join(pldatapath, 'config')
-homepath = xbmc.translatePath('special://home').decode('utf-8')
-CookieFile = os.path.join(pldatapath, 'cookies.lwp')
-def_fanart = os.path.join(pluginpath, 'fanart.jpg')
-kodi_mjver = int(xbmc.getInfoLabel('System.BuildVersion')[0:2])
+tmdb = b64decode('YjM0NDkwYzA1NmYwZGQ5ZTNlYzlhZjIxNjdhNzMxZjQ=')
+tvdb = b64decode('MUQ2MkYyRjkwMDMwQzQ0NA==')
+na = 'not available'
 Dialog = xbmcgui.Dialog()
-sessions = {}
-
+regex_ovf = "((?i)(\[|\()(omu|ov).*(\)|\]))|\sOmU"
+Ages = [('FSK 0', 'FSK 0'), ('FSK 6', 'FSK 6'), ('FSK 12', 'FSK 12'), ('FSK 16', 'FSK 16'), ('FSK 18', 'FSK 18')]
 
 socket.setdefaulttimeout(30)
-
 warnings.simplefilter('error', requests.packages.urllib3.exceptions.SNIMissingWarning)
 warnings.simplefilter('error', requests.packages.urllib3.exceptions.InsecurePlatformWarning)
-
-
-def init_common():
-    global addon
-    global verbLog
-    global playMethod
-    global onlyGer
-    global kodi_mjver
-    global multiuser
-    global verifySsl
-    global pluginhandle
-    global args
-
-    #get new addon instance to reflect setting changes
-    addon = xbmcaddon.Addon()
-
-    #get current settings
-    verbLog = addon.getSetting('logging') == 'true'
-    playMethod = int(addon.getSetting("playmethod"))
-    onlyGer = addon.getSetting('content_filter') == 'true'
-    multiuser = addon.getSetting('multiuser') == 'true'
-    verifySsl = addon.getSetting('ssl_verif') == 'false'
-
-    try:
-        pluginhandle = int(sys.argv[1])
-        params = re.sub('<|>', '', sys.argv[2])
-    except IndexError:
-        pluginhandle = -1
-        params = ''
-
-    args = dict(urlparse.parse_qsl(urlparse.urlparse(params).query))
-    Log('Args: %s' % args)
-
-def get_addon():
-    return addon
-
-def get_args():
-    return args
-
-def get_pluginhandle():
-    return pluginhandle
-
-def get_multiuser():
-    return multiuser
-
-def get_play_method():
-    return playMethod
-
-def get_verb_log():
-    return verbLog
-
-def get_only_ger():
-    return onlyGer
 
 
 class AgeSettings(pyxbmct.AddonDialogWindow):
@@ -239,11 +210,11 @@ def getURL(url, useCookie=False, silent=False, headers=None, rjson=True, attempt
     # Create sessions for keep-alives and connection pooling
     if None is not host:
         host = host.group(1)
-        if host in sessions:
-            session = sessions[host]
+        if host in var.sessions:
+            session = var.sessions[host]
         else:
             session = requests.Session()
-            sessions[host] = session
+            var.sessions[host] = session
     else:
         session = requests.Session()
 
@@ -253,7 +224,7 @@ def getURL(url, useCookie=False, silent=False, headers=None, rjson=True, attempt
         cj = MechanizeLogin() if isinstance(useCookie, bool) else useCookie
         if isinstance(cj, bool):
             return retval
-    if (not silent) or verbLog:
+    if (not silent) or var.verbLog:
         dispurl = url
         dispurl = re.sub('(?i)%s|%s|&token=\w+|&customerId=\w+' % (tvdb, tmdb), '', url).strip()
         Log('%sURL: %s' % ('check' if check else 'get', dispurl))
@@ -268,7 +239,7 @@ def getURL(url, useCookie=False, silent=False, headers=None, rjson=True, attempt
 
     try:
         method = 'POST' if postdata else 'GET'
-        r = session.request(method, url, data=postdata, headers=headers, cookies=cj, verify=verifySsl)
+        r = session.request(method, url, data=postdata, headers=headers, cookies=cj, verify=var.verifySsl)
         response = r.text if not check else 'OK'
         if r.status_code >= 400:
             Log('Error %s' % r.status_code)
@@ -307,7 +278,7 @@ def getURL(url, useCookie=False, silent=False, headers=None, rjson=True, attempt
 
 
 def WriteLog(data, fn=''):
-    if not verbLog:
+    if not var.verbLog:
         return
     if fn:
         fn = '-' + fn
@@ -321,7 +292,7 @@ def WriteLog(data, fn=''):
 
 
 def Log(msg, level=xbmc.LOGNOTICE):
-    if level == xbmc.LOGDEBUG and verbLog:
+    if level == xbmc.LOGDEBUG and var.verbLog:
         level = xbmc.LOGNOTICE
     msg = '[%s] %s' % (pluginname, msg)
     xbmc.log(msg.encode('utf-8'), level)
@@ -362,7 +333,7 @@ def addDir(name, mode, sitemode, url='', thumb='', fanart='', infoLabels=None, t
     if cm:
         item.addContextMenuItems(cm)
 
-    xbmcplugin.addDirectoryItem(handle=pluginhandle, url=url, listitem=item, isFolder=True, totalItems=totalItems)
+    xbmcplugin.addDirectoryItem(var.pluginhandle, url=url, listitem=item, isFolder=sitemode != 'switchUser', totalItems=totalItems)
 
 
 def addVideo(name, asin, poster=None, fanart=None, infoLabels=None, totalItems=0, cm=[], trailer=False,
@@ -377,7 +348,7 @@ def addVideo(name, asin, poster=None, fanart=None, infoLabels=None, totalItems=0
 
     item = xbmcgui.ListItem(name, thumbnailImage=poster)
     item.setProperty('fanart_image', fanart)
-    item.setProperty('IsPlayable', str(playMethod == 3).lower())
+    item.setProperty('IsPlayable', str(var.playMethod == 3).lower())
     cm.insert(0, (getString(30101), 'Action(ToggleWatched)'))
 
     item.addStreamInfo('video', {'width': 1920, 'height': 1080} if isHD else {'width': 720, 'height': 480})
@@ -397,19 +368,19 @@ def addVideo(name, asin, poster=None, fanart=None, infoLabels=None, totalItems=0
     cm.insert(1, (getString(30118), 'RunPlugin(%s)' % (url + '&forcefb=1')))
     item.addContextMenuItems(cm)
     item.setInfo(type='Video', infoLabels=getInfolabels(infoLabels))
-    xbmcplugin.addDirectoryItem(handle=pluginhandle, url=url, listitem=item, isFolder=False, totalItems=totalItems)
+    xbmcplugin.addDirectoryItem(var.pluginhandle, url=url, listitem=item, isFolder=False, totalItems=totalItems)
 
 
 def addText(name):
     item = xbmcgui.ListItem(name)
     item.setProperty('IsPlayable', 'false')
-    xbmcplugin.addDirectoryItem(handle=pluginhandle, url=sys.argv[0], listitem=item)
+    xbmcplugin.addDirectoryItem(var.pluginhandle, url=sys.argv[0], listitem=item)
 
 
 def toogleWatchlist(asin=None, action='add'):
     if not asin:
-        asin = args.get('asin')
-        action = 'remove' if args.get('remove') == '1' else 'add'
+        asin = var.args.get('asin')
+        action = 'remove' if var.args.get('remove') == '1' else 'add'
 
     cookie = MechanizeLogin()
     if not cookie:
@@ -467,9 +438,9 @@ def LogIn(ask=True):
     user = loadUser()
     email = user['email']
     password = decode(user['password'])
-    savelogin = addon.getSetting('save_login') == 'true'
+    savelogin = var.addon.getSetting('save_login') == 'true'
     useMFA = False
-    if ask and multiuser:
+    if ask and var.multiuser:
         email = ''
 
     if ask:
@@ -481,11 +452,10 @@ def LogIn(ask=True):
     else:
         if not email or not password:
             Dialog.notification(getString(30200), getString(30216))
-            xbmc.executebuiltin('Addon.OpenSettings(%s)' % addon.getAddonInfo('id'))
+            xbmc.executebuiltin('Addon.OpenSettings(%s)' % var.addon.getAddonInfo('id'))
             return False
 
     if password:
-        xbmc.executebuiltin('ActivateWindow(busydialog)')
         cj = requests.cookies.RequestsCookieJar()
         br = mechanize.Browser()
         br.set_handle_robots(False)
@@ -505,7 +475,6 @@ def LogIn(ask=True):
             else:
                 break
         else:
-            xbmc.executebuiltin('Dialog.Close(busydialog)')
             Dialog.ok(getString(30200), getString(30213))
             return False
 
@@ -524,7 +493,6 @@ def LogIn(ask=True):
                          ('Upgrade-Insecure-Requests', '1')]
         br.submit()
         response, soup = parseHTML(br)
-        xbmc.executebuiltin('Dialog.Close(busydialog)')
         WriteLog(response, 'login')
 
         while any(s in response for s in ['auth-mfa-form', 'ap_dcq_form', 'ap_captcha_img_label', 'claimspicker', 'fwcim-form']):
@@ -535,7 +503,6 @@ def LogIn(ask=True):
             br.submit()
             response, soup = parseHTML(br)
             WriteLog(response, 'login-mfa')
-            xbmc.executebuiltin('Dialog.Close(busydialog)')
 
         if 'action=sign-out' in response:
             try:
@@ -546,12 +513,12 @@ def LogIn(ask=True):
             if not ask:
                 usr = user['name']
 
-            if multiuser and ask:
+            if var.multiuser and ask:
                 usr = Dialog.input(getString(30179), usr).decode('utf-8')
                 if not usr:
                     return False
             if useMFA:
-                addon.setSetting('save_login', 'false')
+                var.addon.setSetting('save_login', 'false')
                 savelogin = False
 
             user = loadUser(True)
@@ -565,8 +532,8 @@ def LogIn(ask=True):
 
             if ask:
                 remLoginData(False)
-                addon.setSetting('login_acc', usr)
-                if not multiuser:
+                var.addon.setSetting('login_acc', usr)
+                if not var.multiuser:
                     Dialog.ok(getString(30215), '{0} {1}'.format(getString(30014), usr))
 
             addUser(user)
@@ -593,20 +560,20 @@ def LogIn(ask=True):
 def loadUsers():
     users = json.loads(getConfig('accounts.lst', '[]'))
     if not users:
-        addon.setSetting('login_acc', '')
+        var.addon.setSetting('login_acc', '')
     return users
 
 
 def loadUser(empty=False):
-    cur_user = addon.getSetting('login_acc').decode('utf-8')
+    cur_user = var.addon.getSetting('login_acc').decode('utf-8')
     users = loadUsers()
     user = None if empty else [i for i in users if cur_user == i['name']]
     return user[0] if user else {'email': '', 'password': '', 'name': '', 'save': '', 'cookie': ''}
 
 
 def addUser(user):
-    user['save'] = addon.getSetting('save_login')
-    users = loadUsers() if multiuser else []
+    user['save'] = var.addon.getSetting('save_login')
+    users = loadUsers() if var.multiuser else []
     num = [n for n, i in enumerate(users) if user['name'] == i['name']]
     if num:
         users[num[0]] = user
@@ -618,46 +585,51 @@ def addUser(user):
 
 
 def switchUser():
-    users = loadUsers()
-    sel = Dialog.select(getString(30177), [i['name'] for i in users])
+    users, sel = selectUser()
     if sel > -1:
         if loadUser()['name'] == users[sel]['name']:
             return False
         user = users[sel]
-        addon.setSetting('save_login', user['save'])
-        addon.setSetting('login_acc', user['name'])
-        xbmc.executebuiltin('Container.Refresh')
+        var.addon.setSetting('save_login', user['save'])
+        var.addon.setSetting('login_acc', user['name'])
+        if xbmc.getInfoLabel('Container.FolderPath') == sys.argv[0]:
+            xbmc.executebuiltin('RunPlugin(%s)' % sys.argv[0])
+            xbmc.executebuiltin('Container.Refresh')
     return -1 < sel
 
 
 def removeUser():
     cur_user = loadUser()['name']
-    users = loadUsers()
-    sel = Dialog.select(getString(30177), [i['name'] for i in users])
+    users, sel = selectUser()
     if sel > -1:
         user = users[sel]
         users.remove(user)
         writeConfig('accounts.lst', json.dumps(users))
         if user['name'] == cur_user:
-            addon.setSetting('login_acc', '')
+            var.addon.setSetting('login_acc', '')
             if not switchUser():
                 xbmc.executebuiltin('Container.Refresh')
 
 
 def renameUser():
     cur_user = loadUser()['name']
-    users = loadUsers()
-    sel = Dialog.select(getString(30177), [i['name'] for i in users])
+    users, sel = selectUser()
     if sel > -1:
         keyboard = xbmc.Keyboard(users[sel]['name'], getString(30135))
         keyboard.doModal()
         if keyboard.isConfirmed() and keyboard.getText():
             usr = keyboard.getText()
             if users[sel]['name'] == cur_user:
-                addon.setSetting('login_acc', usr)
+                var.addon.setSetting('login_acc', usr)
                 xbmc.executebuiltin('Container.Refresh')
             users[sel]['name'] = usr
             writeConfig('accounts.lst', json.dumps(users))
+
+
+def selectUser():
+    users = loadUsers()
+    sel = Dialog.select(getString(30177), [i['name'] for i in users])
+    return users, sel
 
 
 def MFACheck(br, email, soup):
@@ -669,7 +641,6 @@ def MFACheck(br, email, soup):
         kb = xbmc.Keyboard('', msgtxt)
         kb.doModal()
         if kb.isConfirmed() and kb.getText():
-            xbmc.executebuiltin('ActivateWindow(busydialog)')
             br.select_form(nr=0)
             br['otpCode'] = kb.getText()
         else:
@@ -695,7 +666,6 @@ def MFACheck(br, email, soup):
 
         ret = Dialog.input(q_title[sel])
         if ret:
-            xbmc.executebuiltin('ActivateWindow(busydialog)')
             br.select_form(nr=0)
             br[q_id[sel]] = ret
         else:
@@ -704,7 +674,6 @@ def MFACheck(br, email, soup):
         wnd = Captcha((getString(30008).split('.')[0]), soup, email)
         wnd.doModal()
         if wnd.email and wnd.cap and wnd.pwd:
-            xbmc.executebuiltin('ActivateWindow(busydialog)')
             br.select_form(nr=0)
             br['email'] = wnd.email
             br['password'] = wnd.pwd
@@ -727,7 +696,6 @@ def MFACheck(br, email, soup):
             sel = 100 if Dialog.ok(cs_title, cs_hint) else -1
 
         if sel > -1:
-            xbmc.executebuiltin('ActivateWindow(busydialog)')
             br.select_form(nr=0)
             if sel < 100:
                 br[choices[sel][1]] = [choices[sel][2]]
@@ -737,7 +705,6 @@ def MFACheck(br, email, soup):
         msg = soup.find('div', attrs={'class': 'a-row a-spacing-micro cvf-widget-input-code-label'}).contents[0].strip()
         ret = Dialog.input(msg)
         if ret:
-            xbmc.executebuiltin('ActivateWindow(busydialog)')
             br.select_form(nr=0)
             Log(br)
             br['code'] = ret
@@ -823,7 +790,7 @@ def GET_ASINS(content):
 
 def SCRAP_ASINS(aurl, cj=True):
     asins = []
-    wl_order = ['DATE_ADDED_DESC', 'TITLE_DESC', 'TITLE_ASC'][int('0'+addon.getSetting("wl_order"))]
+    wl_order = ['DATE_ADDED_DESC', 'TITLE_DESC', 'TITLE_ASC'][int('0'+var.addon.getSetting("wl_order"))]
     url = BaseUrl + aurl + '?ie=UTF8&sort=' + wl_order
     content = getURL(url, useCookie=cj, rjson=False)
     WriteLog(content, 'watchlist')
@@ -837,7 +804,7 @@ def SCRAP_ASINS(aurl, cj=True):
 
 
 def getString(string_id):
-    src = xbmc if string_id < 30000 else addon
+    src = xbmc if string_id < 30000 else var.addon
     locString = src.getLocalizedString(string_id)
     return locString
 
@@ -849,7 +816,7 @@ def remLoginData(info=True):
     writeConfig('login_pass', '')
 
     if info:
-        addon.setSetting('login_acc', '')
+        var.addon.setSetting('login_acc', '')
         writeConfig('accounts.lst', '')
         Dialog.notification(pluginname, getString(30211), xbmcgui.NOTIFICATION_INFO)
 
@@ -890,15 +857,15 @@ def getCategories():
 
 def SetView(content, view=None, updateListing=False):
     views = [50, 51, 52, 53, 54, 55, 500, 501, 502, -1]
-    xbmcplugin.setContent(pluginhandle, content)
-    viewenable = addon.getSetting("viewenable")
+    xbmcplugin.setContent(var.pluginhandle, content)
+    viewenable = var.addon.getSetting("viewenable")
 
     if viewenable == 'true' and view:
-        viewid = views[int(addon.getSetting(view))]
+        viewid = views[int(var.addon.getSetting(view))]
         if viewid == -1:
-            viewid = int(addon.getSetting(view.replace('view', 'id')))
+            viewid = int(var.addon.getSetting(view.replace('view', 'id')))
         xbmc.executebuiltin('Container.SetViewMode(%s)' % viewid)
-    xbmcplugin.endOfDirectory(pluginhandle, updateListing=updateListing)
+    xbmcplugin.endOfDirectory(var.pluginhandle, updateListing=updateListing)
 
 
 def compasin(asinlist, searchstring, season=False):
@@ -949,7 +916,7 @@ def getTypes(items, col):
 
 
 def openSettings():
-    aid = args.get('url')
+    aid = var.args.get('url')
     aid = is_addon if aid == 'is' else aid
     xbmcaddon.Addon(aid).openSettings()
 
@@ -1113,3 +1080,5 @@ UserAgent = getConfig('UserAgent')
 AgePin = getConfig('age_pin')
 PinReq = int(getConfig('pin_req', '0'))
 RestrAges = ','.join(a[1] for a in Ages[PinReq:]) if AgePin else ''
+
+Log('Args: %s' % var.args)

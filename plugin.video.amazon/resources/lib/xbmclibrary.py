@@ -9,14 +9,16 @@ import listmovie
 
 from BeautifulSoup import BeautifulSoup, Tag
 
-def __cr_nfo():
-    return get_addon().getSetting('cr_nfo') == 'true'
-
-def __ms_mov():
-    return get_addon().getSetting('mediasource_movie') or 'Amazon Movies'
-
-def __ms_tv():
-    return get_addon().getSetting('mediasource_tv') or 'Amazon TV'
+cr_nfo = var.addon.getSetting('cr_nfo') == 'true'
+ms_mov = var.addon.getSetting('mediasource_movie')
+ms_tv = var.addon.getSetting('mediasource_tv')
+EXPORT_PATH = pldatapath
+if var.addon.getSetting('enablelibraryfolder') == 'true':
+    EXPORT_PATH = xbmc.translatePath(var.addon.getSetting('customlibraryfolder')).decode('utf-8')
+MOVIE_PATH = os.path.join(EXPORT_PATH, 'Movies')
+TV_SHOWS_PATH = os.path.join(EXPORT_PATH, 'TV')
+ms_mov = ms_mov if ms_mov else 'Amazon Movies'
+ms_tv = ms_tv if ms_tv else 'Amazon TV'
 
 
 def UpdateLibrary():
@@ -31,15 +33,6 @@ def CreateDirectory(dir_path):
 
 
 def SetupLibrary():
-    global MOVIE_PATH
-    global TV_SHOWS_PATH
-
-    EXPORT_PATH = pldatapath
-    if get_addon().getSetting('enablelibraryfolder') == 'true':
-        EXPORT_PATH = xbmc.translatePath(get_addon().getSetting('customlibraryfolder')).decode('utf-8')
-    MOVIE_PATH = os.path.join(EXPORT_PATH, 'Movies')
-    TV_SHOWS_PATH = os.path.join(EXPORT_PATH, 'TV')
-
     CreateDirectory(MOVIE_PATH)
     CreateDirectory(TV_SHOWS_PATH)
     SetupAmazonLibrary()
@@ -91,10 +84,10 @@ def streamDetails(Info, language='ger', hasSubtitles=False):
     return fileinfo
 
 
-def EXPORT_MOVIE(asin=False, makeNFO=__cr_nfo()):
+def EXPORT_MOVIE(asin=False, makeNFO=cr_nfo):
     SetupLibrary()
     if not asin:
-        asin = get_args().get('asin')
+        asin = var.args.get('asin')
     for moviedata in moviesDB.lookupMoviedb(asin, single=False):
         Info = listmovie.ADD_MOVIE_ITEM(moviedata, onlyinfo=True)
         filename = Info['Title']
@@ -120,7 +113,7 @@ def EXPORT_MOVIE(asin=False, makeNFO=__cr_nfo()):
 
 def EXPORT_SHOW(asin=None):
     if not asin:
-        asin = get_args().get('asin')
+        asin = var.args.get('asin')
     for data in tvDB.lookupTVdb(asin, tbl='shows', single=False):
         Info = listtv.ADD_SHOW_ITEM(data, onlyinfo=True)
         for showasin in Info['Asins'].split(','):
@@ -132,7 +125,7 @@ def EXPORT_SHOW(asin=None):
 
 def EXPORT_SEASON(asin=None, dispnotif=True):
     if not asin:
-        asin = get_args().get('asin')
+        asin = var.args.get('asin')
     for data in tvDB.lookupTVdb(asin, tbl='seasons', single=False):
         Info = listtv.ADD_SEASON_ITEM(data, onlyinfo=True)
         for seasonasin in Info['Asins'].split(','):
@@ -143,9 +136,9 @@ def EXPORT_SEASON(asin=None, dispnotif=True):
                     dispnotif = False
 
 
-def EXPORT_EPISODE(asin=None, makeNFO=__cr_nfo(), dispnotif=True):
+def EXPORT_EPISODE(asin=None, makeNFO=cr_nfo, dispnotif=True):
     if not asin:
-        asin = get_args().get('asin')
+        asin = var.args.get('asin')
     for data in tvDB.lookupTVdb(asin, single=False):
         Info = listtv.ADD_EPISODE_ITEM(data, onlyinfo=True)
         Info['Title'] = cleanName(Info['EpisodeName'])
@@ -178,7 +171,7 @@ def EXPORT_EPISODE(asin=None, makeNFO=__cr_nfo(), dispnotif=True):
 def SetupAmazonLibrary():
     source_path = xbmc.translatePath('special://profile/sources.xml').decode('utf-8')
     source_added = False
-    source = {__ms_mov(): MOVIE_PATH, __ms_tv(): TV_SHOWS_PATH}
+    source = {ms_mov: MOVIE_PATH, ms_tv: TV_SHOWS_PATH}
 
     if xbmcvfs.exists(source_path):
         srcfile = xbmcvfs.File(source_path)

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
-from common import *
+from .common import *
 import listtv
 import listmovie
 
@@ -112,14 +112,14 @@ def SEARCH_DB():
 
 
 def ExportList():
-    asinlist = get_args().get('url')
+    asinlist = var.args.get('url')
     ListCont(movielib % asinlist)
     ListCont(tvlib % asinlist)
 
 
 def getSimilarities():
     import tv
-    data = getList(NumberOfResults=250, catalog='GetSimilarities', asin=get_args().get('asin'))
+    data = getList(NumberOfResults=250, catalog='GetSimilarities', asin=var.args.get('asin'))
     for title in data['message']['body']['titles']:
         asin = title['titleId']
         if not listmovie.LIST_MOVIES('asin', asin, search=True):
@@ -131,10 +131,10 @@ def getSimilarities():
 
 
 def ListMenu():
-    l = get_args().get('url')
+    l = var.args.get('url')
     addDir(getString(30104), 'appfeed', 'ListCont', movielib % l)
     addDir(getString(30107), 'appfeed', 'ListCont', tvlib % l)
-    xbmcplugin.endOfDirectory(pluginhandle)
+    xbmcplugin.endOfDirectory(var.pluginhandle)
 
 
 def ListCont(export=False):
@@ -145,11 +145,11 @@ def ListCont(export=False):
         url = export
         export = True
     else:
-        url = get_args().get('url')
+        url = var.args.get('url')
 
     mov = True if 'movie' in url else False
 
-    if get_addon().getSetting('disptvshow') == 'true':
+    if var.addon.getSetting('disptvshow') == 'true':
         showonly = True
         rvalue = 'seriesasin'
 
@@ -197,7 +197,7 @@ def RefreshList():
 
     import tv
     import movies
-    l = get_args().get('url')
+    l = var.args.get('url')
     mvlist = []
     tvlist = []
     pDialog = xbmcgui.DialogProgress()

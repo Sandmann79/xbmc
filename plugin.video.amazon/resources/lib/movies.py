@@ -2,12 +2,11 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 from service import updateRunning
-from common import *
+from .common import *
 import appfeed
 import db
 
 MAX = 140
-tmdb_art = get_addon().getSetting("tmdb_art")
 
 
 def addMoviedb(moviedata):
@@ -153,7 +152,7 @@ def addMoviesdb(full_update=True, cj=True):
                 if 'titleId' in title.keys():
                     asin = title['titleId']
                     if '_duplicate_' not in title['title']:
-                        if get_only_ger() and re.compile(regex_ovf).search(title['title']):
+                        if var.onlyGer and re.compile(regex_ovf).search(title['title']):
                             Log('Movie Ignored: %s' % title['title'], xbmc.LOGDEBUG)
                             found = True
                         else:
@@ -266,13 +265,13 @@ def setNewest(compList=False):
 
 
 def updateFanart():
-    if tmdb_art == '0':
+    if var.tmdb_art == '0':
         return
 
     sqlstring = "select asin, movietitle, year, fanart from movies where fanart is null"
     c = MovieDB.cursor()
     Log('Movie Update: Updating Fanart')
-    if tmdb_art == '2':
+    if var.tmdb_art == '2':
         sqlstring += " or fanart like '%images-amazon.com%'"
 
     db.waitforDB(MovieDB)

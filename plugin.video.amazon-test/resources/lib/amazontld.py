@@ -333,7 +333,7 @@ class AmazonTLD(Singleton):
     def listContent(self, catalog, url, page, parent, export=False):
         oldurl = url
         ResPage = 240 if export else self._s.MaxResults
-        url = '%s&NumberOfResults=%s&StartIndex=%s&Detailed=T' % (url, ResPage, (page - 1) * ResPage)
+        url = '%s&NumberOfResults=%s&StartIndex=%s&Detailed=T&mobileClient=true' % (url, ResPage, (page - 1) * ResPage)
         titles = getATVData(catalog, url)
         titlelist = []
 
@@ -720,7 +720,7 @@ class AmazonTLD(Singleton):
         if export:
             self.SetupLibrary()
 
-        url = 'ASINList=' + asins
+        url = 'asinList=' + asins
         listing += '_show' if self._s.dispShowOnly and 'movie' not in cont and not export else ''
         self.listContent('GetASINDetails', url, 1, listing, export)
 

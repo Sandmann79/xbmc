@@ -1,7 +1,8 @@
 from __future__ import unicode_literals
 import xbmc
 import xbmcaddon
-from resources.lib.common import getConfig, writeConfig, Log
+from resources.lib.common import getConfig, writeConfig, Log, var
+var.__init__()
 
 
 def strp(value, form):
@@ -40,7 +41,7 @@ if __name__ == '__main__':
     monitor = xbmc.Monitor()
     Log('AmazonDB: Service Start')
     writeConfig('update_running', 'false')
-    freq = int('0' + addon.getSetting('auto_update'))
+    freq = int('0' + var.addon.getSetting('auto_update'))
     checkfreq = 60
     idleupdate = 300
     startidle = 0
@@ -48,10 +49,9 @@ if __name__ == '__main__':
     if freq:
         while not monitor.abortRequested():
             from datetime import datetime, timedelta
-            addon = xbmcaddon.Addon()
             today = datetime.today()
-            freq = addon.getSetting('auto_update')
-            time = addon.getSetting('update_time')
+            freq = var.addon.getSetting('auto_update')
+            time = var.addon.getSetting('update_time')
             time = '00:00' if time == '' else time
             last = getConfig('last_update', '1970-01-01')
             update_run = updateRunning()
@@ -67,13 +67,13 @@ if __name__ == '__main__':
             if lastidle < startidle:
                 startidle = 0
             idletime = lastidle - startidle
-            if addon.getSetting('wait_idle') != 'true':
+            if var.addon.getSetting('wait_idle') != 'true':
                 idletime = idleupdate
 
             if dtlast + timedelta(days=freqdays) <= today and idletime >= idleupdate:
                 if not update_run:
                     Log('AmazonDB: Starting DBUpdate (%s / %s)' % (dtlast, today))
-                    xbmc.executebuiltin('XBMC.RunPlugin(plugin://%s/?mode=appfeed&sitemode=updateAll)' % addon.getAddonInfo('id'))
+                    xbmc.executebuiltin('XBMC.RunPlugin(plugin://%s/?mode=appfeed&sitemode=updateAll)' % var.addon.getAddonInfo('id'))
 
             if monitor.waitForAbort(checkfreq):
                 break

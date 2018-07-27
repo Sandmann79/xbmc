@@ -2,13 +2,11 @@
 # !/usr/bin/env python
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
-from common import *
+from .common import *
 from service import updateRunning
 import db
 import appfeed
 
-tvdb_art = addon.getSetting("tvdb_art")
-Dialog = xbmcgui.Dialog()
 DialogPG = xbmcgui.DialogProgress()
 MAX = 140
 
@@ -202,9 +200,9 @@ def countDB(tbl):
 
 
 def delfromTVdb():
-    asins = args.get('asins')
-    title = args.get('title')
-    table = args.get('table')
+    asins = var.args.get('asins')
+    title = var.args.get('title')
+    table = var.args.get('table')
     strid = 30167 if table == 'seasons' else 30166
 
     if Dialog.yesno(getString(30155) % getString(strid), getString(30156) % title.decode('utf-8')):
@@ -347,7 +345,7 @@ def addTVdb(full_update=True, libasins=None, cj=True):
                     break
                 SEASONS_ASIN = title['titleId']
 
-                if onlyGer and not libasins and re.compile(regex_ovf).search(title['title']):
+                if var.onlyGer and not libasins and re.compile(regex_ovf).search(title['title']):
                     Log('Season Ignored: %s' % title['title'], xbmc.LOGDEBUG)
                     found = True
                 else:
@@ -616,16 +614,16 @@ def ASIN_ADD(titles, asins=None):
 
 
 def updateFanart():
-    if tvdb_art == '0':
+    if var.tvdb_art == '0':
         return
 
     seasons = False
     c = tvDB.cursor()
     sqlstring = "select asin, seriestitle, fanart, poster from shows where fanart is null"
     Log('TV Update: Updating Fanart')
-    if tvdb_art == '2':
+    if var.tvdb_art == '2':
         sqlstring += " or fanart like '%images-amazon.com%'"
-    if tvdb_art == '3':
+    if var.tvdb_art == '3':
         sqlstring += " or poster like '%images-amazon.com%'"
         seasons = True
     db.waitforDB(tvDB)
@@ -651,7 +649,7 @@ def updateFanart():
                 fanart = na
 
         db.cur_exec(c, 'update shows set fanart=? where asin = (?)', (fanart, asin))
-        if tvdb_art == '3':
+        if var.tvdb_art == '3':
             db.cur_exec(c, 'update shows set poster=? where asin = (?)', (poster, asin))
             if tvid:
                 for season, url in tvid.items():

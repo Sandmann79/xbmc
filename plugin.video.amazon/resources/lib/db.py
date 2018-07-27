@@ -1,16 +1,15 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
-from common import xbmc, addon, xbmcvfs, xbmcgui, os, Dialog, Log, getString, getConfig, writeConfig, homepath, pluginname
+from .common import xbmc, var, xbmcvfs, xbmcgui, os, Dialog, Log, getString, getConfig, writeConfig, homepath, pluginname
 from BeautifulSoup import BeautifulSoup
 
-usesqlite = addon.getSetting('dbsystem') == '0'
 dbplugin = 'script.module.amazon.database'
 dbpath = os.path.join(homepath, 'addons', dbplugin, 'lib')
 
 
 def waitforDB(cnx):
-    if not usesqlite:
+    if not var.usesqlite:
         return
 
     c = cnx.cursor()
@@ -28,16 +27,16 @@ def waitforDB(cnx):
 
 
 def getDBlocation(retvar):
-    custdb = addon.getSetting('customdbfolder') == 'true'
+    custdb = var.addon.getSetting('customdbfolder') == 'true'
     old_dbpath = xbmc.translatePath(getConfig('old_dbfolder')).decode('utf-8')
     cur_dbpath = dbpath
 
     if not old_dbpath:
         old_dbpath = cur_dbpath
     if custdb:
-        cur_dbpath = xbmc.translatePath(addon.getSetting('dbfolder')).decode('utf-8')
+        cur_dbpath = xbmc.translatePath(var.addon.getSetting('dbfolder')).decode('utf-8')
     else:
-        addon.setSetting('dbfolder', dbpath)
+        var.addon.setSetting('dbfolder', dbpath)
 
     orgDBfile = {'tv': os.path.join(dbpath, 'tv.db'), 'movie': os.path.join(dbpath, 'movies.db')}
     oldDBfile = {'tv': os.path.join(old_dbpath, 'tv.db'), 'movie': os.path.join(old_dbpath, 'movies.db')}
@@ -67,13 +66,13 @@ def cur_exec(cur, query, param=None):
               False: {'counttables': 'show tables like ?',
                       "?": "%s"}}
 
-    for k, v in syntax[usesqlite].items():
+    for k, v in syntax[var.usesqlite].items():
         query = query.replace(k, v)
 
-    param = '' if not param and usesqlite else param
+    param = '' if not param and var.usesqlite else param
     res = cur.execute(query, param)
 
-    return res if usesqlite else cur
+    return res if var.usesqlite else cur
 
 
 def copyDB(source, dest, ask=False):
@@ -89,7 +88,7 @@ def copyDB(source, dest, ask=False):
 
 def connSQL(dbname):
     cnx = None
-    if usesqlite:
+    if var.usesqlite:
         from sqlite3 import dbapi2
         DBfile = getDBlocation(dbname)
         if not xbmcvfs.exists(DBfile):
@@ -102,10 +101,10 @@ def connSQL(dbname):
         from mysql.connector import errorcode
         dbname = 'amazon_' + dbname
         mysql_config = {
-            'host': addon.getSetting('dbhost'),
-            'port': addon.getSetting('dbport'),
-            'user': addon.getSetting('dbuser'),
-            'password': addon.getSetting('dbpass'),
+            'host': var.addon.getSetting('dbhost'),
+            'port': var.addon.getSetting('dbport'),
+            'user': var.addon.getSetting('dbuser'),
+            'password': var.addon.getSetting('dbpass'),
             'database': dbname,
             'use_unicode': True,
             'get_warnings': True,
@@ -144,7 +143,7 @@ def loadSQLconfig():
         if videodb:
             for tag in videodb.findAll():
                 if tag.name in keys:
-                    addon.setSetting('db' + tag.name, tag.string)
+                    var.addon.setSetting('db' + tag.name, tag.string)
         else:
             Dialog.notification(pluginname, getString(30226))
     else:

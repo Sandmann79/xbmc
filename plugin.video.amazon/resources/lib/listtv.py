@@ -1,11 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
-from common import *
+from .common import *
 import xbmclibrary
 import tv
-
-showfanart = addon.getSetting("useshowfanart") == 'true'
 
 
 def LIST_TV_ROOT():
@@ -18,11 +16,11 @@ def LIST_TV_ROOT():
     addDir(getString(30145), 'listtv', 'LIST_TVSHOWS_TYPES', 'year')
     addDir(getString(30161), 'listtv', 'LIST_TVSHOWS_TYPES', 'network')
     addDir(getString(30162), 'listtv', 'LIST_TVSHOWS_TYPES', 'mpaa')
-    xbmcplugin.endOfDirectory(pluginhandle)
+    xbmcplugin.endOfDirectory(var.pluginhandle)
 
 
 def LIST_TVSHOWS_CATS():
-    catid = args.get('url')
+    catid = var.args.get('url')
     if catid:
         asins = tv.lookupTVdb(catid, rvalue='asins', name='title', tbl='categories')
         epidb = tv.lookupTVdb('', name='asin', rvalue='asin, seasonasin', tbl='episodes', single=False)
@@ -47,25 +45,25 @@ def LIST_TVSHOWS_CATS():
             if title:
                 addDir(title[0], 'listtv', 'LIST_TVSHOWS_CATS', title[0])
 
-        xbmcplugin.endOfDirectory(pluginhandle, updateListing=False)
+        xbmcplugin.endOfDirectory(var.pluginhandle, updateListing=False)
 
 
 def LIST_TVSHOWS_TYPES(tvtype=None):
     if not tvtype:
-        tvtype = args.get('url')
+        tvtype = var.args.get('url')
     if tvtype:
         for item in tv.getShowTypes(tvtype):
             addDir(item, 'listtv', 'LIST_TVSHOWS_FILTERED', tvtype)
-        xbmcplugin.addSortMethod(pluginhandle, xbmcplugin.SORT_METHOD_LABEL)
-        xbmcplugin.endOfDirectory(pluginhandle, updateListing=False)
+        xbmcplugin.addSortMethod(var.pluginhandle, xbmcplugin.SORT_METHOD_LABEL)
+        xbmcplugin.endOfDirectory(var.pluginhandle, updateListing=False)
 
 
 def LIST_TVSHOWS_FILTERED():
-    LIST_TVSHOWS(args.get('url'), args.get('name'))
+    LIST_TVSHOWS(var.args.get('url'), var.args.get('name'))
 
 
 def LIST_TVSHOWS_SORTED():
-    LIST_TVSHOWS(sortaz=False, sortcol=args.get('url'))
+    LIST_TVSHOWS(sortaz=False, sortcol=var.args.get('url'))
 
 
 def LIST_TVSHOWS(filterobj='', value=None, sortcol=False, sortaz=True, search=False, cmmode=0, export=False):
@@ -80,11 +78,11 @@ def LIST_TVSHOWS(filterobj='', value=None, sortcol=False, sortaz=True, search=Fa
     if not search:
         if sortaz:
             if 'year' not in filterobj:
-                xbmcplugin.addSortMethod(pluginhandle, xbmcplugin.SORT_METHOD_LABEL)
+                xbmcplugin.addSortMethod(var.pluginhandle, xbmcplugin.SORT_METHOD_LABEL)
 
-            xbmcplugin.addSortMethod(pluginhandle, xbmcplugin.SORT_METHOD_VIDEO_YEAR)
-            xbmcplugin.addSortMethod(pluginhandle, xbmcplugin.SORT_METHOD_VIDEO_RATING)
-            xbmcplugin.addSortMethod(pluginhandle, xbmcplugin.SORT_METHOD_STUDIO_IGNORE_THE)
+            xbmcplugin.addSortMethod(var.pluginhandle, xbmcplugin.SORT_METHOD_VIDEO_YEAR)
+            xbmcplugin.addSortMethod(var.pluginhandle, xbmcplugin.SORT_METHOD_VIDEO_RATING)
+            xbmcplugin.addSortMethod(var.pluginhandle, xbmcplugin.SORT_METHOD_STUDIO_IGNORE_THE)
         SetView('tvshows', 'showview')
     return count
 
@@ -134,18 +132,18 @@ def ADD_SHOW_ITEM(showdata, mode='listtv', submode='LIST_TV_SEASONS', cmmode=0, 
 
 
 def LIST_TV_SEASONS():
-    seriesasin = args.get('url')
+    seriesasin = var.args.get('url')
     for asin in seriesasin.split(','):
         seasons = tv.loadTVSeasonsdb(seriesasin=asin).fetchall()
         for seasondata in seasons:
             ADD_SEASON_ITEM(seasondata)
-    xbmcplugin.addSortMethod(pluginhandle, xbmcplugin.SORT_METHOD_LABEL)
+    xbmcplugin.addSortMethod(var.pluginhandle, xbmcplugin.SORT_METHOD_LABEL)
     SetView('seasons', 'seasonview')
 
 
 def LIST_TVSEASON_SORTED(seasons=False, cmmode=0):
     if not seasons:
-        seasons = tv.loadTVSeasonsdb(sortcol=args.get('url')).fetchall()
+        seasons = tv.loadTVSeasonsdb(sortcol=var.args.get('url')).fetchall()
     for seasondata in seasons:
         ADD_SEASON_ITEM(seasondata, disptitle=True, cmmode=cmmode)
     SetView('seasons', 'seasonview')
@@ -155,7 +153,7 @@ def ADD_SEASON_ITEM(seasondata, mode='listtv', submode='LIST_EPISODES_DB', dispt
     asin, seriesASIN, season, seriestitle, plot, actors, network, mpaa, genres, premiered, year, stars, votes, \
         episodetotal, audio, empty, empty, isHD, isprime, empty, poster, banner, fanart, forceupd = seasondata
     tvfanart, tvposter = getFanart(seriesASIN)
-    fanart = tvfanart if showfanart else fanart
+    fanart = tvfanart if var.showfanart else fanart
     infoLabels = {'Title': seriestitle,
                   'TVShowTitle': seriestitle,
                   'Plot': plot,
@@ -209,12 +207,12 @@ def ADD_SEASON_ITEM(seasondata, mode='listtv', submode='LIST_EPISODES_DB', dispt
 
 
 def LIST_EPISODES_DB():
-    seriestitle = args.get('url')
+    seriestitle = var.args.get('url')
     for asin in seriestitle.split(','):
         episodes = tv.loadTVEpisodesdb(asin)
         for episodedata in episodes:
             ADD_EPISODE_ITEM(episodedata)
-    xbmcplugin.addSortMethod(pluginhandle, xbmcplugin.SORT_METHOD_LABEL)
+    xbmcplugin.addSortMethod(var.pluginhandle, xbmcplugin.SORT_METHOD_LABEL)
     SetView('episodes', 'episodeview')
 
 
@@ -222,7 +220,7 @@ def ADD_EPISODE_ITEM(episodedata, onlyinfo=False, export=False):
     asin, seasonASIN, seriesASIN, seriestitle, season, episode, poster, mpaa, actors, genres, episodetitle, network, \
         stars, votes, fanart, plot, airdate, year, runtime, isHD, isprime, isAdult, audio = episodedata
     tvfanart, tvposter = getFanart(seriesASIN)
-    fanart = tvfanart if showfanart else fanart
+    fanart = tvfanart if var.showfanart else fanart
     displayname = '%s - %s' % (episode, episodetitle)
     if episode == 0 and ':' in episodetitle:
         displayname = '- ' + episodetitle.split(':')[1].strip() + ' -'

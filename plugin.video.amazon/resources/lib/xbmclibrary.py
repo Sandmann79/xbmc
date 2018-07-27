@@ -9,12 +9,12 @@ import listmovie
 
 from BeautifulSoup import BeautifulSoup, Tag
 
-cr_nfo = addon.getSetting('cr_nfo') == 'true'
-ms_mov = addon.getSetting('mediasource_movie')
-ms_tv = addon.getSetting('mediasource_tv')
+cr_nfo = var.addon.getSetting('cr_nfo') == 'true'
+ms_mov = var.addon.getSetting('mediasource_movie')
+ms_tv = var.addon.getSetting('mediasource_tv')
 EXPORT_PATH = pldatapath
-if addon.getSetting('enablelibraryfolder') == 'true':
-    EXPORT_PATH = xbmc.translatePath(addon.getSetting('customlibraryfolder')).decode('utf-8')
+if var.addon.getSetting('enablelibraryfolder') == 'true':
+    EXPORT_PATH = xbmc.translatePath(var.addon.getSetting('customlibraryfolder')).decode('utf-8')
 MOVIE_PATH = os.path.join(EXPORT_PATH, 'Movies')
 TV_SHOWS_PATH = os.path.join(EXPORT_PATH, 'TV')
 ms_mov = ms_mov if ms_mov else 'Amazon Movies'
@@ -87,7 +87,7 @@ def streamDetails(Info, language='ger', hasSubtitles=False):
 def EXPORT_MOVIE(asin=False, makeNFO=cr_nfo):
     SetupLibrary()
     if not asin:
-        asin = args.get('asin')
+        asin = var.args.get('asin')
     for moviedata in moviesDB.lookupMoviedb(asin, single=False):
         Info = listmovie.ADD_MOVIE_ITEM(moviedata, onlyinfo=True)
         filename = Info['Title']
@@ -113,7 +113,7 @@ def EXPORT_MOVIE(asin=False, makeNFO=cr_nfo):
 
 def EXPORT_SHOW(asin=None):
     if not asin:
-        asin = args.get('asin')
+        asin = var.args.get('asin')
     for data in tvDB.lookupTVdb(asin, tbl='shows', single=False):
         Info = listtv.ADD_SHOW_ITEM(data, onlyinfo=True)
         for showasin in Info['Asins'].split(','):
@@ -125,7 +125,7 @@ def EXPORT_SHOW(asin=None):
 
 def EXPORT_SEASON(asin=None, dispnotif=True):
     if not asin:
-        asin = args.get('asin')
+        asin = var.args.get('asin')
     for data in tvDB.lookupTVdb(asin, tbl='seasons', single=False):
         Info = listtv.ADD_SEASON_ITEM(data, onlyinfo=True)
         for seasonasin in Info['Asins'].split(','):
@@ -138,7 +138,7 @@ def EXPORT_SEASON(asin=None, dispnotif=True):
 
 def EXPORT_EPISODE(asin=None, makeNFO=cr_nfo, dispnotif=True):
     if not asin:
-        asin = args.get('asin')
+        asin = var.args.get('asin')
     for data in tvDB.lookupTVdb(asin, single=False):
         Info = listtv.ADD_EPISODE_ITEM(data, onlyinfo=True)
         Info['Title'] = cleanName(Info['EpisodeName'])

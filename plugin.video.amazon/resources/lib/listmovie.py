@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
-from common import *
+from .common import *
 import xbmclibrary
 import movies as moviesDB
 
@@ -17,11 +17,11 @@ def LIST_MOVIE_ROOT():
     addDir(getString(30158), 'listmovie', 'LIST_MOVIE_TYPES', 'actors')
     addDir(getString(30147), 'listmovie', 'LIST_MOVIE_TYPES', 'mpaa')
     addDir(getString(30148), 'listmovie', 'LIST_MOVIE_TYPES', 'director')
-    xbmcplugin.endOfDirectory(pluginhandle)
+    xbmcplugin.endOfDirectory(var.pluginhandle)
 
 
 def LIST_MOVIES_CATS():
-    catid = args.get('url')
+    catid = var.args.get('url')
     if catid:
         asins = moviesDB.lookupMoviedb(catid, rvalue='asins', name='title', table='categories')
         for asin in asins.split(','):
@@ -32,25 +32,25 @@ def LIST_MOVIES_CATS():
             if title:
                 addDir(title[0], 'listmovie', 'LIST_MOVIES_CATS', title[0])
 
-        xbmcplugin.endOfDirectory(pluginhandle, updateListing=False)
+        xbmcplugin.endOfDirectory(var.pluginhandle, updateListing=False)
 
 
 def LIST_MOVIE_TYPES(movtype=None):
     if not movtype:
-        movtype = args.get('url')
+        movtype = var.args.get('url')
     if movtype:
         for item in moviesDB.getMovieTypes(movtype):
             addDir(item, 'listmovie', 'LIST_MOVIES_FILTERED', movtype)
-        xbmcplugin.addSortMethod(pluginhandle, xbmcplugin.SORT_METHOD_LABEL)
-        xbmcplugin.endOfDirectory(pluginhandle, updateListing=False)
+        xbmcplugin.addSortMethod(var.pluginhandle, xbmcplugin.SORT_METHOD_LABEL)
+        xbmcplugin.endOfDirectory(var.pluginhandle, updateListing=False)
 
 
 def LIST_MOVIES_FILTERED():
-    LIST_MOVIES(args.get('url'), args.get('name'))
+    LIST_MOVIES(var.args.get('url'), var.args.get('name'))
 
 
 def LIST_MOVIES_SORTED():
-    LIST_MOVIES(sortaz=False, sortcol=args.get('url'))
+    LIST_MOVIES(sortaz=False, sortcol=var.args.get('url'))
 
 
 def LIST_MOVIES(filterobj='', value=None, sortcol=False, sortaz=True, search=False, cmmode=0, export=False):
@@ -65,13 +65,13 @@ def LIST_MOVIES(filterobj='', value=None, sortcol=False, sortaz=True, search=Fal
     if not search:
         if sortaz:
             if 'year' not in filterobj:
-                xbmcplugin.addSortMethod(pluginhandle, xbmcplugin.SORT_METHOD_VIDEO_TITLE)
+                xbmcplugin.addSortMethod(var.pluginhandle, xbmcplugin.SORT_METHOD_VIDEO_TITLE)
 
-            xbmcplugin.addSortMethod(pluginhandle, xbmcplugin.SORT_METHOD_VIDEO_YEAR)
-            xbmcplugin.addSortMethod(pluginhandle, xbmcplugin.SORT_METHOD_VIDEO_RUNTIME)
-            xbmcplugin.addSortMethod(pluginhandle, xbmcplugin.SORT_METHOD_VIDEO_RATING)
-            xbmcplugin.addSortMethod(pluginhandle, xbmcplugin.SORT_METHOD_DURATION)
-            xbmcplugin.addSortMethod(pluginhandle, xbmcplugin.SORT_METHOD_STUDIO_IGNORE_THE)
+            xbmcplugin.addSortMethod(var.pluginhandle, xbmcplugin.SORT_METHOD_VIDEO_YEAR)
+            xbmcplugin.addSortMethod(var.pluginhandle, xbmcplugin.SORT_METHOD_VIDEO_RUNTIME)
+            xbmcplugin.addSortMethod(var.pluginhandle, xbmcplugin.SORT_METHOD_VIDEO_RATING)
+            xbmcplugin.addSortMethod(var.pluginhandle, xbmcplugin.SORT_METHOD_DURATION)
+            xbmcplugin.addSortMethod(var.pluginhandle, xbmcplugin.SORT_METHOD_STUDIO_IGNORE_THE)
         SetView('movies', 'movieview')
     return count
 

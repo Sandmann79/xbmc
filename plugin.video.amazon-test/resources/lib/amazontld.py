@@ -358,6 +358,7 @@ class AmazonTLD(Singleton):
         for item in titles['titles']:
             if 'title' not in item:
                 continue
+            wl_asin = item['titleId']
             if '_show' in parent:
                 item.update(item['ancestorTitles'][0])
                 url = 'SeriesASIN=%s&ContentType=TVSeason&IncludeBlackList=T' % item['titleId']
@@ -369,7 +370,7 @@ class AmazonTLD(Singleton):
             cm = [(getString(30183),
                    'Container.Update(%s?mode=listContent&cat=GetSimilarities&url=%s&page=1&opt=gs)' % (self._g.pluginid, simiUrl)),
                   (getString(wlmode + 30180) % getString(self._g.langID[contentType]),
-                   'RunPlugin(%s?mode=WatchList&url=%s&opt=%s)' % (self._g.pluginid, asin, wlmode)),
+                   'RunPlugin(%s?mode=WatchList&url=%s&opt=%s)' % (self._g.pluginid, wl_asin, wlmode)),
                   (getString(30185) % getString(self._g.langID[contentType]),
                    'RunPlugin(%s?mode=getListMenu&url=%s&export=1)' % (self._g.pluginid, asin)),
                   (getString(30186), 'UpdateLibrary(video)')]

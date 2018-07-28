@@ -192,4 +192,6 @@ def jsonRPC(method, props='', param=None):
 
 def sleep(sec):
     if xbmc.Monitor().waitForAbort(sec):
-        return
+        import sys
+        Log('Abort requested - exiting addon')
+        sys.exit()

@@ -1038,7 +1038,8 @@ def mobileUA(content):
 
 def sleep(sec):
     if xbmc.Monitor().waitForAbort(sec):
-        return
+        Log('Abort requested - exiting addon')
+        sys.exit()
 
 
 def getInfolabels(Infos):

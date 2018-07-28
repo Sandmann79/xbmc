@@ -349,7 +349,7 @@ class AmazonTLD(Singleton):
         endIndex = titles['endIndex']
         numItems = len(titles['titles'])
         if 'approximateSize' not in titles.keys():
-            endIndex = 1 if numItems >= self._s.MaxResults else 0
+            endIndex = 1 if not export and numItems >= self._s.MaxResults else 0
         else:
             if endIndex == 0:
                 if (page * ResPage) <= titles['approximateSize']:
@@ -357,6 +357,8 @@ class AmazonTLD(Singleton):
 
         for item in titles['titles']:
             if 'title' not in item:
+                continue
+            if export and catalog == "Browse" and "adTreatment" not in item["formats"][0]["offers"][0].keys() and not self._s.payCont:
                 continue
             wl_asin = item['titleId']
             if '_show' in parent:

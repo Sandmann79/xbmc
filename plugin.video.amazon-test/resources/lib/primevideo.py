@@ -32,7 +32,12 @@ class PrimeVideo(Singleton):
         self._g = globalsInstance
         self._s = settingsInstance
         self._dateParserData = {
-            """ Data for date string deconstruction and reassembly """
+            """ Data for date string deconstruction and reassembly
+
+                Date references:
+                https://www.primevideo.com/detail/0LCQSTWDMN9V770DG2DKXY3GVF/  01 02 03 04 05 09 10 11 12
+                https://www.primevideo.com/detail/0ND5POOAYD6A4THTH7C1TD3TYE/  06 07 08 09
+            """
             'de_DE': {'deconstruct': r'^([0-9]+)\.\s+([^\s]+)\s+([0-9]+)', 'reassemble': '{2}-{1:0>2}-{0:0>2}', 'month': 1,
                       'months': {'Januar': 1, 'Februar': 2, 'März': 3, 'April': 4, 'Mai': 5, 'Juni': 6, 'Juli': 7, 'August': 8, 'September': 9, 'Oktober': 10,
                                  'November': 11, 'Dezember': 12}},
@@ -43,11 +48,14 @@ class PrimeVideo(Singleton):
                       'months': {'enero': 1, 'febrero': 2, 'marzo': 3, 'abril': 4, 'mayo': 5, 'junio': 6, 'julio': 7, 'agosto': 8, 'septiembre': 9, 'octubre': 10,
                                  'noviembre': 11, 'diciembre': 12}},
             'fr_FR': {'deconstruct': r'^([0-9]+)\s+([^\s]+)\s+([0-9]+)', 'reassemble': '{2}-{1:0>2}-{0:0>2}', 'month': 1,
-                      'months': {'janvier': 1, 'février': 2, 'mars': 3, 'avril': 4, 'mai': 5, 'juin': 6, 'juillet': 7, 'aout': 8, 'septembre': 9, 'octobre': 10,
-                                 'novembre': 11, 'décembre': 12}},
+                      'months': {'janvier': 1, 'février': 2, 'mars': 3, 'avril': 4, 'mai': 5, 'juin': 6, 'juillet': 7, 'aout': 8, 'août': 8, 'septembre': 9,
+                                 'octobre': 10, 'novembre': 11, 'décembre': 12}},
             'it_IT': {'deconstruct': r'^([0-9]+)\s+([^\s]+)\s+([0-9]+)', 'reassemble': '{2}-{1:0>2}-{0:0>2}', 'month': 1,
                       'months': {'gennaio': 1, 'febbraio': 2, 'marzo': 3, 'aprile': 4, 'maggio': 5, 'giugno': 6, 'luglio': 7, 'agosto': 8, 'settembre': 9,
                                  'ottobre': 10, 'novembre': 11, 'dicembre': 12}},
+            'nl_NL': {'deconstruct': r'^([0-9]+)\s+([^\s]+)\s+([0-9]+)', 'reassemble': '{2}-{1:0>2}-{0:0>2}', 'month': 1,
+                      'months': {'januari': 1, 'februari': 2, 'maart': 3, 'april': 4, 'mei': 5, 'juni': 6, 'juli': 7, 'augustus': 8, 'september': 9,
+                                 'oktober': 10, 'november': 11, 'december': 12}},
             'pt_BR': {'deconstruct': r'^([0-9]+)\s+de\s+([^\s]+),\s+de\s+([0-9]+)', 'reassemble': '{2}-{1:0>2}-{0:0>2}', 'month': 1,
                       'months': {'janeiro': 1, 'fevereiro': 2, 'março': 3, 'abril': 4, 'maio': 5, 'junho': 6, 'julho': 7, 'agosto': 8, 'setembro': 9, 'outubro': 10,
                                  'novembro': 11, 'dezembro': 12}},

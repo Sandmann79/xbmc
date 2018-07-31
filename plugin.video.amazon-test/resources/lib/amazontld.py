@@ -366,7 +366,7 @@ class AmazonTLD(Singleton):
             if export and catalog == "Browse" and "adTreatment" not in item["formats"][0]["offers"][0].keys() and not self._s.payCont:
                 continue
             wl_asin = item['titleId']
-            if '_show' in parent:
+            if '_show' in parent and item.get('ancestorTitles'):
                 item.update(item['ancestorTitles'][0])
                 url = 'SeriesASIN=%s&ContentType=TVSeason&IncludeBlackList=T' % item['titleId']
             contentType, infoLabels = self.getInfos(item, export)
@@ -729,7 +729,7 @@ class AmazonTLD(Singleton):
             self.SetupLibrary()
 
         url = 'asinList=' + asins
-        listing += '_show' if self._s.dispShowOnly and 'movie' not in cont and not export else ''
+        listing += '_show' if self._s.dispShowOnly else ''
         self.listContent('GetASINDetails', url, 1, listing, export)
 
     def getAsins(self, content, crIL=True):

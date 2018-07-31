@@ -182,6 +182,8 @@ class AmazonTLD(Singleton):
         if searchString:
             url = 'searchString=%s%s' % (quote_plus(searchString), self._s.OfferGroup)
             self.listContent('Search', url, 1, 'search')
+        else:
+            xbmc.executebuiltin('RunPlugin(%s)' % g.pluginid)
 
     def _createDB(self, menu=False):
         if menu:
@@ -304,7 +306,7 @@ class AmazonTLD(Singleton):
     def listCategories(self, node, root=None):
         self.loadCategories()
         cat = self.getNode(node)
-        all_vid = {'movies': [30143, 'Movie', 'root'], 'tv_shows': [30160, 'TVSeason&RollupToSeason=T', 'root_show']}
+        all_vid = {'movies': [30143, 'Movie', 'root'], 'tv_shows': [30160, 'TVSeason', 'root_show']}
 
         if root in all_vid.keys():
             url = 'OrderBy=Title%s&contentType=%s' % (self._s.OfferGroup, all_vid[root][1])
@@ -351,7 +353,8 @@ class AmazonTLD(Singleton):
         endIndex = titles['endIndex']
         numItems = len(titles['titles'])
         if 'approximateSize' not in titles.keys():
-            endIndex = 1 if not export and numItems >= self._s.MaxResults else 0
+            if numItems > self._s.MaxResults:
+                endIndex = 0
         else:
             if endIndex == 0:
                 if (page * ResPage) <= titles['approximateSize']:

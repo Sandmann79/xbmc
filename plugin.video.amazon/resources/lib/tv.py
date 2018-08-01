@@ -470,14 +470,15 @@ def updatePop():
     maxIndex = MAX * 3
 
     while -1 < Index < maxIndex:
-        jsondata = appfeed.getList('tvepisode,tvseason,tvseries&RollupToSeries=T', Index, NumberOfResults=MAX)
+        jsondata = appfeed.getList('TVSeason', Index, NumberOfResults=MAX)
         titles = jsondata['message']['body']['titles']
         for title in titles:
             Index += 1
             asin = title['titleId']
             if asin:
-                db.cur_exec(c, "update shows set popularity=? where asin like (?) and popularity is null",
-                            (Index, '%' + asin + '%'))
+                seriesasin = lookupTVdb(asin, rvalue='seriesasin', tbl='seasons')
+                if seriesasin:
+                    db.cur_exec(c, "update shows set popularity=? where asin like (?) and popularity is null", (Index, '%' + seriesasin + '%'))
         if len(titles) == 0:
             Index = -1
 

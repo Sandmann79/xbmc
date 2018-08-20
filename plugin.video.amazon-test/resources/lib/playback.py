@@ -739,8 +739,8 @@ class _AmazonPlayer(xbmc.Player):
             return True
         dbtype = _getListItem('DBTYPE')
         result = jsonRPC('VideoLibrary.Get%sDetails' % dbtype, 'resume,playcount', {'%sid' % dbtype: self.dbid})
-        position = int(result['episodedetails']['resume']['position'])
-        playcount = int(result['episodedetails']['playcount'])
+        position = int(result[dbtype.lower()+'details']['resume']['position'])
+        playcount = int(result[dbtype.lower()+'details']['playcount'])
         Log(result, Log.DEBUG)
 
         if playcount:
@@ -767,7 +767,7 @@ class _AmazonPlayer(xbmc.Player):
 
     def finished(self):
         self.updateStream('STOP')
-        if self.extern:
+        if self.extern and self.video_lastpos > 0:
             playcount = 1 if (self.video_lastpos * 100) / self.video_totaltime >= 90 else 0
             watched = _getListItem('PlayCount')
             if self.dbid:

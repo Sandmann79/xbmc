@@ -361,6 +361,7 @@ class AmazonTLD(Singleton):
                     endIndex = 1
 
         for item in titles['titles']:
+            url = ''
             if 'title' not in item:
                 continue
             if export and catalog == "Browse" and "adTreatment" not in item["formats"][0]["offers"][0].keys() and not self._s.payCont:
@@ -386,7 +387,7 @@ class AmazonTLD(Singleton):
                 addVideo(name, asin, infoLabels, cm, export)
             else:
                 mode = 'listContent'
-                url = item['childTitles'][0]['feedUrl'] if '_show' not in parent else url
+                url = url if '_show' in parent and url else item['childTitles'][0]['feedUrl']
 
                 if self._g.watchlist in parent:
                     url += self._s.OfferGroup
@@ -729,7 +730,7 @@ class AmazonTLD(Singleton):
             self.SetupLibrary()
 
         url = 'asinList=' + asins
-        listing += '_show' if self._s.dispShowOnly else ''
+        listing += '_show' if self._s.dispShowOnly and not export else ''
         self.listContent('GetASINDetails', url, 1, listing, export)
 
     def getAsins(self, content, crIL=True):

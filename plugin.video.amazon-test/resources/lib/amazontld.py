@@ -716,7 +716,7 @@ class AmazonTLD(Singleton):
         return ','.join(asins)
 
     def getList(self, listing, export, cont):
-        if listing == self._g.watchlist or listing == self._g.library:
+        if listing in [self._g.watchlist, self._g.library]:
             cj = MechanizeLogin()
             if not cj:
                 return
@@ -730,7 +730,7 @@ class AmazonTLD(Singleton):
             self.SetupLibrary()
 
         url = 'asinList=' + asins
-        listing += '_show' if self._s.dispShowOnly and not export else ''
+        listing += '_show' if self._s.dispShowOnly and not (export and asins == listing) else ''
         self.listContent('GetASINDetails', url, 1, listing, export)
 
     def getAsins(self, content, crIL=True):

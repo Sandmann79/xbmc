@@ -301,6 +301,10 @@ msgctxt "#30079"
 msgid "Title Descending"
 msgstr "Titel absteigend"
 
+msgctxt "#30080"
+msgid "Automatically Watchlist export"
+msgstr "Watchlist autom. exportieren"
+
 msgctxt "#30100"
 msgid "Library"
 msgstr "Bibliothek"

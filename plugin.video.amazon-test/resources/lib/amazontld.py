@@ -364,7 +364,7 @@ class AmazonTLD(Singleton):
             url = ''
             if 'title' not in item:
                 continue
-            if export and catalog == "Browse" and "adTreatment" not in item["formats"][0]["offers"][0].keys() and not self._s.payCont:
+            if export and catalog == "Browse" and "adTreatment" not in item["formats"][0]["offers"][0].keys() and not self._s.payCont and self._g.library not in parent:
                 continue
             wl_asin = item['titleId']
             if '_show' in parent and item.get('ancestorTitles'):
@@ -402,7 +402,7 @@ class AmazonTLD(Singleton):
                 if export:
                     url = re.sub(r'(?i)contenttype=\w+', 'ContentType=TVEpisode', url)
                     url = re.sub(r'(?i)&rollupto\w+=\w+', '', url)
-                    self.listContent('Browse', url, 1, '', export)
+                    self.listContent('Browse', url, 1, parent.replace('_show', ''), export)
                 else:
                     if name not in titlelist:
                         titlelist.append(name)
@@ -481,6 +481,8 @@ class AmazonTLD(Singleton):
                 cPath = xbmc.getInfoLabel('Container.FolderPath').replace(asin, '').replace('opt=' + self._g.watchlist,
                                                                                             'opt=rem_%s' % self._g.watchlist)
                 xbmc.executebuiltin('Container.Update("%s", replace)' % cPath)
+            elif self._s.wl_export:
+                self._g.amz.getList(asin, 1, '_show' if self._s.dispShowOnly else '')
         else:
             Log(data['status'] + ': ' + data['reason'])
 
@@ -730,7 +732,7 @@ class AmazonTLD(Singleton):
             self.SetupLibrary()
 
         url = 'asinList=' + asins
-        listing += '_show' if self._s.dispShowOnly and not (export and asins == listing) else ''
+        listing += '_show' if (self._s.dispShowOnly and not (export and asins == listing)) or cont == '_show' else ''
         self.listContent('GetASINDetails', url, 1, listing, export)
 
     def getAsins(self, content, crIL=True):

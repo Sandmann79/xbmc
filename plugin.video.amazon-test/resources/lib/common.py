@@ -44,7 +44,7 @@ class Globals(Singleton):
     tmdb = 'b34490c056f0dd9e3ec9af2167a731f4'  # b64decode('YjM0NDkwYzA1NmYwZGQ5ZTNlYzlhZjIxNjdhNzMxZjQ=')
     tvdb = '1D62F2F90030C444'  # b64decode('MUQ2MkYyRjkwMDMwQzQ0NA==')
     pluginid = argv[0]
-    pluginhandle = int(argv[1])
+    pluginhandle = int(argv[1]) if pluginid else -1
     langID = {'movie': 30165, 'series': 30166, 'season': 30167, 'episode': 30173}
 
     """ Allow the usage of dot notation for data inside the _globals dictionary, without explicit function call """
@@ -163,6 +163,7 @@ class Settings(Singleton):
         elif 'wl_order' == name: return ['DATE_ADDED_DESC', 'TITLE_DESC', 'TITLE_ASC'][int('0' + self._gs("wl_order"))]
         elif 'verifySsl' == name: return self._gs('ssl_verif') == 'false'
         elif 'OfferGroup' == name: return '' if self.payCont else '&OfferGroups=B0043YVHMY'
+        elif 'wl_export' == name: return self._gs("wl_export") == 'true'
 
 
 def jsonRPC(method, props='', param=None):

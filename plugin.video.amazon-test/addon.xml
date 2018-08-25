@@ -16,6 +16,7 @@
              library="default.py">
 	<provides>video</provides>
   </extension>
+  <extension point="xbmc.service" library="service.py" start="startup" />
   <extension point="xbmc.addon.metadata">
     <platform>all</platform>
     <reuselanguageinvoker>true</reuselanguageinvoker>

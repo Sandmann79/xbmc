@@ -315,7 +315,11 @@ msgctxt "#30079"
 msgid "Title Descending"
 msgstr ""
 
-#empty strings from id 30080 to 30099
+msgctxt "#30080"
+msgid "Automatically Watchlist export"
+msgstr ""
+
+#empty strings from id 30081 to 30099
 
 msgctxt "#30100"
 msgid "Library"

@@ -29,6 +29,7 @@
         <setting id="ssl_verif" type="bool" label="30037" default="false"/>
         <setting id="items_perpage" type="labelenum" values="20|30|40|60|80|100|140|180|220|250" label="30039" default="40"/>
         <setting label="30001" type="lsep"/>
+        <setting id="region" type="enum" label="Region" values="Auto|Germany|United Kingdom|USA|Japan|ROE Europe|ROW Europe|ROW Far East|ROW North America" default="0" />
         <setting id="multiuser" type="bool" label="30009" default="false"/>
         <setting id="rememberme" type="bool" label="30022" default="true"/>
         <setting type="action" label="30130" action="RunPlugin(plugin://plugin.video.amazon-test/?mode=LogIn)" visible="eq(-2,true)" option="close" />

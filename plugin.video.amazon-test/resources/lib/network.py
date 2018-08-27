@@ -84,20 +84,34 @@ def mobileUA(content):
 
 
 def getTerritory(user):
-    Log('Retrieve territoral config')
 
-    data = getURL('https://na.api.amazonvideo.com/cdp/usage/v2/GetAppStartupConfig?deviceTypeID=A28RQHJKHM2A2W&deviceID=%s&firmware=1&version=1&format=json'
-                  % g.deviceID)
-    if not hasattr(data, 'keys'):
-        return user, False
-    if 'customerConfig' in data.keys():
-        host = data['territoryConfig']['defaultVideoWebsite']
-        reg = data['customerConfig']['homeRegion'].lower()
-        reg = '' if 'na' in reg else '-' + reg
-        user['atvurl'] = host.replace('www.', '').replace('//', '//atv-ps%s.' % reg)
-        user['baseurl'] = data['territoryConfig']['primeSignupBaseUrl']
-        user['mid'] = data['territoryConfig']['avMarketplace']
-        user['pv'] = 'primevideo' in host
+    area = [{'atvurl': '', 'baseurl': '', 'mid': '', 'pv': False},
+            {'atvurl': 'https://atv-ps-eu.amazon.de', 'baseurl': 'https://www.amazon.de', 'mid': 'A1PA6795UKMFR9', 'pv': False},
+            {'atvurl': 'https://atv-ps-eu.amazon.co.uk', 'baseurl': 'https://www.amazon.co.uk', 'mid': 'A1F83G8C2ARO7P', 'pv': False},
+            {'atvurl': 'https://atv-ps.amazon.com', 'baseurl': 'https://www.amazon.com', 'mid': 'ATVPDKIKX0DER', 'pv': False},
+            {'atvurl': 'https://atv-ps-fe.amazon.co.jp', 'baseurl': 'https://www.amazon.co.jp', 'mid': 'A1VC38T7YXB528', 'pv': False},
+            {'atvurl': 'https://atv-ps-eu.primevideo.com', 'baseurl': 'https://www.primevideo.com', 'mid': 'A3K6Y4MI8GDYMT', 'pv': True},
+            {'atvurl': 'https://atv-ps-eu.primevideo.com', 'baseurl': 'https://www.primevideo.com', 'mid': 'A2MFUE2XK8ZSSY', 'pv': True},
+            {'atvurl': 'https://atv-ps-fe.primevideo.com', 'baseurl': 'https://www.primevideo.com', 'mid': 'A15PK738MTQHSO', 'pv': True},
+            {'atvurl': 'https://atv-ps.primevideo.com', 'baseurl': 'https://www.primevideo.com', 'mid': 'ART4WZ8MWBX2Y', 'pv': True}][Settings().region]
+
+    if area['mid']:
+        user.update(area)
+    else:
+        Log('Retrieve territoral config')
+        data = getURL('https://na.api.amazonvideo.com/cdp/usage/v2/GetAppStartupConfig?deviceTypeID=A28RQHJKHM2A2W&deviceID=%s&firmware=1&version=1&format=json'
+                      % g.deviceID)
+        if not hasattr(data, 'keys'):
+            return user, False
+        if 'customerConfig' in data.keys():
+            host = data['territoryConfig']['defaultVideoWebsite']
+            reg = data['customerConfig']['homeRegion'].lower()
+            reg = '' if 'na' in reg else '-' + reg
+            user['atvurl'] = host.replace('www.', '').replace('//', '//atv-ps%s.' % reg)
+            user['baseurl'] = data['territoryConfig']['primeSignupBaseUrl']
+            user['mid'] = data['territoryConfig']['avMarketplace']
+            user['pv'] = 'primevideo' in host
+
     return user, True
 
 

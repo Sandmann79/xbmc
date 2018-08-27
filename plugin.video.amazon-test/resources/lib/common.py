@@ -164,6 +164,7 @@ class Settings(Singleton):
         elif 'verifySsl' == name: return self._gs('ssl_verif') == 'false'
         elif 'OfferGroup' == name: return '' if self.payCont else '&OfferGroups=B0043YVHMY'
         elif 'wl_export' == name: return self._gs("wl_export") == 'true'
+        elif 'region' == name: return int(self._gs("region"))
 
 
 def jsonRPC(method, props='', param=None):

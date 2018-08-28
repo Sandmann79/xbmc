@@ -19,8 +19,7 @@ if __name__ == '__main__':
             if cur_time >= last_export + export_freq:
                 Log('Service: Starting Export of Watchlist')
                 writeConfig('last_wl_export', cur_time)
-                xbmc.executebuiltin('XBMC.RunPlugin(plugin://plugin.video.amazon-test/?mode=getListMenu&url=watchlist&export=1)')
-                #g.amz.getListMenu(g.watchlist, True)
+                xbmc.executebuiltin('XBMC.RunPlugin(plugin://plugin.video.amazon-test/?mode=getListMenu&url=watchlist&export=2)')
             if monitor.waitForAbort(check_freq):
                 break
     Log('Service: End')

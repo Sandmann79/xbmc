@@ -483,6 +483,7 @@ class AmazonTLD(Singleton):
                 xbmc.executebuiltin('Container.Update("%s", replace)' % cPath)
             elif self._s.wl_export:
                 self._g.amz.getList(asin, 1, '_show' if self._s.dispShowOnly else '')
+                xbmc.executebuiltin('UpdateLibrary(video)')
         else:
             Log(data['status'] + ': ' + data['reason'])
 
@@ -699,6 +700,7 @@ class AmazonTLD(Singleton):
     def getListMenu(self, listing, export):
         if export:
             self.getList(listing, export, ['movie', 'tv'])
+            if export == 2: xbmc.executebuiltin('UpdateLibrary(video)')
         else:
             addDir(getString(30104), 'getList', listing, export, opt='movie')
             addDir(getString(30107), 'getList', listing, export, opt='tv')

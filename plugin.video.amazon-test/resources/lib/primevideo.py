@@ -56,6 +56,9 @@ class PrimeVideo(Singleton):
             'nl_NL': {'deconstruct': r'^([0-9]+)\s+([^\s]+)\s+([0-9]+)', 'reassemble': '{2}-{1:0>2}-{0:0>2}', 'month': 1,
                       'months': {'januari': 1, 'februari': 2, 'maart': 3, 'april': 4, 'mei': 5, 'juni': 6, 'juli': 7, 'augustus': 8, 'september': 9,
                                  'oktober': 10, 'november': 11, 'december': 12}},
+            'pl_PL': {'deconstruct': r'^([0-9]+)\s+([^\s]+)\s+([0-9]+)', 'reassemble': '{2}-{1:0>2}-{0:0>2}', 'month': 1,
+                      'months': {'stycznia': 1, 'lutego': 2, 'marca': 3, 'kwietnia': 4, 'maja': 5, 'czerwca': 6, 'lipca': 7, 'sierpnia': 8, 'września': 9,
+                                 'października': 10, 'listopada': 11, 'grudnia': 12}},
             'pt_BR': {'deconstruct': r'^([0-9]+)\s+de\s+([^\s]+),\s+de\s+([0-9]+)', 'reassemble': '{2}-{1:0>2}-{0:0>2}', 'month': 1,
                       'months': {'janeiro': 1, 'fevereiro': 2, 'março': 3, 'abril': 4, 'maio': 5, 'junho': 6, 'julho': 7, 'agosto': 8, 'setembro': 9, 'outubro': 10,
                                  'novembro': 11, 'dezembro': 12}},
@@ -307,8 +310,8 @@ class PrimeVideo(Singleton):
             return BeautifyText(ret)
 
         def MaxSize(imgUrl):
-            """ Strip the dynamic resize triggers from the URL """
-            return re.sub(r'_(SX[0-9]+|UR[0-9]+,[0-9]+)', '', imgUrl)
+            """ Strip the dynamic resize triggers from the URL (and other effects, such as blur) """
+            return re.sub(r'\._.*_\.', '.', imgUrl)
 
         def ExtractURN(url):
             """ Extract the unique resource name identifier """
@@ -320,7 +323,7 @@ class PrimeVideo(Singleton):
         def DelocalizeDate(lang, datestr):
             """ Convert language based timestamps into YYYY-MM-DD """
             if lang not in self._dateParserData:
-                Log('Unable decode date "{0}": language "{1}" not supported'.format(datestr, lang), Log.WARNING)
+                Log('Unable to decode date "{0}": language "{1}" not supported'.format(datestr, lang), Log.WARNING)
                 return datestr
             p = re.search(self._dateParserData[lang]['deconstruct'], datestr)
             if None is p:
@@ -344,7 +347,7 @@ class PrimeVideo(Singleton):
 
         def PopulateInlineMovieSeries(obj, rq, title, image, url):
             """ Takes a sequence of Movies or TV Series such as in watchlist and carousels and fetches the metadata """
-            Log('PIMS: %s %s %s %s %s' % (obj, rq, title, image, url))
+            # Log('PIMS: %s %s %s %s %s' % (obj, rq, title, image, url))
             urn = ExtractURN(url)
             obj[urn] = {}
             if urn in self._videodata:
@@ -355,9 +358,6 @@ class PrimeVideo(Singleton):
             }
             rq.append((url, obj[urn], urn))
             return True
-
-        # Set up the fetch order to find the best quality image possible
-        imageSizes = r'((large-screen|desktop|tablet-landscape|tablet|phone-landscape|phablet|phone)(-double)?)'
 
         if 'lazyLoadURL' not in obj:
             return
@@ -421,12 +421,12 @@ class PrimeVideo(Singleton):
                         for entry in re.findall(r'<li[^>]*>\s*<a href="(/[^"]+)"[^>]*>\s*<span>\s*([0-9]+)\s*', pagination.group(0)):
                             if entry[1] not in self._WatchlistPages[refUrn]:
                                 requestURLs.append((self._g.BaseUrl + entry[0], o, refUrn))
-                elif None is re.search(r'"[^"]*av-result-cards[^"]*"', cnt, flags=re.DOTALL):
+                elif re.search('<div class="av-dp-container">', cnt, flags=re.DOTALL):
                     ''' Movie/series page '''
                     # Find the biggest fanart available
-                    bgimg = re.search(r'<div class="av-hero-background-size av-bgimg av-bgimg-' + imageSizes + r'">.*?url\(([^)]+)\)', cnt, flags=re.DOTALL)
+                    bgimg = re.search(r'<div class="av-hero-background[^"]*"[^>]*url\(([^)]+)\)', cnt, flags=re.DOTALL)
                     if None is not bgimg:
-                        bgimg = MaxSize(bgimg.groups()[-1])
+                        bgimg = MaxSize(bgimg.group(1))
 
                     # Extract the global data
                     rx = [
@@ -438,7 +438,7 @@ class PrimeVideo(Singleton):
                         r'<dt data-automation-id="meta-info-director"[^>]*>[^<]*</dt>\s*<dd[^>]*>\s*(.*?)\s*</dd>',  # Director
                         r'<div data-automation-id="synopsis"[^>]*>[^<]*<p>\s*(.*?)\s*</p>',  # Synopsis
                     ]
-                    results = re.search(r'<section\s+[^>]*class="[^"]*av-detail-section[^"]*"[^>]*>\s*(.*?)\s*</section>', cnt, flags=re.DOTALL).group(1)
+                    results = re.search(r'<section\s+[^>]*class="avu-page-container[^>]*>\s*(.*?)\s*</section>', cnt, flags=re.DOTALL).group(1)
                     gres = []
                     for i in range(0, len(rx)):
                         gres.append(re.search(rx[i], results, flags=re.DOTALL))
@@ -490,7 +490,7 @@ class PrimeVideo(Singleton):
                         for entry in re.findall(r'<li[^>]*>\s*(.*?)\s*</li>', results.group(1), flags=re.DOTALL):
                             rx = [
                                 r'<a data-automation-id="ep-playback-[0-9]+"[^>]*data-ref="([^"]*)"[^>]*data-title-id="([^"]*)"[^>]*href="([^"]*)"',
-                                r'<div class="av-bgimg av-bgimg-' + imageSizes + r'">.*?url\(([^)]+)\)',  # Image
+                                r'<div class="av-bgimg__div"[^>]*url\(([^)]+)\)',  # Image
                                 r'<span class="av-play-title-text">\s*(.*?)\s*</span>',  # Title
                                 r'<span data-automation-id="ep-air-date-badge-[0-9]+"[^>]*>\s*(.*?)\s*</span>',  # Original air date
                                 r'<span data-automation-id="ep-amr-badge-[0-9]+"[^>]*>\s*(.*?)\s*</span>',  # Age rating
@@ -506,9 +506,6 @@ class PrimeVideo(Singleton):
                                     # If holding a single result, don't provide a list
                                     if 1 == len(res[i]):
                                         res[i] = Unescape(res[i][0])
-                                    # We just need the image, not the type
-                                    if 1 == i:
-                                        res[i] = res[i][-1]
                             if (None is res[0]) or (None is res[2]):
                                 ''' Some episodes might be not playable until a later date or just N/A, although listed '''
                                 continue
@@ -590,51 +587,43 @@ class PrimeVideo(Singleton):
 
                 else:
                     ''' Movie and series list '''
-                    results = re.search(r'<ol\s+[^>]*class="[^"]*av-result-cards[^"]*"[^>]*>\s*(.*?)\s*</ol>', cnt, flags=re.DOTALL)
-                    for entry in re.findall(r'<li[^>]*>\s*(.*?)\s*</li>', results.group(1), flags=re.DOTALL):
-                        rx = [
-                            r'<img\s+[^>]*src="([^"]*)".*?<h2[^>]*>\s*<a\s+[^>]*href="([^"]+)"[^>]*>\s*(.*?)\s*</a>\s*</h2>',  # Image, link and title
-                            r'<span\s+[^>]*class="[^"]*av-result-card-rating[^"]*"[^>]*>\s*([0-9]+)[,.]([0-9]+)\s*</span>',  # IMDb rating
-                            r'<p\s+[^>]*class="[^"]*av-result-card-synopsis[^"]*"[^>]*>\s*(.*?)\s*</p>',  # Synopsis
-                            r'<span\s+[^>]*class="[^"]*av-result-card-season[^"]*"[^>]*>\s*(.*?)\s*</span>',  # Season
-                            r'<span\s+[^>]*class="[^"]*av-result-card-year[^"]*"[^>]*>\s*(.*?)\s*</span>',  # Year
-                            r'<span\s+[^>]*class="[^"]*av-result-card-certification[^"]*"[^>]*>\s*(.*?)\s*</span>',  # Age rating
-                            r'\s+data-asin="\s*([^"]+?)\s*"',  # Movie/episode's URN
-                        ]
-                        res = []
-                        for i in range(0, len(rx)):
-                            res.append(re.search(rx[i], entry))
+                    for entry in re.findall(r'<div class="[^"]*dvui-beardContainer[^"]*">\s*(.*?)\s*</form>\s*</div>\s*</div>\s*</div>', cnt, flags=re.DOTALL):
+                        res = {
+                            'title': r'<a class="av-beard-title-link"[^>]*>\s*(.*?)\s*</a>',
+                            'asin': r'\s+data-asin="\s*([^"]+?)\s*"',
+                            'image': r'<a [^>]+><img\s+[^>]*src="([^"]+)"',
+                            'link': r'<a href="([^"]+)"><img',
+                            'season': r'<span>\s*(Stagione|Staffel|Season|Temporada|Saison|Seizoen|Sezon)\s+([0-9]+)\s*</span>',
+                        }
+                        for i in res:
+                            res[i] = re.search(res[i], entry)
                             if None is not res[i]:
                                 res[i] = res[i].groups()
-                                if 1 == len(res[i]):
-                                    res[i] = Unescape(res[i][0])
-                                else:
-                                    res[i] = list(res[i])
-                        title = Unescape(res[0][2])
-                        NotifyUser(getString(30253).format(title))
-                        if None is not re.match(r'/[^/]', res[0][1]):
-                            res[0][1] = self._g.BaseUrl + res[0][1]
-                        meta = {'artmeta': {'thumb': MaxSize(res[0][0]), 'poster': MaxSize(res[0][0])}, 'videometa': {}}
-                        if None is not res[1]: meta['videometa']['rating'] = int(res[1][0]) + (int(res[1][1]) / 10.0)
-                        if None is not res[2]: meta['videometa']['plot'] = res[2]
-                        meta['videometa']['mediatype'] = 'movie' if None is res[3] else 'season'
-                        if None is not res[4]: meta['videometa']['year'] = int(res[4])
-                        if None is not res[5]: meta['videometa']['mpaa'] = res[5]
+                                res[i] = Unescape(res[i][0]) if 1 == len(res[i]) else list(res[i])
+                                if 'image' == i:
+                                    res[i] = MaxSize(res[i])
+                                elif 'season' == i:
+                                    res[i] = {'locale': Unescape(res[i][0]), 'episode': int(res[i][1]), 'format': Unescape('{0} {1}'.format(res[i][0], res[i][1]))}
+                        NotifyUser(getString(30253).format(res['title']))
+                        if None is not re.match(r'/[^/]', res['link']):
+                            res['link'] = self._g.BaseUrl + res['link']
+                        meta = {'artmeta': {'thumb': res['image'], 'poster': res['image']}, 'videometa': {}}
+                        meta['videometa']['mediatype'] = 'movie' if None is res['season'] else 'season'
 
-                        if None is res[3]:
+                        if None is res['season']:
                             ''' Movie '''
                             # Queue the movie page instead of parsing partial information here
-                            urn = ExtractURN(res[0][1])
+                            urn = ExtractURN(res['link'])
                             if urn not in o:
                                 o[urn] = {}
                             if (urn not in self._videodata) or ('metadata' not in self._videodata[urn]) or ('video' not in self._videodata[urn]['metadata']):
                                 bUpdatedVideoData = True
-                                self._videodata[urn] = {'metadata': meta, 'title': title}
-                                requestURLs.append((res[0][1], o[urn], urn))
+                                self._videodata[urn] = {'metadata': meta, 'title': res['title']}
+                                requestURLs.append((res['link'], o[urn], urn))
                         else:
                             ''' Series '''
-                            id = title
-                            sid = ExtractURN(res[0][1])
+                            id = res['title']
+                            sid = ExtractURN(res['link'])
 
                             if sid not in self._videodata:
                                 self._videodata[sid] = {'children': []}
@@ -642,11 +631,11 @@ class PrimeVideo(Singleton):
                             # Extract video metadata
                             if 'parent' in self._videodata[sid]:
                                 id = self._videodata[sid]['parent']
-                            elif (id is title) and (None is not res[6]):
-                                success, gpr = getURLData('catalog/GetPlaybackResources', res[6], useCookie=True, extra=True,
+                            elif (id is res['title']) and (None is not res['asin']):
+                                success, gpr = getURLData('catalog/GetPlaybackResources', res['asin'], useCookie=True, extra=True,
                                                           opt='&titleDecorationScheme=primary-content', dRes='CatalogMetadata')
                                 if not success:
-                                    Log('Unable to get the video metadata for {0} ({1})'.format(title, res[0][1]), Log.WARNING)
+                                    Log('Unable to get the video metadata for {0} ({1})'.format(res['title'], res['link']), Log.WARNING)
                                 else:
                                     # Find the show Asin URN, if possible
                                     for d in gpr['catalogMetadata']['family']['tvAncestors']:
@@ -655,24 +644,22 @@ class PrimeVideo(Singleton):
                                             self._videodata[sid]['parent'] = id
                                             break
                             if id not in o:
-                                o[id] = {'title': title}
+                                o[id] = {'title': res['title']}
                             if (sid in self._videodata) and ('children' in self._videodata[sid]) and (0 < len(self._videodata[sid]['children'])):
                                 o[id][sid] = {k: {} for k in self._videodata[sid]['children']}
                             else:
                                 # Save tree information if id is a URN and not a title name
-                                if (id is not title):
+                                if (id is not res['title']):
                                     if id not in self._videodata:
                                         self._videodata[id] = {'children': []}
                                     if sid not in self._videodata[id]['children']:
                                         self._videodata[id]['children'].append(sid)
                                     if 'title' not in self._videodata[id]:
-                                        self._videodata[id]['title'] = title
-                                sn = res[3]
-                                n = int(re.sub(r'^[^0-9]*([0-9]+)[^0-9]*$', r'\1', sn))
-                                meta['videometa']['season'] = n
-                                o[id][sid] = {'lazyLoadURL': res[0][1]}
+                                        self._videodata[id]['title'] = res['title']
+                                meta['videometa']['season'] = res['season']['episode']
+                                o[id][sid] = {'lazyLoadURL': res['link']}
                                 bUpdatedVideoData = True
-                                self._videodata[sid]['title'] = sn
+                                self._videodata[sid]['title'] = res['season']['format']
                                 self._videodata[sid]['metadata'] = meta
 
                     # Next page

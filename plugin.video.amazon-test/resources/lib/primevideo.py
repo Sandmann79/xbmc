@@ -31,6 +31,7 @@ class PrimeVideo(Singleton):
     def __init__(self, globalsInstance, settingsInstance):
         self._g = globalsInstance
         self._s = settingsInstance
+        self._seasonData = r'(Stagione|Staffel|Season|Temporada|Saison|Seizoen|Sezon)'
         self._dateParserData = {
             """ Data for date string deconstruction and reassembly
 
@@ -327,8 +328,12 @@ class PrimeVideo(Singleton):
                 return datestr
             p = re.search(self._dateParserData[lang]['deconstruct'], datestr)
             if None is p:
+                Log('Unable to parse date "{0}" with language "{1}"{2}'.format(datestr, lang, '' if 'en_US' != lang else ': trying english'), Log.WARNING)
+                if 'en_US' == lang:
+                    return datestr
                 # Sometimes Amazon returns english everything, let's try to figure out if this is the case
-                p = re.search(self._dateParserData['en_US']['deconstruct'], datestr)
+                lang = 'en_US'
+                p = re.search(self._dateParserData[lang]['deconstruct'], datestr)
                 if None is p:
                     Log('Unable to parse date "{0}" with language "{1}": format changed?'.format(datestr, lang), Log.WARNING)
                     return datestr
@@ -358,6 +363,30 @@ class PrimeVideo(Singleton):
             }
             rq.append((url, obj[urn], urn))
             return True
+
+        def MultiRegexParsing(content, o):
+            for i in o:
+                o[i] = re.search(o[i], content)
+                if None is not o[i]:
+                    o[i] = o[i].groups()
+                    o[i] = Unescape(o[i][0]) if 1 == len(o[i]) else list(o[i])
+                    if 'image' == i:
+                        o[i] = MaxSize(o[i])
+                    elif 'season' == i:
+                        o[i] = {'locale': Unescape(o[i][0]), 'season': int(o[i][1]), 'format': Unescape('{0} {1}'.format(o[i][0], o[i][1]))}
+                    elif 'episode' == i:
+                        o[i] = int(o[i])
+                    elif ('cast' == i) or ('genre' == i) or ('director' == i):
+                        o[i] = re.sub(r'\s*</?a[^>]*>\s*', '', o[i])
+                        o[i] = re.split(r'\s*[,;]\s*', o[i])
+                        # Cast is always to be sent as a list, single string is only required/preferred for Genre and Director
+                        if ('cast' != i) and (1 == len(o[i])):
+                            o[i] = o[i][0]
+                    elif 'rating' == i:
+                        o[i] = int(o[i][0]) + (int(o[i][1]) / 10.0)
+                    elif 'premiered' == i:
+                        o[i] = DelocalizeDate(amzLang, o[i])
+            return o
 
         if 'lazyLoadURL' not in obj:
             return
@@ -421,7 +450,7 @@ class PrimeVideo(Singleton):
                         for entry in re.findall(r'<li[^>]*>\s*<a href="(/[^"]+)"[^>]*>\s*<span>\s*([0-9]+)\s*', pagination.group(0)):
                             if entry[1] not in self._WatchlistPages[refUrn]:
                                 requestURLs.append((self._g.BaseUrl + entry[0], o, refUrn))
-                elif re.search('<div class="av-dp-container">', cnt, flags=re.DOTALL):
+                elif None is not re.search('<div class="av-dp-container">', cnt, flags=re.DOTALL):
                     ''' Movie/series page '''
                     # Find the biggest fanart available
                     bgimg = re.search(r'<div class="av-hero-background[^"]*"[^>]*url\(([^)]+)\)', cnt, flags=re.DOTALL)
@@ -429,29 +458,15 @@ class PrimeVideo(Singleton):
                         bgimg = MaxSize(bgimg.group(1))
 
                     # Extract the global data
-                    rx = [
-                        r'<span data-automation-id="imdb-release-year-badge"[^>]*>\s*([0-9]+)\s*</span>',  # Year
-                        r'<span data-automation-id="imdb-rating-badge"[^>]*>\s*([0-9]+)[,.]([0-9]+)\s*</span>',  # IMDb rating
-                        r'<span data-automation-id="maturity-rating-badge"[^>]*>\s*(.*?)\s*</span>',  # Age rating
-                        r'<dt data-automation-id="meta-info-starring"[^>]*>[^<]*</dt>\s*<dd[^>]*>\s*(.*?)\s*</dd>',  # Starring
-                        r'<dt data-automation-id="meta-info-genres"[^>]*>[^<]*</dt>\s*<dd[^>]*>\s*(.*?)\s*</dd>',  # Genre
-                        r'<dt data-automation-id="meta-info-director"[^>]*>[^<]*</dt>\s*<dd[^>]*>\s*(.*?)\s*</dd>',  # Director
-                        r'<div data-automation-id="synopsis"[^>]*>[^<]*<p>\s*(.*?)\s*</p>',  # Synopsis
-                    ]
-                    results = re.search(r'<section\s+[^>]*class="avu-page-container[^>]*>\s*(.*?)\s*</section>', cnt, flags=re.DOTALL).group(1)
-                    gres = []
-                    for i in range(0, len(rx)):
-                        gres.append(re.search(rx[i], results, flags=re.DOTALL))
-                        if None is not gres[i]:
-                            gres[i] = gres[i].groups()
-                            if 1 == len(gres[i]):
-                                gres[i] = Unescape(gres[i][0])
-                            if (2 < i) and (6 != i):
-                                gres[i] = re.sub(r'\s*</?a[^>]*>\s*', '', gres[i])
-                                gres[i] = re.split(r'\s*[,;]\s*', gres[i])
-                                # Cast is always to be sent as a list, single string is only required/preferred for Genre and Director
-                                if (3 < i) and (1 == len(gres[i])):
-                                    gres[i] = gres[i][0]
+                    gres = MultiRegexParsing(re.search(r'<section\s+[^>]*class="av-detail-section"[^>]*>\s*(.*?)\s*</section>', cnt, flags=re.DOTALL).group(1), {
+                        'cast': r'<dt data-automation-id="meta-info-starring"[^>]*>[^<]*</dt>\s*<dd[^>]*>\s*(.*?)\s*</dd>',  # Starring
+                        'director': r'<dt data-automation-id="meta-info-director"[^>]*>[^<]*</dt>\s*<dd[^>]*>\s*(.*?)\s*</dd>',  # Director
+                        'genre': r'<dt data-automation-id="meta-info-genres"[^>]*>[^<]*</dt>\s*<dd[^>]*>\s*(.*?)\s*</dd>',  # Genre
+                        'mpaa': r'<span data-automation-id="maturity-rating-badge"[^>]*>\s*(.*?)\s*</span>',  # Age rating
+                        'plot': r'<div data-automation-id="synopsis"[^>]*>[^<]*<p>\s*(.*?)\s*</p>',  # Synopsis
+                        'rating': r'<span data-automation-id="imdb-rating-badge"[^>]*>\s*([0-9]+)[,.]([0-9]+)\s*</span>',  # IMDb rating
+                        'year': r'<span data-automation-id="imdb-release-year-badge"[^>]*>\s*([0-9]+)\s*</span>',  # Year
+                    })
 
                     results = re.search(r'<ol\s+[^>]*class="[^"]*av-episode-list[^"]*"[^>]*>\s*(.*?)\s*</ol>', cnt, flags=re.DOTALL)
                     if None is results:
@@ -469,13 +484,8 @@ class PrimeVideo(Singleton):
                                 meta['video'] = ExtractURN(requestURL)
 
                                 # Insert movie information
-                                if None is not gres[0]: meta['videometa']['year'] = gres[0]
-                                if None is not gres[1]: meta['videometa']['rating'] = int(gres[1][0]) + (int(gres[1][1]) / 10.0)
-                                if None is not gres[2]: meta['videometa']['mpaa'] = gres[2]
-                                if None is not gres[3]: meta['videometa']['cast'] = gres[3]
-                                if None is not gres[4]: meta['videometa']['genre'] = gres[4]
-                                if None is not gres[5]: meta['videometa']['director'] = gres[5]
-                                if None is not gres[6]: meta['videometa']['plot'] = gres[6]
+                                for i in gres:
+                                    if None is not gres[i]: meta['videometa'][i] = gres[i]
 
                                 # Extract the runtime
                                 success, gpr = getURLData('catalog/GetPlaybackResources', meta['asin'], useCookie=True, extra=True,
@@ -488,39 +498,35 @@ class PrimeVideo(Singleton):
                     else:
                         ''' Episode list '''
                         for entry in re.findall(r'<li[^>]*>\s*(.*?)\s*</li>', results.group(1), flags=re.DOTALL):
-                            rx = [
-                                r'<a data-automation-id="ep-playback-[0-9]+"[^>]*data-ref="([^"]*)"[^>]*data-title-id="([^"]*)"[^>]*href="([^"]*)"',
-                                r'<div class="av-bgimg__div"[^>]*url\(([^)]+)\)',  # Image
-                                r'<span class="av-play-title-text">\s*(.*?)\s*</span>',  # Title
-                                r'<span data-automation-id="ep-air-date-badge-[0-9]+"[^>]*>\s*(.*?)\s*</span>',  # Original air date
-                                r'<span data-automation-id="ep-amr-badge-[0-9]+"[^>]*>\s*(.*?)\s*</span>',  # Age rating
-                                r'<p data-automation-id="ep-synopsis-[0-9]+"[^>]*>\s*(.*?)\s*</p>',  # Synopsis
-                                r'id="ep-playback-([0-9]+)"',  # Episode number
-                                r'\s+data-title-id="\s*([^"]+?)\s*"',  # Episode's asin
-                            ]
-                            res = []
-                            for i in range(0, len(rx)):
-                                res.append(re.search(rx[i], entry))
-                                if None is not res[i]:
-                                    res[i] = res[i].groups()
-                                    # If holding a single result, don't provide a list
-                                    if 1 == len(res[i]):
-                                        res[i] = Unescape(res[i][0])
-                            if (None is res[0]) or (None is res[2]):
+                            seriesData = MultiRegexParsing(entry, {
+                                'asin': r'<a data-automation-id="ep-playback-[0-9]+"[^>]*data-ref="[^"]*"[^>]*data-title-id="([^"]*)"',
+                                'id': r'<a data-automation-id="ep-playback-[0-9]+"[^>]*data-ref="([^"]*)"',
+                                'url': r'<a data-automation-id="ep-playback-[0-9]+"[^>]*data-ref="[^"]*"[^>]*data-title-id="[^"]*"[^>]*href="([^"]*)"',
+                            })
+                            episodeData = MultiRegexParsing(entry, {
+                                'asin': r'\s+data-title-id="\s*([^"]+?)\s*"',
+                                'image': r'<div class="av-bgimg__div"[^>]*url\(([^)]+)\)',
+                                'title': r'<span class="av-play-title-text">\s*(.*?)\s*</span>',
+                            })
+                            res = MultiRegexParsing(entry, {
+                                'episode': r'id="ep-playback-([0-9]+)"',  # Episode number
+                                'mpaa': r'<span data-automation-id="ep-amr-badge-[0-9]+"[^>]*>\s*(.*?)\s*</span>',  # Age rating
+                                'plot': r'<p data-automation-id="ep-synopsis-[0-9]+"[^>]*>\s*(.*?)\s*</p>',  # Synopsis
+                                'premiered': r'<span data-automation-id="ep-air-date-badge-[0-9]+"[^>]*>\s*(.*?)\s*</span>',  # Original air date
+                            })
+                            if (None is seriesData['url']) or (None is episodeData['title']):
                                 ''' Some episodes might be not playable until a later date or just N/A, although listed '''
                                 continue
-                            meta = {'artmeta': {'thumb': MaxSize(res[1]), 'poster': MaxSize(res[1]), 'fanart': bgimg, }, 'videometa': {'mediatype': 'episode'},
-                                    'id': res[0][0], 'asin': res[0][1], 'videoURL': res[0][2]}
+                            meta = {'artmeta': {'thumb': MaxSize(episodeData['image']), 'poster': MaxSize(episodeData['image']), 'fanart': bgimg, }, 'videometa': {'mediatype': 'episode'},
+                                    'id': seriesData['id'], 'asin': seriesData['asin'], 'videoURL': seriesData['url']}
                             if None is not re.match(r'/[^/]', meta['videoURL']):
                                 meta['videoURL'] = self._g.BaseUrl + meta['videoURL']
                             meta['video'] = ExtractURN(meta['videoURL'])
                             eid = meta['video']
-                            # if None is not res[7]:
-                            #     eid = res[7]
 
                             if (eid not in self._videodata) or ('videometa' not in self._videodata[eid]) or (0 == len(self._videodata[eid]['videometa'])):
                                 # Extract the runtime
-                                success, gpr = getURLData('catalog/GetPlaybackResources', res[7], useCookie=True, extra=True,
+                                success, gpr = getURLData('catalog/GetPlaybackResources', episodeData['asin'], useCookie=True, extra=True,
                                                           opt='&titleDecorationScheme=primary-content', dRes='CatalogMetadata')
                                 if not success:
                                     gpr = None
@@ -533,24 +539,16 @@ class PrimeVideo(Singleton):
                                 #     self._videodata[refUrn] = { 'metadata': { 'videometa': {} }, 'children': [] }
 
                                 # Insert series information
-                                if None is not gres[0]: meta['videometa']['year'] = gres[0]
-                                if None is not gres[1]: meta['videometa']['rating'] = int(gres[1][0]) + (int(gres[1][1]) / 10.0)
-                                if None is not gres[2]: meta['videometa']['mpaa'] = gres[2]
-                                if None is not gres[3]:
-                                    meta['videometa']['cast'] = gres[3]
-                                    self._videodata[refUrn]['metadata']['videometa']['cast'] = gres[3]
-                                if None is not gres[4]:
-                                    meta['videometa']['genre'] = gres[4]
-                                    self._videodata[refUrn]['metadata']['videometa']['genre'] = gres[4]
-                                if None is not gres[5]:
-                                    meta['videometa']['director'] = gres[5]
-                                    self._videodata[refUrn]['metadata']['videometa']['director'] = gres[5]
+                                for i in gres:
+                                    if None is not gres[i]:
+                                        meta['videometa'][i] = gres[i]
+                                        self._videodata[refUrn]['metadata']['videometa'][i] = gres[i]
 
                                 # Insert episode specific information
-                                if None is not res[3]: meta['videometa']['premiered'] = DelocalizeDate(amzLang, res[3])
-                                if None is not res[4]: meta['videometa']['mpaa'] = res[4]
-                                if None is not res[5]: meta['videometa']['plot'] = res[5]
-                                if None is not res[6]:
+                                for i in res:
+                                    if None is not res[i]:
+                                        meta['videometa'][i] = res[i]
+                                if None is not res['episode']:
                                     if 'season' in self._videodata[refUrn]['metadata']['videometa']:
                                         meta['videometa']['season'] = self._videodata[refUrn]['metadata']['videometa']['season']
                                     else:
@@ -565,21 +563,19 @@ class PrimeVideo(Singleton):
                                             ssn = ssn.group(1)
                                             meta['videometa']['season'] = ssn
                                             self._videodata[refUrn]['metadata']['videometa']['season'] = ssn
-                                    meta['videometa']['episode'] = int(res[6])
 
                                 # Episode title cleanup
-                                title = res[2]
-                                if None is not re.match(r'[0-9]+[.]\s*', title):
+                                if None is not re.match(r'[0-9]+[.]\s*', episodeData['title']):
                                     ''' Strip the episode number '''
-                                    title = re.sub(r'^[0-9]+.\s*', '', title)
+                                    episodeData['title'] = re.sub(r'^[0-9]+.\s*', '', episodeData['title'])
                                 else:
                                     ''' Probably an extra trailer or something, remove episode information '''
                                     del meta['videometa']['season']
                                     del meta['videometa']['episode']
 
                                 bUpdatedVideoData = True
-                                self._videodata[eid] = {'metadata': meta, 'title': title, 'parent': refUrn}
-                                NotifyUser(getString(30253).format(title))
+                                self._videodata[eid] = {'metadata': meta, 'title': episodeData['title'], 'parent': refUrn}
+                                NotifyUser(getString(30253).format(episodeData['title']))
                             if eid not in o:
                                 o[eid] = {}
                             if (refUrn in self._videodata) and ('children' in self._videodata[refUrn]) and (eid not in self._videodata[refUrn]['children']):
@@ -588,22 +584,13 @@ class PrimeVideo(Singleton):
                 else:
                     ''' Movie and series list '''
                     for entry in re.findall(r'<div class="[^"]*dvui-beardContainer[^"]*">\s*(.*?)\s*</form>\s*</div>\s*</div>\s*</div>', cnt, flags=re.DOTALL):
-                        res = {
-                            'title': r'<a class="av-beard-title-link"[^>]*>\s*(.*?)\s*</a>',
+                        res = MultiRegexParsing(entry, {
                             'asin': r'\s+data-asin="\s*([^"]+?)\s*"',
                             'image': r'<a [^>]+><img\s+[^>]*src="([^"]+)"',
                             'link': r'<a href="([^"]+)"><img',
-                            'season': r'<span>\s*(Stagione|Staffel|Season|Temporada|Saison|Seizoen|Sezon)\s+([0-9]+)\s*</span>',
-                        }
-                        for i in res:
-                            res[i] = re.search(res[i], entry)
-                            if None is not res[i]:
-                                res[i] = res[i].groups()
-                                res[i] = Unescape(res[i][0]) if 1 == len(res[i]) else list(res[i])
-                                if 'image' == i:
-                                    res[i] = MaxSize(res[i])
-                                elif 'season' == i:
-                                    res[i] = {'locale': Unescape(res[i][0]), 'episode': int(res[i][1]), 'format': Unescape('{0} {1}'.format(res[i][0], res[i][1]))}
+                            'season': r'<span>\s*' + self._seasonData + r'\s+([0-9]+)\s*</span>',
+                            'title': r'<a class="av-beard-title-link"[^>]*>\s*(.*?)\s*</a>',
+                        })
                         NotifyUser(getString(30253).format(res['title']))
                         if None is not re.match(r'/[^/]', res['link']):
                             res['link'] = self._g.BaseUrl + res['link']
@@ -656,7 +643,7 @@ class PrimeVideo(Singleton):
                                         self._videodata[id]['children'].append(sid)
                                     if 'title' not in self._videodata[id]:
                                         self._videodata[id]['title'] = res['title']
-                                meta['videometa']['season'] = res['season']['episode']
+                                meta['videometa']['season'] = res['season']['season']
                                 o[id][sid] = {'lazyLoadURL': res['link']}
                                 bUpdatedVideoData = True
                                 self._videodata[sid]['title'] = res['season']['format']

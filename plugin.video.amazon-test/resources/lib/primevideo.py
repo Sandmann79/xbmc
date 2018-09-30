@@ -36,7 +36,7 @@ class PrimeVideo(Singleton):
             """ Data for date string deconstruction and reassembly
 
                 Date references:
-                https://www.primevideo.com/detail/0LCQSTWDMN9V770DG2DKXY3GVF/  01 02 03 04 05 09 10 11 12
+                https://www.primevideo.com/detail/0LCQSTWDMN9V770DG2DKXY3GVF/  09 10 11 12 01 02 03 04 05
                 https://www.primevideo.com/detail/0ND5POOAYD6A4THTH7C1TD3TYE/  06 07 08 09
             """
             'de_DE': {'deconstruct': r'^([0-9]+)\.\s+([^\s]+)\s+([0-9]+)', 'reassemble': '{2}-{1:0>2}-{0:0>2}', 'month': 1,
@@ -77,6 +77,7 @@ class PrimeVideo(Singleton):
 
     def _LoadCache(self):
         """ Load cached catalog and video data """
+
         from os.path import join as OSPJoin
         from xbmcvfs import exists
 
@@ -94,6 +95,7 @@ class PrimeVideo(Singleton):
 
     def BrowseRoot(self):
         """ Build and load the root PrimeVideo menu """
+
         if 0 == len(self._catalog):
             ''' Build the root catalog '''
             if not self.BuildRoot():
@@ -102,6 +104,7 @@ class PrimeVideo(Singleton):
 
     def BuildRoot(self):
         """ Parse the top menu on primevideo.com and build the root catalog """
+
         self._catalog['root'] = OrderedDict()
         home = getURL(self._g.BaseUrl, silent=True, useCookie=True, rjson=False)
         if None is home:
@@ -143,6 +146,7 @@ class PrimeVideo(Singleton):
 
     def Search(self):
         """ Provide search functionality for PrimeVideo """
+
         searchString = self._g.dialog.input(getString(24121)).strip(' \t\n\r')
         if 0 == len(searchString):
             xbmcplugin.endOfDirectory(self._g.pluginhandle, succeeded=False)
@@ -299,6 +303,7 @@ class PrimeVideo(Singleton):
 
             def BeautifyText(title):
                 """ Correct stylistic errors in Amazon's titles """
+
                 for t in [(r'\s+-\s*', ' – '),  # Convert dash from small to medium where needed
                           (r'\s*-\s+', ' – '),  # Convert dash from small to medium where needed
                           (r'^\s+', ''),  # Remove leading spaces
@@ -312,10 +317,12 @@ class PrimeVideo(Singleton):
 
         def MaxSize(imgUrl):
             """ Strip the dynamic resize triggers from the URL (and other effects, such as blur) """
+
             return re.sub(r'\._.*_\.', '.', imgUrl)
 
         def ExtractURN(url):
             """ Extract the unique resource name identifier """
+
             ret = re.search(r'(/gp/video)?/detail/([^/]+)/', url)
             if None is not ret:
                 ret = ret.group(2)
@@ -323,6 +330,7 @@ class PrimeVideo(Singleton):
 
         def DelocalizeDate(lang, datestr):
             """ Convert language based timestamps into YYYY-MM-DD """
+
             if lang not in self._dateParserData:
                 Log('Unable to decode date "{0}": language "{1}" not supported'.format(datestr, lang), Log.WARNING)
                 return datestr
@@ -343,6 +351,7 @@ class PrimeVideo(Singleton):
 
         def NotifyUser(msg):
             """ Pop up messages while scraping to inform users of progress """
+
             if not hasattr(NotifyUser, 'lastNotification'):
                 NotifyUser.lastNotification = 0
             if NotifyUser.lastNotification < time.time():
@@ -352,6 +361,7 @@ class PrimeVideo(Singleton):
 
         def PopulateInlineMovieSeries(obj, rq, title, image, url):
             """ Takes a sequence of Movies or TV Series such as in watchlist and carousels and fetches the metadata """
+
             # Log('PIMS: %s %s %s %s %s' % (obj, rq, title, image, url))
             urn = ExtractURN(url)
             obj[urn] = {}
@@ -365,6 +375,8 @@ class PrimeVideo(Singleton):
             return True
 
         def MultiRegexParsing(content, o):
+            """ Takes a dictionary of regex and applies them to content, returning a filtered dictionary of results """
+
             for i in o:
                 o[i] = re.search(o[i], content)
                 if None is not o[i]:
@@ -498,13 +510,13 @@ class PrimeVideo(Singleton):
                     else:
                         ''' Episode list '''
                         for entry in re.findall(r'<li[^>]*>\s*(.*?)\s*</li>', results.group(1), flags=re.DOTALL):
-                            seriesData = MultiRegexParsing(entry, {
-                                'asin': r'<a data-automation-id="ep-playback-[0-9]+"[^>]*data-ref="[^"]*"[^>]*data-title-id="([^"]*)"',
+                            md = MultiRegexParsing(entry, {
+                                # Series data
+                                'asinS': r'<a data-automation-id="ep-playback-[0-9]+"[^>]*data-ref="[^"]*"[^>]*data-title-id="([^"]*)"',
                                 'id': r'<a data-automation-id="ep-playback-[0-9]+"[^>]*data-ref="([^"]*)"',
                                 'url': r'<a data-automation-id="ep-playback-[0-9]+"[^>]*data-ref="[^"]*"[^>]*data-title-id="[^"]*"[^>]*href="([^"]*)"',
-                            })
-                            episodeData = MultiRegexParsing(entry, {
-                                'asin': r'\s+data-title-id="\s*([^"]+?)\s*"',
+                                # Eposide data
+                                'asinE': r'\s+data-title-id="\s*([^"]+?)\s*"',
                                 'image': r'<div class="av-bgimg__div"[^>]*url\(([^)]+)\)',
                                 'title': r'<span class="av-play-title-text">\s*(.*?)\s*</span>',
                             })
@@ -514,11 +526,11 @@ class PrimeVideo(Singleton):
                                 'plot': r'<p data-automation-id="ep-synopsis-[0-9]+"[^>]*>\s*(.*?)\s*</p>',  # Synopsis
                                 'premiered': r'<span data-automation-id="ep-air-date-badge-[0-9]+"[^>]*>\s*(.*?)\s*</span>',  # Original air date
                             })
-                            if (None is seriesData['url']) or (None is episodeData['title']):
+                            if (None is md['url']) or (None is md['title']):
                                 ''' Some episodes might be not playable until a later date or just N/A, although listed '''
                                 continue
-                            meta = {'artmeta': {'thumb': MaxSize(episodeData['image']), 'poster': MaxSize(episodeData['image']), 'fanart': bgimg, }, 'videometa': {'mediatype': 'episode'},
-                                    'id': seriesData['id'], 'asin': seriesData['asin'], 'videoURL': seriesData['url']}
+                            meta = {'artmeta': {'thumb': md['image'], 'poster': md['image'], 'fanart': bgimg, },
+                                    'videometa': {'mediatype': 'episode'}, 'id': md['id'], 'asin': md['asinS'], 'videoURL': md['url']}
                             if None is not re.match(r'/[^/]', meta['videoURL']):
                                 meta['videoURL'] = self._g.BaseUrl + meta['videoURL']
                             meta['video'] = ExtractURN(meta['videoURL'])
@@ -526,7 +538,7 @@ class PrimeVideo(Singleton):
 
                             if (eid not in self._videodata) or ('videometa' not in self._videodata[eid]) or (0 == len(self._videodata[eid]['videometa'])):
                                 # Extract the runtime
-                                success, gpr = getURLData('catalog/GetPlaybackResources', episodeData['asin'], useCookie=True, extra=True,
+                                success, gpr = getURLData('catalog/GetPlaybackResources', md['asinE'], useCookie=True, extra=True,
                                                           opt='&titleDecorationScheme=primary-content', dRes='CatalogMetadata')
                                 if not success:
                                     gpr = None
@@ -565,17 +577,17 @@ class PrimeVideo(Singleton):
                                             self._videodata[refUrn]['metadata']['videometa']['season'] = ssn
 
                                 # Episode title cleanup
-                                if None is not re.match(r'[0-9]+[.]\s*', episodeData['title']):
+                                if None is not re.match(r'[0-9]+[.]\s*', md['title']):
                                     ''' Strip the episode number '''
-                                    episodeData['title'] = re.sub(r'^[0-9]+.\s*', '', episodeData['title'])
+                                    md['title'] = re.sub(r'^[0-9]+.\s*', '', md['title'])
                                 else:
                                     ''' Probably an extra trailer or something, remove episode information '''
                                     del meta['videometa']['season']
                                     del meta['videometa']['episode']
 
                                 bUpdatedVideoData = True
-                                self._videodata[eid] = {'metadata': meta, 'title': episodeData['title'], 'parent': refUrn}
-                                NotifyUser(getString(30253).format(episodeData['title']))
+                                self._videodata[eid] = {'metadata': meta, 'title': md['title'], 'parent': refUrn}
+                                NotifyUser(getString(30253).format(md['title']))
                             if eid not in o:
                                 o[eid] = {}
                             if (refUrn in self._videodata) and ('children' in self._videodata[refUrn]) and (eid not in self._videodata[refUrn]['children']):

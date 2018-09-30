@@ -197,7 +197,7 @@ class PrimeVideo(Singleton):
             if 'verb' not in entry:
                 url += 'PrimeVideo_Browse&path={0}-//-{1}'.format(quote_plus(path.encode('utf-8')), quote_plus(key.encode('utf-8')))
                 # Squash season number folder when only one season is available
-                if ('metadata' not in entry) and ('children' in entry) and (1 == len(entry['children'])):
+                if ('children' in entry) and (1 == len(entry['children'])):
                     url += '-//-{0}'.format(quote_plus(entry['children'][0].encode('utf-8')))
             else:
                 url += entry['verb']

@@ -194,6 +194,11 @@ class PrimeVideo(Singleton):
                 continue
             url = '{0}?mode='.format(self._g.pluginid)
             entry = node[key] if key not in self._videodata else self._videodata[key]
+
+            # Skip items that are out of catalog
+            if ('metadata' in entry) and ('unavailable' in entry['metadata']):
+                continue
+
             if 'verb' not in entry:
                 url += 'PrimeVideo_Browse&path={0}-//-{1}'.format(quote_plus(path.encode('utf-8')), quote_plus(key.encode('utf-8')))
                 # Squash season number folder when only one season is available
@@ -490,8 +495,10 @@ class PrimeVideo(Singleton):
                         for entry in re.findall(r'<a href="([^"]+/)[^"/]+" class="DigitalVideoUI_TabHeading__tab[^"]*">(.*?)</a>', cnt, flags=re.DOTALL):
                             obj[Unescape(entry[1])] = {'title': Unescape(entry[1]), 'lazyLoadURL': self._g.BaseUrl + entry[0] + '?sort=DATE_ADDED_DESC'}
                         continue
-                    for entry in re.findall(r'<div[^>]* class="[^"]*DigitalVideoWebNodeLists_Item__item[^"]*"[^>]*>\s*<a href="(/detail/[^/]+/)[^"]*"[^>]*>*.*?<img src="([^"]+)".*?"[^"]*DigitalVideoWebNodeLists_Item__coreTitle[^"]*"[^>]*>\s*(.*?)\s*</', cnt):
-                        bUpdatedVideoData = True if PopulateInlineMovieSeries(obj, requestURLs, Unescape(entry[2]), MaxSize(Unescape(entry[1])), self._g.BaseUrl + entry[0]) else bUpdatedVideoData
+                    for entry in re.findall(r'<div[^>]* class="[^"]*DigitalVideoWebNodeLists_Item__item[^"]*"[^>]*>\s*<a href="(/detail/[^/]+/)[^"]*"[^>]*>*.*?'
+                                            r'<img src="([^"]+)".*?"[^"]*DigitalVideoWebNodeLists_Item__coreTitle[^"]*"[^>]*>\s*(.*?)\s*</', cnt):
+                        bUpdatedVideoData = True if PopulateInlineMovieSeries(obj, requestURLs, Unescape(entry[2]), MaxSize(Unescape(entry[1])),
+                                                                              self._g.BaseUrl + entry[0]) else bUpdatedVideoData
                     pagination = re.search(r'<ol[^>]* class="[^"]*DigitalVideoUI_Pagination__pagination[^"]*"[^>]*>(.*?)</ol>', cnt)
                     if None is not pagination:
                         # We save a semi-static list of scraped pages, to avoid circular loops
@@ -526,7 +533,9 @@ class PrimeVideo(Singleton):
                         ''' Standalone movie '''
                         if 'video' not in self._videodata[refUrn]['metadata']:
                             asin = re.search(r'"asin":"([^"]*)"', cnt, flags=re.DOTALL)
-                            if None is not asin:
+                            if None is asin:
+                                self._videodata[refUrn]['metadata']['unavailable'] = True
+                            else:
                                 bUpdatedVideoData = True
 
                                 meta = self._videodata[refUrn]['metadata']

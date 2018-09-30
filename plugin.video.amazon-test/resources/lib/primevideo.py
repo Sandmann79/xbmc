@@ -129,7 +129,7 @@ class PrimeVideo(Singleton):
                 continue
             # Remove react comments
             title = re.sub('^<!--\s*[^>]+\s*-->', '', re.sub('<!--\s*[^>]+\s*-->$', '', item.group(2)))
-            self._catalog['root'][title] = {'title': title, 'lazyLoadURL': self._g.BaseUrl + item.group(1) + '?_encoding=UTF8&format=json'}
+            self._catalog['root'][title] = {'title': title, 'lazyLoadURL': self._g.BaseUrl + item.group(1) + '?_encoding=UTF8'}
         if 0 == len(self._catalog['root']):
             self._g.dialog.notification('PrimeVideo error', 'Unable to build the root catalog from primevideo.com', xbmcgui.NOTIFICATION_ERROR)
             Log('Unable to build the root catalog from primevideo.com', Log.ERROR)
@@ -177,7 +177,7 @@ class PrimeVideo(Singleton):
             node = node[n]
 
         if (nodeName in self._videodata) and ('metadata' in self._videodata[nodeName]) and ('video' in self._videodata[nodeName]['metadata']):
-            """ Start the playback if on a video leaf """
+            ''' Start the playback if on a video leaf '''
             PlayVideo(self._videodata[nodeName]['metadata']['video'], self._videodata[nodeName]['metadata']['asin'], '', 0)
             return
 
@@ -367,10 +367,7 @@ class PrimeVideo(Singleton):
             obj[urn] = {}
             if urn in self._videodata:
                 return False
-            self._videodata[urn] = {
-                'metadata': {'artmeta': {'thumb': MaxSize(image), 'poster': MaxSize(image)}, 'videometa': {}},
-                'title': Unescape(title)
-            }
+            self._videodata[urn] = {'metadata': {'artmeta': {'thumb': image, 'poster': image}, 'videometa': {}}, 'title': title}
             rq.append((url, obj[urn], urn))
             return True
 
@@ -441,16 +438,60 @@ class PrimeVideo(Singleton):
 
             for t in [('\\\\n', '\n'), ('\\n', '\n'), ('\\\\"', '"'), (r'^\s+', '')]:
                 cnt = re.sub(t[0], t[1], cnt, flags=re.DOTALL)
-            if None is not re.search('<html[^>]*>', cnt):
-                ''' If there's an HTML tag it's no JSON-AmazonUI-Streaming object '''
-                if None is not re.search(r'<div[^>]* id="Watchlist"[^>]*>', cnt, flags=re.DOTALL):
+            if None is not re.search('<div id="content" class="[^"]*a-container[^"]*">', cnt):
+                ''' Categories list '''
+                from BeautifulSoup import BeautifulSoup
+                soup = BeautifulSoup(cnt, convertEntities=BeautifulSoup.HTML_ENTITIES)
+
+                # Pagination
+                try:
+                    requestURLs.append(Unescape(soup.find("div", {"id": "dv-pagination"}).find('a')['href']))
+                except:
+                    pass
+
+                # Categories
+                for section in soup.findAll('div', 'dv-collection'):
+
+                    # We skip carousels without a name (such as the giant one in the homepage)
+                    try:
+                        title = Unescape(section.find('h2').find('span').next.strip())
+                    except:
+                        continue
+
+                    # Widow carousels have no exploration links in the header
+                    o[title] = {'title': title}
+                    try:
+                        link = Unescape(section.find('h2').find('a')['href'])
+                    except:
+                        ''' The carousel has no explore link, we need to parse what we can from the carousel itself '''
+                        for entry in section.findAll('li'):
+                            itemTitle = entry.find('span', 'dv-core-title').next.strip()
+                            link = Unescape(entry.find('a')['href'])
+                            try:
+                                image = entry.find('img')['src']
+                            except:
+                                image = entry.find('div', 'dv-lazy-load')['data-a-image-source']
+                            image = MaxSize(Unescape(image))
+                            if None is not re.search(r'/search/', link):
+                                ''' Category '''
+                                o[title][itemTitle] = {'metadata': {'artmeta': {'thumb': image, 'poster': image}},
+                                                       'lazyLoadURL': link, 'title': itemTitle}
+                            else:
+                                ''' Movie/Series list '''
+                                bUpdatedVideoData = True if PopulateInlineMovieSeries(o[title], requestURLs, itemTitle, image, link) else bUpdatedVideoData
+                    else:
+                        ''' The carousel has explore link '''
+                        NotifyUser(getString(30253).format(title))
+                        o[title]['lazyLoadURL'] = link
+            else:
+                if None is not re.search(r'<div\s+[^>]*id="Watchlist"[^>]*>', cnt, flags=re.DOTALL):
                     ''' Watchlist '''
                     if ('Watchlist' == objName):
-                        for entry in re.findall(r'<a href="([^"]+/)[^"/]+" class="DigitalVideoUI_TabHeading__tab([^"]*DigitalVideoUI_TabHeading__active)?">(.*?)</a>', cnt, flags=re.DOTALL):
-                            obj[Unescape(entry[2])] = {'title': Unescape(entry[2]), 'lazyLoadURL': self._g.BaseUrl + entry[0] + '?sort=DATE_ADDED_DESC'}
+                        for entry in re.findall(r'<a href="([^"]+/)[^"/]+" class="DigitalVideoUI_TabHeading__tab[^"]*">(.*?)</a>', cnt, flags=re.DOTALL):
+                            obj[Unescape(entry[1])] = {'title': Unescape(entry[1]), 'lazyLoadURL': self._g.BaseUrl + entry[0] + '?sort=DATE_ADDED_DESC'}
                         continue
                     for entry in re.findall(r'<div[^>]* class="[^"]*DigitalVideoWebNodeLists_Item__item[^"]*"[^>]*>\s*<a href="(/detail/[^/]+/)[^"]*"[^>]*>*.*?<img src="([^"]+)".*?"[^"]*DigitalVideoWebNodeLists_Item__coreTitle[^"]*"[^>]*>\s*(.*?)\s*</', cnt):
-                        bUpdatedVideoData = True if PopulateInlineMovieSeries(obj, requestURLs, entry[2], entry[1], self._g.BaseUrl + entry[0]) else bUpdatedVideoData
+                        bUpdatedVideoData = True if PopulateInlineMovieSeries(obj, requestURLs, Unescape(entry[2]), MaxSize(Unescape(entry[1])), self._g.BaseUrl + entry[0]) else bUpdatedVideoData
                     pagination = re.search(r'<ol[^>]* class="[^"]*DigitalVideoUI_Pagination__pagination[^"]*"[^>]*>(.*?)</ol>', cnt)
                     if None is not pagination:
                         # We save a semi-static list of scraped pages, to avoid circular loops
@@ -592,7 +633,6 @@ class PrimeVideo(Singleton):
                                 o[eid] = {}
                             if (refUrn in self._videodata) and ('children' in self._videodata[refUrn]) and (eid not in self._videodata[refUrn]['children']):
                                 self._videodata[refUrn]['children'].append(eid)
-
                 else:
                     ''' Movie and series list '''
                     for entry in re.findall(r'<div class="[^"]*dvui-beardContainer[^"]*">\s*(.*?)\s*</form>\s*</div>\s*</div>\s*</div>', cnt, flags=re.DOTALL):
@@ -663,42 +703,13 @@ class PrimeVideo(Singleton):
 
                     # Next page
                     pagination = re.search(
-                        r'<ol\s+[^>]*id="[^"]*av-pagination[^"]*"[^>]*>.*?<li\s+[^>]*class="[^"]*av-pagination-current-page[^"]*"[^>]*>.*?</li>\s*<li\s+[^>]*class="av-pagination[^>]*>\s*(.*?)\s*</li>\s*</ol>',
+                        r'<li\s+[^>]*class="[^"]*av-pagination-current-page[^"]*"[^>]*>.*?</li>\s*<li\s+[^>]*class="av-pagination[^>]*>\s*(.*?)\s*</li>',
                         cnt, flags=re.DOTALL)
                     if None is not pagination:
                         nru = Unescape(re.search(r'href="([^"]+)"', pagination.group(1), flags=re.DOTALL).group(1))
                         if None is not re.match(r'/[^/]', nru):
                             nru = self._g.BaseUrl + nru
                         requestURLs.append(nru)
-            else:
-                ''' Categories list '''
-                for section in re.split(r'&&&\s+', cnt):
-                    if 0 == len(section):
-                        continue
-                    section = re.split(r'","', section[2:-2])
-                    if 'dvappend' == section[0]:
-                        title = Unescape(re.sub(r'^.*<h2[^>]*>\s*<span[^>]*>\s*(.*?)\s*</span>.*$', r'\1', section[2], flags=re.DOTALL))
-                        NotifyUser(getString(30253).format(title))
-                        o[title] = {'title': title}
-                        if None is not re.search('<h2[^>]*>.*?<a\s+[^>]*\s+href="[^"]+"[^>]*>.*?</h2>', section[2], flags=re.DOTALL):
-                            o[title]['lazyLoadURL'] = Unescape(
-                                re.sub('\\n', '', re.sub(r'^.*?<h2[^>]*>.*?<a\s+[^>]*\s+href="([^"]+)"[^>]*>.*?</h2>.*?$', r'\1', section[2], flags=re.DOTALL)))
-                        else:
-                            ''' The carousel has no explore link, we need to parse what we can from the carousel itself '''
-                            for entry in re.findall(r'<li[^>]*>\s*(.*?)\s*</li>', section[2], flags=re.DOTALL):
-                                parts = re.search(
-                                    r'<a\s+[^>]*href="([^"]*)"[^>]*>\s*.*?(src|data-a-image-source)="([^"]*)"[^>]*>.*?class="dv-core-title"[^>]*>\s*(.*?)\s*</span>',
-                                    entry, flags=re.DOTALL)
-                                if None is not re.search(r'/search/', parts.group(1)):
-                                    ''' Category '''
-                                    o[title][parts.group(4)] = {'metadata': {'artmeta': {'thumb': MaxSize(parts.group(3)), 'poster': MaxSize(parts.group(3))}},
-                                                                'lazyLoadURL': parts.group(1), 'title': parts.group(4)}
-                                else:
-                                    ''' Movie/Series list '''
-                                    bUpdatedVideoData = True if PopulateInlineMovieSeries(o[title], requestURLs, parts.group(4), parts.group(3), parts.group(1)) else bUpdatedVideoData
-                    pagination = re.search(r'data-ajax-pagination="{&quot;href&quot;:&quot;([^}]+)&quot;}"', section[2], flags=re.DOTALL)
-                    if ('dvupdate' == section[0]) and (None is not pagination):
-                        requestURLs.append(re.sub(r'(&quot;,&quot;|&amp;)', '&', re.sub('&quot;:&quot;', '=', pagination.group(1) + '&format=json')))
             if 0 < len(requestURLs):
                 NotifyUser(getString(30252))
 

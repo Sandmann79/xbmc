@@ -44,4 +44,3 @@ def writeConfig(cfile, value):
             l.close()
             if time.time() - modified > 0.1:
                 xbmcvfs.delete(cfglockfile)
-

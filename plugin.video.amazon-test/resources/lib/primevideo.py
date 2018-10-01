@@ -693,17 +693,14 @@ class PrimeVideo(Singleton):
                                             break
                             if id not in o:
                                 o[id] = {'title': res['title']}
+                                if id not in self._videodata:
+                                    self._videodata[id] = {'title': res['title'], 'children': []}
                             if (sid in self._videodata) and ('children' in self._videodata[sid]) and (0 < len(self._videodata[sid]['children'])):
                                 o[id][sid] = {k: {} for k in self._videodata[sid]['children']}
                             else:
                                 # Save tree information if id is a URN and not a title name
-                                if (id is not res['title']):
-                                    if id not in self._videodata:
-                                        self._videodata[id] = {'children': []}
-                                    if sid not in self._videodata[id]['children']:
+                                if (id is not res['title']) and (sid not in self._videodata[id]['children']):
                                         self._videodata[id]['children'].append(sid)
-                                    if 'title' not in self._videodata[id]:
-                                        self._videodata[id]['title'] = res['title']
                                 meta['videometa']['season'] = res['season']['season']
                                 o[id][sid] = {'lazyLoadURL': res['link']}
                                 bUpdatedVideoData = True

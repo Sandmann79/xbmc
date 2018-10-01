@@ -739,8 +739,8 @@ class _AmazonPlayer(xbmc.Player):
             return True
         dbtype = _getListItem('DBTYPE')
         result = jsonRPC('VideoLibrary.Get%sDetails' % dbtype, 'resume,playcount', {'%sid' % dbtype: self.dbid})
-        position = int(result[dbtype.lower()+'details']['resume']['position'])
-        playcount = int(result[dbtype.lower()+'details']['playcount'])
+        position = int(result[dbtype.lower() + 'details']['resume']['position'])
+        playcount = int(result[dbtype.lower() + 'details']['playcount'])
         Log(result, Log.DEBUG)
 
         if playcount:

@@ -497,7 +497,7 @@ def PlayVideo(name, asin, adultstr, trailer, forcefb=0):
 
         Log(mpd, Log.DEBUG)
 
-        if (not extern) or g.UsePrimeVideo:
+        if (not extern):
             mpaa_check = _getListItem('MPAA') in mpaa_str + mpaa_str.replace(' ', '') or isAdult
             title = _getListItem('Label')
             thumb = _getListItem('Art(season.poster)')

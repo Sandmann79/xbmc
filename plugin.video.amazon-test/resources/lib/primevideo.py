@@ -190,7 +190,7 @@ class PrimeVideo(Singleton):
 
         folderType = 0 if 'root' == path else 1
         for key in node:
-            if key in ['metadata', 'ref', 'title', 'verb', 'children']:
+            if key in ['metadata', 'ref', 'title', 'verb', 'children', 'parent']:
                 continue
             url = '{0}?mode='.format(self._g.pluginid)
             entry = node[key] if key not in self._videodata else self._videodata[key]
@@ -364,18 +364,6 @@ class PrimeVideo(Singleton):
                 NotifyUser.lastNotification = 1 + time.time()
                 self._g.dialog.notification(self._g.addon.getAddonInfo('name'), msg, time=1000, sound=False)
 
-        def PopulateInlineMovieSeries(obj, rq, title, image, url):
-            """ Takes a sequence of Movies or TV Series such as in watchlist and carousels and fetches the metadata """
-
-            # Log('PIMS: %s %s %s %s %s' % (obj, rq, title, image, url))
-            urn = ExtractURN(url)
-            obj[urn] = {}
-            if urn in self._videodata:
-                return False
-            self._videodata[urn] = {'metadata': {'artmeta': {'thumb': image, 'poster': image}, 'videometa': {}}, 'title': title}
-            rq.append((url, obj[urn], urn))
-            return True
-
         def MultiRegexParsing(content, o):
             """ Takes a dictionary of regex and applies them to content, returning a filtered dictionary of results """
 
@@ -418,16 +406,30 @@ class PrimeVideo(Singleton):
         while 0 < len(requestURLs):
             # We linearize and avoid recursion through requestURLs differentiation
             # - String: request url, the obj parameter is the root object
-            # - Tuple(URL, object, [urn]): request url, object reference and its urn
+            # - Tuple(URL, object, urn, [bFromWidow]): request url, object reference, URN, and if it's from a widow carousel
             if not isinstance(requestURLs[0], tuple):
                 requestURL = requestURLs[0]
                 o = obj
                 refUrn = objName
+                bFromWidowCarousel = False
             else:
                 requestURL = requestURLs[0][0]
                 o = requestURLs[0][1]
                 refUrn = requestURLs[0][2]
+                bFromWidowCarousel = 3 < len(requestURLs[0])
             del requestURLs[0]
+
+            # If we're coming from a widowed carousel we could exploit the cached video data to further improve loading times
+            if bFromWidowCarousel and (refUrn in self._videodata):
+                Log(self._videodata[refUrn])
+                if ('unavailable' not in self._videodata[refUrn]['metadata']) and ('season' == self._videodata[refUrn]['metadata']['videometa']['mediatype']):
+                    o[self._videodata[refUrn]['parent']] = self._videodata[self._videodata[refUrn]['parent']]
+                    o = o[self._videodata[refUrn]['parent']]
+                o[refUrn] = self._videodata[refUrn]
+                if ('children' in self._videodata[refUrn]) and (0 < len(self._videodata[refUrn]['children'])):
+                    o[refUrn] = {k: {} for k in self._videodata[refUrn]['children']}
+                continue
+
             couldNotParse = False
             try:
                 cnt = getURL(requestURL, silent=True, useCookie=True, rjson=False)
@@ -443,47 +445,45 @@ class PrimeVideo(Singleton):
 
             for t in [('\\\\n', '\n'), ('\\n', '\n'), ('\\\\"', '"'), (r'^\s+', '')]:
                 cnt = re.sub(t[0], t[1], cnt, flags=re.DOTALL)
-            if None is not re.search('<div id="content" class="[^"]*a-container[^"]*">', cnt):
+            if None is not re.search('<div id="Storefront">', cnt):
                 ''' Categories list '''
                 from BeautifulSoup import BeautifulSoup
                 soup = BeautifulSoup(cnt, convertEntities=BeautifulSoup.HTML_ENTITIES)
 
                 # Pagination
                 try:
-                    requestURLs.append(Unescape(soup.find("div", {"id": "dv-pagination"}).find('a')['href']))
+                    requestURLs.append(self._g.BaseUrl + Unescape(soup.find("a", "tst-pagination")['href']))
                 except:
                     pass
 
                 # Categories
-                for section in soup.findAll('div', 'dv-collection'):
+                for section in soup.findAll('div', 'tst-collection'):
 
                     # We skip carousels without a name (such as the giant one in the homepage)
                     try:
-                        title = Unescape(section.find('h2').find('span').next.strip())
+                        title = Unescape(section.find('h2').next.strip())
                     except:
                         continue
 
                     # Widow carousels have no exploration links in the header
                     o[title] = {'title': title}
                     try:
-                        link = Unescape(section.find('h2').find('a')['href'])
+                        link = self._g.BaseUrl + Unescape(section.find('a', 'tst-see-more')['href'])
                     except:
                         ''' The carousel has no explore link, we need to parse what we can from the carousel itself '''
                         for entry in section.findAll('li'):
-                            itemTitle = entry.find('span', 'dv-core-title').next.strip()
-                            link = Unescape(entry.find('a')['href'])
-                            try:
-                                image = entry.find('img')['src']
-                            except:
-                                image = entry.find('div', 'dv-lazy-load')['data-a-image-source']
-                            image = MaxSize(Unescape(image))
-                            if None is not re.search(r'/search/', link):
-                                ''' Category '''
-                                o[title][itemTitle] = {'metadata': {'artmeta': {'thumb': image, 'poster': image}},
-                                                       'lazyLoadURL': link, 'title': itemTitle}
+                            e = entry.find('div', 'DigitalVideoWebNodeStorefront_TextOverlay__OverlayedTextWrapper')
+                            link = self._g.BaseUrl + Unescape(entry.find('a')['href'])
+                            if None is not e:
+                                # Genres/Categories
+                                e = e.next.strip()
+                                image = MaxSize(Unescape(entry.find('img')['src']))
+                                if None is not re.search(r'/search/', link):
+                                    o[title][e] = {'metadata': {'artmeta': {'thumb': image, 'poster': image}}, 'lazyLoadURL': link, 'title': e}
                             else:
-                                ''' Movie/Series list '''
-                                bUpdatedVideoData = True if PopulateInlineMovieSeries(o[title], requestURLs, itemTitle, image, link) else bUpdatedVideoData
+                                # Widow carousel with movies/TV series. Most information has been stripped away from
+                                # the carousel, so we can't do more than just forwarding a request
+                                requestURLs.append((link, o[title], ExtractURN(link), True))
                     else:
                         ''' The carousel has explore link '''
                         NotifyUser(getString(30253).format(title))
@@ -493,12 +493,11 @@ class PrimeVideo(Singleton):
                     ''' Watchlist '''
                     if ('Watchlist' == objName):
                         for entry in re.findall(r'<a href="([^"]+/)[^"/]+" class="DigitalVideoUI_TabHeading__tab[^"]*">(.*?)</a>', cnt, flags=re.DOTALL):
-                            obj[Unescape(entry[1])] = {'title': Unescape(entry[1]), 'lazyLoadURL': self._g.BaseUrl + entry[0] + '?sort=DATE_ADDED_DESC'}
+                            o[Unescape(entry[1])] = {'title': Unescape(entry[1]), 'lazyLoadURL': self._g.BaseUrl + entry[0] + '?sort=DATE_ADDED_DESC'}
                         continue
                     for entry in re.findall(r'<div[^>]* class="[^"]*DigitalVideoWebNodeLists_Item__item[^"]*"[^>]*>\s*<a href="(/detail/[^/]+/)[^"]*"[^>]*>*.*?'
                                             r'<img src="([^"]+)".*?"[^"]*DigitalVideoWebNodeLists_Item__coreTitle[^"]*"[^>]*>\s*(.*?)\s*</', cnt):
-                        bUpdatedVideoData = True if PopulateInlineMovieSeries(obj, requestURLs, Unescape(entry[2]), MaxSize(Unescape(entry[1])),
-                                                                              self._g.BaseUrl + entry[0]) else bUpdatedVideoData
+                        requestURLs.append((self._g.BaseUrl + entry[0], o, ExtractURN(entry[0]), True))
                     pagination = re.search(r'<ol[^>]* class="[^"]*DigitalVideoUI_Pagination__pagination[^"]*"[^>]*>(.*?)</ol>', cnt)
                     if None is not pagination:
                         # We save a semi-static list of scraped pages, to avoid circular loops
@@ -528,9 +527,15 @@ class PrimeVideo(Singleton):
                         'year': r'<span data-automation-id="imdb-release-year-badge"[^>]*>\s*([0-9]+)\s*</span>',  # Year
                     })
 
+                    # In case of widowed carousels, we might actually have no videodata
+                    if refUrn not in self._videodata:
+                        self._videodata[refUrn] = {'metadata': {'videometa': {}}, 'children': []}
+
                     results = re.search(r'<ol\s+[^>]*class="[^"]*av-episode-list[^"]*"[^>]*>\s*(.*?)\s*</ol>', cnt, flags=re.DOTALL)
                     if None is results:
                         ''' Standalone movie '''
+                        if bFromWidowCarousel and (refUrn not in o):
+                            o[refUrn] = {}
                         if 'video' not in self._videodata[refUrn]['metadata']:
                             asin = re.search(r'"asin":"([^"]*)"', cnt, flags=re.DOTALL)
                             if None is asin:
@@ -539,11 +544,16 @@ class PrimeVideo(Singleton):
                                 bUpdatedVideoData = True
 
                                 meta = self._videodata[refUrn]['metadata']
+                                if 'artmeta' not in meta:
+                                    meta['artmeta'] = {}
                                 if None is not bgimg:
                                     meta['artmeta']['fanart'] = bgimg
-                                NotifyUser(getString(30253).format(self._videodata[refUrn]['title']))
+
                                 meta['asin'] = asin.group(1)
                                 meta['video'] = ExtractURN(requestURL)
+
+                                if 'mediatype' not in meta['videometa']:
+                                    meta['videometa']['mediatype'] = 'movie'
 
                                 # Insert movie information
                                 for i in gres:
@@ -557,16 +567,22 @@ class PrimeVideo(Singleton):
                                 else:
                                     if 'runtimeSeconds' in gpr['catalogMetadata']['catalog']:
                                         meta['runtime'] = gpr['catalogMetadata']['catalog']['runtimeSeconds']
+                                    if 'thumb' not in meta['artmeta']:
+                                        image = MaxSize(gpr['catalogMetadata']['images']['imageUrls']['title'])
+                                        meta['artmeta']['thumb'] = image
+                                        meta['artmeta']['poster'] = image
+                                    if 'title' not in self._videodata[refUrn]:
+                                        self._videodata[refUrn]['title'] = gpr['catalogMetadata']['catalog']['title']
+                                if 'title' in self._videodata[refUrn]:
+                                    NotifyUser(getString(30253).format(self._videodata[refUrn]['title']))
                     else:
                         ''' Episode list '''
                         for entry in re.findall(r'<li[^>]*>\s*(.*?)\s*</li>', results.group(1), flags=re.DOTALL):
                             md = MultiRegexParsing(entry, {
-                                # Series data
-                                'asinS': r'<a data-automation-id="ep-playback-[0-9]+"[^>]*data-ref="[^"]*"[^>]*data-title-id="([^"]*)"',
+                                # Episode data
                                 'id': r'<a data-automation-id="ep-playback-[0-9]+"[^>]*data-ref="([^"]*)"',
                                 'url': r'<a data-automation-id="ep-playback-[0-9]+"[^>]*data-ref="[^"]*"[^>]*data-title-id="[^"]*"[^>]*href="([^"]*)"',
-                                # Eposide data
-                                'asinE': r'\s+data-title-id="\s*([^"]+?)\s*"',
+                                'asin': r'\s+data-title-id="\s*([^"]+?)\s*"',
                                 'image': r'<div class="av-bgimg__div"[^>]*url\(([^)]+)\)',
                                 'title': r'<span class="av-play-title-text">\s*(.*?)\s*</span>',
                             })
@@ -579,16 +595,21 @@ class PrimeVideo(Singleton):
                             if (None is md['url']) or (None is md['title']):
                                 ''' Some episodes might be not playable until a later date or just N/A, although listed '''
                                 continue
-                            meta = {'artmeta': {'thumb': md['image'], 'poster': md['image'], 'fanart': bgimg, },
-                                    'videometa': {'mediatype': 'episode'}, 'id': md['id'], 'asin': md['asinS'], 'videoURL': md['url']}
+                            meta = {'artmeta': {'thumb': md['image'], 'poster': md['image'], 'fanart': bgimg},
+                                    'videometa': {'mediatype': 'episode'}, 'id': md['id'], 'asin': md['asin'], 'videoURL': md['url']}
                             if None is not re.match(r'/[^/]', meta['videoURL']):
                                 meta['videoURL'] = self._g.BaseUrl + meta['videoURL']
                             meta['video'] = ExtractURN(meta['videoURL'])
                             eid = meta['video']
 
-                            if (eid not in self._videodata) or ('videometa' not in self._videodata[eid]) or (0 == len(self._videodata[eid]['videometa'])):
+                            if (
+                                (eid not in self._videodata) or
+                                ('metadata' not in self._videodata[eid]) or
+                                ('videometa' not in self._videodata[eid]['metadata']) or
+                                (0 == len(self._videodata[eid]['metadata']['videometa']))
+                            ):
                                 # Extract the runtime
-                                success, gpr = getURLData('catalog/GetPlaybackResources', md['asinE'], useCookie=True, extra=True,
+                                success, gpr = getURLData('catalog/GetPlaybackResources', md['asin'], useCookie=True, extra=True,
                                                           opt='&titleDecorationScheme=primary-content', dRes='CatalogMetadata')
                                 if not success:
                                     gpr = None
@@ -596,35 +617,46 @@ class PrimeVideo(Singleton):
                                     if 'runtimeSeconds' in gpr['catalogMetadata']['catalog']:
                                         meta['runtime'] = gpr['catalogMetadata']['catalog']['runtimeSeconds']
 
-                                # Sometimes the chicken comes before the egg
-                                # if refUrn not in self._videodata:
-                                #     self._videodata[refUrn] = { 'metadata': { 'videometa': {} }, 'children': [] }
+                                # If we come from a widowed carousel, we need to build the ancestry
+                                if bFromWidowCarousel:
+                                    for d in gpr['catalogMetadata']['family']['tvAncestors']:
+                                        if 'SHOW' == d['catalog']['type']:
+                                            showId = d['catalog']['id']
+                                            if (showId not in self._videodata):
+                                                self._videodata[showId] = {'title': d['catalog']['title'], 'children': []}
+                                    if 'season' not in self._videodata[refUrn]['metadata']['videometa']:
+                                        for d in gpr['catalogMetadata']['family']['tvAncestors']:
+                                            if 'SEASON' == d['catalog']['type']:
+                                                self._videodata[refUrn]['metadata']['videometa']['season'] = int(d['catalog']['seasonNumber'])
+                                                self._videodata[refUrn]['metadata']['videometa']['mediatype'] = 'season'
+                                    if 'artmeta' not in self._videodata[refUrn]['metadata']:
+                                        thumbnail = MaxSize(Unescape(gpr['catalogMetadata']['images']['imageUrls']['title']))
+                                        self._videodata[refUrn]['metadata']['artmeta'] = {'thumb': thumbnail, 'poster': thumbnail, 'fanart': bgimg}
+                                    if 'title' not in self._videodata[refUrn]:
+                                        if re.search('class="av-season-single', cnt):
+                                            title = re.search(r'<span class="av-season-single[^"]*"[^>]*>\s*(.*?)\s*</span>', cnt, flags=re.DOTALL)
+                                        else:
+                                            title = re.search(r'<label class="av-select-trigger[^"]*"[^>]*>\s*(.*?)\s*</label>', cnt, flags=re.DOTALL)
+                                        self._videodata[refUrn]['title'] = Unescape(title.group(1))
+                                    if 'parent' not in self._videodata[refUrn]:
+                                        self._videodata[refUrn]['parent'] = showId
+                                        if refUrn not in self._videodata[showId]['children']:
+                                            self._videodata[showId]['children'].append(refUrn)
 
                                 # Insert series information
                                 for i in gres:
                                     if None is not gres[i]:
                                         meta['videometa'][i] = gres[i]
-                                        self._videodata[refUrn]['metadata']['videometa'][i] = gres[i]
+                                        if i not in self._videodata[refUrn]['metadata']['videometa']:
+                                            self._videodata[refUrn]['metadata']['videometa'][i] = gres[i]
 
                                 # Insert episode specific information
                                 for i in res:
                                     if None is not res[i]:
                                         meta['videometa'][i] = res[i]
-                                if None is not res['episode']:
-                                    if 'season' in self._videodata[refUrn]['metadata']['videometa']:
-                                        meta['videometa']['season'] = self._videodata[refUrn]['metadata']['videometa']['season']
-                                    else:
-                                        ''' We're coming from a widow carousel '''
-                                        self._videodata[refUrn]['metadata']['videometa']['mediatype'] = 'tvshow'
-                                        # Try with page season selector
-                                        ssn = re.search(r'<a class="av-droplist--selected"[^>]*>[^0-9]*([0-9]+)[^0-9]*</a>', cnt)
-                                        if None is ssn:
-                                            # Try with single season
-                                            ssn = re.search(r'<span class="av-season-single av-badge-text">[^0-9]*([0-9]+)[^0-9]*</span>', cnt)
-                                        if None is not ssn:
-                                            ssn = ssn.group(1)
-                                            meta['videometa']['season'] = ssn
-                                            self._videodata[refUrn]['metadata']['videometa']['season'] = ssn
+
+                                if ('season' not in meta['videometa']) and ('season' in self._videodata[refUrn]['metadata']['videometa']):
+                                    meta['videometa']['season'] = self._videodata[refUrn]['metadata']['videometa']['season']
 
                                 # Episode title cleanup
                                 if None is not re.match(r'[0-9]+[.]\s*', md['title']):
@@ -638,9 +670,16 @@ class PrimeVideo(Singleton):
                                 bUpdatedVideoData = True
                                 self._videodata[eid] = {'metadata': meta, 'title': md['title'], 'parent': refUrn}
                                 NotifyUser(getString(30253).format(md['title']))
+
+                            if bFromWidowCarousel:
+                                bFromWidowCarousel = False  # Initialisations done (or about to be), avoid nesting
+                                o[self._videodata[refUrn]['parent']] = self._videodata[self._videodata[refUrn]['parent']]
+                                o[self._videodata[refUrn]['parent']][refUrn] = self._videodata[refUrn]
+                                o = o[self._videodata[refUrn]['parent']][refUrn]
                             if eid not in o:
                                 o[eid] = {}
                             if (refUrn in self._videodata) and ('children' in self._videodata[refUrn]) and (eid not in self._videodata[refUrn]['children']):
+                                bUpdatedVideoData = True
                                 self._videodata[refUrn]['children'].append(eid)
                 else:
                     ''' Movie and series list '''

@@ -38,7 +38,7 @@ for /f %%f in ('dir %~dp0 /b /a:d') do if exist %~dp0%%f\addon.xml (
             if exist %~dp0%%f\icon.png copy %~dp0%%f\icon.png %arc_dir%\%%f >nul 2>&1
             if exist %~dp0%%f\fanart.jpg copy %~dp0%%f\fanart.jpg %arc_dir%\%%f >nul 2>&1
             if exist %~dp0%%f\changelog.txt copy %~dp0%%f\changelog.txt %arc_dir%\%%f\changelog-!version!.txt >nul 2>&1
-            %tools_dir%\7z a %arc_dir%\%%f\%%f-!version!.zip %~dp0%%f -tzip > nul
+            %tools_dir%\7za a %arc_dir%\%%f\%%f-!version!.zip %~dp0%%f -tzip > nul
             %tools_dir%\md5 -l -n %arc_dir%\%%f\%%f-!version!.zip > %arc_dir%\%%f\%%f-!version!.zip.md5
         ) else (
             echo %%f v!version! bereits vorhanden

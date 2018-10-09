@@ -119,7 +119,7 @@ class Globals(Singleton):
                 self._globals['pv'] = PrimeVideo(self, Settings())
         else:
             """ Initialise AmazonTLD """
-            from .amazontld import AmazonTLD
+            from .androidapi import AmazonTLD
             if 'amz' not in self._globals:
                 self._globals['amz'] = AmazonTLD(self, Settings())
 

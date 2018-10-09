@@ -87,3 +87,5 @@ def EntryPoint():
         exec '%s()' % mode
     elif mode in ['checkMissing', 'Search']:
         exec 'g.amz.%s()' % mode
+    elif mode == 'getPage':
+        g.amz.getPage(args.get('url'), args.get('opt'))

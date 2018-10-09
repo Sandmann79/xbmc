@@ -208,7 +208,7 @@ def getURLData(mode, asin, retformat='json', devicetypeid='AOAGZA014O5RE', versi
     url += '&marketplaceID=' + g.MarketID
     url += '&format=' + retformat
     url += '&version=' + str(version)
-    url += '&gascEnabled=' + str(g.UsePrimeVideo).lower()
+    url += '&gascEnabled=true'
     if extra:
         url += '&resourceUsage=ImmediateConsumption&consumptionType=Streaming&deviceDrmOverride=CENC' \
                '&deviceStreamingTechnologyOverride=DASH&deviceProtocolOverride=Https' \

@@ -1,7 +1,7 @@
 <settings>
     <!-- General -->
     <category label="30011">
-        <setting id="playmethod" type="enum" label="30012" values="Browser|Script/Batch|Android|Input Stream" default="0"/>
+        <setting id="playmethod" type="enum" label="30012" values="Browser|Script/Batch|Android|Input Stream" default="3"/>
         <setting type="sep"/>
         <setting id="browser" type="enum" label="Browser" values="Internet Explorer|Chrome|Firefox|Safari" default="0" visible="lt(-2,2)"/>
         <setting id="cust_path" type="bool" label="30043" default="" visible="eq(-3,0)"/>

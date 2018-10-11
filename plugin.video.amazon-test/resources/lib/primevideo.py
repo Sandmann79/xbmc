@@ -31,7 +31,10 @@ class PrimeVideo(Singleton):
     def __init__(self, globalsInstance, settingsInstance):
         self._g = globalsInstance
         self._s = settingsInstance
-        self._seasonData = r'(Stagione|Staffel|Season|Temporada|Saison|Seizoen|Sezon)'
+        self._seasonRex = r'(Stagione|Staffel|Season|Temporada|Saison|Seizoen|Sezon)'
+        self._directorRex = r'(Direc?tor|Regia|Regie|Réalisation|Regisseur|Reżyser)'
+        self._starringRex = r'(Starring|Interpreti|Hauptdarsteller|Reparto|Acteurs principaux|In de hoofdrol|Występują|Atores principais)'
+        self._genresRex = r'(Gene?res?|Géneros|Gatunki|Gêneros)'
         self._dateParserData = {
             """ Data for date string deconstruction and reassembly
 
@@ -379,7 +382,7 @@ class PrimeVideo(Singleton):
                     elif 'episode' == i:
                         o[i] = int(o[i])
                     elif ('cast' == i) or ('genre' == i) or ('director' == i):
-                        o[i] = re.sub(r'\s*</?a[^>]*>\s*', '', o[i])
+                        o[i] = re.sub(r'\s*</?(a|span|input|label.*?/label)\s*[^>]*>\s*', '', o[i][1])  # Strip everything useless
                         o[i] = re.split(r'\s*[,;]\s*', o[i])
                         # Cast is always to be sent as a list, single string is only required/preferred for Genre and Director
                         if ('cast' != i) and (1 == len(o[i])):
@@ -518,15 +521,14 @@ class PrimeVideo(Singleton):
 
                     # Extract the global data
                     gres = MultiRegexParsing(re.search(r'<section\s+[^>]*class="av-detail-section"[^>]*>\s*(.*?)\s*</section>', cnt, flags=re.DOTALL).group(1), {
-                        'cast': r'<dt data-automation-id="meta-info-starring"[^>]*>[^<]*</dt>\s*<dd[^>]*>\s*(.*?)\s*</dd>',  # Starring
-                        'director': r'<dt data-automation-id="meta-info-director"[^>]*>[^<]*</dt>\s*<dd[^>]*>\s*(.*?)\s*</dd>',  # Director
-                        'genre': r'<dt data-automation-id="meta-info-genres"[^>]*>[^<]*</dt>\s*<dd[^>]*>\s*(.*?)\s*</dd>',  # Genre
-                        'mpaa': r'<span data-automation-id="maturity-rating-badge"[^>]*>\s*(.*?)\s*</span>',  # Age rating
-                        'plot': r'<div data-automation-id="synopsis"[^>]*>[^<]*<p>\s*(.*?)\s*</p>',  # Synopsis
+                        'cast': self._starringRex + r'\s*</span>\s*</dt>\s*<dd[^>]*>\s*(.*?)\s*</dd>',  # Starring
+                        'director': self._directorRex + r'\s*</span>\s*</dt>\s*<dd[^>]*>\s*(.*?)\s*</dd>',  # Director
+                        'genre': self._genresRex + r'\s*</span>\s*</dt>\s*<dd[^>]*>\s*(.*?)\s*</dd>',  # Genre
+                        'mpaa': r'<span data-automation-id="rating-badge"[^>]*>\s*<span[^>]*>\s*(.*?)\s*</span>',  # Age rating
+                        'plot': r'<div [^>]*data-automation-id="synopsis"[^>]*>\s*<div [^>]*>.*?<div [^>]*>\s*(.*?)\s*</div>',  # Synopsis
                         'rating': r'<span data-automation-id="imdb-rating-badge"[^>]*>\s*([0-9]+)[,.]([0-9]+)\s*</span>',  # IMDb rating
-                        'year': r'<span data-automation-id="imdb-release-year-badge"[^>]*>\s*([0-9]+)\s*</span>',  # Year
+                        'year': r'<span data-automation-id="release-year-badge"[^>]*>\s*([0-9]+)\s*</span>',  # Year
                     })
-
                     # In case of widowed carousels, we might actually have no videodata
                     if refUrn not in self._videodata:
                         self._videodata[refUrn] = {'metadata': {'videometa': {}}, 'children': []}
@@ -633,10 +635,12 @@ class PrimeVideo(Singleton):
                                         thumbnail = MaxSize(Unescape(gpr['catalogMetadata']['images']['imageUrls']['title']))
                                         self._videodata[refUrn]['metadata']['artmeta'] = {'thumb': thumbnail, 'poster': thumbnail, 'fanart': bgimg}
                                     if 'title' not in self._videodata[refUrn]:
-                                        if re.search('class="av-season-single', cnt):
-                                            title = re.search(r'<span class="av-season-single[^"]*"[^>]*>\s*(.*?)\s*</span>', cnt, flags=re.DOTALL)
+                                        if re.search('class="[^"]*DigitalVideoWebNodeDetail_seasons__single', cnt):
+                                            title = re.search(r'<span class="[^"]*DigitalVideoWebNodeDetail_seasons__single[^"]*"[^>]*>\s*<span[^>]*>\s*(.*?)\s*</span>',
+                                                              cnt, flags=re.DOTALL)
                                         else:
-                                            title = re.search(r'<label class="av-select-trigger[^"]*"[^>]*>\s*(.*?)\s*</label>', cnt, flags=re.DOTALL)
+                                            title = re.search(r'<div class="[^*]*dv-node-dp-seasons.*?<label[^>]*>\s*<span[^>]*>\s*(.*?)\s*</span>\s*</label>',
+                                                              cnt, flags=re.DOTALL)
                                         self._videodata[refUrn]['title'] = Unescape(title.group(1))
                                     if 'parent' not in self._videodata[refUrn]:
                                         self._videodata[refUrn]['parent'] = showId
@@ -688,7 +692,7 @@ class PrimeVideo(Singleton):
                             'asin': r'\s+data-asin="\s*([^"]+?)\s*"',
                             'image': r'<a [^>]+><img\s+[^>]*src="([^"]+)"',
                             'link': r'<a href="([^"]+)"><img',
-                            'season': r'<span>\s*' + self._seasonData + r'\s+([0-9]+)\s*</span>',
+                            'season': r'<span>\s*' + self._seasonRex + r'\s+([0-9]+)\s*</span>',
                             'title': r'<a class="av-beard-title-link"[^>]*>\s*(.*?)\s*</a>',
                         })
                         NotifyUser(getString(30253).format(res['title']))

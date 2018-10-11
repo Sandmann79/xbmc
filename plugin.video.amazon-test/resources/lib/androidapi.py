@@ -186,18 +186,19 @@ class AmazonTLD(Singleton):
         else:
             xbmc.executebuiltin('RunPlugin(%s)' % g.pluginid)
 
-    def findKey(self, key, var):
-        if hasattr(var, 'iteritems'):
-            for k, v in var.iteritems():
-                if k == key:
-                    yield v
-                if isinstance(v, dict):
-                    for result in self.findKey(key, v):
-                        yield result
-                elif isinstance(v, list):
-                    for d in v:
-                        for result in self.findKey(key, d):
-                            yield result
+    def findKey(self, key, obj):
+        if key in obj.keys():
+            return obj[key]
+        for v in obj.values():
+            if isinstance(v, dict):
+                res = self.findKey(key, v)
+                if res: return res
+            elif isinstance(v, list):
+                for d in v:
+                    if isinstance(d, dict):
+                        res = self.findKey(key, d)
+                        if res: return res
+        return []
 
     def getPage(self, page='landing', params='pageType=home', root=False):
         if page == 'landing':
@@ -207,37 +208,31 @@ class AmazonTLD(Singleton):
 
         if resp:
             if root:
-                for item in self.findKey('filterValueList', resp).next():
-                    Log(item)
+                for item in self.findKey('filterValueList', resp):
                     self.filter[item['value']] = {'text': item['text']}
                     self.filter[item['value']].update(item['parameters'])
                 for item in resp['navigations']:
                     query = urlencode(item['link']['parameters'])
-                    query += '&pageSize=20&startIndex=0&sectionType=center'
+                    query += '&pageSize=20&startIndex=0&sectionType=center&serviceToken=' + self.filter['PRIME']['serviceToken']
                     addDir(item['text'], 'getPage', '/cdp/discovery/GetCollections', opt=query)
                 return
 
-            col_list = self.findKey('collectionList', resp)
-            if next(col_list, None):
-                for item in col_list.next():
-                    pglink = item['items']['paginationLink']
-                    if pglink:
-                        query = urlencode(pglink['parameters'])
-                        addDir(item['text'], 'getPage', pglink['api'], opt=query)
+            for item in self.findKey('collectionList', resp):
+                pglink = item['items']['paginationLink']
+                if pglink:
+                    query = urlencode(pglink['parameters'])
+                    addDir(item['text'], 'getPage', pglink['api'], opt=query)
 
-            item_list = self.findKey('itemList', resp)
-            if item_list:
-                for item in list(item_list)[0]:
-                    catalog = item.get('decoratedTitle', {}).get('catalog')
-                    if catalog:
-                        il = self.getAsins(item)
-                        il['title'] = catalog['title']
-                        il['plot'] = catalog['synopsis']
-                        il['runtime'] = catalog['runtimeSeconds']
-                        il['isAdult'] = item['decoratedTitle']['computed']['simple']['IS_ADULT']
-                        il['contentType'] = 'movie'
-                        addVideo(catalog['title'], catalog['id'], il)
-
+            for item in self.findKey('itemList', resp):
+                catalog = item.get('decoratedTitle', {}).get('catalog')
+                if catalog:
+                    il = self.getAsins(item)
+                    il['title'] = catalog['title']
+                    il['plot'] = catalog['synopsis']
+                    il['runtime'] = catalog['runtimeSeconds']
+                    il['isAdult'] = item['decoratedTitle']['computed']['simple']['IS_ADULT']
+                    il['contentType'] = 'movie'
+                    addVideo(catalog['title'], catalog['id'], il)
             xbmcplugin.endOfDirectory(g.pluginhandle)
         return
 

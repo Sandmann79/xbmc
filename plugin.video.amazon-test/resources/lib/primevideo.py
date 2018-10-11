@@ -403,6 +403,7 @@ class PrimeVideo(Singleton):
             cj = MechanizeLogin()
             if cj:
                 amzLang = cj.get('lc-main-av', domain='.primevideo.com', path='/')
+        amzLang = amzLang if amzLang else 'en_US'
 
         bUpdatedVideoData = False  # Whether or not the pvData has been updated
 
@@ -424,7 +425,6 @@ class PrimeVideo(Singleton):
 
             # If we're coming from a widowed carousel we could exploit the cached video data to further improve loading times
             if bFromWidowCarousel and (refUrn in self._videodata):
-                Log(self._videodata[refUrn])
                 if ('unavailable' not in self._videodata[refUrn]['metadata']) and ('season' == self._videodata[refUrn]['metadata']['videometa']['mediatype']):
                     o[self._videodata[refUrn]['parent']] = self._videodata[self._videodata[refUrn]['parent']]
                     o = o[self._videodata[refUrn]['parent']]

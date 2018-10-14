@@ -333,7 +333,7 @@ def addDir(name, mode, sitemode, url='', thumb='', fanart='', infoLabels=None, t
     if cm:
         item.addContextMenuItems(cm)
 
-    xbmcplugin.addDirectoryItem(var.pluginhandle, url=url, listitem=item, isFolder=sitemode != 'switchUser', totalItems=totalItems)
+    xbmcplugin.addDirectoryItem(var.pluginhandle, url=url, listitem=item, isFolder=sitemode not in ('switchUser', 'updateAll'), totalItems=totalItems)
 
 
 def addVideo(name, asin, poster=None, fanart=None, infoLabels=None, totalItems=0, cm=[], trailer=False,

@@ -551,6 +551,7 @@ class AmazonTLD(Singleton):
                 title = infoLabels['TVShowTitle']
             c.execute('insert or ignore into miss values (?,?,?,?)', (asins, title, infoLabels['Year'], contentType))
         c.close()
+        self._db.commit()
         return infoLabels
 
     def checkMissing(self):

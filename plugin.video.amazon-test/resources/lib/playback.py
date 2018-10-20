@@ -497,7 +497,13 @@ def PlayVideo(name, asin, adultstr, trailer, forcefb=0):
 
         Log(mpd, Log.DEBUG)
 
-        if (not extern):
+        if g.KodiK and extern:
+            content = getATVData('GetASINDetails', 'ASINList=' + asin)['titles'][0]
+            ct, Info = g.amz.getInfos(content, False)
+            title = Info['DisplayTitle']
+            thumb = Info.get('Poster', Info['Thumb'])
+            mpaa_check = str(Info.get('MPAA', mpaa_str)) in mpaa_str or isAdult
+        else:
             mpaa_check = _getListItem('MPAA') in mpaa_str + mpaa_str.replace(' ', '') or isAdult
             title = _getListItem('Label')
             thumb = _getListItem('Art(season.poster)')
@@ -505,16 +511,9 @@ def PlayVideo(name, asin, adultstr, trailer, forcefb=0):
                 thumb = _getListItem('Art(tvshow.poster)')
                 if not thumb:
                     thumb = _getListItem('Art(thumb)')
-        else:
-            content = getATVData('GetASINDetails', 'ASINList=' + asin)['titles'][0]
-            ct, Info = g.amz.getInfos(content, False)
-            title = Info['DisplayTitle']
-            thumb = Info.get('Poster', Info['Thumb'])
-            mpaa_check = str(Info.get('MPAA', mpaa_str)) in mpaa_str or isAdult
 
         if trailer == 1:
             title += ' (Trailer)'
-            Info = {'Plot': _getListItem('Plot')}
         if not title:
             title = name
 
@@ -523,7 +522,7 @@ def PlayVideo(name, asin, adultstr, trailer, forcefb=0):
 
         listitem = xbmcgui.ListItem(label=title, path=mpd)
 
-        if extern or trailer == 1:
+        if g.KodiK and extern:
             listitem.setInfo('video', getInfolabels(Info))
 
         if 'adaptive' in g.is_addon:
@@ -538,12 +537,11 @@ def PlayVideo(name, asin, adultstr, trailer, forcefb=0):
         listitem.setProperty('inputstreamaddon', g.is_addon)
         listitem.setMimeType('application/dash+xml')
         listitem.setContentLookup(False)
-        # xbmc.executebuiltin('Dialog.Close(busydialog)')
         player = _AmazonPlayer()
-        player.extern = extern
         player.asin = asin
-        player.url = mpd
         player.cookie = cookie
+        player.content = trailer
+        player.extern = extern
         player.resolve(listitem)
         starttime = time.time()
 
@@ -708,50 +706,71 @@ class _AmazonPlayer(xbmc.Player):
         self.video_lastpos = 0
         self.video_totaltime = 0
         self.dbid = 0
-        self.seek = 0
-        self.url = ''
-        self.extern = ''
         self.asin = ''
         self.cookie = None
         self.interval = 180
         self.running = False
+        self.extern = False
+        self.resume = 0
+        self.watched = 0
+        self.content = 0
+        self.resumedb = OSPJoin(g.DATA_PATH, 'resume.db')
 
     def resolve(self, li):
-        if not self.checkResume():
+        if self.extern and not self.checkResume():
             xbmcplugin.setResolvedUrl(self._g.pluginhandle, True, xbmcgui.ListItem())
             xbmc.executebuiltin('Container.Refresh')
             return
-        self.running = True
-        xbmcplugin.setResolvedUrl(self._g.pluginhandle, True, li)
-        self.PlayerInfo('Starting Playback')
-        if self.seek:
-            self.seekTime(self.seek)
-            self.PlayerInfo('Resuming Playback')
+        if self.resume:
+            li.setProperty('resumetime', str(self.resume))
+            li.setProperty('totaltime', '1')
+            Log('Resuming Video at %s' % self.resume)
 
+        xbmcplugin.setResolvedUrl(self._g.pluginhandle, True, li)
+        self.running = True
+        self.getTimes('Starting Playback')
         self.updateStream('START')
-        Log('Video ContentType Movie? %s' % xbmc.getCondVisibility('VideoPlayer.Content(movies)'), Log.DEBUG)
-        Log('Video ContentType Episode? %s' % xbmc.getCondVisibility('VideoPlayer.Content(episodes)'), Log.DEBUG)
 
     def checkResume(self):
         self.dbid = int('0' + _getListItem('DBID'))
-        Log(self.dbid, Log.DEBUG)
-        if not self.dbid:
+        if self.dbid:
+            dbtype = _getListItem('DBTYPE')
+            result = jsonRPC('VideoLibrary.Get%sDetails' % dbtype, 'resume,playcount', {'%sid' % dbtype: self.dbid})
+            self.resume = int(result[dbtype.lower() + 'details']['resume']['position'])
+            self.watched = int(result[dbtype.lower() + 'details']['playcount'])
+        if not self.resume:
+            self.getResumePoint()
+        if self.watched:
             return True
-        dbtype = _getListItem('DBTYPE')
-        result = jsonRPC('VideoLibrary.Get%sDetails' % dbtype, 'resume,playcount', {'%sid' % dbtype: self.dbid})
-        position = int(result[dbtype.lower() + 'details']['resume']['position'])
-        playcount = int(result[dbtype.lower() + 'details']['playcount'])
-        Log(result, Log.DEBUG)
-
-        if playcount:
-            return True
-        if position > 180:
-            sel = g.dialog.contextmenu([getString(12022).format(time.strftime("%H:%M:%S", time.gmtime(position))), getString(12021)])
+        if self.resume > 180 and self.extern:
+            res_string = getString(12022).replace("%s", "{}") if g.KodiK else getString(12022)
+            sel = g.dialog.contextmenu([res_string.format(time.strftime("%H:%M:%S", time.gmtime(self.resume))), getString(12021)])
             if sel > -1:
-                self.seek = position if sel == 0 else 0
+                self.resume = self.resume if sel == 0 else 0
             else:
                 return False
         return True
+
+    def getResumePoint(self):
+        if not xbmcvfs.exists(self.resumedb) or self.content == 2:
+            return {}
+        with open(self.resumedb, 'r') as fp:
+            items = pickle.load(fp)
+            self.resume = items.get(self.asin, {}).get('resume')
+            fp.close()
+        return items
+
+    def saveResumePoint(self):
+        if self.content == 2:
+            return
+        items = self.getResumePoint()
+        with open(self.resumedb, 'w+') as fp:
+            if self.watched and self.asin in items.keys():
+                del items[self.asin]
+            else:
+                items.update({self.asin: {'resume': self.video_lastpos}})
+            pickle.dump(items, fp, 2)
+            fp.close()
 
     def onPlayBackEnded(self):
         self.finished()
@@ -767,32 +786,25 @@ class _AmazonPlayer(xbmc.Player):
 
     def finished(self):
         self.updateStream('STOP')
-        if self.extern and self.video_lastpos > 0:
-            playcount = 1 if (self.video_lastpos * 100) / self.video_totaltime >= 90 else 0
-            watched = _getListItem('PlayCount')
-            if self.dbid:
-                dbtype = _getListItem('DBTYPE')
-                params = {'%sid' % dbtype: self.dbid,
-                          'resume': {'position': 0 if playcount else self.video_lastpos,
-                                     'total': self.video_totaltime},
-                          'playcount': playcount}
-                res = '' if 'OK' in jsonRPC('VideoLibrary.Set%sDetails' % dbtype, '', params) else 'NOT '
-                Log('%sUpdated %sid(%s) with: pos(%s) total(%s) playcount(%s)' % (res, dbtype, self.dbid, self.video_lastpos,
-                                                                                  self.video_totaltime, playcount))
-            else:
-                Log('No DBID returned')
-                if playcount and not watched:
-                    xbmc.executebuiltin("Action(ToggleWatched)")
+        if self.running:
+            self.running = False
+            if self.video_lastpos > 0 and self.video_totaltime > 0:
+                self.watched = 1 if (self.video_lastpos * 100) / self.video_totaltime >= 90 else 0
+                if self.dbid and g.KodiK:
+                    dbtype = _getListItem('DBTYPE')
+                    params = {'%sid' % dbtype: self.dbid,
+                              'resume': {'position': 0 if self.watched else self.video_lastpos,
+                                         'total': self.video_totaltime},
+                              'playcount': self.watched}
+                    res = '' if 'OK' in jsonRPC('VideoLibrary.Set%sDetails' % dbtype, '', params) else 'NOT '
+                    Log('%sUpdated %sid(%s) with: pos(%s) total(%s) playcount(%s)' % (res, dbtype, self.dbid, self.video_lastpos,
+                                                                                      self.video_totaltime, self.watched))
+                self.saveResumePoint()
 
-        xbmc.executebuiltin('Container.Refresh')
-        self.running = False
-
-    def PlayerInfo(self, msg):
-        while not self.isPlayingVideo():
+    def getTimes(self, msg):
+        while self.video_totaltime <= 0:
             sleep(self.sleeptm)
-        while self.isPlayingVideo() and (0 > self.getTime() >= self.getTotalTime()):
-            sleep(self.sleeptm)
-        if self.isPlayingVideo():
-            self.video_totaltime = self.getTotalTime()
-            self.video_lastpos = self.getTime()
-            Log('%s: %s/%s' % (msg, self.video_lastpos, self.video_totaltime))
+            if self.isPlaying() and self.getTotalTime() >= self.getTime() >= 0:
+                self.video_totaltime = self.getTotalTime()
+                self.video_lastpos = self.getTime()
+        Log('%s: %s/%s' % (msg, self.video_lastpos, self.video_totaltime))

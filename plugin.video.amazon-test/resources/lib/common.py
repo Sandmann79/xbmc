@@ -46,6 +46,7 @@ class Globals(Singleton):
     pluginid = argv[0]
     pluginhandle = int(argv[1]) if pluginid else -1
     langID = {'movie': 30165, 'series': 30166, 'season': 30167, 'episode': 30173}
+    KodiK = int(xbmc.getInfoLabel('System.BuildVersion').split('.')[0]) < 18
 
     """ Allow the usage of dot notation for data inside the _globals dictionary, without explicit function call """
     def __getattr__(self, name): return self._globals[name]
@@ -169,6 +170,7 @@ class Settings(Singleton):
 
 def jsonRPC(method, props='', param=None):
     """ Wrapper for Kodi's executeJSONRPC API """
+    from .logging import Log
     rpc = {'jsonrpc': '2.0',
            'method': method,
            'params': {},
@@ -194,6 +196,7 @@ def jsonRPC(method, props='', param=None):
 
 
 def sleep(sec):
+    from .logging import Log
     if xbmc.Monitor().waitForAbort(sec):
         import sys
         Log('Abort requested - exiting addon')

@@ -1,7 +1,7 @@
 <settings>
     <!-- General -->
     <category label="30011">
-        <setting id="playmethod" type="enum" label="30012" values="Browser|Script/Batch|Android|Input Stream" default="0" />
+        <setting id="playmethod" type="enum" label="30012" values="Browser|Script/Batch|Android|Input Stream" default="3" />
         <setting type="sep"/>
         <setting id="browser" type="enum" label="Browser" values="Internet Explorer|Chrome|Firefox|Safari" default="0" visible="lt(-2,2)"/>
         <setting id="cust_path" type="bool" label="30043" default="" visible="eq(-3,0)" />
@@ -29,9 +29,9 @@
         <setting id="ssl_verif" type="bool" label="30037" default="false"/>
         <setting label="30001" type="lsep"/>
         <setting id="multiuser" type="bool" label="30027" default="false"/>
-        <setting type="action" label="30004" action="RunPlugin(plugin://plugin.video.amazon/?mode=common&sitemode=LogIn)" visible="eq(-1,false)" option="close"/>
+        <setting type="action" label="30004" action="RunPlugin(plugin://plugin.video.amazon/?mode=common&sitemode=MechanizeLogin&ask=true)" visible="eq(-1,false)" option="close"/>
         <setting id="login_acc" type="text" label="30014" enable="false" default="" subsetting="true" visible="eq(-2,false)"/>
-        <setting type="action" label="30174" action="RunPlugin(plugin://plugin.video.amazon/?mode=common&sitemode=LogIn)" visible="eq(-3,true)" option="close"/>
+        <setting type="action" label="30174" action="RunPlugin(plugin://plugin.video.amazon/?mode=common&sitemode=MechanizeLogin&ask=true)" visible="eq(-3,true)" option="close"/>
         <setting type="action" label="30175" action="RunPlugin(plugin://plugin.video.amazon/?mode=common&sitemode=removeUser)" visible="eq(-4,true)" option="close"/>
         <setting id="save_login" type="bool" label="30006" default="false"/>
         <setting label="30007" type="action" action="RunPlugin(plugin://plugin.video.amazon/?mode=common&sitemode=remLoginData)" visible="eq(-6,false)" option="close"/>

@@ -423,18 +423,24 @@ def gen_id(renew=False):
 
 
 def MechanizeLogin():
-    cj = requests.cookies.RequestsCookieJar()
-    user = loadUser()
-    if user['cookie']:
-        cj.update(pickle.loads(user['cookie']))
-        return cj
+    ask = var.args.get('ask') == 'true'
+    if not ask:
+        cj = requests.cookies.RequestsCookieJar()
+        user = loadUser()
+        if user['cookie']:
+            cj.update(pickle.loads(user['cookie']))
+            return cj
 
     Log('Login')
+    res = False
+    if not getConfig('login'):
+        writeConfig('login', 'true')
+        res = LogIn(ask)
+        writeConfig('login')
+    return res
 
-    return LogIn(False)
 
-
-def LogIn(ask=True):
+def LogIn(ask):
     user = loadUser()
     email = user['email']
     password = decode(user['password'])
@@ -947,7 +953,7 @@ def getConfig(cfile, defvalue=''):
     return value if value else defvalue
 
 
-def writeConfig(cfile, value):
+def writeConfig(cfile, value=''):
     cfgfile = os.path.join(configpath, cfile)
     cfglockfile = os.path.join(configpath, cfile + '.lock')
 

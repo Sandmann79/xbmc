@@ -59,12 +59,12 @@ class variables:
 
 
 var = variables()
+KodiK = int(xbmc.getInfoLabel('System.BuildVersion').split('.')[0]) < 18
 pluginname = var.addon.getAddonInfo('name')
 pluginpath = var.addon.getAddonInfo('path').decode('utf-8')
 pldatapath = xbmc.translatePath(var.addon.getAddonInfo('profile')).decode('utf-8')
 configpath = os.path.join(pldatapath, 'config')
 homepath = xbmc.translatePath('special://home').decode('utf-8')
-kodi_mjver = int(xbmc.getInfoLabel('System.BuildVersion')[0:2])
 CookieFile = os.path.join(pldatapath, 'cookies.lwp')
 def_fanart = os.path.join(pluginpath, 'fanart.jpg')
 BaseUrl = 'https://www.amazon.de'

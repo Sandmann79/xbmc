@@ -46,8 +46,8 @@ msgid "Sign In..."
 msgstr "Anmelden..."
 
 msgctxt "#30005"
-msgid "Enable Subtitles"
-msgstr "Untertitel aktivieren"
+msgid "Subtitles languages"
+msgstr "Untertitel-Sprachen"
 
 msgctxt "#30006"
 msgid "Store Credentials instead of using Cookie?"
@@ -324,6 +324,26 @@ msgstr "Medienquellen-Titel für Filme"
 msgctxt "#30082"
 msgid "Mediasource TV Title"
 msgstr "Medienquellen-Titel für Serien"
+
+msgctxt "#30083"
+msgid "None"
+msgstr "Keine"
+
+msgctxt "#30084"
+msgid "All"
+msgstr "Alle"
+
+msgctxt "#30085"
+msgid "From Kodi player language settings"
+msgstr "Spracheinstellung vom Kodi Player"
+
+msgctxt "#30086"
+msgid "From settings, fallback to english"
+msgstr "Kodi-Einstellungen sonst Englisch"
+
+msgctxt "#30087"
+msgid "From settings, fallback to all"
+msgstr "Kodi-Einstellungen sonst alle"
 
 msgctxt "#30100"
 msgid "Popular"

@@ -514,6 +514,9 @@ class PrimeVideo(Singleton):
                                 requestURLs.append((self._g.BaseUrl + entry[0], o, refUrn))
                 elif None is not re.search('<div class="av-dp-container">', cnt, flags=re.DOTALL):
                     ''' Movie/series page '''
+                    # Are we getting the old or new version of the page?
+                    bNewVersion = None is not re.search(r'<h1 [^>]*class="[^"]*DigitalVideoUI', cnt, flags=re.DOTALL)
+
                     # Find the biggest fanart available
                     bgimg = re.search(r'<div class="av-hero-background[^"]*"[^>]*url\(([^)]+)\)', cnt, flags=re.DOTALL)
                     if None is not bgimg:
@@ -524,8 +527,10 @@ class PrimeVideo(Singleton):
                         'cast': self._starringRex + r'\s*</span>\s*</dt>\s*<dd[^>]*>\s*(.*?)\s*</dd>',  # Starring
                         'director': self._directorRex + r'\s*</span>\s*</dt>\s*<dd[^>]*>\s*(.*?)\s*</dd>',  # Director
                         'genre': self._genresRex + r'\s*</span>\s*</dt>\s*<dd[^>]*>\s*(.*?)\s*</dd>',  # Genre
-                        'mpaa': r'<span data-automation-id="rating-badge"[^>]*>\s*<span[^>]*>\s*(.*?)\s*</span>',  # Age rating
-                        'plot': r'<div [^>]*data-automation-id="synopsis"[^>]*>\s*<div [^>]*>.*?<div [^>]*>\s*(.*?)\s*</div>',  # Synopsis
+                        'mpaa': r'<span data-automation-id="' + (r'' if bNewVersion else r'maturity-') +
+                                r'rating-badge"[^>]*>\s*<span[^>]*>\s*(.*?)\s*</span>',  # Age rating
+                        'plot': r'<div [^>]*data-automation-id="synopsis"[^>]*>\s*<div [^>]*>.*?<div [^>]*>\s*(.*?)\s*</div>'
+                                if bNewVersion else r'<div data-automation-id="synopsis"[^>]*>[^<]*<p>\s*(.*?)\s*</p>',  # Synopsis
                         'rating': r'<span data-automation-id="imdb-rating-badge"[^>]*>\s*([0-9]+)[,.]([0-9]+)\s*</span>',  # IMDb rating
                         'year': r'<span data-automation-id="release-year-badge"[^>]*>\s*([0-9]+)\s*</span>',  # Year
                     })
@@ -635,13 +640,13 @@ class PrimeVideo(Singleton):
                                         thumbnail = MaxSize(Unescape(gpr['catalogMetadata']['images']['imageUrls']['title']))
                                         self._videodata[refUrn]['metadata']['artmeta'] = {'thumb': thumbnail, 'poster': thumbnail, 'fanart': bgimg}
                                     if 'title' not in self._videodata[refUrn]:
-                                        if re.search('class="[^"]*DigitalVideoWebNodeDetail_seasons__single', cnt):
-                                            title = re.search(r'<span class="[^"]*DigitalVideoWebNodeDetail_seasons__single[^"]*"[^>]*>\s*<span[^>]*>\s*(.*?)\s*</span>',
-                                                              cnt, flags=re.DOTALL)
-                                        else:
-                                            title = re.search(r'<div class="[^*]*dv-node-dp-seasons.*?<label[^>]*>\s*<span[^>]*>\s*(.*?)\s*</span>\s*</label>',
-                                                              cnt, flags=re.DOTALL)
-                                        self._videodata[refUrn]['title'] = Unescape(title.group(1))
+                                        bSingle = None is not re.search(r'(av-season-single|DigitalVideoWebNodeDetail_seasons__single)', cnt, flags=re.DOTALL)
+                                        self._videodata[refUrn]['title'] = Unescape(re.search([
+                                            r'<span class="av-season-single av-badge-text">\s*(.*?)\s*</a>',  # Old, single
+                                            r'<a class="av-droplist--selected"[^>]*>\s*(.*?)\s*</a>',  # Old, multi
+                                            r'<span class="[^"]*DigitalVideoWebNodeDetail_seasons__single[^"]*"[^>]*>\s*<span[^>]*>\s*(.*?)\s*</span>',  # New, single
+                                            r'<div class="[^*]*dv-node-dp-seasons.*?<label[^>]*>\s*<span[^>]*>\s*(.*?)\s*</span>\s*</label>',  # New, multi
+                                        ][(2 if bNewVersion else 0) + (0 if bSingle else 1)], cnt, flags=re.DOTALL).group(1))
                                     if 'parent' not in self._videodata[refUrn]:
                                         self._videodata[refUrn]['parent'] = showId
                                         if refUrn not in self._videodata[showId]['children']:
@@ -687,13 +692,17 @@ class PrimeVideo(Singleton):
                                 self._videodata[refUrn]['children'].append(eid)
                 else:
                     ''' Movie and series list '''
-                    for entry in re.findall(r'<div class="[^"]*dvui-beardContainer[^"]*">\s*(.*?)\s*</form>\s*</div>\s*</div>\s*</div>', cnt, flags=re.DOTALL):
+                    # Are we getting the old or new version of the list?
+                    bNewVersion = None is re.search(r'<li class="av-result-card">', cnt, flags=re.DOTALL)
+                    for entry in re.findall(r'<div class="[^"]*dvui-beardContainer[^"]*">\s*(.*?)\s*</form>\s*</div>\s*</div>\s*</div>'
+                                            if bNewVersion else r'<li class="av-result-card">\s*(.*?)\s*</li>',
+                                            cnt, flags=re.DOTALL):
                         res = MultiRegexParsing(entry, {
                             'asin': r'\s+data-asin="\s*([^"]+?)\s*"',
                             'image': r'<a [^>]+><img\s+[^>]*src="([^"]+)"',
                             'link': r'<a href="([^"]+)"><img',
-                            'season': r'<span>\s*' + self._seasonRex + r'\s+([0-9]+)\s*</span>',
-                            'title': r'<a class="av-beard-title-link"[^>]*>\s*(.*?)\s*</a>',
+                            'season': (r'<span>\s*' if bNewVersion else r'<span class="av-result-card-season">\s*') + self._seasonRex + r'\s+([0-9]+)\s*</span>',
+                            'title': r'<a class="' + (r'av-beard-title-link' if bNewVersion else r'av-result-card-title') + r'"[^>]*>\s*(.*?)\s*</a>',
                         })
                         NotifyUser(getString(30253).format(res['title']))
                         if None is not re.match(r'/[^/]', res['link']):

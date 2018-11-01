@@ -8,7 +8,6 @@ import re
 import sys
 import xbmcgui
 import xbmcplugin
-from urllib import quote_plus
 
 from .singleton import Singleton
 from .network import getURL, getURLData, MechanizeLogin
@@ -173,9 +172,11 @@ class PrimeVideo(Singleton):
                 self.BuildRoot()
             return
 
+        from urllib import quote_plus, unquote
+
         node = self._catalog
         nodeName = None
-        for n in path.split('-//-'):
+        for n in [unquote(p) for p in path.split('-//-')]:
             nodeName = n
             node = node[n]
 
@@ -203,7 +204,7 @@ class PrimeVideo(Singleton):
                 continue
 
             if 'verb' not in entry:
-                url += 'PrimeVideo_Browse&path={0}-//-{1}'.format(quote_plus(path.encode('utf-8')), quote_plus(key.encode('utf-8')))
+                url += 'PrimeVideo_Browse&path={0}-//-{1}'.format(path, quote_plus(key.encode('utf-8')))
                 # Squash season number folder when only one season is available
                 if ('children' in entry) and (1 == len(entry['children'])):
                     url += '-//-{0}'.format(quote_plus(entry['children'][0].encode('utf-8')))

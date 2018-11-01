@@ -83,6 +83,8 @@ def EntryPoint():
         g.pv.Browse(None if 'path' not in args else args['path'])
     elif mode == 'PrimeVideo_Search':
         g.pv.Search()
+    elif mode == 'PrimeVideo_Refresh':
+        g.pv.Refresh(args['path'])
     elif mode in ['LogIn', 'remLoginData', 'removeUser', 'renameUser', 'switchUser']:
         exec '%s()' % mode
     elif mode in ['checkMissing', 'Search']:

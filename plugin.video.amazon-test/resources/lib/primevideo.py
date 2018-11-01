@@ -203,15 +203,24 @@ class PrimeVideo(Singleton):
             if ('metadata' in entry) and ('unavailable' in entry['metadata']):
                 continue
 
+            # Can we refresh the cache on this item?
+            bCanRefresh = ('ref' in node[key]) or ('lazyLoadURL' in node[key])
+
             if 'verb' not in entry:
                 url += 'PrimeVideo_Browse&path={0}-//-{1}'.format(path, quote_plus(key.encode('utf-8')))
                 # Squash season number folder when only one season is available
                 if ('children' in entry) and (1 == len(entry['children'])):
-                    url += '-//-{0}'.format(quote_plus(entry['children'][0].encode('utf-8')))
+                    child = entry['children'][0]
+                    url += '-//-{0}'.format(quote_plus(child.encode('utf-8')))
+                    # Propagate refresh if we squashed the season
+                    bCanRefresh = bCanRefresh or (('ref' in node[key][child]) or ('lazyLoadURL' in node[key][child]))
             else:
                 url += entry['verb']
             title = entry['title'] if 'title' in entry else nodeName
             item = xbmcgui.ListItem(title)
+
+            if bCanRefresh:
+                item.addContextMenuItems([('Refresh', 'RunPlugin({0}?mode=PrimeVideo_Refresh&path={1})'.format(self._g.pluginid, re.sub(r'^.*&path=', '', url)))])
             folder = True
             # In case of series find the oldest series and apply its art, also update metadata in case of squashed series
             if ('metadata' not in entry) and ('children' in entry) and (0 < len(entry['children'])):
@@ -272,7 +281,27 @@ class PrimeVideo(Singleton):
 
         setContentAndView([None, 'videos', 'series', 'season', 'episode', 'movie'][folderType])
 
-    def _LazyLoad(self, obj, objName):
+    def Refresh(self, path):
+        """ Provides cache refresh functionality """
+
+        from urllib import unquote
+        path = [unquote(p) for p in path.decode('utf-8').split('-//-')]
+
+        # Traverse the catalog cache
+        node = self._catalog
+        name = path.pop()  # Remove the leaf to stop early
+        for n in path:
+            node = node[n]
+
+        # Safety check, don't refresh if a video leaf or not yet loaded
+        if ('lazyLoadURL' in node[name]) or ('ref' not in node[name]):
+            return
+
+        # Reset the basic metadata and reload
+        node[name] = {'title': node[name]['title'], 'lazyLoadURL': node[name]['ref']}
+        self._LazyLoad(node[name], name, True)
+
+    def _LazyLoad(self, obj, objName, bCacheRefresh=False):
         """ Loader and parser of all the PrimeVideo.com queries """
 
         def Unescape(text):
@@ -425,7 +454,7 @@ class PrimeVideo(Singleton):
             del requestURLs[0]
 
             # If we're coming from a widowed carousel we could exploit the cached video data to further improve loading times
-            if bFromWidowCarousel and (refUrn in self._videodata):
+            if (not bCacheRefresh) and bFromWidowCarousel and (refUrn in self._videodata):
                 if ('unavailable' not in self._videodata[refUrn]['metadata']) and ('season' == self._videodata[refUrn]['metadata']['videometa']['mediatype']):
                     o[self._videodata[refUrn]['parent']] = self._videodata[self._videodata[refUrn]['parent']]
                     o = o[self._videodata[refUrn]['parent']]
@@ -436,7 +465,7 @@ class PrimeVideo(Singleton):
 
             couldNotParse = False
             try:
-                cnt = getURL(requestURL, silent=True, useCookie=True, rjson=False)
+                cnt = getURL(requestURL, silent=False, useCookie=True, rjson=False)
                 if 'lazyLoadURL' in o:
                     o['ref'] = o['lazyLoadURL']
                     del o['lazyLoadURL']
@@ -544,7 +573,7 @@ class PrimeVideo(Singleton):
                         ''' Standalone movie '''
                         if bFromWidowCarousel and (refUrn not in o):
                             o[refUrn] = {}
-                        if 'video' not in self._videodata[refUrn]['metadata']:
+                        if bCacheRefresh or ('video' not in self._videodata[refUrn]['metadata']):
                             asin = re.search(r'"asin":"([^"]*)"', cnt, flags=re.DOTALL)
                             if None is asin:
                                 self._videodata[refUrn]['metadata']['unavailable'] = True
@@ -579,7 +608,7 @@ class PrimeVideo(Singleton):
                                         image = MaxSize(gpr['catalogMetadata']['images']['imageUrls']['title'])
                                         meta['artmeta']['thumb'] = image
                                         meta['artmeta']['poster'] = image
-                                    if 'title' not in self._videodata[refUrn]:
+                                    if bCacheRefresh or ('title' not in self._videodata[refUrn]):
                                         self._videodata[refUrn]['title'] = gpr['catalogMetadata']['catalog']['title']
                                 if 'title' in self._videodata[refUrn]:
                                     NotifyUser(getString(30253).format(self._videodata[refUrn]['title']))
@@ -610,7 +639,7 @@ class PrimeVideo(Singleton):
                             meta['video'] = ExtractURN(meta['videoURL'])
                             eid = meta['video']
 
-                            if (
+                            if bCacheRefresh or (
                                 (eid not in self._videodata) or
                                 ('metadata' not in self._videodata[eid]) or
                                 ('videometa' not in self._videodata[eid]['metadata']) or
@@ -657,7 +686,7 @@ class PrimeVideo(Singleton):
                                 for i in gres:
                                     if None is not gres[i]:
                                         meta['videometa'][i] = gres[i]
-                                        if i not in self._videodata[refUrn]['metadata']['videometa']:
+                                        if bCacheRefresh or (i not in self._videodata[refUrn]['metadata']['videometa']):
                                             self._videodata[refUrn]['metadata']['videometa'][i] = gres[i]
 
                                 # Insert episode specific information
@@ -717,7 +746,7 @@ class PrimeVideo(Singleton):
                             urn = ExtractURN(res['link'])
                             if urn not in o:
                                 o[urn] = {}
-                            if (urn not in self._videodata) or ('metadata' not in self._videodata[urn]) or ('video' not in self._videodata[urn]['metadata']):
+                            if bCacheRefresh or ((urn not in self._videodata) or ('metadata' not in self._videodata[urn]) or ('video' not in self._videodata[urn]['metadata'])):
                                 bUpdatedVideoData = True
                                 self._videodata[urn] = {'metadata': meta, 'title': res['title']}
                                 requestURLs.append((res['link'], o[urn], urn))
@@ -773,4 +802,4 @@ class PrimeVideo(Singleton):
                 NotifyUser(getString(30252))
 
         # Flush catalog and data
-        self._flush(bUpdatedVideoData)
+        self._flush(bCacheRefresh or bUpdatedVideoData)

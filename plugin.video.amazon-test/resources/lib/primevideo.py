@@ -379,7 +379,7 @@ class PrimeVideo(Singleton):
                         o[i] = MaxSize(o[i])
                     elif 'season' == i:
                         o[i] = {'locale': Unescape(o[i][0]), 'season': int(o[i][1]), 'format': Unescape('{0} {1}'.format(o[i][0], o[i][1]))}
-                    elif 'episode' == i:
+                    elif ('episode' == i) or ('year' == i):
                         o[i] = int(o[i])
                     elif ('cast' == i) or ('genre' == i) or ('director' == i):
                         o[i] = re.sub(r'\s*</?(a|span|input|label.*?/label)\s*[^>]*>\s*', '', o[i][1])  # Strip everything useless

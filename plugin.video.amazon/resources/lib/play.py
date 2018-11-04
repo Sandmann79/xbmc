@@ -179,8 +179,7 @@ def IStreamPlayback(trailer, isAdult, extern):
         playDummyVid()
         return True
 
-    mpd, subs = getStreams(*getUrldata('catalog/GetPlaybackResources', var.args.get('asin'), extra=True, vMT=vMT,
-                                       opt='&titleDecorationScheme=primary-content', useCookie=cookie), retmpd=True)
+    mpd, subs = getStreams(*getUrldata('catalog/GetPlaybackResources', var.args.get('asin'), extra=True, vMT=vMT, useCookie=cookie), retmpd=True)
 
     cj_str = ';'.join(['%s=%s' % (k, v) for k, v in cookie.items()])
     opt = '|Content-Type=application%2Fx-www-form-urlencoded&Cookie=' + urllib.quote_plus(cj_str)
@@ -541,24 +540,29 @@ def getUrldata(mode, asin, devicetypeid='AOAGZA014O5RE', version=1, firmware='1'
     url += '&deviceTypeID=' + devicetypeid
     url += '&firmware=' + firmware
     url += '&deviceID=' + gen_id()
+    url += '&marketplaceID=A1PA6795UKMFR9'
     url += '&format=json'
     url += '&version=' + str(version)
     if extra:
         url += '&resourceUsage=ImmediateConsumption&consumptionType=Streaming&deviceDrmOverride=CENC' \
                '&deviceStreamingTechnologyOverride=DASH&deviceProtocolOverride=Https&audioTrackId=all' \
-               '&deviceBitrateAdaptationsOverride=CVBR%2CCBR'
+               '&deviceBitrateAdaptationsOverride=CVBR%2CCBR&gascEnabled=false'
         url += '&videoMaterialType=' + vMT
         url += '&desiredResources=' + dRes
         url += '&supportedDRMKeyScheme=DUAL_KEY' if not platform & OS_ANDROID and 'PlaybackUrls' in dRes else ''
     url += opt
     if retURL:
         return url
-    data = getURL(url, useCookie=useCookie, rjson=False)
+    data = getURL(url, useCookie=useCookie, postdata='')
     if data:
-        error = re.findall('{[^"]*"errorCode[^}]*}', data)
-        if error:
-            return False, Error(json.loads(error[0]))
-        return True, json.loads(data)
+        if 'error' in data.keys():
+            return False, Error(data['error'])
+        elif 'AudioVideoUrls' in data.get('errorsByResource', ''):
+            return False, Error(data['errorsByResource']['AudioVideoUrls'])
+        elif 'PlaybackUrls' in data.get('errorsByResource', ''):
+            return False, Error(data['errorsByResource']['PlaybackUrls'])
+        else:
+            return True, data
     return False, 'HTTP Error'
 
 

@@ -206,6 +206,7 @@ class Captcha(pyxbmct.AddonDialogWindow):
 def getURL(url, useCookie=False, silent=False, headers=None, rjson=True, attempt=1, check=False, postdata=None):
     # Try to extract the host from the URL
     host = re.search('://([^/]+)/', url)
+    method = 'POST' if postdata is not None else 'GET'
 
     # Create sessions for keep-alives and connection pooling
     if None is not host:
@@ -227,7 +228,7 @@ def getURL(url, useCookie=False, silent=False, headers=None, rjson=True, attempt
     if (not silent) or var.verbLog:
         dispurl = url
         dispurl = re.sub('(?i)%s|%s|&token=\w+|&customerId=\w+' % (tvdb, tmdb), '', url).strip()
-        Log('%sURL: %s' % ('check' if check else 'get', dispurl))
+        Log('%sURL: %s' % ('check' if check else method.lower(), dispurl))
 
     headers = {} if not headers else headers
     if 'User-Agent' not in headers:
@@ -238,7 +239,6 @@ def getURL(url, useCookie=False, silent=False, headers=None, rjson=True, attempt
         headers['Accept-Language'] = 'de-de, en-gb;q=0.2, en;q=0.1'
 
     try:
-        method = 'POST' if postdata else 'GET'
         r = session.request(method, url, data=postdata, headers=headers, cookies=cj, verify=var.verifySsl)
         response = r.text if not check else 'OK'
         if r.status_code >= 400:

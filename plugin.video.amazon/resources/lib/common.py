@@ -473,7 +473,7 @@ def LogIn(ask):
             br.addheaders = [('User-Agent', getConfig('UserAgent'))]
             br.open(BaseUrl + '/gp/aw/si.html')
             response = br.response().read()
-            if mobileUA(response) or 'signIn' not in [i.name for i in br.forms()]:
+            if 'signIn' not in [i.name for i in br.forms()]:
                 getUA(True)
                 caperr += 1
                 WriteLog(response, 'login-si')

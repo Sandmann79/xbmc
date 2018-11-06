@@ -438,7 +438,7 @@ def LogIn(ask=True):
             br.addheaders = [('User-Agent', getConfig('UserAgent'))]
             br.open(user['baseurl'] + ('/gp/aw/si.html' if not user['pv'] else '/auth-redirect/'))
             response = br.response().read()
-            if mobileUA(response) or 'signIn' not in [i.name for i in br.forms()]:
+            if 'signIn' not in [i.name for i in br.forms()]:
                 getUA(True)
                 caperr += 1
                 WriteLog(response, 'login-si')

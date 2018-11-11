@@ -294,7 +294,7 @@ def parseSubs(data):
         lang_main = xbmc.convertLanguage(lang_main, xbmc.ISO_639_1)
     if 'none' == lang_main:
         return []
-    if 'forced_only' == lang_main:
+    if 'forced_only' == lang_main and down_lang > 1:
         bForcedOnly = True
     if ('forced_only' == lang_main) or ('original' == lang_main):
         lang_main = jsonRPC('Settings.GetSettingValue', param={'setting': 'locale.audiolanguage'})

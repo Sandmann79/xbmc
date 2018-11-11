@@ -600,7 +600,7 @@ def Input(mousex=0, mousey=0, click=0, keys=None, delay='200'):
 
     if mousey == -1:
         mousey = screenHeight / 2
-    spec_keys = {'{EX}': ('!{F4}', 'control+shift+q', 'kd:cmd t:q ku:cmd'),
+    spec_keys = {'{EX}': ('!{F4}', 'alt+F4', 'kd:cmd t:q ku:cmd'),
                  '{SPC}': ('{SPACE}', 'space', 't:p'),
                  '{LFT}': ('{LEFT}', 'Left', 'kp:arrow-left'),
                  '{RGT}': ('{RIGHT}', 'Right', 'kp:arrow-right'),

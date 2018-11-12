@@ -640,14 +640,18 @@ def selectUser():
 
 def MFACheck(br, email, soup):
     Log('MFA, DCQ or Captcha form')
-    uni_soup = unicode(soup)
+    uni_soup = soup.__unicode__()
+    if 'signIn' in [i.name for i in br.forms()]:
+        br.select_form(name='signIn')
+    else:
+        br.select_form(nr=0)
+
     if 'auth-mfa-form' in uni_soup:
         msg = soup.find('form', attrs={'id': 'auth-mfa-form'})
         msgtxt = msg.p.renderContents().strip()
         kb = xbmc.Keyboard('', msgtxt)
         kb.doModal()
         if kb.isConfirmed() and kb.getText():
-            br.select_form(nr=0)
             br['otpCode'] = kb.getText()
         else:
             return False
@@ -672,7 +676,6 @@ def MFACheck(br, email, soup):
 
         ret = Dialog.input(q_title[sel])
         if ret:
-            br.select_form(nr=0)
             br[q_id[sel]] = ret
         else:
             return False
@@ -680,7 +683,6 @@ def MFACheck(br, email, soup):
         wnd = Captcha((getString(30008).split('.')[0]), soup, email)
         wnd.doModal()
         if wnd.email and wnd.cap and wnd.pwd:
-            br.select_form(nr=0)
             br['email'] = wnd.email
             br['password'] = wnd.pwd
             br['guess'] = wnd.cap
@@ -702,7 +704,6 @@ def MFACheck(br, email, soup):
             sel = 100 if Dialog.ok(cs_title, cs_hint) else -1
 
         if sel > -1:
-            br.select_form(nr=0)
             if sel < 100:
                 br[choices[sel][1]] = [choices[sel][2]]
         else:
@@ -711,8 +712,6 @@ def MFACheck(br, email, soup):
         msg = soup.find('div', attrs={'class': 'a-row a-spacing-micro cvf-widget-input-code-label'}).contents[0].strip()
         ret = Dialog.input(msg)
         if ret:
-            br.select_form(nr=0)
-            Log(br)
             br['code'] = ret
         else:
             return False

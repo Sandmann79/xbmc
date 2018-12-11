@@ -79,7 +79,7 @@ def addDir(name, mode='', url='', infoLabels=None, opt='', catalog='Browse', cm=
     xbmcplugin.addDirectoryItem(g.pluginhandle, url, item, isFolder=mode != 'switchUser')
 
 
-def addVideo(name, asin, infoLabels, cm=[], export=False):
+def addVideo(name, asin, infoLabels, cm=None, export=False):
     g = Globals()
     s = Settings()
     u = {'asin': asin, 'mode': 'PlayVideo', 'name': name.encode('utf-8'), 'adult': infoLabels['isAdult']}
@@ -107,6 +107,7 @@ def addVideo(name, asin, infoLabels, cm=[], export=False):
         url += '&selbitrate=0'
         g.amz.Export(infoLabels, url)
     else:
+        cm = cm if cm else []
         cm.insert(0, (getString(30101), 'Action(ToggleWatched)'))
         cm.insert(1, (getString(30102), 'RunPlugin(%s)' % (url + '&selbitrate=1')))
         url += '&selbitrate=0'

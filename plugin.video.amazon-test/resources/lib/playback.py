@@ -562,7 +562,7 @@ def PlayVideo(name, asin, adultstr, trailer, forcefb=0):
                     starttime = time.time()
                     player.updateStream('PLAY')
             sleep(1)
-
+        player.finished()
         del player
         return True
 
@@ -743,16 +743,19 @@ class _AmazonPlayer(xbmc.Player):
 
     def checkResume(self):
         self.dbid = int('0' + _getListItem('DBID'))
+        Log(self.dbid)
         if self.dbid:
             dbtype = _getListItem('DBTYPE')
             result = jsonRPC('VideoLibrary.Get%sDetails' % dbtype, 'resume,playcount', {'%sid' % dbtype: self.dbid})
             self.resume = int(result[dbtype.lower() + 'details']['resume']['position'])
             self.watched = int(result[dbtype.lower() + 'details']['playcount'])
+        if self.watched:
+            self.resume = 0
+            return True
         if not self.resume:
             self.getResumePoint()
-        if self.watched:
-            return True
         if self.resume > 180 and self.extern:
+            Log('Displaying Resumedialog')
             res_string = getString(12022).replace("%s", "{}") if g.KodiK else getString(12022)
             sel = g.dialog.contextmenu([res_string.format(time.strftime("%H:%M:%S", time.gmtime(self.resume))), getString(12021)])
             if sel > -1:

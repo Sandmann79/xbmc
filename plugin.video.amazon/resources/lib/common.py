@@ -336,7 +336,7 @@ def addDir(name, mode, sitemode, url='', thumb='', fanart='', infoLabels=None, t
     xbmcplugin.addDirectoryItem(var.pluginhandle, url=url, listitem=item, isFolder=sitemode not in ('switchUser', 'updateAll'), totalItems=totalItems)
 
 
-def addVideo(name, asin, poster=None, fanart=None, infoLabels=None, totalItems=0, cm=[], trailer=False,
+def addVideo(name, asin, poster=None, fanart=None, infoLabels=None, totalItems=0, cm=None, trailer=False,
              isAdult=False, isHD=False):
     u = {'asin': asin, 'mode': 'play', 'name': name.encode('utf-8'), 'sitemode': 'PLAYVIDEO', 'adult': isAdult}
     url = '%s?%s' % (sys.argv[0], urllib.urlencode(u))
@@ -365,6 +365,7 @@ def addVideo(name, asin, poster=None, fanart=None, infoLabels=None, totalItems=0
     else:
         item.setArt({'Poster': poster})
 
+    cm = cm if cm else []
     cm.insert(1, (getString(30118), 'RunPlugin(%s)' % (url + '&forcefb=1')))
     item.addContextMenuItems(cm)
     item.setInfo(type='Video', infoLabels=getInfolabels(infoLabels))

@@ -522,26 +522,41 @@ class PrimeVideo(Singleton):
                         NotifyUser(getString(30253).format(title))
                         o[title]['lazyLoadURL'] = link
             else:
-                if None is not re.search(r'<div\s+[^>]*id="Watchlist"[^>]*>', cnt, flags=re.DOTALL):
+                if None is not re.search(r'<div\s+[^>]*(id="Watchlist"|class="DVWebNode-watchlist-wrapper")[^>]*>', cnt, flags=re.DOTALL):
                     ''' Watchlist '''
-                    if ('Watchlist' == objName):
-                        for entry in re.findall(r'<a href="([^"]+/)[^"/]+" class="DigitalVideoUI_TabHeading__tab[^"]*">(.*?)</a>', cnt, flags=re.DOTALL):
-                            o[Unescape(entry[1])] = {'title': Unescape(entry[1]), 'lazyLoadURL': self._g.BaseUrl + entry[0] + '?sort=DATE_ADDED_DESC'}
-                        continue
-                    for entry in re.findall(r'<div[^>]* class="[^"]*DigitalVideoWebNodeLists_Item__item[^"]*"[^>]*>\s*<a href="(/detail/[^/]+/)[^"]*"[^>]*>*.*?'
-                                            r'<img src="([^"]+)".*?"[^"]*DigitalVideoWebNodeLists_Item__coreTitle[^"]*"[^>]*>\s*(.*?)\s*</', cnt):
-                        requestURLs.append((self._g.BaseUrl + entry[0], o, ExtractURN(entry[0]), True))
-                    pagination = re.search(r'<ol[^>]* class="[^"]*DigitalVideoUI_Pagination__pagination[^"]*"[^>]*>(.*?)</ol>', cnt)
-                    if None is not pagination:
-                        # We save a semi-static list of scraped pages, to avoid circular loops
-                        if (refUrn not in self._WatchlistPages):
-                            self._WatchlistPages[refUrn] = []
-                        currentPage = re.search(r'<a[^>]* href="#"[^>]*>\s*<span>\s*([0-9]+)\s*</span>', pagination.group(0), flags=re.DOTALL).group(1)
-                        if currentPage not in self._WatchlistPages[refUrn]:
-                            self._WatchlistPages[refUrn].append(currentPage)
-                        for entry in re.findall(r'<li[^>]*>\s*<a href="(/[^"]+)"[^>]*>\s*<span>\s*([0-9]+)\s*', pagination.group(0)):
-                            if entry[1] not in self._WatchlistPages[refUrn]:
-                                requestURLs.append((self._g.BaseUrl + entry[0], o, refUrn))
+                    if None is not re.search(r'<div\s+[^>]*id="Watchlist"[^>]*>', cnt, flags=re.DOTALL):
+                        ''' Old watchlist, possibly (about to be) deprecated. Leaving it in because I stopped trusting anyone '''
+                        if ('Watchlist' == objName):
+                            for entry in re.findall(r'<a href="([^"]+/)[^"/]+" class="DigitalVideoUI_TabHeading__tab[^"]*">(.*?)</a>', cnt, flags=re.DOTALL):
+                                o[Unescape(entry[1])] = {'title': Unescape(entry[1]), 'lazyLoadURL': self._g.BaseUrl + entry[0] + '?sort=DATE_ADDED_DESC'}
+                            continue
+                        for entry in re.findall(r'<div[^>]* class="[^"]*DigitalVideoWebNodeLists_Item__item[^"]*"[^>]*>\s*<a href="(/detail/[^/]+/)[^"]*"[^>]*>*.*?'
+                                                r'<img src="([^"]+)".*?"[^"]*DigitalVideoWebNodeLists_Item__coreTitle[^"]*"[^>]*>\s*(.*?)\s*</', cnt):
+                            requestURLs.append((self._g.BaseUrl + entry[0], o, ExtractURN(entry[0]), True))
+                        pagination = re.search(r'<ol[^>]* class="[^"]*DigitalVideoUI_Pagination__pagination[^"]*"[^>]*>(.*?)</ol>', cnt)
+                        if None is not pagination:
+                            # We save a semi-static list of scraped pages, to avoid circular loops
+                            if (refUrn not in self._WatchlistPages):
+                                self._WatchlistPages[refUrn] = []
+                            currentPage = re.search(r'<a[^>]* href="#"[^>]*>\s*<span>\s*([0-9]+)\s*</span>', pagination.group(0), flags=re.DOTALL).group(1)
+                            if currentPage not in self._WatchlistPages[refUrn]:
+                                self._WatchlistPages[refUrn].append(currentPage)
+                            for entry in re.findall(r'<li[^>]*>\s*<a href="(/[^"]+)"[^>]*>\s*<span>\s*([0-9]+)\s*', pagination.group(0)):
+                                if entry[1] not in self._WatchlistPages[refUrn]:
+                                    requestURLs.append((self._g.BaseUrl + entry[0], o, refUrn))
+                    else:
+                        ''' New type of watchlist nobody asked for '''
+                        if ('Watchlist' == objName):
+                            entries = re.search(r'<div class="DVWebNode-watchlist-wrapper">(<div[^>]*>)<div[^>]*>.*?</div><div[^>]*><div[^>]*>'
+                                                r'((<a href="[^"]+"[^>]*>[^<]+</a>)+)', cnt, flags=re.DOTALL).group(2)
+                            for entry in re.findall(r'href="([^"]+)"[^>]*>(.*?)</a', entries, flags=re.DOTALL):
+                                o[Unescape(entry[1])] = {'title': Unescape(entry[1]), 'lazyLoadURL': self._g.BaseUrl + entry[0]}
+                            continue
+                        for entry in re.findall(r'data-asin="amzn1\.dv\.[^>]+>.*?href="([^"]+)"[^>]*>\s*<img\s*src="[^"]+"\s*alt="[^"]+"', cnt, flags=re.DOTALL):
+                            requestURLs.append((self._g.BaseUrl + entry, o, ExtractURN(entry), True))
+                        pagination = re.search(r'href="([^"]+)"\s*class="[^"]*u-pagination', cnt, flags=re.DOTALL)
+                        if None is not pagination:
+                            requestURLs.append((self._g.BaseUrl + pagination.group(1), o, refUrn))
                 elif None is not re.search('<div class="av-dp-container">', cnt, flags=re.DOTALL):
                     ''' Movie/series page '''
                     # Are we getting the old or new version of the page?

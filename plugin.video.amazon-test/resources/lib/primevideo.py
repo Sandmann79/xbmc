@@ -197,6 +197,7 @@ class PrimeVideo(Singleton):
             if key in ['metadata', 'ref', 'title', 'verb', 'children', 'parent']:
                 continue
             url = '{0}?mode='.format(self._g.pluginid)
+            urlPath = ''
             entry = node[key] if key not in self._videodata else self._videodata[key]
 
             # Skip items that are out of catalog
@@ -206,16 +207,20 @@ class PrimeVideo(Singleton):
             # Can we refresh the cache on this item?
             bCanRefresh = ('ref' in node[key]) or ('lazyLoadURL' in node[key])
 
-            if 'verb' not in entry:
-                url += 'PrimeVideo_Browse&path={0}-//-{1}'.format(path, quote_plus(key.encode('utf-8')))
+            if 'verb' in entry:
+                url += entry['verb']
+            else:
+                url += 'PrimeVideo_Browse&path='
+                urlPath += '{0}-//-{1}'.format(path, key)
                 # Squash season number folder when only one season is available
                 if ('children' in entry) and (1 == len(entry['children'])):
                     child = entry['children'][0]
-                    url += '-//-{0}'.format(quote_plus(child.encode('utf-8')))
+                    urlPath += '-//-{0}'.format(child)
                     # Propagate refresh if we squashed the season
                     bCanRefresh = bCanRefresh or (('ref' in node[key][child]) or ('lazyLoadURL' in node[key][child]))
-            else:
-                url += entry['verb']
+            if (0 < len(urlPath)):
+                url += '-//-'.join([quote_plus(x.encode('utf-8')) for x in urlPath.split('-//-')])
+            Log('Encoded PrimeVideo URL: {0}'.format(url), Log.DEBUG)
             title = entry['title'] if 'title' in entry else nodeName
             item = xbmcgui.ListItem(title)
 
@@ -342,8 +347,8 @@ class PrimeVideo(Singleton):
             def BeautifyText(title):
                 """ Correct stylistic errors in Amazon's titles """
 
-                for t in [(r'\s+-\s*', ' – '),  # Convert dash from small to medium where needed
-                          (r'\s*-\s+', ' – '),  # Convert dash from small to medium where needed
+                for t in [(r'\s+-\s*([^&])', r' – \1'),  # Convert dash from small to medium where needed
+                          (r'\s*-\s+([^&])', r' – \1'),  # Convert dash from small to medium where needed
                           (r'^\s+', ''),  # Remove leading spaces
                           (r'\s+$', ''),  # Remove trailing spaces
                           (r' {2,}', ' '),  # Remove double spacing

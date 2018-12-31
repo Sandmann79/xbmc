@@ -121,6 +121,10 @@ def getURL(url, useCookie=False, silent=False, headers=None, rjson=True, attempt
     if not hasattr(getURL, 'sessions'):
         getURL.sessions = {}  # Keep-Alive sessions
 
+    # Static variable to store last response code. 0 means generic error (like SSL/connection errors),
+    # while every other response code is a specific HTTP status code
+    getURL.lastResponseCode = 0
+
     # Try to extract the host from the URL
     host = re.search('://([^/]+)/', url)
 
@@ -158,21 +162,29 @@ def getURL(url, useCookie=False, silent=False, headers=None, rjson=True, attempt
     if 'Accept-Language' not in headers:
         headers['Accept-Language'] = g.userAcceptLanguages
 
+    class TryAgain(Exception): pass  # Try again on temporary errors
+    class NoRetries(Exception): pass  # Fail on permanent errors
     try:
         method = 'POST' if postdata is not None else 'GET'
         r = session.request(method, url, data=postdata, headers=headers, cookies=cj, verify=s.verifySsl)
+        getURL.lastResponseCode = r.status_code  # Set last response code
         response = r.text if not check else 'OK'
-        if r.status_code >= 400:
-            Log('Error %s' % r.status_code)
-            raise requests.exceptions.HTTPError('429')
-    except (requests.exceptions.Timeout,
+        # 408 Timeout, 429 Too many requests and 5xx errors are temporary
+        # Consider everything else definitive fail (like 404s and 403s)
+        if (408 == r.status_code) or (429 == r.status_code) or (500 <= r.status_code):
+            raise TryAgain('{0} error'.format(r.status_code))
+        if 400 <= r.status_code:
+            raise NoRetries('{0} error'.format(r.status_code))
+    except (TryAgain,
+            NoRetries,
+            requests.exceptions.Timeout,
             requests.exceptions.ConnectionError,
             requests.exceptions.SSLError,
             requests.exceptions.HTTPError,
             requests.packages.urllib3.exceptions.SNIMissingWarning,
-            requests.packages.urllib3.exceptions.InsecurePlatformWarning), e:
+            requests.packages.urllib3.exceptions.InsecurePlatformWarning) as e:
         eType = e.__class__.__name__
-        Log('Error reason: %s (%s)' % (e, eType), Log.ERROR)
+        Log('Error reason: %s (%s)' % (e.message, eType), Log.ERROR)
         if 'SNIMissingWarning' in eType:
             Log('Using a Python/OpenSSL version which doesn\'t support SNI for TLS connections.', Log.ERROR)
             g.dialog.ok('No SNI for TLS', 'Your current Python/OpenSSL environment does not support SNI over TLS connections.',
@@ -185,13 +197,12 @@ def getURL(url, useCookie=False, silent=False, headers=None, rjson=True, attempt
                         'You can find a Linux guide on how to update Python and its modules for Kodi here: https://goo.gl/CKtygz',
                         'Additionally, follow this guide to update the required modules: https://goo.gl/ksbbU2')
             exit()
-        if (('429' in e) or ('Timeout' in eType)) and (3 > attempt):
-            attempt += 1 if not check else 10
-            logout = 'Attempt #%s' % attempt
-            if '429' in e:
-                logout += '. Too many requests - Pause 10 sec'
-                sleep(10)
-            Log(logout)
+        if (not check) and (3 > attempt) and (('TryAgain' in eType) or ('Timeout' in eType)):
+            wait = 10 * attempt if '429' in e.message else 0
+            attempt += 1
+            Log('Attempt #{0}{1}'.format(attempt, '' if 0 == wait else ' (Too many requests, pause %s seconds…)' % wait))
+            if 0 < wait:
+                sleep(wait)
             return getURL(url, useCookie, silent, headers, rjson, attempt, check, postdata)
         return retval
     return json.loads(response) if rjson else response

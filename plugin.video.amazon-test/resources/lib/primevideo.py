@@ -115,9 +115,9 @@ class PrimeVideo(Singleton):
             return False
 
         # Setup watchlist
-        watchlist = re.search(r'<a[^>]* href="(/watchlist/)[^"]*"[^>]*>(.*?)</a>', home)
+        watchlist = re.search(r'<a[^>]* href="(([^"]+)?/watchlist/)[^"]*"[^>]*>(.*?)</a>', home)
         if None is not watchlist:
-            self._catalog['root']['Watchlist'] = {'title': watchlist.group(2), 'lazyLoadURL': self._g.BaseUrl + watchlist.group(1)}
+            self._catalog['root']['Watchlist'] = {'title': watchlist.group(3), 'lazyLoadURL': self._g.BaseUrl + watchlist.group(1)}
 
         # PrimeVideo.com top navigation menu
         home = re.search('<div id="av-nav-main-menu".*?<ul role="navigation"[^>]*>\s*(.*?)\s*</ul>', home)
@@ -127,7 +127,7 @@ class PrimeVideo(Singleton):
             return False
         for item in re.findall('<li[^>]*>\s*(.*?)\s*</li>', home.group(1)):
             item = re.search('<a href="([^"]+)"[^>]*>\s*(.*?)\s*</a>', item)
-            if None is not re.match('/storefront/home/', item.group(1)):
+            if None is not re.match(r'(/region/[^/]+)?/storefront/home/', item.group(1)):
                 continue
             # Remove react comments
             title = re.sub('^<!--\s*[^>]+\s*-->', '', re.sub('<!--\s*[^>]+\s*-->$', '', item.group(2)))
@@ -535,7 +535,7 @@ class PrimeVideo(Singleton):
                             for entry in re.findall(r'<a href="([^"]+/)[^"/]+" class="DigitalVideoUI_TabHeading__tab[^"]*">(.*?)</a>', cnt, flags=re.DOTALL):
                                 o[Unescape(entry[1])] = {'title': Unescape(entry[1]), 'lazyLoadURL': self._g.BaseUrl + entry[0] + '?sort=DATE_ADDED_DESC'}
                             continue
-                        for entry in re.findall(r'<div[^>]* class="[^"]*DigitalVideoWebNodeLists_Item__item[^"]*"[^>]*>\s*<a href="(/detail/[^/]+/)[^"]*"[^>]*>*.*?'
+                        for entry in re.findall(r'<div[^>]* class="[^"]*DigitalVideoWebNodeLists_Item__item[^"]*"[^>]*>\s*<a href="((/region/[^/]+)?/detail/[^/]+/)[^"]*"[^>]*>*.*?'
                                                 r'<img src="([^"]+)".*?"[^"]*DigitalVideoWebNodeLists_Item__coreTitle[^"]*"[^>]*>\s*(.*?)\s*</', cnt):
                             requestURLs.append((self._g.BaseUrl + entry[0], o, ExtractURN(entry[0]), True))
                         pagination = re.search(r'<ol[^>]* class="[^"]*DigitalVideoUI_Pagination__pagination[^"]*"[^>]*>(.*?)</ol>', cnt)

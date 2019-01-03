@@ -30,10 +30,17 @@ class PrimeVideo(Singleton):
     def __init__(self, globalsInstance, settingsInstance):
         self._g = globalsInstance
         self._s = settingsInstance
-        self._seasonRex = r'(Stagione|Staffel|Season|Temporada|Saison|Seizoen|Sezon)'
-        self._directorRex = r'(Direc?tor|Regia|Regie|Réalisation|Regisseur|Reżyser)'
-        self._starringRex = r'(Starring|Interpreti|Hauptdarsteller|Reparto|Acteurs principaux|In de hoofdrol|Występują|Atores principais)'
-        self._genresRex = r'(Gene?res?|Géneros|Gatunki|Gêneros)'
+        """ Data for text extrapolation
+
+            References:
+            https://www.primevideo.com/detail/0ND5POOAYD6A4THTH7C1TD3TYE/ Season, Starring, Genres
+            https://www.primevideo.com/detail/0I5LVHEYZFZ51QTL86QYXWQ1QW/ Director, Starring, Genres
+        """
+        self._seasonRex = r'(Stagione|Staffel|Season|Temporada|Saison|Seizoen|Sezon|S[æeä]song?|सीज़न|சீசன்|సీజన్)'
+        self._directorRex = r'(Direc?tor|Regia|Regie|Réalisation|Regisseur|Reżyser|Instruktør|Regiss[øö]r|निर्देशक|இயக்குனர்|దర్శకుడు)'
+        self._starringRex = r'(Starring|Interpreti|Hauptdarsteller|Reparto|Acteurs principaux|In de hoofdrol|Występują|Atores principais|Medvirkende|I huvudrollerna|' \
+                            r'मुख्य भूमिका में|நடித்தவர்கள்|నటులు:)'
+        self._genresRex = r'(Gene?re[rs]?|Géneros|Gatunki|Gêneros|Sjangrer|शैलियां|வகைகள்|శైలీలు)'
         self._dateParserData = {
             """ Data for date string deconstruction and reassembly
 
@@ -41,6 +48,9 @@ class PrimeVideo(Singleton):
                 https://www.primevideo.com/detail/0LCQSTWDMN9V770DG2DKXY3GVF/  09 10 11 12 01 02 03 04 05
                 https://www.primevideo.com/detail/0ND5POOAYD6A4THTH7C1TD3TYE/  06 07 08 09
             """
+            'da_DK': {'deconstruct': r'^([0-9]+)\.\s+([^\s]+)\s+([0-9]+)', 'reassemble': '{2}-{1:0>2}-{0:0>2}', 'month': 1,
+                      'months': {'januar': 1, 'februar': 2, 'marts': 3, 'april': 4, 'maj': 5, 'juni': 6, 'juli': 7, 'august': 8, 'september': 9, 'oktober': 10,
+                                 'november': 11, 'december': 12}},
             'de_DE': {'deconstruct': r'^([0-9]+)\.\s+([^\s]+)\s+([0-9]+)', 'reassemble': '{2}-{1:0>2}-{0:0>2}', 'month': 1,
                       'months': {'Januar': 1, 'Februar': 2, 'März': 3, 'April': 4, 'Mai': 5, 'Juni': 6, 'Juli': 7, 'August': 8, 'September': 9, 'Oktober': 10,
                                  'November': 11, 'Dezember': 12}},
@@ -53,9 +63,15 @@ class PrimeVideo(Singleton):
             'fr_FR': {'deconstruct': r'^([0-9]+)\s+([^\s]+)\s+([0-9]+)', 'reassemble': '{2}-{1:0>2}-{0:0>2}', 'month': 1,
                       'months': {'janvier': 1, 'février': 2, 'mars': 3, 'avril': 4, 'mai': 5, 'juin': 6, 'juillet': 7, 'aout': 8, 'août': 8, 'septembre': 9,
                                  'octobre': 10, 'novembre': 11, 'décembre': 12}},
+            'hi_IN': {'deconstruct': r'^([0-9]+)\s+([^\s]+)\s+([0-9]+)', 'reassemble': '{2}-{1:0>2}-{0:0>2}', 'month': 1,
+                      'months': {'जनवरी': 1, 'फ़रवरी': 2, 'मार्च': 3, 'अप्रैल': 4, 'मई': 5, 'जून': 6, 'जुलाई': 7, 'अगस्त': 8, 'सितंबर': 9, 'अक्तूबर': 10,
+                                 'नवंबर': 11, 'दिसंबर': 12}},
             'it_IT': {'deconstruct': r'^([0-9]+)\s+([^\s]+)\s+([0-9]+)', 'reassemble': '{2}-{1:0>2}-{0:0>2}', 'month': 1,
                       'months': {'gennaio': 1, 'febbraio': 2, 'marzo': 3, 'aprile': 4, 'maggio': 5, 'giugno': 6, 'luglio': 7, 'agosto': 8, 'settembre': 9,
                                  'ottobre': 10, 'novembre': 11, 'dicembre': 12}},
+            'nb_NO': {'deconstruct': r'^([0-9]+)\.\s+([^\s]+)\s+([0-9]+)', 'reassemble': '{2}-{1:0>2}-{0:0>2}', 'month': 1,
+                      'months': {'januar': 1, 'februar': 2, 'mars': 3, 'april': 4, 'mai': 5, 'juni': 6, 'juli': 7, 'august': 8, 'september': 9, 'oktober': 10,
+                                 'november': 11, 'desember': 12}},
             'nl_NL': {'deconstruct': r'^([0-9]+)\s+([^\s]+)\s+([0-9]+)', 'reassemble': '{2}-{1:0>2}-{0:0>2}', 'month': 1,
                       'months': {'januari': 1, 'februari': 2, 'maart': 3, 'april': 4, 'mei': 5, 'juni': 6, 'juli': 7, 'augustus': 8, 'september': 9,
                                  'oktober': 10, 'november': 11, 'december': 12}},
@@ -65,6 +81,15 @@ class PrimeVideo(Singleton):
             'pt_BR': {'deconstruct': r'^([0-9]+)\s+de\s+([^\s]+),\s+de\s+([0-9]+)', 'reassemble': '{2}-{1:0>2}-{0:0>2}', 'month': 1,
                       'months': {'janeiro': 1, 'fevereiro': 2, 'março': 3, 'abril': 4, 'maio': 5, 'junho': 6, 'julho': 7, 'agosto': 8, 'setembro': 9, 'outubro': 10,
                                  'novembro': 11, 'dezembro': 12}},
+            'sv_SE': {'deconstruct': r'^([0-9]+)\s+([^\s]+)\s+([0-9]+)', 'reassemble': '{2}-{1:0>2}-{0:0>2}', 'month': 1,
+                      'months': {'januari': 1, 'februari': 2, 'mars': 3, 'april': 4, 'maj': 5, 'juni': 6, 'juli': 7, 'augusti': 8, 'september': 9, 'oktober': 10,
+                                 'november': 11, 'december': 12}},
+            'ta_IN': {'deconstruct': r'^([0-9]+)\s+([^\s]+),\s+([0-9]+)', 'reassemble': '{2}-{1:0>2}-{0:0>2}', 'month': 1,
+                      'months': {'ஜனவரி': 1, 'பிப்ரவரி': 2, 'மார்ச்': 3, 'ஏப்ரல்': 4, 'மே': 5, 'ஜூன்': 6, 'ஜூலை': 7, 'ஆகஸ்ட்': 8, 'செப்டம்பர்': 9, 'அக்டோபர்': 10,
+                                 'நவம்பர்': 11, 'டிசம்பர்': 12}},
+            'te_IN': {'deconstruct': r'^([0-9]+)\s+([^\s]+),\s+([0-9]+)', 'reassemble': '{2}-{1:0>2}-{0:0>2}', 'month': 1,
+                      'months': {'జనవరి': 1, 'ఫిబ్రవరి': 2, 'మార్చి': 3, 'ఏప్రిల్': 4, 'మే': 5, 'జూన్': 6, 'జులై': 7, 'ఆగస్టు': 8, 'సెప్టెంబర్': 9, 'అక్టోబర్': 10,
+                                 'నవంబర్': 11, 'డిసెంబర్': 12}},
         }
         self._LoadCache()
 
@@ -574,11 +599,11 @@ class PrimeVideo(Singleton):
 
                     # Extract the global data
                     gres = MultiRegexParsing(re.search(r'<section\s+[^>]*class="av-detail-section"[^>]*>\s*(.*?)\s*</section>', cnt, flags=re.DOTALL).group(1), {
-                        'cast': self._starringRex + r'\s*</span>\s*</dt>\s*<dd[^>]*>\s*(.*?)\s*</dd>',  # Starring
-                        'director': self._directorRex + r'\s*</span>\s*</dt>\s*<dd[^>]*>\s*(.*?)\s*</dd>',  # Director
-                        'genre': self._genresRex + r'\s*</span>\s*</dt>\s*<dd[^>]*>\s*(.*?)\s*</dd>',  # Genre
+                        'cast': self._starringRex + r'\s*</dt>\s*<dd[^>]*>\s*(.*?)\s*</dd>',  # Starring
+                        'director': self._directorRex + r'\s*</dt>\s*<dd[^>]*>\s*(.*?)\s*</dd>',  # Director
+                        'genre': self._genresRex + r'\s*</dt>\s*<dd[^>]*>\s*(.*?)\s*</dd>',  # Genre
                         'mpaa': r'<span data-automation-id="' + (r'' if bNewVersion else r'maturity-') +
-                                r'rating-badge"[^>]*>\s*<span[^>]*>\s*(.*?)\s*</span>',  # Age rating
+                                r'rating-badge"[^>]*>\s*(.*?)\s*</span>',  # Age rating
                         'plot': r'<div [^>]*data-automation-id="synopsis"[^>]*>\s*<div [^>]*>.*?<div [^>]*>\s*(.*?)\s*</div>'
                                 if bNewVersion else r'<div data-automation-id="synopsis"[^>]*>[^<]*<p>\s*(.*?)\s*</p>',  # Synopsis
                         'rating': r'<span data-automation-id="imdb-rating-badge"[^>]*>\s*([0-9]+)[,.]([0-9]+)\s*</span>',  # IMDb rating

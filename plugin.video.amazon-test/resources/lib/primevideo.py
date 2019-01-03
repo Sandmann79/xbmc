@@ -30,10 +30,17 @@ class PrimeVideo(Singleton):
     def __init__(self, globalsInstance, settingsInstance):
         self._g = globalsInstance
         self._s = settingsInstance
-        self._seasonRex = r'(Stagione|Staffel|Season|Temporada|Saison|Seizoen|Sezon)'
-        self._directorRex = r'(Direc?tor|Regia|Regie|Réalisation|Regisseur|Reżyser)'
-        self._starringRex = r'(Starring|Interpreti|Hauptdarsteller|Reparto|Acteurs principaux|In de hoofdrol|Występują|Atores principais)'
-        self._genresRex = r'(Gene?res?|Géneros|Gatunki|Gêneros)'
+        """ Data for text extrapolation
+
+            References:
+            https://www.primevideo.com/detail/0ND5POOAYD6A4THTH7C1TD3TYE/ Season, Starring, Genres
+            https://www.primevideo.com/detail/0I5LVHEYZFZ51QTL86QYXWQ1QW/ Director, Starring, Genres
+        """
+        self._seasonRex = r'(Stagione|Staffel|Season|Temporada|Saison|Seizoen|Sezon|S[æeä]song?|सीज़न|சீசன்|సీజన్)'
+        self._directorRex = r'(Direc?tor|Regia|Regie|Réalisation|Regisseur|Reżyser|Instruktør|Regiss[øö]r|निर्देशक|இயக்குனர்|దర్శకుడు)'
+        self._starringRex = r'(Starring|Interpreti|Hauptdarsteller|Reparto|Acteurs principaux|In de hoofdrol|Występują|Atores principais|Medvirkende|I huvudrollerna|' \
+                            r'मुख्य भूमिका में|நடித்தவர்கள்|నటులు:)'
+        self._genresRex = r'(Gene?re[rs]?|Géneros|Gatunki|Gêneros|Sjangrer|शैलियां|வகைகள்|శైలీలు)'
         self._dateParserData = {
             """ Data for date string deconstruction and reassembly
 

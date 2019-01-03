@@ -332,7 +332,7 @@ def LogIn(ask=True):
                 br[q_id[sel]] = ret
             else:
                 return False
-        elif 'ap_captcha_img_label' in uni_soup or 'auth-captcha-image-container' in uni_soup:
+        elif ('ap_captcha_img_label' in uni_soup) or ('auth-captcha-image-container' in uni_soup):
             wnd = _Captcha((getString(30008).split('…')[0]), soup, email)
             wnd.doModal()
             if wnd.email and wnd.cap and wnd.pwd:
@@ -560,7 +560,6 @@ class _Captcha(pyxbmct.AddonDialogWindow):
             self.head = soup.find('span', attrs={'class': 'a-list-item'}).renderContents().strip()
             title = soup.find('div', attrs={'id': 'auth-guess-missing-alert'}).div.div
             self.picurl = soup.find('div', attrs={'id': 'auth-captcha-image-container'}).img.get('src')
-            pass
         self.setGeometry(500, 550, 9, 2)
         self.email = email
         self.pwd = ''

@@ -133,21 +133,25 @@ class AgeSettings(pyxbmct.AddonDialogWindow):
             self.btn_ages.setLabel(self.age_list[self.pin_req])
 
 
-class Captcha(pyxbmct.AddonDialogWindow):
-
+class _Captcha(pyxbmct.AddonDialogWindow):
     def __init__(self, title='', soup=None, email=None):
         super(Captcha, self).__init__(title)
-        head = soup.find('div', attrs={'id': 'message_warning'})
-        if not head:
-            head = soup.find('div', attrs={'id': 'message_error'})
-        title = soup.find('div', attrs={'id': 'ap_captcha_guess_alert'})
-        self.picurl = soup.find('div', attrs={'id': 'ap_captcha_img'}).img.get('src')
+        if 'ap_captcha_img_label' in unicode(soup):
+            head = soup.find('div', attrs={'id': 'message_warning'})
+            if not head:
+                head = soup.find('div', attrs={'id': 'message_error'})
+            title = soup.find('div', attrs={'id': 'ap_captcha_guess_alert'})
+            self.head = head.p.renderContents().strip()
+            self.head = re.sub('(?i)<[^>]*>', '', self.head)
+            self.picurl = soup.find('div', attrs={'id': 'ap_captcha_img'}).img.get('src')
+        else:
+            self.head = soup.find('span', attrs={'class': 'a-list-item'}).renderContents().strip()
+            title = soup.find('div', attrs={'id': 'auth-guess-missing-alert'}).div.div
+            self.picurl = soup.find('div', attrs={'id': 'auth-captcha-image-container'}).img.get('src')
         self.setGeometry(500, 550, 9, 2)
         self.email = email
         self.pwd = ''
         self.cap = ''
-        self.head = head.p.renderContents().strip()
-        self.head = re.sub('(?i)<[^>]*>', '', self.head)
         self.title = title.renderContents().strip()
         self.image = pyxbmct.Image('', aspectRatio=2)
         self.tb_head = pyxbmct.TextBox()
@@ -260,8 +264,8 @@ def getURL(url, useCookie=False, silent=False, headers=None, rjson=True, attempt
             exit()
         if 'InsecurePlatformWarning' in eType:
             Log('Using an outdated SSL module.', xbmc.LOGERROR)
-            Dialog.ok('SSL module outdated', 'The SSL module for Python is outdated.', 
-                      'You can find a Linux guide on how to update Python and its modules for Kodi here: https://goo.gl/CKtygz', 
+            Dialog.ok('SSL module outdated', 'The SSL module for Python is outdated.',
+                      'You can find a Linux guide on how to update Python and its modules for Kodi here: https://goo.gl/CKtygz',
                       'Additionally, follow this guide to update the required modules: https://goo.gl/ksbbU2')
             exit()
         if ('429' in e) or ('Timeout' in eType):
@@ -502,7 +506,7 @@ def LogIn(ask):
         response, soup = parseHTML(br)
         WriteLog(response, 'login')
 
-        while any(s in response for s in ['auth-mfa-form', 'ap_dcq_form', 'ap_captcha_img_label', 'claimspicker', 'fwcim-form']):
+        while any(s in response for s in ['auth-mfa-form', 'ap_dcq_form', 'ap_captcha_img_label', 'claimspicker', 'fwcim-form', 'auth-captcha-image-container']):
             br = MFACheck(br, email, soup)
             if not br:
                 return False
@@ -680,7 +684,7 @@ def MFACheck(br, email, soup):
             br[q_id[sel]] = ret
         else:
             return False
-    elif 'ap_captcha_img_label' in uni_soup:
+    elif ('ap_captcha_img_label' in uni_soup) or ('auth-captcha-image-container' in uni_soup):
         wnd = Captcha((getString(30008).split('.')[0]), soup, email)
         wnd.doModal()
         if wnd.email and wnd.cap and wnd.pwd:
@@ -796,7 +800,7 @@ def GET_ASINS(content):
 
 def SCRAP_ASINS(aurl, cj=True):
     asins = []
-    wl_order = ['DATE_ADDED_DESC', 'TITLE_DESC', 'TITLE_ASC'][int('0'+var.addon.getSetting("wl_order"))]
+    wl_order = ['DATE_ADDED_DESC', 'TITLE_DESC', 'TITLE_ASC'][int('0' + var.addon.getSetting("wl_order"))]
     url = BaseUrl + aurl + '?ie=UTF8&sort=' + wl_order
     content = getURL(url, useCookie=cj, rjson=False)
     WriteLog(content, 'watchlist')

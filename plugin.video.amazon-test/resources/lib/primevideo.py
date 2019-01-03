@@ -599,11 +599,11 @@ class PrimeVideo(Singleton):
 
                     # Extract the global data
                     gres = MultiRegexParsing(re.search(r'<section\s+[^>]*class="av-detail-section"[^>]*>\s*(.*?)\s*</section>', cnt, flags=re.DOTALL).group(1), {
-                        'cast': self._starringRex + r'\s*</span>\s*</dt>\s*<dd[^>]*>\s*(.*?)\s*</dd>',  # Starring
-                        'director': self._directorRex + r'\s*</span>\s*</dt>\s*<dd[^>]*>\s*(.*?)\s*</dd>',  # Director
-                        'genre': self._genresRex + r'\s*</span>\s*</dt>\s*<dd[^>]*>\s*(.*?)\s*</dd>',  # Genre
+                        'cast': self._starringRex + r'\s*</dt>\s*<dd[^>]*>\s*(.*?)\s*</dd>',  # Starring
+                        'director': self._directorRex + r'\s*</dt>\s*<dd[^>]*>\s*(.*?)\s*</dd>',  # Director
+                        'genre': self._genresRex + r'\s*</dt>\s*<dd[^>]*>\s*(.*?)\s*</dd>',  # Genre
                         'mpaa': r'<span data-automation-id="' + (r'' if bNewVersion else r'maturity-') +
-                                r'rating-badge"[^>]*>\s*<span[^>]*>\s*(.*?)\s*</span>',  # Age rating
+                                r'rating-badge"[^>]*>\s*(.*?)\s*</span>',  # Age rating
                         'plot': r'<div [^>]*data-automation-id="synopsis"[^>]*>\s*<div [^>]*>.*?<div [^>]*>\s*(.*?)\s*</div>'
                                 if bNewVersion else r'<div data-automation-id="synopsis"[^>]*>[^<]*<p>\s*(.*?)\s*</p>',  # Synopsis
                         'rating': r'<span data-automation-id="imdb-rating-badge"[^>]*>\s*([0-9]+)[,.]([0-9]+)\s*</span>',  # IMDb rating

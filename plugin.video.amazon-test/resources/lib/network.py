@@ -553,7 +553,7 @@ class _Captcha(pyxbmct.AddonDialogWindow):
             if not head:
                 head = soup.find('div', attrs={'id': 'message_error'})
             title = soup.find('div', attrs={'id': 'ap_captcha_guess_alert'})
-            self.head = head.p.renderContents().strip()
+            self.head = head.p.renderContents().strip().encode('utf-8')
             self.head = re.sub('(?i)<[^>]*>', '', self.head)
             self.picurl = soup.find('div', attrs={'id': 'ap_captcha_img'}).img.get('src')
         else:

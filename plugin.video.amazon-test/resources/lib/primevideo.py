@@ -263,7 +263,9 @@ class PrimeVideo(Singleton):
                     if 'runtime' in m:
                         item.setInfo('video', {'duration': m['runtime']})
                         item.addStreamInfo('video', {'duration': m['runtime']})
-            xbmcplugin.addDirectoryItem(self._g.pluginhandle, url, item, isFolder=folder)
+            # If it's a video leaf without an actual video, something went wrong with Amazon servers, just hide it
+            if (not folder) or (4 > folderType):
+                xbmcplugin.addDirectoryItem(self._g.pluginhandle, url, item, isFolder=folder)
             del item
 
         # Set sort method and view

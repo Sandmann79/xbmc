@@ -26,6 +26,7 @@ class PrimeVideo(Singleton):
     _catalogCache = None  # Catalog cache file name
     _videodataCache = None  # Video data cache file name
     _WatchlistPages = {}  # Avoid LazyLoad infinite recursion on watchlist parsing
+    _separator = '-!!-'  # Virtual path separator
 
     def __init__(self, globalsInstance, settingsInstance):
         self._g = globalsInstance
@@ -191,8 +192,8 @@ class PrimeVideo(Singleton):
         if (self._s.multiuser) and ('root' == path) and (1 < len(loadUsers())):
             li = xbmcgui.ListItem(getString(30134).format(loadUser('name')))
             li.addContextMenuItems(self._g.CONTEXTMENU_MULTIUSER)
-            xbmcplugin.addDirectoryItem(self._g.pluginhandle, '{0}?mode=PrimeVideo_Browse&path=root-//-SwitchUser'.format(self._g.pluginid), li, isFolder=False)
-        if 'root-//-SwitchUser' == path:
+            xbmcplugin.addDirectoryItem(self._g.pluginhandle, '{0}?mode=PrimeVideo_Browse&path=root{1}SwitchUser'.format(self._g.pluginid, self._separator), li, isFolder=False)
+        if ('root' + self._separator + 'SwitchUser') == path:
             if switchUser():
                 self.BuildRoot()
             return
@@ -201,7 +202,7 @@ class PrimeVideo(Singleton):
 
         node = self._catalog
         nodeName = None
-        for n in [unquote(p) for p in path.split('-//-')]:
+        for n in [unquote(p) for p in path.split(self._separator)]:
             nodeName = n
             node = node[n]
 
@@ -236,15 +237,15 @@ class PrimeVideo(Singleton):
                 url += entry['verb']
             else:
                 url += 'PrimeVideo_Browse&path='
-                urlPath += '{0}-//-{1}'.format(path, key)
+                urlPath += '{0}{1}{2}'.format(path, self._separator, key)
                 # Squash season number folder when only one season is available
                 if ('children' in entry) and (1 == len(entry['children'])):
                     child = entry['children'][0]
-                    urlPath += '-//-{0}'.format(child)
+                    urlPath += '{0}{1}'.format(self._separator, child)
                     # Propagate refresh if we squashed the season
                     bCanRefresh = bCanRefresh or (('ref' in node[key][child]) or ('lazyLoadURL' in node[key][child]))
             if (0 < len(urlPath)):
-                url += '-//-'.join([quote_plus(x.encode('utf-8')) for x in urlPath.split('-//-')])
+                url += self._separator.join([quote_plus(x.encode('utf-8')) for x in urlPath.split(self._separator)])
             Log('Encoded PrimeVideo URL: {0}'.format(url), Log.DEBUG)
             title = entry['title'] if 'title' in entry else nodeName
             item = xbmcgui.ListItem(title)
@@ -315,7 +316,7 @@ class PrimeVideo(Singleton):
         """ Provides cache refresh functionality """
 
         from urllib import unquote
-        path = [unquote(p) for p in path.decode('utf-8').split('-//-')]
+        path = [unquote(p) for p in path.decode('utf-8').split(self._separator)]
 
         # Traverse the catalog cache
         node = self._catalog

@@ -133,7 +133,7 @@ class AgeSettings(pyxbmct.AddonDialogWindow):
             self.btn_ages.setLabel(self.age_list[self.pin_req])
 
 
-class _Captcha(pyxbmct.AddonDialogWindow):
+class Captcha(pyxbmct.AddonDialogWindow):
     def __init__(self, title='', soup=None, email=None):
         super(Captcha, self).__init__(title)
         if 'ap_captcha_img_label' in unicode(soup):

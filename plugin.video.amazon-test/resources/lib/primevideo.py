@@ -289,7 +289,9 @@ class PrimeVideo(Singleton):
                     if 'runtime' in m:
                         item.setInfo('video', {'duration': m['runtime']})
                         item.addStreamInfo('video', {'duration': m['runtime']})
-            xbmcplugin.addDirectoryItem(self._g.pluginhandle, url, item, isFolder=folder)
+            # If it's a video leaf without an actual video, something went wrong with Amazon servers, just hide it
+            if (not folder) or (4 > folderType):
+                xbmcplugin.addDirectoryItem(self._g.pluginhandle, url, item, isFolder=folder)
             del item
 
         # Set sort method and view
@@ -497,7 +499,7 @@ class PrimeVideo(Singleton):
             couldNotParse = False
             try:
                 cnt = getURL(requestURL, silent=False, useCookie=True, rjson=False)
-                if 'lazyLoadURL' in o:
+                if (0 < len(cnt)) and ('lazyLoadURL' in o):
                     o['ref'] = o['lazyLoadURL']
                     del o['lazyLoadURL']
             except:
@@ -505,7 +507,7 @@ class PrimeVideo(Singleton):
             if couldNotParse or (0 == len(cnt)):
                 self._g.dialog.notification(getString(30251), requestURL, xbmcgui.NOTIFICATION_ERROR)
                 Log('Unable to fetch the url: {0}'.format(requestURL), Log.ERROR)
-                break
+                continue
 
             for t in [('\\\\n', '\n'), ('\\n', '\n'), ('\\\\"', '"'), (r'^\s+', '')]:
                 cnt = re.sub(t[0], t[1], cnt, flags=re.DOTALL)

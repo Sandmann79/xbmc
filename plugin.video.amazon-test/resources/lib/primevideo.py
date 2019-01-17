@@ -107,19 +107,30 @@ class PrimeVideo(Singleton):
         """ Load cached catalog and video data """
 
         from os.path import join as OSPJoin
-        from xbmcvfs import exists
+        from xbmcvfs import exists, delete
 
         self._catalogCache = OSPJoin(self._g.DATA_PATH, 'PVCatalog{0}.pvcp'.format(self._g.MarketID))
         self._videodataCache = OSPJoin(self._g.DATA_PATH, 'PVVideoData{0}.pvdp'.format(self._g.MarketID))
 
         if exists(self._videodataCache):
-            with open(self._videodataCache, 'r') as fp:
-                self._videodata = pickle.load(fp)
+            try:
+                with open(self._videodataCache, 'r') as fp:
+                    self._videodata = pickle.load(fp)
+            except:
+                Log('Removing corrupted cache file “%s”' % self._videodataCache, Log.DEBUG)
+                delete(self._videodataCache)
+                self._g.dialog.notification('Corrupted video cache', 'Unable to load the video cache data', xbmcgui.NOTIFICATION_ERROR)
+
         if exists(self._catalogCache):
-            with open(self._catalogCache, 'r') as fp:
-                cached = pickle.load(fp)
-            if time.time() < cached['expiration']:
-                self._catalog = cached
+            try:
+                with open(self._catalogCache, 'r') as fp:
+                    cached = pickle.load(fp)
+                if time.time() < cached['expiration']:
+                    self._catalog = cached
+            except:
+                Log('Removing corrupted cache file “%s”' % self._catalogCache, Log.DEBUG)
+                delete(self._catalogCache)
+                self._g.dialog.notification('Corrupted catalog cache', 'Unable to load the catalog cache data', xbmcgui.NOTIFICATION_ERROR)
 
     def BrowseRoot(self):
         """ Build and load the root PrimeVideo menu """

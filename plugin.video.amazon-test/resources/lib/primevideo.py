@@ -445,7 +445,7 @@ class PrimeVideo(Singleton):
             """ Takes a dictionary of regex and applies them to content, returning a filtered dictionary of results """
 
             for i in o:
-                o[i] = re.search(o[i], content)
+                o[i] = re.search(o[i], content, flags=re.DOTALL)
                 if None is not o[i]:
                     o[i] = o[i].groups()
                     o[i] = Unescape(o[i][0]) if 1 == len(o[i]) else list(o[i])

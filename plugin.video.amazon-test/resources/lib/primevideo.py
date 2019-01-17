@@ -497,8 +497,9 @@ class PrimeVideo(Singleton):
                 bFromWidowCarousel = 3 < len(requestURLs[0])
             del requestURLs[0]
 
-            # If we're coming from a widowed carousel we could exploit the cached video data to further improve loading times
-            if (not bCacheRefresh) and bFromWidowCarousel and (refUrn in self._videodata):
+            # If we're coming from a widowed carousel we could exploit the cached video data to further improve loading times,
+            # but we also have to watch out for unavailable movies and TV seasons, which might cause data corruption
+            if (not bCacheRefresh) and bFromWidowCarousel and (refUrn in self._videodata) and ('mediatype' in self._videodata[refUrn]['metadata']['videometa']):
                 if ('unavailable' not in self._videodata[refUrn]['metadata']) and ('season' == self._videodata[refUrn]['metadata']['videometa']['mediatype']):
                     o[self._videodata[refUrn]['parent']] = self._videodata[self._videodata[refUrn]['parent']]
                     o = o[self._videodata[refUrn]['parent']]

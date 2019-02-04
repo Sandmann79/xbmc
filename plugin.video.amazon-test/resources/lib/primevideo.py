@@ -211,10 +211,17 @@ class PrimeVideo(Singleton):
 
         from urllib import quote_plus, unquote
 
+        if 0 == len(self._catalog):
+            self.BuildRoot()
         node = self._catalog
         nodeName = None
         for n in [unquote(p) for p in path.split(self._separator)]:
             nodeName = n
+            if n not in node:
+                self._g.dialog.notification('Catalog error', 'Catalog path not available…', xbmcgui.NOTIFICATION_ERROR)
+                return
+            elif 'lazyLoadURL' in node[n]:
+                self._LazyLoad(node[n], nodeName)
             node = node[n]
 
         if (nodeName in self._videodata) and ('metadata' in self._videodata[nodeName]) and ('video' in self._videodata[nodeName]['metadata']):

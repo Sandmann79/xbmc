@@ -293,11 +293,10 @@ class PrimeVideo(Singleton):
                     item.setInfo('video', m['videometa'])
                     if 'episode' in m['videometa']:
                         folderType = 4  # Episode
-                    elif 'season' in m['videometa']:
-                        if 'tvshow' == m['videometa']['mediatype']:
-                            folderType = 2  # Series list
-                        else:
-                            folderType = 3  # Season
+                    elif 'tvshow' == m['videometa']['mediatype']:
+                        folderType = 2  # Seasons list
+                    elif 'season' == m['videometa']['mediatype']:
+                        folderType = 3  # Season
                     elif 2 > folderType:  # If it's not been declared series, season or episode yet…
                         folderType = 5  # … it's a Movie
                 if 'video' in m:

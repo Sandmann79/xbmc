@@ -220,6 +220,8 @@ def getURLData(mode, asin, retformat='json', devicetypeid='AOAGZA014O5RE', versi
     url += '&format=' + retformat
     url += '&version=' + str(version)
     url += '&gascEnabled=' + str(g.UsePrimeVideo).lower()
+    if 'SubtitleUrls' in dRes.split(','):
+        url += "&subtitleFormat=TTMLv2"
     if ('catalog/GetPlaybackResources' == mode):
         url += '&operatingSystemName=Windows'
     if extra:

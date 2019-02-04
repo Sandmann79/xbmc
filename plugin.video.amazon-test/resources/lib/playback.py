@@ -219,27 +219,39 @@ def PlayVideo(name, asin, adultstr, trailer, forcefb=0):
                 srtfile = xbmc.translatePath('special://temp/%s.srt' % sub['languageCode']).decode('utf-8')
                 subDisplayLang = '“%s” subtitle (%s)' % (sub['displayName'].strip(), sub['languageCode'])
                 content = ''
+                Log("Subtitle URL: %s" % (sub['url']), Log.DEBUG)
                 with codecs.open(srtfile, 'w', encoding='utf-8') as srt:
-                    num = 0
-                    # Since .srt are available on amazon's servers, we strip the default extension and try downloading it just once
-                    subUrl = re.search(r'^(.*?\.)[^.]{1,}$', sub['url'])
-                    content = '' if None is subUrl else getURL(subUrl.group(1) + 'srt', rjson=False, attempt=777)
-                    if 0 < len(content):
-                        Log('Downloaded %s' % subDisplayLang)
-                        srt.write(content)
-                    else:
-                        content = getURL(sub['url'], rjson=False, attempt=3)
+                    # Since dfxp provides no particular metadata and .srt are usually available on amazon's servers,
+                    # we try to download the .srt straight away to avoid conversion
+                    if (sub['url'].endswith("dfxp")):
+                        subUrl = re.search(r'^(.*?\.)[^.]{1,}$', sub['url'])
+                        content = '' if None is subUrl else getURL(subUrl.group(1) + 'srt', rjson=False, attempt=777)
                         if 0 < len(content):
-                            Log('Converting %s' % subDisplayLang)
-                            for tt in re.compile('<tt:p(.*)').findall(content):
-                                tt = re.sub('<tt:br[^>]*>', '\n', tt)
-                                tt = re.search(r'begin="([^"]*).*end="([^"]*).*>([^<]*).', tt)
-                                subtext = tt.group(3)
-                                for ec in escape_chars:
-                                    subtext = subtext.replace(ec[0], ec[1])
-                                if tt:
-                                    num += 1
-                                    srt.write('%s\n%s --> %s\n%s\n\n' % (num, tt.group(1), tt.group(2), subtext))
+                            Log('Downloaded %s' % subDisplayLang, Log.DEBUG)
+                            srt.write(content)
+                            continue
+
+                    content = getURL(sub['url'], rjson=False, attempt=3)
+                    if 0 < len(content):
+                        Log('Converting %s' % subDisplayLang)
+                        Log('Output %s' % srtfile, Log.DEBUG)
+
+                        # Apply a bunch of regex to the content instead of line-by-line to save computation time
+                        content = re.sub(r'<(|/)span[^>]*>', r'<\1i>', content)  # Using (|<search>) instead of ()? to avoid py2.7 empty matching error
+                        content = re.sub(r'([0-9]{2}:[0-9]{2}:[0-9]{2})\.', r'\1,', content)  # SRT-like timestamps
+                        content = re.sub(r'\s*<(?:tt:)?br\s*/>\s*', '\n', content)  # Replace <br/> with actual new lines
+
+                        # Convert dfxp or ttml2 to srt
+                        num = 0
+                        for tt in re.compile(r'<(?:tt:)?p begin="([^"]+)"[^>]*end="([^"]+)"[^>]*>\s*(.*?)\s*</(?:tt:)?p>', re.DOTALL).findall(content):
+                            text = tt[2]
+                            for ec in escape_chars:
+                                text = text.replace(ec[0], ec[1])
+                            num += 1
+                            srt.write('%s\n%s --> %s\n%s\n\n' % (num, tt[0], tt[1], text))
+
+                        Log('Conversion finished', Log.DEBUG)
+
                 if 0 == len(content):
                     Log('Unable to download %s' % subDisplayLang)
                 else:

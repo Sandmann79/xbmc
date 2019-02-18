@@ -222,8 +222,9 @@ def PlayVideo(name, asin, adultstr, trailer, forcefb=0):
                 Log("Subtitle URL: %s" % (sub['url']), Log.DEBUG)
                 with codecs.open(srtfile, 'w', encoding='utf-8') as srt:
                     # Since dfxp provides no particular metadata and .srt are usually available on amazon's servers,
-                    # we try to download the .srt straight away to avoid conversion
-                    if (sub['url'].endswith("dfxp")):
+                    # we try to download the .srt straight away to avoid conversion. Although we avoid it with RTL
+                    # languages, since we need to parse them anyway.
+                    if (sub['url'].endswith("dfxp")) and ('ar' != sub['languageCode']):
                         subUrl = re.search(r'^(.*?\.)[^.]{1,}$', sub['url'])
                         content = '' if None is subUrl else getURL(subUrl.group(1) + 'srt', rjson=False, attempt=777)
                         if 0 < len(content):
@@ -245,6 +246,13 @@ def PlayVideo(name, asin, adultstr, trailer, forcefb=0):
                         num = 0
                         for tt in re.compile(r'<(?:tt:)?p begin="([^"]+)"[^>]*end="([^"]+)"[^>]*>\s*(.*?)\s*</(?:tt:)?p>', re.DOTALL).findall(content):
                             text = tt[2]
+
+                            # Embed RTL and change the punctuation where needed
+                            if 'ar' == sub['languageCode']:
+                                from unicodedata import lookup
+                                text = re.sub('^', lookup('RIGHT-TO-LEFT EMBEDDING'), text, flags=re.MULTILINE)
+                                text = text.replace('?', '؟').replace(',', '،')
+
                             for ec in escape_chars:
                                 text = text.replace(ec[0], ec[1])
                             num += 1

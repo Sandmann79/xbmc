@@ -224,17 +224,22 @@ class PrimeVideo(Singleton):
                 self._LazyLoad(node[n], nodeName)
             node = node[n]
 
+        if None is node:
+            self._g.dialog.notification('Catalog error', 'Something went catastrophically wrong…', xbmcgui.NOTIFICATION_ERROR)
+            return
+        elif ('lazyLoadURL' in node):
+            self._LazyLoad(node, nodeName)
+
         if (nodeName in self._videodata) and ('metadata' in self._videodata[nodeName]) and ('video' in self._videodata[nodeName]['metadata']):
             ''' Start the playback if on a video leaf '''
             PlayVideo(self._videodata[nodeName]['metadata']['video'], self._videodata[nodeName]['metadata']['asin'], '', 0)
             return
 
-        if (None is not node) and ('lazyLoadURL' in node):
-            self._LazyLoad(node, nodeName)
-
-        if None is node:
-            self._g.dialog.notification('General error', 'Something went terribly wrong…', xbmcgui.NOTIFICATION_ERROR)
-            return
+        # Populate children list with empty references
+        if (nodeName in self._videodata) and ('children' in self._videodata[nodeName]):
+            for c in self._videodata[nodeName]['children']:
+                if c not in node:
+                    node[c] = {}
 
         folderType = 0 if 'root' == path else 1
         for key in node:
@@ -248,20 +253,24 @@ class PrimeVideo(Singleton):
             if ('metadata' in entry) and ('unavailable' in entry['metadata']):
                 continue
 
-            # Can we refresh the cache on this item?
-            bCanRefresh = ('ref' in node[key]) or ('lazyLoadURL' in node[key])
+            # Can we refresh the cache on this/these item(s)?
+            bCanRefresh = ('ref' in node[key]) or ('lazyLoadURL' in node[key]) or ((key in self._videodata) and ('ref' in self._videodata[key]))
+            if ('children' in entry) and (0 < len(entry['children'])):
+                bCanRefresh = bCanRefresh or (0 < len([k for k in entry['children'] if (k in self._videodata) and ('ref' in self._videodata[k])]))
 
             if 'verb' in entry:
                 url += entry['verb']
             else:
                 url += 'PrimeVideo_Browse&path='
                 urlPath += '{0}{1}{2}'.format(path, self._separator, key)
-                # Squash season number folder when only one season is available
+                # Squash season number folder when only one season is available, paying attention not to squash episodes into seasons
                 if ('children' in entry) and (1 == len(entry['children'])):
                     child = entry['children'][0]
-                    urlPath += '{0}{1}'.format(self._separator, child)
-                    # Propagate refresh if we squashed the season
-                    bCanRefresh = bCanRefresh or (('ref' in node[key][child]) or ('lazyLoadURL' in node[key][child]))
+                    if (child not in self._videodata) or ('episode' != self._videodata[child]['metadata']['videometa']['mediatype']):
+                        urlPath += '{0}{1}'.format(self._separator, child)
+                        # Propagate refresh if we squashed the season
+                        bCanRefresh = bCanRefresh or (('ref' in node[key][child]) or ('lazyLoadURL' in node[key][child]) or
+                                                      ((child in self._videodata) and ('ref' in self._videodata[child])))
             if (0 < len(urlPath)):
                 url += self._separator.join([quote_plus(x.encode('utf-8')) for x in urlPath.split(self._separator)])
             Log('Encoded PrimeVideo URL: {0}'.format(url), Log.DEBUG)
@@ -269,7 +278,8 @@ class PrimeVideo(Singleton):
             item = xbmcgui.ListItem(title)
 
             if bCanRefresh:
-                item.addContextMenuItems([('Refresh', 'RunPlugin({0}?mode=PrimeVideo_Refresh&path={1})'.format(self._g.pluginid, re.sub(r'^.*&path=', '', url)))])
+                item.addContextMenuItems([('Refresh', 'RunPlugin({0}?mode=PrimeVideo_Refresh&path={1})'.format(self._g.pluginid, urlPath))])
+
             folder = True
             # In case of series find the oldest series and apply its art, also update metadata in case of squashed series
             if ('metadata' not in entry) and ('children' in entry) and (0 < len(entry['children'])):
@@ -343,13 +353,45 @@ class PrimeVideo(Singleton):
         for n in path:
             node = node[n]
 
-        # Safety check, don't refresh if a video leaf or not yet loaded
-        if ('lazyLoadURL' in node[name]) or ('ref' not in node[name]):
-            return
+        refreshes = []
 
-        # Reset the basic metadata and reload
-        node[name] = {'title': node[name]['title'], 'lazyLoadURL': node[name]['ref']}
-        self._LazyLoad(node[name], name, True)
+        # Only refresh if previously loaded. If not loaded, and specifically asked, perform a full (lazy) loading
+        if 'lazyLoadURL' in node[name]:
+            refreshes.append((node[name], name, False))
+        else:
+            bShow = False
+            if 'ref' in node[name]:  # ref's in the cache already
+                targetURL = node[name]['ref']
+            elif 'ref' in self._videodata[name]:  # Movie or Season
+                targetURL = self._videodata[name]['ref']
+            else:  # Show
+                bShow = True
+                for season in [k for k in self._videodata[name]['children'] if (k in self._videodata) and ('ref' in self._videodata[k])]:
+                    node[name][season] = {'lazyLoadURL': self._videodata[season]['ref']}
+                    refreshes.append((node[name][season], season, True))
+                Log(refreshes)
+
+            if not bShow:
+                # Reset the basic metadata
+                title = node[name]['title'] if 'title' in node[name] else None
+                node[name] = {'lazyLoadURL': targetURL}
+                if title:
+                    node[name]['title'] = title
+                refreshes.append((node[name], name, True))
+
+        from contextlib import contextmanager
+
+        @contextmanager
+        def _busy_dialog():
+            xbmc.executebuiltin('ActivateWindow(busydialognocancel)')
+            try:
+                yield
+            finally:
+                xbmc.executebuiltin('Dialog.Close(busydialognocancel)')
+
+        with _busy_dialog():
+            for r in refreshes:
+                self._LazyLoad(r[0], r[1], r[2])
 
     def _LazyLoad(self, obj, objName, bCacheRefresh=False):
         """ Loader and parser of all the PrimeVideo.com queries """
@@ -633,6 +675,9 @@ class PrimeVideo(Singleton):
                     # In case of widowed carousels, we might actually have no videodata
                     if refUrn not in self._videodata:
                         self._videodata[refUrn] = {'metadata': {'videometa': {}}, 'children': []}
+                    if 'ref' not in self._videodata[refUrn]:
+                        bUpdatedVideoData = True
+                        self._videodata[refUrn]['ref'] = requestURL
 
                     results = re.search(r'<ol\s+[^>]*class="[^"]*av-episode-list[^"]*"[^>]*>\s*(.*?)\s*</ol>', cnt, flags=re.DOTALL)
                     if None is results:
@@ -738,7 +783,7 @@ class PrimeVideo(Singleton):
                                     if 'title' not in self._videodata[refUrn]:
                                         bSingle = None is not re.search(r'(av-season-single|DigitalVideoWebNodeDetail_seasons__single)', cnt, flags=re.DOTALL)
                                         self._videodata[refUrn]['title'] = Unescape(re.search([
-                                            r'<span class="av-season-single av-badge-text">\s*(.*?)\s*</a>',  # Old, single
+                                            r'<span class="av-season-single av-badge-text">\s*(.*?)\s*(?:</a>|</span>)',  # Old, single
                                             r'<a class="av-droplist--selected"[^>]*>\s*(.*?)\s*</a>',  # Old, multi
                                             r'<span class="[^"]*DigitalVideoWebNodeDetail_seasons__single[^"]*"[^>]*>\s*<span[^>]*>\s*(.*?)\s*</span>',  # New, single
                                             r'<div class="[^*]*dv-node-dp-seasons.*?<label[^>]*>\s*<span[^>]*>\s*(.*?)\s*</span>\s*</label>',  # New, multi
@@ -781,8 +826,6 @@ class PrimeVideo(Singleton):
                                 o[self._videodata[refUrn]['parent']] = self._videodata[self._videodata[refUrn]['parent']]
                                 o[self._videodata[refUrn]['parent']][refUrn] = self._videodata[refUrn]
                                 o = o[self._videodata[refUrn]['parent']][refUrn]
-                            if eid not in o:
-                                o[eid] = {}
                             if (refUrn in self._videodata) and ('children' in self._videodata[refUrn]) and (eid not in self._videodata[refUrn]['children']):
                                 bUpdatedVideoData = True
                                 self._videodata[refUrn]['children'].append(eid)

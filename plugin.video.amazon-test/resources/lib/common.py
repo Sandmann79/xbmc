@@ -131,6 +131,7 @@ class Settings(Singleton):
     def __init__(self):
         self._g = Globals()
         self._gs = self._g.addon.getSetting
+        self._ss = self._g.addon.setSetting
 
     def __getattr__(self, name):
         if name in ['MOVIE_PATH', 'TV_SHOWS_PATH']:
@@ -166,6 +167,12 @@ class Settings(Singleton):
         elif 'OfferGroup' == name: return '' if self.payCont else '&OfferGroups=B0043YVHMY'
         elif 'wl_export' == name: return self._gs("wl_export") == 'true'
         elif 'region' == name: return int(self._gs("region"))
+
+    def get(self, name):
+        return self._gs(name)
+
+    def set(self, name, value):
+        return self._ss(name, value)
 
 
 def jsonRPC(method, props='', param=None):

@@ -307,7 +307,7 @@ def PlayVideo(name, asin, adultstr, trailer, forcefb=0):
                     Log('Host not reachable: ' + cdn['cdn'])
                     continue
 
-                return (urlset['url'], subUrls) if retmpd else (True, _extrFr(data))
+                return ('http://{0}/mpd/{1}'.format(s.get('proxyaddress'), quote_plus(urlset['url'])), subUrls) if retmpd else (True, _extrFr(data))
 
         return False, getString(30217)
 

@@ -157,7 +157,7 @@ class PrimeVideo(Singleton):
             self._catalog['root']['Watchlist'] = {'title': watchlist.group(3), 'lazyLoadURL': self._g.BaseUrl + watchlist.group(1)}
 
         # PrimeVideo.com top navigation menu
-        home = re.search('<div id="av-nav-main-menu".*?<ul role="navigation"[^>]*>\s*(.*?)\s*</ul>', home)
+        home = re.search(r'<div id="[ap]v-nav-main-menu".*?<ul role="navigation"[^>]*>\s*(.*?)\s*</ul>', home)
         if None is home:
             self._g.dialog.notification('PrimeVideo error', 'Unable to find the main primevideo.com navigation section', xbmcgui.NOTIFICATION_ERROR)
             Log('Unable to find the main primevideo.com navigation section', Log.ERROR)
@@ -650,18 +650,18 @@ class PrimeVideo(Singleton):
                         pagination = re.search(r'href="([^"]+)"\s*class="[^"]*u-pagination', cnt, flags=re.DOTALL)
                         if None is not pagination:
                             requestURLs.append((self._g.BaseUrl + pagination.group(1), o, refUrn))
-                elif None is not re.search('<div class="av-dp-container">', cnt, flags=re.DOTALL):
+                elif None is not re.search(r'<div class="[ap]v-dp-container">', cnt, flags=re.DOTALL):
                     ''' Movie/series page '''
                     # Are we getting the old or new version of the page?
                     bNewVersion = None is not re.search(r'<h1 [^>]*class="[^"]*DigitalVideoUI', cnt, flags=re.DOTALL)
 
                     # Find the biggest fanart available
-                    bgimg = re.search(r'<div class="av-hero-background[^"]*"[^>]*url\(([^)]+)\)', cnt, flags=re.DOTALL)
+                    bgimg = re.search(r'<div class="[ap]v-hero-background[^"]*"[^>]*url\(([^)]+)\)', cnt, flags=re.DOTALL)
                     if None is not bgimg:
                         bgimg = MaxSize(bgimg.group(1))
 
                     # Extract the global data
-                    gres = MultiRegexParsing(re.search(r'<section\s+[^>]*class="av-detail-section"[^>]*>\s*(.*?)\s*</section>', cnt, flags=re.DOTALL).group(1), {
+                    gres = MultiRegexParsing(re.search(r'<section\s+[^>]*class="[ap]v-detail-section"[^>]*>\s*(.*?)\s*</section>', cnt, flags=re.DOTALL).group(1), {
                         'cast': self._starringRex + r'\s*</dt>\s*<dd[^>]*>\s*(.*?)\s*</dd>',  # Starring
                         'director': self._directorRex + r'\s*</dt>\s*<dd[^>]*>\s*(.*?)\s*</dd>',  # Director
                         'genre': self._genresRex + r'\s*</dt>\s*<dd[^>]*>\s*(.*?)\s*</dd>',  # Genre
@@ -731,8 +731,8 @@ class PrimeVideo(Singleton):
                                 'id': r'<a data-automation-id="ep-playback-[0-9]+"[^>]*data-ref="([^"]*)"',
                                 'url': r'<a data-automation-id="ep-playback-[0-9]+"[^>]*data-ref="[^"]*"[^>]*data-title-id="[^"]*"[^>]*href="([^"]*)"',
                                 'asin': r'\s+data-title-id="\s*([^"]+?)\s*"',
-                                'image': r'<div class="av-bgimg__div"[^>]*url\(([^)]+)\)',
-                                'title': r'<span class="av-play-title-text">\s*(.*?)\s*</span>',
+                                'image': r'<div class="[ap]v-bgimg__div"[^>]*url\(([^)]+)\)',
+                                'title': r'<span class="[ap]v-play-title-text">\s*(.*?)\s*</span>',
                             })
                             res = MultiRegexParsing(entry, {
                                 'episode': r'id="ep-playback-([0-9]+)"',  # Episode number
@@ -783,8 +783,8 @@ class PrimeVideo(Singleton):
                                     if 'title' not in self._videodata[refUrn]:
                                         bSingle = None is not re.search(r'(av-season-single|DigitalVideoWebNodeDetail_seasons__single)', cnt, flags=re.DOTALL)
                                         self._videodata[refUrn]['title'] = Unescape(re.search([
-                                            r'<span class="av-season-single av-badge-text">\s*(.*?)\s*(?:</a>|</span>)',  # Old, single
-                                            r'<a class="av-droplist--selected"[^>]*>\s*(.*?)\s*</a>',  # Old, multi
+                                            r'<span class="[ap]v-season-single av-badge-text">\s*(.*?)\s*(?:</a>|</span>)',  # Old, single
+                                            r'<a class="[ap]v-droplist--selected"[^>]*>\s*(.*?)\s*</a>',  # Old, multi
                                             r'<span class="[^"]*DigitalVideoWebNodeDetail_seasons__single[^"]*"[^>]*>\s*<span[^>]*>\s*(.*?)\s*</span>',  # New, single
                                             r'<div class="[^*]*dv-node-dp-seasons.*?<label[^>]*>\s*<span[^>]*>\s*(.*?)\s*</span>\s*</label>',  # New, multi
                                         ][(2 if bNewVersion else 0) + (0 if bSingle else 1)], cnt, flags=re.DOTALL).group(1))
@@ -832,15 +832,15 @@ class PrimeVideo(Singleton):
                 else:
                     ''' Movie and series list '''
                     # Are we getting the old or new version of the list?
-                    bNewVersion = None is re.search(r'<li class="av-result-card">', cnt, flags=re.DOTALL)
+                    bNewVersion = None is re.search(r'<li class="[ap]v-result-card">', cnt, flags=re.DOTALL)
                     for entry in re.findall(r'<div class="[^"]*dvui-beardContainer[^"]*">\s*(.*?)\s*</form>\s*</div>\s*</div>\s*</div>'
-                                            if bNewVersion else r'<li class="av-result-card">\s*(.*?)\s*</li>',
+                                            if bNewVersion else r'<li class="[ap]v-result-card">\s*(.*?)\s*</li>',
                                             cnt, flags=re.DOTALL):
                         res = MultiRegexParsing(entry, {
                             'asin': r'\s+data-asin="\s*([^"]+?)\s*"',
                             'image': r'<a [^>]+><img\s+[^>]*src="([^"]+)"',
                             'link': r'<a href="([^"]+)"><img',
-                            'season': (r'<span>\s*' if bNewVersion else r'<span class="av-result-card-season">\s*') + self._seasonRex + r'\s+([0-9]+)\s*</span>',
+                            'season': (r'<span>\s*' if bNewVersion else r'<span class="[ap]v-result-card-season">\s*') + self._seasonRex + r'\s+([0-9]+)\s*</span>',
                             'title': r'<a class="' + (r'av-beard-title-link' if bNewVersion else r'av-result-card-title') + r'"[^>]*>\s*(.*?)\s*</a>',
                         })
                         NotifyUser(getString(30253).format(res['title']))
@@ -900,7 +900,7 @@ class PrimeVideo(Singleton):
 
                     # Next page
                     pagination = re.search(
-                        r'<li\s+[^>]*class="[^"]*av-pagination-current-page[^"]*"[^>]*>.*?</li>\s*<li\s+[^>]*class="av-pagination[^>]*>\s*(.*?)\s*</li>',
+                        r'<li\s+[^>]*class="[^"]*av-pagination-current-page[^"]*"[^>]*>.*?</li>\s*<li\s+[^>]*class="[ap]v-pagination[^>]*>\s*(.*?)\s*</li>',
                         cnt, flags=re.DOTALL)
                     if None is not pagination:
                         nru = Unescape(re.search(r'href="([^"]+)"', pagination.group(1), flags=re.DOTALL).group(1))

@@ -16,11 +16,12 @@ class BackgroundService():
     def __init__(self):
         from resources.lib.common import Settings
         from resources.lib.proxy import ProxyTCPD
+        from resources.lib.configs import writeConfig
         self._s = Settings()
         self.lastExport = float(getConfig('last_wl_export', '0'))
         self.proxy = ProxyTCPD(self._s)
-        self._s.set('proxyaddress', '127.0.0.1:{}'.format(self.proxy.port))
-        Log('Service: Proxy bound to {}'.format(self._s.get('proxyaddress')))
+        writeConfig('proxyaddress', '127.0.0.1:{}'.format(self.proxy.port))
+        Log('Service: Proxy bound to {}'.format(self._s.proxyaddress))
         self.proxy_thread = threading.Thread(target=self.proxy.serve_forever)
 
     def run(self):

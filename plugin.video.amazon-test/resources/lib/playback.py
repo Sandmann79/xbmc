@@ -121,151 +121,6 @@ def PlayVideo(name, asin, adultstr, trailer, forcefb=0):
         g = Globals()
         s = Settings()
 
-        def _ParseSubs(data):
-            bForcedOnly = False  # Whether or not we should only download forced subtitles
-            down_lang = int('0' + g.addon.getSetting('sub_lang'))
-            if 0 == down_lang:
-                return []  # Return if the sub_lang is set to None
-            lang_main = jsonRPC('Settings.GetSettingValue', param={'setting': 'locale.subtitlelanguage'})
-            lang_main = lang_main['value'] if 'value' in lang_main else ''
-
-            # Locale.SubtitleLanguage (and .AudioLanguage) can either return a language or:
-            # [ S] none: no subtitles
-            # [ S] forced_only: forced subtitles only
-            # [AS] original: the stream's original language
-            # [AS] default: Kodi's UI
-            #
-            # For simplicity's sake (and temporarily) we will treat original as AudioLanguage, and
-            # AudioLanguage 'original' as 'default'
-            if lang_main not in ['none', 'forced_only', 'original', 'default']:
-                lang_main = xbmc.convertLanguage(lang_main, xbmc.ISO_639_1)
-            if 'none' == lang_main:
-                return []
-            if 'forced_only' == lang_main and down_lang > 1:
-                bForcedOnly = True
-            if ('forced_only' == lang_main) or ('original' == lang_main):
-                lang_main = jsonRPC('Settings.GetSettingValue', param={'setting': 'locale.audiolanguage'})
-                lang_main = lang_main['value'] if 'value' in lang_main else ''
-                if lang_main not in ['original', 'default']:
-                    lang_main = xbmc.convertLanguage(lang_main, xbmc.ISO_639_1)
-                if lang_main == 'original':
-                    lang_main = 'default'
-            if 'default' == lang_main:
-                lang_main = xbmc.getLanguage(xbmc.ISO_639_1, False)
-
-            # At this point we should have the user's selected language or a valid fallback, although
-            # we further sanitize for safety
-            lang_main = lang_main if lang_main else xbmc.getLanguage(xbmc.ISO_639_1, False)
-            lang_main = lang_main if lang_main else 'en'
-
-            # down_lang: None | All | From Kodi player language settings | From settings, fallback to english | From settings, fallback to all
-            lang_main = '' if 1 == down_lang else lang_main
-            lang_fallback = None if 3 > down_lang else ('' if 4 == down_lang else 'en')
-
-            localeConversion = {
-                'ar-001': 'ar',
-                'cmn-hans': 'zh HANS',
-                'cmn-hant': 'zh HANT',
-                'da-dk': 'da',
-                'es-419': 'es LA',
-                'ja-jp': 'ja',
-                'ko-kr': 'ko',
-                'nb-no': 'nb',
-                'sv-se': 'sv',
-            }  # Clean up language and locale information where needed
-            subs = []
-            if (not down_lang) or (('subtitleUrls' not in data) and ('forcedNarratives' not in data)):
-                return subs
-
-            def_subs = []
-            fb_subs = []
-
-            for sub in data['subtitleUrls'] + data['forcedNarratives']:
-                lang = sub['languageCode'].strip()
-                if lang in localeConversion:
-                    lang = localeConversion[lang]
-                # Clean up where needed
-                if '-' in lang:
-                    p1 = re.split('-', lang)[0]
-                    p2 = re.split('-', lang)[1]
-                    if (p1 == p2):  # Remove redundant locale information when not useful
-                        lang = p1
-                    else:
-                        lang = '%s %s' % (p1, p2.upper())
-                # Amazon's en defaults to en_US, not en_UK
-                if 'en' == lang:
-                    lang = 'en US'
-                # Read close-caption information where needed
-                if '[' in sub['displayName']:
-                    cc = re.search(r'(\[[^\]]+\])', sub['displayName'])
-                    if None is not cc:
-                        lang = lang + (' %s' % cc.group(1))
-                # Add forced subs information
-                if ' forced ' in sub['displayName']:
-                    lang = lang + '.Forced'
-                if (' forced ' in sub['displayName']) or (False is bForcedOnly):
-                    sub['languageCode'] = lang
-                    if lang_main in lang:
-                        def_subs.append(sub)
-                    if (None is not lang_fallback) and (lang_fallback in lang):
-                        fb_subs.append(sub)
-
-            if not def_subs:
-                def_subs = fb_subs
-
-            import codecs
-            for sub in def_subs:
-                escape_chars = [('&amp;', '&'), ('&quot;', '"'), ('&lt;', '<'), ('&gt;', '>'), ('&apos;', "'")]
-                srtfile = xbmc.translatePath('special://temp/%s.srt' % sub['languageCode']).decode('utf-8')
-                subDisplayLang = '“%s” subtitle (%s)' % (sub['displayName'].strip(), sub['languageCode'])
-                content = ''
-                Log("Subtitle URL: %s" % (sub['url']), Log.DEBUG)
-                with codecs.open(srtfile, 'w', encoding='utf-8') as srt:
-                    # Since dfxp provides no particular metadata and .srt are usually available on amazon's servers,
-                    # we try to download the .srt straight away to avoid conversion. Although we avoid it with RTL
-                    # languages, since we need to parse them anyway.
-                    if (sub['url'].endswith("dfxp")) and ('ar' != sub['languageCode']):
-                        subUrl = re.search(r'^(.*?\.)[^.]{1,}$', sub['url'])
-                        content = '' if None is subUrl else getURL(subUrl.group(1) + 'srt', rjson=False, attempt=777)
-                        if 0 < len(content):
-                            Log('Downloaded %s' % subDisplayLang, Log.DEBUG)
-                            srt.write(content)
-                            continue
-
-                    content = getURL(sub['url'], rjson=False, attempt=3)
-                    if 0 < len(content):
-                        Log('Converting %s' % subDisplayLang)
-                        Log('Output %s' % srtfile, Log.DEBUG)
-
-                        # Apply a bunch of regex to the content instead of line-by-line to save computation time
-                        content = re.sub(r'<(|/)span[^>]*>', r'<\1i>', content)  # Using (|<search>) instead of ()? to avoid py2.7 empty matching error
-                        content = re.sub(r'([0-9]{2}:[0-9]{2}:[0-9]{2})\.', r'\1,', content)  # SRT-like timestamps
-                        content = re.sub(r'\s*<(?:tt:)?br\s*/>\s*', '\n', content)  # Replace <br/> with actual new lines
-
-                        # Convert dfxp or ttml2 to srt
-                        num = 0
-                        for tt in re.compile(r'<(?:tt:)?p begin="([^"]+)"[^>]*end="([^"]+)"[^>]*>\s*(.*?)\s*</(?:tt:)?p>', re.DOTALL).findall(content):
-                            text = tt[2]
-
-                            # Embed RTL and change the punctuation where needed
-                            if 'ar' == sub['languageCode']:
-                                from unicodedata import lookup
-                                text = re.sub('^', lookup('RIGHT-TO-LEFT EMBEDDING'), text, flags=re.MULTILINE)
-                                text = text.replace('?', '؟').replace(',', '،')
-
-                            for ec in escape_chars:
-                                text = text.replace(ec[0], ec[1])
-                            num += 1
-                            srt.write('%s\n%s --> %s\n%s\n\n' % (num, tt[0], tt[1], text))
-
-                        Log('Conversion finished', Log.DEBUG)
-
-                if 0 == len(content):
-                    Log('Unable to download %s' % subDisplayLang)
-                else:
-                    subs.append(srtfile)
-            return subs
-
         HostSet = g.addon.getSetting("pref_host")
         subUrls = []
 
@@ -273,7 +128,7 @@ def PlayVideo(name, asin, adultstr, trailer, forcefb=0):
             return False, data
 
         if retmpd:
-            subUrls = _ParseSubs(data)
+            subUrls = [sub['url'] for sub in data['subtitles'] if 'url' in sub.keys()]
 
         if 'audioVideoUrls' in data.keys():
             hosts = data['audioVideoUrls']['avCdnUrlSets']
@@ -307,7 +162,7 @@ def PlayVideo(name, asin, adultstr, trailer, forcefb=0):
                     Log('Host not reachable: ' + cdn['cdn'])
                     continue
 
-                return ('http://{0}/mpd/{1}'.format(s.get('proxyaddress'), quote_plus(urlset['url'])), subUrls) if retmpd else (True, _extrFr(data))
+                return ('http://{}/mpd/{}'.format(s.proxyaddress, quote_plus(urlset['url'])), subUrls) if retmpd else (True, _extrFr(data))
 
         return False, getString(30217)
 
@@ -499,7 +354,7 @@ def PlayVideo(name, asin, adultstr, trailer, forcefb=0):
             return True
 
         mpd, subs = _ParseStreams(*getURLData('catalog/GetPlaybackResources', asin, extra=True,
-                                              vMT=vMT, dRes=dRes, useCookie=cookie), retmpd=True)
+                                              vMT=vMT, dRes=dRes, useCookie=cookie, proxyEndpoint='gpr'), retmpd=True)
 
         cj_str = ';'.join(['%s=%s' % (k, v) for k, v in cookie.items()])
         opt = '|Content-Type=application%2Fx-www-form-urlencoded&Cookie=' + quote_plus(cj_str)

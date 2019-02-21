@@ -52,7 +52,7 @@ class ProxyHTTPD(BaseHTTPRequestHandler):
         from urlparse import unquote, urlparse, parse_qsl
 
         path = urlparse(self.path).path[1:]  # Get URI without the trailing slash
-        path = path.split('/')  # license/<asin>/<ATV endpoint>
+        path = path.decode('utf-8').split('/')  # license/<asin>/<ATV endpoint>
         Log('[PS] Requested {} path {}'.format(method, path), Log.DEBUG)
 
         # Retrieve headers, data and set up cookies for the forward
@@ -118,23 +118,40 @@ class ProxyHTTPD(BaseHTTPRequestHandler):
             # out which URL has which language, then sort them neatly in a human digestible order.
             content = json.loads(content)
             content['subtitles'] = []
+            newsubs = []
             for sub_type in ['forcedNarratives', 'subtitleUrls']:
                 if sub_type in content:
                     for i in range(0, len(content[sub_type])):
-                        fn = self._AdjustLocale(content[sub_type][i]['languageCode'], ' ')
+                        fn = self._AdjustLocale(content[sub_type][i]['languageCode'])
                         variants = '{}{}'.format(
-                            ' [CC]' if 'sdh' == content[sub_type][i]['type'] else '',
+                            '-[CC]' if 'sdh' == content[sub_type][i]['type'] else '',
                             '.Forced' if 'forcedNarratives' == sub_type else ''
                         )
                         # Proxify the URLs, with a make believe Kodi-friendly file name
-                        content[sub_type][i]['url'] = 'http://127.0.0.1:{}/subtitles/{}/{}.srt'.format(
+                        escapedurl = quote_plus(content[sub_type][i]['url'])
+                        content[sub_type][i]['url'] = 'http://127.0.0.1:{}/subtitles/{}/{}{}.srt'.format(
                             self.server.port,
-                            quote_plus(content[sub_type][i]['url']),
-                            '{}{}'.format(fn, variants)
+                            escapedurl,
+                            fn,
+                            variants
                         )
-                        content['subtitles'].append((content[sub_type][i], xbmc.convertLanguage(fn[0:2], xbmc.ENGLISH_NAME).decode('utf-8') + fn, variants))
+                        newsubs.append((content[sub_type][i], xbmc.convertLanguage(fn[0:2], xbmc.ENGLISH_NAME).decode('utf-8'), fn, variants, escapedurl))
                 del content[sub_type]  # Reduce the data transfer by removing the lists we merged
-            content['subtitles'] = [x[0] for x in sorted(content['subtitles'], key=lambda sub: (sub[1], sub[2]))]
+            for sub in [x for x in sorted(newsubs, key=lambda sub: (sub[1], sub[2], sub[3]))]:
+                content['subtitles'].append(sub[0])
+                # Add multiple options for time stretching
+                if self.server._s.subtitleStretch:
+                    from copy import deepcopy
+                    cnts = deepcopy(sub[0])
+                    urls = 'http://127.0.0.1:{}/subtitles/{}/{}-{{}}{}.srt'.format(
+                        self.server.port,
+                        sub[4],
+                        sub[2],
+                        sub[3]
+                    )
+                    # Loop-ready for multiple stretches
+                    cnts['url'] = urls.format('[–1]')
+                    content['subtitles'].append(cnts)
             content = json.dumps(content)
         else:
             Log('[PS] Invalid request received', Log.DEBUG)
@@ -177,6 +194,17 @@ class ProxyHTTPD(BaseHTTPRequestHandler):
                 content = re.sub(r'<(|/)span[^>]*>', r'<\1i>', content.decode('utf-8'))  # Using (|<search>) instead of ()? to avoid py2.7 empty matching error
                 content = re.sub(r'([0-9]{2}:[0-9]{2}:[0-9]{2})\.', r'\1,', content)  # SRT-like timestamps
                 content = re.sub(r'\s*<(?:tt:)?br\s*/>\s*', '\n', content)  # Replace <br/> with actual new lines
+                # Subtitle timing stretching
+                if ('[–1]' in path[2]):
+                    def _stretch(f):
+                        millis = int(f.group('h')) * 3600000 + int(f.group('m')) * 60000 + int(f.group('s')) * 1000 + int(f.group('ms'))
+                        h, m = divmod(millis * _stretch.factor, 3600000)
+                        m, s = divmod(m, 60000)
+                        s, ms = divmod(s, 1000)
+                        # Truncate to the decimal of a ms (for lazyness)
+                        return '%02d:%02d:%02d,%03d' % (h, m, s, int(ms))
+                    _stretch.factor = 24 / 23.976
+                    content = re.sub(r'(?P<h>\d+):(?P<m>\d+):(?P<s>\d+),(?P<ms>\d+)', _stretch, content)
 
                 # Convert dfxp or ttml2 to srt
                 num = 0

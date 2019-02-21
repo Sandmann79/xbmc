@@ -167,6 +167,7 @@ class Settings(Singleton):
         elif 'wl_export' == name: return self._gs('wl_export') == 'true'
         elif 'region' == name: return int(self._gs('region'))
         elif 'proxyaddress' == name: return getConfig('proxyaddress')
+        elif 'subtitleStretch' == name: return self._gs('sub_stretch') == 'true'
 
 
 def jsonRPC(method, props='', param=None):

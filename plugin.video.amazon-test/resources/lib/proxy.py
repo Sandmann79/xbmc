@@ -23,18 +23,22 @@ class ProxyHTTPD(BaseHTTPRequestHandler):
         """Disable the BaseHTTPServer Log"""
         pass
 
-    def _AdjustLocale(self, langCode, separator='-'):
+    def _AdjustLocale(self, langCode, count=2, separator='-'):
         """Locale conversion helper"""
         try:
             p1, p2 = langCode.split('-')
         except:
             p1 = langCode
             p2 = langCode
+        if 1 == count:
+            return p1.lower()
         localeConversionTable = {
             'ar' + separator + '001': 'ar',
             'cmn' + separator + 'HANS': 'zh' + separator + 'HANS',
             'cmn' + separator + 'HANT': 'zh' + separator + 'HANT',
+            'fr' + separator + 'CA': 'fr' + separator + 'Canada',
             'da' + separator + 'DK': 'da',
+            'en' + separator + 'GB': 'en',
             'es' + separator + '419': 'es' + separator + 'Latinoamerica',
             'ja' + separator + 'JP': 'ja',
             'ko' + separator + 'KR': 'ko',
@@ -42,7 +46,7 @@ class ProxyHTTPD(BaseHTTPRequestHandler):
             'sv' + separator + 'SE': 'sv',
             'pt' + separator + 'BR': 'pt' + separator + 'Brazil'
         }
-        new_lang = p1 + ('' if p1 == p2 else separator + p2.upper())
+        new_lang = p1.lower() + ('' if p1 == p2 else separator + p2.upper())
         new_lang = new_lang if new_lang not in localeConversionTable.keys() else localeConversionTable[new_lang]
         return new_lang
 
@@ -119,10 +123,19 @@ class ProxyHTTPD(BaseHTTPRequestHandler):
             content = json.loads(content)
             content['subtitles'] = []
             newsubs = []
-            for sub_type in ['forcedNarratives', 'subtitleUrls']:
+            langCount = {'forcedNarratives': {}, 'subtitleUrls': {}}
+            # Count the number of duplicates with the same ISO 639-1 codes
+            for sub_type in langCount.keys():
                 if sub_type in content:
                     for i in range(0, len(content[sub_type])):
-                        fn = self._AdjustLocale(content[sub_type][i]['languageCode'])
+                        lang = content[sub_type][i]['languageCode'][0:2]
+                        if lang not in langCount[sub_type]:
+                            langCount[sub_type][lang] = 0
+                        langCount[sub_type][lang] += 1
+            for sub_type in langCount.keys():
+                if sub_type in content:
+                    for i in range(0, len(content[sub_type])):
+                        fn = self._AdjustLocale(content[sub_type][i]['languageCode'], langCount[sub_type][content[sub_type][i]['languageCode'][0:2]])
                         variants = '{}{}'.format(
                             '-[CC]' if 'sdh' == content[sub_type][i]['type'] else '',
                             '.Forced' if 'forcedNarratives' == sub_type else ''
@@ -179,11 +192,26 @@ class ProxyHTTPD(BaseHTTPRequestHandler):
             content = re.sub(r'(<BaseURL>)', r'\1{}'.format(baseurl), content)  # Rebase CDN URLs
             header, sets, footer = re.search(r'^(.*<Period [^>]*>\s*)(.*)(\s*</Period>.*)$', content, flags=re.DOTALL).groups()  # Extract <AdaptationSet>s
 
+            # Count the number of duplicates with the same ISO 639-1 codes
+            languages = []
+            langCount = {}
+            for lang in re.findall(r'<AdaptationSet[^>]*audioTrackId="([^"]+)"[^>]*>', content):
+                if lang not in languages:
+                    languages.append(lang)
+            for lang in languages:
+                lang = lang[0:2]
+                if lang not in langCount:
+                    langCount[lang] = 0
+                langCount[lang] += 1
             # Alter the <AdaptationSet>s for our linguistic needs
             new_sets = []
             for s in re.findall(r'(<AdaptationSet\s+[^>]*>)(.*?</AdaptationSet>)', content, flags=re.DOTALL):
-                audioTrack = re.search(r' audioTrackId="([a-z]{2}-[a-z0-9]{2,})[^"]+[^>]+ lang="([a-z]{2})"', s[0])
-                new_sets.append((s[0] if None is audioTrack else s[0].replace('lang="%s"' % audioTrack.group(2), 'lang="%s"' % self._AdjustLocale(audioTrack.group(1)))) + s[1])
+                s = list(s)
+                audioTrack = re.search(r' audioTrackId="([a-z]{2})(-[a-z0-9]{2,})[^"]+[^>]+ lang="([a-z]{2})"', s[0])
+                if None is not audioTrack:
+                    audioTrack = audioTrack.groups()
+                    s[0] = s[0].replace('lang="%s"' % audioTrack[2], 'lang="%s"' % self._AdjustLocale(audioTrack[0] + audioTrack[1], langCount[audioTrack[0]]))
+                new_sets.append(s[0] + s[1])
 
             content = header + ''.join(new_sets) + footer  # Reassemble the MPD
         elif ('subtitles' == path[0]) and (3 == len(path)):

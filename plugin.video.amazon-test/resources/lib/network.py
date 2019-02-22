@@ -125,17 +125,13 @@ def getURL(url, useCookie=False, silent=False, headers=None, rjson=True, attempt
     # while every other response code is a specific HTTP status code
     getURL.lastResponseCode = 0
 
-    # Try to extract the host from the URL
-    host = re.search('://([^/]+)/', url)
-
     # Create sessions for keep-alives and connection pooling
+    host = re.search('://([^/]+)/', url)  # Try to extract the host from the URL
     if None is not host:
         host = host.group(1)
-        if host in getURL.sessions:
-            session = getURL.sessions[host]
-        else:
-            session = requests.Session()
-            getURL.sessions[host] = session
+        if host not in getURL.sessions:
+            getURL.sessions[host] = requests.Session()
+        session = getURL.sessions[host]
     else:
         session = requests.Session()
 
@@ -209,7 +205,9 @@ def getURL(url, useCookie=False, silent=False, headers=None, rjson=True, attempt
 
 
 def getURLData(mode, asin, retformat='json', devicetypeid='AOAGZA014O5RE', version=1, firmware='1', opt='', extra=False,
-               useCookie=False, retURL=False, vMT='Feature', dRes='PlaybackUrls,SubtitleUrls,ForcedNarratives'):
+               useCookie=False, retURL=False, vMT='Feature', dRes='PlaybackUrls,SubtitleUrls,ForcedNarratives', proxyEndpoint=None):
+    from urllib import quote_plus
+
     g = Globals()
     url = g.ATVUrl + '/cdp/' + mode
     url += '?asin=' + asin
@@ -234,7 +232,7 @@ def getURLData(mode, asin, retformat='json', devicetypeid='AOAGZA014O5RE', versi
     url += opt
     if retURL:
         return url
-    data = getURL(url, useCookie=useCookie, postdata='')
+    data = getURL(url if not proxyEndpoint else 'http://{}/{}/{}'.format(getConfig('proxyaddress'), proxyEndpoint, quote_plus(url)), useCookie=useCookie, postdata='')
     if data:
         if 'error' in data.keys():
             return False, _Error(data['error'])

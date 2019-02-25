@@ -52,27 +52,21 @@ class ProxyHTTPD(BaseHTTPRequestHandler):
 
     def _ParseBaseRequest(self, method):
         """Return path, headers and post data commonly required by all methods"""
-        from resources.lib.network import MechanizeLogin
         from urlparse import unquote, urlparse, parse_qsl
 
         path = urlparse(self.path).path[1:]  # Get URI without the trailing slash
         path = path.decode('utf-8').split('/')  # license/<asin>/<ATV endpoint>
         Log('[PS] Requested {} path {}'.format(method, path), Log.DEBUG)
 
-        # Retrieve headers, data and set up cookies for the forward
-        cookie = MechanizeLogin()
-        if not cookie:
-            Log('[PS] Not logged in', Log.DEBUG)
-            self.send_error(440)
-            return (None, None, None)
+        # Retrieve headers and data
         headers = {k: self.headers[k] for k in self.headers if k not in ['host', 'content-length']}
-        headers['cookie'] = ';'.join(['%s=%s' % (k, v) for k, v in cookie.items()])
         data_length = self.headers.get('content-length')
-        data = None if None is data_length else {k: v for k, v in parse_qsl(self.rfile.read(int(data_length)))}
+        data = {k: v for k, v in parse_qsl(self.rfile.read(int(data_length)))} if data_length else None
         return (path, headers, data)
 
-    def _ForwardRequest(self, method, endpoint, headers, data=None):
+    def _ForwardRequest(self, method, endpoint, headers, data):
         """Forwards the request to the proper target"""
+        from resources.lib.network import MechanizeLogin
         import re
         import requests
 
@@ -86,22 +80,42 @@ class ProxyHTTPD(BaseHTTPRequestHandler):
         else:
             session = requests.Session()
 
-        r = session.request(method, endpoint, data=data, headers=headers, verify=self.server._s.verifySsl)
-        return (r.status_code, r.headers, r.content)
+        cookie = MechanizeLogin()
+        if not cookie:
+            Log('[PS] Not logged in', Log.DEBUG)
+            self.send_error(440)
+            return (None, None, None)
 
-    def _SendResponse(self, code, headers, content):
+        Log('[PS] Forwarding the {} request towards {}'.format(method, endpoint), Log.DEBUG)
+        r = session.request(method, endpoint, data=data, headers=headers, cookies=cookie, verify=self.server._s.verifySsl)
+        return (r.status_code, r.headers, r.content.decode('utf-8'))
+
+    def _gzip(self, data):
+        """Compress the output data"""
+        from StringIO import StringIO
+        from gzip import GzipFile
+        out = StringIO()
+        with GzipFile(fileobj=out, mode='w', compresslevel=5) as f:
+            f.write(data)
+        return out.getvalue()
+
+    def _SendResponse(self, code, headers, data, gzip=False):
         """Send a response to the caller"""
         # We don't use chunked or gunzipped transfers locally, so we removed the relative headers and
         # attach the contact length, before returning the response
-        headers = {k: headers[k] for k in headers if k not in ['Transfer-Encoding', 'Content-Encoding']}
-        headers['Content-Length'] = len(content)
+        headers = {k: headers[k] for k in headers if k not in ['Transfer-Encoding', 'Content-Encoding', 'Content-Length', 'Server', 'Date']}
+        data = data.encode('utf-8') if data else b''
+        if gzip:
+            data = self._gzip(data)
+            headers['Content-Encoding'] = 'gzip'
+        headers['Content-Length'] = len(data)
 
         # Build the response
         self.send_response(code)
         for k in headers:
             self.send_header(k, headers[k])
         self.end_headers()
-        self.wfile.write(content)
+        self.wfile.write(data)
 
     def do_POST(self):
         """Respond to POST requests"""
@@ -116,7 +130,7 @@ class ProxyHTTPD(BaseHTTPRequestHandler):
             import json
             import xbmc
             endpoint = unquote(path[1])  # MPD stream
-            status_code, headers, content = self._ForwardRequest('get', endpoint, headers)
+            status_code, headers, content = self._ForwardRequest('get', endpoint, headers, data)
 
             # Grab the subtitle urls, merge them in a single list, append the locale codes to let Kodi figure
             # out which URL has which language, then sort them neatly in a human digestible order.
@@ -149,7 +163,7 @@ class ProxyHTTPD(BaseHTTPRequestHandler):
                             variants
                         )
                         newsubs.append((content[sub_type][i], xbmc.convertLanguage(fn[0:2], xbmc.ENGLISH_NAME).decode('utf-8'), fn, variants, escapedurl))
-                del content[sub_type]  # Reduce the data transfer by removing the lists we merged
+                    del content[sub_type]  # Reduce the data transfer by removing the lists we merged
             for sub in [x for x in sorted(newsubs, key=lambda sub: (sub[1], sub[2], sub[3]))]:
                 content['subtitles'].append(sub[0])
                 # Add multiple options for time stretching
@@ -187,7 +201,7 @@ class ProxyHTTPD(BaseHTTPRequestHandler):
             # Extrapolate the base CDN url to avoid proxying data we don't need to
             url_parts = urlparse(endpoint)
             baseurl = url_parts.scheme + '://' + url_parts.netloc + re.sub(r'[^/]+$', '', url_parts.path)
-            status_code, headers, content = self._ForwardRequest('get', endpoint, headers)  # Call the destination server
+            status_code, headers, content = self._ForwardRequest('get', endpoint, headers, data)  # Call the destination server
 
             content = re.sub(r'(<BaseURL>)', r'\1{}'.format(baseurl), content)  # Rebase CDN URLs
             header, sets, footer = re.search(r'^(.*<Period [^>]*>\s*)(.*)(\s*</Period>.*)$', content, flags=re.DOTALL).groups()  # Extract <AdaptationSet>s
@@ -216,10 +230,10 @@ class ProxyHTTPD(BaseHTTPRequestHandler):
             content = header + ''.join(new_sets) + footer  # Reassemble the MPD
         elif ('subtitles' == path[0]) and (3 == len(path)):
             # On-the-fly subtitle transcoding (TTMLv2 => SRT)
-            status_code, headers, content = self._ForwardRequest('get', unquote(path[1]), headers)
+            status_code, headers, content = self._ForwardRequest('get', unquote(path[1]), headers, data)
             if 0 < len(content):
                 # Apply a bunch of regex to the content instead of line-by-line to save computation time
-                content = re.sub(r'<(|/)span[^>]*>', r'<\1i>', content.decode('utf-8'))  # Using (|<search>) instead of ()? to avoid py2.7 empty matching error
+                content = re.sub(r'<(|/)span[^>]*>', r'<\1i>', content)  # Using (|<search>) instead of ()? to avoid py2.7 empty matching error
                 content = re.sub(r'([0-9]{2}:[0-9]{2}:[0-9]{2})\.', r'\1,', content)  # SRT-like timestamps
                 content = re.sub(r'\s*<(?:tt:)?br\s*/>\s*', '\n', content)  # Replace <br/> with actual new lines
                 # Subtitle timing stretching
@@ -250,7 +264,7 @@ class ProxyHTTPD(BaseHTTPRequestHandler):
                         text = text.replace(ec[0], ec[1])
                     num += 1
                     srt += '%s\n%s --> %s\n%s\n\n' % (num, tt[0], tt[1], text)
-                content = srt.encode('utf-8')
+                content = srt
         else:
             Log('[PS] Invalid request received', Log.DEBUG)
             self.send_error(501, 'Invalid request')

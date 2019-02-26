@@ -280,9 +280,14 @@ class ProxyTCPD(ThreadingTCPServer):
 
         from socket import socket, AF_INET, SOCK_STREAM
         sock = socket(AF_INET, SOCK_STREAM)
-        sock.bind(('127.0.0.1', 0))
-        _, port = sock.getsockname()
-        sock.close()
-        self.port = port  # Save the current binded port
 
-        ThreadingTCPServer.__init__(self, ('127.0.0.1', port), ProxyHTTPD)
+        while True:
+            try:
+                sock.bind(('127.0.0.1', 0))
+                _, port = sock.getsockname()
+                sock.close()
+                ThreadingTCPServer.__init__(self, ('127.0.0.1', port), ProxyHTTPD)
+                self.port = port  # Save the current binded port
+                break
+            except:
+                pass

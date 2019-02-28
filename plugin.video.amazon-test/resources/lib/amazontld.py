@@ -392,6 +392,8 @@ class AmazonTLD(Singleton):
                 if self._g.watchlist in parent:
                     url += self._s.OfferGroup
                 if contentType == 'season':
+                    if not self._s.payCont and not infoLabels['isPrime'] and self._g.watchlist in parent:
+                        continue
                     name = self.formatSeason(infoLabels, parent)
                     if self._g.library not in parent and parent != '':
                         curl = 'SeriesASIN=%s&ContentType=TVSeason&IncludeBlackList=T%s' % (
@@ -726,8 +728,9 @@ class AmazonTLD(Singleton):
             if not cj:
                 return
             asins = ''
+            payParam = '/' if self._s.payCont and listing in self._g.watchlist else '/prime/'
             for content in cont:
-                asins += self._scrapeAsins('/gp/video/%s/%s/?ie=UTF8&sort=%s' % (listing, content, self._s.wl_order), cj) + ','
+                asins += self._scrapeAsins(('/gp/video/%s/%s' + payParam + '?ie=UTF8&sort=%s') % (listing, content, self._s.wl_order), cj) + ','
         else:
             asins = listing
 

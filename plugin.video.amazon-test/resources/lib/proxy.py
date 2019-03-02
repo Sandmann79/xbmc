@@ -230,7 +230,7 @@ class ProxyHTTPD(BaseHTTPRequestHandler):
         status_code, headers, content = self._ForwardRequest('get', endpoint, headers, data)  # Call the destination server
 
         content = re.sub(r'(<BaseURL>)', r'\1{}'.format(baseurl), content)  # Rebase CDN URLs
-        header, sets, footer = re.search(r'^(.*<Period [^>]*>\s*)(.*)(\s*</Period>.*)$', content, flags=re.DOTALL).groups()  # Extract <AdaptationSet>s
+        header, sets, footer = re.search(r'^(.*<Period[^>]*>\s*)(.*)(\s*</Period>.*)$', content, flags=re.DOTALL).groups()  # Extract <AdaptationSet>s
 
         # Count the number of duplicates with the same ISO 639-1 codes
         languages = []

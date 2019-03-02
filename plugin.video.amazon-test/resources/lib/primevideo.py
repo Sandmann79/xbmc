@@ -42,6 +42,7 @@ class PrimeVideo(Singleton):
         self._starringRex = r'(Starring|Interpreti|Hauptdarsteller|Reparto|Acteurs principaux|In de hoofdrol|Występują|Atores principais|Medvirkende|I huvudrollerna|' \
                             r'मुख्य भूमिका में|நடித்தவர்கள்|నటులు:)'
         self._genresRex = r'(Gene?re[rs]?|Géneros|Gatunki|Gêneros|Sjangrer|शैलियां|வகைகள்|శైలీలు)'
+        self._dateFinder = r'(([0-9]+|[^\s]+)(\.|\s+de)?\s+([0-9]+|[^\s]+),?(\s+de)?\s+([0-9]+))'
         self._dateParserData = {
             """ Data for date string deconstruction and reassembly
 
@@ -86,8 +87,8 @@ class PrimeVideo(Singleton):
                       'months': {'januari': 1, 'februari': 2, 'mars': 3, 'april': 4, 'maj': 5, 'juni': 6, 'juli': 7, 'augusti': 8, 'september': 9, 'oktober': 10,
                                  'november': 11, 'december': 12}},
             'ta_IN': {'deconstruct': r'^([0-9]+)\s+([^\s]+),?\s+([0-9]+)', 'reassemble': '{2}-{1:0>2}-{0:0>2}', 'month': 1,
-                      'months': {'ஜனவரி': 1, 'பிப்ரவரி': 2, 'மார்ச்': 3, 'ஏப்ரல்': 4, 'மே': 5, 'ஜூன்': 6, 'ஜூலை': 7, 'ஆகஸ்ட்': 8, 'செப்டம்பர்': 9, 'அக்டோபர்': 10,
-                                 'நவம்பர்': 11, 'டிசம்பர்': 12}},
+                      'months': {'ஜனவரி': 1, 'பிப்ரவரி': 2, 'மார்ச்': 3, 'ஏப்ரல்': 4, 'மே': 5, 'ஜூன்': 6, 'ஜூலை': 7, 'ஆகஸ்ட்': 8, 'செப்டம்பர்': 9,
+                                 'அக்டோபர்': 10, 'நவம்பர்': 11, 'டிசம்பர்': 12}},
             'te_IN': {'deconstruct': r'^([0-9]+)\s+([^\s]+),?\s+([0-9]+)', 'reassemble': '{2}-{1:0>2}-{0:0>2}', 'month': 1,
                       'months': {'జనవరి': 1, 'ఫిబ్రవరి': 2, 'మార్చి': 3, 'ఏప్రిల్': 4, 'మే': 5, 'జూన్': 6, 'జులై': 7, 'ఆగస్టు': 8, 'సెప్టెంబర్': 9, 'అక్టోబర్': 10,
                                  'నవంబర్': 11, 'డిసెంబర్': 12}},
@@ -162,12 +163,12 @@ class PrimeVideo(Singleton):
             self._g.dialog.notification('PrimeVideo error', 'Unable to find the main primevideo.com navigation section', xbmcgui.NOTIFICATION_ERROR)
             Log('Unable to find the main primevideo.com navigation section', Log.ERROR)
             return False
-        for item in re.findall('<li[^>]*>\s*(.*?)\s*</li>', home.group(1)):
-            item = re.search('<a href="([^"]+)"[^>]*>\s*(.*?)\s*</a>', item)
+        for item in re.findall(r'<li[^>]*>\s*(.*?)\s*</li>', home.group(1)):
+            item = re.search(r'<a href="([^"]+)"[^>]*>\s*(.*?)\s*</a>', item)
             if None is not re.match(r'(/region/[^/]+)?/storefront/home/', item.group(1)):
                 continue
             # Remove react comments
-            title = re.sub('^<!--\s*[^>]+\s*-->', '', re.sub('<!--\s*[^>]+\s*-->$', '', item.group(2)))
+            title = re.sub(r'^<!--\s*[^>]+\s*-->', '', re.sub(r'<!--\s*[^>]+\s*-->$', '', item.group(2)))
             self._catalog['root'][title] = {'title': title, 'lazyLoadURL': self._g.BaseUrl + item.group(1) + '?_encoding=UTF8'}
         if 0 == len(self._catalog['root']):
             self._g.dialog.notification('PrimeVideo error', 'Unable to build the root catalog from primevideo.com', xbmcgui.NOTIFICATION_ERROR)
@@ -573,6 +574,7 @@ class PrimeVideo(Singleton):
                 cnt = re.sub(t[0], t[1], cnt, flags=re.DOTALL)
             if None is not re.search('<div id="Storefront">', cnt):
                 ''' Categories list '''
+                Log('Storefront page', Log.DEBUG)
                 from BeautifulSoup import BeautifulSoup
                 soup = BeautifulSoup(cnt, convertEntities=BeautifulSoup.HTML_ENTITIES)
 
@@ -619,6 +621,7 @@ class PrimeVideo(Singleton):
                     ''' Watchlist '''
                     if None is not re.search(r'<div\s+[^>]*id="Watchlist"[^>]*>', cnt, flags=re.DOTALL):
                         ''' Old watchlist, possibly (about to be) deprecated. Leaving it in because I stopped trusting anyone '''
+                        Log('Old watchlist', Log.DEBUG)
                         if ('Watchlist' == objName):
                             for entry in re.findall(r'<a href="([^"]+/)[^"/]+" class="DigitalVideoUI_TabHeading__tab[^"]*">(.*?)</a>', cnt, flags=re.DOTALL):
                                 o[Unescape(entry[1])] = {'title': Unescape(entry[1]), 'lazyLoadURL': self._g.BaseUrl + entry[0] + '?sort=DATE_ADDED_DESC'}
@@ -639,6 +642,7 @@ class PrimeVideo(Singleton):
                                     requestURLs.append((self._g.BaseUrl + entry[0], o, refUrn))
                     else:
                         ''' New type of watchlist nobody asked for '''
+                        Log('New watchlist', Log.DEBUG)
                         if ('Watchlist' == objName):
                             entries = re.search(r'<div class="DVWebNode-watchlist-wrapper">(<div[^>]*>)<div[^>]*>.*?</div><div[^>]*><div[^>]*>'
                                                 r'((<a href="[^"]+"[^>]*>[^<]+</a>)+)', cnt, flags=re.DOTALL).group(2)
@@ -652,9 +656,6 @@ class PrimeVideo(Singleton):
                             requestURLs.append((self._g.BaseUrl + pagination.group(1), o, refUrn))
                 elif None is not re.search(r'<div class="[ap]v-dp-container">', cnt, flags=re.DOTALL):
                     ''' Movie/series page '''
-                    # Are we getting the old or new version of the page?
-                    bNewVersion = None is not re.search(r'<h1 [^>]*class="[^"]*DigitalVideoUI', cnt, flags=re.DOTALL)
-
                     # Find the biggest fanart available
                     bgimg = re.search(r'<div class="[ap]v-hero-background[^"]*"[^>]*url\(([^)]+)\)', cnt, flags=re.DOTALL)
                     if None is not bgimg:
@@ -665,10 +666,8 @@ class PrimeVideo(Singleton):
                         'cast': self._starringRex + r'\s*</dt>\s*<dd[^>]*>\s*(.*?)\s*</dd>',  # Starring
                         'director': self._directorRex + r'\s*</dt>\s*<dd[^>]*>\s*(.*?)\s*</dd>',  # Director
                         'genre': self._genresRex + r'\s*</dt>\s*<dd[^>]*>\s*(.*?)\s*</dd>',  # Genre
-                        'mpaa': r'<span data-automation-id="' + (r'' if bNewVersion else r'maturity-') +
-                                r'rating-badge"[^>]*>\s*(.*?)\s*</span>',  # Age rating
-                        'plot': r'<div [^>]*data-automation-id="synopsis"[^>]*>\s*<div [^>]*>.*?<div [^>]*>\s*(.*?)\s*</div>'
-                                if bNewVersion else r'<div data-automation-id="synopsis"[^>]*>[^<]*<p>\s*(.*?)\s*</p>',  # Synopsis
+                        'mpaa': r'<span data-automation-id="(?:maturity-)?rating-badge"[^>]*>\s*(.*?)\s*</span>',  # Age rating
+                        'plot': r'<div [^>]*data-automation-id="synopsis"[^>]*>\s*(?:<p>|<div [^>]*>.*?<div [^>]*>)\s*(.*?)\s*(?:</p>|</div>)',  # Synopsis
                         'rating': r'<span data-automation-id="imdb-rating-badge"[^>]*>\s*([0-9]+)[,.]([0-9]+)\s*</span>',  # IMDb rating
                         'year': r'<span data-automation-id="release-year-badge"[^>]*>\s*([0-9]+)\s*</span>',  # Year
                     })
@@ -679,9 +678,10 @@ class PrimeVideo(Singleton):
                         bUpdatedVideoData = True
                         self._videodata[refUrn]['ref'] = requestURL
 
-                    results = re.search(r'<ol\s+[^>]*class="[^"]*av-episode-list[^"]*"[^>]*>\s*(.*?)\s*</ol>', cnt, flags=re.DOTALL)
-                    if None is results:
+                    results = re.findall(r'<li [^>]*id="[ap]v-ep-(?:bonus-?)?[0-9]+"[^>]*>(.*?)</li>', cnt, flags=re.DOTALL)
+                    if not results:
                         ''' Standalone movie '''
+                        Log('Movie page', Log.DEBUG)
                         if bFromWidowCarousel and (refUrn not in o):
                             o[refUrn] = {}
                         if bCacheRefresh or ('video' not in self._videodata[refUrn]['metadata']):
@@ -725,26 +725,43 @@ class PrimeVideo(Singleton):
                                     NotifyUser(getString(30253).format(self._videodata[refUrn]['title']))
                     else:
                         ''' Episode list '''
-                        for entry in re.findall(r'<li[^>]*>\s*(.*?)\s*</li>', results.group(1), flags=re.DOTALL):
+                        # Find out what page revision we're in
+                        if None is not re.search(r'<ol[^>]*>\s*<li id="[ap]v-ep-', cnt, flags=re.DOTALL):
+                            revision = 2
+                        elif None is not re.search(r'<h1 [^>]*class="[^"]*DigitalVideoUI', cnt, flags=re.DOTALL):
+                            revision = 1
+                        else:
+                            revision = 0
+                        Log('Season page rev{}'.format(revision), Log.DEBUG)
+
+                        for entry in results:
                             md = MultiRegexParsing(entry, {
                                 # Episode data
-                                'id': r'<a data-automation-id="ep-playback-[0-9]+"[^>]*data-ref="([^"]*)"',
                                 'url': r'<a data-automation-id="ep-playback-[0-9]+"[^>]*data-ref="[^"]*"[^>]*data-title-id="[^"]*"[^>]*href="([^"]*)"',
                                 'asin': r'\s+data-title-id="\s*([^"]+?)\s*"',
                                 'image': r'<div class="[ap]v-bgimg__div"[^>]*url\(([^)]+)\)',
                                 'title': r'<span class="[ap]v-play-title-text">\s*(.*?)\s*</span>',
+                            } if 2 > revision else {
+                                'url': r'<div class="[^"]*episode-playback-title[^"]*"[^>]*>.*?\s+href="([^"]+)"',
+                                'asin': r'\s+data-title-id="\s*([^"]+?)\s*"',
+                                'image': r'<img src="([^"]+)"',
+                                'title': r'<div class="[^"]*episode-title-name[^"]*"[^>]*>(?:\s*<span[^>]*>)?\s*(.*?)\s*</span>',
                             })
                             res = MultiRegexParsing(entry, {
-                                'episode': r'id="ep-playback-([0-9]+)"',  # Episode number
-                                'mpaa': r'<span data-automation-id="ep-amr-badge-[0-9]+"[^>]*>\s*(.*?)\s*</span>',  # Age rating
+                                'mpaa': r'<span data-automation-id="(?:rating-badge|ep-amr-badge-[0-9]+)"[^>]*>(?:\s*<span[^>]*>)?\s*(.*?)\s*</span>',  # Age rating
                                 'plot': r'<p data-automation-id="ep-synopsis-[0-9]+"[^>]*>\s*(.*?)\s*</p>',  # Synopsis
                                 'premiered': r'<span data-automation-id="ep-air-date-badge-[0-9]+"[^>]*>\s*(.*?)\s*</span>',  # Original air date
+                            } if 2 > revision else {
+                                'mpaa': r'<span data-automation-id="(?:rating-badge|ep-amr-badge-[0-9]+)"[^>]*>(?:\s*<span[^>]*>)?\s*(.*?)\s*</span>',  # Age rating
+                                'plot': r'<label for="synopsis-[^>]*>\s*<div[^>]*>(.*?)\s*</div>',  # Synopsis
+                                'premiered': r'<div[^>]*>\s*<div[^>]*>\s*' + self._dateFinder + r'\s*</div>',  # Original air date
                             })
+
                             if (None is md['url']) or (None is md['title']):
                                 ''' Some episodes might be not playable until a later date or just N/A, although listed '''
                                 continue
                             meta = {'artmeta': {'thumb': md['image'], 'poster': md['image'], 'fanart': bgimg},
-                                    'videometa': {'mediatype': 'episode'}, 'id': md['id'], 'asin': md['asin'], 'videoURL': md['url']}
+                                    'videometa': {'mediatype': 'episode'}, 'asin': md['asin'], 'videoURL': md['url']}
                             if None is not re.match(r'/[^/]', meta['videoURL']):
                                 meta['videoURL'] = self._g.BaseUrl + meta['videoURL']
                             meta['video'] = ExtractURN(meta['videoURL'])
@@ -781,13 +798,15 @@ class PrimeVideo(Singleton):
                                         thumbnail = MaxSize(Unescape(gpr['catalogMetadata']['images']['imageUrls']['title']))
                                         self._videodata[refUrn]['metadata']['artmeta'] = {'thumb': thumbnail, 'poster': thumbnail, 'fanart': bgimg}
                                     if 'title' not in self._videodata[refUrn]:
-                                        bSingle = None is not re.search(r'(av-season-single|DigitalVideoWebNodeDetail_seasons__single)', cnt, flags=re.DOTALL)
+                                        bSingle = None is not re.search(r'([ap]v-season-single|DigitalVideoWebNodeDetail_seasons__single)', cnt, flags=re.DOTALL)
                                         self._videodata[refUrn]['title'] = Unescape(re.search([
-                                            r'<span class="[ap]v-season-single av-badge-text">\s*(.*?)\s*(?:</a>|</span>)',  # Old, single
-                                            r'<a class="[ap]v-droplist--selected"[^>]*>\s*(.*?)\s*</a>',  # Old, multi
-                                            r'<span class="[^"]*DigitalVideoWebNodeDetail_seasons__single[^"]*"[^>]*>\s*<span[^>]*>\s*(.*?)\s*</span>',  # New, single
-                                            r'<div class="[^*]*dv-node-dp-seasons.*?<label[^>]*>\s*<span[^>]*>\s*(.*?)\s*</span>\s*</label>',  # New, multi
-                                        ][(2 if bNewVersion else 0) + (0 if bSingle else 1)], cnt, flags=re.DOTALL).group(1))
+                                            r'<span class="[^"]*[ap]v-season-single[^"]*">\s*(.*?)\s*(?:</a>|</span>)',  # r0 single
+                                            r'<a class="[^"]*[ap]v-droplist--selected[^"]*"[^>]*>\s*(.*?)\s*</a>',  # r0 multi
+                                            r'<span class="[^"]*DigitalVideoWebNodeDetail_seasons__single[^"]*"[^>]*>\s*<span[^>]*>\s*(.*?)\s*</span>',  # r1 single
+                                            r'<div class="[^*]*dv-node-dp-seasons.*?<label[^>]*>\s*<span[^>]*>\s*(.*?)\s*</span>\s*</label>',  # r1 multi
+                                            r'<span class="[^"]*[ap]v-season-single[^"]*">\s*(.*?)\s*(?:</a>|</span>)',  # r2 single
+                                            r'<label class="[^"]*[ap]v-select-trigger[^"]*"[^>]*>\s*(.*?)\s*</label>',  # r2 multi
+                                        ][(revision << 1) + (0 if bSingle else 1)], cnt, flags=re.DOTALL).group(1))
                                     if 'parent' not in self._videodata[refUrn]:
                                         self._videodata[refUrn]['parent'] = showId
                                         if refUrn not in self._videodata[showId]['children']:
@@ -808,14 +827,12 @@ class PrimeVideo(Singleton):
                                 if ('season' not in meta['videometa']) and ('season' in self._videodata[refUrn]['metadata']['videometa']):
                                     meta['videometa']['season'] = self._videodata[refUrn]['metadata']['videometa']['season']
 
-                                # Episode title cleanup
-                                if None is not re.match(r'[0-9]+[.]\s*', md['title']):
-                                    ''' Strip the episode number '''
-                                    md['title'] = re.sub(r'^[0-9]+.\s*', '', md['title'])
+                                if None is not re.match(r'^[0-9]+\.', md['title']):
+                                    meta['videometa']['episode'] = int(re.search(r'^([0-9]+)\.', md['title']).group(1))  # Extract the episode number
+                                    md['title'] = re.sub(r'^[0-9]+\.\s*', '', md['title'])  # Clean the title
                                 else:
-                                    ''' Probably an extra trailer or something, remove episode information '''
+                                    # Probably an extra trailer or something, remove season information
                                     del meta['videometa']['season']
-                                    del meta['videometa']['episode']
 
                                 bUpdatedVideoData = True
                                 self._videodata[eid] = {'metadata': meta, 'title': md['title'], 'parent': refUrn}
@@ -831,6 +848,7 @@ class PrimeVideo(Singleton):
                                 self._videodata[refUrn]['children'].append(eid)
                 else:
                     ''' Movie and series list '''
+                    Log('Movie/series list or search results', Log.DEBUG)
                     # Are we getting the old or new version of the list?
                     bNewVersion = None is re.search(r'<li class="[ap]v-result-card">', cnt, flags=re.DOTALL)
                     for entry in re.findall(r'<div class="[^"]*dvui-beardContainer[^"]*">\s*(.*?)\s*</form>\s*</div>\s*</div>\s*</div>'

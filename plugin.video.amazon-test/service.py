@@ -48,7 +48,7 @@ class BackgroundService():
             ct = time()
             if (ct >= (self.lastCheck + self.freqCheck)) and self._s.wl_export:
                 self.lastCheck = ct
-                export_watchlist(ct)
+                self.export_watchlist(ct)
 
             if monitor.waitForAbort(1):
                 break

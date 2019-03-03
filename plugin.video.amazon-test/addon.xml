@@ -24,6 +24,10 @@
     <summary lang="de">Amazon Prime Instant Video</summary>
     <description lang="en">Movies and Television Shows for Prime Members</description>
     <description lang="de">Filme und Serien für Amazon Prime Mitglieder</description>
+    <assets>
+       <icon>icon.png</icon>
+       <fanart>fanart.jpg</fanart>
+    </assets>
     <disclaimer lang="en">Some parts of this addon may not be legal in your country of residence - please check with your local laws before installing.
 This Addon uses pyDes by Todd Whiteman</disclaimer>
     <disclaimer lang="de">Möglicherweise sind einge Teile dieses Addons in Ihrem Land illegal, Sie sollten dies unbedingt vor der Installation überprüfen.

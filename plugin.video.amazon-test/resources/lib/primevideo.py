@@ -803,7 +803,7 @@ class PrimeVideo(Singleton):
                                             r'<span class="[^"]*[ap]v-season-single[^"]*">\s*(.*?)\s*(?:</a>|</span>)',  # r0 single
                                             r'<a class="[^"]*[ap]v-droplist--selected[^"]*"[^>]*>\s*(.*?)\s*</a>',  # r0 multi
                                             r'<span class="[^"]*DigitalVideoWebNodeDetail_seasons__single[^"]*"[^>]*>\s*<span[^>]*>\s*(.*?)\s*</span>',  # r1 single
-                                            r'<div class="[^*]*dv-node-dp-seasons.*?<label[^>]*>\s*<span[^>]*>\s*(.*?)\s*</span>\s*</label>',  # r1 multi
+                                            r'<div class="[^"]*dv-node-dp-seasons.*?<label[^>]*>\s*<span[^>]*>\s*(.*?)\s*</span>\s*</label>',  # r1 multi
                                             r'<span class="[^"]*[ap]v-season-single[^"]*">\s*(.*?)\s*(?:</a>|</span>)',  # r2 single
                                             r'<label class="[^"]*[ap]v-select-trigger[^"]*"[^>]*>\s*(.*?)\s*</label>',  # r2 multi
                                         ][(revision << 1) + (0 if bSingle else 1)], cnt, flags=re.DOTALL).group(1))

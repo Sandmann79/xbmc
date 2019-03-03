@@ -753,7 +753,7 @@ class PrimeVideo(Singleton):
                                 'premiered': r'<span data-automation-id="ep-air-date-badge-[0-9]+"[^>]*>\s*(.*?)\s*</span>',  # Original air date
                             } if 2 > revision else {
                                 'mpaa': r'<span data-automation-id="(?:rating-badge|ep-amr-badge-[0-9]+)"[^>]*>(?:\s*<span[^>]*>)?\s*(.*?)\s*</span>',  # Age rating
-                                'plot': r'<label for="synopsis-[^>]*>\s*<div[^>]*>(.*?)\s*</div>',  # Synopsis
+                                'plot': r'<label for="[^"]*synopsis-[^>]*>.*?</label>\s*<div[^>]*>\s*(.*?)\s*</div>',  # Synopsis
                                 'premiered': r'<div[^>]*>\s*<div[^>]*>\s*' + self._dateFinder + r'\s*</div>',  # Original air date
                             })
 
@@ -815,7 +815,9 @@ class PrimeVideo(Singleton):
                                 # Insert series information
                                 for i in gres:
                                     if None is not gres[i]:
-                                        meta['videometa'][i] = gres[i]
+                                        # Don't propagate plot to episodes
+                                        if 'plot' != i:
+                                            meta['videometa'][i] = gres[i]
                                         if bCacheRefresh or (i not in self._videodata[refUrn]['metadata']['videometa']):
                                             self._videodata[refUrn]['metadata']['videometa'][i] = gres[i]
 

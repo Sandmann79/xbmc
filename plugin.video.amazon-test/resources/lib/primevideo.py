@@ -42,7 +42,7 @@ class PrimeVideo(Singleton):
         self._starringRex = r'(Starring|Interpreti|Hauptdarsteller|Reparto|Acteurs principaux|In de hoofdrol|Występują|Atores principais|Medvirkende|I huvudrollerna|' \
                             r'मुख्य भूमिका में|நடித்தவர்கள்|నటులు:)'
         self._genresRex = r'(Gene?re[rs]?|Géneros|Gatunki|Gêneros|Sjangrer|शैलियां|வகைகள்|శైలీలు)'
-        self._dateFinder = r'(([0-9]+|[^\s]+)(\.|\s+de)?\s+([0-9]+|[^\s]+),?(\s+de)?\s+([0-9]+))'
+        self._dateFinder = r'((?:[0-9]+|[^\s]+)(?:\.|\s+de)?\s+(?:[0-9]+|[^\s]+),?(?:\s+de)?\s+(?:[0-9]+))'
         self._dateParserData = {
             """ Data for date string deconstruction and reassembly
 

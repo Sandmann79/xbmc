@@ -289,7 +289,8 @@ class ProxyHTTPD(BaseHTTPRequestHandler):
                 # Embed RTL and change the punctuation where needed
                 if filename.startswith("ar"):
                     from unicodedata import lookup
-                    text = re.sub('^', lookup('RIGHT-TO-LEFT EMBEDDING'), text, flags=re.MULTILINE)
+                    text = re.sub(r'^(?!{}|{})'.format(lookup('RIGHT-TO-LEFT MARK'), lookup('RIGHT-TO-LEFT EMBEDDING')),
+                                  lookup('RIGHT-TO-LEFT EMBEDDING'), text, flags=re.MULTILINE)
                     text = text.replace('?', '؟').replace(',', '،')
 
                 for ec in [('&amp;', '&'), ('&quot;', '"'), ('&lt;', '<'), ('&gt;', '>'), ('&apos;', "'")]:

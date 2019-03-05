@@ -45,7 +45,9 @@ msgctxt "#30004"
 msgid "Stream Bitrate (0 - Ask)"
 msgstr ""
 
-#empty strings with id 30005
+msgctxt "#30005"
+msgid "Audio descriptions (disables 5.1/7.1)"
+msgstr ""
 
 msgctxt "#30006"
 msgid "Store Credentials instead of using the Cookie?"

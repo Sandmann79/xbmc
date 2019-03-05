@@ -371,7 +371,7 @@ def PlayVideo(name, asin, adultstr, trailer, forcefb=0):
         is_version = KodiAddon(g.is_addon).getAddonInfo('version') if g.is_addon else '0'
         is_binary = xbmc.getCondVisibility('System.HasAddon(kodi.binary.instance.inputstream)')
 
-        if trailer != 2:
+        if (not s.audioDescriptions) and (trailer != 2):
             mpd = re.sub(r'(~|%7E)', '', mpd)
 
         if drm_check and (not g.platform & g.OS_ANDROID) and (not is_binary):

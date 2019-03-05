@@ -30,8 +30,12 @@
         <setting id="drm_check" type="bool" label="30020" visible="eq(-20,3)" default="true"/>
         <setting id="fallback_method" type="enum" label="Fallback" values="None|Browser|Script/Batch|Android" default="0" visible="eq(-21,3)" enable="eq(-1,true)" subsetting="true"/>
     </category>
-    <!-- Connection -->
+    <!-- Language -->
     <category label="30021">
+        <!-- Audio -->
+        <setting label="30033" type="lsep"/>
+        <setting id="audio_description" type="bool" label="30005" default="false"/>
+        <!-- Subtitles -->
         <setting label="30034" type="lsep"/>
         <setting id="sub_stretch" type="bool" label="30028" default="false"/>
     </category>

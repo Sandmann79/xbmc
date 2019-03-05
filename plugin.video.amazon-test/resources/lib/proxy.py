@@ -248,10 +248,13 @@ class ProxyHTTPD(BaseHTTPRequestHandler):
         new_sets = []
         for s in re.findall(r'(<AdaptationSet\s+[^>]*>)(.*?</AdaptationSet>)', content, flags=re.DOTALL):
             s = list(s)
-            audioTrack = re.search(r' audioTrackId="([a-z]{2})(-[a-z0-9]{2,})[^"]+[^>]+ lang="([a-z]{2})"', s[0])
+            audioTrack = re.search(r' audioTrackId="([a-z]{2})(-[a-z0-9]{2,})_(dialog|descriptive)[^"]+[^>]+ lang="([a-z]{2})"', s[0])
             if None is not audioTrack:
                 audioTrack = audioTrack.groups()
-                s[0] = s[0].replace('lang="%s"' % audioTrack[2], 'lang="%s"' % self._AdjustLocale(audioTrack[0] + audioTrack[1], langCount[audioTrack[0]]))
+                newLocale = self._AdjustLocale(audioTrack[0] + audioTrack[1], langCount[audioTrack[0]])
+                if 'descriptive' == audioTrack[2]:
+                    newLocale += (' ' if '-' in newLocale else '-') + '[Audio Description]'
+                s[0] = s[0].replace('lang="%s"' % audioTrack[3], 'lang="%s"' % newLocale)
             new_sets.append(s[0] + s[1])
 
         self._SendResponse(status_code, headers, header + ''.join(new_sets) + footer, True)

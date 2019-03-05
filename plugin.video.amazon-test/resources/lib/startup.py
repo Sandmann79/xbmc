@@ -80,11 +80,11 @@ def EntryPoint():
     elif mode == 'ageSettings':
         AgeRestrictions().Settings()
     elif mode == 'PrimeVideo_Browse':
-        g.pv.Browse(None if 'path' not in args else args['path'])
+        g.pv.Browse(None if 'path' not in args else args['path'].decode('utf-8'))
     elif mode == 'PrimeVideo_Search':
         g.pv.Search()
     elif mode == 'PrimeVideo_Refresh':
-        g.pv.Refresh(args['path'])
+        g.pv.Refresh(args['path'].decode('utf-8'))
     elif mode in ['LogIn', 'remLoginData', 'removeUser', 'renameUser', 'switchUser']:
         exec '%s()' % mode
     elif mode in ['checkMissing', 'Search']:

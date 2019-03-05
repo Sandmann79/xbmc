@@ -25,7 +25,7 @@ class PrimeVideo(Singleton):
     _videodata = {}  # Video data cache
     _catalogCache = None  # Catalog cache file name
     _videodataCache = None  # Video data cache file name
-    _WatchlistPages = {}  # Avoid LazyLoad infinite recursion on watchlist parsing
+    _recurringPages = {'SeasonScraping': []}  # Avoid LazyLoad infinite recursion on watchlist parsing
     _separator = '-!!-'  # Virtual path separator
 
     def __init__(self, globalsInstance, settingsInstance):
@@ -95,7 +95,7 @@ class PrimeVideo(Singleton):
         }
         self._LoadCache()
 
-    def _flush(self, FlushVideoData=False):
+    def _Flush(self, FlushVideoData=False):
         """ Cache catalog and video data """
 
         with open(self._catalogCache, 'w+') as fp:
@@ -132,6 +132,40 @@ class PrimeVideo(Singleton):
                 Log('Removing corrupted cache file “%s”' % self._catalogCache, Log.DEBUG)
                 delete(self._catalogCache)
                 self._g.dialog.notification('Corrupted catalog cache', 'Unable to load the catalog cache data', xbmcgui.NOTIFICATION_ERROR)
+
+    def _TraverseCatalog(self, path, bRefresh=False):
+        """ Extract current node, grandparent node and their names """
+
+        from urllib import unquote
+
+        pathList = [unquote(p) for p in path.split(self._separator)]
+        pathLen = len(pathList)
+
+        if 0 == len(self._catalog):
+            self.BuildRoot()
+
+        node = self._catalog
+        nodeName = None
+        ancestorNode = None
+        ancestorName = None
+        for i in range(0, pathLen):
+            nodeName = pathList[i]
+            if i == (pathLen - 2):
+                ancestorNode = node
+                ancestorName = nodeName
+
+            # Stop one short while refreshing, due to python mutability reasons
+            if bRefresh and (i == (pathLen - 1)):
+                break
+
+            if nodeName not in node:
+                self._g.dialog.notification('Catalog error', 'Catalog path not available…', xbmcgui.NOTIFICATION_ERROR)
+                return (None, None, None, None)
+            elif 'lazyLoadURL' in node[nodeName]:
+                self._LazyLoad(node[nodeName], nodeName, ancestorNode, ancestorName)
+            node = node[nodeName]
+
+        return (node, nodeName, ancestorNode, ancestorName)
 
     def BrowseRoot(self):
         """ Build and load the root PrimeVideo menu """
@@ -180,7 +214,7 @@ class PrimeVideo(Singleton):
 
         # Set the expiration in 11 hours and flush to disk
         self._catalog['expiration'] = 39600 + int(time.time())
-        self._flush()
+        self._Flush()
 
         return True
 
@@ -198,8 +232,6 @@ class PrimeVideo(Singleton):
     def Browse(self, path, forceSort=None):
         """ Display and navigate the menu for PrimeVideo users """
 
-        path = path.decode('utf-8')
-
         # Add multiuser menu if needed
         if (self._s.multiuser) and ('root' == path) and (1 < len(loadUsers())):
             li = xbmcgui.ListItem(getString(30134).format(loadUser('name')))
@@ -210,26 +242,11 @@ class PrimeVideo(Singleton):
                 self.BuildRoot()
             return
 
-        from urllib import quote_plus, unquote
+        from urllib import quote_plus
 
-        if 0 == len(self._catalog):
-            self.BuildRoot()
-        node = self._catalog
-        nodeName = None
-        for n in [unquote(p) for p in path.split(self._separator)]:
-            nodeName = n
-            if n not in node:
-                self._g.dialog.notification('Catalog error', 'Catalog path not available…', xbmcgui.NOTIFICATION_ERROR)
-                return
-            elif 'lazyLoadURL' in node[n]:
-                self._LazyLoad(node[n], nodeName)
-            node = node[n]
-
+        node, nodeName, ancestorNode, ancestorName = self._TraverseCatalog(path)
         if None is node:
-            self._g.dialog.notification('Catalog error', 'Something went catastrophically wrong…', xbmcgui.NOTIFICATION_ERROR)
             return
-        elif ('lazyLoadURL' in node):
-            self._LazyLoad(node, nodeName)
 
         if (nodeName in self._videodata) and ('metadata' in self._videodata[nodeName]) and ('video' in self._videodata[nodeName]['metadata']):
             ''' Start the playback if on a video leaf '''
@@ -345,40 +362,36 @@ class PrimeVideo(Singleton):
     def Refresh(self, path):
         """ Provides cache refresh functionality """
 
-        from urllib import unquote
-        path = [unquote(p) for p in path.decode('utf-8').split(self._separator)]
-
-        # Traverse the catalog cache
-        node = self._catalog
-        name = path.pop()  # Remove the leaf to stop early
-        for n in path:
-            node = node[n]
-
         refreshes = []
+        node, nodeName, ancestorNode, ancestorName = self._TraverseCatalog(path, True)
+        if None is node:
+            return
 
         # Only refresh if previously loaded. If not loaded, and specifically asked, perform a full (lazy) loading
-        if 'lazyLoadURL' in node[name]:
-            refreshes.append((node[name], name, False))
+        if 'lazyLoadURL' in node[nodeName]:
+            refreshes.append((node[nodeName], nodeName, False, None))
         else:
             bShow = False
-            if 'ref' in node[name]:  # ref's in the cache already
-                targetURL = node[name]['ref']
-            elif 'ref' in self._videodata[name]:  # Movie or Season
-                targetURL = self._videodata[name]['ref']
+            if 'ref' in node[nodeName]:  # ref's in the cache already
+                Log('Refreshing element in the cache: {}'.format(nodeName), Log.DEBUG)
+                targetURL = node[nodeName]['ref']
+            elif 'ref' in self._videodata[nodeName]:  # Movie or Season
+                Log('Refreshing element: {}'.format(nodeName), Log.DEBUG)
+                targetURL = self._videodata[nodeName]['ref']
             else:  # Show
+                Log('Refreshing Show: {}'.format(nodeName), Log.DEBUG)
                 bShow = True
-                for season in [k for k in self._videodata[name]['children'] if (k in self._videodata) and ('ref' in self._videodata[k])]:
-                    node[name][season] = {'lazyLoadURL': self._videodata[season]['ref']}
-                    refreshes.append((node[name][season], season, True))
-                Log(refreshes)
+                for season in [k for k in self._videodata[nodeName]['children'] if (k in self._videodata) and ('ref' in self._videodata[k])]:
+                    node[nodeName][season] = {'lazyLoadURL': self._videodata[season]['ref']}
+                    refreshes.append((node[nodeName][season], season, None, None, True))
 
             if not bShow:
                 # Reset the basic metadata
-                title = node[name]['title'] if 'title' in node[name] else None
-                node[name] = {'lazyLoadURL': targetURL}
+                title = node[nodeName]['title'] if 'title' in node[nodeName] else None
+                node[nodeName] = {'lazyLoadURL': targetURL}
                 if title:
-                    node[name]['title'] = title
-                refreshes.append((node[name], name, True))
+                    node[nodeName]['title'] = title
+                refreshes.append((node[nodeName], nodeName, ancestorNode, ancestorName, True))
 
         from contextlib import contextmanager
 
@@ -392,9 +405,9 @@ class PrimeVideo(Singleton):
 
         with _busy_dialog():
             for r in refreshes:
-                self._LazyLoad(r[0], r[1], r[2])
+                self._LazyLoad(r[0], r[1], r[2], r[3], r[4])
 
-    def _LazyLoad(self, obj, objName, bCacheRefresh=False):
+    def _LazyLoad(self, obj, objName, ancestorNode=None, ancestorName=None, bCacheRefresh=False):
         """ Loader and parser of all the PrimeVideo.com queries """
 
         def Unescape(text):
@@ -632,13 +645,13 @@ class PrimeVideo(Singleton):
                         pagination = re.search(r'<ol[^>]* class="[^"]*DigitalVideoUI_Pagination__pagination[^"]*"[^>]*>(.*?)</ol>', cnt)
                         if None is not pagination:
                             # We save a semi-static list of scraped pages, to avoid circular loops
-                            if (refUrn not in self._WatchlistPages):
-                                self._WatchlistPages[refUrn] = []
+                            if (refUrn not in self._recurringPages):
+                                self._recurringPages[refUrn] = []
                             currentPage = re.search(r'<a[^>]* href="#"[^>]*>\s*<span>\s*([0-9]+)\s*</span>', pagination.group(0), flags=re.DOTALL).group(1)
-                            if currentPage not in self._WatchlistPages[refUrn]:
-                                self._WatchlistPages[refUrn].append(currentPage)
+                            if currentPage not in self._recurringPages[refUrn]:
+                                self._recurringPages[refUrn].append(currentPage)
                             for entry in re.findall(r'<li[^>]*>\s*<a href="(/[^"]+)"[^>]*>\s*<span>\s*([0-9]+)\s*', pagination.group(0)):
-                                if entry[1] not in self._WatchlistPages[refUrn]:
+                                if entry[1] not in self._recurringPages[refUrn]:
                                     requestURLs.append((self._g.BaseUrl + entry[0], o, refUrn))
                     else:
                         ''' New type of watchlist nobody asked for '''
@@ -848,6 +861,19 @@ class PrimeVideo(Singleton):
                             if (refUrn in self._videodata) and ('children' in self._videodata[refUrn]) and (eid not in self._videodata[refUrn]['children']):
                                 bUpdatedVideoData = True
                                 self._videodata[refUrn]['children'].append(eid)
+
+                        # Scan the other seasons
+                        seasons = re.search(r'<div class="[^"]*[ap]v-season-selector[^>]*>.*?<ul[^>]*>(.*?)</ul>', cnt, flags=re.DOTALL)
+                        if seasons:
+                            for season in re.findall(r'<a href="([^"]+?)(?:ref=[^"]*)?">\s*' + self._seasonRex + r'\s+([0-9]+)\s*</a>', seasons.group(1)):
+                                if season[0] in self._recurringPages['SeasonScraping']:
+                                    continue
+                                self._recurringPages['SeasonScraping'].append(season[0])
+                                seasonURN = ExtractURN(season[0])
+                                if seasonURN not in self._videodata:
+                                    if 'parent' in self._videodata[refUrn]:
+                                        o = ancestorNode[ancestorName][objName] if self._videodata[refUrn]['parent'] in ancestorNode[ancestorName][objName] else ancestorNode
+                                    requestURLs.append((season[0], o, seasonURN, True))
                 else:
                     ''' Movie and series list '''
                     Log('Movie/series list or search results', Log.DEBUG)
@@ -931,4 +957,4 @@ class PrimeVideo(Singleton):
                 NotifyUser(getString(30252))
 
         # Flush catalog and data
-        self._flush(bCacheRefresh or bUpdatedVideoData)
+        self._Flush(bCacheRefresh or bUpdatedVideoData)

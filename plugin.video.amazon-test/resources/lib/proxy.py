@@ -8,6 +8,7 @@ from __future__ import unicode_literals
 import base64
 from SocketServer import ThreadingTCPServer
 from resources.lib.logging import Log
+from contextlib import contextmanager
 try:
     from BaseHTTPServer import BaseHTTPRequestHandler  # Python2 HTTP Server
 except ImportError:
@@ -18,6 +19,13 @@ class ProxyHTTPD(BaseHTTPRequestHandler):
     protocol_version = 'HTTP/1.1'  # Allow keep-alive
     server_version = 'AmazonVOD/0.1'
     sessions = {}  # Keep-Alive sessions
+    _purgeHeaders = [  # List of headers not to forward to the client
+        'Transfer-Encoding',
+        'Content-Encoding',
+        'Content-Length',
+        'Server',
+        'Date'
+    ]
 
     def log_message(self, *args):
         """Disable the BaseHTTPServer Log"""
@@ -66,7 +74,7 @@ class ProxyHTTPD(BaseHTTPRequestHandler):
         data = {k: v for k, v in parse_qsl(self.rfile.read(int(data_length)))} if data_length else None
         return (path, headers, data)
 
-    def _ForwardRequest(self, method, endpoint, headers, data):
+    def _ForwardRequest(self, method, endpoint, headers, data, stream=False):
         """Forwards the request to the proper target"""
 
         from resources.lib.network import MechanizeLogin
@@ -89,38 +97,91 @@ class ProxyHTTPD(BaseHTTPRequestHandler):
             self.send_error(440)
             return (None, None, None)
 
-        Log('[PS] Forwarding the {} request towards {}'.format(method, endpoint), Log.DEBUG)
-        r = session.request(method, endpoint, data=data, headers=headers, cookies=cookie, verify=self.server._s.verifySsl)
-        return (r.status_code, r.headers, r.content.decode('utf-8'))
+        Log('[PS] Forwarding the {} request towards {}'.format(method.upper(), endpoint), Log.DEBUG)
+        r = session.request(method, endpoint, data=data, headers=headers, cookies=cookie, stream=stream, verify=self.server._s.verifySsl)
+        return (r.status_code, r.headers, r if stream else r.content.decode('utf-8'))
 
-    def _gzip(self, data):
+    def _gzip(self, data=None, stream=False):
         """Compress the output data"""
 
         from StringIO import StringIO
         from gzip import GzipFile
         out = StringIO()
-        with GzipFile(fileobj=out, mode='w', compresslevel=5) as f:
+        f = GzipFile(fileobj=out, mode='w', compresslevel=5)
+        if not stream:
             f.write(data)
-        return out.getvalue()
+            f.close()
+            return out.getvalue()
+        return (f, out)
+
+    def _SendHeaders(self, code, headers):
+        self.send_response(code)
+        for k in headers:
+            self.send_header(k, headers[k])
+        self.end_headers()
 
     def _SendResponse(self, code, headers, data, gzip=False):
         """Send a response to the caller"""
 
         # We don't use chunked or gunzipped transfers locally, so we removed the relative headers and
         # attach the contact length, before returning the response
-        headers = {k: headers[k] for k in headers if k not in ['Transfer-Encoding', 'Content-Encoding', 'Content-Length', 'Server', 'Date']}
+        headers = {k: headers[k] for k in headers if k not in self._purgeHeaders}
+        headers['Connection'] = 'Keep-Alive'
         data = data.encode('utf-8') if data else b''
         if gzip:
             data = self._gzip(data)
             headers['Content-Encoding'] = 'gzip'
         headers['Content-Length'] = len(data)
 
-        # Build the response
-        self.send_response(code)
-        for k in headers:
-            self.send_header(k, headers[k])
-        self.end_headers()
+        self._SendHeaders(code, headers)
         self.wfile.write(data)
+
+    @contextmanager
+    def _PrepareChunkedResponse(self, code, headers):
+        """Prep the stream for gzipped chunked transfers"""
+
+        Log('[PS] Chunked transfer: prepping', Log.DEBUG)
+        headers = {k: headers[k] for k in headers if k not in self._purgeHeaders}
+        headers['Connection'] = 'Keep-Alive'
+        headers['Transfer-Encoding'] = 'chunked'
+        headers['Content-Encoding'] = 'gzip'
+
+        self._SendHeaders(code, headers)
+        gzstream = self._gzip(stream=True)
+
+        try:
+            yield gzstream
+        finally:
+            gzstream[0].close()
+            gzstream[1].close()
+
+    def _SendChunk(self, gzstream, data=None):
+        """Send a gzipped chunk"""
+
+        # Log('[PS] Chunked transfer: sending chunk', Log.DEBUG)
+
+        if None is not data:
+            gzstream[0].write(data)
+            gzstream[0].flush()
+        chunk = gzstream[1].getvalue()
+        gzstream[1].truncate(0)
+
+        if 0 == len(chunk):
+            return
+
+        data = b'%X\r\n%s\r\n' % (len(chunk), chunk)
+        self.wfile.write(data)
+
+    def _EndChunkedTransfer(self, gzstream):
+        """Terminate the transfer"""
+
+        Log('[PS] Chunked transfer: last chunks', Log.DEBUG)
+        gzstream[0].flush()
+        gzstream[0].close()
+        self._SendChunk(gzstream)
+        gzstream[1].close()
+
+        self.wfile.write(b'0\r\n\r\n')
 
     def do_POST(self):
         """Respond to POST requests"""
@@ -227,37 +288,74 @@ class ProxyHTTPD(BaseHTTPRequestHandler):
         # Extrapolate the base CDN url to avoid proxying data we don't need to
         url_parts = urlparse(endpoint)
         baseurl = url_parts.scheme + '://' + url_parts.netloc + re.sub(r'[^/]+$', '', url_parts.path)
-        status_code, headers, content = self._ForwardRequest('get', endpoint, headers, data)  # Call the destination server
 
-        content = re.sub(r'(<BaseURL>)', r'\1{}'.format(baseurl), content)  # Rebase CDN URLs
-        header, sets, footer = re.search(r'^(.*<Period[^>]*>\s*)(.*)(\s*</Period>.*)$', content, flags=re.DOTALL).groups()  # Extract <AdaptationSet>s
+        def _rebase(data):
+            return data.replace('<BaseURL>', '<BaseURL>' + baseurl)
 
-        # Count the number of duplicates with the same ISO 639-1 codes
-        languages = []
-        langCount = {}
-        for lang in re.findall(r'<AdaptationSet[^>]*audioTrackId="([^"]+)"[^>]*>', content):
-            if lang not in languages:
-                languages.append(lang)
-        for lang in languages:
-            lang = lang[0:2]
-            if lang not in langCount:
-                langCount[lang] = 0
-            langCount[lang] += 1
+        # Start the chunked reception
+        status_code, headers, r = self._ForwardRequest('get', endpoint, headers, data, True)
 
-        # Alter the <AdaptationSet>s for our linguistic needs
-        new_sets = []
-        for s in re.findall(r'(<AdaptationSet\s+[^>]*>)(.*?</AdaptationSet>)', content, flags=re.DOTALL):
-            s = list(s)
-            audioTrack = re.search(r' audioTrackId="([a-z]{2})(-[a-z0-9]{2,})_(dialog|descriptive)[^"]+[^>]+ lang="([a-z]{2})"', s[0])
-            if None is not audioTrack:
-                audioTrack = audioTrack.groups()
-                newLocale = self._AdjustLocale(audioTrack[0] + audioTrack[1], langCount[audioTrack[0]])
-                if 'descriptive' == audioTrack[2]:
-                    newLocale += (' ' if '-' in newLocale else '-') + '[Audio Description]'
-                s[0] = s[0].replace('lang="%s"' % audioTrack[3], 'lang="%s"' % newLocale)
-            new_sets.append(s[0] + s[1])
+        with self._PrepareChunkedResponse(status_code, headers) as gzstream:
+            if r.encoding is None:
+                r.encoding = 'utf-8'
+            buffer = ''
+            bPeriod = False
+            Log('[PS] Loading MPD and rebasing as {}'.format(baseurl), Log.DEBUG)
+            for chunk in r.iter_content(chunk_size=1048576, decode_unicode=True):
+                buffer += chunk.decode('utf-8')
 
-        self._SendResponse(status_code, headers, header + ''.join(new_sets) + footer, True)
+                # Flush everything up to audio AdaptationSets as fast as possible
+                pos = re.search(r'(<AdaptationSet[^>]*contentType="video"[^>]*>.*?</AdaptationSet>\s*)' if bPeriod else r'(<Period[^>]*>\s*)', buffer, flags=re.DOTALL)
+                if pos:
+                    if 0 < pos.start(1):
+                        self._SendChunk(gzstream, buffer[0:pos.start(1)])
+                    if not bPeriod:
+                        bPeriod = True
+                        self._SendChunk(gzstream, buffer[pos.start(1):pos.end(1)])
+                    else:
+                        self._SendChunk(gzstream, _rebase(buffer[pos.start(1):pos.end(1)]))
+                    buffer = buffer[pos.end(1):]
+
+            # Count the number of duplicates with the same ISO 639-1 codes
+            Log('[PS] Parsing languages', Log.DEBUG)
+            languages = []
+            langCount = {}
+            for lang in re.findall(r'<AdaptationSet[^>]*audioTrackId="([^"]+)"[^>]*>', buffer):
+                if lang not in languages:
+                    languages.append(lang)
+            for lang in languages:
+                lang = lang[0:2]
+                if lang not in langCount:
+                    langCount[lang] = 0
+                langCount[lang] += 1
+
+            # Send corrected AdaptationSets, one at a time through chunked transfer
+            Log('[PS] Altering <AdaptationSet>s', Log.DEBUG)
+            while True:
+                pos = re.search(r'(<AdaptationSet[^>]*>)(.*?</AdaptationSet>)', buffer, flags=re.DOTALL)
+                if None is pos:
+                    break
+                # Log('[PS] AdaptationSet position: ([{}:{}], [{}:{}])'.format(pos.start(1), pos.end(1), pos.start(2), pos.end(2)))
+                setTag = buffer[pos.start(1):pos.end(1)]
+                try:
+                    trackId = re.search(r'\s+audioTrackId="([a-z]{2})(-[a-z0-9]{2,})_(dialog|descriptive)', setTag).groups()
+                    lang = re.search(r'\s+lang="([a-z]{2})"', setTag).group(1)
+
+                    newLocale = self._AdjustLocale(trackId[0] + trackId[1], langCount[trackId[0]])
+                    if 'descriptive' == trackId[2]:
+                        newLocale += (' ' if '-' in newLocale else '-') + '[Audio Description]'
+                    setTag = setTag.replace('lang="%s"' % lang, 'lang="%s"' % newLocale)
+                except:
+                    pass
+
+                self._SendChunk(gzstream, setTag)
+                self._SendChunk(gzstream, _rebase(buffer[pos.start(2):pos.end(2)]))
+                buffer = buffer[pos.end(2):]
+
+            # Send the rest and signal EOT
+            if 0 < len(buffer):
+                self._SendChunk(gzstream, buffer)
+            self._EndChunkedTransfer(gzstream)
 
     def _TranscodeSubtitle(self, endpoint, headers, data, filename):
         """ On-the-fly subtitle transcoding (TTMLv2 => SRT) """

@@ -30,8 +30,9 @@ def EntryPoint():
 
     import urlparse
     args = dict(urlparse.parse_qsl(urlparse.urlparse(sys.argv[2]).query))
+    path = urlparse.urlparse(sys.argv[0]).path
 
-    Log(args, Log.DEBUG)
+    Log('Requested {}'.format(path if 1 < len(path) else args), Log.DEBUG)
     mode = args.get('mode', None)
 
     if not getConfig('UserAgent'):
@@ -51,7 +52,12 @@ def EntryPoint():
         xbmc.executebuiltin('Addon.OpenSettings(%s)' % g.addon.getAddonInfo('id'))
         return
 
-    if None is mode:
+    if path.startswith('/pv/'):
+        verb, path = path[4:].decode('utf-8').split('/', 1)
+        if 'search' == verb: g.pv.Search()
+        elif 'browse' == verb: g.pv.Browse(path)
+        elif 'refresh' == verb: g.pv.Refresh(path)
+    elif None is mode:
         Log('Version: %s' % g.__version__)
         Log('Unicode filename support: %s' % os.path.supports_unicode_filenames)
         Log('Locale: %s / Language: %s' % (g.userAcceptLanguages.split(',')[0], s.Language))
@@ -79,12 +85,6 @@ def EntryPoint():
         xbmcaddon.Addon(aid).openSettings()
     elif mode == 'ageSettings':
         AgeRestrictions().Settings()
-    elif mode == 'PrimeVideo_Browse':
-        g.pv.Browse(None if 'path' not in args else args['path'].decode('utf-8'))
-    elif mode == 'PrimeVideo_Search':
-        g.pv.Search()
-    elif mode == 'PrimeVideo_Refresh':
-        g.pv.Refresh(args['path'].decode('utf-8'))
     elif mode in ['LogIn', 'remLoginData', 'removeUser', 'renameUser', 'switchUser']:
         exec '%s()' % mode
     elif mode in ['checkMissing', 'Search']:

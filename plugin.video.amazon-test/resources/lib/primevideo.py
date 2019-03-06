@@ -26,7 +26,7 @@ class PrimeVideo(Singleton):
     _catalogCache = None  # Catalog cache file name
     _videodataCache = None  # Video data cache file name
     _recurringPages = {'SeasonScraping': []}  # Avoid LazyLoad infinite recursion on watchlist parsing
-    _separator = '-!!-'  # Virtual path separator
+    _separator = '/'  # Virtual path separator
 
     def __init__(self, globalsInstance, settingsInstance):
         self._g = globalsInstance
@@ -110,8 +110,8 @@ class PrimeVideo(Singleton):
         from os.path import join as OSPJoin
         from xbmcvfs import exists, delete
 
-        self._catalogCache = OSPJoin(self._g.DATA_PATH, 'PVCatalog{0}.pvcp'.format(self._g.MarketID))
-        self._videodataCache = OSPJoin(self._g.DATA_PATH, 'PVVideoData{0}.pvdp'.format(self._g.MarketID))
+        self._catalogCache = OSPJoin(self._g.DATA_PATH, 'PVCatalog{}.pvcp'.format(self._g.MarketID))
+        self._videodataCache = OSPJoin(self._g.DATA_PATH, 'PVVideoData{}.pvdp'.format(self._g.MarketID))
 
         if exists(self._videodataCache):
             try:
@@ -136,9 +136,10 @@ class PrimeVideo(Singleton):
     def _TraverseCatalog(self, path, bRefresh=False):
         """ Extract current node, grandparent node and their names """
 
-        from urllib import unquote
+        from urllib import unquote_plus
 
-        pathList = [unquote(p) for p in path.split(self._separator)]
+        # Fix the unquote_plus problem with unicode_literals by encoding to latin-1 (byte string) and then decoding
+        pathList = [unquote_plus(p).encode('latin-1').decode('utf-8') for p in path.split(self._separator)]
         pathLen = len(pathList)
 
         if 0 == len(self._catalog):
@@ -210,7 +211,7 @@ class PrimeVideo(Singleton):
             return False
 
         # Search method
-        self._catalog['root']['Search'] = {'title': getString(30108), 'verb': 'PrimeVideo_Search'}
+        self._catalog['root']['Search'] = {'title': getString(30108), 'verb': 'pv/search/'}
 
         # Set the expiration in 11 hours and flush to disk
         self._catalog['expiration'] = 39600 + int(time.time())
@@ -225,8 +226,8 @@ class PrimeVideo(Singleton):
         if 0 == len(searchString):
             xbmcplugin.endOfDirectory(self._g.pluginhandle, succeeded=False)
             return
-        Log('Searching "{0}"…'.format(searchString), Log.INFO)
-        self._catalog['search'] = OrderedDict([('lazyLoadURL', 'https://www.primevideo.com/search/ref=atv_nb_sr?ie=UTF8&phrase={0}'.format(searchString))])
+        Log('Searching "{}"…'.format(searchString), Log.INFO)
+        self._catalog['search'] = OrderedDict([('lazyLoadURL', 'https://www.primevideo.com/search/ref=atv_nb_sr?ie=UTF8&phrase={}'.format(searchString))])
         self.Browse('search', xbmcplugin.SORT_METHOD_NONE)
 
     def Browse(self, path, forceSort=None):
@@ -236,7 +237,7 @@ class PrimeVideo(Singleton):
         if (self._s.multiuser) and ('root' == path) and (1 < len(loadUsers())):
             li = xbmcgui.ListItem(getString(30134).format(loadUser('name')))
             li.addContextMenuItems(self._g.CONTEXTMENU_MULTIUSER)
-            xbmcplugin.addDirectoryItem(self._g.pluginhandle, '{0}?mode=PrimeVideo_Browse&path=root{1}SwitchUser'.format(self._g.pluginid, self._separator), li, isFolder=False)
+            xbmcplugin.addDirectoryItem(self._g.pluginhandle, '{}pv/browse/root{}SwitchUser'.format(self._g.pluginid, self._separator), li, isFolder=False)
         if ('root' + self._separator + 'SwitchUser') == path:
             if switchUser():
                 self.BuildRoot()
@@ -248,11 +249,6 @@ class PrimeVideo(Singleton):
         if None is node:
             return
 
-        if (nodeName in self._videodata) and ('metadata' in self._videodata[nodeName]) and ('video' in self._videodata[nodeName]['metadata']):
-            ''' Start the playback if on a video leaf '''
-            PlayVideo(self._videodata[nodeName]['metadata']['video'], self._videodata[nodeName]['metadata']['asin'], '', 0)
-            return
-
         # Populate children list with empty references
         if (nodeName in self._videodata) and ('children' in self._videodata[nodeName]):
             for c in self._videodata[nodeName]['children']:
@@ -260,43 +256,60 @@ class PrimeVideo(Singleton):
                     node[c] = {}
 
         folderType = 0 if 'root' == path else 1
-        for key in node:
-            if key in ['metadata', 'ref', 'title', 'verb', 'children', 'parent']:
-                continue
-            url = '{0}?mode='.format(self._g.pluginid)
-            urlPath = ''
+        metaKeys = ['metadata', 'ref', 'title', 'verb', 'children', 'parent']
+        nodeKeys = [k for k in node if k not in metaKeys]
+        i = 0
+        while i < len(nodeKeys):
+            key = nodeKeys[i]
+            i += 1
+            url = self._g.pluginid
             entry = node[key] if key not in self._videodata else self._videodata[key]
 
             # Skip items that are out of catalog
             if ('metadata' in entry) and ('unavailable' in entry['metadata']):
                 continue
 
+            try:
+                bSeason = 'season' == self._videodata[key]['metadata']['videometa']['mediatype']
+
+                # Load series upon entering the show directory
+                if bSeason and ('lazyLoadURL' in node[key]):
+                    self._LazyLoad(node[key], key, ancestorNode[ancestorName], nodeName)
+                    for ka in [k for k in ancestorNode[ancestorName][nodeName] if k not in meyaKeys]:
+                        # Due to python mutability shenanigans we need to manually alter the nodes
+                        # instead of waiting for changes to propagate
+                        nodeKeys.append(ka)
+                        node[ka] = ancestorNode[ancestorName][nodeName][ka]
+
+                # If the series is squashable override the seasons list with the episodes list
+                if 1 == len(nodeKeys):
+                    node = node[key]
+                    i = 0
+                    nodeKeys = [k for k in node if k not in metaKeys]
+                    continue
+            except KeyError:
+                pass
+
             # Can we refresh the cache on this/these item(s)?
             bCanRefresh = ('ref' in node[key]) or ('lazyLoadURL' in node[key]) or ((key in self._videodata) and ('ref' in self._videodata[key]))
             if ('children' in entry) and (0 < len(entry['children'])):
                 bCanRefresh = bCanRefresh or (0 < len([k for k in entry['children'] if (k in self._videodata) and ('ref' in self._videodata[k])]))
 
-            if 'verb' in entry:
+            refreshPath = '{}{}{}'.format(path, self._separator, quote_plus(key.encode('utf-8')))
+            if (key in self._videodata) and ('metadata' in self._videodata[key]) and ('video' in self._videodata[key]['metadata']):
+                url += '?mode=PlayVideo&name={}&asin={}'.format(self._videodata[key]['metadata']['video'], self._videodata[key]['metadata']['asin'])
+            elif 'verb' in entry:
                 url += entry['verb']
+                refreshPath = ''
             else:
-                url += 'PrimeVideo_Browse&path='
-                urlPath += '{0}{1}{2}'.format(path, self._separator, key)
-                # Squash season number folder when only one season is available, paying attention not to squash episodes into seasons
-                if ('children' in entry) and (1 == len(entry['children'])):
-                    child = entry['children'][0]
-                    if (child not in self._videodata) or ('episode' != self._videodata[child]['metadata']['videometa']['mediatype']):
-                        urlPath += '{0}{1}'.format(self._separator, child)
-                        # Propagate refresh if we squashed the season
-                        bCanRefresh = bCanRefresh or (('ref' in node[key][child]) or ('lazyLoadURL' in node[key][child]) or
-                                                      ((child in self._videodata) and ('ref' in self._videodata[child])))
-            if (0 < len(urlPath)):
-                url += self._separator.join([quote_plus(x.encode('utf-8')) for x in urlPath.split(self._separator)])
-            Log('Encoded PrimeVideo URL: {0}'.format(url), Log.DEBUG)
+                url += 'pv/browse/' + refreshPath
+            Log('Encoded PrimeVideo URL: {}'.format(url), Log.DEBUG)
             title = entry['title'] if 'title' in entry else nodeName
             item = xbmcgui.ListItem(title)
 
-            if bCanRefresh:
-                item.addContextMenuItems([('Refresh', 'RunPlugin({0}?mode=PrimeVideo_Refresh&path={1})'.format(self._g.pluginid, urlPath))])
+            if bCanRefresh and (0 < len(refreshPath)):
+                Log('Encoded PrimeVideo refresh URL: pv/refresh/{}'.format(refreshPath), Log.DEBUG)
+                item.addContextMenuItems([('Refresh', 'RunPlugin({}pv/refresh/{})'.format(self._g.pluginid, refreshPath))])
 
             folder = True
             # In case of series find the oldest series and apply its art, also update metadata in case of squashed series
@@ -476,18 +489,18 @@ class PrimeVideo(Singleton):
             """ Convert language based timestamps into YYYY-MM-DD """
 
             if lang not in self._dateParserData:
-                Log('Unable to decode date "{0}": language "{1}" not supported'.format(datestr, lang), Log.WARNING)
+                Log('Unable to decode date "{}": language "{}" not supported'.format(datestr, lang), Log.WARNING)
                 return datestr
             p = re.search(self._dateParserData[lang]['deconstruct'], datestr)
             if None is p:
-                Log('Unable to parse date "{0}" with language "{1}"{2}'.format(datestr, lang, '' if 'en_US' != lang else ': trying english'), Log.WARNING)
+                Log('Unable to parse date "{}" with language "{}"{}'.format(datestr, lang, '' if 'en_US' != lang else ': trying english'), Log.WARNING)
                 if 'en_US' == lang:
                     return datestr
                 # Sometimes Amazon returns english everything, let's try to figure out if this is the case
                 lang = 'en_US'
                 p = re.search(self._dateParserData[lang]['deconstruct'], datestr)
                 if None is p:
-                    Log('Unable to parse date "{0}" with language "{1}": format changed?'.format(datestr, lang), Log.WARNING)
+                    Log('Unable to parse date "{}" with language "{}": format changed?'.format(datestr, lang), Log.WARNING)
                     return datestr
             p = list(p.groups())
             p[self._dateParserData[lang]['month']] = self._dateParserData[lang]['months'][p[self._dateParserData[lang]['month']]]
@@ -514,7 +527,7 @@ class PrimeVideo(Singleton):
                     if 'image' == i:
                         o[i] = MaxSize(o[i])
                     elif 'season' == i:
-                        o[i] = {'locale': Unescape(o[i][0]), 'season': int(o[i][1]), 'format': Unescape('{0} {1}'.format(o[i][0], o[i][1]))}
+                        o[i] = {'locale': Unescape(o[i][0]), 'season': int(o[i][1]), 'format': Unescape('{} {}'.format(o[i][0], o[i][1]))}
                     elif ('episode' == i) or ('year' == i):
                         o[i] = int(o[i])
                     elif ('cast' == i) or ('genre' == i) or ('director' == i):
@@ -580,7 +593,7 @@ class PrimeVideo(Singleton):
                 couldNotParse = True
             if couldNotParse or (0 == len(cnt)):
                 self._g.dialog.notification(getString(30251), requestURL, xbmcgui.NOTIFICATION_ERROR)
-                Log('Unable to fetch the url: {0}'.format(requestURL), Log.ERROR)
+                Log('Unable to fetch the url: {}'.format(requestURL), Log.ERROR)
                 continue
 
             for t in [('\\\\n', '\n'), ('\\n', '\n'), ('\\\\"', '"'), (r'^\s+', '')]:
@@ -920,7 +933,7 @@ class PrimeVideo(Singleton):
                                 success, gpr = getURLData('catalog/GetPlaybackResources', res['asin'], useCookie=True, extra=True,
                                                           opt='&titleDecorationScheme=primary-content', dRes='CatalogMetadata')
                                 if not success:
-                                    Log('Unable to get the video metadata for {0} ({1})'.format(res['title'], res['link']), Log.WARNING)
+                                    Log('Unable to get the video metadata for {} ({})'.format(res['title'], res['link']), Log.WARNING)
                                 else:
                                     # Find the show Asin URN, if possible
                                     for d in gpr['catalogMetadata']['family']['tvAncestors']:

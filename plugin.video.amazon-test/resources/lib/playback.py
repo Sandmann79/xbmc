@@ -640,19 +640,21 @@ class _AmazonPlayer(xbmc.Player):
         return True
 
     def getResumePoint(self):
+        from codecs import open as co
         if not xbmcvfs.exists(self.resumedb) or self.content == 2:
             return {}
-        with open(self.resumedb, 'r') as fp:
+        with co(self.resumedb, 'r') as fp:
             items = pickle.load(fp)
             self.resume = items.get(self.asin, {}).get('resume')
             fp.close()
         return items
 
     def saveResumePoint(self):
+        from codecs import open as co
         if self.content == 2:
             return
         items = self.getResumePoint()
-        with open(self.resumedb, 'w+') as fp:
+        with co(self.resumedb, 'w+') as fp:
             if self.watched and self.asin in items.keys():
                 del items[self.asin]
             else:

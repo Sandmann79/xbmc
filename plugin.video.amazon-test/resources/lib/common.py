@@ -43,8 +43,6 @@ class Globals(Singleton):
     PayCol = 'FFE95E01'
     tmdb = 'b34490c056f0dd9e3ec9af2167a731f4'  # b64decode('YjM0NDkwYzA1NmYwZGQ5ZTNlYzlhZjIxNjdhNzMxZjQ=')
     tvdb = '1D62F2F90030C444'  # b64decode('MUQ2MkYyRjkwMDMwQzQ0NA==')
-    pluginid = argv[0]
-    pluginhandle = int(argv[1]) if pluginid else -1
     langID = {'movie': 30165, 'series': 30166, 'season': 30167, 'episode': 30173}
     KodiK = int(xbmc.getInfoLabel('System.BuildVersion').split('.')[0]) < 18
 
@@ -54,6 +52,13 @@ class Globals(Singleton):
     # def __delattr__(self, name): self._globals.pop(name, None)
 
     def __init__(self):
+        from urlparse import urlparse
+
+        # argv[0] can contain the entire path, so we limit ourselves to the base url
+        pid = urlparse(argv[0])
+        self.pluginid = '{}://{}/'.format(pid.scheme, pid.netloc)
+        self.pluginhandle = int(argv[1]) if (1 < len(argv)) and self.pluginid else -1
+
         self._globals['addon'] = xbmcaddon.Addon()
         self._globals['dialog'] = xbmcgui.Dialog()
         # self._globals['dialogprogress'] = xbmcgui.DialogProgress()

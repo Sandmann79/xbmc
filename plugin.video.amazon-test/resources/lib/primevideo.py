@@ -275,7 +275,7 @@ class PrimeVideo(Singleton):
                 # Load series upon entering the show directory
                 if bSeason and ('lazyLoadURL' in node[key]):
                     self._LazyLoad(node[key], key, ancestorNode[ancestorName], nodeName)
-                    for ka in [k for k in ancestorNode[ancestorName][nodeName] if k not in meyaKeys]:
+                    for ka in [k for k in ancestorNode[ancestorName][nodeName] if k not in metaKeys]:
                         # Due to python mutability shenanigans we need to manually alter the nodes
                         # instead of waiting for changes to propagate
                         nodeKeys.append(ka)

@@ -275,17 +275,28 @@ class PrimeVideo(Singleton):
                 # Load series upon entering the show directory
                 if bSeason and ('lazyLoadURL' in node[key]):
                     self._LazyLoad(node[key], key, ancestorNode[ancestorName], nodeName)
+                    # Due to python mutability shenanigans we need to manually alter the nodes
+                    # instead of waiting for changes to propagate
                     for ka in [k for k in ancestorNode[ancestorName][nodeName] if k not in metaKeys]:
-                        # Due to python mutability shenanigans we need to manually alter the nodes
-                        # instead of waiting for changes to propagate
-                        nodeKeys.append(ka)
-                        node[ka] = ancestorNode[ancestorName][nodeName][ka]
+                        if ka not in nodeKeys:
+                            nodeKeys.append(ka)
+                        if ka not in node:
+                            node[ka] = ancestorNode[ancestorName][nodeName][ka]
+                    for ka in [k for k in node if k not in metaKeys]:
+                        if ka not in ancestorNode[ancestorName][nodeName]:
+                            ancestorNode[ancestorName][nodeName][ka] = node[ka]
+                    self._Flush()
 
                 # If the series is squashable override the seasons list with the episodes list
                 if 1 == len(nodeKeys):
                     node = node[key]
                     i = 0
                     nodeKeys = [k for k in node if k not in metaKeys]
+                    if (0 == len(nodeKeys)) and (key in self._videodata) and ('children' in self._videodata[key]):
+                        for c in self._videodata[key]['children']:
+                            nodeKeys.append(c)
+                            if c not in node:
+                                node[c] = {}
                     continue
             except KeyError:
                 pass
@@ -643,7 +654,7 @@ class PrimeVideo(Singleton):
                         NotifyUser(getString(30253).format(title))
                         o[title]['lazyLoadURL'] = link
             else:
-                if None is not re.search(r'<div\s+[^>]*(id="Watchlist"|class="DVWebNode-watchlist-wrapper")[^>]*>', cnt, flags=re.DOTALL):
+                if None is not re.search(r'<div\s+[^>]*(?:id="Watchlist"|class="DVWebNode-watchlist-wrapper")', cnt, flags=re.DOTALL):
                     ''' Watchlist '''
                     if None is not re.search(r'<div\s+[^>]*id="Watchlist"[^>]*>', cnt, flags=re.DOTALL):
                         ''' Old watchlist, possibly (about to be) deprecated. Leaving it in because I stopped trusting anyone '''
@@ -680,12 +691,11 @@ class PrimeVideo(Singleton):
                         pagination = re.search(r'href="([^"]+)"\s*class="[^"]*u-pagination', cnt, flags=re.DOTALL)
                         if None is not pagination:
                             requestURLs.append((self._g.BaseUrl + pagination.group(1), o, refUrn))
-                elif None is not re.search(r'<div class="[ap]v-dp-container">', cnt, flags=re.DOTALL):
+                elif None is not re.search(r'<div\s+[^>]*class="[^"]*[ap]v-dp-container', cnt, flags=re.DOTALL):
                     ''' Movie/series page '''
                     # Find the biggest fanart available
-                    bgimg = re.search(r'<div class="[ap]v-hero-background[^"]*"[^>]*url\(([^)]+)\)', cnt, flags=re.DOTALL)
-                    if None is not bgimg:
-                        bgimg = MaxSize(bgimg.group(1))
+                    bgimg = re.search(r'<div\s+[^>]*class="[^"]*[ap]v-hero-background[^>]*(?:>\s*<div\s+[^>]*class="[^"]*[ap]v-bgimg[^>]*)?url\(([^)]+)\)', cnt, flags=re.DOTALL)
+                    bgimg = None if (not bgimg) or re.search(r'_BL\d+_', bgimg.group(1)) else MaxSize(bgimg.group(1))
 
                     # Extract the global data
                     gres = MultiRegexParsing(re.search(r'<section\s+[^>]*class="[ap]v-detail-section"[^>]*>\s*(.*?)\s*</section>', cnt, flags=re.DOTALL).group(1), {

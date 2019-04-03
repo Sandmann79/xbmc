@@ -220,7 +220,7 @@ def getURLData(mode, asin, retformat='json', devicetypeid='AOAGZA014O5RE', versi
     url += '&gascEnabled=' + str(g.UsePrimeVideo).lower()
     if 'SubtitleUrls' in dRes.split(','):
         url += "&subtitleFormat=TTMLv2"
-    if ('catalog/GetPlaybackResources' == mode):
+    if ('catalog/GetPlaybackResources' == mode) and (g.platform & g.OS_ANDROID):
         url += '&operatingSystemName=Windows'
     if extra:
         url += '&resourceUsage=ImmediateConsumption&consumptionType=Streaming&deviceDrmOverride=CENC' \

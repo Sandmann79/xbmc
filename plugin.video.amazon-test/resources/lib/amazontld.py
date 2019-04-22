@@ -37,9 +37,9 @@ class AmazonTLD(Singleton):
 
     @staticmethod
     def _cleanName(name, isfile=True):
-        notallowed = ['<', '>', ':', '"', '\\', '/', '|', '*', '?']
+        notallowed = ['<', '>', ':', '"', '\\', '/', '|', '*', '?', '´']
         if not isfile:
-            notallowed = ['<', '>', '"', '|', '*', '?']
+            notallowed = ['<', '>', '"', '|', '*', '?', '´']
         for c in notallowed:
             name = name.replace(c, '')
         if not os.path.supports_unicode_filenames and not isfile:
@@ -364,13 +364,13 @@ class AmazonTLD(Singleton):
             url = ''
             if 'title' not in item:
                 continue
-            if export and catalog == "Browse" and "adTreatment" not in item["formats"][0]["offers"][0].keys() and not self._s.payCont and self._g.library not in parent:
-                continue
             wl_asin = item['titleId']
             if '_show' in parent and item.get('ancestorTitles'):
                 item.update(item['ancestorTitles'][0])
                 url = 'SeriesASIN=%s&ContentType=TVSeason&IncludeBlackList=T' % item['titleId']
             contentType, infoLabels = self.getInfos(item, export)
+            if export and catalog == "Browse" and not infoLabels['isPrime'] and not self._s.payCont and self._g.library not in parent:
+                continue
             name = infoLabels['DisplayTitle']
             asin = item['titleId']
             wlmode = 1 if self._g.watchlist in parent else 0

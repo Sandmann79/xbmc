@@ -764,9 +764,9 @@ def cleanData(data):
 
 
 def cleanName(name, isfile=True):
-    notallowed = ['<', '>', ':', '"', '\\', '/', '|', '*', '?']
+    notallowed = ['<', '>', ':', '"', '\\', '/', '|', '*', '?', '`']
     if not isfile:
-        notallowed = ['<', '>', '"', '|', '*', '?']
+        notallowed = ['<', '>', '"', '|', '*', '?', '`']
     for c in notallowed:
         name = name.replace(c, '')
     if not os.path.supports_unicode_filenames and not isfile:

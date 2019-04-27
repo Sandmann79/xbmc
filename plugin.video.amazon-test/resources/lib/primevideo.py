@@ -714,7 +714,7 @@ class PrimeVideo(Singleton):
                         bUpdatedVideoData = True
                         self._videodata[refUrn]['ref'] = requestURL
 
-                    results = re.findall(r'<li [^>]*id="[ap]v-ep-(?:bonus-?)?[0-9]+"[^>]*>(.*?)</li>', cnt, flags=re.DOTALL)
+                    results = re.findall(r'<li [^>]*id="[ap]v-ep-(?:bonus-?)?(?:episodes-?)?[0-9]+"[^>]*>(.*?)</li>', cnt, flags=re.DOTALL)
                     if not results:
                         ''' Standalone movie '''
                         Log('Movie page', Log.DEBUG)

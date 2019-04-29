@@ -54,11 +54,11 @@ class PrimeVideo(Singleton):
                       'months': {'januar': 1, 'februar': 2, 'marts': 3, 'april': 4, 'maj': 5, 'juni': 6, 'juli': 7, 'august': 8, 'september': 9, 'oktober': 10,
                                  'november': 11, 'december': 12}},
             'de_DE': {'deconstruct': r'^([0-9]+)\.?\s+([^\s]+)\s+([0-9]+)', 'reassemble': '{2}-{1:0>2}-{0:0>2}', 'month': 1,
-                      'months': {'Januar': 1, 'Februar': 2, 'März': 3, 'April': 4, 'Mai': 5, 'Juni': 6, 'Juli': 7, 'August': 8, 'September': 9, 'Oktober': 10,
-                                 'November': 11, 'Dezember': 12}},
+                      'months': {'januar': 1, 'februar': 2, 'märz': 3, 'april': 4, 'mai': 5, 'juni': 6, 'juli': 7, 'august': 8, 'september': 9, 'oktober': 10,
+                                 'november': 11, 'dezember': 12}},
             'en_US': {'deconstruct': r'^([^\s]+)\s+([0-9]+),?\s+([0-9]+)', 'reassemble': '{2}-{0:0>2}-{1:0>2}', 'month': 0,
-                      'months': {'January': 1, 'February': 2, 'March': 3, 'April': 4, 'May': 5, 'June': 6, 'July': 7, 'August': 8, 'September': 9, 'October': 10,
-                                 'November': 11, 'December': 12}},
+                      'months': {'january': 1, 'february': 2, 'march': 3, 'april': 4, 'may': 5, 'june': 6, 'july': 7, 'august': 8, 'september': 9, 'october': 10,
+                                 'november': 11, 'december': 12}},
             'es_ES': {'deconstruct': r'^([0-9]+)\s+de\s+([^\s]+),?\s+de\s+([0-9]+)', 'reassemble': '{2}-{1:0>2}-{0:0>2}', 'month': 1,
                       'months': {'enero': 1, 'febrero': 2, 'marzo': 3, 'abril': 4, 'mayo': 5, 'junio': 6, 'julio': 7, 'agosto': 8, 'septiembre': 9, 'octubre': 10,
                                  'noviembre': 11, 'diciembre': 12}},
@@ -502,14 +502,14 @@ class PrimeVideo(Singleton):
             if lang not in self._dateParserData:
                 Log('Unable to decode date "{}": language "{}" not supported'.format(datestr, lang), Log.WARNING)
                 return datestr
-            p = re.search(self._dateParserData[lang]['deconstruct'], datestr)
+            p = re.search(self._dateParserData[lang]['deconstruct'], datestr.lower())
             if None is p:
                 Log('Unable to parse date "{}" with language "{}"{}'.format(datestr, lang, '' if 'en_US' != lang else ': trying english'), Log.WARNING)
                 if 'en_US' == lang:
                     return datestr
                 # Sometimes Amazon returns english everything, let's try to figure out if this is the case
                 lang = 'en_US'
-                p = re.search(self._dateParserData[lang]['deconstruct'], datestr)
+                p = re.search(self._dateParserData[lang]['deconstruct'], datestr.lower())
                 if None is p:
                     Log('Unable to parse date "{}" with language "{}": format changed?'.format(datestr, lang), Log.WARNING)
                     return datestr

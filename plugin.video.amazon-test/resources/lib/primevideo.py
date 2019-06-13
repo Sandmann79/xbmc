@@ -654,7 +654,7 @@ class PrimeVideo(Singleton):
                         NotifyUser(getString(30253).format(title))
                         o[title]['lazyLoadURL'] = link
             else:
-                if None is not re.search(r'<div\s+[^>]*(?:id="Watchlist"|class="DVWebNode-watchlist-wrapper")', cnt, flags=re.DOTALL):
+                if None is not re.search(r'<div\s+[^>]*(?:id="Watchlist"|class="[^"]*DVWebNode-watchlist-wrapper)', cnt, flags=re.DOTALL):
                     ''' Watchlist '''
                     if None is not re.search(r'<div\s+[^>]*id="Watchlist"[^>]*>', cnt, flags=re.DOTALL):
                         ''' Old watchlist, possibly (about to be) deprecated. Leaving it in because I stopped trusting anyone '''
@@ -681,8 +681,8 @@ class PrimeVideo(Singleton):
                         ''' New type of watchlist nobody asked for '''
                         Log('New watchlist', Log.DEBUG)
                         if ('Watchlist' == objName):
-                            entries = re.search(r'<div class="DVWebNode-watchlist-wrapper">(<div[^>]*>)<div[^>]*>.*?</div><div[^>]*><div[^>]*>'
-                                                r'((<a href="[^"]+"[^>]*>[^<]+</a>)+)', cnt, flags=re.DOTALL).group(2)
+                            entries = re.search(r'<div\s+class="[^"]*DVWebNode-watchlist-wrapper[^"]*">\s*<div[^>]*><div[^>]*>.*?</div><div[^>]*><div[^>]*>'
+                                                r'((?:\s*<a href="[^"]+"[^>]*>[^<]+</a>)+)', cnt, flags=re.DOTALL).group(1)
                             for entry in re.findall(r'href="([^"]+)"[^>]*>(.*?)</a', entries, flags=re.DOTALL):
                                 o[Unescape(entry[1])] = {'title': Unescape(entry[1]), 'lazyLoadURL': self._g.BaseUrl + entry[0]}
                             continue

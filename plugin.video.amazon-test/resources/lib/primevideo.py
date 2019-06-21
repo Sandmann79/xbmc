@@ -698,12 +698,12 @@ class PrimeVideo(Singleton):
                     bgimg = None if (not bgimg) or re.search(r'_BL\d+_', bgimg.group(1)) else MaxSize(bgimg.group(1))
 
                     # Extract the global data
-                    gres = MultiRegexParsing(re.search(r'<section\s+[^>]*class="[ap]v-detail-section"[^>]*>\s*(.*?)\s*</section>', cnt, flags=re.DOTALL).group(1), {
-                        'cast': self._starringRex + r'\s*</dt>\s*<dd[^>]*>\s*(.*?)\s*</dd>',  # Starring
-                        'director': self._directorRex + r'\s*</dt>\s*<dd[^>]*>\s*(.*?)\s*</dd>',  # Director
-                        'genre': self._genresRex + r'\s*</dt>\s*<dd[^>]*>\s*(.*?)\s*</dd>',  # Genre
+                    gres = MultiRegexParsing(re.search(r'\s+class="[ap]v-detail-section"[^>]*>\s*(.*?)\s*(?:</section>|<script)', cnt, flags=re.DOTALL).group(1), {
+                        'cast': self._starringRex + r'(?:\s*</span>)\s*</dt>\s*<dd[^>]*>\s*(.*?)\s*</dd>',  # Starring
+                        'director': self._directorRex + r'(?:\s*</span>)\s*</dt>\s*<dd[^>]*>\s*(.*?)\s*</dd>',  # Director
+                        'genre': self._genresRex + r'(?:\s*</span>)\s*</dt>\s*<dd[^>]*>\s*(.*?)\s*</dd>',  # Genre
                         'mpaa': r'<span data-automation-id="(?:maturity-)?rating-badge"[^>]*>\s*(.*?)\s*</span>',  # Age rating
-                        'plot': r'<div [^>]*data-automation-id="synopsis"[^>]*>\s*(?:<p>|<div [^>]*>.*?<div [^>]*>)\s*(.*?)\s*(?:</p>|</div>)',  # Synopsis
+                        'plot': r'<div [^>]*data-automation-id="[^"]*synopsis"[^>]*>\s*(?:<p[^>]*>|<div [^>]*>.*?<div [^>]*>)\s*(.*?)\s*(?:</p>|</div>)',  # Synopsis
                         'rating': r'<span data-automation-id="imdb-rating-badge"[^>]*>\s*([0-9]+)[,.]([0-9]+)\s*</span>',  # IMDb rating
                         'year': r'<span data-automation-id="release-year-badge"[^>]*>\s*([0-9]+)\s*</span>',  # Year
                     })
@@ -762,7 +762,9 @@ class PrimeVideo(Singleton):
                     else:
                         ''' Episode list '''
                         # Find out what page revision we're in
-                        if None is not re.search(r'<ol[^>]*>\s*<li id="[ap]v-ep-', cnt, flags=re.DOTALL):
+                        if None is not re.search(r'(class="_2XnrBy"|for="[^"]*-season-selector)', cnt):
+                            revision = 3
+                        elif None is not re.search(r'<ol[^>]*>\s*<li id="[ap]v-ep-', cnt, flags=re.DOTALL):
                             revision = 2
                         elif None is not re.search(r'<h1 [^>]*class="[^"]*DigitalVideoUI', cnt, flags=re.DOTALL):
                             revision = 1
@@ -834,7 +836,7 @@ class PrimeVideo(Singleton):
                                         thumbnail = MaxSize(Unescape(gpr['catalogMetadata']['images']['imageUrls']['title']))
                                         self._videodata[refUrn]['metadata']['artmeta'] = {'thumb': thumbnail, 'poster': thumbnail, 'fanart': bgimg}
                                     if 'title' not in self._videodata[refUrn]:
-                                        bSingle = None is not re.search(r'([ap]v-season-single|DigitalVideoWebNodeDetail_seasons__single)', cnt, flags=re.DOTALL)
+                                        bSingle = None is not re.search(r'(class="_2XnrBy"|[ap]v-season-single|DigitalVideoWebNodeDetail_seasons__single)', cnt)
                                         self._videodata[refUrn]['title'] = Unescape(re.search([
                                             r'<span class="[^"]*[ap]v-season-single[^"]*">\s*(.*?)\s*(?:</a>|</span>)',  # r0 single
                                             r'<a class="[^"]*[ap]v-droplist--selected[^"]*"[^>]*>\s*(.*?)\s*</a>',  # r0 multi
@@ -842,6 +844,8 @@ class PrimeVideo(Singleton):
                                             r'<div class="[^"]*dv-node-dp-seasons.*?<label[^>]*>\s*<span[^>]*>\s*(.*?)\s*</span>\s*</label>',  # r1 multi
                                             r'<span class="[^"]*[ap]v-season-single[^"]*">\s*(.*?)\s*(?:</a>|</span>)',  # r2 single
                                             r'<label class="[^"]*[ap]v-select-trigger[^"]*"[^>]*>\s*(.*?)\s*</label>',  # r2 multi
+                                            r'<span class="_2XnrBy">\s*<span>\s*(.*?)\s*</span>',  # r3 single
+                                            r'<label[^>]*\s+for="[^"]*-season-selector"[^>]*>\s*<span>\s*(.*?)\s*</span>',  # r3 multi
                                         ][(revision << 1) + (0 if bSingle else 1)], cnt, flags=re.DOTALL).group(1))
                                     if 'parent' not in self._videodata[refUrn]:
                                         self._videodata[refUrn]['parent'] = showId
@@ -886,9 +890,14 @@ class PrimeVideo(Singleton):
                                 self._videodata[refUrn]['children'].append(eid)
 
                         # Scan the other seasons
-                        seasons = re.search(r'<div class="[^"]*[ap]v-season-selector[^>]*>.*?<ul[^>]*>(.*?)</ul>', cnt, flags=re.DOTALL)
+                        seasons = re.search(r'<div class="[^"]*(?:[ap]v-season-selector|-dp-seasons)[^>]*>.*?<ul[^>]*>(.*?)</ul>', cnt, flags=re.DOTALL)
                         if seasons:
-                            for season in re.findall(r'<a href="([^"]+?)(?:ref=[^"]*)?">\s*' + self._seasonRex + r'\s+([0-9]+)\s*</a>', seasons.group(1)):
+                            for season in re.findall(r'<a href="([^"]+?)(?:ref=[^"]*)?"[^>]*>(?:\s*<span[^>]*>)*\s*' +
+                                                     self._seasonRex +
+                                                     r'\s+([0-9]+)\s*</(?:a>|span>)', seasons.group(1)):
+                                season = list(season)
+                                if '/' == (season[0][0:1]):
+                                    season[0] = self._g.BaseUrl + season[0]
                                 if season[0] in self._recurringPages['SeasonScraping']:
                                     continue
                                 self._recurringPages['SeasonScraping'].append(season[0])

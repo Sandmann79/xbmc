@@ -63,7 +63,7 @@ def PLAYVIDEO():
                 Dialog.ok(getString(30203), getString(30218))
                 playable = True
 
-    if methodOW !=3:
+    if methodOW != 3:
         playDummyVid()
 
 
@@ -233,7 +233,7 @@ def IStreamPlayback(trailer, isAdult, extern):
     if 'adaptive' in is_addon:
         listitem.setProperty('inputstream.adaptive.manifest_type', 'mpd')
 
-    Log('Using %s Version:%s' %(is_addon, is_version))
+    Log('Using %s Version:%s' % (is_addon, is_version))
     listitem.setArt({'thumb': infoLabels['Thumb']})
     listitem.setInfo('video', getInfolabels(infoLabels))
     listitem.setSubtitles(subs)
@@ -251,7 +251,8 @@ def IStreamPlayback(trailer, isAdult, extern):
     player.resolve(listitem)
     starttime = time.time()
 
-    while not xbmc.abortRequested and player.running:
+    monitor = xbmc.Monitor()
+    while (not monitor.abortRequested()) and player.running:
         if player.isPlayingVideo():
             player.video_lastpos = player.getTime()
             if time.time() > starttime + player.interval:

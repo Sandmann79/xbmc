@@ -9,6 +9,7 @@ from sys import argv
 import hashlib
 import hmac
 import uuid
+import xbmc
 import xbmcaddon
 import xbmcgui
 import json
@@ -59,6 +60,7 @@ class Globals(Singleton):
         self.pluginid = '{}://{}/'.format(pid.scheme, pid.netloc)
         self.pluginhandle = int(argv[1]) if (1 < len(argv)) and self.pluginid else -1
 
+        self._globals['monitor'] = xbmc.Monitor()
         self._globals['addon'] = xbmcaddon.Addon()
         self._globals['dialog'] = xbmcgui.Dialog()
         # self._globals['dialogprogress'] = xbmcgui.DialogProgress()
@@ -205,7 +207,7 @@ def jsonRPC(method, props='', param=None):
 
 def sleep(sec):
     from .logging import Log
-    if xbmc.Monitor().waitForAbort(sec):
+    if Globals().monitor.waitForAbort(sec):
         import sys
         Log('Abort requested - exiting addon')
         sys.exit()

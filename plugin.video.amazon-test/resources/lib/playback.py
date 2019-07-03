@@ -423,20 +423,20 @@ def PlayVideo(name, asin, adultstr, trailer, forcefb=0):
         listitem.setMimeType('application/dash+xml')
         listitem.setContentLookup(False)
         player = _AmazonPlayer()
+        player.resolve(listitem)
         player.asin = asin
         player.cookie = cookie
         player.content = trailer
         player.extern = extern
-        player.resolve(listitem)
-        starttime = time.time()
 
-        while not xbmc.abortRequested and player.running:
+        starttime = time.time()
+        while (not g.monitor.abortRequested()) and player.running:
             if player.isPlayingVideo():
                 player.video_lastpos = player.getTime()
-                if time.time() > starttime + player.interval:
+                if time.time() > (starttime + player.interval):
                     starttime = time.time()
                     player.updateStream('PLAY')
-            sleep(1)
+            g.monitor.waitForAbort(1)
         player.finished()
         del player
         return True

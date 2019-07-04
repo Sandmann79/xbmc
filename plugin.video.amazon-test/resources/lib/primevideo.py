@@ -180,41 +180,81 @@ class PrimeVideo(Singleton):
                 return
         self.Browse('root')
 
+    def _GrabJSON(self, url):
+        """ Extract JSON objects from HTMLs while keeping the API ones intact """
+        from json import loads
+
+        r = getURL(self._g.BaseUrl, silent=True, useCookie=True, rjson=False)
+        if not r:
+            return None
+        try:
+            return loads(r)
+        except:
+            pass
+
+        o = {}
+        matches = re.findall(r'\s*(?:<script type="text/template">|state:)\s*({[^\n]+})\s*(?:,|</script>)\s*', r)
+        Log('Objects found: {}'.format(len(matches)), Log.DEBUG)
+        for prop in matches:
+            prop = json.loads(prop)
+            o.update(prop['props'] if 'props' in prop else prop['widgets']['Storefront'])
+        return o if o else None
+
+    def _FQify(self, URL):
+        """ Makes sure to provide correct fully qualified URLs """
+        base = self._g.BaseUrl
+        if '://' in URL:  # FQ
+            return URL
+        elif URL.startswith('//'):  # Specified domain, same schema
+            return base.split(':')[0] + ':' + URL
+        elif URL.startswith('/'):  # Relative URL
+            return base + URL
+        else:  # Hope and pray we never reach this ¯\_(ツ)_/¯
+            return base + '/' + URL
+
     def BuildRoot(self):
         """ Parse the top menu on primevideo.com and build the root catalog """
 
+        home = self._GrabJSON(self._g.BaseUrl)
+        if not home:
+            return False
         self._catalog['root'] = OrderedDict()
-        home = getURL(self._g.BaseUrl, silent=True, useCookie=True, rjson=False)
-        if None is home:
-            self._g.dialog.notification('Connection error', 'Unable to fetch the primevideo.com homepage', xbmcgui.NOTIFICATION_ERROR)
-            Log('Unable to fetch the primevideo.com homepage', Log.ERROR)
+
+        # Insert the watchlist
+        try:
+            watchlist = next((x for x in home['yourAccount']['links'] if '/watchlist/' in x['href']), None)
+            self._catalog['root']['Watchlist'] = {'title': watchlist['text'], 'lazyLoadURL': self._FQify(watchlist['href'])}
+        except:
+            Log('Watchlist link not found', Log.ERROR)
+            pass
+
+        # Insert the main sections, in order
+        try:
+            for link in home['mainMenu']['links']:
+                self._catalog['root'][link['text']] = {'title': link['text'], 'lazyLoadURL': self._FQify(link['href'])}
+                if '/home/' in link['href']:
+                    self._catalog['root'][link['text']]['lazyLoadData'] = home
+        except:
+            self._g.dialog.notification('PrimeVideo error', 'Unable to find the navigation menu for primevideo.com', xbmcgui.NOTIFICATION_ERROR)
+            Log('Unable to parse the navigation menu for primevideo.com', Log.ERROR)
             return False
 
-        # Setup watchlist
-        watchlist = re.search(r'<a[^>]* href="(([^"]+)?/watchlist/)[^"]*"[^>]*>(.*?)</a>', home)
-        if None is not watchlist:
-            self._catalog['root']['Watchlist'] = {'title': watchlist.group(3), 'lazyLoadURL': self._g.BaseUrl + watchlist.group(1)}
-
-        # PrimeVideo.com top navigation menu
-        home = re.search(r'<div id="[ap]v-nav-main-menu".*?<ul role="navigation"[^>]*>\s*(.*?)\s*</ul>', home)
-        if None is home:
-            self._g.dialog.notification('PrimeVideo error', 'Unable to find the main primevideo.com navigation section', xbmcgui.NOTIFICATION_ERROR)
-            Log('Unable to find the main primevideo.com navigation section', Log.ERROR)
-            return False
-        for item in re.findall(r'<li[^>]*>\s*(.*?)\s*</li>', home.group(1)):
-            item = re.search(r'<a href="([^"]+)"[^>]*>\s*(.*?)\s*</a>', item)
-            if None is not re.match(r'(/region/[^/]+)?/storefront/home/', item.group(1)):
-                continue
-            # Remove react comments
-            title = re.sub(r'^<!--\s*[^>]+\s*-->', '', re.sub(r'<!--\s*[^>]+\s*-->$', '', item.group(2)))
-            self._catalog['root'][title] = {'title': title, 'lazyLoadURL': self._g.BaseUrl + item.group(1) + '?_encoding=UTF8'}
-        if 0 == len(self._catalog['root']):
-            self._g.dialog.notification('PrimeVideo error', 'Unable to build the root catalog from primevideo.com', xbmcgui.NOTIFICATION_ERROR)
-            Log('Unable to build the root catalog from primevideo.com', Log.ERROR)
-            return False
-
-        # Search method
-        self._catalog['root']['Search'] = {'title': getString(30108), 'verb': 'pv/search/'}
+        # Insert the searching mechanism
+        try:
+            sfa = home['searchBar']['searchFormAction']
+            # Build the query parametrization
+            query = ''
+            if 'query' in sfa:
+                query += '&'.join(['{}={}'.format(k, v) for k, v in sfa['query'].items()])
+            query = query if not query else query + '&'
+            self._catalog['root']['Search'] = {
+                'title': home['searchBar']['searchFormPlaceholder'],
+                'verb': 'pv/search/',
+                'endpoint': '{}?{}phrase={{}}'.format(self._FQify(sfa['partialURL']), query)
+            }
+        except:
+            Log('Search functionality not found', Log.ERROR)
+            pass
 
         # Set the expiration in 11 hours and flush to disk
         self._catalog['expiration'] = 39600 + int(time.time())
@@ -230,7 +270,7 @@ class PrimeVideo(Singleton):
             xbmcplugin.endOfDirectory(self._g.pluginhandle, succeeded=False)
             return
         Log('Searching "{}"…'.format(searchString), Log.INFO)
-        self._catalog['search'] = OrderedDict([('lazyLoadURL', 'https://www.primevideo.com/search/ref=atv_nb_sr?ie=UTF8&phrase={}'.format(searchString))])
+        self._catalog['search'] = OrderedDict([('lazyLoadURL', self._catalog['root']['Search']['endpoint'].format(searchString))])
         self.Browse('search', xbmcplugin.SORT_METHOD_NONE)
 
     def Browse(self, path, forceSort=None):

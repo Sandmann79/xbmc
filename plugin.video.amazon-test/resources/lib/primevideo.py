@@ -217,24 +217,67 @@ class PrimeVideo(Singleton):
 
             return text
 
+        def Merge(o, n):
+            """ Merge JSON objects with multiple multi-level collisions """
+            if (not n) or (o == n):  # Nothing to do
+                return
+            elif (type(n) == list) or (type(n) == set):  # Insert into list/set
+                for item in n:
+                    if item not in o:
+                        if type(n) == list:
+                            o.append(item)
+                        else:
+                            o.add(item)
+            elif type(n) == dict:
+                for k in n.keys():
+                    if k not in o:
+                        o[k] = n[k]  # Insert into dictionary
+                    else:
+                        Merge(o[k], n[k])  # Recurse
+            else:
+                Log('Collision detected during JSON objects merging, overwriting and praying', Log.WARNING)
+                o = n
+
         from json import loads
 
         r = getURL(url, silent=True, useCookie=True, rjson=False)
         if not r:
             return None
         try:
+            r = r.strip()
             if '{' == r[0:1]:
                 return loads(Unescape(r))
         except:
             pass
 
-        o = {}
         matches = re.findall(r'\s*(?:<script type="text/template">|state:)\s*({[^\n]+})\s*(?:,|</script>)\s*', r)
         if not matches:
             Log('No JSON objects found in the page', Log.ERROR)
-        for prop in matches:
-            prop = json.loads(Unescape(prop))
-            o.update(prop['props'] if 'props' in prop else prop['widgets']['Storefront'])
+            return None
+
+        # Create a single object containing all the data from the multiple JSON objects in the page
+        o = {}
+        for m in matches:
+            m = json.loads(Unescape(m))
+            if 'props' not in m:
+                m = m['widgets']['Storefront']
+            else:
+                m = m['props']
+
+                # Prune useless/sensitive info
+                for k in m.keys():
+                    if (not m[k]) or (k in ['copyright', 'links', 'logo', 'context']):
+                        del m[k]
+                if 'state' in m:
+                    for k in m['state'].keys():
+                        if not m['state'][k]:
+                            del m['state'][k]
+                        elif k in ['features', 'strings', 'customerPreferences']:
+                            del m['state'][k]
+            if not m:
+                continue
+            Merge(o, m)
+
         return o if o else None
 
     def _FQify(self, URL):
@@ -263,7 +306,6 @@ class PrimeVideo(Singleton):
             self._catalog['root']['Watchlist'] = {'title': self._BeautifyText(watchlist['text']), 'lazyLoadURL': self._FQify(watchlist['href'])}
         except:
             Log('Watchlist link not found', Log.ERROR)
-            pass
 
         # Insert the main sections, in order
         try:

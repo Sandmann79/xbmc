@@ -2,10 +2,11 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 from collections import OrderedDict
+import json
 import pickle
-import time
 import re
 import sys
+import time
 import xbmcgui
 import xbmcplugin
 
@@ -133,52 +134,29 @@ class PrimeVideo(Singleton):
                 delete(self._catalogCache)
                 self._g.dialog.notification('Corrupted catalog cache', 'Unable to load the catalog cache data', xbmcgui.NOTIFICATION_ERROR)
 
-    def _TraverseCatalog(self, path, bRefresh=False):
-        """ Extract current node, grandparent node and their names """
+    def _BeautifyText(self, title):
+        """ Correct stylistic errors in Amazon's titles """
 
-        try:
-            from urllib.parse import unquote_plus
-        except ImportError:
-            from urllib import unquote_plus
+        for t in [(r'\s+-\s*([^&])', r' – \1'),  # Convert dash from small to medium where needed
+                  (r'\s*-\s+([^&])', r' – \1'),  # Convert dash from small to medium where needed
+                  (r'^\s+', ''),  # Remove leading spaces
+                  (r'\s+$', ''),  # Remove trailing spaces
+                  (r' {2,}', ' '),  # Remove double spacing
+                  (r'\.\.\.', '…')]:  # Replace triple dots with ellipsis
+            title = re.sub(t[0], t[1], title)
+        return title
 
-        # Fix the unquote_plus problem with unicode_literals by encoding to latin-1 (byte string) and then decoding
-        pathList = [unquote_plus(p).encode('latin-1').decode('utf-8') for p in path.split(self._separator)]
-        pathLen = len(pathList)
-
-        if 0 == len(self._catalog):
-            self.BuildRoot()
-
-        node = self._catalog
-        nodeName = None
-        ancestorNode = None
-        ancestorName = None
-        for i in range(0, pathLen):
-            nodeName = pathList[i]
-            if i == (pathLen - 2):
-                ancestorNode = node
-                ancestorName = nodeName
-
-            # Stop one short while refreshing, due to python mutability reasons
-            if bRefresh and (i == (pathLen - 1)):
-                break
-
-            if nodeName not in node:
-                self._g.dialog.notification('Catalog error', 'Catalog path not available…', xbmcgui.NOTIFICATION_ERROR)
-                return (None, None, None, None)
-            elif 'lazyLoadURL' in node[nodeName]:
-                self._LazyLoad(node[nodeName], nodeName, ancestorNode, ancestorName)
-            node = node[nodeName]
-
-        return (node, nodeName, ancestorNode, ancestorName)
-
-    def BrowseRoot(self):
-        """ Build and load the root PrimeVideo menu """
-
-        if 0 == len(self._catalog):
-            ''' Build the root catalog '''
-            if not self.BuildRoot():
-                return
-        self.Browse('root')
+    def _FQify(self, URL):
+        """ Makes sure to provide correct fully qualified URLs """
+        base = self._g.BaseUrl
+        if '://' in URL:  # FQ
+            return URL
+        elif URL.startswith('//'):  # Specified domain, same schema
+            return base.split(':')[0] + ':' + URL
+        elif URL.startswith('/'):  # Relative URL
+            return base + URL
+        else:  # Hope and pray we never reach this ¯\_(ツ)_/¯
+            return base + '/' + URL
 
     def _GrabJSON(self, url):
         """ Extract JSON objects from HTMLs while keeping the API ones intact """
@@ -238,7 +216,20 @@ class PrimeVideo(Singleton):
                 Log('Collision detected during JSON objects merging, overwriting and praying', Log.WARNING)
                 o = n
 
-        from json import loads
+        def Prune(d):
+            """ Prune some commonly found sensitive info from JSON response bodies """
+            if not d:
+                return
+
+            l = d
+            if isinstance(l, dict):
+                for k in l.keys():
+                    if (not l[k]) or (k in ['context', 'params', 'playerConfig', 'refine']):
+                        del l[k]
+                l = d.values()
+            for v in l:
+                if isinstance(v, dict) or isinstance(v, list):
+                    Prune(v)
 
         r = getURL(url, silent=True, useCookie=True, rjson=False)
         if not r:
@@ -246,7 +237,9 @@ class PrimeVideo(Singleton):
         try:
             r = r.strip()
             if '{' == r[0:1]:
-                return loads(Unescape(r))
+                o = json.loads(Unescape(r))
+                Prune(o)
+                return o
         except:
             pass
 
@@ -266,31 +259,62 @@ class PrimeVideo(Singleton):
 
                 # Prune useless/sensitive info
                 for k in m.keys():
-                    if (not m[k]) or (k in ['copyright', 'links', 'logo', 'context']):
+                    if (not m[k]) or (k in ['copyright', 'links', 'logo', 'params', 'playerConfig', 'refine']):
                         del m[k]
                 if 'state' in m:
-                    for k in m['state'].keys():
-                        if not m['state'][k]:
-                            del m['state'][k]
-                        elif k in ['features', 'strings', 'customerPreferences']:
-                            del m['state'][k]
-            if not m:
-                continue
+                    st = m['state']
+                    for k in st.keys():
+                        if not st[k]:
+                            del st[k]
+                        elif k in ['features', 'customerPreferences']:
+                            del st[k]
+                        elif k == 'strings':
+                            m[k] = {s: st[k][s] for s in ['AVOD_DP_season_selector'] if s in st[k]}
+
+            # Prune sensitive context info and merge into o
+            Prune(m)
             Merge(o, m)
 
         return o if o else None
 
-    def _FQify(self, URL):
-        """ Makes sure to provide correct fully qualified URLs """
-        base = self._g.BaseUrl
-        if '://' in URL:  # FQ
-            return URL
-        elif URL.startswith('//'):  # Specified domain, same schema
-            return base.split(':')[0] + ':' + URL
-        elif URL.startswith('/'):  # Relative URL
-            return base + URL
-        else:  # Hope and pray we never reach this ¯\_(ツ)_/¯
-            return base + '/' + URL
+    def _TraverseCatalog(self, path, bRefresh=False):
+        """ Extract current node, grandparent node and their names """
+
+        from urllib import unquote_plus
+
+        # Fix the unquote_plus problem with unicode_literals by encoding to latin-1 (byte string) and then decoding
+        pathList = [unquote_plus(p).encode('latin-1').decode('utf-8') for p in path.split(self._separator)]
+
+        if 0 == len(self._catalog):
+            self.BuildRoot()
+
+        # Traverse
+        node = self._catalog
+        pathLen = len(pathList)
+        for i in range(0, pathLen):
+            nodeName = pathList[i]
+
+            # Stop one short while refreshing, due to python mutability reasons
+            if bRefresh and (i == (pathLen - 1)):
+                break
+
+            if nodeName not in node:
+                self._g.dialog.notification('Catalog error', 'Catalog path not available…', xbmcgui.NOTIFICATION_ERROR)
+                return (None, None)
+            elif 'lazyLoadURL' in node[nodeName]:
+                self._LazyLoad(node[nodeName], pathList[0:1 + i])
+            node = node[nodeName]
+
+        return (node, pathList[:])
+
+    def BrowseRoot(self):
+        """ Build and load the root PrimeVideo menu """
+
+        if 0 == len(self._catalog):
+            ''' Build the root catalog '''
+            if not self.BuildRoot():
+                return
+        self.Browse('root')
 
     def BuildRoot(self):
         """ Parse the top menu on primevideo.com and build the root catalog """
@@ -341,17 +365,6 @@ class PrimeVideo(Singleton):
 
         return True
 
-    def Search(self):
-        """ Provide search functionality for PrimeVideo """
-
-        searchString = self._g.dialog.input(getString(24121)).strip(' \t\n\r')
-        if 0 == len(searchString):
-            xbmcplugin.endOfDirectory(self._g.pluginhandle, succeeded=False)
-            return
-        Log('Searching "{}"…'.format(searchString), Log.INFO)
-        self._catalog['search'] = OrderedDict([('lazyLoadURL', self._catalog['root']['Search']['endpoint'].format(searchString))])
-        self.Browse('search', xbmcplugin.SORT_METHOD_NONE)
-
     def Browse(self, path, forceSort=None):
         """ Display and navigate the menu for PrimeVideo users """
 
@@ -370,11 +383,12 @@ class PrimeVideo(Singleton):
         except ImportError:
             from urllib import quote_plus
 
-        node, nodeName, ancestorNode, ancestorName = self._TraverseCatalog(path)
+        node, breadcrumb = self._TraverseCatalog(path)
         if None is node:
             return
 
         # Populate children list with empty references
+        nodeName = breadcrumb[-1]
         if (nodeName in self._videodata) and ('children' in self._videodata[nodeName]):
             for c in self._videodata[nodeName]['children']:
                 if c not in node:
@@ -397,9 +411,10 @@ class PrimeVideo(Singleton):
             try:
                 bSeason = 'season' == self._videodata[key]['metadata']['videometa']['mediatype']
 
+                """
                 # Load series upon entering the show directory
                 if bSeason and ('lazyLoadURL' in node[key]):
-                    self._LazyLoad(node[key], key, ancestorNode[ancestorName], nodeName)
+                    self._LazyLoad(node[key], key /*breadcrumbs*/)
                     # Due to python mutability shenanigans we need to manually alter the nodes
                     # instead of waiting for changes to propagate
                     for ka in [k for k in ancestorNode[ancestorName][nodeName] if k not in metaKeys]:
@@ -411,6 +426,7 @@ class PrimeVideo(Singleton):
                         if ka not in ancestorNode[ancestorName][nodeName]:
                             ancestorNode[ancestorName][nodeName][ka] = node[ka]
                     self._Flush()
+                """
 
                 # If the series is squashable override the seasons list with the episodes list
                 if 1 == len(nodeKeys):
@@ -508,11 +524,22 @@ class PrimeVideo(Singleton):
 
         setContentAndView([None, 'videos', 'series', 'season', 'episode', 'movie'][folderType])
 
+    def Search(self):
+        """ Provide search functionality for PrimeVideo """
+
+        searchString = self._g.dialog.input(getString(24121)).strip(' \t\n\r')
+        if 0 == len(searchString):
+            xbmcplugin.endOfDirectory(self._g.pluginhandle, succeeded=False)
+            return
+        Log('Searching "{}"…'.format(searchString), Log.INFO)
+        self._catalog['search'] = OrderedDict([('lazyLoadURL', self._catalog['root']['Search']['endpoint'].format(searchString))])
+        self.Browse('search', xbmcplugin.SORT_METHOD_NONE)
+
     def Refresh(self, path):
         """ Provides cache refresh functionality """
 
         refreshes = []
-        node, nodeName, ancestorNode, ancestorName = self._TraverseCatalog(path, True)
+        node, breadcrumb = self._TraverseCatalog(path, True)
         if None is node:
             return
 
@@ -556,19 +583,7 @@ class PrimeVideo(Singleton):
             for r in refreshes:
                 self._LazyLoad(r[0], r[1], r[2], r[3], r[4])
 
-    def _BeautifyText(self, title):
-        """ Correct stylistic errors in Amazon's titles """
-
-        for t in [(r'\s+-\s*([^&])', r' – \1'),  # Convert dash from small to medium where needed
-                  (r'\s*-\s+([^&])', r' – \1'),  # Convert dash from small to medium where needed
-                  (r'^\s+', ''),  # Remove leading spaces
-                  (r'\s+$', ''),  # Remove trailing spaces
-                  (r' {2,}', ' '),  # Remove double spacing
-                  (r'\.\.\.', '…')]:  # Replace triple dots with ellipsis
-            title = re.sub(t[0], t[1], title)
-        return title
-
-    def _LazyLoad(self, obj, objName, ancestorNode=None, ancestorName=None, bCacheRefresh=False):
+    def _LazyLoad(self, obj, breadcrumb=None, bCacheRefresh=False):
         """ Loader and parser of all the PrimeVideo.com queries """
 
         def MaxSize(imgUrl):
@@ -641,6 +656,16 @@ class PrimeVideo(Singleton):
                         o[i] = DelocalizeDate(amzLang, o[i])
             return o
 
+        def ParseSinglePage(o, data=None, url=None):
+            """ Parse PrimeVideo.com single movie/season pages.
+                `url` is discarded in favour of `data`, if present.
+            """
+            if (not data):
+                if (not url):
+                    return
+                data = self._GrabJSON(url)
+            # Do something smart with data
+
         if 'lazyLoadURL' not in obj:
             return
         requestURLs = [obj['lazyLoadURL']]
@@ -662,7 +687,7 @@ class PrimeVideo(Singleton):
             if not isinstance(requestURLs[0], tuple):
                 requestURL = requestURLs[0]
                 o = obj
-                refUrn = objName
+                refUrn = breadcrumb
                 bFromWidowCarousel = False
             else:
                 requestURL = requestURLs[0][0]
@@ -672,7 +697,7 @@ class PrimeVideo(Singleton):
             del requestURLs[0]
 
             # Load content
-            couldNotParse = False
+            bCouldNotParse = False
             try:
                 cnt = None
                 if 'lazyLoadData' in o:
@@ -685,15 +710,14 @@ class PrimeVideo(Singleton):
                         o['ref'] = o['lazyLoadURL']
                     del o['lazyLoadURL']
             except:
-                couldNotParse = True
-            if couldNotParse or (0 == len(cnt)):
+                bCouldNotParse = True
+            if bCouldNotParse or (not cnt):
                 self._g.dialog.notification(getString(30251), requestURL, xbmcgui.NOTIFICATION_ERROR)
                 Log('Unable to fetch the url: {}'.format(requestURL), Log.ERROR)
                 continue
 
-            # Parsing
+            # Categories
             if 'collections' in cnt:
-                # Categories
                 for collection in cnt['collections']:
                     o[collection['text']] = {'title': self._BeautifyText(collection['text'])}
                     if 'seeMoreLink' in collection:
@@ -701,19 +725,42 @@ class PrimeVideo(Singleton):
                     else:
                         o[collection['text']]['lazyLoadURL'] = True
                         o[collection['text']]['lazyLoadData'] = collection
-            elif 'items':
-                Log(cnt)
-                raise Exception('HCF')
-                pass
+
+            # Widow list (No seeMoreLink)
+            if ('items' in cnt):
+                for item in cnt['items']:
+                    ParseSinglePage(o, url=item['link']['url'])
+                    pass
+
+            # Search/list
+            if ('results' in cnt) and ('items' in cnt['results']):
+                for item in cnt['results']['items']:
+                    if 'season' not in item:
+                        ParseSinglePage(o, url=item['title']['url'])
+                    else:
+                        if item['title']['text'] not in o:
+                            o[item['title']['text']] = {
+                                'title': self._BeautifyText(item['title']['text']),
+                                'lazyLoadURL': self._FQify(item['title']['url']),
+                                'metadata': {
+                                    'artmeta': {
+                                        'thumb': MaxSize(item['packshot']['image']['src'])
+                                    }
+                                }
+                            }
+
+            # Single page
+            if 'state' in cnt:
+                ParseSinglePage(o, data=cnt)
 
             # Pagination
             if 'pagination' in cnt:
-                if 'paginator' in cnt['pagination']:
+                if 'apiUrl' in cnt['pagination']:
+                    requestURLs.append(self._FQify(cnt['pagination']['apiUrl']))
+                elif 'paginator' in cnt['pagination']:
                     page = next((x['href'] for x in cnt['pagination']['paginator'] if x['type'] == 'NextPage'), None)
                     if page:
                         requestURLs.append(self._FQify(page))
-                elif 'apiUrl' in cnt['pagination']:
-                    requestURLs.append(self._FQify(cnt['pagination']['apiUrl']))
                 else:
                     Log('Unknown error while parsing pagination', Log.ERROR)
 

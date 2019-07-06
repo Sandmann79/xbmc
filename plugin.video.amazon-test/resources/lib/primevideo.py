@@ -146,20 +146,20 @@ class PrimeVideo(Singleton):
             title = re.sub(t[0], t[1], title)
         return title
 
-    def _FQify(self, URL):
-        """ Makes sure to provide correct fully qualified URLs """
-        base = self._g.BaseUrl
-        if '://' in URL:  # FQ
-            return URL
-        elif URL.startswith('//'):  # Specified domain, same schema
-            return base.split(':')[0] + ':' + URL
-        elif URL.startswith('/'):  # Relative URL
-            return base + URL
-        else:  # Hope and pray we never reach this ¯\_(ツ)_/¯
-            return base + '/' + URL
-
     def _GrabJSON(self, url):
         """ Extract JSON objects from HTMLs while keeping the API ones intact """
+
+        def FQify(URL):
+            """ Makes sure to provide correct fully qualified URLs """
+            base = self._g.BaseUrl
+            if '://' in URL:  # FQ
+                return URL
+            elif URL.startswith('//'):  # Specified domain, same schema
+                return base.split(':')[0] + ':' + URL
+            elif URL.startswith('/'):  # Relative URL
+                return base + URL
+            else:  # Hope and pray we never reach this ¯\_(ツ)_/¯
+                return base + '/' + URL
 
         def Unescape(text):
             """ Unescape various html/xml entities in dictionary values, courtesy of Fredrik Lundh """
@@ -224,6 +224,8 @@ class PrimeVideo(Singleton):
             l = d
             if isinstance(l, dict):
                 for k in l.keys():
+                    if k == 'strings':
+                        l[k] = {s: l[k][s] for s in ['AVOD_DP_season_selector'] if s in l[k]}
                     if (not l[k]) or (k in ['context', 'params', 'playerConfig', 'refine']):
                         del l[k]
                 l = d.values()
@@ -231,7 +233,7 @@ class PrimeVideo(Singleton):
                 if isinstance(v, dict) or isinstance(v, list):
                     Prune(v)
 
-        r = getURL(url, silent=True, useCookie=True, rjson=False)
+        r = getURL(FQify(url), silent=True, useCookie=True, rjson=False)
         if not r:
             return None
         try:
@@ -268,8 +270,6 @@ class PrimeVideo(Singleton):
                             del st[k]
                         elif k in ['features', 'customerPreferences']:
                             del st[k]
-                        elif k == 'strings':
-                            m[k] = {s: st[k][s] for s in ['AVOD_DP_season_selector'] if s in st[k]}
 
             # Prune sensitive context info and merge into o
             Prune(m)
@@ -305,7 +305,7 @@ class PrimeVideo(Singleton):
                 self._LazyLoad(node[nodeName], pathList[0:1 + i])
             node = node[nodeName]
 
-        return (node, pathList[:])
+        return (node, pathList)
 
     def BrowseRoot(self):
         """ Build and load the root PrimeVideo menu """
@@ -327,14 +327,14 @@ class PrimeVideo(Singleton):
         # Insert the watchlist
         try:
             watchlist = next((x for x in home['yourAccount']['links'] if '/watchlist/' in x['href']), None)
-            self._catalog['root']['Watchlist'] = {'title': self._BeautifyText(watchlist['text']), 'lazyLoadURL': self._FQify(watchlist['href'])}
+            self._catalog['root']['Watchlist'] = {'title': self._BeautifyText(watchlist['text']), 'lazyLoadURL': watchlist['href']}
         except:
             Log('Watchlist link not found', Log.ERROR)
 
         # Insert the main sections, in order
         try:
             for link in home['mainMenu']['links']:
-                self._catalog['root'][link['text']] = {'title': self._BeautifyText(link['text']), 'lazyLoadURL': self._FQify(link['href'])}
+                self._catalog['root'][link['text']] = {'title': self._BeautifyText(link['text']), 'lazyLoadURL': link['href']}
                 if '/home/' in link['href']:
                     self._catalog['root'][link['text']]['lazyLoadData'] = home
         except:
@@ -353,7 +353,7 @@ class PrimeVideo(Singleton):
             self._catalog['root']['Search'] = {
                 'title': self._BeautifyText(home['searchBar']['searchFormPlaceholder']),
                 'verb': 'pv/search/',
-                'endpoint': '{}?{}phrase={{}}'.format(self._FQify(sfa['partialURL']), query)
+                'endpoint': '{}?{}phrase={{}}'.format(sfa['partialURL'], query)
             }
         except:
             Log('Search functionality not found', Log.ERROR)
@@ -626,7 +626,7 @@ class PrimeVideo(Singleton):
             if not hasattr(NotifyUser, 'lastNotification'):
                 NotifyUser.lastNotification = 0
             if NotifyUser.lastNotification < time.time():
-                ''' Only update once every other second, to avoid endless message queue '''
+                # Only update once every other second, to avoid endless message queue
                 NotifyUser.lastNotification = 1 + time.time()
                 self._g.dialog.notification(self._g.addon.getAddonInfo('name'), msg, time=1000, sound=False)
 
@@ -664,7 +664,14 @@ class PrimeVideo(Singleton):
                 if (not url):
                     return
                 data = self._GrabJSON(url)
-            # Do something smart with data
+
+            # Season
+            if 'self' in data:
+                pass
+
+            # Movie
+            else:
+                pass
 
         if 'lazyLoadURL' not in obj:
             return
@@ -706,7 +713,7 @@ class PrimeVideo(Singleton):
                 if not cnt:
                     cnt = self._GrabJSON(requestURL)
                 if cnt and ('lazyLoadURL' in o):
-                    if True is not o['lazyLoadURL']:
+                    if 'ref' not in o:
                         o['ref'] = o['lazyLoadURL']
                     del o['lazyLoadURL']
             except:
@@ -721,16 +728,15 @@ class PrimeVideo(Singleton):
                 for collection in cnt['collections']:
                     o[collection['text']] = {'title': self._BeautifyText(collection['text'])}
                     if 'seeMoreLink' in collection:
-                        o[collection['text']]['lazyLoadURL'] = self._FQify(collection['seeMoreLink']['url'])
+                        o[collection['text']]['lazyLoadURL'] = collection['seeMoreLink']['url']
                     else:
-                        o[collection['text']]['lazyLoadURL'] = True
+                        o[collection['text']]['lazyLoadURL'] = requestURL
                         o[collection['text']]['lazyLoadData'] = collection
 
             # Widow list (No seeMoreLink)
             if ('items' in cnt):
                 for item in cnt['items']:
                     ParseSinglePage(o, url=item['link']['url'])
-                    pass
 
             # Search/list
             if ('results' in cnt) and ('items' in cnt['results']):
@@ -741,7 +747,7 @@ class PrimeVideo(Singleton):
                         if item['title']['text'] not in o:
                             o[item['title']['text']] = {
                                 'title': self._BeautifyText(item['title']['text']),
-                                'lazyLoadURL': self._FQify(item['title']['url']),
+                                'lazyLoadURL': item['title']['url'],
                                 'metadata': {
                                     'artmeta': {
                                         'thumb': MaxSize(item['packshot']['image']['src'])
@@ -751,16 +757,17 @@ class PrimeVideo(Singleton):
 
             # Single page
             if 'state' in cnt:
-                ParseSinglePage(o, data=cnt)
+                ParseSinglePage(o, data=cnt, url=requestURL)
 
             # Pagination
             if 'pagination' in cnt:
+                page = None
                 if 'apiUrl' in cnt['pagination']:
-                    requestURLs.append(self._FQify(cnt['pagination']['apiUrl']))
+                    page = cnt['pagination']['apiUrl']
                 elif 'paginator' in cnt['pagination']:
                     page = next((x['href'] for x in cnt['pagination']['paginator'] if x['type'] == 'NextPage'), None)
-                    if page:
-                        requestURLs.append(self._FQify(page))
+                if page:
+                    requestURLs.append(page)
                 else:
                     Log('Unknown error while parsing pagination', Log.ERROR)
 

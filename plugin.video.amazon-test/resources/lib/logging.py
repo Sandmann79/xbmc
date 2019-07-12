@@ -45,7 +45,7 @@ def LogJSON(o, url):
     except:
         LogJSON.counter = 0
     with co(OSPJoin(g.DATA_PATH, '{}_{}.json'.format(datetime.now().strftime('%Y%m%d_%H%M%S%f'), LogJSON.counter)), 'w+', 'utf-8') as f:
-        f.write('/* {} */\n'.format(url))
+        f.write('/* %s */\n' % url)
         dump(o, f, sort_keys=True, indent=4)
 
 

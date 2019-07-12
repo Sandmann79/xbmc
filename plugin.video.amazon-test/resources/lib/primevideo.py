@@ -162,7 +162,7 @@ class PrimeVideo(Singleton):
         else:  # Hope and pray we never reach this ¯\_(ツ)_/¯
             return base + '/' + URL
 
-    def _GrabJSON(self, url):
+    def _GrabJSON(self, url, bRaw=False):
         """ Extract JSON objects from HTMLs while keeping the API ones intact """
 
         def Unescape(text):
@@ -244,7 +244,8 @@ class PrimeVideo(Singleton):
             r = r.strip()
             if '{' == r[0:1]:
                 o = json.loads(Unescape(r))
-                Prune(o)
+                if not bRaw:
+                    Prune(o)
                 return o
         except:
             pass
@@ -263,20 +264,22 @@ class PrimeVideo(Singleton):
             else:
                 m = m['props']
 
-                # Prune useless/sensitive info
-                for k in m.keys():
-                    if (not m[k]) or (k in ['copyright', 'links', 'logo', 'params', 'playerConfig', 'refine']):
-                        del m[k]
-                if 'state' in m:
-                    st = m['state']
-                    for k in st.keys():
-                        if not st[k]:
-                            del st[k]
-                        elif k in ['features', 'customerPreferences']:
-                            del st[k]
+                if not bRaw:
+                    # Prune useless/sensitive info
+                    for k in m.keys():
+                        if (not m[k]) or (k in ['copyright', 'links', 'logo', 'params', 'playerConfig', 'refine']):
+                            del m[k]
+                    if 'state' in m:
+                        st = m['state']
+                        for k in st.keys():
+                            if not st[k]:
+                                del st[k]
+                            elif k in ['features', 'customerPreferences']:
+                                del st[k]
 
             # Prune sensitive context info and merge into o
-            Prune(m)
+            if not bRaw:
+                Prune(m)
             Merge(o, m)
 
         return o if o else None

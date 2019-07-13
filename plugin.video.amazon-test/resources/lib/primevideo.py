@@ -26,25 +26,11 @@ class PrimeVideo(Singleton):
     _videodata = {'urn2gti': {}}  # Video data cache
     _catalogCache = None  # Catalog cache file name
     _videodataCache = None  # Video data cache file name
-    # _recurringPages = {'SeasonScraping': []}  # Avoid LazyLoad infinite recursion on watchlist parsing
     _separator = '/'  # Virtual path separator
 
     def __init__(self, globalsInstance, settingsInstance):
         self._g = globalsInstance
         self._s = settingsInstance
-        """ Data for text extrapolation
-
-            References:
-            https://www.primevideo.com/detail/0ND5POOAYD6A4THTH7C1TD3TYE/ Season, Starring, Genres
-            https://www.primevideo.com/detail/0I5LVHEYZFZ51QTL86QYXWQ1QW/ Director, Starring, Genres
-
-            self._seasonRex = r'(Stagione|Staffel|Season|Temporada|Saison|Seizoen|Sezon|S[æeä]song?|सीज़न|சீசன்|సీజన్)'
-            self._directorRex = r'(Direc?tor|Regia|Regie|Réalisation|Regisseur|Reżyser|Instruktør|Regiss[øö]r|निर्देशक|இயக்குனர்|దర్శకుడు)'
-            self._starringRex = r'(Starring|Interpreti|Hauptdarsteller|Reparto|Acteurs principaux|In de hoofdrol|Występują|Atores principais|Medvirkende|I huvudrollerna|' \
-                                r'मुख्य भूमिका में|நடித்தவர்கள்|నటులు:)'
-            self._genresRex = r'(Gene?re[rs]?|Géneros|Gatunki|Gêneros|Sjangrer|शैलियां|வகைகள்|శైలీలు)'
-            self._dateFinder = r'((?:[0-9]+|[^\s]+)(?:\.|\s+de)?\s+(?:[0-9]+|[^\s]+),?(?:\s+de)?\s+(?:[0-9]+))'
-        """
         self._dateParserData = {
             """ Data for date string deconstruction and reassembly
 
@@ -237,6 +223,20 @@ class PrimeVideo(Singleton):
                 if isinstance(v, dict) or isinstance(v, list):
                     Prune(v)
 
+        try:
+            from urlparse import urlparse, parse_qs
+            from urllib import urlencode
+        except:
+            from urllib.parse import urlparse, parse_qs, urlencode
+        if url.startswith('/search/'):
+            np = urlparse(url)
+            qs = parse_qs(np.query)
+            if 'from' in qs.keys():
+                qs['startIndex'] = qs['from']
+                del qs['from']
+            np = np._replace(path='/gp/video/api' + np.path, query=urlencode([(k, v) for k, l in qs.items() for v in l]))
+            url = np.geturl()
+
         r = getURL(self._FQify(url), silent=True, useCookie=True, rjson=False)
         if not r:
             return None
@@ -412,15 +412,15 @@ class PrimeVideo(Singleton):
             bIsVideo = False
             try: bIsVideo = self._videodata[key]['metadata']['videometa']['mediatype'] in ['episode', 'movie']
             except: pass
-
+            """
             # Skip items that are out of catalog
-            if ('metadata' in entry) and ('unavailable' in entry['metadata']):
+            if ('metadata' in entry):
                 continue
 
             try:
                 bSeason = 'season' == self._videodata[key]['metadata']['videometa']['mediatype']
 
-                """
+                "" "
                 # Load series upon entering the show directory
                 if bSeason and ('lazyLoadURL' in node[key]):
                     self._LazyLoad(node[key], key /*breadcrumbs*/)
@@ -435,7 +435,7 @@ class PrimeVideo(Singleton):
                         if ka not in ancestorNode[ancestorName][nodeName]:
                             ancestorNode[ancestorName][nodeName][ka] = node[ka]
                     self._Flush()
-                """
+                "" "
 
                 # If the series is squashable override the seasons list with the episodes list
                 if 1 == len(nodeKeys):
@@ -450,6 +450,7 @@ class PrimeVideo(Singleton):
                     continue
             except KeyError:
                 pass
+            """
 
             # Can we refresh the cache on this/these item(s)?
             bCanRefresh = ('ref' in node[key]) or ('lazyLoadURL' in node[key]) or ((key in self._videodata) and ('ref' in self._videodata[key]))
@@ -492,18 +493,16 @@ class PrimeVideo(Singleton):
 
             if 'metadata' in entry:
                 m = entry['metadata']
-                if 'artmeta' in m: item.setArt(m['artmeta'])
+                if 'artmeta' in m:
+                    item.setArt(m['artmeta'])
                 if 'videometa' in m:
                     # https://codedocs.xyz/xbmc/xbmc/group__python__xbmcgui__listitem.html#ga0b71166869bda87ad744942888fb5f14
                     item.setInfo('video', m['videometa'])
-                    if 'episode' in m['videometa']:
-                        folderType = 4  # Episode
-                    elif 'tvshow' == m['videometa']['mediatype']:
-                        folderType = 2  # Seasons list
-                    elif 'season' == m['videometa']['mediatype']:
-                        folderType = 3  # Season
-                    elif 2 > folderType:  # If it's not been declared series, season or episode yet…
-                        folderType = 5  # … it's a Movie
+                    try:
+                        folderType = {'movie': 5, 'episode': 4, 'tvshow': 2, 'season': 3}[m['videometa']['mediatype']]
+                    except:
+                        folderType = 5  # Default to movie
+
                     if bIsVideo:
                         folder = False
                         item.setProperty('IsPlayable', 'true')
@@ -511,6 +510,7 @@ class PrimeVideo(Singleton):
                         if 'runtime' in m:
                             item.setInfo('video', {'duration': m['runtime']})
                             item.addStreamInfo('video', {'duration': m['runtime']})
+
             # If it's a video leaf without an actual video, something went wrong with Amazon servers, just hide it
             if (not folder) or (4 > folderType):
                 xbmcplugin.addDirectoryItem(self._g.pluginhandle, url, item, isFolder=folder)
@@ -928,10 +928,20 @@ class PrimeVideo(Singleton):
                         o[collection['text']]['lazyLoadURL'] = requestURL
                         o[collection['text']]['lazyLoadData'] = collection
 
-            # Widow list (No seeMoreLink)
+            # Widow list / API Search
             if ('items' in cnt):
                 for item in cnt['items']:
-                    bUpdatedVideoData |= ParseSinglePage(o, bCacheRefresh, url=item['link']['url'])
+                    title = item['heading']
+                    iu = item['href']
+                    try:
+                        t = item['watchlistAction']['endpoint']['query']['titleType']
+                    except:
+                        t = None
+                    Log('Found {}, type: {}'.format(title, t))
+                    if 'season' != t:
+                        bUpdatedVideoData |= ParseSinglePage(o, bCacheRefresh, url=iu)
+                    else:
+                        o[title] = {'title': self._BeautifyText(title), 'lazyLoadURL': iu, 'metadata': {'artmeta': {'thumb': item['imageSrc']}, 'videometa': {'mediatype': 'season'}}}
 
             # Search/list
             if ('results' in cnt) and ('items' in cnt['results']):

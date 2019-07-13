@@ -931,17 +931,33 @@ class PrimeVideo(Singleton):
             # Widow list / API Search
             if ('items' in cnt):
                 for item in cnt['items']:
-                    title = item['heading']
-                    iu = item['href']
-                    try:
-                        t = item['watchlistAction']['endpoint']['query']['titleType']
-                    except:
-                        t = None
-                    Log('Found {}, type: {}'.format(title, t))
-                    if 'season' != t:
-                        bUpdatedVideoData |= ParseSinglePage(o, bCacheRefresh, url=iu)
+                    # Search results
+                    if 'heading' in item:
+                        title = item['heading']
+                        iu = item['href']
+                        try:
+                            t = item['watchlistAction']['endpoint']['query']['titleType']
+                        except:
+                            t = None
+                        Log('Found {}, type: {}'.format(title, t))
+                        if 'season' != t:
+                            bUpdatedVideoData |= ParseSinglePage(o, bCacheRefresh, url=iu)
+                        else:
+                            o[title] = {
+                                'title': self._BeautifyText(title),
+                                'lazyLoadURL': iu,
+                                'metadata': {
+                                    'artmeta': {
+                                        'thumb': item['imageSrc']
+                                    },
+                                    'videometa': {
+                                        'mediatype': 'season'
+                                    }
+                                }
+                            }
+                    # Watchlist
                     else:
-                        o[title] = {'title': self._BeautifyText(title), 'lazyLoadURL': iu, 'metadata': {'artmeta': {'thumb': item['imageSrc']}, 'videometa': {'mediatype': 'season'}}}
+                        Log('Show all seasons in watchlist: {}'.format(self._s.dispShowOnly))
 
             # Search/list
             if ('results' in cnt) and ('items' in cnt['results']):
@@ -959,6 +975,13 @@ class PrimeVideo(Singleton):
                                     }
                                 }
                             }
+
+            # Watchlist
+            if 'filters' in cnt:
+                for f in cnt['filters']:
+                    o[f['id']] = {'title': f['text'], 'lazyLoadURL': f['apiUrl' if 'apiUrl' in f else 'href']}
+                    if 'applied' in cnt['filters'][0]:
+                        o[f['id']]['lazyLoadData'] = cnt['content']
 
             # Single page
             if 'state' in cnt:

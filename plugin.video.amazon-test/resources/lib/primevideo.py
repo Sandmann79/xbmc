@@ -609,7 +609,7 @@ class PrimeVideo(Singleton):
 
             for t in [('\\\\n', '\n'), ('\\n', '\n'), ('\\\\"', '"'), (r'^\s+', '')]:
                 cnt = re.sub(t[0], t[1], cnt, flags=re.DOTALL)
-            if None is not re.search('<div id="Storefront">', cnt):
+            if None is not re.search('<div\s+class="DVWebNode-storefront-wrapper|<div id="Storefront">', cnt):
                 ''' Categories list '''
                 Log('Storefront page', Log.DEBUG)
                 from BeautifulSoup import BeautifulSoup
@@ -637,18 +637,18 @@ class PrimeVideo(Singleton):
                     except:
                         ''' The carousel has no explore link, we need to parse what we can from the carousel itself '''
                         for entry in section.findAll('li'):
-                            e = entry.find('div', 'DigitalVideoWebNodeStorefront_TextOverlay__OverlayedTextWrapper')
                             link = self._g.BaseUrl + Unescape(entry.find('a')['href'])
-                            if None is not e:
+                            if '_2L11wb' in unicode(entry):
                                 # Genres/Categories
-                                e = e.next.strip()
                                 image = MaxSize(Unescape(entry.find('img')['src']))
+                                name = Unescape(entry.find('a')['aria-label'])
                                 if None is not re.search(r'/search/', link):
-                                    o[title][e] = {'metadata': {'artmeta': {'thumb': image, 'poster': image}}, 'lazyLoadURL': link, 'title': e}
+                                    o[title][name] = {'metadata': {'artmeta': {'thumb': image, 'poster': image}}, 'lazyLoadURL': link, 'title': name}
                             else:
                                 # Widow carousel with movies/TV series. Most information has been stripped away from
                                 # the carousel, so we can't do more than just forwarding a request
-                                requestURLs.append((link, o[title], ExtractURN(link), True))
+                                if None is re.search(r'/search/', link):
+                                    requestURLs.append((link, o[title], ExtractURN(link), True))
                     else:
                         ''' The carousel has explore link '''
                         NotifyUser(getString(30253).format(title))
@@ -752,9 +752,10 @@ class PrimeVideo(Singleton):
                                     if 'runtimeSeconds' in gpr['catalogMetadata']['catalog']:
                                         meta['runtime'] = gpr['catalogMetadata']['catalog']['runtimeSeconds']
                                     if 'thumb' not in meta['artmeta']:
-                                        image = MaxSize(gpr['catalogMetadata']['images']['imageUrls']['title'])
-                                        meta['artmeta']['thumb'] = image
-                                        meta['artmeta']['poster'] = image
+                                        if 'images' in gpr['catalogMetadata']:
+                                            image = MaxSize(gpr['catalogMetadata']['images']['imageUrls']['title'])
+                                            meta['artmeta']['thumb'] = image
+                                            meta['artmeta']['poster'] = image
                                     if bCacheRefresh or ('title' not in self._videodata[refUrn]):
                                         self._videodata[refUrn]['title'] = gpr['catalogMetadata']['catalog']['title']
                                 if 'title' in self._videodata[refUrn]:
@@ -762,7 +763,7 @@ class PrimeVideo(Singleton):
                     else:
                         ''' Episode list '''
                         # Find out what page revision we're in
-                        if None is not re.search(r'(class="_2XnrBy"|for="[^"]*-season-selector)', cnt):
+                        if None is not re.search(r'(class=".*?_2XnrBy"|for="[^"]*-season-selector)', cnt):
                             revision = 3
                         elif None is not re.search(r'<ol[^>]*>\s*<li id="[ap]v-ep-', cnt, flags=re.DOTALL):
                             revision = 2
@@ -836,17 +837,30 @@ class PrimeVideo(Singleton):
                                         thumbnail = MaxSize(Unescape(gpr['catalogMetadata']['images']['imageUrls']['title']))
                                         self._videodata[refUrn]['metadata']['artmeta'] = {'thumb': thumbnail, 'poster': thumbnail, 'fanart': bgimg}
                                     if 'title' not in self._videodata[refUrn]:
-                                        bSingle = None is not re.search(r'(class="_2XnrBy"|[ap]v-season-single|DigitalVideoWebNodeDetail_seasons__single)', cnt)
-                                        self._videodata[refUrn]['title'] = Unescape(re.search([
+                                        bSingle = None is not re.search(r'(class=".*?_2XnrBy"|[ap]v-season-single|DigitalVideoWebNodeDetail_seasons__single)', cnt)
+
+                                        search = re.search([
                                             r'<span class="[^"]*[ap]v-season-single[^"]*">\s*(.*?)\s*(?:</a>|</span>)',  # r0 single
                                             r'<a class="[^"]*[ap]v-droplist--selected[^"]*"[^>]*>\s*(.*?)\s*</a>',  # r0 multi
                                             r'<span class="[^"]*DigitalVideoWebNodeDetail_seasons__single[^"]*"[^>]*>\s*<span[^>]*>\s*(.*?)\s*</span>',  # r1 single
                                             r'<div class="[^"]*dv-node-dp-seasons.*?<label[^>]*>\s*<span[^>]*>\s*(.*?)\s*</span>\s*</label>',  # r1 multi
                                             r'<span class="[^"]*[ap]v-season-single[^"]*">\s*(.*?)\s*(?:</a>|</span>)',  # r2 single
                                             r'<label class="[^"]*[ap]v-select-trigger[^"]*"[^>]*>\s*(.*?)\s*</label>',  # r2 multi
-                                            r'<span class="_2XnrBy">\s*<span>\s*(.*?)\s*</span>',  # r3 single
-                                            r'<label[^>]*\s+for="[^"]*-season-selector"[^>]*>\s*<span>\s*(.*?)\s*</span>',  # r3 multi
-                                        ][(revision << 1) + (0 if bSingle else 1)], cnt, flags=re.DOTALL).group(1))
+                                            r'<span class=".*?_2XnrBy">\s*<span.*?>\s*(.*?)\s*</span>',  # r3 single
+                                            r'<label[^>]*\s+for="[^"]*-season-selector"[^>]*>\s*<span.*?>\s*(.*?)\s*</span>', # r3 multi
+                                        ][(revision << 1) + (0 if bSingle else 1)], cnt, flags=re.DOTALL)
+
+                                        # Try to get the season number from the json data if the previous method fails
+                                        title = 'Season 0'
+                                        if None is not search:
+                                            title = search.group(1)
+                                        else:
+                                            search = re.search(r'{"props":{"state":.*"pageTitleId":.*"seasonNumber":(\d+),', cnt, flags=re.DOTALL)
+                                            if None is not search:
+                                                title = 'Season ' + search.group(1)
+                                        Log('Season title: %s' % (title))
+
+                                        self._videodata[refUrn]['title'] = Unescape(title)
                                     if 'parent' not in self._videodata[refUrn]:
                                         self._videodata[refUrn]['parent'] = showId
                                         if refUrn not in self._videodata[showId]['children']:

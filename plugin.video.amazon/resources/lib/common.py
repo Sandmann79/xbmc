@@ -393,7 +393,7 @@ def toogleWatchlist(asin=None, action='add'):
 
     par = getParams(asin, cookie)
     data = getURL(par['data-%s-url' % action],
-                  postdata={'ASIN': asin,
+                  postdata={'itemId': par['data-title-id'],
                             'dataType': 'json',
                             'csrfToken': par['data-csrf-token'],
                             'action': action,
@@ -413,8 +413,9 @@ def getParams(asin, cookie):
     url = BaseUrl + '/gp/video/hover/%s?format=json&refTag=dv-hover&requesterPageType=Detail' % asin
     data = getURL(url, useCookie=cookie, rjson=False)
     if data:
+        data = data.encode('utf-8').decode('unicode_escape')
         data = re.compile('(<form.*</form>)').findall(data)[0]
-        form = BeautifulSoup(data.replace('\\\"', '"'), convertEntities=BeautifulSoup.HTML_ENTITIES)
+        form = BeautifulSoup(data, convertEntities=BeautifulSoup.HTML_ENTITIES)
         return form.button
     return ''
 

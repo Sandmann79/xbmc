@@ -117,7 +117,7 @@ def PlayVideo(name, asin, adultstr, trailer, forcefb=0):
         fr = round(eval(fps_string + '.0'), 3)
         return str(fr).replace('.0', '')
 
-    def _ParseStreams(suc, data, retmpd=False):
+    def _ParseStreams(suc, data, retmpd=False, bypassproxy=False):
         g = Globals()
         s = Settings()
 
@@ -127,7 +127,7 @@ def PlayVideo(name, asin, adultstr, trailer, forcefb=0):
         if not suc:
             return False, data
 
-        if retmpd:
+        if retmpd and not bypassproxy:
             subUrls = [sub['url'] for sub in data['subtitles'] if 'url' in sub.keys()]
 
         if 'audioVideoUrls' in data.keys():
@@ -162,7 +162,8 @@ def PlayVideo(name, asin, adultstr, trailer, forcefb=0):
                     Log('Host not reachable: ' + cdn['cdn'])
                     continue
 
-                return ('http://{}/mpd/{}'.format(s.proxyaddress, quote_plus(urlset['url'])), subUrls) if retmpd else (True, _extrFr(data))
+                returl = urlset['url'] if bypassproxy else 'http://{}/mpd/{}'.format(s.proxyaddress, quote_plus(urlset['url']))
+                return (returl, subUrls) if retmpd else (True, _extrFr(data))
 
         return False, getString(30217)
 
@@ -353,8 +354,8 @@ def PlayVideo(name, asin, adultstr, trailer, forcefb=0):
             _playDummyVid()
             return True
 
-        mpd, subs = _ParseStreams(*getURLData('catalog/GetPlaybackResources', asin, extra=True,
-                                              vMT=vMT, dRes=dRes, useCookie=cookie, proxyEndpoint='gpr'), retmpd=True)
+        mpd, subs = _ParseStreams(*getURLData('catalog/GetPlaybackResources', asin, extra=True, vMT=vMT, dRes=dRes, useCookie=cookie,
+                                              proxyEndpoint='gpr'), retmpd=True, bypassproxy=trailer == 2)
 
         cj_str = ';'.join(['%s=%s' % (k, v) for k, v in cookie.items()])
         opt = '|Content-Type=application%2Fx-www-form-urlencoded&Cookie=' + quote_plus(cj_str)

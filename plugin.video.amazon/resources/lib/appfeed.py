@@ -50,7 +50,6 @@ def BUILD_BASE_API(MODE, HOST=ATV_URL + '/cdp/'):
 def getList(ContentType=None, start=0, isPrime=True, NumberOfResults=0, OrderBy='MostPopular', version=2,
             AsinList=None, catalog='Browse', asin=None):
 
-    ContentFilter = '&ContractID=UX*'
     BROWSE_PARAMS = '&StartIndex=' + str(start)
     if NumberOfResults:
         BROWSE_PARAMS += '&NumberOfResults=' + str(NumberOfResults)
@@ -64,9 +63,6 @@ def getList(ContentType=None, start=0, isPrime=True, NumberOfResults=0, OrderBy=
 
     if ContentType == 'TVEpisode':
         BROWSE_PARAMS += '&Detailed=T'
-
-    if not AsinList and not asin and 'tvseries' not in ContentType:
-        BROWSE_PARAMS += ContentFilter
 
     if AsinList:
         BROWSE_PARAMS += '&SeasonASIN=' + AsinList

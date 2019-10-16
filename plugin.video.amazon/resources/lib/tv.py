@@ -16,7 +16,11 @@ def loadTVShowdb(filterobj=None, value=None, sortcol=None):
     db.waitforDB(tvDB)
     c = tvDB.cursor()
     if filterobj:
-        value = "%{0}%".format(value.decode('utf-8'))
+        try:
+            value = value.decode('utf-8')
+        except AttributeError:
+            pass
+        value = "%{0}%".format(value)
         return db.cur_exec(c, 'select distinct * from shows where %s like (?)' % filterobj, (value,))
     elif sortcol:
         return db.cur_exec(c, 'select distinct * from shows where %s is not null order by %s asc' % (sortcol, sortcol))
@@ -171,7 +175,10 @@ def addDB(table, data):
 def lookupTVdb(value, rvalue='distinct *', tbl='episodes', name='asin', single=True, exact=False):
     db.waitforDB(tvDB)
     c = tvDB.cursor()
-    value = value.decode('utf-8')
+    try:
+        value = value.decode('utf-8')
+    except AttributeError:
+        pass
     if not db.cur_exec(c, 'counttables', (tbl,)).fetchone():
         return '' if single else []
 
@@ -206,7 +213,12 @@ def delfromTVdb():
     table = var.args.get('table')
     strid = 30167 if table == 'seasons' else 30166
 
-    if Dialog.yesno(getString(30155) % getString(strid), getString(30156) % title.decode('utf-8')):
+    try:
+        title = title.decode('utf-8')
+    except AttributeError:
+        pass
+
+    if Dialog.yesno(getString(30155) % getString(strid), getString(30156) % title):
         delasins = []
         if table == 'seasons':
             delasins.append(asins)
@@ -370,8 +382,8 @@ def addTVdb(full_update=True, libasins=None, cj=True):
                             ALL_SERIES_ASINS += SERIES_KEY + ','
                         if season_size < 1:
                             season_size = MAX
-                        parsed = urlparse.urlparse(title['childTitles'][0]['feedUrl'])
-                        EPISODE_ASINS.append(urlparse.parse_qs(parsed.query)['SeasonASIN'])
+                        parsed = urlparse(title['childTitles'][0]['feedUrl'])
+                        EPISODE_ASINS.append(parse_qs(parsed.query)['SeasonASIN'])
                         EPISODE_NUM.append(season_size)
 
             if (approx and endIndex + 1 >= approx) or (not approx and len(titles) < 1):
@@ -685,7 +697,7 @@ def getIMDbID(asins, title):
             break
     if not url:
         while not imdbid:
-            data = getURL('http://www.omdbapi.com/?type=series&t=' + urllib.quote_plus(title.encode('utf-8')))
+            data = getURL('http://www.omdbapi.com/?type=series&t=' + quote_plus(title.encode('utf-8')))
             if data['Response'] == 'True':
                 imdbid = data['imdbID']
             else:

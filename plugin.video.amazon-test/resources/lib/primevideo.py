@@ -118,7 +118,7 @@ class PrimeVideo(Singleton):
                 with open(self._videodataCache, 'r') as fp:
                     self._videodata = pickle.load(fp)
             except:
-                Log('Removing corrupted cache file “%s”' % self._videodataCache, Log.DEBUG)
+                Log('Removing corrupted cache file “{}”'.format(self._videodataCache), Log.DEBUG)
                 delete(self._videodataCache)
                 self._g.dialog.notification('Corrupted video cache', 'Unable to load the video cache data', xbmcgui.NOTIFICATION_ERROR)
 
@@ -129,14 +129,17 @@ class PrimeVideo(Singleton):
                 if time.time() < cached['expiration']:
                     self._catalog = cached
             except:
-                Log('Removing corrupted cache file “%s”' % self._catalogCache, Log.DEBUG)
+                Log('Removing corrupted cache file “{}”'.format(self._catalogCache), Log.DEBUG)
                 delete(self._catalogCache)
                 self._g.dialog.notification('Corrupted catalog cache', 'Unable to load the catalog cache data', xbmcgui.NOTIFICATION_ERROR)
 
     def _TraverseCatalog(self, path, bRefresh=False):
         """ Extract current node, grandparent node and their names """
 
-        from urllib import unquote_plus
+        try:
+            from urllib.parse import unquote_plus
+        except ImportError:
+            from urllib import unquote_plus
 
         # Fix the unquote_plus problem with unicode_literals by encoding to latin-1 (byte string) and then decoding
         pathList = [unquote_plus(p).encode('latin-1').decode('utf-8') for p in path.split(self._separator)]
@@ -243,7 +246,10 @@ class PrimeVideo(Singleton):
                 self.BuildRoot()
             return
 
-        from urllib import quote_plus
+        try:
+            from urllib.parse import quote_plus
+        except ImportError:
+            from urllib import quote_plus
 
         node, nodeName, ancestorNode, ancestorName = self._TraverseCatalog(path)
         if None is node:

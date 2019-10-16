@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 from .common import xbmc, var, xbmcvfs, xbmcgui, os, Dialog, Log, getString, getConfig, writeConfig, homepath, pluginname
-from BeautifulSoup import BeautifulSoup
+from bs4 import BeautifulSoup
 
 dbplugin = 'script.module.amazon.database'
 dbpath = os.path.join(homepath, 'addons', dbplugin, 'lib')
@@ -28,13 +28,21 @@ def waitforDB(cnx):
 
 def getDBlocation(retvar):
     custdb = var.addon.getSetting('customdbfolder') == 'true'
-    old_dbpath = xbmc.translatePath(getConfig('old_dbfolder')).decode('utf-8')
+    old_dbpath = xbmc.translatePath(getConfig('old_dbfolder'))
+    try:
+        old_dbpath = old_dbpath.decode('utf-8')
+    except AttributeError:
+        pass
     cur_dbpath = dbpath
 
     if not old_dbpath:
         old_dbpath = cur_dbpath
     if custdb:
-        cur_dbpath = xbmc.translatePath(var.addon.getSetting('dbfolder')).decode('utf-8')
+        cur_dbpath = xbmc.translatePath(var.addon.getSetting('dbfolder'))
+        try:
+            cur_dbpath = cur_dbpath.decode('utf-8')
+        except AttributeError:
+            pass
     else:
         var.addon.setSetting('dbfolder', dbpath)
 
@@ -134,7 +142,11 @@ def connSQL(dbname):
 
 def loadSQLconfig():
     keys = 'host port user pass'
-    userdata = xbmc.translatePath('special://userdata').decode('utf-8')
+    userdata = xbmc.translatePath('special://userdata')
+    try:
+        userdata = userdata.decode('utf-8')
+    except:
+        pass
     asfile = os.path.join(userdata, 'advancedsettings.xml')
     if xbmcvfs.exists(asfile):
         f = xbmcvfs.File(asfile, 'r')

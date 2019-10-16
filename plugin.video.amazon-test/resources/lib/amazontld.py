@@ -2,9 +2,12 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 import os.path
-from BeautifulSoup import Tag
+from bs4 import Tag
 from datetime import date
-from urllib import quote_plus
+try:
+    from urllib.parse import quote_plus
+except ImportError:
+    from urllib import quote_plus
 
 from .ages import AgeRestrictions
 from .singleton import Singleton
@@ -128,7 +131,11 @@ class AmazonTLD(Singleton):
         return
 
     def SetupAmazonLibrary(self):
-        source_path = xbmc.translatePath('special://profile/sources.xml').decode('utf-8')
+        source_path = xbmc.translatePath('special://profile/sources.xml')
+        try:
+            source_path = source_path.decode('utf-8')
+        except AttributeError:
+            pass
         source_added = False
         source = {self._s.ms_mov: self._s.MOVIE_PATH, self._s.ms_tv: self._s.TV_SHOWS_PATH}
 
@@ -493,7 +500,7 @@ class AmazonTLD(Singleton):
         if data:
             data = data.encode('utf-8').decode('unicode_escape')
             data = re.compile('(<form.*</form>)').findall(data)[0]
-            form = BeautifulSoup(data, convertEntities=BeautifulSoup.HTML_ENTITIES)
+            form = BeautifulSoup(data.replace('\\\"', '"'), 'html', features='html.parser')
             return form.button
         return ''
 

@@ -20,7 +20,11 @@ def loadUsers():
 
 def loadUser(key='', empty=False, cachedUsers=None):
     def_keys = {'email': '', 'password': '', 'name': '', 'save': '', 'atvurl': '', 'baseurl': '', 'pv': False, 'mid': '', 'cookie': ''}
-    cur_user = g.addon.getSetting('login_acc').decode('utf-8')
+    cur_user = g.addon.getSetting('login_acc')
+    try:
+        cur_user = cur_user.decode('utf-8')
+    except AttributeError:
+        pass
     users = cachedUsers if cachedUsers else loadUsers()
     user = None if empty else [i for i in users if cur_user == i['name']]
     if user:

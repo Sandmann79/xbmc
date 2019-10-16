@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 import os
-from urllib import quote_plus
 import shlex
 import subprocess
 import threading
@@ -11,10 +10,19 @@ from inputstreamhelper import Helper
 from .network import *
 from .common import Globals, Settings, jsonRPC, sleep
 from .itemlisting import getInfolabels
+try:
+    from urllib.parse import quote_plus
+except:
+    from urllib import quote_plus
 
 
 def _getListItem(li):
-    return xbmc.getInfoLabel('ListItem.%s' % li).decode('utf-8')
+    il = xbmc.getInfoLabel('ListItem.%s' % li)
+    try:
+        il = il.decode('utf-8')
+    except:
+        pass
+    return il
 
 
 def _Input(mousex=0, mousey=0, click=0, keys=None, delay='200'):

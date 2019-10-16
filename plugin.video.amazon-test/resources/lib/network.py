@@ -14,7 +14,7 @@ import requests
 import uuid
 from pyDes import *
 from random import randint
-from BeautifulSoup import BeautifulSoup
+from bs4 import BeautifulSoup
 from .l10n import *
 from .logging import *
 from .configs import *
@@ -22,9 +22,13 @@ from .common import Globals, Settings, sleep
 
 
 def _parseHTML(br):
-    response = br.response().read().decode('utf-8')
+    response = br.response().read()
+    try:
+        response = response.decode('utf-8')
+    except AttributeError:
+        pass
     response = re.sub(r'(?i)(<!doctype \w+).*>', r'\1>', response)
-    soup = BeautifulSoup(response, convertEntities=BeautifulSoup.HTML_ENTITIES)
+    soup = BeautifulSoup(response, 'html', features='html.parser')
     return response, soup
 
 
@@ -61,7 +65,7 @@ def getUA(blacklist=False):
     if not UAlist or len(UAwlist) < 5:
         Log('Loading list of common UserAgents')
         html = getURL('https://techblog.willshouse.com/2012/01/03/most-common-user-agents/', rjson=False)
-        soup = BeautifulSoup(html, convertEntities=BeautifulSoup.HTML_ENTITIES)
+        soup = BeautifulSoup(html, 'html', features='html.parser')
         text = soup.find('textarea')
         # text can be None in case of server errors
         if text:
@@ -79,7 +83,7 @@ def getUA(blacklist=False):
 
 
 def mobileUA(content):
-    soup = BeautifulSoup(content, convertEntities=BeautifulSoup.HTML_ENTITIES)
+    soup = BeautifulSoup(content, 'html', features='html.parser')
     res = soup.find('html')
     res = res.get('class', '') if res else ''
     return True if 'a-mobile' in res or 'a-tablet' in res else False
@@ -180,7 +184,7 @@ def getURL(url, useCookie=False, silent=False, headers=None, rjson=True, attempt
             requests.packages.urllib3.exceptions.SNIMissingWarning,
             requests.packages.urllib3.exceptions.InsecurePlatformWarning) as e:
         eType = e.__class__.__name__
-        Log('Error reason: %s (%s)' % (e.message, eType), Log.ERROR)
+        Log('Error reason: %s (%s)' % (str(e), eType), Log.ERROR)
         if 'SNIMissingWarning' in eType:
             Log('Using a Python/OpenSSL version which doesn\'t support SNI for TLS connections.', Log.ERROR)
             g.dialog.ok('No SNI for TLS', 'Your current Python/OpenSSL environment does not support SNI over TLS connections.',
@@ -194,7 +198,7 @@ def getURL(url, useCookie=False, silent=False, headers=None, rjson=True, attempt
                         'Additionally, follow this guide to update the required modules: https://goo.gl/ksbbU2')
             exit()
         if (not check) and (3 > attempt) and (('TryAgain' in eType) or ('Timeout' in eType)):
-            wait = 10 * attempt if '429' in e.message else 0
+            wait = 10 * attempt if '429' in str(e) else 0
             attempt += 1
             Log('Attempt #{0}{1}'.format(attempt, '' if 0 == wait else ' (Too many requests, pause %s seconds…)' % wait))
             if 0 < wait:
@@ -206,7 +210,10 @@ def getURL(url, useCookie=False, silent=False, headers=None, rjson=True, attempt
 
 def getURLData(mode, asin, retformat='json', devicetypeid='AOAGZA014O5RE', version=1, firmware='1', opt='', extra=False,
                useCookie=False, retURL=False, vMT='Feature', dRes='PlaybackUrls,SubtitleUrls,ForcedNarratives', proxyEndpoint=None):
-    from urllib import quote_plus
+    try:
+        from urllib.parse import quote_plus
+    except ImportError:
+        from urllib import quote_plus
 
     g = Globals()
     url = g.ATVUrl + '/cdp/' + mode
@@ -500,7 +507,11 @@ def LogIn(ask=True):
                 usr = getString(30209)
 
             if s.multiuser and ask:
-                usr = g.dialog.input(getString(30135), usr).decode('utf-8')
+                usr = g.dialog.input(getString(30135), usr)
+                try:
+                    usr = usr.decode('utf-8')
+                except:
+                    pass
                 if not usr:
                     return False
             if useMFA:
@@ -560,7 +571,11 @@ def remLoginData(info=True):
 class _Captcha(pyxbmct.AddonDialogWindow):
     def __init__(self, title='', soup=None, email=None):
         super(_Captcha, self).__init__(title)
-        if 'ap_captcha_img_label' in unicode(soup):
+        try:
+            soup = unicode(soup)
+        except NameError:
+            pass
+        if 'ap_captcha_img_label' in soup:
             head = soup.find('div', attrs={'id': 'message_warning'})
             if not head:
                 head = soup.find('div', attrs={'id': 'message_error'})

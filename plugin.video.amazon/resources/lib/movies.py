@@ -23,7 +23,10 @@ def addMoviedb(moviedata):
 def lookupMoviedb(value, rvalue='distinct *', name='asin', single=True, exact=False, table='movies'):
     db.waitforDB(MovieDB)
     c = MovieDB.cursor()
-    value = value.decode('utf-8')
+    try:
+        value = value.decode('utf-8')
+    except:
+        pass
     if not db.cur_exec(c, 'counttables', (table,)).fetchone():
         return '' if single else []
 
@@ -72,7 +75,11 @@ def loadMoviedb(filterobj=None, value=None, sortcol=False):
     db.waitforDB(MovieDB)
     c = MovieDB.cursor()
     if filterobj:
-        value = "%{0}%".format(value.decode('utf-8'))
+        try:
+            value = value.decode('utf-8')
+        except:
+            pass
+        value = "%{0}%".format(value)
         return db.cur_exec(c, 'select distinct * from movies where %s like (?)' % filterobj, (value,))
     elif sortcol:
         return db.cur_exec(c, 'select distinct * from movies where %s is not null order by %s asc' % (sortcol, sortcol))

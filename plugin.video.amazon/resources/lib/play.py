@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
-from BeautifulSoup import BeautifulStoneSoup
+from bs4 import BeautifulStoneSoup
 from .common import *
 from inputstreamhelper import Helper
 import subprocess
@@ -190,7 +190,7 @@ def IStreamPlayback(trailer, isAdult, extern):
     mpd, subs = getStreams(*getUrldata('catalog/GetPlaybackResources', var.args.get('asin'), extra=True, vMT=vMT, useCookie=cookie), retmpd=True)
 
     cj_str = ';'.join(['%s=%s' % (k, v) for k, v in cookie.items()])
-    opt = '|Content-Type=application%2Fx-www-form-urlencoded&Cookie=' + urllib.quote_plus(cj_str)
+    opt = '|Content-Type=application%2Fx-www-form-urlencoded&Cookie=' + quote_plus(cj_str)
     opt += '|widevine2Challenge=B{SSM}&includeHdcpTestKeyInLicense=true'
     opt += '|JBlicense;hdcpEnforcementResolutionPixels'
     licURL = getUrldata('catalog/GetPlaybackResources', var.args.get('asin'), extra=True, vMT=vMT, dRes='Widevine2License', opt=opt, retURL=True)
@@ -370,7 +370,11 @@ def parseSubs(data):
     import codecs
     for sub in def_subs:
         escape_chars = [('&amp;', '&'), ('&quot;', '"'), ('&lt;', '<'), ('&gt;', '>'), ('&apos;', "'")]
-        srtfile = xbmc.translatePath('special://temp/%s.srt' % sub['languageCode']).decode('utf-8')
+        srtfile = xbmc.translatePath('special://temp/%s.srt' % sub['languageCode'])
+        try:
+            srtfile = srtfile.decode('utf-8')
+        except AttributeError:
+            pass
         subDisplayLang = '“%s” subtitle (%s)' % (sub['displayName'].strip(), sub['languageCode'])
         content = ''
         with codecs.open(srtfile, 'w', encoding='utf-8') as srt:
@@ -514,7 +518,12 @@ def getStreams(suc, data, retmpd=False):
 
     while hosts:
         for cdn in hosts:
-            prefHost = False if HostSet not in unicode(hosts) or HostSet == 'Auto' else HostSet
+            hs = str(hosts)
+            try:
+                hs = unicode(hs)
+            except NameError:
+                pass
+            prefHost = False if HostSet not in hs or HostSet == 'Auto' else HostSet
             cdn_item = cdn
 
             if 'urls' in cdn:
@@ -835,7 +844,12 @@ class AmazonPlayer(xbmc.Player):
 
     @staticmethod
     def getListItem(li):
-        return xbmc.getInfoLabel('ListItem.%s' % li).decode('utf-8')
+        il = xbmc.getInfoLabel('ListItem.%s' % li)
+        try:
+            il = il.decode('utf-8')
+        except AttributeError:
+            pass
+        return il
 
     def getResumePoint(self):
         if not xbmcvfs.exists(self.resumedb) or self.content == 2:

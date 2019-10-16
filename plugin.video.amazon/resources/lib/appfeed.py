@@ -228,7 +228,7 @@ def getTVDBImages(title, tvdbid=None, seasons=False):
     langcodes = ['de', 'en']
     TVDB_URL = 'http://www.thetvdb.com/banners/'
     while not tvdbid and title:
-        tv = urllib.quote_plus(title.encode('utf-8'))
+        tv = quote_plus(title.encode('utf-8'))
         result = getURL('http://www.thetvdb.com/api/GetSeries.php?seriesname=%s&language=de' % tv, silent=True, rjson=False)
         if not result:
             continue
@@ -297,7 +297,7 @@ def getTMDBImages(title, content='movie', year=None):
         if year:
             str_year = '&year=' + str(year)
 
-        movie = urllib.quote_plus(title.encode('utf-8'))
+        movie = quote_plus(title.encode('utf-8'))
         data = getURL('http://api.themoviedb.org/3/search/%s?api_key=%s&language=de&query=%s%s' % (
             content, tmdb, movie, str_year), silent=True)
         if not data:

@@ -6,13 +6,14 @@
 
 from __future__ import unicode_literals
 import base64
-from SocketServer import ThreadingTCPServer
 from resources.lib.logging import Log
 from contextlib import contextmanager
 try:
     from BaseHTTPServer import BaseHTTPRequestHandler  # Python2 HTTP Server
+    from SocketServer import ThreadingTCPServer
 except ImportError:
     from http.server import BaseHTTPRequestHandler  # Python3 HTTP Server
+    from socketserver import ThreadingTCPServer
 
 
 class ProxyHTTPD(BaseHTTPRequestHandler):
@@ -62,10 +63,17 @@ class ProxyHTTPD(BaseHTTPRequestHandler):
     def _ParseBaseRequest(self, method):
         """Return path, headers and post data commonly required by all methods"""
 
-        from urlparse import unquote, urlparse, parse_qsl
+        try:
+            from urllib.parse import unquote, urlparse, parse_qsl
+        except ImportError:
+            from urlparse import unquote, urlparse, parse_qsl
 
         path = urlparse(self.path).path[1:]  # Get URI without the trailing slash
-        path = path.decode('utf-8').split('/')  # license/<asin>/<ATV endpoint>
+        try:
+            path = path.decode('utf-8')
+        except AttributeError:
+            pass
+        path = path.split('/')  # license/<asin>/<ATV endpoint>
         Log('[PS] Requested {} path {}'.format(method, path), Log.DEBUG)
 
         # Retrieve headers and data
@@ -99,7 +107,12 @@ class ProxyHTTPD(BaseHTTPRequestHandler):
 
         Log('[PS] Forwarding the {} request towards {}'.format(method.upper(), endpoint), Log.DEBUG)
         r = session.request(method, endpoint, data=data, headers=headers, cookies=cookie, stream=stream, verify=self.server._s.verifySsl)
-        return (r.status_code, r.headers, r if stream else r.content.decode('utf-8'))
+        rc = r.content
+        try:
+            rc = rc.decode('utf-8')
+        except AttributeError:
+            pass
+        return (r.status_code, r.headers, r if stream else rc)
 
     def _gzip(self, data=None, stream=False):
         """Compress the output data"""
@@ -169,7 +182,7 @@ class ProxyHTTPD(BaseHTTPRequestHandler):
         if 0 == len(chunk):
             return
 
-        data = b'%X\r\n%s\r\n' % (len(chunk), chunk)
+        data = b'{}\r\n{}\r\n'.format(hex(chunk)[2:].upper(), chunk)
         self.wfile.write(data)
 
     def _EndChunkedTransfer(self, gzstream):
@@ -216,7 +229,10 @@ class ProxyHTTPD(BaseHTTPRequestHandler):
     def _AlterGPR(self, endpoint, headers, data):
         """ GPR data alteration for better language parsing and subtitles streaming instead of pre-caching """
 
-        from urllib import quote_plus
+        try:
+            from urllib.parse import quote_plus
+        except ImportError:
+            from urllib import quote_plus
         import json
         from xbmc import convertLanguage, ENGLISH_NAME
 
@@ -257,7 +273,12 @@ class ProxyHTTPD(BaseHTTPRequestHandler):
                         fn,
                         variants
                     )
-                    newsubs.append((content[sub_type][i], convertLanguage(fn[0:2], ENGLISH_NAME).decode('utf-8'), fn, variants, escapedurl))
+                    cl = convertLanguage(fn[0:2], ENGLISH_NAME)
+                    try:
+                        cl = cl.decode('utf-8')
+                    except AttributeError:
+                        pass
+                    newsubs.append((content[sub_type][i], cl, fn, variants, escapedurl))
                 del content[sub_type]  # Reduce the data transfer by removing the lists we merged
 
         # Create the new merged subtitles list, and append time stretched variants.
@@ -302,7 +323,11 @@ class ProxyHTTPD(BaseHTTPRequestHandler):
             bPeriod = False
             Log('[PS] Loading MPD and rebasing as {}'.format(baseurl), Log.DEBUG)
             for chunk in r.iter_content(chunk_size=1048576, decode_unicode=True):
-                buffer += chunk.decode('utf-8')
+                try:
+                    chunk = chunk.decode('utf-8')
+                except AttributeError:
+                    pass
+                buffer += chunk
 
                 # Flush everything up to audio AdaptationSets as fast as possible
                 pos = re.search(r'(<AdaptationSet[^>]*contentType="video"[^>]*>.*?</AdaptationSet>\s*)' if bPeriod else r'(<Period[^>]*>\s*)', buffer, flags=re.DOTALL)
@@ -344,7 +369,7 @@ class ProxyHTTPD(BaseHTTPRequestHandler):
                     newLocale = self._AdjustLocale(trackId[0] + trackId[1], langCount[trackId[0]])
                     if 'descriptive' == trackId[2]:
                         newLocale += (' ' if '-' in newLocale else '-') + '[Audio Description]'
-                    setTag = setTag.replace('lang="%s"' % lang, 'lang="%s"' % newLocale)
+                    setTag = setTag.replace('lang="{}"'.format(lang), 'lang="{}"'.format(newLocale))
                 except:
                     pass
 

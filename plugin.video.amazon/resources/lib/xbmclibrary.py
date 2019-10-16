@@ -7,14 +7,18 @@ import tv as tvDB
 import listtv
 import listmovie
 
-from BeautifulSoup import BeautifulSoup, Tag
+from bs4 import BeautifulSoup, Tag
 
 cr_nfo = var.addon.getSetting('cr_nfo') == 'true'
 ms_mov = var.addon.getSetting('mediasource_movie')
 ms_tv = var.addon.getSetting('mediasource_tv')
 EXPORT_PATH = pldatapath
 if var.addon.getSetting('enablelibraryfolder') == 'true':
-    EXPORT_PATH = xbmc.translatePath(var.addon.getSetting('customlibraryfolder')).decode('utf-8')
+    EXPORT_PATH = xbmc.translatePath(var.addon.getSetting('customlibraryfolder'))
+    try:
+        EXPORT_PATH = EXPORT_PATH.decode('utf-8')
+    except AttributeError:
+        pass
 MOVIE_PATH = os.path.join(EXPORT_PATH, 'Movies')
 TV_SHOWS_PATH = os.path.join(EXPORT_PATH, 'TV')
 ms_mov = ms_mov if ms_mov else 'Amazon Movies'
@@ -94,13 +98,13 @@ def EXPORT_MOVIE(asin=False, makeNFO=cr_nfo):
         folder = os.path.join(MOVIE_PATH, cleanName(filename))
         Log('Amazon Export: ' + filename)
         strm_file = filename + ".strm"
-        u = '%s?%s' % (sys.argv[0], urllib.urlencode({'asin': asin,
-                                                      'mode': 'play',
-                                                      'name': Info['Title'].encode('utf-8'),
-                                                      'sitemode': 'PLAYVIDEO',
-                                                      'adult': Info['isAdult'],
-                                                      'trailer': 0,
-                                                      'selbitrate': 0}))
+        u = '%s?%s'.format(sys.argv[0], urlencode({'asin': asin,
+                                                   'mode': 'play',
+                                                   'name': Info['Title'].encode('utf-8'),
+                                                   'sitemode': 'PLAYVIDEO',
+                                                   'adult': Info['isAdult'],
+                                                   'trailer': 0,
+                                                   'selbitrate': 0}))
         SaveFile(strm_file, u, folder)
 
         if makeNFO:
@@ -151,13 +155,13 @@ def EXPORT_EPISODE(asin=None, makeNFO=cr_nfo, dispnotif=True):
         seasonpath = os.path.join(directorname, name)
         filename = '%s - S%02dE%02d - %s' % (showname, Info['Season'], Info['Episode'], Info['Title'])
         strm_file = filename + ".strm"
-        u = '%s?%s' % (sys.argv[0], urllib.urlencode({'asin': asin,
-                                                      'mode': 'play',
-                                                      'name': '',
-                                                      'sitemode': 'PLAYVIDEO',
-                                                      'adult': Info['isAdult'],
-                                                      'trailer': 0,
-                                                      'selbitrate': 0}))
+        u = '%s?%s'.format(sys.argv[0], urlencode({'asin': asin,
+                                                   'mode': 'play',
+                                                   'name': '',
+                                                   'sitemode': 'PLAYVIDEO',
+                                                   'adult': Info['isAdult'],
+                                                   'trailer': 0,
+                                                   'selbitrate': 0}))
         SaveFile(strm_file, u, seasonpath)
 
         if makeNFO:
@@ -169,7 +173,11 @@ def EXPORT_EPISODE(asin=None, makeNFO=cr_nfo, dispnotif=True):
 
 
 def SetupAmazonLibrary():
-    source_path = xbmc.translatePath('special://profile/sources.xml').decode('utf-8')
+    source_path = xbmc.translatePath('special://profile/sources.xml')
+    try:
+        source_path = source_path.decode('utf-8')
+    except AttributeError:
+        pass
     source_added = False
     source = {ms_mov: MOVIE_PATH, ms_tv: TV_SHOWS_PATH}
 

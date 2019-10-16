@@ -3,10 +3,13 @@
 from __future__ import unicode_literals
 import xbmcgui
 import xbmcplugin
-from urllib import urlencode
 from .common import Globals, Settings
 from .l10n import *
 
+try:
+    from urllib.parse import urlencode
+except ImportError:
+    from urllib import urlencode
 
 def setContentAndView(content, updateListing=False):
     g = Globals()
@@ -39,7 +42,7 @@ def setContentAndView(content, updateListing=False):
         viewid = views[int(g.addon.getSetting(cview))]
         if viewid == -1:
             viewid = int(g.addon.getSetting(cview.replace('view', 'id')))
-        xbmc.executebuiltin('Container.SetViewMode(%s)' % viewid)
+        xbmc.executebuiltin('Container.SetViewMode({})'.format(viewid))
     xbmcplugin.endOfDirectory(g.pluginhandle, updateListing=updateListing)
 
 
@@ -49,7 +52,7 @@ def addDir(name, mode='', url='', infoLabels=None, opt='', catalog='Browse', cm=
     if None is thumb:
         thumb = s.DefaultFanart
     u = {'mode': mode, 'url': url.encode('utf-8'), 'page': page, 'opt': opt, 'cat': catalog}
-    url = '%s?%s' % (g.pluginid, urlencode(u))
+    url = '{}?{}'.format(g.pluginid, urlencode(u))
 
     if not mode:
         url = g.pluginid
@@ -83,7 +86,7 @@ def addVideo(name, asin, infoLabels, cm=None, export=False):
     g = Globals()
     s = Settings()
     u = {'asin': asin, 'mode': 'PlayVideo', 'name': name.encode('utf-8'), 'adult': infoLabels['isAdult']}
-    url = '%s?%s' % (g.pluginid, urlencode(u))
+    url = '{}?{}'.format(g.pluginid, urlencode(u))
 
     item = xbmcgui.ListItem(name, thumbnailImage=infoLabels['Thumb'])
     item.setArt({'fanart': infoLabels['Fanart'], 'poster': infoLabels['Thumb']})
@@ -109,7 +112,7 @@ def addVideo(name, asin, infoLabels, cm=None, export=False):
     else:
         cm = cm if cm else []
         cm.insert(0, (getString(30101), 'Action(ToggleWatched)'))
-        cm.insert(1, (getString(30102), 'RunPlugin(%s)' % (url + '&selbitrate=1')))
+        cm.insert(1, (getString(30102), 'RunPlugin({})'.format(url + '&selbitrate=1')))
         url += '&selbitrate=0'
         item.setInfo(type='Video', infoLabels=getInfolabels(infoLabels))
         item.addContextMenuItems(cm)

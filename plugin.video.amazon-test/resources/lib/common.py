@@ -53,7 +53,10 @@ class Globals(Singleton):
     # def __delattr__(self, name): self._globals.pop(name, None)
 
     def __init__(self):
-        from urlparse import urlparse
+        try:
+            from urllib.parse import urlparse
+        except ImportError:
+            from urlparse import urlparse
 
         # argv[0] can contain the entire path, so we limit ourselves to the base url
         pid = urlparse(argv[0])
@@ -66,10 +69,16 @@ class Globals(Singleton):
         # self._globals['dialogprogress'] = xbmcgui.DialogProgress()
         self._globals['hasExtRC'] = xbmc.getCondVisibility('System.HasAddon(script.chromium_remotecontrol)')
 
-        self._globals['DATA_PATH'] = xbmc.translatePath(self.addon.getAddonInfo('profile')).decode('utf-8')
+        self._globals['DATA_PATH'] = xbmc.translatePath(self.addon.getAddonInfo('profile'))
         self._globals['CONFIG_PATH'] = OSPJoin(self._globals['DATA_PATH'], 'config')
-        self._globals['HOME_PATH'] = xbmc.translatePath('special://home').decode('utf-8')
-        self._globals['PLUGIN_PATH'] = self._globals['addon'].getAddonInfo('path').decode('utf-8')
+        self._globals['HOME_PATH'] = xbmc.translatePath('special://home')
+        self._globals['PLUGIN_PATH'] = self._globals['addon'].getAddonInfo('path')
+        # Python27 compat
+        try:
+            for field in ['DATA_PATH', 'HOME_PATH', 'PLUGIN_PATH']:
+                self._globals[field] = self._globals[field].decode('utf-8')
+        except AttributeError:
+            pass
 
         # With main PATHs configured, we initialise the get/write path attributes
         # and generate/retrieve the device ID
@@ -96,13 +105,13 @@ class Globals(Singleton):
 
         # Save the language code for HTTP requests and set the locale for l10n
         loc = getdefaultlocale()[0]
-        userAcceptLanguages = 'en-gb%s, en;q=0.5'
-        self._globals['userAcceptLanguages'] = userAcceptLanguages % '' if not loc else '%s, %s' % (loc.lower().replace('_', '-'), userAcceptLanguages % ';q=0.75')
+        userAcceptLanguages = 'en-gb{}, en;q=0.5'
+        self._globals['userAcceptLanguages'] = userAcceptLanguages.format('') if not loc else '{}, {}'.format(loc.lower().replace('_', '-'), userAcceptLanguages.format(';q=0.75'))
 
         self._globals['CONTEXTMENU_MULTIUSER'] = [
-            (getString(30130, self._globals['addon']).split('…')[0], 'RunPlugin(%s?mode=LogIn)' % self.pluginid),
-            (getString(30131, self._globals['addon']).split('…')[0], 'RunPlugin(%s?mode=removeUser)' % self.pluginid),
-            (getString(30132, self._globals['addon']), 'RunPlugin(%s?mode=renameUser)' % self.pluginid)
+            (getString(30130, self._globals['addon']).split('…')[0], 'RunPlugin({}?mode=LogIn)'.format(self.pluginid)),
+            (getString(30131, self._globals['addon']).split('…')[0], 'RunPlugin({}?mode=removeUser)'.format(self.pluginid)),
+            (getString(30132, self._globals['addon']), 'RunPlugin({}?mode=renameUser)'.format(self.pluginid))
         ]
 
     @staticmethod
@@ -110,7 +119,12 @@ class Globals(Singleton):
         guid = getConfig("GenDeviceID") if not renew else False
         if not guid or len(guid) != 56:
             from random import randint
-            guid = hmac.new(unicode(randint(1, int('9' * 100))), uuid.uuid4().bytes, hashlib.sha224).hexdigest()
+            r = randint(1, int('9' * 100))
+            try:
+                r = unicode(r)
+            except NameError:
+                r = bytes(str(r), 'utf-8')
+            guid = hmac.new(r, uuid.uuid4().bytes, hashlib.sha224).hexdigest()
             writeConfig("GenDeviceID", guid)
         return guid
 

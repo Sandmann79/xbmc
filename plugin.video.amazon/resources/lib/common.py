@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
-from BeautifulSoup import BeautifulSoup
+from bs4 import BeautifulSoup
 from pyDes import *
 from platform import node
 from random import randint
@@ -9,14 +9,12 @@ from base64 import b64encode, b64decode
 import uuid
 import mechanize
 import sys
-import urllib
 import re
 import os
 import xbmcplugin
 import xbmcgui
 import xbmcaddon
 import xbmc
-import urlparse
 import hmac
 import hashlib
 import json
@@ -27,6 +25,12 @@ import time
 import requests
 import pickle
 import warnings
+
+try:
+    from urllib.parse import urlparse, parse_qs, parse_sql, urlencode
+except ImportError:
+    from urlparse import urlparse, parse_qs, parse_sql
+    from urllib import urlencode
 
 
 class variables:
@@ -55,16 +59,22 @@ class variables:
             self.pluginhandle = -1
             params = ''
 
-        self.args = dict(urlparse.parse_qsl(urlparse.urlparse(params).query))
+        self.args = dict(parse_qsl(urlparse(params).query))
 
 
 var = variables()
 KodiK = int(xbmc.getInfoLabel('System.BuildVersion').split('.')[0]) < 18
 pluginname = var.addon.getAddonInfo('name')
-pluginpath = var.addon.getAddonInfo('path').decode('utf-8')
-pldatapath = xbmc.translatePath(var.addon.getAddonInfo('profile')).decode('utf-8')
+pluginpath = var.addon.getAddonInfo('path')
+pldatapath = xbmc.translatePath(var.addon.getAddonInfo('profile'))
 configpath = os.path.join(pldatapath, 'config')
-homepath = xbmc.translatePath('special://home').decode('utf-8')
+homepath = xbmc.translatePath('special://home')
+try:
+    pluginpath = pluginpath.decode('utf-8')
+    pldatapath = pldatapath.decode('utf-8')
+    homepath = homepath.decode('utf-8')
+except AttributeError:
+    pass
 CookieFile = os.path.join(pldatapath, 'cookies.lwp')
 def_fanart = os.path.join(pluginpath, 'fanart.jpg')
 BaseUrl = 'https://www.amazon.de'
@@ -136,7 +146,11 @@ class AgeSettings(pyxbmct.AddonDialogWindow):
 class Captcha(pyxbmct.AddonDialogWindow):
     def __init__(self, title='', soup=None, email=None):
         super(Captcha, self).__init__(title)
-        if 'ap_captcha_img_label' in unicode(soup):
+        try:
+            soup = unicode(soup)
+        except NameError:
+            pass
+        if 'ap_captcha_img_label' in soup:
             head = soup.find('div', attrs={'id': 'message_warning'})
             if not head:
                 head = soup.find('div', attrs={'id': 'message_error'})
@@ -323,7 +337,7 @@ def SaveFile(filename, data, dirname=None):
 
 def addDir(name, mode, sitemode, url='', thumb='', fanart='', infoLabels=None, totalItems=0, cm=None, page=1, options=''):
     u = {'url': url.encode('utf-8'), 'mode': mode, 'sitemode': sitemode, 'name': name.encode('utf-8'), 'page': page, 'opt': options}
-    url = '%s?%s' % (sys.argv[0], urllib.urlencode(u))
+    url = '{}?{}'.format(sys.argv[0], urlencode(u))
 
     if not fanart or fanart == na:
         fanart = def_fanart
@@ -348,7 +362,7 @@ def addDir(name, mode, sitemode, url='', thumb='', fanart='', infoLabels=None, t
 def addVideo(name, asin, poster=None, fanart=None, infoLabels=None, totalItems=0, cm=None, trailer=False,
              isAdult=False, isHD=False):
     u = {'asin': asin, 'mode': 'play', 'name': name.encode('utf-8'), 'sitemode': 'PLAYVIDEO', 'adult': isAdult}
-    url = '%s?%s' % (sys.argv[0], urllib.urlencode(u))
+    url = '%s?%s'.format(sys.argv[0], urlencode(u))
 
     if not infoLabels:
         infoLabels = {'Title': name}
@@ -420,7 +434,7 @@ def getParams(asin, cookie):
     if data:
         data = data.encode('utf-8').decode('unicode_escape')
         data = re.compile('(<form.*</form>)').findall(data)[0]
-        form = BeautifulSoup(data, convertEntities=BeautifulSoup.HTML_ENTITIES)
+        form = BeautifulSoup(data.replace('\\\"', '"'), 'html')
         return form.button
     return ''
 
@@ -531,7 +545,12 @@ def LogIn(ask):
                 usr = user['name']
 
             if var.multiuser and ask:
-                usr = Dialog.input(getString(30179), usr).decode('utf-8')
+                di = getString(30179), usr)
+                try:
+                    di = di
+                except AttributeError:
+                    pass
+                usr = Dialog.input(di)
                 if not usr:
                     return False
             if useMFA:
@@ -582,7 +601,11 @@ def loadUsers():
 
 
 def loadUser(empty=False):
-    cur_user = var.addon.getSetting('login_acc').decode('utf-8')
+    cur_user = var.addon.getSetting('login_acc')
+    try:
+        cur_user = cur_user.decode('utf-8')
+    except AttributeError:
+        pass
     users = loadUsers()
     user = None if empty else [i for i in users if cur_user == i['name']]
     return user[0] if user else {'email': '', 'password': '', 'name': '', 'save': '', 'cookie': ''}
@@ -761,7 +784,11 @@ def getmac():
 
 def cleanData(data):
     if isinstance(data, str):
-        data = data.decode('utf-8')
+        data = data
+        try:
+            data = data.decode('utf-8')
+        except AttributeError:
+            pass
     elif not isinstance(data, unicode):
         return data
 
@@ -856,18 +883,18 @@ def getCategories():
                 subPageType = cattype.get('subPageType')
                 subCatId = cattype.get('id')
                 if subPageType == 'PrimeMovieRecentlyAdded' or subPageType == 'PrimeTVRecentlyAdded':
-                    asins[mainCatId].update({subPageType: urlparse.parse_qs(cattype['query'])['ASINList'][0].split(',')})
+                    asins[mainCatId].update({subPageType: parse_qs(cattype['query'])['ASINList'][0].split(',')})
                 elif 'prime_editors_picks' in subCatId:
                     for picks in cattype['categories']:
                         query = picks.get('query').upper()
                         title = picks.get('title')
                         if title and ('ASINLIST' in query):
-                            querylist = urlparse.parse_qs(query)
+                            querylist = parse_qs(query)
                             alkey = None
                             for key in querylist.keys():
                                 if 'ASINLIST' in key:
                                     alkey = key
-                            asins[mainCatId].update({title: urlparse.parse_qs(query)[alkey][0]})
+                            asins[mainCatId].update({title: parse_qs(query)[alkey][0]})
     return asins
 
 
@@ -925,7 +952,11 @@ def getTypes(items, col):
                         studiolist.append(item)
                         lowlist.append(item.lower())
         elif 1800 < data < 2200:
-            unidata = unicode(data)[0:-1] + '0 -'
+            try:
+                data = unicode(data)
+            except NameError:
+                pass
+            unidata = data[0:-1] + '0 -'
             if unidata not in studiolist:
                 studiolist.append(unidata)
     return studiolist
@@ -1003,9 +1034,13 @@ def insertLF(string, begin=70):
 
 
 def parseHTML(br):
-    response = br.response().read().decode('utf-8')
+    response = br.response().read()
+    try:
+        response = response.decode('utf-8')
+    except AttributeError:
+        pass
     response = re.sub(r'(?i)(<!doctype \w+).*>', r'\1>', response)
-    soup = BeautifulSoup(response, convertEntities=BeautifulSoup.HTML_ENTITIES)
+    soup = BeautifulSoup(response, 'html', features='html.parser')
     return response, soup
 
 
@@ -1030,7 +1065,7 @@ def getUA(blacklist=False):
     if not UAlist or len(UAwlist) < 5:
         Log('Loading list of common UserAgents')
         html = getURL('https://techblog.willshouse.com/2012/01/03/most-common-user-agents/', rjson=False)
-        soup = BeautifulSoup(html, convertEntities=BeautifulSoup.HTML_ENTITIES)
+        soup = BeautifulSoup(html, 'html', features='html.parser')
         text = soup.find('textarea')
         if text:
             UAlist = text.string.split('\n')
@@ -1047,7 +1082,7 @@ def getUA(blacklist=False):
 
 
 def mobileUA(content):
-    soup = BeautifulSoup(content, convertEntities=BeautifulSoup.HTML_ENTITIES)
+    soup = BeautifulSoup(content, 'html', features='html.parser')
     res = soup.find('html')
     res = res.get('class', '') if res else ''
     return True if 'a-mobile' in res or 'a-tablet' in res else False

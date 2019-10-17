@@ -60,7 +60,7 @@ def getUA(blacklist=False):
     if not UAlist or len(UAwlist) < 5:
         Log('Loading list of common UserAgents')
         html = getURL('https://techblog.willshouse.com/2012/01/03/most-common-user-agents/', rjson=False)
-        soup = BeautifulSoup(html, 'html', features='html.parser')
+        soup = BeautifulSoup(html, 'html.parser')
         text = soup.find('textarea')
         # text can be None in case of server errors
         if text:
@@ -78,7 +78,7 @@ def getUA(blacklist=False):
 
 
 def mobileUA(content):
-    soup = BeautifulSoup(content, 'html', features='html.parser')
+    soup = BeautifulSoup(content, 'html.parser')
     res = soup.find('html')
     res = res.get('class', '') if res else ''
     return True if 'a-mobile' in res or 'a-tablet' in res else False

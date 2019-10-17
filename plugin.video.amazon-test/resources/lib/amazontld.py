@@ -500,7 +500,7 @@ class AmazonTLD(Singleton):
         if data:
             data = data.encode('utf-8').decode('unicode_escape')
             data = re.compile('(<form.*</form>)').findall(data)[0]
-            form = BeautifulSoup(data.replace('\\\"', '"'), 'html', features='html.parser')
+            form = BeautifulSoup(data, 'html.parser')
             return form.button
         return ''
 

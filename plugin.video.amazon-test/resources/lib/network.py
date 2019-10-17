@@ -5,7 +5,7 @@ from base64 import b64encode, b64decode
 from os.path import join as OSPJoin
 import xbmcgui
 import json
-import mechanize
+import mechanicalsoup
 import pickle
 from platform import node
 import pyxbmct
@@ -22,13 +22,8 @@ from .common import Globals, Settings, sleep
 
 
 def _parseHTML(br):
-    response = br.response().read()
-    try:
-        response = response.decode('utf-8')
-    except AttributeError:
-        pass
-    response = re.sub(r'(?i)(<!doctype \w+).*>', r'\1>', response)
-    soup = BeautifulSoup(response, 'html', features='html.parser')
+    soup = br.get_current_page()
+    response = soup.__unicode__()
     return response, soup
 
 
@@ -310,10 +305,10 @@ def LogIn(ask=True):
     def _MFACheck(br, email, soup):
         Log('MFA, DCQ or Captcha form')
         uni_soup = soup.__unicode__()
-        if 'signIn' in [i.name for i in br.forms()]:
-            br.select_form(name='signIn')
-        else:
-            br.select_form(nr=0)
+        try:
+            br.select_form('form[name="signIn"]')
+        except mechanicalsoup.LinkNotFoundError:
+            br.select_form()
 
         if 'auth-mfa-form' in uni_soup:
             msg = soup.find('form', attrs={'id': 'auth-mfa-form'})
@@ -447,20 +442,19 @@ def LogIn(ask=True):
     if password:
         # xbmc.executebuiltin('ActivateWindow(busydialog)')
         cj = requests.cookies.RequestsCookieJar()
-        br = mechanize.Browser()
-        br.set_handle_robots(False)
+        br = mechanicalsoup.StatefulBrowser(soup_config={'features': 'html.parser'})
         br.set_cookiejar(cj)
-        br.set_handle_gzip(True)
         caperr = -5
         while caperr:
             Log('Connect to SignIn Page %s attempts left' % -caperr)
-            br.addheaders = [('User-Agent', getConfig('UserAgent'))]
+            br.session.headers = [('User-Agent', getConfig('UserAgent'))]
             br.open(user['baseurl'] + ('/gp/aw/si.html' if not user['pv'] else '/auth-redirect/'))
-            response = br.response().read()
-            if 'signIn' not in [i.name for i in br.forms()]:
+            try:
+                form = br.select_form('form[name="signIn"]')
+            except mechanicalsoup.LinkNotFoundError:
                 getUA(True)
                 caperr += 1
-                WriteLog(response, 'login-si')
+                WriteLog(br.get_current_page(), 'login-si')
                 xbmc.sleep(randint(750, 1500))
             else:
                 break
@@ -469,49 +463,45 @@ def LogIn(ask=True):
             g.dialog.ok(getString(30200), getString(30213))
             return False
 
-        br.select_form(name='signIn')
         br['email'] = email
         br['password'] = password
-        if 'true' == g.addon.getSetting('rememberme') and user['pv']:
-            br.find_control(name='rememberMe').items[0].selected = True
-        br.addheaders = [('Accept', 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8'),
-                         ('Accept-Encoding', 'gzip, deflate'),
-                         ('Accept-Language', g.userAcceptLanguages),
-                         ('Cache-Control', 'max-age=0'),
-                         ('Connection', 'keep-alive'),
-                         ('Content-Type', 'application/x-www-form-urlencoded'),
-                         ('Host', user['baseurl'].split('//')[1]),
-                         ('Origin', user['baseurl']),
-                         ('User-Agent', getConfig('UserAgent')),
-                         ('Upgrade-Insecure-Requests', '1')]
-        br.submit()
+
+        if 'true' == g.addon.getSetting('rememberme') and user['pv'] and form.find_by_type('input', 'checkbox', {'name': 'rememberMe'}):
+            form.set_checkbox({'rememberMe': True})
+
+        br.session.headers = [('Accept', 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8'),
+                              ('Accept-Encoding', 'gzip, deflate'),
+                              ('Accept-Language', g.userAcceptLanguages),
+                              ('Cache-Control', 'max-age=0'),
+                              ('Connection', 'keep-alive'),
+                              ('Content-Type', 'application/x-www-form-urlencoded'),
+                              ('Host', user['baseurl'].split('//')[1]),
+                              ('Origin', user['baseurl']),
+                              ('User-Agent', getConfig('UserAgent')),
+                              ('Upgrade-Insecure-Requests', '1')]
+        br.submit_selected()
         response, soup = _parseHTML(br)
         # xbmc.executebuiltin('Dialog.Close(busydialog)')
         WriteLog(response, 'login')
 
-        while any(s in response for s in ['auth-mfa-form', 'ap_dcq_form', 'ap_captcha_img_label', 'claimspicker', 'fwcim-form', 'auth-captcha-image-container']):
+        while any(sp in response for sp in ['auth-mfa-form', 'ap_dcq_form', 'ap_captcha_img_label', 'claimspicker', 'fwcim-form', 'auth-captcha-image-container']):
             br = _MFACheck(br, email, soup)
             if not br:
                 return False
-            useMFA = 'otpCode' in str(list(br.forms())[0])
-            br.submit()
+            useMFA = True if br.get_current_form().form.find('input', {'name': 'otpCode'}) else False
+            br.submit_selected()
             response, soup = _parseHTML(br)
             WriteLog(response, 'login-mfa')
             # xbmc.executebuiltin('Dialog.Close(busydialog)')
 
         if 'action=sign-out' in response:
-            regex = r'action=sign-out[^"]*"[^>]*>[^?]+\s+([^?]+?)\s*\?' if user['pv'] else r'config.customerName[^"]*"([^"]*)'
             try:
-                usr = re.search(regex, response).group(1)
+                usr = re.search(r'action=sign-out[^"]*"[^>]*>[^?]+\s+([^?]+?)\s*\?', response).group(1)
             except AttributeError:
                 usr = getString(30209)
 
             if s.multiuser and ask:
                 usr = g.dialog.input(getString(30135), usr)
-                try:
-                    usr = usr.decode('utf-8')
-                except:
-                    pass
                 if not usr:
                     return False
             if useMFA:
@@ -571,11 +561,7 @@ def remLoginData(info=True):
 class _Captcha(pyxbmct.AddonDialogWindow):
     def __init__(self, title='', soup=None, email=None):
         super(_Captcha, self).__init__(title)
-        try:
-            soup = unicode(soup)
-        except NameError:
-            pass
-        if 'ap_captcha_img_label' in soup:
+        if soup.find('ap_captcha_img_label'):
             head = soup.find('div', attrs={'id': 'message_warning'})
             if not head:
                 head = soup.find('div', attrs={'id': 'message_error'})

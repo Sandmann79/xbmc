@@ -7,7 +7,7 @@ from platform import node
 from random import randint
 from base64 import b64encode, b64decode
 import uuid
-import mechanize
+import mechanicalsoup
 import sys
 import re
 import os
@@ -29,7 +29,7 @@ import warnings
 try:
     from urllib.parse import urlparse, parse_qs, parse_sql, urlencode
 except ImportError:
-    from urlparse import urlparse, parse_qs, parse_sql
+    from urlparse import urlparse, parse_qs, parse_qsl
     from urllib import urlencode
 
 
@@ -146,11 +146,7 @@ class AgeSettings(pyxbmct.AddonDialogWindow):
 class Captcha(pyxbmct.AddonDialogWindow):
     def __init__(self, title='', soup=None, email=None):
         super(Captcha, self).__init__(title)
-        try:
-            soup = unicode(soup)
-        except NameError:
-            pass
-        if 'ap_captcha_img_label' in soup:
+        if soup.find('ap_captcha_img_label'):
             head = soup.find('div', attrs={'id': 'message_warning'})
             if not head:
                 head = soup.find('div', attrs={'id': 'message_error'})
@@ -488,20 +484,19 @@ def LogIn(ask):
 
     if password:
         cj = requests.cookies.RequestsCookieJar()
-        br = mechanize.Browser()
-        br.set_handle_robots(False)
+        br = mechanicalsoup.StatefulBrowser(soup_config={'features': 'html.parser'})
         br.set_cookiejar(cj)
-        br.set_handle_gzip(True)
         caperr = -5
         while caperr:
             Log('Connect to SignIn Page %s attempts left' % -caperr)
-            br.addheaders = [('User-Agent', getConfig('UserAgent'))]
+            br.session.headers = [('User-Agent', getConfig('UserAgent'))]
             br.open(BaseUrl + '/gp/aw/si.html')
-            response = br.response().read()
-            if 'signIn' not in [i.name for i in br.forms()]:
+            try:
+                br.select_form('form[name="signIn"]')
+            except mechanicalsoup.LinkNotFoundError:
                 getUA(True)
                 caperr += 1
-                WriteLog(response, 'login-si')
+                WriteLog(br.get_current_page(), 'login-si')
                 xbmc.sleep(randint(750, 1500))
             else:
                 break
@@ -509,35 +504,34 @@ def LogIn(ask):
             Dialog.ok(getString(30200), getString(30213))
             return False
 
-        br.select_form(name='signIn')
         br['email'] = email
         br['password'] = password
-        br.addheaders = [('Accept', 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8'),
-                         ('Accept-Encoding', 'gzip, deflate'),
-                         ('Accept-Language', 'de,en-US;q=0.8,en;q=0.6'),
-                         ('Cache-Control', 'max-age=0'),
-                         ('Connection', 'keep-alive'),
-                         ('Content-Type', 'application/x-www-form-urlencoded'),
-                         ('Host', BaseUrl.split('//')[1]),
-                         ('Origin', BaseUrl),
-                         ('User-Agent', getConfig('UserAgent')),
-                         ('Upgrade-Insecure-Requests', '1')]
-        br.submit()
+        br.session.headers = [('Accept', 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8'),
+                              ('Accept-Encoding', 'gzip, deflate'),
+                              ('Accept-Language', 'de,en-US;q=0.8,en;q=0.6'),
+                              ('Cache-Control', 'max-age=0'),
+                              ('Connection', 'keep-alive'),
+                              ('Content-Type', 'application/x-www-form-urlencoded'),
+                              ('Host', BaseUrl.split('//')[1]),
+                              ('Origin', BaseUrl),
+                              ('User-Agent', getConfig('UserAgent')),
+                              ('Upgrade-Insecure-Requests', '1')]
+        br.submit_selected()
         response, soup = parseHTML(br)
         WriteLog(response, 'login')
 
-        while any(s in response for s in ['auth-mfa-form', 'ap_dcq_form', 'ap_captcha_img_label', 'claimspicker', 'fwcim-form', 'auth-captcha-image-container']):
+        while any(sp in response for sp in ['auth-mfa-form', 'ap_dcq_form', 'ap_captcha_img_label', 'claimspicker', 'fwcim-form', 'auth-captcha-image-container']):
             br = MFACheck(br, email, soup)
             if not br:
                 return False
-            useMFA = 'otpCode' in str(list(br.forms())[0])
-            br.submit()
+            useMFA = True if br.get_current_form().form.find('input', {'name': 'otpCode'}) else False
+            br.submit_selected()
             response, soup = parseHTML(br)
             WriteLog(response, 'login-mfa')
 
         if 'action=sign-out' in response:
             try:
-                usr = re.search(r'config.customerName[^"]*"([^"]*)', response).group(1)
+                usr = re.search(r'action=sign-out[^"]*"[^>]*>[^?]+\s+([^?]+?)\s*\?', response).group(1)
             except AttributeError:
                 usr = getString(30209)
 
@@ -545,12 +539,7 @@ def LogIn(ask):
                 usr = user['name']
 
             if var.multiuser and ask:
-                di = getString(30179), usr)
-                try:
-                    di = di
-                except AttributeError:
-                    pass
-                usr = Dialog.input(di)
+                usr = Dialog.input(getString(30179), usr)
                 if not usr:
                     return False
             if useMFA:
@@ -675,10 +664,10 @@ def selectUser():
 def MFACheck(br, email, soup):
     Log('MFA, DCQ or Captcha form')
     uni_soup = soup.__unicode__()
-    if 'signIn' in [i.name for i in br.forms()]:
-        br.select_form(name='signIn')
-    else:
-        br.select_form(nr=0)
+    try:
+        br.select_form('form[name="signIn"]')
+    except mechanicalsoup.LinkNotFoundError:
+        br.select_form()
 
     if 'auth-mfa-form' in uni_soup:
         msg = soup.find('form', attrs={'id': 'auth-mfa-form'})
@@ -1034,13 +1023,8 @@ def insertLF(string, begin=70):
 
 
 def parseHTML(br):
-    response = br.response().read()
-    try:
-        response = response.decode('utf-8')
-    except AttributeError:
-        pass
-    response = re.sub(r'(?i)(<!doctype \w+).*>', r'\1>', response)
-    soup = BeautifulSoup(response, 'html', features='html.parser')
+    soup = br.get_current_page()
+    response = soup.__unicode__()
     return response, soup
 
 

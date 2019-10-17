@@ -2,7 +2,7 @@
 <addon id="script.module.mechanicalsoup"
 	name="MechanicalSoup"
 	version="0.12.0"
-	provider-name="Matthieu Moy & Dan Hemberger">
+	provider-name="Matthew Hickford, Dan Hemberger, Matthieu Moy">
 	<requires>
 		<import addon="xbmc.python" version="2.25.0"/>
 		<import addon="script.module.requests" version="2.0.0"/>

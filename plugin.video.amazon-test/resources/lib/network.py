@@ -412,134 +412,157 @@ def LogIn(ask=True):
         d = k.decrypt(b64decode(data))
         return d
 
-    g = Globals()
-    s = Settings()
-    from .users import loadUser, addUser
-    user = loadUser(empty=ask)
-    email = user['email']
-    password = _decode(user['password'])
-    savelogin = g.addon.getSetting('save_login') == 'true'
-    useMFA = False
+    class LoginLocked(Exception):
+        pass
 
-    if not user['baseurl']:
-        user = getTerritory(user)
-        if False is user[1]:
-            return False
-        user = user[0]
+    from contextlib import contextmanager
+    @contextmanager
+    def LoginLock():
+        try:
+            bLocked = 'false' != getConfig('loginlock', 'false')
+            if not bLocked:
+                writeConfig('loginlock', 'true')
+            yield bLocked
+        except LoginLocked:  # Already locked
+            pass
+        except Exception as e:  # Something went horribly wrong, release and re-raise
+            writeConfig('loginlock', 'false')   
+            raise e
+        else:  # All fine, release
+            writeConfig('loginlock', 'false')        
 
-    if ask:
-        keyboard = xbmc.Keyboard(email, getString(30002))
-        keyboard.doModal()
-        if keyboard.isConfirmed() and keyboard.getText():
-            email = keyboard.getText()
-            password = _setLoginPW()
-    else:
-        if not email or not password:
-            g.dialog.notification(getString(30200), getString(30216))
-            xbmc.executebuiltin('Addon.OpenSettings(%s)' % g.addon.getAddonInfo('id'))
-            return False
+    with LoginLock() as locked:
+        if locked:
+            raise LoginLocked
 
-    if password:
-        # xbmc.executebuiltin('ActivateWindow(busydialog)')
-        cj = requests.cookies.RequestsCookieJar()
-        br = mechanicalsoup.StatefulBrowser(soup_config={'features': 'html.parser'})
-        br.set_cookiejar(cj)
-        caperr = -5
-        while caperr:
-            Log('Connect to SignIn Page %s attempts left' % -caperr)
-            br.session.headers = [('User-Agent', getConfig('UserAgent'))]
-            br.open(user['baseurl'] + ('/gp/aw/si.html' if not user['pv'] else '/auth-redirect/'))
-            try:
-                form = br.select_form('form[name="signIn"]')
-            except mechanicalsoup.LinkNotFoundError:
-                getUA(True)
-                caperr += 1
-                WriteLog(br.get_current_page(), 'login-si')
-                xbmc.sleep(randint(750, 1500))
-            else:
-                break
-        else:
-            # xbmc.executebuiltin('Dialog.Close(busydialog)')
-            g.dialog.ok(getString(30200), getString(30213))
-            return False
+        g = Globals()
+        s = Settings()
+        from .users import loadUser, addUser
+        user = loadUser(empty=ask)
+        email = user['email']
+        password = _decode(user['password'])
+        savelogin = g.addon.getSetting('save_login') == 'true'
+        useMFA = False
 
-        br['email'] = email
-        br['password'] = password
-
-        if 'true' == g.addon.getSetting('rememberme') and user['pv'] and form.find_by_type('input', 'checkbox', {'name': 'rememberMe'}):
-            form.set_checkbox({'rememberMe': True})
-
-        br.session.headers = [('Accept', 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8'),
-                              ('Accept-Encoding', 'gzip, deflate'),
-                              ('Accept-Language', g.userAcceptLanguages),
-                              ('Cache-Control', 'max-age=0'),
-                              ('Connection', 'keep-alive'),
-                              ('Content-Type', 'application/x-www-form-urlencoded'),
-                              ('Host', user['baseurl'].split('//')[1]),
-                              ('Origin', user['baseurl']),
-                              ('User-Agent', getConfig('UserAgent')),
-                              ('Upgrade-Insecure-Requests', '1')]
-        br.submit_selected()
-        response, soup = _parseHTML(br)
-        # xbmc.executebuiltin('Dialog.Close(busydialog)')
-        WriteLog(response, 'login')
-
-        while any(sp in response for sp in ['auth-mfa-form', 'ap_dcq_form', 'ap_captcha_img_label', 'claimspicker', 'fwcim-form', 'auth-captcha-image-container']):
-            br = _MFACheck(br, email, soup)
-            if not br:
+        if not user['baseurl']:
+            user = getTerritory(user)
+            if False is user[1]:
                 return False
-            useMFA = True if br.get_current_form().form.find('input', {'name': 'otpCode'}) else False
+            user = user[0]
+
+        if ask:
+            keyboard = xbmc.Keyboard(email, getString(30002))
+            keyboard.doModal()
+            if keyboard.isConfirmed() and keyboard.getText():
+                email = keyboard.getText()
+                password = _setLoginPW()
+        else:
+            if not email or not password:
+                g.dialog.notification(getString(30200), getString(30216))
+                xbmc.executebuiltin('Addon.OpenSettings(%s)' % g.addon.getAddonInfo('id'))
+                return False
+
+        if password:
+            # xbmc.executebuiltin('ActivateWindow(busydialog)')
+            cj = requests.cookies.RequestsCookieJar()
+            br = mechanicalsoup.StatefulBrowser(soup_config={'features': 'html.parser'})
+            br.set_cookiejar(cj)
+            caperr = -5
+            while caperr:
+                Log('Connect to SignIn Page %s attempts left' % -caperr)
+                br.session.headers = [('User-Agent', getConfig('UserAgent'))]
+                br.open(user['baseurl'] + ('/gp/aw/si.html' if not user['pv'] else '/auth-redirect/'))
+                try:
+                    form = br.select_form('form[name="signIn"]')
+                except mechanicalsoup.LinkNotFoundError:
+                    getUA(True)
+                    caperr += 1
+                    WriteLog(br.get_current_page(), 'login-si')
+                    xbmc.sleep(randint(750, 1500))
+                else:
+                    break
+            else:
+                # xbmc.executebuiltin('Dialog.Close(busydialog)')
+                g.dialog.ok(getString(30200), getString(30213))
+                return False
+
+            br['email'] = email
+            br['password'] = password
+
+            if 'true' == g.addon.getSetting('rememberme') and user['pv'] and form.find_by_type('input', 'checkbox', {'name': 'rememberMe'}):
+                form.set_checkbox({'rememberMe': True})
+
+            br.session.headers = [('Accept', 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8'),
+                                ('Accept-Encoding', 'gzip, deflate'),
+                                ('Accept-Language', g.userAcceptLanguages),
+                                ('Cache-Control', 'max-age=0'),
+                                ('Connection', 'keep-alive'),
+                                ('Content-Type', 'application/x-www-form-urlencoded'),
+                                ('Host', user['baseurl'].split('//')[1]),
+                                ('Origin', user['baseurl']),
+                                ('User-Agent', getConfig('UserAgent')),
+                                ('Upgrade-Insecure-Requests', '1')]
             br.submit_selected()
             response, soup = _parseHTML(br)
-            WriteLog(response, 'login-mfa')
             # xbmc.executebuiltin('Dialog.Close(busydialog)')
+            WriteLog(response, 'login')
 
-        if 'action=sign-out' in response:
-            try:
-                usr = re.search(r'action=sign-out[^"]*"[^>]*>[^?]+\s+([^?]+?)\s*\?', response).group(1)
-            except AttributeError:
-                usr = getString(30209)
-
-            if s.multiuser and ask:
-                usr = g.dialog.input(getString(30135), usr)
-                if not usr:
+            while any(sp in response for sp in ['auth-mfa-form', 'ap_dcq_form', 'ap_captcha_img_label', 'claimspicker', 'fwcim-form', 'auth-captcha-image-container']):
+                br = _MFACheck(br, email, soup)
+                if not br:
                     return False
-            if useMFA:
-                g.addon.setSetting('save_login', 'false')
-                savelogin = False
+                useMFA = True if br.get_current_form().form.find('input', {'name': 'otpCode'}) else False
+                br.submit_selected()
+                response, soup = _parseHTML(br)
+                WriteLog(response, 'login-mfa')
+                # xbmc.executebuiltin('Dialog.Close(busydialog)')
 
-            user['name'] = usr
-            user['email'] = user['password'] = user['cookie'] = ''
+            if 'action=sign-out' in response:
+                try:
+                    usr = re.search(r'action=sign-out[^"]*"[^>]*>[^?]+\s+([^?]+?)\s*\?', response).group(1)
+                except AttributeError:
+                    usr = getString(30209)
 
-            if savelogin:
-                user['email'] = email
-                user['password'] = _encode(password)
+                if s.multiuser and ask:
+                    usr = g.dialog.input(getString(30135), usr)
+                    if not usr:
+                        return False
+                if useMFA:
+                    g.addon.setSetting('save_login', 'false')
+                    savelogin = False
+
+                user['name'] = usr
+                user['email'] = user['password'] = user['cookie'] = ''
+
+                if savelogin:
+                    user['email'] = email
+                    user['password'] = _encode(password)
+                else:
+                    user['cookie'] = pickle.dumps(cj)
+
+                if ask:
+                    remLoginData(False)
+                    g.addon.setSetting('login_acc', usr)
+                    if not s.multiuser:
+                        g.dialog.ok(getString(30215), '{0} {1}'.format(getString(30014), usr))
+
+                addUser(user)
+                g.genID()
+                return cj
+            elif 'message_error' in response:
+                writeConfig('login_pass', '')
+                msg = soup.find('div', attrs={'id': 'message_error'})
+                Log('Login Error: %s' % msg.p.renderContents(None).strip())
+                g.dialog.ok(getString(30200), getString(30201))
+            elif 'message_warning' in response:
+                msg = soup.find('div', attrs={'id': 'message_warning'})
+                Log('Login Warning: %s' % msg.p.renderContents(None).strip())
+            elif 'auth-error-message-box' in response:
+                msg = soup.find('div', attrs={'class': 'a-alert-content'})
+                Log('Login MFA: %s' % msg.ul.li.span.renderContents(None).strip())
+                g.dialog.ok(getString(30200), getString(30214))
             else:
-                user['cookie'] = pickle.dumps(cj)
-
-            if ask:
-                remLoginData(False)
-                g.addon.setSetting('login_acc', usr)
-                if not s.multiuser:
-                    g.dialog.ok(getString(30215), '{0} {1}'.format(getString(30014), usr))
-
-            addUser(user)
-            g.genID()
-            return cj
-        elif 'message_error' in response:
-            writeConfig('login_pass', '')
-            msg = soup.find('div', attrs={'id': 'message_error'})
-            Log('Login Error: %s' % msg.p.renderContents(None).strip())
-            g.dialog.ok(getString(30200), getString(30201))
-        elif 'message_warning' in response:
-            msg = soup.find('div', attrs={'id': 'message_warning'})
-            Log('Login Warning: %s' % msg.p.renderContents(None).strip())
-        elif 'auth-error-message-box' in response:
-            msg = soup.find('div', attrs={'class': 'a-alert-content'})
-            Log('Login MFA: %s' % msg.ul.li.span.renderContents(None).strip())
-            g.dialog.ok(getString(30200), getString(30214))
-        else:
-            g.dialog.ok(getString(30200), getString(30213))
+                g.dialog.ok(getString(30200), getString(30213))
 
     return False
 

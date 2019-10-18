@@ -449,8 +449,11 @@ def MechanizeLogin():
         cj = requests.cookies.RequestsCookieJar()
         user = loadUser()
         if user['cookie']:
-            cj.update(pickle.loads(user['cookie']))
-            return cj
+            try:
+                cj.update(requests.utils.cookiejar_from_dict(user['cookie']))
+                return cj
+            except:
+                pass
 
     Log('Login')
     res = False
@@ -553,7 +556,7 @@ def LogIn(ask):
                 user['email'] = email
                 user['password'] = encode(password)
             else:
-                user['cookie'] = pickle.dumps(cj)
+                user['cookie'] = requests.utils.dict_from_cookiejar(cj)
 
             if ask:
                 remLoginData(False)

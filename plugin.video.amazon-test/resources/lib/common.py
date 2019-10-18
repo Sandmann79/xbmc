@@ -216,7 +216,7 @@ def jsonRPC(method, props='', param=None):
         return res['error']
 
     result = res['result']
-    return result if type(result) == unicode else res['result'].get(props, res['result'])
+    return res['result'].get(props, res['result']) if type(result) == dict else result
 
 
 def sleep(sec):

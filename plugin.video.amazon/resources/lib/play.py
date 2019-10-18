@@ -854,7 +854,7 @@ class AmazonPlayer(xbmc.Player):
     def getResumePoint(self):
         if not xbmcvfs.exists(self.resumedb) or self.content == 2:
             return {}
-        with open(self.resumedb, 'r') as fp:
+        with open(self.resumedb, 'rb') as fp:
             items = pickle.load(fp)
             self.resume = items.get(self.asin, {}).get('resume')
             fp.close()
@@ -864,7 +864,7 @@ class AmazonPlayer(xbmc.Player):
         if self.content == 2:
             return
         items = self.getResumePoint()
-        with open(self.resumedb, 'w+') as fp:
+        with open(self.resumedb, 'wb+') as fp:
             if self.watched and self.asin in items.keys():
                 del items[self.asin]
             else:

@@ -98,10 +98,10 @@ class PrimeVideo(Singleton):
     def _Flush(self, FlushVideoData=False):
         """ Cache catalog and video data """
 
-        with open(self._catalogCache, 'w+') as fp:
+        with open(self._catalogCache, 'wb+') as fp:
             pickle.dump(self._catalog, fp)
         if FlushVideoData:
-            with open(self._videodataCache, 'w+') as fp:
+            with open(self._videodataCache, 'wb+') as fp:
                 pickle.dump(self._videodata, fp)
 
     def _LoadCache(self):
@@ -115,7 +115,7 @@ class PrimeVideo(Singleton):
 
         if exists(self._videodataCache):
             try:
-                with open(self._videodataCache, 'r') as fp:
+                with open(self._videodataCache, 'rb') as fp:
                     self._videodata = pickle.load(fp)
             except:
                 Log('Removing corrupted cache file “{}”'.format(self._videodataCache), Log.DEBUG)
@@ -124,7 +124,7 @@ class PrimeVideo(Singleton):
 
         if exists(self._catalogCache):
             try:
-                with open(self._catalogCache, 'r') as fp:
+                with open(self._catalogCache, 'rb') as fp:
                     cached = pickle.load(fp)
                 if time.time() < cached['expiration']:
                     self._catalog = cached

@@ -156,26 +156,40 @@ class PrimeVideo(Singleton):
 
             def fixup(m):
                 """ Unescape entities except for double quotes, lest the JSON breaks """
-                import htmlentitydefs
-                text = m.group(0)
+                try:
+                    from html.entities import name2codepoint
+                except:
+                    from htmlentitydefs import name2codepoint
+
+                text = m.group(0)  # First group is the text to replace
+
+                # Unescape if possible
                 if text[:2] == "&#":
                     # character reference
                     try:
-                        if text[:3] == "&#x":
-                            char = int(text[3:-1], 16)
+                        bHex = ("&#x" == text[:3])
+                        char = int(text[3 if bHex else 2:-1], 16 if bHex else 10)
+                        if 34 == char:
+                            text = u'\\"'
                         else:
-                            char = int(text[2:-1])
-                        return unichr(char) if 34 != char else '\\"'
+                            try:
+                                text = unichr(char)
+                            except NameError:
+                                text = chr(char)
                     except ValueError:
                         pass
                 else:
                     # named entity
-                    try:
-                        char = text[1:-1]
-                        text = unichr(htmlentitydefs.name2codepoint[char]) if 'quot' != char else '\\"'
-                    except KeyError:
-                        pass
-                return text  # leave as is
+                    char = text[1:-1]
+                    if 'quot' == char:
+                        text = u'\\"'
+                    elif char in name2codepoint:
+                        char = name2codepoint[char]
+                        try:
+                            text = unichr(char)
+                        except NameError:
+                            text = chr(char)
+                return text
 
             text = re.sub("&#?\w+;", fixup, text)
             try:
@@ -197,7 +211,7 @@ class PrimeVideo(Singleton):
                         else:
                             o.add(item)
             elif type(n) == dict:
-                for k in n.keys():
+                for k in list(n):  # list() instead of .keys() to avoid py3 iteration errors
                     if k not in o:
                         o[k] = n[k]  # Insert into dictionary
                     else:
@@ -213,7 +227,7 @@ class PrimeVideo(Singleton):
 
             l = d
             if isinstance(l, dict):
-                for k in l.keys():
+                for k in list(l):  # list() instead of .keys() to avoid py3 iteration errors
                     if k == 'strings':
                         l[k] = {s: l[k][s] for s in ['AVOD_DP_season_selector'] if s in l[k]}
                     if (not l[k]) or (k in ['context', 'params', 'playerConfig', 'refine']):
@@ -231,7 +245,7 @@ class PrimeVideo(Singleton):
         if url.startswith('/search/'):
             np = urlparse(url)
             qs = parse_qs(np.query)
-            if 'from' in qs.keys():
+            if 'from' in list(qs):  # list() instead of .keys() to avoid py3 iteration errors
                 qs['startIndex'] = qs['from']
                 del qs['from']
             np = np._replace(path='/gp/video/api' + np.path, query=urlencode([(k, v) for k, l in qs.items() for v in l]))
@@ -266,12 +280,12 @@ class PrimeVideo(Singleton):
 
                 if not bRaw:
                     # Prune useless/sensitive info
-                    for k in m.keys():
+                    for k in list(m):  # list() instead of .keys() to avoid py3 iteration errors
                         if (not m[k]) or (k in ['copyright', 'links', 'logo', 'params', 'playerConfig', 'refine']):
                             del m[k]
                     if 'state' in m:
                         st = m['state']
-                        for k in st.keys():
+                        for k in list(st):  # list() instead of .keys() to avoid py3 iteration errors
                             if not st[k]:
                                 del st[k]
                             elif k in ['features', 'customerPreferences']:
@@ -287,7 +301,10 @@ class PrimeVideo(Singleton):
     def _TraverseCatalog(self, path, bRefresh=False):
         """ Extract current node, grandparent node and their names """
 
-        from urllib import unquote_plus
+        try:
+            from urllib.parse import unquote_plus
+        except:
+            from urllib import unquote_plus
 
         # Fix the unquote_plus problem with unicode_literals by encoding to latin-1 (byte string) and then decoding
         pathList = [unquote_plus(p).encode('latin-1').decode('utf-8') for p in path.split(self._separator)]

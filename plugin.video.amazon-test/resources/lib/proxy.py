@@ -246,7 +246,7 @@ class ProxyHTTPD(BaseHTTPRequestHandler):
 
         # Count the number of duplicates with the same ISO 639-1 codes
         langCount = {'forcedNarratives': {}, 'subtitleUrls': {}}
-        for sub_type in langCount.keys():
+        for sub_type in list(langCount):  # list() instead of .keys() to avoid py3 iteration errors
             if sub_type in content:
                 for i in range(0, len(content[sub_type])):
                     lang = content[sub_type][i]['languageCode'][0:2]
@@ -257,7 +257,7 @@ class ProxyHTTPD(BaseHTTPRequestHandler):
         # Merge the different subtitles lists in a single one, and append a spurious name file
         # to let Kodi figure out the locale, while at the same time enabling subtitles to be
         # proxied and transcoded on-the-fly.
-        for sub_type in langCount.keys():
+        for sub_type in list(langCount):  # list() instead of .keys() to avoid py3 iteration errors
             if sub_type in content:
                 for i in range(0, len(content[sub_type])):
                     fn = self._AdjustLocale(content[sub_type][i]['languageCode'], langCount[sub_type][content[sub_type][i]['languageCode'][0:2]])

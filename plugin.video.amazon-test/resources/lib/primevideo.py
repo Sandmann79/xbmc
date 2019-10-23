@@ -191,7 +191,7 @@ class PrimeVideo(Singleton):
                             text = chr(char)
                 return text
 
-            text = re.sub("&#?\w+;", fixup, text)
+            text = re.sub('&#?\\w+;', fixup, text)
             try:
                 text = text.encode('latin-1').decode('utf-8')
             except (UnicodeEncodeError, UnicodeDecodeError):
@@ -766,8 +766,13 @@ class PrimeVideo(Singleton):
             if urn not in self._videodata['urn2gti']:
                 self._videodata['urn2gti'][urn] = state['pageTitleId']
 
-            for gti in state['detail']:
-                item = state['detail'][gti]
+            # { "detail": { "detail": {…}, "headerDetail": {…} } }
+            details = state['detail']
+            if 'detail' in details:
+                details = details['detail']
+
+            for gti in details:
+                item = details[gti]
                 if gti not in GTIs:  # Most likely (surely?) movie
                     GTIs.append(gti)
                     o[gti] = {}
@@ -1010,7 +1015,7 @@ class PrimeVideo(Singleton):
                 if 'apiUrl' in cnt['pagination']:
                     page = cnt['pagination']['apiUrl']
                 elif 'paginator' in cnt['pagination']:
-                    page = next((x['href'] for x in cnt['pagination']['paginator'] if x['type'] == 'NextPage'), None)
+                    page = next((x['href'] for x in cnt['pagination']['paginator'] if 'atv.wps.PaginatorNext' == x['*className*']), None)
                 if page:
                     requestURLs.append(page)
                 else:

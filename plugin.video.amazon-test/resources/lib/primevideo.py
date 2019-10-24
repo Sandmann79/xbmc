@@ -902,7 +902,7 @@ class PrimeVideo(Singleton):
             # Fine the locale amazon's using
             cj = MechanizeLogin()
             if cj:
-                amzLang = cj.get('lc-main-av', domain='.primevideo.com', path='/')
+                amzLang = cj.get('lc-main-av', path='/')
         amzLang = amzLang if amzLang else 'en_US'
 
         bUpdatedVideoData = False  # Whether or not the pvData has been updated

@@ -634,7 +634,7 @@ class PrimeVideo(Singleton):
                 return datestr
             p = re.search(self._dateParserData[lang]['deconstruct'], datestr.lower())
             if None is p:
-                Log('Unable to parse date "{}" with language "{}"{}'.format(datestr, lang, '' if 'en_US' != lang else ': trying english'), Log.WARNING)
+                Log('Unable to parse date "{}" with language "{}"{}'.format(datestr, lang, '' if 'en_US' == lang else ': trying english'), Log.WARNING)
                 if 'en_US' == lang:
                     return datestr
                 # Sometimes Amazon returns english everything, let's try to figure out if this is the case

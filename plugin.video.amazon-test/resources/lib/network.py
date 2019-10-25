@@ -146,7 +146,7 @@ def getURL(url, useCookie=False, silent=False, headers=None, rjson=True, attempt
     s = Settings()
     if (not silent) or s.verbLog:
         dispurl = url
-        dispurl = re.sub('(?i)%s|%s|&token=\w+|&customerId=\w+' % (g.tvdb, g.tmdb), '', url).strip()
+        dispurl = re.sub('(?i)%s|%s|&token=\\w+|&customerId=\\w+' % (g.tvdb, g.tmdb), '', url).strip()
         Log('%sURL: %s' % ('check' if check else 'post' if postdata is not None else 'get', dispurl))
 
     headers = {} if not headers else headers
@@ -431,10 +431,10 @@ def LogIn(ask=True):
         except LoginLocked:  # Already locked
             pass
         except Exception as e:  # Something went horribly wrong, release and re-raise
-            writeConfig('loginlock', 'false')   
+            writeConfig('loginlock', 'false')
             raise e
         else:  # All fine, release
-            writeConfig('loginlock', 'false')        
+            writeConfig('loginlock', 'false')
 
     with LoginLock() as locked:
         if locked:
@@ -498,15 +498,15 @@ def LogIn(ask=True):
                 form.set_checkbox({'rememberMe': True})
 
             br.session.headers = [('Accept', 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8'),
-                                ('Accept-Encoding', 'gzip, deflate'),
-                                ('Accept-Language', g.userAcceptLanguages),
-                                ('Cache-Control', 'max-age=0'),
-                                ('Connection', 'keep-alive'),
-                                ('Content-Type', 'application/x-www-form-urlencoded'),
-                                ('Host', user['baseurl'].split('//')[1]),
-                                ('Origin', user['baseurl']),
-                                ('User-Agent', getConfig('UserAgent')),
-                                ('Upgrade-Insecure-Requests', '1')]
+                                  ('Accept-Encoding', 'gzip, deflate'),
+                                  ('Accept-Language', g.userAcceptLanguages),
+                                  ('Cache-Control', 'max-age=0'),
+                                  ('Connection', 'keep-alive'),
+                                  ('Content-Type', 'application/x-www-form-urlencoded'),
+                                  ('Host', user['baseurl'].split('//')[1]),
+                                  ('Origin', user['baseurl']),
+                                  ('User-Agent', getConfig('UserAgent')),
+                                  ('Upgrade-Insecure-Requests', '1')]
             br.submit_selected()
             response, soup = _parseHTML(br)
             # xbmc.executebuiltin('Dialog.Close(busydialog)')

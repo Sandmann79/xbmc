@@ -204,7 +204,8 @@ def getURL(url, useCookie=False, silent=False, headers=None, rjson=True, attempt
 
 
 def getURLData(mode, asin, retformat='json', devicetypeid='AOAGZA014O5RE', version=1, firmware='1', opt='', extra=False,
-               useCookie=False, retURL=False, vMT='Feature', dRes='PlaybackUrls,SubtitleUrls,ForcedNarratives', proxyEndpoint=None):
+               useCookie=False, retURL=False, vMT='Feature', dRes='PlaybackUrls,SubtitleUrls,ForcedNarratives',
+               proxyEndpoint=None, silent=False):
     try:
         from urllib.parse import quote_plus
     except ImportError:
@@ -235,7 +236,8 @@ def getURLData(mode, asin, retformat='json', devicetypeid='AOAGZA014O5RE', versi
     url += opt
     if retURL:
         return url
-    data = getURL(url if not proxyEndpoint else 'http://{}/{}/{}'.format(getConfig('proxyaddress'), proxyEndpoint, quote_plus(url)), useCookie=useCookie, postdata='')
+    data = getURL(url if not proxyEndpoint else 'http://{}/{}/{}'.format(getConfig('proxyaddress'), proxyEndpoint, quote_plus(url)),
+                  useCookie=useCookie, postdata='', silent=silent)
     if data:
         if 'error' in data.keys():
             return False, _Error(data['error'])

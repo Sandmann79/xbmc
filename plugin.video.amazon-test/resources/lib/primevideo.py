@@ -23,7 +23,7 @@ class PrimeVideo(Singleton):
     """ Wrangler of all things PrimeVideo.com """
 
     _catalog = {}  # Catalog cache
-    _videodata = {'urn2gti': {}}  # Video data cache
+    _videodata = {'urn2gti': {}, 'parents': {}}  # Video data cache
     _catalogCache = None  # Catalog cache file name
     _videodataCache = None  # Video data cache file name
     _separator = '/'  # Virtual path separator
@@ -37,6 +37,8 @@ class PrimeVideo(Singleton):
                 Date references:
                 https://www.primevideo.com/detail/0LCQSTWDMN9V770DG2DKXY3GVF/  09 10 11 12 01 02 03 04 05
                 https://www.primevideo.com/detail/0ND5POOAYD6A4THTH7C1TD3TYE/  06 07 08 09
+
+                Languages: https://www.primevideo.com/settings/language/
             """
             'da_DK': {'deconstruct': r'^([0-9]+)\.?\s+([^\s]+)\s+([0-9]+)', 'reassemble': '{2}-{1:0>2}-{0:0>2}', 'month': 1,
                       'months': {'januar': 1, 'februar': 2, 'marts': 3, 'april': 4, 'maj': 5, 'juni': 6, 'juli': 7, 'august': 8, 'september': 9, 'oktober': 10,
@@ -105,7 +107,7 @@ class PrimeVideo(Singleton):
             try:
                 with open(self._videodataCache, 'r') as fp:
                     data = json.load(fp)
-                if 'urn2gti' not in data:
+                if ('urn2gti' not in data) or ('parents' not in data):
                     raise Exception('Old, unsafe cache data')
                 self._videodata = data
             except:
@@ -683,7 +685,45 @@ class PrimeVideo(Singleton):
                         o[i] = DelocalizeDate(amzLang, o[i])
             return o
 
-        def ParseSinglePage(o, bCacheRefresh, data=None, url=None):
+        def AddSeason(oid, o, title, thumbnail, url):
+            """ Given a season, adds TV Shows to the catalog """
+            urn = ExtractURN(iu)
+            parent = None
+            season = {}
+            bUpdatedVideoData = False
+            if urn not in self._videodata['urn2gti']:
+                # Find the show the season belongs to
+                bUpdatedVideoData |= ParseSinglePage(oid, season, False, url=url)
+                seasonGTI = self._videodata['urn2gti'][urn]
+                try:
+                    # Query an episode to find its ancestors
+                    family = getURLData('catalog/GetPlaybackResources', self._videodata[seasonGTI]['children'][0], silent=True, extra=True, useCookie=True,
+                                        opt='&titleDecorationScheme=primary-content', dRes='CatalogMetadata')[1]['catalogMetadata']['family']['tvAncestors']
+                    # Grab the 'SHOW' ancestor ({SHOW: [{SEASON: [EPISODE, …], …}])
+                    parent = [a['catalog'] for a in family if 'SHOW' == a['catalog']['type']][0]
+                except: pass
+                if parent:
+                    # {'id': gti, 'title': …, 'type': 'SHOW', …}
+                    pid = parent['id']
+                    self._videodata[seasonGTI]['parent'] = pid
+                    self._videodata[pid] = {'title': parent['title'], 'metadata': {'videometa': {'mediatype': 'tvshow'}}, 'children': [seasonGTI]}
+                    for gti in self._videodata[seasonGTI]['siblings']:
+                        self._videodata[gti]['parent'] = pid
+                        if gti not in self._videodata[pid]['children']:
+                            self._videodata[pid]['children'].append(gti)
+                    parent = pid
+                    bUpdatedVideoData = True
+            else:
+                parent = self._videodata[self._videodata['urn2gti'][urn]]['parent']
+            bSeasonOnly = (not parent) or (oid == parent)
+            if not bSeasonOnly:
+                o[parent] = self._videodata[parent]
+                o = o[parent]
+            for sid in season:
+                o[sid] = season[sid]
+            return bUpdatedVideoData
+
+        def ParseSinglePage(oid, o, bCacheRefresh, data=None, url=None):
             """ Parse PrimeVideo.com single movie/season pages.
                 `url` is discarded in favour of `data`, if present.
             """
@@ -700,15 +740,22 @@ class PrimeVideo(Singleton):
                     return False
 
                 # TV Series
-                siblings = vd['siblings'][:]
+                bEpisodesOnly = oid == gti
+                siblings = [] if bEpisodesOnly else vd['siblings'][:]
                 siblings.append(gti)
                 siblings = sorted(siblings, key=(lambda k: self._videodata[k]['metadata']['videometa']['season']))
                 for gti in siblings:
-                    if gti not in o:
+                    # Add season if we're not inside a season already
+                    if (not bEpisodesOnly) and (gti not in o):
                         o[gti] = self._videodata[gti]
-                    for c in o[gti]['children']:
-                        if c not in o[gti]:
-                            o[gti][c] = {}
+                        dest = o[gti]
+                    else:
+                        o = self._videodata[gti]
+                        dest = o
+                    # Add cached episodes
+                    for c in dest['children']:
+                        if c not in dest:
+                            dest[c] = {}
                 return False
 
             if url:
@@ -717,6 +764,8 @@ class PrimeVideo(Singleton):
                 if not url:
                     return False
                 data = self._GrabJSON(url)
+                # from .logging import LogJSON
+                # LogJSON(data, url)
 
             # Video/season/movie data are in the `state` field of the response
             if 'state' not in data:
@@ -727,10 +776,11 @@ class PrimeVideo(Singleton):
             parents = {}  # Map of parents
             bUpdated = False  # Video data updated
 
-            # Seasons
-            if 'self' in state:
+            # Seasons (episodes are now listed in self too)
+            # Only add seasons if we are not inside a season already
+            if ('self' in state) and (oid not in state['self']):
                 # "self": {"amzn1.dv.gti.[…]": {"gti": "amzn1.dv.gti.[…]", "link": "/detail/[…]"}}
-                for gti in state['self']:
+                for gti in [k for k in state['self'] if 'season' == state['self'][k]['titleType']]:
                     s = state['self'][gti]
                     gti = s['gti']
                     if gti not in self._videodata:
@@ -740,7 +790,7 @@ class PrimeVideo(Singleton):
                     else:
                         o[gti] = self._videodata[gti]
                     GTIs.append(gti)
-                    siblings = [k for k in state['self'] if k != gti]
+                    siblings = [k for k, ss in state['self'].items() if k != gti and ss['titleType'] == s['titleType']]
                     if siblings != self._videodata[gti]['siblings']:
                         self._videodata[gti]['siblings'] = siblings
                         bUpdated = True
@@ -751,7 +801,10 @@ class PrimeVideo(Singleton):
                 for gti, lc in state['collections'].items():
                     for le in lc:
                         for e in le['titleIds']:
-                            o[gti][e] = {}
+                            if oid == gti:  # Inside the season folder already
+                                o[e] = {}
+                            else:
+                                o[gti][e] = {}
                             GTIs.append(e)
                             # Save parent/children relationships
                             parents[e] = gti
@@ -766,14 +819,18 @@ class PrimeVideo(Singleton):
             if urn not in self._videodata['urn2gti']:
                 self._videodata['urn2gti'][urn] = state['pageTitleId']
 
+            # Both of these versions have been spotted in the wild
+            # { "detail": { … } }
             # { "detail": { "detail": {…}, "headerDetail": {…} } }
             details = state['detail']
             if 'detail' in details:
                 details = details['detail']
 
-            for gti in details:
+            from json import dumps
+            # Get details, seasons first
+            for gti in sorted(details, key=lambda x: 'season' != details[x]['titleType']):
                 item = details[gti]
-                if gti not in GTIs:  # Most likely (surely?) movie
+                if (oid not in details) and (gti not in GTIs):  # Most likely (surely?) movie
                     GTIs.append(gti)
                     o[gti] = {}
                 if gti not in self._videodata:
@@ -800,14 +857,12 @@ class PrimeVideo(Singleton):
                 if bCacheRefresh or ('title' not in vd):
                     if 'seasonNumber' not in item:
                         vd['title'] = self._BeautifyText(item['title'])
-                        bUpdated = True
                     else:
                         try:
                             vd['title'] = state['strings']['AVOD_DP_season_selector'].format(seasonNumber=item['seasonNumber'])
-                            bUpdated = True
                         except:
                             vd['title'] = 'Season {}'.format(item['seasonNumber'])
-                            bUpdated = True
+                    bUpdated = True
 
                 # Images
                 for k, v in {'thumb': 'packshot', 'poster': 'titleshot', 'fanart': 'heroshot'}.items():
@@ -908,20 +963,25 @@ class PrimeVideo(Singleton):
         bUpdatedVideoData = False  # Whether or not the pvData has been updated
 
         while 0 < len(requestURLs):
-            requestURL = requestURLs.pop(0)
+            requestURL = requestURLs.pop(0)  # rULRs: FIFO stack
             o = obj
 
             # Load content
             bCouldNotParse = False
             try:
                 cnt = None
+
+                # Use cached data, if available
                 if 'lazyLoadData' in o:
                     cnt = o['lazyLoadData']
                     del o['lazyLoadData']
+
+                # Load content from an external url
                 if not cnt:
                     urn = ExtractURN(requestURL)
                     if (not bCacheRefresh) and urn and (urn in self._videodata['urn2gti']):
-                        ParseSinglePage(o, False, url=requestURL)
+                        # There are no API endpoints for movie/series pages, so we handle them in a separate function
+                        bUpdatedVideoData |= ParseSinglePage(breadcrumb[-1], o, False, url=requestURL)
                         if 'lazyLoadURL' in o:
                             if 'ref' not in o:
                                 o['ref'] = o['lazyLoadURL']
@@ -929,6 +989,8 @@ class PrimeVideo(Singleton):
                         continue
                     else:
                         cnt = self._GrabJSON(requestURL)
+
+                # Don't switch direct action for reference until we have content to show for it
                 if cnt and ('lazyLoadURL' in o):
                     if 'ref' not in o:
                         o['ref'] = o['lazyLoadURL']
@@ -953,50 +1015,30 @@ class PrimeVideo(Singleton):
             # Widow list / API Search
             if ('items' in cnt):
                 for item in cnt['items']:
-                    # Search results
                     if 'heading' in item:
+                        # Search results
                         title = item['heading']
                         iu = item['href']
                         try:
                             t = item['watchlistAction']['endpoint']['query']['titleType']
                         except:
                             t = None
-                        Log('Found {}, type: {}'.format(title, t))
                         if 'season' != t:
-                            bUpdatedVideoData |= ParseSinglePage(o, bCacheRefresh, url=iu)
+                            bUpdatedVideoData |= ParseSinglePage(breadcrumb[-1], o, bCacheRefresh, url=iu)
                         else:
-                            o[title] = {
-                                'title': self._BeautifyText(title),
-                                'lazyLoadURL': iu,
-                                'metadata': {
-                                    'artmeta': {
-                                        'thumb': item['imageSrc']
-                                    },
-                                    'videometa': {
-                                        'mediatype': 'season'
-                                    }
-                                }
-                            }
-                    # Watchlist
+                            bUpdatedVideoData |= AddSeason(breadcrumb[-1], o, title, item['imageSrc'], iu)
                     else:
+                        # Watchlist
                         Log('Show all seasons in watchlist: {}'.format(self._s.dispShowOnly))
 
             # Search/list
             if ('results' in cnt) and ('items' in cnt['results']):
                 for item in cnt['results']['items']:
+                    iu = item['title']['url']
                     if 'season' not in item:
-                        bUpdatedVideoData |= ParseSinglePage(o, bCacheRefresh, url=item['title']['url'])
+                        bUpdatedVideoData |= ParseSinglePage(breadcrumb[-1], o, bCacheRefresh, url=iu)
                     else:
-                        if item['title']['text'] not in o:
-                            o[item['title']['text']] = {
-                                'title': self._BeautifyText(item['title']['text']),
-                                'lazyLoadURL': item['title']['url'],
-                                'metadata': {
-                                    'artmeta': {
-                                        'thumb': MaxSize(item['packshot']['image']['src'])
-                                    }
-                                }
-                            }
+                        bUpdatedVideoData |= AddSeason(breadcrumb[-1], o, item['title']['text'], MaxSize(item['packshot']['image']['src']), iu)
 
             # Watchlist
             if 'filters' in cnt:
@@ -1007,7 +1049,7 @@ class PrimeVideo(Singleton):
 
             # Single page
             if 'state' in cnt:
-                bUpdatedVideoData |= ParseSinglePage(o, bCacheRefresh, data=cnt, url=requestURL)
+                bUpdatedVideoData |= ParseSinglePage(breadcrumb[-1], o, bCacheRefresh, data=cnt, url=requestURL)
 
             # Pagination
             if 'pagination' in cnt:

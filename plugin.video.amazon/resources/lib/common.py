@@ -751,6 +751,8 @@ def getmac():
 
 def cleanData(data):
     data = py2_decode(data)
+    if not isinstance(data, str):
+        return data
     data = data.replace('\u00A0', ' ').replace('\u2013', '-').strip()
     return None if data == '' else data
 

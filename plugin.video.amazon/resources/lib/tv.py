@@ -371,7 +371,7 @@ def addTVdb(full_update=True, libasins=None, cj=True):
                         if season_size < 1:
                             season_size = MAX
                         parsed = urlparse(title['childTitles'][0]['feedUrl'])
-                        EPISODE_ASINS.append(parse_qsl(parsed.query)['SeasonASIN'])
+                        EPISODE_ASINS.append(parse_qs(parsed.query)['SeasonASIN'])
                         EPISODE_NUM.append(season_size)
 
             if (approx and endIndex + 1 >= approx) or (not approx and len(titles) < 1):

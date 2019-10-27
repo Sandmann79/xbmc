@@ -2,8 +2,6 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 from .common import *
-import listtv
-import listmovie
 
 # Modes
 # ===============================================================================
@@ -87,7 +85,7 @@ def getList(ContentType=None, start=0, isPrime=True, NumberOfResults=0, OrderBy=
     # &HideNum=T
     # &Detailed=T
     # &AID=1
-    url = BUILD_BASE_API('catalog/%s' % catalog) + BROWSE_PARAMS
+    url = BUILD_BASE_API('catalog/{}'.format(catalog)) + BROWSE_PARAMS
     return getURL(url)
 
 
@@ -100,45 +98,51 @@ def ASIN_LOOKUP(ASINLIST):
 
 
 def SEARCH_DB():
+    from .listtv import LIST_TVSHOWS
+    from .listmovie import LIST_MOVIES
     searchString = Dialog.input(getString(24121), '')
     if searchString != '':
         addText('          ----=== ' + getString(30104) + ' ===----')
-        if not listmovie.LIST_MOVIES('movietitle', searchString, search=True):
+        if not LIST_MOVIES('movietitle', searchString, search=True):
             addText(getString(30202))
         addText('          ----=== ' + getString(30107) + ' ===----')
-        if not listtv.LIST_TVSHOWS('seriestitle', searchString, search=True):
+        if not LIST_TVSHOWS('seriestitle', searchString, search=True):
             addText(getString(30202))
         SetView('tvshows', 'showview')
 
 
 def ExportList():
     asinlist = var.args.get('url')
-    ListCont(movielib % asinlist)
-    ListCont(tvlib % asinlist)
+    ListCont(movielib.format(asinlist))
+    ListCont(tvlib.format(asinlist))
 
 
 def getSimilarities():
-    import tv
+    from .listtv import ADD_SEASON_ITEM
+    from .listmovie import LIST_MOVIES
+    from .tv import lookupTVdb
     data = getList(NumberOfResults=250, catalog='GetSimilarities', asin=var.args.get('asin'))
     for title in data['message']['body']['titles']:
         asin = title['titleId']
-        if not listmovie.LIST_MOVIES('asin', asin, search=True):
-            for seasondata in tv.lookupTVdb(asin, tbl='seasons', single=False):
+        if not LIST_MOVIES('asin', asin, search=True):
+            for seasondata in lookupTVdb(asin, tbl='seasons', single=False):
                 if seasondata:
-                    listtv.ADD_SEASON_ITEM(seasondata, disptitle=True)
+                    ADD_SEASON_ITEM(seasondata, disptitle=True)
 
     SetView('tvshows', 'showview')
 
 
 def ListMenu():
     l = var.args.get('url')
-    addDir(getString(30104), 'appfeed', 'ListCont', movielib % l)
-    addDir(getString(30107), 'appfeed', 'ListCont', tvlib % l)
+    addDir(getString(30104), 'appfeed', 'ListCont', movielib.format(l))
+    addDir(getString(30107), 'appfeed', 'ListCont', tvlib.format(l))
     xbmcplugin.endOfDirectory(var.pluginhandle)
 
 
 def ListCont(export=False):
-    import tv
+    from .listtv import ADD_SEASON_ITEM, LIST_TVSHOWS
+    from .listmovie import LIST_MOVIES
+    from .tv import lookupTVdb
     showonly = False
     rvalue = 'distinct *'
     if export:
@@ -164,22 +168,22 @@ def ListCont(export=False):
 
     asinlist = []
     for value in asins:
-        ret = listmovie.LIST_MOVIES('asin', value, search=True, cmmode=1, export=export) if mov else 0
+        ret = LIST_MOVIES('asin', value, search=True, cmmode=1, export=export) if mov else 0
 
         if ret == 0 and not mov:
-            for seasondata in tv.lookupTVdb(value, tbl='seasons', rvalue=rvalue, single=False):
+            for seasondata in lookupTVdb(value, tbl='seasons', rvalue=rvalue, single=False):
                 if seasondata:
                     if showonly:
                         ret = 0
                         value = seasondata[0]
-                        for asin in tv.lookupTVdb(value, tbl='shows', rvalue='asin').split(','):
+                        for asin in lookupTVdb(value, tbl='shows', rvalue='asin').split(','):
                             if asin in asinlist:
                                 ret = 1
                     else:
                         ret = 1
-                        listtv.ADD_SEASON_ITEM(seasondata, disptitle=True, cmmode=1, export=export)
+                        ADD_SEASON_ITEM(seasondata, disptitle=True, cmmode=1, export=export)
         if ret == 0 and not mov:
-            listtv.LIST_TVSHOWS('asin', value, search=True, cmmode=1, export=export)
+            LIST_TVSHOWS('asin', value, search=True, cmmode=1, export=export)
 
         asinlist.append(value)
 
@@ -195,19 +199,19 @@ def RefreshList():
     if not cj:
         return
 
-    import tv
-    import movies
+    from . import tv
+    from . import movies
     l = var.args.get('url')
     mvlist = []
     tvlist = []
     pDialog = xbmcgui.DialogProgress()
     pDialog.create(pluginname, getString(30117))
 
-    for asin in SCRAP_ASINS(movielib % l, cj):
+    for asin in SCRAP_ASINS(movielib.format(l), cj):
         if not movies.lookupMoviedb(asin):
             mvlist.append(asin)
 
-    for asin in SCRAP_ASINS(tvlib % l, cj):
+    for asin in SCRAP_ASINS(tvlib.format(l), cj):
         if not tv.lookupTVdb(asin, tbl='seasons'):
             tvlist.append(asin)
 
@@ -232,11 +236,11 @@ def getTVDBImages(title, tvdbid=None, seasons=False):
     langcodes = ['de', 'en']
     TVDB_URL = 'http://www.thetvdb.com/banners/'
     while not tvdbid and title:
-        tv = urllib.quote_plus(title.encode('utf-8'))
-        result = getURL('http://www.thetvdb.com/api/GetSeries.php?seriesname=%s&language=de' % tv, silent=True, rjson=False)
+        tv = quote_plus(py2_encode(title))
+        result = getURL('http://www.thetvdb.com/api/GetSeries.php?seriesname={}&language=de'.format(tv), silent=True, rjson=False)
         if not result:
             continue
-        soup = BeautifulSoup(result)
+        soup = BeautifulSoup(result, 'html.parser')
         tvdbid = soup.find('seriesid')
         if tvdbid:
             tvdbid = tvdbid.string
@@ -253,9 +257,9 @@ def getTVDBImages(title, tvdbid=None, seasons=False):
 
     if seasons:
         seasons = {}
-        result = getURL('http://www.thetvdb.com/api/%s/series/%s/banners.xml' % (tvdb, tvdbid), silent=True, rjson=False)
+        result = getURL('http://www.thetvdb.com/api/{}/series/{}/banners.xml'.format(tvdb, tvdbid), silent=True, rjson=False)
         if result:
-            soup = BeautifulSoup(result)
+            soup = BeautifulSoup(result, 'html.parser')
             for lang in langcodes:
                 for datalang in soup.findAll('language'):
                     if datalang.string == lang:
@@ -273,9 +277,9 @@ def getTVDBImages(title, tvdbid=None, seasons=False):
         return seasons, posterurl, fanarturl
     else:
         for lang in langcodes:
-            result = getURL('http://www.thetvdb.com/api/%s/series/%s/%s.xml' % (tvdb, tvdbid, lang), silent=True, rjson=False)
+            result = getURL('http://www.thetvdb.com/api/{}/series/{}/{}.xml'.format(tvdb, tvdbid, lang), silent=True, rjson=False)
             if result:
-                soup = BeautifulSoup(result)
+                soup = BeautifulSoup(result, 'html.parser')
                 fanart = soup.find('fanart')
                 poster = soup.find('poster')
                 if fanart and fanart.string and not fanarturl:
@@ -301,9 +305,8 @@ def getTMDBImages(title, content='movie', year=None):
         if year:
             str_year = '&year=' + str(year)
 
-        movie = urllib.quote_plus(title.encode('utf-8'))
-        data = getURL('http://api.themoviedb.org/3/search/%s?api_key=%s&language=de&query=%s%s' % (
-            content, tmdb, movie, str_year), silent=True)
+        movie = quote_plus(py2_encode(title))
+        data = getURL('http://api.themoviedb.org/3/search/{}?api_key={}&language=de&query={}{}'.format(content, tmdb, movie, str_year), silent=True)
         if not data:
             continue
 
@@ -342,8 +345,8 @@ def updateAll():
         writeConfig('update_running', 'false')
         return
 
-    import movies
-    import tv
+    from . import tv
+    from . import movies
 
     Log('Starting DBUpdate')
     Notif(getString(30106))

@@ -1,32 +1,33 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
-from BeautifulSoup import BeautifulSoup
+from bs4 import BeautifulSoup
 from pyDes import *
 from platform import node
 from random import randint
 from base64 import b64encode, b64decode
+from kodi_six import xbmc, xbmcaddon, xbmcplugin, xbmcgui, xbmcvfs
+from kodi_six.utils import py2_encode, py2_decode
 import uuid
-import mechanize
+import mechanicalsoup
 import sys
-import urllib
 import re
 import os
-import xbmcplugin
-import xbmcgui
-import xbmcaddon
-import xbmc
-import urlparse
 import hmac
 import hashlib
 import json
-import xbmcvfs
 import pyxbmct
 import socket
 import time
 import requests
 import pickle
 import warnings
+
+try:
+    from urllib.parse import urlparse, parse_qs, parse_qsl, urlencode, quote_plus
+except ImportError:
+    from urlparse import urlparse, parse_qs, parse_qsl
+    from urllib import urlencode, quote_plus
 
 
 class variables:
@@ -55,22 +56,23 @@ class variables:
             self.pluginhandle = -1
             params = ''
 
-        self.args = dict(urlparse.parse_qsl(urlparse.urlparse(params).query))
+        self.args = dict(parse_qsl(urlparse(params).query))
 
 
 var = variables()
+KodiK = int(xbmc.getInfoLabel('System.BuildVersion').split('.')[0]) < 18
+pyV2 = sys.version_info[0] < 3
 pluginname = var.addon.getAddonInfo('name')
-pluginpath = var.addon.getAddonInfo('path').decode('utf-8')
-pldatapath = xbmc.translatePath(var.addon.getAddonInfo('profile')).decode('utf-8')
+pluginpath = var.addon.getAddonInfo('path')
+pldatapath = xbmc.translatePath(var.addon.getAddonInfo('profile'))
 configpath = os.path.join(pldatapath, 'config')
-homepath = xbmc.translatePath('special://home').decode('utf-8')
-kodi_mjver = int(xbmc.getInfoLabel('System.BuildVersion')[0:2])
+homepath = xbmc.translatePath('special://home')
 CookieFile = os.path.join(pldatapath, 'cookies.lwp')
 def_fanart = os.path.join(pluginpath, 'fanart.jpg')
 BaseUrl = 'https://www.amazon.de'
 ATV_URL = 'https://atv-ps-eu.amazon.de'
-movielib = '/gp/video/%s/movie/'
-tvlib = '/gp/video/%s/tv/'
+movielib = '/gp/video/{}/movie/'
+tvlib = '/gp/video/{}/tv/'
 lib = 'video-library'
 wl = 'watchlist'
 is_addon = 'inputstream.adaptive'
@@ -134,20 +136,24 @@ class AgeSettings(pyxbmct.AddonDialogWindow):
 
 
 class Captcha(pyxbmct.AddonDialogWindow):
-
     def __init__(self, title='', soup=None, email=None):
         super(Captcha, self).__init__(title)
-        head = soup.find('div', attrs={'id': 'message_warning'})
-        if not head:
-            head = soup.find('div', attrs={'id': 'message_error'})
-        title = soup.find('div', attrs={'id': 'ap_captcha_guess_alert'})
-        self.picurl = soup.find('div', attrs={'id': 'ap_captcha_img'}).img.get('src')
+        if soup.find('ap_captcha_img_label'):
+            head = soup.find('div', attrs={'id': 'message_warning'})
+            if not head:
+                head = soup.find('div', attrs={'id': 'message_error'})
+            title = soup.find('div', attrs={'id': 'ap_captcha_guess_alert'})
+            self.head = head.p.renderContents().strip()
+            self.head = re.sub('(?i)<[^>]*>', '', self.head)
+            self.picurl = soup.find('div', attrs={'id': 'ap_captcha_img'}).img.get('src')
+        else:
+            self.head = soup.find('span', attrs={'class': 'a-list-item'}).renderContents().strip()
+            title = soup.find('div', attrs={'id': 'auth-guess-missing-alert'}).div.div
+            self.picurl = soup.find('div', attrs={'id': 'auth-captcha-image-container'}).img.get('src')
         self.setGeometry(500, 550, 9, 2)
         self.email = email
         self.pwd = ''
         self.cap = ''
-        self.head = head.p.renderContents().strip()
-        self.head = re.sub('(?i)<[^>]*>', '', self.head)
         self.title = title.renderContents().strip()
         self.image = pyxbmct.Image('', aspectRatio=2)
         self.tb_head = pyxbmct.TextBox()
@@ -206,6 +212,7 @@ class Captcha(pyxbmct.AddonDialogWindow):
 def getURL(url, useCookie=False, silent=False, headers=None, rjson=True, attempt=1, check=False, postdata=None):
     # Try to extract the host from the URL
     host = re.search('://([^/]+)/', url)
+    method = 'POST' if postdata is not None else 'GET'
 
     # Create sessions for keep-alives and connection pooling
     if None is not host:
@@ -226,8 +233,8 @@ def getURL(url, useCookie=False, silent=False, headers=None, rjson=True, attempt
             return retval
     if (not silent) or var.verbLog:
         dispurl = url
-        dispurl = re.sub('(?i)%s|%s|&token=\w+|&customerId=\w+' % (tvdb, tmdb), '', url).strip()
-        Log('%sURL: %s' % ('check' if check else 'get', dispurl))
+        dispurl = re.sub('(?i){}|{}|&token=\w+|&customerId=\w+'.format(tvdb, tmdb), '', url).strip()
+        Log('{}URL: {}'.format('check' if check else method.lower(), dispurl))
 
     headers = {} if not headers else headers
     if 'User-Agent' not in headers:
@@ -238,20 +245,21 @@ def getURL(url, useCookie=False, silent=False, headers=None, rjson=True, attempt
         headers['Accept-Language'] = 'de-de, en-gb;q=0.2, en;q=0.1'
 
     try:
-        method = 'POST' if postdata else 'GET'
         r = session.request(method, url, data=postdata, headers=headers, cookies=cj, verify=var.verifySsl)
         response = r.text if not check else 'OK'
-        if r.status_code >= 400:
-            Log('Error %s' % r.status_code)
+        if r.status_code == 500:
+            raise requests.exceptions.HTTPError('500')
+        elif r.status_code >= 400 and r.status_code != 500:
+            Log('Error {}'.format(r.status_code))
             raise requests.exceptions.HTTPError('429')
     except (requests.exceptions.Timeout,
             requests.exceptions.ConnectionError,
             requests.exceptions.SSLError,
             requests.exceptions.HTTPError,
             requests.packages.urllib3.exceptions.SNIMissingWarning,
-            requests.packages.urllib3.exceptions.InsecurePlatformWarning), e:
+            requests.packages.urllib3.exceptions.InsecurePlatformWarning) as e:
         eType = e.__class__.__name__
-        Log('Error reason: %s (%s)' % (e, eType), xbmc.LOGERROR)
+        Log('Error reason: {} ({})'.format(e, eType), xbmc.LOGERROR)
         if 'SNIMissingWarning' in eType:
             Log('Using a Python/OpenSSL version which doesn\'t support SNI for TLS connections.', xbmc.LOGERROR)
             Dialog.ok('No SNI for TLS', 'Your current Python/OpenSSL environment does not support SNI over TLS connections.',
@@ -260,13 +268,16 @@ def getURL(url, useCookie=False, silent=False, headers=None, rjson=True, attempt
             exit()
         if 'InsecurePlatformWarning' in eType:
             Log('Using an outdated SSL module.', xbmc.LOGERROR)
-            Dialog.ok('SSL module outdated', 'The SSL module for Python is outdated.', 
-                      'You can find a Linux guide on how to update Python and its modules for Kodi here: https://goo.gl/CKtygz', 
+            Dialog.ok('SSL module outdated', 'The SSL module for Python is outdated.',
+                      'You can find a Linux guide on how to update Python and its modules for Kodi here: https://goo.gl/CKtygz',
                       'Additionally, follow this guide to update the required modules: https://goo.gl/ksbbU2')
             exit()
+        if '500' in e:
+            Log('HTTP Error 500')
+            return {'message': {'body': {'titles': [], 'endIndex': 0}}}
         if ('429' in e) or ('Timeout' in eType):
             attempt += 1 if not check else 10
-            logout = 'Attempt #%s' % attempt
+            logout = 'Attempt #{}'.format(attempt)
             if '429' in e:
                 logout += '. Too many requests - Pause 10 sec'
                 sleep(10)
@@ -284,23 +295,19 @@ def WriteLog(data, fn=''):
         fn = '-' + fn
     fn = pluginname + fn + '.log'
     path = os.path.join(homepath, fn)
-    if isinstance(data, unicode):
-        data = data.encode('utf-8')
     logfile = xbmcvfs.File(path, 'w')
-    logfile.write(data.__str__())
+    logfile.write(py2_encode(data))
     logfile.close()
 
 
 def Log(msg, level=xbmc.LOGNOTICE):
     if level == xbmc.LOGDEBUG and var.verbLog:
         level = xbmc.LOGNOTICE
-    msg = '[%s] %s' % (pluginname, msg)
-    xbmc.log(msg.encode('utf-8'), level)
+    msg = '[{}] {}'.format(pluginname, msg)
+    xbmc.log(msg, level)
 
 
 def SaveFile(filename, data, dirname=None):
-    if isinstance(data, unicode):
-        data = data.encode('utf-8')
     if dirname:
         filename = cleanName(filename)
         filename = os.path.join(dirname, filename)
@@ -308,13 +315,13 @@ def SaveFile(filename, data, dirname=None):
             xbmcvfs.mkdirs(cleanName(dirname.strip(), isfile=False))
     filename = cleanName(filename, isfile=False)
     f = xbmcvfs.File(filename, 'w')
-    f.write(data)
+    f.write(py2_encode(data))
     f.close()
 
 
 def addDir(name, mode, sitemode, url='', thumb='', fanart='', infoLabels=None, totalItems=0, cm=None, page=1, options=''):
-    u = {'url': url.encode('utf-8'), 'mode': mode, 'sitemode': sitemode, 'name': name.encode('utf-8'), 'page': page, 'opt': options}
-    url = '%s?%s' % (sys.argv[0], urllib.urlencode(u))
+    u = {'url': py2_encode(url), 'mode': mode, 'sitemode': sitemode, 'name': py2_encode(name), 'page': page, 'opt': options}
+    url = '{}?{}'.format(sys.argv[0], urlencode(u))
 
     if not fanart or fanart == na:
         fanart = def_fanart
@@ -333,13 +340,13 @@ def addDir(name, mode, sitemode, url='', thumb='', fanart='', infoLabels=None, t
     if cm:
         item.addContextMenuItems(cm)
 
-    xbmcplugin.addDirectoryItem(var.pluginhandle, url=url, listitem=item, isFolder=sitemode != 'switchUser', totalItems=totalItems)
+    xbmcplugin.addDirectoryItem(var.pluginhandle, url=url, listitem=item, isFolder=sitemode not in ('switchUser', 'updateAll'), totalItems=totalItems)
 
 
-def addVideo(name, asin, poster=None, fanart=None, infoLabels=None, totalItems=0, cm=[], trailer=False,
+def addVideo(name, asin, poster=None, fanart=None, infoLabels=None, totalItems=0, cm=None, trailer=False,
              isAdult=False, isHD=False):
-    u = {'asin': asin, 'mode': 'play', 'name': name.encode('utf-8'), 'sitemode': 'PLAYVIDEO', 'adult': isAdult}
-    url = '%s?%s' % (sys.argv[0], urllib.urlencode(u))
+    u = {'asin': asin, 'mode': 'play', 'name': py2_encode(name), 'sitemode': 'PLAYVIDEO', 'adult': isAdult}
+    url = '{}?{}'.format(sys.argv[0], urlencode(u))
 
     if not infoLabels:
         infoLabels = {'Title': name}
@@ -349,6 +356,7 @@ def addVideo(name, asin, poster=None, fanart=None, infoLabels=None, totalItems=0
     item = xbmcgui.ListItem(name, thumbnailImage=poster)
     item.setProperty('fanart_image', fanart)
     item.setProperty('IsPlayable', str(var.playMethod == 3).lower())
+    cm = cm if cm else []
     cm.insert(0, (getString(30101), 'Action(ToggleWatched)'))
 
     item.addStreamInfo('video', {'width': 1920, 'height': 1080} if isHD else {'width': 720, 'height': 480})
@@ -365,7 +373,7 @@ def addVideo(name, asin, poster=None, fanart=None, infoLabels=None, totalItems=0
     else:
         item.setArt({'Poster': poster})
 
-    cm.insert(1, (getString(30118), 'RunPlugin(%s)' % (url + '&forcefb=1')))
+    cm.insert(1, (getString(30118), 'RunPlugin({})'.format(url + '&forcefb=1')))
     item.addContextMenuItems(cm)
     item.setInfo(type='Video', infoLabels=getInfolabels(infoLabels))
     xbmcplugin.addDirectoryItem(var.pluginhandle, url=url, listitem=item, isFolder=False, totalItems=totalItems)
@@ -387,8 +395,8 @@ def toogleWatchlist(asin=None, action='add'):
         return
 
     par = getParams(asin, cookie)
-    data = getURL(par['data-%s-url' % action],
-                  postdata={'ASIN': asin,
+    data = getURL(par['data-{}-url'.format(action)],
+                  postdata={'itemId': par['data-title-id'],
                             'dataType': 'json',
                             'csrfToken': par['data-csrf-token'],
                             'action': action,
@@ -405,11 +413,12 @@ def toogleWatchlist(asin=None, action='add'):
 
 
 def getParams(asin, cookie):
-    url = BaseUrl + '/gp/video/hover/%s?format=json&refTag=dv-hover&requesterPageType=Detail' % asin
+    url = BaseUrl + '/gp/video/hover/{}?format=json&refTag=dv-hover&requesterPageType=Detail'.format(asin)
     data = getURL(url, useCookie=cookie, rjson=False)
     if data:
+        data = py2_decode(py2_encode(data), 'unicode_escape')
         data = re.compile('(<form.*</form>)').findall(data)[0]
-        form = BeautifulSoup(data.replace('\\\"', '"'), convertEntities=BeautifulSoup.HTML_ENTITIES)
+        form = BeautifulSoup(data, 'html.parser')
         return form.button
     return ''
 
@@ -423,18 +432,24 @@ def gen_id(renew=False):
 
 
 def MechanizeLogin():
-    cj = requests.cookies.RequestsCookieJar()
-    user = loadUser()
-    if user['cookie']:
-        cj.update(pickle.loads(user['cookie']))
-        return cj
+    ask = var.args.get('ask') == 'true'
+    if not ask:
+        cj = requests.cookies.RequestsCookieJar()
+        user = loadUser()
+        if user['cookie']:
+            cj.update(pickle.loads(user['cookie']))
+            return cj
 
     Log('Login')
+    res = False
+    if not getConfig('login'):
+        writeConfig('login', 'true')
+        res = LogIn(ask)
+        writeConfig('login')
+    return res
 
-    return LogIn(False)
 
-
-def LogIn(ask=True):
+def LogIn(ask):
     user = loadUser()
     email = user['email']
     password = decode(user['password'])
@@ -444,33 +459,30 @@ def LogIn(ask=True):
         email = ''
 
     if ask:
-        keyboard = xbmc.Keyboard(email, getString(30002))
-        keyboard.doModal()
-        if keyboard.isConfirmed() and keyboard.getText():
-            email = keyboard.getText()
+        email = Dialog.input(getString(30002), email)
+        if email:
             password = setLoginPW()
     else:
         if not email or not password:
             Dialog.notification(getString(30200), getString(30216))
-            xbmc.executebuiltin('Addon.OpenSettings(%s)' % var.addon.getAddonInfo('id'))
+            xbmc.executebuiltin('Addon.OpenSettings({})'.format(var.addon.getAddonInfo('id')))
             return False
 
     if password:
         cj = requests.cookies.RequestsCookieJar()
-        br = mechanize.Browser()
-        br.set_handle_robots(False)
+        br = mechanicalsoup.StatefulBrowser(soup_config={'features': 'html.parser'})
         br.set_cookiejar(cj)
-        br.set_handle_gzip(True)
         caperr = -5
         while caperr:
-            Log('Connect to SignIn Page %s attempts left' % -caperr)
-            br.addheaders = [('User-Agent', getConfig('UserAgent'))]
+            Log('Connect to SignIn Page {} attempts left'.format(-caperr))
+            br.session.headers = [('User-Agent', getConfig('UserAgent'))]
             br.open(BaseUrl + '/gp/aw/si.html')
-            response = br.response().read()
-            if mobileUA(response) or 'signIn' not in [i.name for i in br.forms()]:
+            try:
+                br.select_form('form[name="signIn"]')
+            except mechanicalsoup.LinkNotFoundError:
                 getUA(True)
                 caperr += 1
-                WriteLog(response, 'login-si')
+                WriteLog(br.get_current_page(), 'login-si')
                 xbmc.sleep(randint(750, 1500))
             else:
                 break
@@ -478,35 +490,34 @@ def LogIn(ask=True):
             Dialog.ok(getString(30200), getString(30213))
             return False
 
-        br.select_form(name='signIn')
         br['email'] = email
         br['password'] = password
-        br.addheaders = [('Accept', 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8'),
-                         ('Accept-Encoding', 'gzip, deflate'),
-                         ('Accept-Language', 'de,en-US;q=0.8,en;q=0.6'),
-                         ('Cache-Control', 'max-age=0'),
-                         ('Connection', 'keep-alive'),
-                         ('Content-Type', 'application/x-www-form-urlencoded'),
-                         ('Host', BaseUrl.split('//')[1]),
-                         ('Origin', BaseUrl),
-                         ('User-Agent', getConfig('UserAgent')),
-                         ('Upgrade-Insecure-Requests', '1')]
-        br.submit()
+        br.session.headers = [('Accept', 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8'),
+                              ('Accept-Encoding', 'gzip, deflate'),
+                              ('Accept-Language', 'de,en-US;q=0.8,en;q=0.6'),
+                              ('Cache-Control', 'max-age=0'),
+                              ('Connection', 'keep-alive'),
+                              ('Content-Type', 'application/x-www-form-urlencoded'),
+                              ('Host', BaseUrl.split('//')[1]),
+                              ('Origin', BaseUrl),
+                              ('User-Agent', getConfig('UserAgent')),
+                              ('Upgrade-Insecure-Requests', '1')]
+        br.submit_selected()
         response, soup = parseHTML(br)
         WriteLog(response, 'login')
 
-        while any(s in response for s in ['auth-mfa-form', 'ap_dcq_form', 'ap_captcha_img_label', 'claimspicker', 'fwcim-form']):
+        while any(sp in response for sp in ['auth-mfa-form', 'ap_dcq_form', 'ap_captcha_img_label', 'claimspicker', 'fwcim-form', 'auth-captcha-image-container']):
             br = MFACheck(br, email, soup)
             if not br:
                 return False
-            useMFA = 'otpCode' in str(list(br.forms())[0])
-            br.submit()
+            useMFA = True if br.get_current_form().form.find('input', {'name': 'otpCode'}) else False
+            br.submit_selected()
             response, soup = parseHTML(br)
             WriteLog(response, 'login-mfa')
 
         if 'action=sign-out' in response:
             try:
-                usr = re.search(r'config.customerName[^"]*"([^"]*)', response).group(1)
+                usr = re.search(r'action=sign-out[^"]*"[^>]*>[^?]+\s+([^?]+?)\s*\?', response).group(1)
             except AttributeError:
                 usr = getString(30209)
 
@@ -514,7 +525,7 @@ def LogIn(ask=True):
                 usr = user['name']
 
             if var.multiuser and ask:
-                usr = Dialog.input(getString(30179), usr).decode('utf-8')
+                usr = Dialog.input(getString(30179), usr)
                 if not usr:
                     return False
             if useMFA:
@@ -542,14 +553,14 @@ def LogIn(ask=True):
         elif 'message_error' in response:
             writeConfig('login_pass', '')
             msg = soup.find('div', attrs={'id': 'message_error'})
-            Log('Login Error: %s' % msg.p.renderContents(None).strip())
+            Log('Login Error: {}'.format(msg.p.renderContents(None).strip()))
             Dialog.ok(getString(30200), getString(30201))
         elif 'message_warning' in response:
             msg = soup.find('div', attrs={'id': 'message_warning'})
-            Log('Login Warning: %s' % msg.p.renderContents(None).strip())
+            Log('Login Warning: {}'.format(msg.p.renderContents(None).strip()))
         elif 'auth-error-message-box' in response:
             msg = soup.find('div', attrs={'class': 'a-alert-content'})
-            Log('Login MFA: %s' % msg.ul.li.span.renderContents(None).strip())
+            Log('Login MFA: {}'.format(msg.ul.li.span.renderContents(None).strip()))
             Dialog.ok(getString(30200), getString(30214))
         else:
             Dialog.ok(getString(30200), getString(30213))
@@ -565,7 +576,7 @@ def loadUsers():
 
 
 def loadUser(empty=False):
-    cur_user = var.addon.getSetting('login_acc').decode('utf-8')
+    cur_user = py2_decode(var.addon.getSetting('login_acc'))
     users = loadUsers()
     user = None if empty else [i for i in users if cur_user == i['name']]
     return user[0] if user else {'email': '', 'password': '', 'name': '', 'save': '', 'cookie': ''}
@@ -593,7 +604,7 @@ def switchUser():
         var.addon.setSetting('save_login', user['save'])
         var.addon.setSetting('login_acc', user['name'])
         if xbmc.getInfoLabel('Container.FolderPath') == sys.argv[0]:
-            xbmc.executebuiltin('RunPlugin(%s)' % sys.argv[0])
+            xbmc.executebuiltin('RunPlugin({})'.format(sys.argv[0]))
             xbmc.executebuiltin('Container.Refresh')
     return -1 < sel
 
@@ -634,14 +645,18 @@ def selectUser():
 
 def MFACheck(br, email, soup):
     Log('MFA, DCQ or Captcha form')
-    uni_soup = unicode(soup)
+    uni_soup = soup.__unicode__()
+    try:
+        br.select_form('form[name="signIn"]')
+    except mechanicalsoup.LinkNotFoundError:
+        br.select_form()
+
     if 'auth-mfa-form' in uni_soup:
         msg = soup.find('form', attrs={'id': 'auth-mfa-form'})
         msgtxt = msg.p.renderContents().strip()
         kb = xbmc.Keyboard('', msgtxt)
         kb.doModal()
         if kb.isConfirmed() and kb.getText():
-            br.select_form(nr=0)
             br['otpCode'] = kb.getText()
         else:
             return False
@@ -666,15 +681,13 @@ def MFACheck(br, email, soup):
 
         ret = Dialog.input(q_title[sel])
         if ret:
-            br.select_form(nr=0)
             br[q_id[sel]] = ret
         else:
             return False
-    elif 'ap_captcha_img_label' in uni_soup:
+    elif ('ap_captcha_img_label' in uni_soup) or ('auth-captcha-image-container' in uni_soup):
         wnd = Captcha((getString(30008).split('.')[0]), soup, email)
         wnd.doModal()
         if wnd.email and wnd.cap and wnd.pwd:
-            br.select_form(nr=0)
             br['email'] = wnd.email
             br['password'] = wnd.pwd
             br['guess'] = wnd.cap
@@ -691,12 +704,11 @@ def MFACheck(br, email, soup):
         if cs_quest:
             for c in soup.findAll('div', attrs={'data-a-input-name': 'option'}):
                 choices.append((c.span.contents[0].strip(), c.input['name'], c.input['value']))
-            sel = Dialog.select('%s - %s' % (cs_title, cs_quest.contents[0].strip()), [k[0] for k in choices])
+            sel = Dialog.select('{} - {}'.format(cs_title, cs_quest.contents[0].strip()), [k[0] for k in choices])
         else:
             sel = 100 if Dialog.ok(cs_title, cs_hint) else -1
 
         if sel > -1:
-            br.select_form(nr=0)
             if sel < 100:
                 br[choices[sel][1]] = [choices[sel][2]]
         else:
@@ -705,8 +717,6 @@ def MFACheck(br, email, soup):
         msg = soup.find('div', attrs={'class': 'a-row a-spacing-micro cvf-widget-input-code-label'}).contents[0].strip()
         ret = Dialog.input(msg)
         if ret:
-            br.select_form(nr=0)
-            Log(br)
             br['code'] = ret
         else:
             return False
@@ -714,12 +724,8 @@ def MFACheck(br, email, soup):
 
 
 def setLoginPW():
-    keyboard = xbmc.Keyboard('', getString(30003))
-    keyboard.doModal()
-    if keyboard.isConfirmed() and keyboard.getText():
-        password = keyboard.getText()
-        return password
-    return False
+    password = Dialog.input(getString(30003), '')
+    return password if password else False
 
 
 def encode(data):
@@ -744,23 +750,19 @@ def getmac():
 
 
 def cleanData(data):
-    if isinstance(data, str):
-        data = data.decode('utf-8')
-    elif not isinstance(data, unicode):
-        return data
-
+    data = py2_decode(data)
     data = data.replace('\u00A0', ' ').replace('\u2013', '-').strip()
     return None if data == '' else data
 
 
 def cleanName(name, isfile=True):
-    notallowed = ['<', '>', ':', '"', '\\', '/', '|', '*', '?']
+    notallowed = ['<', '>', ':', '"', '\\', '/', '|', '*', '?', '`']
     if not isfile:
-        notallowed = ['<', '>', '"', '|', '*', '?']
+        notallowed = ['<', '>', '"', '|', '*', '?', '`']
     for c in notallowed:
         name = name.replace(c, '')
     if not os.path.supports_unicode_filenames and not isfile:
-        name = name.encode('utf-8')
+        name = py2_encode(name)
     return name
 
 
@@ -790,7 +792,7 @@ def GET_ASINS(content):
 
 def SCRAP_ASINS(aurl, cj=True):
     asins = []
-    wl_order = ['DATE_ADDED_DESC', 'TITLE_DESC', 'TITLE_ASC'][int('0'+var.addon.getSetting("wl_order"))]
+    wl_order = ['DATE_ADDED_DESC', 'TITLE_DESC', 'TITLE_ASC'][int('0' + var.addon.getSetting("wl_order"))]
     url = BaseUrl + aurl + '?ie=UTF8&sort=' + wl_order
     content = getURL(url, useCookie=cj, rjson=False)
     WriteLog(content, 'watchlist')
@@ -830,7 +832,7 @@ def checkCase(title):
 
 def getCategories():
     data = getURL(ATV_URL + '/cdp/catalog/GetCategoryList?firmware=fmw:15-app:1.1.23&deviceTypeID=A1MPSLFC7L5AFK'
-                  '&deviceID=%s&format=json&OfferGroups=B0043YVHMY&IncludeAll=T&version=2' % gen_id())
+                  '&deviceID={}&format=json&OfferGroups=B0043YVHMY&IncludeAll=T&version=2'.format(gen_id()))
     asins = {}
     for maincat in data['message']['body']['categories']:
         mainCatId = maincat.get('id')
@@ -840,18 +842,18 @@ def getCategories():
                 subPageType = cattype.get('subPageType')
                 subCatId = cattype.get('id')
                 if subPageType == 'PrimeMovieRecentlyAdded' or subPageType == 'PrimeTVRecentlyAdded':
-                    asins[mainCatId].update({subPageType: urlparse.parse_qs(cattype['query'])['ASINList'][0].split(',')})
+                    asins[mainCatId].update({subPageType: parse_qs(cattype['query'])['ASINList'][0].split(',')})
                 elif 'prime_editors_picks' in subCatId:
                     for picks in cattype['categories']:
                         query = picks.get('query').upper()
                         title = picks.get('title')
                         if title and ('ASINLIST' in query):
-                            querylist = urlparse.parse_qs(query)
+                            querylist = parse_qs(query)
                             alkey = None
                             for key in querylist.keys():
                                 if 'ASINLIST' in key:
                                     alkey = key
-                            asins[mainCatId].update({title: urlparse.parse_qs(query)[alkey][0]})
+                            asins[mainCatId].update({title: parse_qs(query)[alkey][0]})
     return asins
 
 
@@ -864,7 +866,7 @@ def SetView(content, view=None, updateListing=False):
         viewid = views[int(var.addon.getSetting(view))]
         if viewid == -1:
             viewid = int(var.addon.getSetting(view.replace('view', 'id')))
-        xbmc.executebuiltin('Container.SetViewMode(%s)' % viewid)
+        xbmc.executebuiltin('Container.SetViewMode({})'.format(viewid))
     xbmcplugin.endOfDirectory(var.pluginhandle, updateListing=updateListing)
 
 
@@ -893,7 +895,7 @@ def getTypes(items, col):
     lowlist = []
     for data in items:
         data = data[0]
-        if isinstance(data, unicode):
+        if isinstance(data, str):
             if 'Rated' in data:
                 item = data.split('for')[0]
                 if item not in studiolist and item != '' and item != 0 and item != 'Inc.' and item != 'LLC.':
@@ -909,7 +911,11 @@ def getTypes(items, col):
                         studiolist.append(item)
                         lowlist.append(item.lower())
         elif 1800 < data < 2200:
-            unidata = unicode(data)[0:-1] + '0 -'
+            try:
+                data = str(data)
+            except NameError:
+                pass
+            unidata = data[0:-1] + '0 -'
             if unidata not in studiolist:
                 studiolist.append(unidata)
     return studiolist
@@ -947,7 +953,7 @@ def getConfig(cfile, defvalue=''):
     return value if value else defvalue
 
 
-def writeConfig(cfile, value):
+def writeConfig(cfile, value=''):
     cfgfile = os.path.join(configpath, cfile)
     cfglockfile = os.path.join(configpath, cfile + '.lock')
 
@@ -970,7 +976,8 @@ def writeConfig(cfile, value):
             return True
         else:
             l = xbmcvfs.File(cfglockfile)
-            modified = float(l.read())
+            modified = l.read()
+            modified = float(modified) if modified else 0
             l.close()
             if time.time() - modified > 0.1:
                 xbmcvfs.delete(cfglockfile)
@@ -987,9 +994,8 @@ def insertLF(string, begin=70):
 
 
 def parseHTML(br):
-    response = br.response().read().decode('utf-8')
-    response = re.sub(r'(?i)(<!doctype \w+).*>', r'\1>', response)
-    soup = BeautifulSoup(response, convertEntities=BeautifulSoup.HTML_ENTITIES)
+    soup = br.get_current_page()
+    response = soup.__unicode__()
     return response, soup
 
 
@@ -1008,13 +1014,13 @@ def getUA(blacklist=False):
         if UAcur not in UAblist:
             UAblist.append(UAcur)
             writeConfig('UABlacklist', json.dumps(UAblist))
-            Log('UA: %s blacklisted' % UAcur)
+            Log('UA: {} blacklisted'.format(UAcur))
 
     UAwlist = [i for i in UAlist if i not in UAblist]
     if not UAlist or len(UAwlist) < 5:
         Log('Loading list of common UserAgents')
         html = getURL('https://techblog.willshouse.com/2012/01/03/most-common-user-agents/', rjson=False)
-        soup = BeautifulSoup(html, convertEntities=BeautifulSoup.HTML_ENTITIES)
+        soup = BeautifulSoup(html, 'html.parser')
         text = soup.find('textarea')
         if text:
             UAlist = text.string.split('\n')
@@ -1031,7 +1037,7 @@ def getUA(blacklist=False):
 
 
 def mobileUA(content):
-    soup = BeautifulSoup(content, convertEntities=BeautifulSoup.HTML_ENTITIES)
+    soup = BeautifulSoup(content, 'html.parser')
     res = soup.find('html')
     res = res.get('class', '') if res else ''
     return True if 'a-mobile' in res or 'a-tablet' in res else False
@@ -1083,4 +1089,4 @@ AgePin = getConfig('age_pin')
 PinReq = int(getConfig('pin_req', '0'))
 RestrAges = ','.join(a[1] for a in Ages[PinReq:]) if AgePin else ''
 
-Log('Args: %s' % var.args)
+Log('Args: {}'.format(var.args))

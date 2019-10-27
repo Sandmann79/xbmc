@@ -2,9 +2,12 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 import os.path
-from BeautifulSoup import Tag
+from bs4 import Tag
 from datetime import date
-from urllib import quote_plus
+try:
+    from urllib.parse import quote_plus
+except ImportError:
+    from urllib import quote_plus
 
 from .ages import AgeRestrictions
 from .singleton import Singleton
@@ -37,9 +40,9 @@ class AmazonTLD(Singleton):
 
     @staticmethod
     def _cleanName(name, isfile=True):
-        notallowed = ['<', '>', ':', '"', '\\', '/', '|', '*', '?']
+        notallowed = ['<', '>', ':', '"', '\\', '/', '|', '*', '?', '´']
         if not isfile:
-            notallowed = ['<', '>', '"', '|', '*', '?']
+            notallowed = ['<', '>', '"', '|', '*', '?', '´']
         for c in notallowed:
             name = name.replace(c, '')
         if not os.path.supports_unicode_filenames and not isfile:
@@ -128,7 +131,11 @@ class AmazonTLD(Singleton):
         return
 
     def SetupAmazonLibrary(self):
-        source_path = xbmc.translatePath('special://profile/sources.xml').decode('utf-8')
+        source_path = xbmc.translatePath('special://profile/sources.xml')
+        try:
+            source_path = source_path.decode('utf-8')
+        except AttributeError:
+            pass
         source_added = False
         source = {self._s.ms_mov: self._s.MOVIE_PATH, self._s.ms_tv: self._s.TV_SHOWS_PATH}
 
@@ -364,13 +371,13 @@ class AmazonTLD(Singleton):
             url = ''
             if 'title' not in item:
                 continue
-            if export and catalog == "Browse" and "adTreatment" not in item["formats"][0]["offers"][0].keys() and not self._s.payCont and self._g.library not in parent:
-                continue
             wl_asin = item['titleId']
             if '_show' in parent and item.get('ancestorTitles'):
                 item.update(item['ancestorTitles'][0])
                 url = 'SeriesASIN=%s&ContentType=TVSeason&IncludeBlackList=T' % item['titleId']
             contentType, infoLabels = self.getInfos(item, export)
+            if export and catalog == "Browse" and not infoLabels['isPrime'] and not self._s.payCont and self._g.library not in parent:
+                continue
             name = infoLabels['DisplayTitle']
             asin = item['titleId']
             wlmode = 1 if self._g.watchlist in parent else 0
@@ -467,7 +474,7 @@ class AmazonTLD(Singleton):
 
         par = self.getParams(asin, cookie)
         data = getURL(par['data-%s-url' % action],
-                      postdata={'itemId': asin,
+                      postdata={'itemId': par['data-title-id'],
                                 'dataType': 'json',
                                 'csrfToken': par['data-csrf-token'],
                                 'action': action,
@@ -491,8 +498,9 @@ class AmazonTLD(Singleton):
         url = self._g.BaseUrl + '/gp/video/hover/%s?format=json&refTag=dv-hover&requesterPageType=Detail' % asin
         data = getURL(url, useCookie=cookie, rjson=False)
         if data:
+            data = data.encode('utf-8').decode('unicode_escape')
             data = re.compile('(<form.*</form>)').findall(data)[0]
-            form = BeautifulSoup(data.replace('\\\"', '"'), convertEntities=BeautifulSoup.HTML_ENTITIES)
+            form = BeautifulSoup(data, 'html.parser')
             return form.button
         return ''
 
@@ -551,6 +559,7 @@ class AmazonTLD(Singleton):
                 title = infoLabels['TVShowTitle']
             c.execute('insert or ignore into miss values (?,?,?,?)', (asins, title, infoLabels['Year'], contentType))
         c.close()
+        self._db.commit()
         return infoLabels
 
     def checkMissing(self):

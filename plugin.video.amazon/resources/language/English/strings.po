@@ -29,7 +29,6 @@ msgctxt "Addon Disclaimer"
 msgid "Some parts of this addon may not be legal in your country of residence - please check with your local laws before installing.\nThis Addon uses pyDes by Todd Whiteman"
 msgstr ""
 
-
 msgctxt "#30001"
 msgid "Amazon Account"
 msgstr ""
@@ -47,7 +46,7 @@ msgid "Sign In..."
 msgstr ""
 
 msgctxt "#30005"
-msgid "Enable Subtitles"
+msgid "Subtitles languages"
 msgstr ""
 
 msgctxt "#30006"
@@ -332,7 +331,27 @@ msgctxt "#30082"
 msgid "Mediasource TV Title"
 msgstr ""
 
-#empty strings from id 30082 to 30099
+msgctxt "#30083"
+msgid "None"
+msgstr ""
+
+msgctxt "#30084"
+msgid "All"
+msgstr ""
+
+msgctxt "#30085"
+msgid "From Kodi player language settings"
+msgstr ""
+
+msgctxt "#30086"
+msgid "From settings, fallback to english"
+msgstr ""
+
+msgctxt "#30087"
+msgid "From settings, fallback to all"
+msgstr ""
+
+#empty strings from id 30088 to 30099
 
 msgctxt "#30100"
 msgid "Popular"
@@ -421,11 +440,11 @@ msgid "Initializing Movie Scan"
 msgstr ""
 
 msgctxt "#30122"
-msgid "Scanning Page %s"
+msgid "Scanning Page {}"
 msgstr ""
 
 msgctxt "#30123"
-msgid "%s Movies found"
+msgid "{} Movies found"
 msgstr ""
 
 msgctxt "#30124"
@@ -455,15 +474,15 @@ msgid "Initializing Television Scan"
 msgstr ""
 
 msgctxt "#30132"
-msgid "%s Shows"
+msgid "{} Shows"
 msgstr ""
 
 msgctxt "#30133"
-msgid "%s Seasons"
+msgid "{} Seasons"
 msgstr ""
 
 msgctxt "#30134"
-msgid "%s Episodes"
+msgid "{} Episodes"
 msgstr ""
 
 msgctxt "#30135"
@@ -479,7 +498,7 @@ msgid "Create a new Database?"
 msgstr ""
 
 msgctxt "#30138"
-msgid "This can take up to %s minutes"
+msgid "This can take up to {} minutes"
 msgstr ""
 
 #empty string with id 30139
@@ -531,11 +550,11 @@ msgid "Movie"
 msgstr ""
 
 msgctxt "#30155"
-msgid "Remove %s"
+msgid "Remove {}"
 msgstr ""
 
 msgctxt "#30156"
-msgid "Remove %s from Database?"
+msgid "Remove {} from Database?"
 msgstr ""
 
 msgctxt "#30157"
@@ -561,7 +580,7 @@ msgid "TV Rating"
 msgstr ""
 
 msgctxt "#30163"
-msgid "Rename %s"
+msgid "Rename {}"
 msgstr ""
 
 msgctxt "#30164"
@@ -627,11 +646,11 @@ msgid "Display Name"
 msgstr ""
 
 msgctxt "#30180"
-msgid "Add %s to Watchlist"
+msgid "Add {} to Watchlist"
 msgstr ""
 
 msgctxt "#30181"
-msgid "Remove %s from Watchlist"
+msgid "Remove {} from Watchlist"
 msgstr ""
 
 #empty string with id 30182
@@ -643,7 +662,7 @@ msgstr ""
 #empty string with id 30184
 
 msgctxt "#30185"
-msgid "Export %s"
+msgid "Export {}"
 msgstr ""
 
 msgctxt "#30186"

@@ -28,10 +28,14 @@ def EntryPoint():
     # warnings.simplefilter('error', requests.packages.urllib3.exceptions.SNIMissingWarning)
     # warnings.simplefilter('error', requests.packages.urllib3.exceptions.InsecurePlatformWarning)
 
-    import urlparse
-    args = dict(urlparse.parse_qsl(urlparse.urlparse(sys.argv[2]).query))
+    try:
+        from urllib.parse import urlparse, parse_qsl
+    except ImportError:
+        from urlparse import urlparse, parse_qsl
+    args = dict(parse_qsl(urlparse(sys.argv[2]).query))
+    path = urlparse(sys.argv[0]).path
 
-    Log(args, Log.DEBUG)
+    Log('Requested {}'.format(path if 1 < len(path) else args), Log.DEBUG)
     mode = args.get('mode', None)
 
     if not getConfig('UserAgent'):
@@ -51,7 +55,17 @@ def EntryPoint():
         xbmc.executebuiltin('Addon.OpenSettings(%s)' % g.addon.getAddonInfo('id'))
         return
 
-    if None is mode:
+    if path.startswith('/pv/'):
+        path = path[4:]
+        try:
+            path = path.decode('utf-8')
+        except AttributeError:
+            pass
+        verb, path = path.split('/', 1)
+        if 'search' == verb: g.pv.Search()
+        elif 'browse' == verb: g.pv.Browse(path)
+        elif 'refresh' == verb: g.pv.Refresh(path)
+    elif None is mode:
         Log('Version: %s' % g.__version__)
         Log('Unicode filename support: %s' % os.path.supports_unicode_filenames)
         Log('Locale: %s / Language: %s' % (g.userAcceptLanguages.split(',')[0], s.Language))
@@ -62,7 +76,12 @@ def EntryPoint():
     elif mode == 'listCategories':
         g.amz.listCategories(args.get('url', ''), args.get('opt', ''))
     elif mode == 'listContent':
-        g.amz.listContent(args.get('cat'), args.get('url', '').decode('utf-8'), int(args.get('page', '1')), args.get('opt', ''))
+        url = args.get('url', '')
+        try:
+            url = url.decode('utf-8')
+        except AttributeError:
+            pass
+        g.amz.listContent(args.get('cat'), url, int(args.get('page', '1')), args.get('opt', ''))
     elif mode == 'PlayVideo':
         from .playback import PlayVideo
         PlayVideo(args.get('name', ''), args.get('asin'), args.get('adult', '0'), int(args.get('trailer', '0')), int(args.get('selbitrate', '0')))
@@ -79,13 +98,9 @@ def EntryPoint():
         xbmcaddon.Addon(aid).openSettings()
     elif mode == 'ageSettings':
         AgeRestrictions().Settings()
-    elif mode == 'PrimeVideo_Browse':
-        g.pv.Browse(None if 'path' not in args else args['path'])
-    elif mode == 'PrimeVideo_Search':
-        g.pv.Search()
     elif mode in ['LogIn', 'remLoginData', 'removeUser', 'renameUser', 'switchUser']:
-        exec '%s()' % mode
+        exec('{}()'.format(mode))
     elif mode in ['checkMissing', 'Search']:
-        exec 'g.amz.%s()' % mode
+        exec('g.amz.{}()'.format(mode))
     elif mode == 'getPage':
         g.amz.getPage(args.get('url'), args.get('opt'))

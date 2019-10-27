@@ -26,7 +26,7 @@ msgid "Movies and Television Shows for Prime Members"
 msgstr ""
 
 msgctxt "Addon Disclaimer"
-msgid "Some parts of this addon may not be legal in your country of residence - please check with your local laws before installing.\nThis Addon uses pyDes by Todd Whiteman"
+msgid "Some parts of this addon may not be legal in your country of residence – please check with your local laws before installing.\nThis Addon uses pyDes by Todd Whiteman"
 msgstr ""
 
 msgctxt "#30001"
@@ -46,7 +46,7 @@ msgid "Stream Bitrate (0 - Ask)"
 msgstr ""
 
 msgctxt "#30005"
-msgid "Subtitles languages"
+msgid "Audio descriptions (disables 5.1/7.1)"
 msgstr ""
 
 msgctxt "#30006"
@@ -109,33 +109,19 @@ msgctxt "#30020"
 msgid "Enable DRM check"
 msgstr ""
 
-#empty string with id 30021
+msgctxt "#30021"
+msgid "Language"
+msgstr ""
 
 msgctxt "#30022"
 msgid "Keep me logged in"
 msgstr ""
 
-msgctxt "#30023"
-msgid "None"
-msgstr ""
+#empty strings from id 30023 to id 30027
 
-msgctxt "#30024"
-msgid "All"
+msgctxt "#30028"
+msgid "Stretching"
 msgstr ""
-
-msgctxt "#30025"
-msgid "From Kodi player language settings"
-msgstr ""
-
-msgctxt "#30026"
-msgid "From settings, fallback to english"
-msgstr ""
-
-msgctxt "#30027"
-msgid "From settings, fallback to all"
-msgstr ""
-
-#empty string with id 30028
 
 msgctxt "#30029"
 msgid "Movie View"
@@ -153,13 +139,19 @@ msgctxt "#30032"
 msgid "Episode View"
 msgstr ""
 
-#empty strings from id 30033 to 30034
+msgctxt "#30033"
+msgid "Audio"
+msgstr ""
+
+msgctxt "#30034"
+msgid "Subtitles"
+msgstr ""
 
 msgctxt "#30035"
 msgid "Enable Views"
 msgstr ""
 
-#empty strings id 30036
+#empty string with id 30036
 
 msgctxt "#30037"
 msgid "Disable SSL Certificate Verification"

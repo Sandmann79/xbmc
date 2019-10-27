@@ -1,45 +1,65 @@
 <settings>
     <!-- General -->
     <category label="30011">
-        <setting id="playmethod" type="enum" label="30012" values="Browser|Script/Batch|Android|Input Stream" default="0"/>
+        <setting id="playmethod" type="enum" label="30012" values="Browser|Script/Batch|Android|Input Stream" default="3"/>
         <setting type="sep"/>
+        <!-- Browser/Script -->
         <setting id="browser" type="enum" label="Browser" values="Internet Explorer|Chrome|Firefox|Safari" default="0" visible="lt(-2,2)"/>
+        <!-- Browser -->
         <setting id="cust_path" type="bool" label="30043" default="" visible="eq(-3,0)"/>
         <setting id="br_path" type="file" label="30062" default="" visible="eq(-4,0)" enable="eq(-1,true)" subsetting="true"/>
-        <setting id="scr_path" type="file" label="30048" default="" visible="eq(-5,1)"/>
-        <setting id="scr_param" type="text" label="Parameter ({u} - URL / {f} - Framerate)" default="{f} &quot;{u}&quot;" visible="eq(-6,1)"/>
-        <setting id="framerate" type="bool" label="30049" default="true" visible="eq(-7,1)" />
-        <setting id="ownappdata" type="bool" label="30059" default="false" visible="eq(-8,0)" enable="gt(-6,0) + lt(-6,3)"/>
-        <setting id="kiosk" type="bool" label="30042" default="true" visible="eq(-9,0)" enable="!eq(-7,2) + !eq(-7,3)"/>
+        <setting id="ownappdata" type="bool" label="30059" default="false" visible="eq(-5,0)" enable="gt(-3,0) + lt(-3,3)"/>
+        <setting id="kiosk" type="bool" label="30042" default="true" visible="eq(-6,0)" enable="!eq(-4,2) + !eq(-4,3)"/>
+        <!-- Script -->
+        <setting id="scr_path" type="file" label="30048" default="" visible="eq(-7,1)"/>
+        <setting id="scr_param" type="text" label="Parameter ({u} - URL / {f} - Framerate)" default="{f} &quot;{u}&quot;" visible="eq(-8,1)"/>
+        <setting id="framerate" type="bool" label="30049" default="true" visible="eq(-9,1)" />
+        <!-- - -->
         <setting type="sep"/>
+        <!-- Browser/Script -->
         <setting id="fullscreen" type="bool" label="30041" default="false" visible="lt(-11,2)"/>
         <setting id="clickwait" type="labelenum" values="1|2|3|4|5|6|7|8|9|10|11|12|13|14|15|16|17|18|19|20|21|22|23|24|25|26|27|28|29|30" label="30044" default="10" enable="eq(-1,true)" visible="lt(-12,2)"/>
         <setting id="pininput" type="bool" label="30045" default="false" visible="lt(-13,2)" />
         <setting id="pin" type="number" label="30046" enable="eq(-1,true)" default="" visible="lt(-14,2)" />
         <setting id="waitprepin" type="labelenum" values="1|2|3|4|5|6|7|8|9|10|11|12|13|14|15|16|17|18|19|20|21|22|23|24|25|26|27|28|29|30" label="30057" default="10" visible="eq(-4,false) + lt(-15,2)" enable="eq(-2,true) + eq(-4,false)"/>
         <setting id="waitpin" type="labelenum" values="1|2|3|4|5|6|7|8|9|10|11|12|13|14|15|16|17|18|19|20|21|22|23|24|25|26|27|28|29|30" enable="eq(-3,true) + eq(-5,true)" label="30047" default="5" visible="eq(-5,true) + lt(-16,2)"/>
-        <setting id="sub_lang" type="enum" label="30005" visible="eq(-17,3)" default="0" lvalues='30023|30024|30025|30026|30027'/>
-        <setting id="pref_host" type="labelenum" label="30019" visible="eq(-18,3)" values="Auto|Akamai|Cloudfront|Level3|Limelight" default="Auto"/>
-        <setting id="is_settings" type="action" label="30013" visible="eq(-19,3)" action="RunPlugin(plugin://plugin.video.amazon-test/?mode=openSettings&url=is)" option="close"/>
-        <setting id="age_settings" type="action" label="30018" visible="eq(-20,3)" action="RunPlugin(plugin://plugin.video.amazon-test/?mode=ageSettings)" option="close"/>
-        <setting id="drm_check" type="bool" label="30020" visible="eq(-21,3)" default="true"/>
-        <setting id="fallback_method" type="enum" label="Fallback" values="None|Browser|Script/Batch|Android" default="0" visible="eq(-22,3)" enable="eq(-1,true)" subsetting="true"/>
+        <!-- Inputstream -->
+        <setting id="pref_host" type="labelenum" label="30019" visible="eq(-17,3)" values="Auto|Akamai|Cloudfront|Level3|Limelight" default="Auto"/>
+        <setting id="is_settings" type="action" label="30013" visible="eq(-18,3)" action="RunPlugin(plugin://plugin.video.amazon-test/?mode=openSettings&url=is)" option="close"/>
+        <setting id="age_settings" type="action" label="30018" visible="eq(-19,3)" action="RunPlugin(plugin://plugin.video.amazon-test/?mode=ageSettings)" option="close"/>
+        <setting id="drm_check" type="bool" label="30020" visible="eq(-20,3)" default="true"/>
+        <setting id="fallback_method" type="enum" label="Fallback" values="None|Browser|Script/Batch|Android" default="0" visible="eq(-21,3)" enable="eq(-1,true)" subsetting="true"/>
     </category>
+    <!-- Language -->
+    <category label="30021">
+        <!-- Audio -->
+        <setting label="30033" type="lsep"/>
+        <setting id="audio_description" type="bool" label="30005" default="false"/>
+        <!-- Subtitles -->
+        <setting label="30034" type="lsep"/>
+        <setting id="sub_stretch" type="bool" label="30028" default="false"/>
+    </category>
+    <!-- Connection -->
     <category label="30038">
         <setting id="ssl_verif" type="bool" label="30037" default="false"/>
         <setting id="items_perpage" type="labelenum" values="20|30|40|60|80|100|140|180|220|250" label="30039" default="40"/>
+        <!-- - -->
         <setting label="30001" type="lsep"/>
         <setting id="region" type="enum" label="Region" values="Auto|Germany|United Kingdom|USA|Japan|ROE Europe|ROW Europe|ROW Far East|ROW North America" default="0" />
         <setting id="multiuser" type="bool" label="30009" default="false"/>
         <setting id="rememberme" type="bool" label="30022" default="true"/>
+        <!-- Multiuser -->
         <setting type="action" label="30130" action="RunPlugin(plugin://plugin.video.amazon-test/?mode=LogIn)" visible="eq(-2,true)" option="close" />
         <setting type="action" label="30131" action="RunPlugin(plugin://plugin.video.amazon-test/?mode=removeUser)" visible="eq(-3,true)" option="close"/>
         <setting type="action" label="30008" action="RunPlugin(plugin://plugin.video.amazon-test/?mode=LogIn)" option="close" visible="eq(-4,false)"/>
         <setting id="login_acc" type="text" label="30014" enable="false" default="" subsetting="true" visible="eq(-5,false)"/>
+        <!-- /Multiuser -->
         <setting id="save_login" type="bool" label="30006" default="false"/>
+        <!-- Multiuser -->
         <setting label="30007" type="action" action="RunPlugin(plugin://plugin.video.amazon-test/?mode=remLoginData)" option="close" visible="eq(-7,false)"/>
         <setting label="30010" type="action" action="RunPlugin(plugin://plugin.video.amazon-test/?mode=remLoginData)" option="close" visible="eq(-8,true)"/>
     </category>
+    <!-- Views -->
     <category label="30015">
         <setting id="viewenable" type ="bool" label="30035" default="false"/>
         <setting id="movieview" type="enum" values="List|Poster|IconWall|Shift|InfoWall|WideList|Wall|Banner|FanArt|Custom" label="30029" default="5" enable="eq(-1,true)" />
@@ -51,6 +71,7 @@
         <setting id="episodeview" type="enum" values="List|Poster|IconWall|Shift|InfoWall|WideList|Wall|Banner|FanArt|Custom" label="30032" default="3" enable="eq(-7,true)"/>
         <setting id="episodeid" type="number" label="View ID" enable="eq(-1,9) + eq(-8,true)" subsetting="true" />
     </category>
+    <!-- Export -->
     <category label="30060">
         <setting id="enablelibraryfolder" type="bool" label="30061" default="false" />
         <setting id="customlibraryfolder" type="folder" label="30062" enable="eq(-1,true)" default="special://profile/addon_data/plugin.video.amazon-test" source="auto" option="writeable" subsetting="true" />
@@ -58,11 +79,13 @@
         <setting id="mediasource_movie" type="text" label="30064" default="Amazon Movies" />
         <setting id="mediasource_tv" type="text" label="30065" default="Amazon TV" />
     </category>
+    <!-- Miscellaneous -->
     <category label="30070">
         <setting label="Fanart" type="lsep"/>
         <setting id="tmdb_art" type="enum" lvalues="30050|30051|30052" label="30016" default="1"/>
         <setting id="tvdb_art" type="enum" lvalues="30050|30053|30054|30056" label="30017" default="1"/>
         <setting id="useshowfanart" type="bool" label="30055" default="true"/>
+        <!-- - -->
         <setting label="30070" type="lsep"/>
         <setting id="paycont" type="bool" label="30073" default="false"/>
         <setting id="disptvshow" type="bool" label="30071" default="false"/>

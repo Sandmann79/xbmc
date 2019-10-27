@@ -9,6 +9,7 @@ from sys import argv
 import hashlib
 import hmac
 import uuid
+import xbmc
 import xbmcaddon
 import xbmcgui
 import json
@@ -43,9 +44,8 @@ class Globals(Singleton):
     PayCol = 'FFE95E01'
     tmdb = 'b34490c056f0dd9e3ec9af2167a731f4'  # b64decode('YjM0NDkwYzA1NmYwZGQ5ZTNlYzlhZjIxNjdhNzMxZjQ=')
     tvdb = '1D62F2F90030C444'  # b64decode('MUQ2MkYyRjkwMDMwQzQ0NA==')
-    pluginid = argv[0]
-    pluginhandle = int(argv[1]) if pluginid else -1
     langID = {'movie': 30165, 'series': 30166, 'season': 30167, 'episode': 30173}
+    KodiK = int(xbmc.getInfoLabel('System.BuildVersion').split('.')[0]) < 18
 
     """ Allow the usage of dot notation for data inside the _globals dictionary, without explicit function call """
     def __getattr__(self, name): return self._globals[name]
@@ -53,15 +53,32 @@ class Globals(Singleton):
     # def __delattr__(self, name): self._globals.pop(name, None)
 
     def __init__(self):
+        try:
+            from urllib.parse import urlparse
+        except ImportError:
+            from urlparse import urlparse
+
+        # argv[0] can contain the entire path, so we limit ourselves to the base url
+        pid = urlparse(argv[0])
+        self.pluginid = '{}://{}/'.format(pid.scheme, pid.netloc)
+        self.pluginhandle = int(argv[1]) if (1 < len(argv)) and self.pluginid else -1
+
+        self._globals['monitor'] = xbmc.Monitor()
         self._globals['addon'] = xbmcaddon.Addon()
         self._globals['dialog'] = xbmcgui.Dialog()
         # self._globals['dialogprogress'] = xbmcgui.DialogProgress()
         self._globals['hasExtRC'] = xbmc.getCondVisibility('System.HasAddon(script.chromium_remotecontrol)')
 
-        self._globals['DATA_PATH'] = xbmc.translatePath(self.addon.getAddonInfo('profile')).decode('utf-8')
+        self._globals['DATA_PATH'] = xbmc.translatePath(self.addon.getAddonInfo('profile'))
         self._globals['CONFIG_PATH'] = OSPJoin(self._globals['DATA_PATH'], 'config')
-        self._globals['HOME_PATH'] = xbmc.translatePath('special://home').decode('utf-8')
-        self._globals['PLUGIN_PATH'] = self._globals['addon'].getAddonInfo('path').decode('utf-8')
+        self._globals['HOME_PATH'] = xbmc.translatePath('special://home')
+        self._globals['PLUGIN_PATH'] = self._globals['addon'].getAddonInfo('path')
+        # Python27 compat
+        try:
+            for field in ['DATA_PATH', 'HOME_PATH', 'PLUGIN_PATH']:
+                self._globals[field] = self._globals[field].decode('utf-8')
+        except AttributeError:
+            pass
 
         # With main PATHs configured, we initialise the get/write path attributes
         # and generate/retrieve the device ID
@@ -88,13 +105,13 @@ class Globals(Singleton):
 
         # Save the language code for HTTP requests and set the locale for l10n
         loc = getdefaultlocale()[0]
-        userAcceptLanguages = 'en-gb%s, en;q=0.5'
-        self._globals['userAcceptLanguages'] = userAcceptLanguages % '' if not loc else '%s, %s' % (loc.lower().replace('_', '-'), userAcceptLanguages % ';q=0.75')
+        userAcceptLanguages = 'en-gb{}, en;q=0.5'
+        self._globals['userAcceptLanguages'] = userAcceptLanguages.format('') if not loc else '{}, {}'.format(loc.lower().replace('_', '-'), userAcceptLanguages.format(';q=0.75'))
 
         self._globals['CONTEXTMENU_MULTIUSER'] = [
-            (getString(30130, self._globals['addon']).split('…')[0], 'RunPlugin(%s?mode=LogIn)' % self.pluginid),
-            (getString(30131, self._globals['addon']).split('…')[0], 'RunPlugin(%s?mode=removeUser)' % self.pluginid),
-            (getString(30132, self._globals['addon']), 'RunPlugin(%s?mode=renameUser)' % self.pluginid)
+            (getString(30130, self._globals['addon']).split('…')[0], 'RunPlugin({}?mode=LogIn)'.format(self.pluginid)),
+            (getString(30131, self._globals['addon']).split('…')[0], 'RunPlugin({}?mode=removeUser)'.format(self.pluginid)),
+            (getString(30132, self._globals['addon']), 'RunPlugin({}?mode=renameUser)'.format(self.pluginid))
         ]
 
     @staticmethod
@@ -102,7 +119,12 @@ class Globals(Singleton):
         guid = getConfig("GenDeviceID") if not renew else False
         if not guid or len(guid) != 56:
             from random import randint
-            guid = hmac.new(unicode(randint(1, int('9' * 100))), uuid.uuid4().bytes, hashlib.sha224).hexdigest()
+            r = randint(1, int('9' * 100))
+            try:
+                r = unicode(r)
+            except NameError:
+                r = bytes(str(r), 'utf-8')
+            guid = hmac.new(r, uuid.uuid4().bytes, hashlib.sha224).hexdigest()
             writeConfig("GenDeviceID", guid)
         return guid
 
@@ -143,32 +165,36 @@ class Settings(Singleton):
             l = xbmc.convertLanguage(l['value'], xbmc.ISO_639_1)
             l = l if l else xbmc.getLanguage(xbmc.ISO_639_1, False)
             return l if l else 'en'
-        elif 'playMethod' == name: return int(self._gs("playmethod"))
-        elif 'browser' == name: return int(self._gs("browser"))
-        elif 'MaxResults' == name: return int(self._gs("items_perpage"))
-        elif 'tvdb_art' == name: return self._gs("tvdb_art")
-        elif 'tmdb_art' == name: return self._gs("tmdb_art")
-        elif 'showfanart' == name: return self._gs("useshowfanart") == 'true'
-        elif 'dispShowOnly' == name: return self._gs("disptvshow") == 'true'
+        elif 'playMethod' == name: return int(self._gs('playmethod'))
+        elif 'browser' == name: return int(self._gs('browser'))
+        elif 'MaxResults' == name: return int(self._gs('items_perpage'))
+        elif 'tvdb_art' == name: return self._gs('tvdb_art')
+        elif 'tmdb_art' == name: return self._gs('tmdb_art')
+        elif 'showfanart' == name: return self._gs('useshowfanart') == 'true'
+        elif 'dispShowOnly' == name: return self._gs('disptvshow') == 'true'
         elif 'payCont' == name: return self._gs('paycont') == 'true'
         elif 'verbLog' == name: return self._gs('logging') == 'true'
-        elif 'useIntRC' == name: return self._gs("remotectrl") == 'true'
-        elif 'RMC_vol' == name: return self._gs("remote_vol") == 'true'
+        elif 'useIntRC' == name: return self._gs('remotectrl') == 'true'
+        elif 'RMC_vol' == name: return self._gs('remote_vol') == 'true'
         elif 'ms_mov' == name: ms_mov = self._gs('mediasource_movie'); return ms_mov if ms_mov else 'Amazon Movies'
         elif 'ms_tv' == name: ms_tv = self._gs('mediasource_tv'); return ms_tv if ms_tv else 'Amazon TV'
         elif 'multiuser' == name: return self._gs('multiuser') == 'true'
         elif 'DefaultFanart' == name: return OSPJoin(self._g.PLUGIN_PATH, 'fanart.jpg')
         elif 'NextIcon' == name: return OSPJoin(self._g.PLUGIN_PATH, 'resources', 'next.png')
         elif 'HomeIcon' == name: return OSPJoin(self._g.PLUGIN_PATH, 'resources', 'home.png')
-        elif 'wl_order' == name: return ['DATE_ADDED_DESC', 'TITLE_DESC', 'TITLE_ASC'][int('0' + self._gs("wl_order"))]
+        elif 'wl_order' == name: return ['DATE_ADDED_DESC', 'TITLE_DESC', 'TITLE_ASC'][int('0' + self._gs('wl_order'))]
         elif 'verifySsl' == name: return self._gs('ssl_verif') == 'false'
         elif 'OfferGroup' == name: return '' if self.payCont else '&OfferGroups=B0043YVHMY'
-        elif 'wl_export' == name: return self._gs("wl_export") == 'true'
-        elif 'region' == name: return int(self._gs("region"))
+        elif 'wl_export' == name: return self._gs('wl_export') == 'true'
+        elif 'region' == name: return int(self._gs('region'))
+        elif 'proxyaddress' == name: return getConfig('proxyaddress')
+        elif 'subtitleStretch' == name: return self._gs('sub_stretch') == 'true'
+        elif 'audioDescriptions' == name: return self._gs('audio_description') == 'true'
 
 
 def jsonRPC(method, props='', param=None):
     """ Wrapper for Kodi's executeJSONRPC API """
+    from .logging import Log
     rpc = {'jsonrpc': '2.0',
            'method': method,
            'params': {},
@@ -190,11 +216,12 @@ def jsonRPC(method, props='', param=None):
         return res['error']
 
     result = res['result']
-    return result if type(result) == unicode else res['result'].get(props, res['result'])
+    return res['result'].get(props, res['result']) if type(result) == dict else result
 
 
 def sleep(sec):
-    if xbmc.Monitor().waitForAbort(sec):
+    from .logging import Log
+    if Globals().monitor.waitForAbort(sec):
         import sys
         Log('Abort requested - exiting addon')
         sys.exit()

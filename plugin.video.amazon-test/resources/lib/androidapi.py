@@ -2,9 +2,12 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 import os.path
-from BeautifulSoup import Tag
+from bs4 import Tag
 from datetime import date
-from urllib import quote_plus
+try:
+    from urllib.parse import quote_plus
+except ImportError:
+    from urllib import quote_plus
 
 from .ages import AgeRestrictions
 from .singleton import Singleton

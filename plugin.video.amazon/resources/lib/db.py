@@ -1,8 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
-from .common import xbmc, var, xbmcvfs, xbmcgui, os, Dialog, Log, getString, getConfig, writeConfig, homepath, pluginname
-from BeautifulSoup import BeautifulSoup
+from .common import *
 
 dbplugin = 'script.module.amazon.database'
 dbpath = os.path.join(homepath, 'addons', dbplugin, 'lib')
@@ -28,13 +27,13 @@ def waitforDB(cnx):
 
 def getDBlocation(retvar):
     custdb = var.addon.getSetting('customdbfolder') == 'true'
-    old_dbpath = xbmc.translatePath(getConfig('old_dbfolder')).decode('utf-8')
+    old_dbpath = xbmc.translatePath(getConfig('old_dbfolder'))
     cur_dbpath = dbpath
 
     if not old_dbpath:
         old_dbpath = cur_dbpath
     if custdb:
-        cur_dbpath = xbmc.translatePath(var.addon.getSetting('dbfolder')).decode('utf-8')
+        cur_dbpath = xbmc.translatePath(var.addon.getSetting('dbfolder'))
     else:
         var.addon.setSetting('dbfolder', dbpath)
 
@@ -64,7 +63,7 @@ def cur_exec(cur, query, param=None):
     syntax = {True: {'counttables': 'SELECT count(*) FROM sqlite_master WHERE type="table" AND name=(?)',
                      'insert ignore': 'insert or ignore'},
               False: {'counttables': 'show tables like ?',
-                      "?": "%s"}}
+                      "?": "{}"}}
 
     for k, v in syntax[var.usesqlite].items():
         query = query.replace(k, v)
@@ -121,7 +120,7 @@ def connSQL(dbname):
                 mysql_config['database'] = None
                 cnx = mysql.connector.connect(**mysql_config)
                 c = cnx.cursor()
-                cur_exec(c, 'CREATE DATABASE %s CHARACTER SET utf8 COLLATE utf8_general_ci;' % dbname)
+                cur_exec(c, 'CREATE DATABASE {} CHARACTER SET utf8 COLLATE utf8_general_ci;'.format(dbname))
                 cnx.database = dbname
                 createDatabase(cnx, dbname)
             else:
@@ -133,17 +132,17 @@ def connSQL(dbname):
 
 
 def loadSQLconfig():
+    import xml.etree.ElementTree as et
     keys = 'host port user pass'
-    userdata = xbmc.translatePath('special://userdata').decode('utf-8')
+    userdata = xbmc.translatePath('special://userdata')
     asfile = os.path.join(userdata, 'advancedsettings.xml')
     if xbmcvfs.exists(asfile):
-        f = xbmcvfs.File(asfile, 'r')
-        soup = BeautifulSoup(f.read(), convertEntities=BeautifulSoup.XML_ENTITIES)
-        videodb = soup.advancedsettings.videodatabase
-        if videodb:
-            for tag in videodb.findAll():
-                if tag.name in keys:
-                    var.addon.setSetting('db' + tag.name, tag.string)
+        root = et.parse(xbmcvfs.File(asfile, 'r')).getroot()
+        videodb = root.find('videodatabase')
+        if videodb is not None:
+            for tag in videodb.iter():
+                if tag.tag in keys:
+                    var.addon.setSetting('db' + tag.tag, tag.text)
         else:
             Dialog.notification(pluginname, getString(30226))
     else:
@@ -153,7 +152,7 @@ def loadSQLconfig():
 def createDatabase(cnx, dbname):
     c = cnx.cursor()
     cur_exec(c, 'drop table if exists categories')
-    Log('Creating %s database' % dbname.upper())
+    Log('Creating {} database'.format(dbname.upper()))
 
     if 'movie' in dbname:
         cur_exec(c, 'drop table if exists movies')

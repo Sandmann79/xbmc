@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 import os
-from urllib import quote_plus
 import shlex
 import subprocess
 import threading
@@ -11,10 +10,19 @@ from inputstreamhelper import Helper
 from .network import *
 from .common import Globals, Settings, jsonRPC, sleep
 from .itemlisting import getInfolabels
+try:
+    from urllib.parse import quote_plus
+except:
+    from urllib import quote_plus
 
 
 def _getListItem(li):
-    return xbmc.getInfoLabel('ListItem.%s' % li).decode('utf-8')
+    il = xbmc.getInfoLabel('ListItem.%s' % li)
+    try:
+        il = il.decode('utf-8')
+    except:
+        pass
+    return il
 
 
 def _Input(mousex=0, mousey=0, click=0, keys=None, delay='200'):
@@ -27,7 +35,7 @@ def _Input(mousex=0, mousey=0, click=0, keys=None, delay='200'):
     mousex = screenWidth / 2 if mousex == -1 else mousex
     mousey = screenHeight / 2 if mousey == -1 else mousey
 
-    spec_keys = {'{EX}': ('!{F4}', 'control+shift+q', 'kd:cmd t:q ku:cmd'),
+    spec_keys = {'{EX}': ('!{F4}', 'alt+F4', 'kd:cmd t:q ku:cmd'),
                  '{SPC}': ('{SPACE}', 'space', 't:p'),
                  '{LFT}': ('{LEFT}', 'Left', 'kp:arrow-left'),
                  '{RGT}': ('{RIGHT}', 'Right', 'kp:arrow-right'),
@@ -117,134 +125,9 @@ def PlayVideo(name, asin, adultstr, trailer, forcefb=0):
         fr = round(eval(fps_string + '.0'), 3)
         return str(fr).replace('.0', '')
 
-    def _ParseStreams(suc, data, retmpd=False):
+    def _ParseStreams(suc, data, retmpd=False, bypassproxy=False):
         g = Globals()
         s = Settings()
-
-        def _ParseSubs(data):
-            bForcedOnly = False  # Whether or not we should only download forced subtitles
-            down_lang = int('0' + g.addon.getSetting('sub_lang'))
-            if 0 == down_lang:
-                return []  # Return if the sub_lang is set to None
-            lang_main = jsonRPC('Settings.GetSettingValue', param={'setting': 'locale.subtitlelanguage'})
-            lang_main = lang_main['value'] if 'value' in lang_main else ''
-
-            # Locale.SubtitleLanguage (and .AudioLanguage) can either return a language or:
-            # [ S] none: no subtitles
-            # [ S] forced_only: forced subtitles only
-            # [AS] original: the stream's original language
-            # [AS] default: Kodi's UI
-            #
-            # For simplicity's sake (and temporarily) we will treat original as AudioLanguage, and
-            # AudioLanguage 'original' as 'default'
-            if lang_main not in ['none', 'forced_only', 'original', 'default']:
-                lang_main = xbmc.convertLanguage(lang_main, xbmc.ISO_639_1)
-            if 'none' == lang_main:
-                return []
-            if 'forced_only' == lang_main:
-                bForcedOnly = True
-            if ('forced_only' == lang_main) or ('original' == lang_main):
-                lang_main = jsonRPC('Settings.GetSettingValue', param={'setting': 'locale.audiolanguage'})
-                lang_main = lang_main['value'] if 'value' in lang_main else ''
-                if lang_main not in ['original', 'default']:
-                    lang_main = xbmc.convertLanguage(lang_main, xbmc.ISO_639_1)
-                if lang_main == 'original':
-                    lang_main = 'default'
-            if 'default' == lang_main:
-                lang_main = xbmc.getLanguage(xbmc.ISO_639_1, False)
-
-            # At this point we should have the user's selected language or a valid fallback, although
-            # we further sanitize for safety
-            lang_main = lang_main if lang_main else xbmc.getLanguage(xbmc.ISO_639_1, False)
-            lang_main = lang_main if lang_main else 'en'
-
-            # down_lang: None | All | From Kodi player language settings | From settings, fallback to english | From settings, fallback to all
-            lang_main = '' if 1 == down_lang else lang_main
-            lang_fallback = None if 3 > down_lang else ('' if 4 == down_lang else 'en')
-
-            localeConversion = {
-                'ar-001': 'ar',
-                'cmn-hans': 'zh HANS',
-                'cmn-hant': 'zh HANT',
-                'da-dk': 'da',
-                'es-419': 'es LA',
-                'ja-jp': 'ja',
-                'ko-kr': 'ko',
-                'nb-no': 'nb',
-                'sv-se': 'sv',
-            }  # Clean up language and locale information where needed
-            subs = []
-            if (not down_lang) or (('subtitleUrls' not in data) and ('forcedNarratives' not in data)):
-                return subs
-
-            def_subs = []
-            fb_subs = []
-
-            for sub in data['subtitleUrls'] + data['forcedNarratives']:
-                lang = sub['languageCode'].strip()
-                if lang in localeConversion:
-                    lang = localeConversion[lang]
-                # Clean up where needed
-                if '-' in lang:
-                    p1 = re.split('-', lang)[0]
-                    p2 = re.split('-', lang)[1]
-                    if (p1 == p2):  # Remove redundant locale information when not useful
-                        lang = p1
-                    else:
-                        lang = '%s %s' % (p1, p2.upper())
-                # Amazon's en defaults to en_US, not en_UK
-                if 'en' == lang:
-                    lang = 'en US'
-                # Read close-caption information where needed
-                if '[' in sub['displayName']:
-                    cc = re.search(r'(\[[^\]]+\])', sub['displayName'])
-                    if None is not cc:
-                        lang = lang + (' %s' % cc.group(1))
-                # Add forced subs information
-                if ' forced ' in sub['displayName']:
-                    lang = lang + '.Forced'
-                if (' forced ' in sub['displayName']) or (False is bForcedOnly):
-                    sub['languageCode'] = lang
-                    if lang_main in lang:
-                        def_subs.append(sub)
-                    if (None is not lang_fallback) and (lang_fallback in lang):
-                        fb_subs.append(sub)
-
-            if not def_subs:
-                def_subs = fb_subs
-
-            import codecs
-            for sub in def_subs:
-                escape_chars = [('&amp;', '&'), ('&quot;', '"'), ('&lt;', '<'), ('&gt;', '>'), ('&apos;', "'")]
-                srtfile = xbmc.translatePath('special://temp/%s.srt' % sub['languageCode']).decode('utf-8')
-                subDisplayLang = '“%s” subtitle (%s)' % (sub['displayName'].strip(), sub['languageCode'])
-                content = ''
-                with codecs.open(srtfile, 'w', encoding='utf-8') as srt:
-                    num = 0
-                    # Since .srt are available on amazon's servers, we strip the default extension and try downloading it just once
-                    subUrl = re.search(r'^(.*?\.)[^.]{1,}$', sub['url'])
-                    content = '' if None is subUrl else getURL(subUrl.group(1) + 'srt', rjson=False, attempt=777)
-                    if 0 < len(content):
-                        Log('Downloaded %s' % subDisplayLang)
-                        srt.write(content)
-                    else:
-                        content = getURL(sub['url'], rjson=False, attempt=3)
-                        if 0 < len(content):
-                            Log('Converting %s' % subDisplayLang)
-                            for tt in re.compile('<tt:p(.*)').findall(content):
-                                tt = re.sub('<tt:br[^>]*>', '\n', tt)
-                                tt = re.search(r'begin="([^"]*).*end="([^"]*).*>([^<]*).', tt)
-                                subtext = tt.group(3)
-                                for ec in escape_chars:
-                                    subtext = subtext.replace(ec[0], ec[1])
-                                if tt:
-                                    num += 1
-                                    srt.write('%s\n%s --> %s\n%s\n\n' % (num, tt.group(1), tt.group(2), subtext))
-                if 0 == len(content):
-                    Log('Unable to download %s' % subDisplayLang)
-                else:
-                    subs.append(srtfile)
-            return subs
 
         HostSet = g.addon.getSetting("pref_host")
         subUrls = []
@@ -252,8 +135,8 @@ def PlayVideo(name, asin, adultstr, trailer, forcefb=0):
         if not suc:
             return False, data
 
-        if retmpd:
-            subUrls = _ParseSubs(data)
+        if retmpd and not bypassproxy:
+            subUrls = [sub['url'] for sub in data['subtitles'] if 'url' in sub.keys()]
 
         if 'audioVideoUrls' in data.keys():
             hosts = data['audioVideoUrls']['avCdnUrlSets']
@@ -287,7 +170,8 @@ def PlayVideo(name, asin, adultstr, trailer, forcefb=0):
                     Log('Host not reachable: ' + cdn['cdn'])
                     continue
 
-                return (urlset['url'], subUrls) if retmpd else (True, _extrFr(data))
+                returl = urlset['url'] if bypassproxy else 'http://{}/mpd/{}'.format(s.proxyaddress, quote_plus(urlset['url']))
+                return (returl, subUrls) if retmpd else (True, _extrFr(data))
 
         return False, getString(30217)
 
@@ -454,6 +338,16 @@ def PlayVideo(name, asin, adultstr, trailer, forcefb=0):
         dRes = 'PlaybackUrls' if trailer == 2 else 'PlaybackUrls,SubtitleUrls,ForcedNarratives'
         mpaa_str = AgeRestrictions().GetRestrictedAges() + getString(30171)
         drm_check = g.addon.getSetting("drm_check") == 'true'
+
+        verifyISA = '{"jsonrpc":"2.0","id":1,"method":"Addons.GetAddonDetails","params":{"addonid":"inputstream.adaptive"}}'
+        if 'error' in xbmc.executeJSONRPC(verifyISA):
+            xbmc.executebuiltin('UpdateAddonRepos', True)
+            xbmc.executebuiltin('InstallAddon(inputstream.adaptive)', True)
+            if 'error' in xbmc.executeJSONRPC(verifyISA):
+                Log('InputStream.Adaptive addon is not installed')
+                _playDummyVid()
+                return True
+
         inputstream_helper = Helper('mpd', drm='com.widevine.alpha')
 
         if not inputstream_helper.check_inputstream():
@@ -468,8 +362,8 @@ def PlayVideo(name, asin, adultstr, trailer, forcefb=0):
             _playDummyVid()
             return True
 
-        mpd, subs = _ParseStreams(*getURLData('catalog/GetPlaybackResources', asin, extra=True,
-                                              vMT=vMT, dRes=dRes, useCookie=cookie), retmpd=True)
+        mpd, subs = _ParseStreams(*getURLData('catalog/GetPlaybackResources', asin, extra=True, vMT=vMT, dRes=dRes, useCookie=cookie,
+                                              proxyEndpoint='gpr'), retmpd=True, bypassproxy=trailer == 2)
 
         cj_str = ';'.join(['%s=%s' % (k, v) for k, v in cookie.items()])
         opt = '|Content-Type=application%2Fx-www-form-urlencoded&Cookie=' + quote_plus(cj_str)
@@ -486,8 +380,8 @@ def PlayVideo(name, asin, adultstr, trailer, forcefb=0):
         is_version = KodiAddon(g.is_addon).getAddonInfo('version') if g.is_addon else '0'
         is_binary = xbmc.getCondVisibility('System.HasAddon(kodi.binary.instance.inputstream)')
 
-        if trailer != 2:
-            mpd = re.sub(r'~', '', mpd)
+        if (not s.audioDescriptions) and (trailer != 2):
+            mpd = re.sub(r'(~|%7E)', '', mpd)
 
         if drm_check and (not g.platform & g.OS_ANDROID) and (not is_binary):
             mpdcontent = getURL(mpd, useCookie=cookie, rjson=False)
@@ -497,7 +391,13 @@ def PlayVideo(name, asin, adultstr, trailer, forcefb=0):
 
         Log(mpd, Log.DEBUG)
 
-        if (not extern):
+        if g.KodiK and extern:
+            content = getATVData('GetASINDetails', 'ASINList=' + asin)['titles'][0]
+            ct, Info = g.amz.getInfos(content, False)
+            title = Info['DisplayTitle']
+            thumb = Info.get('Poster', Info['Thumb'])
+            mpaa_check = str(Info.get('MPAA', mpaa_str)) in mpaa_str or isAdult
+        else:
             mpaa_check = _getListItem('MPAA') in mpaa_str + mpaa_str.replace(' ', '') or isAdult
             title = _getListItem('Label')
             thumb = _getListItem('Art(season.poster)')
@@ -505,16 +405,9 @@ def PlayVideo(name, asin, adultstr, trailer, forcefb=0):
                 thumb = _getListItem('Art(tvshow.poster)')
                 if not thumb:
                     thumb = _getListItem('Art(thumb)')
-        else:
-            content = getATVData('GetASINDetails', 'ASINList=' + asin)['titles'][0]
-            ct, Info = g.amz.getInfos(content, False)
-            title = Info['DisplayTitle']
-            thumb = Info.get('Poster', Info['Thumb'])
-            mpaa_check = str(Info.get('MPAA', mpaa_str)) in mpaa_str or isAdult
 
         if trailer == 1:
             title += ' (Trailer)'
-            Info = {'Plot': _getListItem('Plot')}
         if not title:
             title = name
 
@@ -523,7 +416,7 @@ def PlayVideo(name, asin, adultstr, trailer, forcefb=0):
 
         listitem = xbmcgui.ListItem(label=title, path=mpd)
 
-        if extern or trailer == 1:
+        if g.KodiK and extern:
             listitem.setInfo('video', getInfolabels(Info))
 
         if 'adaptive' in g.is_addon:
@@ -538,23 +431,22 @@ def PlayVideo(name, asin, adultstr, trailer, forcefb=0):
         listitem.setProperty('inputstreamaddon', g.is_addon)
         listitem.setMimeType('application/dash+xml')
         listitem.setContentLookup(False)
-        # xbmc.executebuiltin('Dialog.Close(busydialog)')
         player = _AmazonPlayer()
-        player.extern = extern
-        player.asin = asin
-        player.url = mpd
-        player.cookie = cookie
         player.resolve(listitem)
-        starttime = time.time()
+        player.asin = asin
+        player.cookie = cookie
+        player.content = trailer
+        player.extern = extern
 
-        while not xbmc.abortRequested and player.running:
+        starttime = time.time()
+        while (not g.monitor.abortRequested()) and player.running:
             if player.isPlayingVideo():
                 player.video_lastpos = player.getTime()
-                if time.time() > starttime + player.interval:
+                if time.time() > (starttime + player.interval):
                     starttime = time.time()
                     player.updateStream('PLAY')
-            sleep(1)
-
+            g.monitor.waitForAbort(1)
+        player.finished()
         del player
         return True
 
@@ -708,50 +600,76 @@ class _AmazonPlayer(xbmc.Player):
         self.video_lastpos = 0
         self.video_totaltime = 0
         self.dbid = 0
-        self.seek = 0
-        self.url = ''
-        self.extern = ''
         self.asin = ''
         self.cookie = None
         self.interval = 180
         self.running = False
+        self.extern = False
+        self.resume = 0
+        self.watched = 0
+        self.content = 0
+        self.resumedb = OSPJoin(g.DATA_PATH, 'resume.db')
 
     def resolve(self, li):
-        if not self.checkResume():
+        if self.extern and not self.checkResume():
             xbmcplugin.setResolvedUrl(self._g.pluginhandle, True, xbmcgui.ListItem())
             xbmc.executebuiltin('Container.Refresh')
             return
-        self.running = True
-        xbmcplugin.setResolvedUrl(self._g.pluginhandle, True, li)
-        self.PlayerInfo('Starting Playback')
-        if self.seek:
-            self.seekTime(self.seek)
-            self.PlayerInfo('Resuming Playback')
+        if self.resume:
+            li.setProperty('resumetime', str(self.resume))
+            li.setProperty('totaltime', '1')
+            Log('Resuming Video at %s' % self.resume)
 
+        xbmcplugin.setResolvedUrl(self._g.pluginhandle, True, li)
+        self.running = True
+        self.getTimes('Starting Playback')
         self.updateStream('START')
-        Log('Video ContentType Movie? %s' % xbmc.getCondVisibility('VideoPlayer.Content(movies)'), Log.DEBUG)
-        Log('Video ContentType Episode? %s' % xbmc.getCondVisibility('VideoPlayer.Content(episodes)'), Log.DEBUG)
 
     def checkResume(self):
         self.dbid = int('0' + _getListItem('DBID'))
-        Log(self.dbid, Log.DEBUG)
-        if not self.dbid:
+        Log(self.dbid)
+        if self.dbid:
+            dbtype = _getListItem('DBTYPE')
+            result = jsonRPC('VideoLibrary.Get%sDetails' % dbtype, 'resume,playcount', {'%sid' % dbtype: self.dbid})
+            self.resume = int(result[dbtype.lower() + 'details']['resume']['position'])
+            self.watched = int(result[dbtype.lower() + 'details']['playcount'])
+        if self.watched:
+            self.resume = 0
             return True
-        dbtype = _getListItem('DBTYPE')
-        result = jsonRPC('VideoLibrary.Get%sDetails' % dbtype, 'resume,playcount', {'%sid' % dbtype: self.dbid})
-        position = int(result[dbtype.lower() + 'details']['resume']['position'])
-        playcount = int(result[dbtype.lower() + 'details']['playcount'])
-        Log(result, Log.DEBUG)
-
-        if playcount:
-            return True
-        if position > 180:
-            sel = g.dialog.contextmenu([getString(12022).format(time.strftime("%H:%M:%S", time.gmtime(position))), getString(12021)])
+        if not self.resume:
+            self.getResumePoint()
+        if self.resume > 180 and self.extern:
+            Log('Displaying Resumedialog')
+            res_string = getString(12022).replace("%s", "{}") if g.KodiK else getString(12022)
+            sel = g.dialog.contextmenu([res_string.format(time.strftime("%H:%M:%S", time.gmtime(self.resume))), getString(12021)])
             if sel > -1:
-                self.seek = position if sel == 0 else 0
+                self.resume = self.resume if sel == 0 else 0
             else:
                 return False
         return True
+
+    def getResumePoint(self):
+        from codecs import open as co
+        if not xbmcvfs.exists(self.resumedb) or self.content == 2:
+            return {}
+        with co(self.resumedb, 'rb') as fp:
+            items = pickle.load(fp)
+            self.resume = items.get(self.asin, {}).get('resume')
+            fp.close()
+        return items
+
+    def saveResumePoint(self):
+        from codecs import open as co
+        if self.content == 2:
+            return
+        items = self.getResumePoint()
+        with co(self.resumedb, 'wb+') as fp:
+            if self.watched and self.asin in items.keys():
+                del items[self.asin]
+            else:
+                items.update({self.asin: {'resume': self.video_lastpos}})
+            pickle.dump(items, fp, 2)
+            fp.close()
 
     def onPlayBackEnded(self):
         self.finished()
@@ -767,32 +685,25 @@ class _AmazonPlayer(xbmc.Player):
 
     def finished(self):
         self.updateStream('STOP')
-        if self.extern and self.video_lastpos > 0:
-            playcount = 1 if (self.video_lastpos * 100) / self.video_totaltime >= 90 else 0
-            watched = _getListItem('PlayCount')
-            if self.dbid:
-                dbtype = _getListItem('DBTYPE')
-                params = {'%sid' % dbtype: self.dbid,
-                          'resume': {'position': 0 if playcount else self.video_lastpos,
-                                     'total': self.video_totaltime},
-                          'playcount': playcount}
-                res = '' if 'OK' in jsonRPC('VideoLibrary.Set%sDetails' % dbtype, '', params) else 'NOT '
-                Log('%sUpdated %sid(%s) with: pos(%s) total(%s) playcount(%s)' % (res, dbtype, self.dbid, self.video_lastpos,
-                                                                                  self.video_totaltime, playcount))
-            else:
-                Log('No DBID returned')
-                if playcount and not watched:
-                    xbmc.executebuiltin("Action(ToggleWatched)")
+        if self.running:
+            self.running = False
+            if self.video_lastpos > 0 and self.video_totaltime > 0:
+                self.watched = 1 if (self.video_lastpos * 100) / self.video_totaltime >= 90 else 0
+                if self.dbid and g.KodiK:
+                    dbtype = _getListItem('DBTYPE')
+                    params = {'%sid' % dbtype: self.dbid,
+                              'resume': {'position': 0 if self.watched else self.video_lastpos,
+                                         'total': self.video_totaltime},
+                              'playcount': self.watched}
+                    res = '' if 'OK' in jsonRPC('VideoLibrary.Set%sDetails' % dbtype, '', params) else 'NOT '
+                    Log('%sUpdated %sid(%s) with: pos(%s) total(%s) playcount(%s)' % (res, dbtype, self.dbid, self.video_lastpos,
+                                                                                      self.video_totaltime, self.watched))
+                self.saveResumePoint()
 
-        xbmc.executebuiltin('Container.Refresh')
-        self.running = False
-
-    def PlayerInfo(self, msg):
-        while not self.isPlayingVideo():
+    def getTimes(self, msg):
+        while self.video_totaltime <= 0:
             sleep(self.sleeptm)
-        while self.isPlayingVideo() and (0 > self.getTime() >= self.getTotalTime()):
-            sleep(self.sleeptm)
-        if self.isPlayingVideo():
-            self.video_totaltime = self.getTotalTime()
-            self.video_lastpos = self.getTime()
-            Log('%s: %s/%s' % (msg, self.video_lastpos, self.video_totaltime))
+            if self.isPlaying() and self.getTotalTime() >= self.getTime() >= 0:
+                self.video_totaltime = self.getTotalTime()
+                self.video_lastpos = self.getTime()
+        Log('%s: %s/%s' % (msg, self.video_lastpos, self.video_totaltime))

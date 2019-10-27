@@ -472,10 +472,10 @@ def PlayVideo(name, asin, adultstr, trailer, forcefb=0):
         elif not g.platform & g.OS_ANDROID:
             _ExtPlayback(videoUrl, asin, isAdult, methodOW, fr)
 
-        if not playable or isinstance(playable, unicode):
+        if not playable or not isinstance(playable, bool):
             if fallback:
                 methodOW = fallback - 1
-                if isinstance(playable, unicode):
+                if not isinstance(playable, bool):
                     fr = playable
                     playable = False
             else:

@@ -260,7 +260,7 @@ def getATVData(pg_mode, query='', version=2, useCookie=False, site_id=None):
     #                        'All': 'firmware=fmw:22-app:3.0.211.123001&deviceTypeID=A43PXU4ZN2AL1'}
     #                        'All': 'firmware=fmw:045.01E01164A-app:4.7&deviceTypeID=A3VN4E5F7BBC7S'}
     # TypeIDs = {'All': 'firmware=fmw:17-app:2.0.45.1210&deviceTypeID=A2RJLFEH0UEKI9'}
-    _TypeIDs = {'All': 'firmware=fmw:17-app:2.0.45.1210&deviceTypeID=A2M4YX06LWP8WI',
+    _TypeIDs = {'All': 'firmware=fmw:28-app:3.0.258.45141&deviceTypeID=A2GFL5ZMWNE0PX',
                 'GetCategoryList_ftv': 'firmware=fmw:17-app:2.0.45.1210&deviceTypeID=ADVBD696BHNV5'}
 
     g = Globals()
@@ -557,14 +557,14 @@ def LogIn(ask=True):
             elif 'message_error' in response:
                 writeConfig('login_pass', '')
                 msg = soup.find('div', attrs={'id': 'message_error'})
-                Log('Login Error: %s' % msg.p.renderContents(None).strip())
+                Log('Login Error: %s' % msg.p.get_text(strip=True))
                 g.dialog.ok(getString(30200), getString(30201))
             elif 'message_warning' in response:
                 msg = soup.find('div', attrs={'id': 'message_warning'})
-                Log('Login Warning: %s' % msg.p.renderContents(None).strip())
+                Log('Login Warning: %s' % msg.p.get_text(strip=True))
             elif 'auth-error-message-box' in response:
                 msg = soup.find('div', attrs={'class': 'a-alert-content'})
-                Log('Login MFA: %s' % msg.ul.li.span.renderContents(None).strip())
+                Log('Login MFA: %s' % msg.ul.li.span.get_text(strip=True))
                 g.dialog.ok(getString(30200), getString(30214))
             else:
                 g.dialog.ok(getString(30200), getString(30213))

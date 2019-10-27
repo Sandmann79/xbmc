@@ -35,8 +35,8 @@ deviceID = gen_id()
 
 # Android id: A2W5AJPLW5Q6YM, A1PY8QQU9P0WJV, A1MPSLFC7L5AFK // fmw:{AndroidSDK}-app:{AppVersion}
 # deviceTypeID = 'A13Q6A55DBZB7M' #WEB Type
-firmware = 'fmw:17-app:2.0.45.1210'  # Android
-deviceTypeID = 'A2M4YX06LWP8WI'
+firmware = 'fmw:28-app:3.0.258.45141'  # Android
+deviceTypeID = 'A2GFL5ZMWNE0PX'
 
 PARAMETERS = '?firmware=' + firmware + '&deviceTypeID=' + deviceTypeID + '&deviceID=' + deviceID + '&format=json'
 
@@ -48,7 +48,6 @@ def BUILD_BASE_API(MODE, HOST=ATV_URL + '/cdp/'):
 def getList(ContentType=None, start=0, isPrime=True, NumberOfResults=0, OrderBy='MostPopular', version=2,
             AsinList=None, catalog='Browse', asin=None):
 
-    ContentFilter = '&ContractID=UX*'
     BROWSE_PARAMS = '&StartIndex=' + str(start)
     if NumberOfResults:
         BROWSE_PARAMS += '&NumberOfResults=' + str(NumberOfResults)
@@ -63,8 +62,8 @@ def getList(ContentType=None, start=0, isPrime=True, NumberOfResults=0, OrderBy=
     if ContentType == 'TVEpisode':
         BROWSE_PARAMS += '&Detailed=T'
 
-    if not AsinList and not asin and 'tvseries' not in ContentType:
-        BROWSE_PARAMS += ContentFilter
+    # if not AsinList and not asin and 'tvseries' not in ContentType:
+    #     BROWSE_PARAMS += '&ContractID=UX*'
 
     if AsinList:
         BROWSE_PARAMS += '&SeasonASIN=' + AsinList

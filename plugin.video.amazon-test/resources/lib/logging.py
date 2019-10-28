@@ -11,9 +11,12 @@ s = Settings()
 
 
 def Log(msg, level=xbmc.LOGNOTICE):
+    from inspect import currentframe, getframeinfo
+    from os.path import basename as opb
     if level == xbmc.LOGDEBUG and s.verbLog:
         level = xbmc.LOGNOTICE
-    msg = '[{}] {}'.format(g.__plugin__, msg)
+    fi = getframeinfo(currentframe().f_back)
+    msg = '[{0}]{2} {1}'.format(g.__plugin__, msg, '' if not s.verbLog else ' {}:{}'.format(opb(fi.filename), fi.lineno))
     msg = msg if isinstance(u'', str) else msg.encode('utf-8')
     xbmc.log(msg, level)
 

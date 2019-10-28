@@ -897,7 +897,7 @@ def getTypes(items, col):
     lowlist = []
     for data in items:
         data = data[0]
-        if isinstance(data, str):
+        if isinstance(data, type(u'')):
             if 'Rated' in data:
                 item = data.split('for')[0]
                 if item not in studiolist and item != '' and item != 0 and item != 'Inc.' and item != 'LLC.':

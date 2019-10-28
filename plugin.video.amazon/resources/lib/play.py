@@ -50,10 +50,10 @@ def PLAYVIDEO():
         elif not platform & OS_ANDROID:
             ExtPlayback(videoUrl, isAdult, methodOW, fr)
 
-        if not playable or isinstance(playable, str):
+        if not playable or isinstance(playable, type(u'')):
             if fallback:
                 methodOW = fallback - 1
-                if isinstance(playable, str):
+                if isinstance(playable, type(u'')):
                     fr = playable
                     playable = False
             else:

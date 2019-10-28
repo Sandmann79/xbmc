@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 from os.path import join as OSPJoin
+from sys import version_info
 import xbmc
 import xbmcvfs
 from .common import Globals, Settings
@@ -17,7 +18,8 @@ def Log(msg, level=xbmc.LOGNOTICE):
         level = xbmc.LOGNOTICE
     fi = getframeinfo(currentframe().f_back)
     msg = '[{0}]{2} {1}'.format(g.__plugin__, msg, '' if not s.verbLog else ' {}:{}'.format(opb(fi.filename), fi.lineno))
-    msg = msg if isinstance(u'', str) else msg.encode('utf-8')
+    if (3 > version_info[0]) and (isinstance(msg, unicode)):
+        msg = msg.encode('utf-8')
     xbmc.log(msg, level)
 
 
@@ -28,10 +30,8 @@ def WriteLog(data, fn=''):
     fn = '-' + fn if fn else ''
     fn = 'avod{}.log'.format(fn)
     path = OSPJoin(g.HOME_PATH, fn)
-    try:
+    if (3 > version_info[0]) and (isinstance(data, unicode)):
         data = data.encode('utf-8')
-    except:
-        pass
     logfile = xbmcvfs.File(path, 'w')
     logfile.write(data.__str__())
     logfile.close()

@@ -105,6 +105,7 @@ class ProxyHTTPD(BaseHTTPRequestHandler):
             self.send_error(440)
             return (None, None, None)
 
+        if 'Host' in headers: del headers['Host']  # Forcibly strip the host (py3 compliance)
         Log('[PS] Forwarding the {} request towards {}'.format(method.upper(), endpoint), Log.DEBUG)
         r = session.request(method, endpoint, data=data, headers=headers, cookies=cookie, stream=stream, verify=self.server._s.verifySsl)
         rc = r.content
@@ -117,9 +118,9 @@ class ProxyHTTPD(BaseHTTPRequestHandler):
     def _gzip(self, data=None, stream=False):
         """Compress the output data"""
 
-        from StringIO import StringIO
+        from io import BytesIO
         from gzip import GzipFile
-        out = StringIO()
+        out = BytesIO()
         f = GzipFile(fileobj=out, mode='w', compresslevel=5)
         if not stream:
             f.write(data)
@@ -174,15 +175,16 @@ class ProxyHTTPD(BaseHTTPRequestHandler):
         # Log('[PS] Chunked transfer: sending chunk', Log.DEBUG)
 
         if None is not data:
-            gzstream[0].write(data)
+            gzstream[0].write(data.encode('utf-8'))
             gzstream[0].flush()
         chunk = gzstream[1].getvalue()
-        gzstream[1].truncate(0)
+        gzstream[1].seek(0)
+        gzstream[1].truncate()
 
         if 0 == len(chunk):
             return
 
-        data = b'{}\r\n{}\r\n'.format(hex(chunk)[2:].upper(), chunk)
+        data = b'%s\r\n%s\r\n' % (hex(len(chunk))[2:].upper().encode(), chunk)
         self.wfile.write(data)
 
     def _EndChunkedTransfer(self, gzstream):
@@ -199,7 +201,10 @@ class ProxyHTTPD(BaseHTTPRequestHandler):
     def do_POST(self):
         """Respond to POST requests"""
 
-        from urlparse import unquote
+        try:
+            from urllib.parse import unquote
+        except ImportError:
+            from urlparse import unquote
 
         path, headers, data = self._ParseBaseRequest('POST')
         if None is path: return
@@ -213,7 +218,10 @@ class ProxyHTTPD(BaseHTTPRequestHandler):
     def do_GET(self):
         """Respond to GET requests"""
 
-        from urlparse import unquote
+        try:
+            from urllib.parse import unquote
+        except ImportError:
+            from urlparse import unquote
 
         path, headers, data = self._ParseBaseRequest('GET')
         if None is path: return
@@ -303,7 +311,10 @@ class ProxyHTTPD(BaseHTTPRequestHandler):
     def _AlterMPD(self, endpoint, headers, data):
         """ MPD alteration for better language parsing """
 
-        from urlparse import urlparse
+        try:
+            from urllib.parse import urlparse
+        except ImportError:
+            from urlparse import urlparse
         import re
 
         # Extrapolate the base CDN url to avoid proxying data we don't need to

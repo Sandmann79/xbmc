@@ -14,7 +14,7 @@
                         },
                         {
                             "title": "Neue Filme bei Prime Video",
-                            "query": "OfferGroups=B0043YVHMY&ContentType=Movie&OrderBy=AvailabilityDate&MinAmazonRatingCount=40&HideNum=T&Preorder=F&Detailed=T&AID=1&ContractID=UX*",
+                            "query": "OfferGroups=B0043YVHMY&ContentType=Movie&OrderBy=AvailabilityDate&MinAmazonRatingCount=40&HideNum=T&Preorder=F&Detailed=T&AID=1",
                             "id": "prime-movie-2"
                         },
                         {
@@ -339,7 +339,7 @@
                         },
                         {
                             "title": "Neuerscheinungen im Shop",
-                            "query": "ContentType=Movie&OrderBy=AvailabilityDate&MinAmazonRatingCount=40&HideNum=T&Preorder=F&Detailed=T&AID=1&ContractID=UX*",
+                            "query": "ContentType=Movie&OrderBy=AvailabilityDate&MinAmazonRatingCount=40&HideNum=T&Preorder=F&Detailed=T&AID=1",
                             "id": "all-movie-2"
                         },
                         {
@@ -657,7 +657,7 @@
                         },
                         {
                             "title": "Neue Serien bei Prime Video",
-                            "query": "OfferGroups=B0043YVHMY&ContentType=TVEpisode&RollUpToSeason=T&OrderBy=AvailabilityDate&MinAmazonRatingCount=40&HideNum=T&Preorder=F&Detailed=T&AID=1&ContractID=UX*",
+                            "query": "OfferGroups=B0043YVHMY&ContentType=TVEpisode&RollUpToSeason=T&OrderBy=AvailabilityDate&MinAmazonRatingCount=40&HideNum=T&Preorder=F&Detailed=T&AID=1",
                             "id": "prime-tv-2"
                         },
                         {

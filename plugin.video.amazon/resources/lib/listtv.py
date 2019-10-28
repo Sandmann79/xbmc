@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
+from . import tv
+from . import xbmclibrary
 from .common import *
-import xbmclibrary
-import tv
 
 
 def LIST_TV_ROOT():
@@ -116,14 +116,14 @@ def ADD_SHOW_ITEM(showdata, mode='listtv', submode='LIST_TV_SEASONS', cmmode=0, 
         xbmclibrary.EXPORT_SHOW(asin)
         return
 
-    cm = [(getString(30180 + cmmode) % getString(30166),
-           'RunPlugin(%s?mode=common&sitemode=toogleWatchlist&asin=%s&remove=%s)' % (sys.argv[0], asin, cmmode)),
-          (getString(30185) % getString(30166),
-          'RunPlugin(%s?mode=xbmclibrary&sitemode=EXPORT_SHOW&asin=%s)' % (sys.argv[0], asin)),
-          (getString(30183), 'Container.Update(%s?mode=appfeed&sitemode=getSimilarities&asin=%s)' % (sys.argv[0], asin)),
-          (getString(30186), 'RunPlugin(%s?mode=xbmclibrary&sitemode=UpdateLibrary)' % sys.argv[0]),
-          (getString(30155) % getString(30166), 'RunPlugin(%s?mode=tv&sitemode=delfromTVdb&asins=%s&table=shows&title=%s)' % (
-           sys.argv[0], quote_plus(infoLabels['Asins']), quote_plus(seriestitle.encode('utf-8'))))]
+    cm = [(getString(30180 + cmmode).format(getString(30166)),
+           'RunPlugin({}?mode=common&sitemode=toogleWatchlist&asin={}&remove={})'.format(sys.argv[0], asin, cmmode)),
+          (getString(30185).format(getString(30166)),
+          'RunPlugin({}?mode=xbmclibrary&sitemode=EXPORT_SHOW&asin={})'.format(sys.argv[0], asin)),
+          (getString(30183), 'Container.Update({}?mode=appfeed&sitemode=getSimilarities&asin={})'.format(sys.argv[0], asin)),
+          (getString(30186), 'RunPlugin({}?mode=xbmclibrary&sitemode=UpdateLibrary)'.format(sys.argv[0]),
+          (getString(30155).format(getString(30166)), 'RunPlugin({}?mode=tv&sitemode=delfromTVdb&asins={}&table=shows&title={})'.format(
+           sys.argv[0], quote_plus(infoLabels['Asins']), quote_plus(py2_encode(seriestitle)))))]
 
     if onlyinfo:
         return infoLabels
@@ -191,14 +191,14 @@ def ADD_SEASON_ITEM(seasondata, mode='listtv', submode='LIST_EPISODES_DB', dispt
         xbmclibrary.EXPORT_SEASON(asin)
         return
 
-    cm = [(getString(30180 + cmmode) % getString(30167),
-          'RunPlugin(%s?mode=common&sitemode=toogleWatchlist&asin=%s&remove=%s)' % (sys.argv[0], asin, cmmode)),
-          (getString(30185) % getString(30167),
-          'RunPlugin(%s?mode=xbmclibrary&sitemode=EXPORT_SEASON&asin=%s)' % (sys.argv[0], asin)),
-          (getString(30183), 'Container.Update(%s?mode=appfeed&sitemode=getSimilarities&asin=%s)' % (sys.argv[0], asin)),
-          (getString(30186), 'RunPlugin(%s?mode=xbmclibrary&sitemode=UpdateLibrary)' % sys.argv[0]),
-          (getString(30155) % getString(30167), 'RunPlugin(%s?mode=tv&sitemode=delfromTVdb&asins=%s&table=seasons&title=%s)' % (
-           sys.argv[0], quote_plus(infoLabels['Asins']), quote_plus(displayname.encode('utf-8'))))]
+    cm = [(getString(30180 + cmmode).format(getString(30167)),
+          'RunPlugin({}?mode=common&sitemode=toogleWatchlist&asin={}&remove={})'.format(sys.argv[0], asin, cmmode)),
+          (getString(30185).format(getString(30167)),
+          'RunPlugin({}?mode=xbmclibrary&sitemode=EXPORT_SEASON&asin={})'.format(sys.argv[0], asin)),
+          (getString(30183), 'Container.Update({}?mode=appfeed&sitemode=getSimilarities&asin={})'.format(sys.argv[0], asin)),
+          (getString(30186), 'RunPlugin({}?mode=xbmclibrary&sitemode=UpdateLibrary)'.format(sys.argv[0])),
+          (getString(30155).format(getString(30167)), 'RunPlugin({}?mode=tv&sitemode=delfromTVdb&asins={}&table=seasons&title={})'.format(
+           sys.argv[0], quote_plus(infoLabels['Asins']), quote_plus(py2_encode(displayname))))]
 
     if onlyinfo:
         return infoLabels
@@ -221,7 +221,7 @@ def ADD_EPISODE_ITEM(episodedata, onlyinfo=False, export=False):
         stars, votes, fanart, plot, airdate, year, runtime, isHD, isprime, isAdult, audio = episodedata
     tvfanart, tvposter = getFanart(seriesASIN)
     fanart = tvfanart if var.showfanart else fanart
-    displayname = '%s - %s' % (episode, episodetitle)
+    displayname = '{} - {}'.format(episode, episodetitle)
     if episode == 0 and ':' in episodetitle:
         displayname = '- ' + episodetitle.split(':')[1].strip() + ' -'
 
@@ -255,11 +255,9 @@ def ADD_EPISODE_ITEM(episodedata, onlyinfo=False, export=False):
         xbmclibrary.EXPORT_EPISODE(asin)
         return
 
-    cm = [(getString(30185) % getString(30173),
-           'RunPlugin(%s?mode=xbmclibrary&sitemode=EXPORT_EPISODE&asin=%s)' % (sys.argv[0], asin)),
-          (getString(30183),
-           'Container.Update(%s?mode=appfeed&sitemode=getSimilarities&asin=%s)' % (sys.argv[0], asin)),
-          (getString(30186), 'RunPlugin(%s?mode=xbmclibrary&sitemode=UpdateLibrary)' % sys.argv[0])]
+    cm = [(getString(30185).format(getString(30173)), 'RunPlugin({}?mode=xbmclibrary&sitemode=EXPORT_EPISODE&asin={})'.format(sys.argv[0], asin)),
+          (getString(30183), 'Container.Update({}?mode=appfeed&sitemode=getSimilarities&asin={})'.format(sys.argv[0], asin)),
+          (getString(30186), 'RunPlugin({}?mode=xbmclibrary&sitemode=UpdateLibrary)'.format(sys.argv[0]))]
 
     if onlyinfo:
         return infoLabels

@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 import os.path
-from bs4 import Tag
 from datetime import date
 try:
     from urllib.parse import quote_plus
@@ -50,8 +49,10 @@ class AmazonTLD(Singleton):
         return name
 
     def SaveFile(self, filename, data, isdir=None, mode='w'):
-        if isinstance(data, unicode):
+        try:
             data = data.encode('utf-8')
+        except:
+            pass
         if isdir:
             filename = self._cleanName(filename)
             filename = os.path.join(isdir, filename)
@@ -131,55 +132,44 @@ class AmazonTLD(Singleton):
         return
 
     def SetupAmazonLibrary(self):
+        import xml.etree.ElementTree as et
         source_path = xbmc.translatePath('special://profile/sources.xml')
         try:
             source_path = source_path.decode('utf-8')
         except AttributeError:
             pass
         source_added = False
-        source = {self._s.ms_mov: self._s.MOVIE_PATH, self._s.ms_tv: self._s.TV_SHOWS_PATH}
+        source_dict = {self._s.ms_mov: self._s.MOVIE_PATH, self._s.ms_tv: self._s.TV_SHOWS_PATH}
 
-        if xbmcvfs.exists(source_path):
-            srcfile = xbmcvfs.File(source_path)
-            soup = BeautifulSoup(srcfile)
-            srcfile.close()
+        if xbmcvfs.exists(source_path) and xbmcvfs.Stat(source_path).st_size() > 0:
+            root = et.parse(xbmcvfs.File(source_path)).getroot()
         else:
             subtags = ['programs', 'video', 'music', 'pictures', 'files']
-            soup = BeautifulSoup('<sources></sources>')
-            root = soup.sources
+            root = et.Element('sources')
             for cat in subtags:
-                cat_tag = Tag(soup, cat)
-                def_tag = Tag(soup, 'default')
-                def_tag['pathversion'] = 1
-                cat_tag.append(def_tag)
-                root.append(cat_tag)
+                cat_tag = et.SubElement(root, cat)
+                et.SubElement(cat_tag, 'default', attrib={'pathversion': '1'})
 
-        video = soup.find("video")
-
-        for name, path in source.items():
-            path_tag = Tag(soup, "path")
-            path_tag['pathversion'] = 1
-            path_tag.append(path)
-            source_text = soup.find(text=name)
-            if not source_text:
-                source_tag = Tag(soup, "source")
-                name_tag = Tag(soup, "name")
-                name_tag.append(name)
-                source_tag.append(name_tag)
-                source_tag.append(path_tag)
-                video.append(source_tag)
-                Log(name + ' source path added!')
+        for src_name, src_path in source_dict.items():
+            video_tag = root.find('video')
+            if not any(src_name == i.text for i in video_tag.iter()):
+                source_tag = et.SubElement(video_tag, 'source')
+                name_tag = et.SubElement(source_tag, 'name')
+                path_tag = et.SubElement(source_tag, 'path', attrib={'pathversion': '1'})
+                name_tag.text = src_name
+                path_tag.text = src_path
+                Log(src_name + ' source path added')
                 source_added = True
             else:
-                source_tag = source_text.findParent('source')
-                old_path = source_tag.find('path').contents[0]
-                if path not in old_path:
-                    source_tag.find('path').replaceWith(path_tag)
-                    Log(name + ' source path changed!')
-                    source_added = True
+                for tag in video_tag.iter('source'):
+                    if tag.findtext('name') in src_name and tag.findtext('path') not in src_path:
+                        tag.find('path').text = src_path
+                        Log(src_name + ' source path changed')
+                        source_added = True
 
         if source_added:
-            self.SaveFile(source_path, str(soup))
+            xml_tree = et.ElementTree(root)
+            xml_tree.write(xbmcvfs.File(source_path, 'w'))
             self._g.dialog.ok(getString(30187), getString(30188), getString(30189), getString(30190))
             if self._g.dialog.yesno(getString(30191), getString(30192)):
                 xbmc.executebuiltin('RestartApp')
@@ -618,7 +608,7 @@ class AmazonTLD(Singleton):
                             silent=True, rjson=False)
             if not result:
                 continue
-            soup = BeautifulSoup(result)
+            soup = BeautifulSoup(result, 'html.parser')
             tvdb_id = soup.find('seriesid')
             if tvdb_id:
                 tvdb_id = tvdb_id.string
@@ -636,7 +626,7 @@ class AmazonTLD(Singleton):
         seasons = {}
         result = getURL('http://www.thetvdb.com/api/%s/series/%s/banners.xml' % (self._g.tvdb, tvdb_id), silent=True, rjson=False)
         if result:
-            soup = BeautifulSoup(result)
+            soup = BeautifulSoup(result, 'html.parser')
             for lang in langcodes:
                 for datalang in soup.findAll('language'):
                     if datalang.string == lang:

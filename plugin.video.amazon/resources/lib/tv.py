@@ -2,10 +2,10 @@
 # !/usr/bin/env python
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
+from . import db
+from . import appfeed
 from .common import *
 from service import updateRunning
-import db
-import appfeed
 
 DialogPG = xbmcgui.DialogProgress()
 MAX_RES = 140
@@ -16,14 +16,10 @@ def loadTVShowdb(filterobj=None, value=None, sortcol=None):
     db.waitforDB(tvDB)
     c = tvDB.cursor()
     if filterobj:
-        try:
-            value = value.decode('utf-8')
-        except AttributeError:
-            pass
-        value = "%{0}%".format(value)
-        return db.cur_exec(c, 'select distinct * from shows where %s like (?)' % filterobj, (value,))
+        value = "%{0}%".format(py2_decode(value))
+        return db.cur_exec(c, 'select distinct * from shows where {} like (?)'.format(filterobj), (value,))
     elif sortcol:
-        return db.cur_exec(c, 'select distinct * from shows where %s is not null order by %s asc' % (sortcol, sortcol))
+        return db.cur_exec(c, 'select distinct * from shows where {} is not null order by {} asc'.format(sortcol, sortcol))
     else:
         return db.cur_exec(c, 'select distinct * from shows order by seriestitle asc')
 
@@ -37,7 +33,7 @@ def loadTVSeasonsdb(seriesasin=None, sortcol=None, seasonasin=None):
         seasonasin = '%' + seasonasin + '%'
         return db.cur_exec(c, 'select distinct * from seasons where asin like (?)', (seasonasin,))
     elif sortcol:
-        return db.cur_exec(c, 'select distinct * from seasons where %s is not null order by %s asc' % (sortcol, sortcol))
+        return db.cur_exec(c, 'select distinct * from seasons where {} is not null order by {} asc'.format(sortcol, sortcol))
     else:
         return db.cur_exec(c, 'select distinct * from seasons')
 
@@ -51,7 +47,7 @@ def loadTVEpisodesdb(seriestitle):
 def getShowTypes(col):
     db.waitforDB(tvDB)
     c = tvDB.cursor()
-    items = db.cur_exec(c, 'select distinct %s from shows' % col)
+    items = db.cur_exec(c, 'select distinct {} from shows'.format(col))
     l = getTypes(items, col)
     c.close()
     return l
@@ -159,11 +155,11 @@ def addDB(table, data):
     c = tvDB.cursor()
     columns = {'shows': 22, 'seasons': 24, 'episodes': 23}
     query = '?,' * columns[table]
-    num = db.cur_exec(c, 'insert ignore into %s values (%s)' % (table, query[0:-1]), data).rowcount
+    num = db.cur_exec(c, 'insert ignore into {} values ({})'.format(table, query[0:-1]), data).rowcount
 
     if not num and table == 'seasons':
         oldepi = db.cur_exec(c, 'select episodetotal from seasons where asin=(?)', (data[0],)).fetchall()[0][0]
-        Log('Updating show %s season %s (O:%s N:%s)' % (data[3], data[2], oldepi, data[13]), xbmc.LOGDEBUG)
+        Log('Updating show {} season {} (O:{} N:{})'.format(data[3], data[2], oldepi, data[13]), xbmc.LOGDEBUG)
         num = db.cur_exec(c, 'update seasons set episodetotal=(?) where asin=(?)', (data[13], data[0])).rowcount
 
     if num:
@@ -175,14 +171,11 @@ def addDB(table, data):
 def lookupTVdb(value, rvalue='distinct *', tbl='episodes', name='asin', single=True, exact=False):
     db.waitforDB(tvDB)
     c = tvDB.cursor()
-    try:
-        value = value.decode('utf-8')
-    except AttributeError:
-        pass
+    value = py2_decode(value)
     if not db.cur_exec(c, 'counttables', (tbl,)).fetchone():
         return '' if single else []
 
-    sqlstring = 'select %s from %s where %s ' % (rvalue, tbl, name)
+    sqlstring = 'select {} from {} where {} '.format(rvalue, tbl, name)
     retlen = len(rvalue.split(','))
     if not exact:
         value = "%{0}%".format(value)
@@ -204,7 +197,7 @@ def lookupTVdb(value, rvalue='distinct *', tbl='episodes', name='asin', single=T
 
 def countDB(tbl):
     c = tvDB.cursor()
-    return len(db.cur_exec(c, 'select * from %s' % tbl).fetchall())
+    return len(db.cur_exec(c, 'select * from {}'.format(tbl)).fetchall())
 
 
 def delfromTVdb():
@@ -213,12 +206,7 @@ def delfromTVdb():
     table = var.args.get('table')
     strid = 30167 if table == 'seasons' else 30166
 
-    try:
-        title = title.decode('utf-8')
-    except AttributeError:
-        pass
-
-    if Dialog.yesno(getString(30155) % getString(strid), getString(30156) % title):
+    if Dialog.yesno(getString(30155).format(getString(strid)), getString(30156).format(py2_decode(title))):
         delasins = []
         if table == 'seasons':
             delasins.append(asins)
@@ -274,10 +262,10 @@ def cleanDB():
 def getTVdbAsins(table, isPrime=1, retlist=False, value='asin'):
     c = tvDB.cursor()
     content = [] if retlist else ''
-    sqlstring = 'select %s from %s' % (value, table)
+    sqlstring = 'select {} from {}'.format(value, table)
 
     if isPrime < 2:
-        sqlstring += ' where isPrime = (%s)' % isPrime
+        sqlstring += ' where isPrime = ({})'.format(isPrime)
 
     for item in db.cur_exec(c, sqlstring).fetchall():
         if str(item[0]) not in str(content):
@@ -310,7 +298,7 @@ def addTVdb(full_update=True, libasins=None, cj=True):
         if updateRunning():
             return
 
-        if not Dialog.yesno(getString(30136), getString(30137), getString(30138) % '30'):
+        if not Dialog.yesno(getString(30136), getString(30137), getString(30138).format('30')):
             return
         DialogPG.create(getString(30130))
         DialogPG.update(0, getString(30131))
@@ -363,7 +351,7 @@ def addTVdb(full_update=True, libasins=None, cj=True):
                 SEASONS_ASIN = title['titleId']
 
                 if var.onlyGer and not libasins and re.compile(regex_ovf).search(title['title']):
-                    Log('Season Ignored: %s' % title['title'], xbmc.LOGDEBUG)
+                    Log('Season Ignored: {}'.format(title['title']), xbmc.LOGDEBUG)
                     found = True
                 else:
                     season_size = int(title['childTitles'][0]['size'])
@@ -394,8 +382,8 @@ def addTVdb(full_update=True, libasins=None, cj=True):
             if SERIES_ASINS:
                 ASIN_ADD(0, asins=SERIES_ASINS)
             if full_update:
-                DialogPG.update(int(SEASON_COUNT * 100.0 / approx), getString(30132) % SERIES_COUNT,
-                                getString(30133) % SEASON_COUNT, getString(30134) % EPISODE_COUNT)
+                DialogPG.update(int(SEASON_COUNT * 100.0 / approx), getString(30132).format(SERIES_COUNT),
+                                getString(30133).format(SEASON_COUNT), getString(30134).format(EPISODE_COUNT))
             episodes = 0
             AsinList = ''
             EPISODE_NUM.append(MAX + 1)
@@ -413,8 +401,8 @@ def addTVdb(full_update=True, libasins=None, cj=True):
                     episodes = 0
                     AsinList = ''
                     if full_update:
-                        DialogPG.update(int(SEASON_COUNT * 100.0 / approx), getString(30132) % SERIES_COUNT,
-                                        getString(30133) % SEASON_COUNT, getString(30134) % EPISODE_COUNT)
+                        DialogPG.update(int(SEASON_COUNT * 100.0 / approx), getString(30132).format(SERIES_COUNT),
+                                        getString(30133).format(SEASON_COUNT), getString(30134).format(EPISODE_COUNT))
                     del titles
         else:
             retrycount += 1
@@ -429,7 +417,7 @@ def addTVdb(full_update=True, libasins=None, cj=True):
                 Log('Maxium wait time exceed, canceling database update')
                 return False
             wait_time = randint(180, 420)
-            Log('Getting %s times a empty response. Waiting %s sec' % (retrycount, wait_time))
+            Log('Getting {} times a empty response. Waiting {} sec'.format(retrycount, wait_time))
             sleep(wait_time)
             retrycount = 0
 
@@ -462,7 +450,7 @@ def checkLibraryAsins(asinlist, cj):
     removed_seasons = []
 
     if asinlist == 'full':
-        asinlist = SCRAP_ASINS(tvlib % lib, cj)
+        asinlist = SCRAP_ASINS(tvlib.format(lib), cj)
         ALL_SEASONS_ASINS = getTVdbAsins('seasons', 0, True)
         for asin in asinlist:
             found, ALL_SEASONS_ASINS = compasin(ALL_SEASONS_ASINS, asin)
@@ -510,30 +498,30 @@ def UpdateDialog(SERIES_COUNT, SEASON_COUNT, EPISODE_COUNT, delShows, delSeasons
     line2 = ''
     line3 = ''
     if SERIES_COUNT:
-        line1 += '%s %s' % (getString(30132) % SERIES_COUNT, getString(30124))
+        line1 += '{} {}'.format(getString(30132).format(SERIES_COUNT), getString(30124))
         if delShows:
-            line1 += ', %s %s' % (delShows, getString(30125))
+            line1 += ', {} {}'.format(delShows, getString(30125))
 
     if delShows and (not SERIES_COUNT):
-        line1 += '%s %s' % (getString(30132) % delShows, getString(30125))
+        line1 += '{} {}'.format(getString(30132).format(delShows), getString(30125))
     if SEASON_COUNT:
-        line2 += '%s %s' % (getString(30133) % SEASON_COUNT, getString(30124))
+        line2 += '{} {}'.format(getString(30133).format(SEASON_COUNT), getString(30124))
         if delSeasons:
-            line2 += ', %s %s' % (delSeasons, getString(30125))
+            line2 += ', {} {}'.format(delSeasons, getString(30125))
 
     if delSeasons and (not SEASON_COUNT):
-        line2 += '%s %s' % (getString(30133) % delSeasons, getString(30125))
+        line2 += '{} {}'.format(getString(30133).format(delSeasons), getString(30125))
     if EPISODE_COUNT:
-        line3 += '%s %s' % (getString(30134) % EPISODE_COUNT, getString(30124))
+        line3 += '{} {}'.format(getString(30134).format(EPISODE_COUNT), getString(30124))
         if delEpisodes:
-            line3 += ', %s %s' % (delEpisodes, getString(30125))
+            line3 += ', {} {}'.format(delEpisodes, getString(30125))
 
     if delEpisodes and (not EPISODE_COUNT):
-        line3 += '%s %s' % (getString(30134) % delEpisodes, getString(30125))
+        line3 += '{} {}'.format(getString(30134).format(delEpisodes), getString(30125))
     if line1 + line2 + line3 == '':
         line2 = getString(30127)
 
-    Log('TV Shows Update:\n%s\n%s\n%s' % (line1, line2, line3))
+    Log('TV Shows Update:\n{}\n{}\n{}'.format(line1, line2, line3))
     # Dialog.ok(getString(30126), line1, line2, line3)
 
 
@@ -697,7 +685,7 @@ def getIMDbID(asins, title):
             break
     if not url:
         while not imdbid:
-            data = getURL('http://www.omdbapi.com/?type=series&t=' + quote_plus(title.encode('utf-8')))
+            data = getURL('http://www.omdbapi.com/?type=series&t=' + quote_plus(py2_encode(title)))
             if data['Response'] == 'True':
                 imdbid = data['imdbID']
             else:

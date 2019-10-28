@@ -28,8 +28,10 @@ def WriteLog(data, fn=''):
     fn = '-' + fn if fn else ''
     fn = 'avod{}.log'.format(fn)
     path = OSPJoin(g.HOME_PATH, fn)
-    if isinstance(data, unicode):
+    try:
         data = data.encode('utf-8')
+    except:
+        pass
     logfile = xbmcvfs.File(path, 'w')
     logfile.write(data.__str__())
     logfile.close()

@@ -14,11 +14,11 @@ def strp(value, form):
     except TypeError:
         try:
             return datetime(*(strptime(value, form)[0:6]))
-        except ValueError, e:
-            Log('time.strp error: %s' % e, xbmc.LOGERROR)
+        except ValueError as e:
+            Log('time.strp error: {}'.format(e), xbmc.LOGERROR)
             return def_value
-    except Exception, e:
-        Log('datetime.strp error: %s' % e, xbmc.LOGERROR)
+    except Exception as e:
+        Log('datetime.strp error: {}'.format(e), xbmc.LOGERROR)
         return def_value
 
 
@@ -72,8 +72,8 @@ if __name__ == '__main__':
 
             if dtlast + timedelta(days=freqdays) <= today and idletime >= idleupdate:
                 if not update_run:
-                    Log('AmazonDB: Starting DBUpdate (%s / %s)' % (dtlast, today))
-                    xbmc.executebuiltin('XBMC.RunPlugin(plugin://%s/?mode=appfeed&sitemode=updateAll)' % var.addon.getAddonInfo('id'))
+                    Log('AmazonDB: Starting DBUpdate ({} / {})'.format(dtlast, today))
+                    xbmc.executebuiltin('XBMC.RunPlugin(plugin://{}/?mode=appfeed&sitemode=updateAll)'.format(var.addon.getAddonInfo('id')))
 
             if monitor.waitForAbort(checkfreq):
                 break

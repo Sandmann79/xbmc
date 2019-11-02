@@ -245,7 +245,9 @@ def getURL(url, useCookie=False, silent=False, headers=None, rjson=True, attempt
     try:
         r = session.request(method, url, data=postdata, headers=headers, cookies=cj, verify=var.verifySsl)
         response = r.text if not check else 'OK'
-        if r.status_code >= 400:
+        if r.status_code == 500:
+            raise requests.exceptions.HTTPError('500')
+        elif r.status_code >= 400 and r.status_code != 500:
             Log('Error %s' % r.status_code)
             raise requests.exceptions.HTTPError('429')
     except (requests.exceptions.Timeout,
@@ -268,6 +270,9 @@ def getURL(url, useCookie=False, silent=False, headers=None, rjson=True, attempt
                       'You can find a Linux guide on how to update Python and its modules for Kodi here: https://goo.gl/CKtygz',
                       'Additionally, follow this guide to update the required modules: https://goo.gl/ksbbU2')
             exit()
+        if '500' in e:
+            Log('HTTP Error 500')
+            return {'message': {'body': {'titles': [], 'endIndex': 0}}}
         if ('429' in e) or ('Timeout' in eType):
             attempt += 1 if not check else 10
             logout = 'Attempt #%s' % attempt
@@ -393,7 +398,7 @@ def toogleWatchlist(asin=None, action='add'):
 
     par = getParams(asin, cookie)
     data = getURL(par['data-%s-url' % action],
-                  postdata={'ASIN': asin,
+                  postdata={'itemId': par['data-title-id'],
                             'dataType': 'json',
                             'csrfToken': par['data-csrf-token'],
                             'action': action,
@@ -413,8 +418,9 @@ def getParams(asin, cookie):
     url = BaseUrl + '/gp/video/hover/%s?format=json&refTag=dv-hover&requesterPageType=Detail' % asin
     data = getURL(url, useCookie=cookie, rjson=False)
     if data:
+        data = data.encode('utf-8').decode('unicode_escape')
         data = re.compile('(<form.*</form>)').findall(data)[0]
-        form = BeautifulSoup(data.replace('\\\"', '"'), convertEntities=BeautifulSoup.HTML_ENTITIES)
+        form = BeautifulSoup(data, convertEntities=BeautifulSoup.HTML_ENTITIES)
         return form.button
     return ''
 

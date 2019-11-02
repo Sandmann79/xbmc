@@ -8,7 +8,8 @@ import db
 import appfeed
 
 DialogPG = xbmcgui.DialogProgress()
-MAX = 140
+MAX_RES = 140
+max_wt = 10800  # 3hr
 
 
 def loadTVShowdb(filterobj=None, value=None, sortcol=None):
@@ -291,6 +292,7 @@ def addTVdb(full_update=True, libasins=None, cj=True):
     EPISODE_COUNT = 0
     approx = 0
     retrycount = 0
+    retrystart = 0
 
     if full_update and not libasins:
         if updateRunning():
@@ -321,6 +323,7 @@ def addTVdb(full_update=True, libasins=None, cj=True):
             xbmc.sleep(randint(500, 1000))
 
     while goAhead == 1:
+        MAX = randint(5, MAX_RES)
         jsondata = appfeed.getList('TVEpisode&RollUpToSeason=T', endIndex, isPrime=prime,
                                    OrderBy='Title', NumberOfResults=MAX, AsinList=new_libasins)
         if not jsondata:
@@ -336,6 +339,8 @@ def addTVdb(full_update=True, libasins=None, cj=True):
         del jsondata
 
         if titles:
+            retrycount = 0
+            retrystart = 0
             SERIES_ASINS = ''
             EPISODE_ASINS = []
             EPISODE_NUM = []
@@ -405,11 +410,15 @@ def addTVdb(full_update=True, libasins=None, cj=True):
         if (approx and endIndex + 1 >= approx) or (not approx):
             goAhead = 0
 
-        if retrycount > 3:
-            Log('Waiting 5min')
-            sleep(300)
-            appfeed.getList('TVEpisode&RollUpToSeason=T', endIndex-randint(1, MAX-1), isPrime=prime,
-                            NumberOfResults=randint(1, 10), AsinList=new_libasins)
+        if retrycount > 2:
+            if not retrystart:
+                retrystart = time.time()
+            elif time.time() > retrystart + max_wt:
+                Log('Maxium wait time exceed, canceling database update')
+                return False
+            wait_time = randint(180, 420)
+            Log('Getting %s times a empty response. Waiting %s sec' % (retrycount, wait_time))
+            sleep(wait_time)
             retrycount = 0
 
     if goAhead == 0:
@@ -467,9 +476,10 @@ def updatePop():
     c = tvDB.cursor()
     db.cur_exec(c, "update shows set popularity=null")
     Index = 0
-    maxIndex = MAX * 3
+    maxIndex = MAX_RES * 3
 
     while -1 < Index < maxIndex:
+        MAX = randint(5, MAX_RES)
         jsondata = appfeed.getList('TVSeason', Index, NumberOfResults=MAX)
         titles = jsondata['message']['body']['titles']
         for title in titles:

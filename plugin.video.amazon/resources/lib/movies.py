@@ -6,7 +6,8 @@ from .common import *
 import appfeed
 import db
 
-MAX = 140
+MAX_RES = 140
+max_wt = 10800  # 3hrs
 
 
 def addMoviedb(moviedata):
@@ -128,6 +129,7 @@ def addMoviesdb(full_update=True, cj=True):
     endIndex = 0
     new_mov = 0
     retrycount = 0
+    retrystart = 0
     approx = 0
 
     while not approx:
@@ -136,6 +138,7 @@ def addMoviesdb(full_update=True, cj=True):
         xbmc.sleep(randint(500, 1000))
 
     while goAhead == 1:
+        MAX = randint(5, MAX_RES)
         jsondata = appfeed.getList('Movie', endIndex, NumberOfResults=MAX, OrderBy='Title')
         if not jsondata:
             goAhead = -1
@@ -146,6 +149,8 @@ def addMoviesdb(full_update=True, cj=True):
 
         if titles:
             for title in titles:
+                retrycount = 0
+                retrystart = 0
                 if full_update and dialog.iscanceled():
                     goAhead = -1
                     break
@@ -163,10 +168,15 @@ def addMoviesdb(full_update=True, cj=True):
         else:
             retrycount += 1
 
-        if retrycount > 3:
-            Log('Waiting 5min')
+        if retrycount > 2:
+            if not retrystart:
+                retrystart = time.time()
+            elif time.time() > retrystart + max_wt:
+                Log('Maxium wait time exceed, canceling database update')
+                return False
+            wait_time = randint(180, 420)
+            Log('Getting %s times a empty response. Waiting %s sec' % (retrycount, wait_time))
             sleep(300)
-            appfeed.getList('Movie', endIndex-randint(1, MAX-1), NumberOfResults=randint(1, 10))
             retrycount = 0
 
         endIndex += len(titles)
@@ -206,9 +216,10 @@ def updatePop():
     c = MovieDB.cursor()
     db.cur_exec(c, "update movies set popularity=null")
     Index = 0
-    maxIndex = MAX * 3
+    maxIndex = MAX_RES * 3
 
     while -1 < Index < maxIndex:
+        MAX = randint(5, MAX_RES)
         jsondata = appfeed.getList('Movie', Index, NumberOfResults=MAX)
         titles = jsondata['message']['body']['titles']
         for title in titles:

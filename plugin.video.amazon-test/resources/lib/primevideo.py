@@ -309,7 +309,11 @@ class PrimeVideo(Singleton):
             from urllib import unquote_plus
 
         # Fix the unquote_plus problem with unicode_literals by encoding to latin-1 (byte string) and then decoding
-        pathList = [unquote_plus(p).encode('latin-1').decode('utf-8') for p in path.split(self._separator)]
+        pathList = [unquote_plus(p) for p in path.split(self._separator)]
+        for k in pathList:
+            try:
+                pathList[k] = pathList[k].encode('latin-1').decode('utf-8')
+            except: pass
 
         if 0 == len(self._catalog):
             self.BuildRoot()
@@ -989,6 +993,8 @@ class PrimeVideo(Singleton):
                         continue
                     else:
                         cnt = self._GrabJSON(requestURL)
+                        # from .logging import LogJSON
+                        # LogJSON(cnt, requestURL)
 
                 # Don't switch direct action for reference until we have content to show for it
                 if cnt and ('lazyLoadURL' in o):
@@ -1012,24 +1018,30 @@ class PrimeVideo(Singleton):
                         o[collection['text']]['lazyLoadURL'] = requestURL
                         o[collection['text']]['lazyLoadData'] = collection
 
-            # Widow list / API Search
-            if ('items' in cnt):
-                for item in cnt['items']:
-                    if 'heading' in item:
-                        # Search results
-                        title = item['heading']
-                        iu = item['href']
-                        try:
-                            t = item['watchlistAction']['endpoint']['query']['titleType']
-                        except:
-                            t = None
-                        if 'season' != t:
-                            bUpdatedVideoData |= ParseSinglePage(breadcrumb[-1], o, bCacheRefresh, url=iu)
-                        else:
-                            bUpdatedVideoData |= AddSeason(breadcrumb[-1], o, title, item['imageSrc'], iu)
+            # Watchlist
+            if ('filters' in cnt) and ('*classHierarchy*' not in cnt):
+                # Don't parse content and forbid pagination on the main watchlist page
+                if 'content' in cnt:
+                    del cnt['content']
+                if 'pagination' in cnt:
+                    del cnt['pagination']
+                for f in cnt['filters']:
+                    o[f['id']] = {'title': f['text'], 'lazyLoadURL': f['apiUrl' if 'apiUrl' in f else 'href']}
+
+            # Watchlist / Widow list / API Search
+            if ('items' in cnt) or (('content' in cnt) and ('items' in cnt['content'])):
+                for item in (cnt if 'items' in cnt else cnt['content'])['items']:
+                    title = item['heading'] if 'heading' in item else item['title']
+                    iu = item['href'] if 'href' in item else item['link']['url']
+                    img = item['imageSrc'] if 'imageSrc' in item else item['image']['url']
+                    try:
+                        t = item['watchlistAction']['endpoint']['query']['titleType']
+                    except:
+                        t = None
+                    if 'season' != t:
+                        bUpdatedVideoData |= ParseSinglePage(breadcrumb[-1], o, bCacheRefresh, url=iu)
                     else:
-                        # Watchlist
-                        Log('Show all seasons in watchlist: {}'.format(self._s.dispShowOnly))
+                        bUpdatedVideoData |= AddSeason(breadcrumb[-1], o, title, img, iu)
 
             # Search/list
             if ('results' in cnt) and ('items' in cnt['results']):
@@ -1039,13 +1051,6 @@ class PrimeVideo(Singleton):
                         bUpdatedVideoData |= ParseSinglePage(breadcrumb[-1], o, bCacheRefresh, url=iu)
                     else:
                         bUpdatedVideoData |= AddSeason(breadcrumb[-1], o, item['title']['text'], MaxSize(item['packshot']['image']['src']), iu)
-
-            # Watchlist
-            if 'filters' in cnt:
-                for f in cnt['filters']:
-                    o[f['id']] = {'title': f['text'], 'lazyLoadURL': f['apiUrl' if 'apiUrl' in f else 'href']}
-                    if 'applied' in cnt['filters'][0]:
-                        o[f['id']]['lazyLoadData'] = cnt['content']
 
             # Single page
             if 'state' in cnt:

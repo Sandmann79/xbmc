@@ -420,7 +420,7 @@ class PrimeVideo(Singleton):
                     node[c] = {}
 
         folderType = 0 if 'root' == path else 1
-        metaKeys = ['metadata', 'ref', 'title', 'verb', 'children', 'parent']
+        metaKeys = ['ref', 'verb', 'title', 'metadata', 'parent', 'siblings', 'children']
         nodeKeys = [k for k in node if k not in metaKeys]
         i = 0
         while i < len(nodeKeys):

@@ -438,77 +438,44 @@ class PrimeVideo(Singleton):
                     node[c] = {}
 
         folderType = 0 if 'root' == path else 1
-        metaKeys = ['ref', 'verb', 'title', 'metadata', 'parent', 'siblings', 'children']
-        nodeKeys = [k for k in node if k not in metaKeys]
-        i = 0
-        while i < len(nodeKeys):
-            key = nodeKeys[i]
-            i += 1
+        for key in [k for k in node if k not in ['ref', 'verb', 'title', 'metadata', 'parent', 'siblings', 'children']]:
             url = self._g.pluginid
-            entry = node[key] if key not in self._videodata else self._videodata[key]
+            entry = (node if key not in self._videodata else self._videodata)[key]
+            title = entry['title'] if 'title' in entry else nodeName
+            itemPathURI = '{}{}{}'.format(path, self._separator, quote_plus(key.encode('utf-8')))
+
+            # Squash single season tv shows
+            try:
+                if 'tvshow' == self._videodata[key]['metadata']['videometa']['mediatype']:
+                    if 1 == len(self._videodata[key]['children']):
+                        childgti = self._videodata[key]['children'][0]
+                        entry = self._videodata[childgti]
+                        itemPathURI += '{}{}'.format(self._separator, quote_plus(childgti.encode('utf-8')))
+            except: pass
+
+            # Find out if item's a video leaf
             bIsVideo = False
             try: bIsVideo = self._videodata[key]['metadata']['videometa']['mediatype'] in ['episode', 'movie']
             except: pass
-            """
-            # Skip items that are out of catalog
-            if ('metadata' in entry):
-                continue
-
-            try:
-                bSeason = 'season' == self._videodata[key]['metadata']['videometa']['mediatype']
-
-                "" "
-                # Load series upon entering the show directory
-                if bSeason and ('lazyLoadURL' in node[key]):
-                    self._LazyLoad(node[key], key /*breadcrumbs*/)
-                    # Due to python mutability shenanigans we need to manually alter the nodes
-                    # instead of waiting for changes to propagate
-                    for ka in [k for k in ancestorNode[ancestorName][nodeName] if k not in metaKeys]:
-                        if ka not in nodeKeys:
-                            nodeKeys.append(ka)
-                        if ka not in node:
-                            node[ka] = ancestorNode[ancestorName][nodeName][ka]
-                    for ka in [k for k in node if k not in metaKeys]:
-                        if ka not in ancestorNode[ancestorName][nodeName]:
-                            ancestorNode[ancestorName][nodeName][ka] = node[ka]
-                    self._Flush()
-                "" "
-
-                # If the series is squashable override the seasons list with the episodes list
-                if 1 == len(nodeKeys):
-                    node = node[key]
-                    i = 0
-                    nodeKeys = [k for k in node if k not in metaKeys]
-                    if (0 == len(nodeKeys)) and (key in self._videodata) and ('children' in self._videodata[key]):
-                        for c in self._videodata[key]['children']:
-                            nodeKeys.append(c)
-                            if c not in node:
-                                node[c] = {}
-                    continue
-            except KeyError:
-                pass
-            """
 
             # Can we refresh the cache on this/these item(s)?
             bCanRefresh = ('ref' in node[key]) or ('lazyLoadURL' in node[key]) or ((key in self._videodata) and ('ref' in self._videodata[key]))
             if ('children' in entry) and (0 < len(entry['children'])):
                 bCanRefresh = bCanRefresh or (0 < len([k for k in entry['children'] if (k in self._videodata) and ('ref' in self._videodata[k])]))
 
-            refreshPath = '{}{}{}'.format(path, self._separator, quote_plus(key.encode('utf-8')))
             if bIsVideo:
                 url += '?mode=PlayVideo&name={}&asin={}'.format(self._videodata[key]['metadata']['compactGTI'], key)
             elif 'verb' in entry:
                 url += entry['verb']
-                refreshPath = ''
+                itemPathURI = ''
             else:
-                url += 'pv/browse/' + refreshPath
+                url += 'pv/browse/' + itemPathURI
             # Log('Encoded PrimeVideo URL: {}'.format(url), Log.DEBUG)
-            title = entry['title'] if 'title' in entry else nodeName
             item = xbmcgui.ListItem(title)
 
-            if bCanRefresh and (0 < len(refreshPath)):
-                # Log('Encoded PrimeVideo refresh URL: pv/refresh/{}'.format(refreshPath), Log.DEBUG)
-                item.addContextMenuItems([('Refresh', 'RunPlugin({}pv/refresh/{})'.format(self._g.pluginid, refreshPath))])
+            if bCanRefresh and (0 < len(itemPathURI)):
+                # Log('Encoded PrimeVideo refresh URL: pv/refresh/{}'.format(itemPathURI), Log.DEBUG)
+                item.addContextMenuItems([('Refresh', 'RunPlugin({}pv/refresh/{})'.format(self._g.pluginid, itemPathURI))])
 
             folder = True
             """

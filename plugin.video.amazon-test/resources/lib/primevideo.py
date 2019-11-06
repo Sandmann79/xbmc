@@ -441,7 +441,11 @@ class PrimeVideo(Singleton):
         folderType = 0 if 'root' == path else 1
         for key in [k for k in node if k not in ['ref', 'verb', 'title', 'metadata', 'parent', 'siblings', 'children']]:
             url = self._g.pluginid
-            entry = (node if key not in self._videodata else self._videodata)[key]
+            if key in self._videodata:
+                from copy import deepcopy
+                entry = deepcopy(self._videodata[key])
+            else:
+                entry = node[key]
             title = entry['title'] if 'title' in entry else nodeName
             itemPathURI = '{}{}{}'.format(path, self._separator, quote_plus(key.encode('utf-8')))
 
@@ -478,24 +482,24 @@ class PrimeVideo(Singleton):
                 # Log('Encoded PrimeVideo refresh URL: pv/refresh/{}'.format(itemPathURI), Log.DEBUG)
                 item.addContextMenuItems([('Refresh', 'RunPlugin({}pv/refresh/{})'.format(self._g.pluginid, itemPathURI))])
 
-            folder = True
-            """
-            # In case of series find the oldest series and apply its art, also update metadata in case of squashed series
-            if ('metadata' not in entry) and ('children' in entry) and (0 < len(entry['children'])):
-                if 1 == len(entry['children']):
-                    entry['metadata'] = {'artmeta': self._videodata[entry['children'][0]]['metadata']['artmeta'],
-                                         'videometa': self._videodata[entry['children'][0]]['metadata']['videometa']}
-                else:
-                    sn = 90001
+            # In case of tv shows find the oldest season and apply its art
+            try:
+                if ('tvshow' == entry['metadata']['videometa']['mediatype']) and (1 < len(entry['children'])):
+                    sn = None
                     snid = None
                     for child in entry['children']:
-                        if ('season' in self._videodata[child]['metadata']['videometa']) and (sn > self._videodata[child]['metadata']['videometa']['season']):
-                            sn = self._videodata[child]['metadata']['videometa']['season']
-                            snid = child
-                    if None is not snid:
-                        entry['metadata'] = {'artmeta': self._videodata[snid]['metadata']['artmeta'], 'videometa': {'mediatype': 'tvshow'}}
-            """
+                        try:
+                            childsn = self._videodata[child]['metadata']['videometa']['season']
+                            if (None is sn) or (sn > childsn):
+                                sn = childsn
+                                snid = child
+                        except: pass
+                    if snid:
+                        entry['metadata']['artmeta'] = self._videodata[snid]['metadata']['artmeta']
+                        entry['metadata']['videometa']['plot'] = getString(30253).format(len(entry['children']))  # "# series" as plot/description
+            except: pass
 
+            folder = True
             if 'metadata' in entry:
                 m = entry['metadata']
                 if 'artmeta' in m:

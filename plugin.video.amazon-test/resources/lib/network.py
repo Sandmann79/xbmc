@@ -311,31 +311,30 @@ def LogIn(ask=True):
         Log('MFA, DCQ or Captcha form')
         uni_soup = soup.__unicode__()
         try:
-            br.select_form('form[name="signIn"]')
+            form = br.select_form('form[name="signIn"]')
         except mechanicalsoup.LinkNotFoundError:
-            br.select_form()
+            form = br.select_form()
 
         if 'auth-mfa-form' in uni_soup:
             msg = soup.find('form', attrs={'id': 'auth-mfa-form'})
-            msgtxt = msg.p.renderContents().strip()
+            msgtxt = msg.p.get_text(strip=True)
             kb = xbmc.Keyboard('', msgtxt)
             kb.doModal()
             if kb.isConfirmed() and kb.getText():
                 # xbmc.executebuiltin('ActivateWindow(busydialog)')
                 br['otpCode'] = kb.getText()
-                # br.find_control('rememberDevice').items[0].selected = True
             else:
-                return False
+                return None
         elif 'ap_dcq_form' in uni_soup:
             msg = soup.find('div', attrs={'id': 'message_warning'})
-            g.dialog.ok(g.__plugin__, msg.p.contents[0].strip())
+            g.dialog.ok(g.__plugin__, msg.p.get_text(strip=True))
             dcq = soup.find('div', attrs={'id': 'ap_dcq1a_pagelet'})
-            dcq_title = dcq.find('div', attrs={'id': 'ap_dcq1a_pagelet_title'}).h1.contents[0].strip()
+            dcq_title = dcq.find('div', attrs={'id': 'ap_dcq1a_pagelet_title'}).get_text(strip=True)
             q_title = []
             q_id = []
             for q in dcq.findAll('div', attrs={'class': 'dcq_question'}):
                 if q.span.label:
-                    label = q.span.label.renderContents().strip().replace('  ', '').replace('\n', '')
+                    label = q.span.label.get_text(strip=True).replace('  ', '').replace('\n', '')
                     if q.span.label.span:
                         label = label.replace(str(q.span.label.span), q.span.label.span.text)
                     q_title.append(_insertLF(label))
@@ -343,14 +342,14 @@ def LogIn(ask=True):
 
             sel = g.dialog.select(_insertLF(dcq_title, 60), q_title) if len(q_title) > 1 else 0
             if sel < 0:
-                return False
+                return None
 
             ret = g.dialog.input(q_title[sel])
             if ret:
                 # xbmc.executebuiltin('ActivateWindow(busydialog)')
                 br[q_id[sel]] = ret
             else:
-                return False
+                return None
         elif ('ap_captcha_img_label' in uni_soup) or ('auth-captcha-image-container' in uni_soup):
             wnd = _Captcha((getString(30008).split('…')[0]), soup, email)
             wnd.doModal()
@@ -360,35 +359,34 @@ def LogIn(ask=True):
                 br['password'] = wnd.pwd
                 br['guess'] = wnd.cap
             else:
-                return False
+                return None
             del wnd
         elif 'claimspicker' in uni_soup:
             msg = soup.find('form', attrs={'name': 'claimspicker'})
-            cs_title = msg.find('div', attrs={'class': 'a-row a-spacing-small'})
-            cs_title = cs_title.h1.contents[0].strip()
+            cs_title = msg.find('div', attrs={'class': 'a-row a-spacing-small'}).get_text(strip=True)
             cs_quest = msg.find('label', attrs={'class': 'a-form-label'})
-            cs_hint = msg.find('div', attrs={'class': 'a-row'}).contents[0].strip()
+            cs_hint = msg.find(lambda tag: tag.name == 'div' and tag.get('class') == ['a-row']).get_text(strip=True)
             choices = []
             if cs_quest:
                 for c in soup.findAll('div', attrs={'data-a-input-name': 'option'}):
-                    choices.append((c.span.contents[0].strip(), c.input['name'], c.input['value']))
-                sel = g.dialog.select('%s - %s' % (cs_title, cs_quest.contents[0].strip()), [k[0] for k in choices])
+                    choices.append((c.span.get_text(strip=True), c.input['name'], c.input['value']))
+                sel = g.dialog.select('%s - %s' % (cs_title, cs_quest.get_text(strip=True)), [k[0] for k in choices])
             else:
                 sel = 100 if g.dialog.ok(cs_title, cs_hint) else -1
 
             if sel > -1:
                 # xbmc.executebuiltin('ActivateWindow(busydialog)')
                 if sel < 100:
-                    br[choices[sel][1]] = [choices[sel][2]]
+                    form.set_radio({choices[sel][1]: choices[sel][2]})
             else:
-                return False
+                return None
         elif 'fwcim-form' in uni_soup:
-            msg = soup.find('div', attrs={'class': 'a-row a-spacing-micro cvf-widget-input-code-label'}).contents[0].strip()
+            msg = soup.find('div', attrs={'class': 'a-row a-spacing-micro cvf-widget-input-code-label'}).get_text(strip=True)
             ret = g.dialog.input(msg)
             if ret:
                 br['code'] = ret
             else:
-                return False
+                return None
         return br
 
     def _setLoginPW():
@@ -508,19 +506,27 @@ def LogIn(ask=True):
                                   ('User-Agent', getConfig('UserAgent')),
                                   ('Upgrade-Insecure-Requests', '1')]
             br.submit_selected()
+            # br.open_fake_page(open('/storage/emulated/0/Download/Kodi/avod-login-mfa.log').read())
             response, soup = _parseHTML(br)
             # xbmc.executebuiltin('Dialog.Close(busydialog)')
             WriteLog(response, 'login')
 
             while any(sp in response for sp in ['auth-mfa-form', 'ap_dcq_form', 'ap_captcha_img_label', 'claimspicker', 'fwcim-form', 'auth-captcha-image-container']):
                 br = _MFACheck(br, email, soup)
-                if not br:
+                if br is None:
                     return False
                 useMFA = True if br.get_current_form().form.find('input', {'name': 'otpCode'}) else False
                 br.submit_selected()
                 response, soup = _parseHTML(br)
                 WriteLog(response, 'login-mfa')
                 # xbmc.executebuiltin('Dialog.Close(busydialog)')
+
+            if 'accountFixup' in response:
+                Log('Login AccountFixup')
+                skip_link = br.find_link(id='ap-account-fixup-phone-skip-link')
+                br.follow_link(skip_link)
+                response, soup = _parseHTML(br)
+                WriteLog(response, 'login-fixup')
 
             if 'action=sign-out' in response:
                 try:

@@ -147,14 +147,14 @@ class Captcha(pyxbmct.AddonDialogWindow):
             self.head = re.sub('(?i)<[^>]*>', '', self.head)
             self.picurl = soup.find('div', attrs={'id': 'ap_captcha_img'}).img.get('src')
         else:
-            self.head = soup.find('span', attrs={'class': 'a-list-item'}).renderContents().strip()
+            self.head = soup.find('span', attrs={'class': 'a-list-item'}).get_text(strip=True)
             title = soup.find('div', attrs={'id': 'auth-guess-missing-alert'}).div.div
             self.picurl = soup.find('div', attrs={'id': 'auth-captcha-image-container'}).img.get('src')
         self.setGeometry(500, 550, 9, 2)
         self.email = email
         self.pwd = ''
         self.cap = ''
-        self.title = title.renderContents().strip()
+        self.title = title.get_text(strip=True)
         self.image = pyxbmct.Image('', aspectRatio=2)
         self.tb_head = pyxbmct.TextBox()
         self.fl_title = pyxbmct.FadeLabel(_alignment=pyxbmct.ALIGN_CENTER)
@@ -515,6 +515,13 @@ def LogIn(ask):
             response, soup = parseHTML(br)
             WriteLog(response, 'login-mfa')
 
+        if 'accountFixup' in response:
+            Log('Login AccountFixup')
+            skip_link = br.find_link(id='ap-account-fixup-phone-skip-link')
+            br.follow_link(skip_link)
+            response, soup = parseHTML(br)
+            WriteLog(response, 'login-fixup')
+
         if 'action=sign-out' in response:
             try:
                 usr = re.search(r'action=sign-out[^"]*"[^>]*>[^?]+\s+([^?]+?)\s*\?', response).group(1)
@@ -553,14 +560,14 @@ def LogIn(ask):
         elif 'message_error' in response:
             writeConfig('login_pass', '')
             msg = soup.find('div', attrs={'id': 'message_error'})
-            Log('Login Error: {}'.format(msg.p.renderContents(None).strip()))
+            Log('Login Error: {}'.format(msg.p.get_text(strip=True)))
             Dialog.ok(getString(30200), getString(30201))
         elif 'message_warning' in response:
             msg = soup.find('div', attrs={'id': 'message_warning'})
-            Log('Login Warning: {}'.format(msg.p.renderContents(None).strip()))
+            Log('Login Warning: {}'.format(msg.p.get_text(strip=True)))
         elif 'auth-error-message-box' in response:
             msg = soup.find('div', attrs={'class': 'a-alert-content'})
-            Log('Login MFA: {}'.format(msg.ul.li.span.renderContents(None).strip()))
+            Log('Login MFA: {}'.format(msg.ul.li.span.get_text(strip=True)))
             Dialog.ok(getString(30200), getString(30214))
         else:
             Dialog.ok(getString(30200), getString(30213))
@@ -647,9 +654,9 @@ def MFACheck(br, email, soup):
     Log('MFA, DCQ or Captcha form')
     uni_soup = soup.__unicode__()
     try:
-        br.select_form('form[name="signIn"]')
+        form = br.select_form('form[name="signIn"]')
     except mechanicalsoup.LinkNotFoundError:
-        br.select_form()
+        form = br.select_form()
 
     if 'auth-mfa-form' in uni_soup:
         msg = soup.find('form', attrs={'id': 'auth-mfa-form'})
@@ -662,14 +669,14 @@ def MFACheck(br, email, soup):
             return False
     elif 'ap_dcq_form' in uni_soup:
         msg = soup.find('div', attrs={'id': 'message_warning'})
-        Dialog.ok(pluginname, msg.p.contents[0].strip())
+        Dialog.ok(pluginname, msg.p.get_text(strip=True))
         dcq = soup.find('div', attrs={'id': 'ap_dcq1a_pagelet'})
-        dcq_title = dcq.find('div', attrs={'id': 'ap_dcq1a_pagelet_title'}).h1.contents[0].strip()
+        dcq_title = dcq.find('div', attrs={'id': 'ap_dcq1a_pagelet_title'}).get_text(strip=True)
         q_title = []
         q_id = []
         for q in dcq.findAll('div', attrs={'class': 'dcq_question'}):
             if q.span.label:
-                label = q.span.label.renderContents().strip().replace('  ', '').replace('\n', '')
+                label = q.span.label.get_text(strip=True).replace('  ', '').replace('\n', '')
                 if q.span.label.span:
                     label = label.replace(str(q.span.label.span), q.span.label.span.text)
                 q_title.append(insertLF(label))
@@ -696,25 +703,24 @@ def MFACheck(br, email, soup):
         del wnd
     elif 'claimspicker' in uni_soup:
         msg = soup.find('form', attrs={'name': 'claimspicker'})
-        cs_title = msg.find('div', attrs={'class': 'a-row a-spacing-small'})
-        cs_title = cs_title.h1.contents[0].strip()
+        cs_title = msg.find('div', attrs={'class': 'a-row a-spacing-small'}).get_text(strip=True)
         cs_quest = msg.find('label', attrs={'class': 'a-form-label'})
-        cs_hint = msg.find('div', attrs={'class': 'a-row'}).contents[0].strip()
+        cs_hint = msg.find(lambda tag: tag.name == 'div' and tag.get('class') == ['a-row']).get_text(strip=True)
         choices = []
         if cs_quest:
             for c in soup.findAll('div', attrs={'data-a-input-name': 'option'}):
-                choices.append((c.span.contents[0].strip(), c.input['name'], c.input['value']))
-            sel = Dialog.select('{} - {}'.format(cs_title, cs_quest.contents[0].strip()), [k[0] for k in choices])
+                choices.append((c.span.get_text(strip=True), c.input['name'], c.input['value']))
+            sel = Dialog.select('{} - {}'.format(cs_title, cs_quest.get_text(strip=True)), [k[0] for k in choices])
         else:
             sel = 100 if Dialog.ok(cs_title, cs_hint) else -1
 
         if sel > -1:
             if sel < 100:
-                br[choices[sel][1]] = [choices[sel][2]]
+                form.set_radio({choices[sel][1]: choices[sel][2]})
         else:
             return False
     elif 'fwcim-form' in uni_soup:
-        msg = soup.find('div', attrs={'class': 'a-row a-spacing-micro cvf-widget-input-code-label'}).contents[0].strip()
+        msg = soup.find('div', attrs={'class': 'a-row a-spacing-micro cvf-widget-input-code-label'}).get_text(strip=True)
         ret = Dialog.input(msg)
         if ret:
             br['code'] = ret

@@ -99,12 +99,13 @@ class PrimeVideo(Singleton):
         }
         self._LoadCache()
 
-    def _Flush(self, FlushVideoData=False):
+    def _Flush(self, bFlushCacheData=True, bFlushVideoData=False):
         """ Cache catalog and video data """
 
-        with open(self._catalogCache, 'wb+') as fp:
-            pickle.dump(self._catalog, fp)
-        if FlushVideoData:
+        if bFlushCacheData:
+            with open(self._catalogCache, 'wb+') as fp:
+                pickle.dump(self._catalog, fp)
+        if bFlushVideoData:
             with open(self._videodataCache, 'w+') as fp:
                 json.dump(self._videodata, fp)
 
@@ -950,6 +951,7 @@ class PrimeVideo(Singleton):
         amzLang = amzLang if amzLang else 'en_US'
 
         bUpdatedVideoData = False  # Whether or not the pvData has been updated
+        pageNumber = 1  # Page number
 
         while 0 < len(requestURLs):
             requestURL = requestURLs.pop(0)  # rULRs: FIFO stack
@@ -1043,19 +1045,23 @@ class PrimeVideo(Singleton):
 
             # Pagination
             if 'pagination' in cnt:
-                page = None
+                nextPage = None
                 if 'apiUrl' in cnt['pagination']:
-                    page = cnt['pagination']['apiUrl']
+                    nextPage = cnt['pagination']['apiUrl']
                 elif 'paginator' in cnt['pagination']:
-                    page = next((x['href'] for x in cnt['pagination']['paginator'] if 'atv.wps.PaginatorNext' == x['*className*']), None)
-                if page:
-                    requestURLs.append(page)
+                    nextPage = next((x['href'] for x in cnt['pagination']['paginator'] if 'atv.wps.PaginatorNext' == x['*className*']), None)
+                if nextPage:
+                    requestURLs.append(nextPage)
                 else:
                     Log('Unknown error while parsing pagination', Log.ERROR)
 
             # Notify new page
             if 0 < len(requestURLs):
-                NotifyUser(getString(30252))
+                if (0 == (pageNumber % 5)) and bUpdatedVideoData:
+                    self._Flush(bFlushCacheData=False, bFlushVideoData=True)
+                    bUpdatedVideoData = False
+                pageNumber += 1
+                NotifyUser(getString(30252).format(pageNumber))
 
         # Flush catalog and data
-        self._Flush(bCacheRefresh or bUpdatedVideoData)
+        self._Flush(bFlushVideoData=bCacheRefresh or bUpdatedVideoData)

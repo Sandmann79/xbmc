@@ -610,9 +610,9 @@ msgid "Connection error"
 msgstr ""
 
 msgctxt "#30252"
-msgid "Loading next page…"
+msgid "Loading page {0}…"
 msgstr ""
 
 msgctxt "#30253"
-msgid "Found “{0}”"
+msgid "{0} seasons"
 msgstr ""

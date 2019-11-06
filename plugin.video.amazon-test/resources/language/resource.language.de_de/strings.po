@@ -570,9 +570,9 @@ msgid "Connection error"
 msgstr "Verbindungsfehler"
 
 msgctxt "#30252"
-msgid "Loading next page…"
-msgstr "Lade nächste Seite…"
+msgid "Loading page {0}…"
+msgstr "Lade Seite {0}…"
 
 msgctxt "#30253"
-msgid "Found “{0}”"
-msgstr "Gefunden “{0}”"
+msgid "{0} seasons"
+msgstr "{0} Staffeln"

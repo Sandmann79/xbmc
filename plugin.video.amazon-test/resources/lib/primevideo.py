@@ -538,7 +538,7 @@ class PrimeVideo(Singleton):
                     try:
                         folderType = {'movie': 5, 'episode': 4, 'tvshow': 2, 'season': 3}[m['videometa']['mediatype']]
                     except:
-                        folderType = 5  # Default to movie
+                        folderType = 2  # Default to category
 
                     if bIsVideo:
                         folder = False
@@ -556,13 +556,13 @@ class PrimeVideo(Singleton):
         # Set sort method and view
         # https://codedocs.xyz/xbmc/xbmc/group__python__xbmcplugin.html#ga85b3bff796fd644fb28f87b136025f40
         xbmcplugin.addSortMethod(self._g.pluginhandle, [
-            xbmcplugin.SORT_METHOD_NONE,
-            xbmcplugin.SORT_METHOD_LABEL_IGNORE_THE,
-            xbmcplugin.SORT_METHOD_LABEL_IGNORE_THE,
-            xbmcplugin.SORT_METHOD_LABEL_IGNORE_THE,
-            xbmcplugin.SORT_METHOD_EPISODE,
-            xbmcplugin.SORT_METHOD_LABEL_IGNORE_THE,
-        ][folderType if None is forceSort else forceSort])
+            xbmcplugin.SORT_METHOD_NONE,  # Root
+            xbmcplugin.SORT_METHOD_NONE,  # Category list
+            xbmcplugin.SORT_METHOD_LABEL_IGNORE_THE,  # Category
+            xbmcplugin.SORT_METHOD_LABEL_IGNORE_THE,  # TV Show (Seasons list)
+            xbmcplugin.SORT_METHOD_EPISODE,  # Season (Episodes list)
+            xbmcplugin.SORT_METHOD_LABEL_IGNORE_THE,  # Movies list
+        ][folderType] if None is forceSort else forceSort)
 
         if 'false' == self._g.addon.getSetting("viewenable"):
             # Only vfs and videos to keep Kodi's watched functionalities

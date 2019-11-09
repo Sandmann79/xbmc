@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# !/usr/bin/env python
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 from . import db
@@ -292,7 +291,6 @@ def addTVdb(full_update=True, libasins=None, cj=True):
     EPISODE_COUNT = 0
     approx = 0
     retrycount = 0
-    retrystart = 0
 
     if full_update and not libasins:
         if updateRunning():
@@ -315,7 +313,7 @@ def addTVdb(full_update=True, libasins=None, cj=True):
         ALL_SEASONS_ASINS = []
         new_libasins = checkLibraryAsins(libasins, cj)
         if not new_libasins:
-            return
+            return False
     else:
         while not approx:
             jsondata = appfeed.getList('TVEpisode&RollUpToSeason=T', randint(1, 20), NumberOfResults=1)
@@ -323,7 +321,7 @@ def addTVdb(full_update=True, libasins=None, cj=True):
             xbmc.sleep(randint(500, 1000))
 
     while goAhead == 1:
-        MAX = randint(5, MAX_RES)
+        MAX = randint(20, MAX_RES)
         jsondata = appfeed.getList('TVEpisode&RollUpToSeason=T', endIndex, isPrime=prime,
                                    OrderBy='Title', NumberOfResults=MAX, AsinList=new_libasins)
         if not jsondata:
@@ -331,16 +329,10 @@ def addTVdb(full_update=True, libasins=None, cj=True):
             break
 
         titles = jsondata['message']['body']['titles']
-        endI = jsondata['message']['body']['endIndex']
-        if endI:
-            endIndex = endI
-        else:
-            endIndex += len(titles)
-        del jsondata
+        endIndex += len(titles)
 
         if titles:
             retrycount = 0
-            retrystart = 0
             SERIES_ASINS = ''
             EPISODE_ASINS = []
             EPISODE_NUM = []
@@ -406,40 +398,38 @@ def addTVdb(full_update=True, libasins=None, cj=True):
                     del titles
         else:
             retrycount += 1
+            endIndex += 1
 
         if (approx and endIndex + 1 >= approx) or (not approx):
             goAhead = 0
 
         if retrycount > 2:
-            if not retrystart:
-                retrystart = time.time()
-            elif time.time() > retrystart + max_wt:
-                Log('Maxium wait time exceed, canceling database update')
-                return False
             wait_time = randint(180, 420)
             Log('Getting {} times a empty response. Waiting {} sec'.format(retrycount, wait_time))
-            sleep(wait_time)
+            #sleep(wait_time)
             retrycount = 0
 
     if goAhead == 0:
+        finished = False
         if not libasins:
             updatePop()
             delShows, delSeasons, delEpisodes = deleteremoved(getcompresult(ALL_SEASONS_ASINS))
             UpdateDialog(SERIES_COUNT, SEASON_COUNT, EPISODE_COUNT, delShows, delSeasons, delEpisodes)
-            addTVdb(False, 'full', cj)
+            finished = addTVdb(False, 'full', cj)
 
-        fixDBLShows()
-        fixYears()
-        fixStars()
-        fixHDshows()
-        updateEpisodes()
-        fixTitles()
-        if full_update:
-            setNewest()
-            DialogPG.close()
-            updateFanart()
-        tvDB.commit()
-        return True
+        if not finished:
+            fixDBLShows()
+            fixYears()
+            fixStars()
+            fixHDshows()
+            updateEpisodes()
+            fixTitles()
+            if full_update:
+                setNewest()
+                DialogPG.close()
+                updateFanart()
+            tvDB.commit()
+            return True
 
     return False
 

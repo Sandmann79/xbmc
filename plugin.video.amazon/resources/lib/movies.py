@@ -129,7 +129,6 @@ def addMoviesdb(full_update=True, cj=True):
     endIndex = 0
     new_mov = 0
     retrycount = 0
-    retrystart = 0
     approx = 0
 
     while not approx:
@@ -150,7 +149,6 @@ def addMoviesdb(full_update=True, cj=True):
         if titles:
             for title in titles:
                 retrycount = 0
-                retrystart = 0
                 if full_update and dialog.iscanceled():
                     goAhead = -1
                     break
@@ -167,16 +165,12 @@ def addMoviesdb(full_update=True, cj=True):
                             new_mov += ASIN_ADD(title)
         else:
             retrycount += 1
+            endIndex += 1
 
         if retrycount > 2:
-            if not retrystart:
-                retrystart = time.time()
-            elif time.time() > retrystart + max_wt:
-                Log('Maxium wait time exceed, canceling database update')
-                return False
             wait_time = randint(180, 420)
             Log('Getting {} times a empty response. Waiting {} sec'.format(retrycount, wait_time))
-            sleep(wait_time)
+            #sleep(wait_time)
             retrycount = 0
 
         endIndex += len(titles)

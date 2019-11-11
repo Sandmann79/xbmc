@@ -59,17 +59,9 @@ def getUA(blacklist=False):
     UAwlist = [i for i in UAlist if i not in UAblist]
     if not UAlist or len(UAwlist) < 5:
         Log('Loading list of common UserAgents')
-        html = getURL('https://techblog.willshouse.com/2012/01/03/most-common-user-agents/', rjson=False)
-        soup = BeautifulSoup(html, 'html.parser')
-        text = soup.find('textarea')
-        # text can be None in case of server errors
-        if text:
-            UAlist = text.string.split('\n')
-            UAblist = []
-            writeConfig('UABlacklist', json.dumps(UAblist))
-            writeConfig('UAlist', json.dumps(UAlist[0:len(UAlist) - 1]))
-            UAwlist = UAlist
-
+        # [{'pt': int perthousand, 'ua': 'useragent string', 'bw': 'detected browser': 'os': 'detected O/S'}, …]
+        rj = getURL('http://www.skydubh.com/pub/useragents.json', rjson=True)
+        UAwlist = [ua['ua'] for ua in rj]
     UAnew = UAwlist[randint(0, len(UAwlist) - 1)] if UAwlist else \
         'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/59.0.3071.115 Safari/537.36'
     writeConfig('UserAgent', UAnew)

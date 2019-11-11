@@ -616,3 +616,11 @@ msgstr ""
 msgctxt "#30253"
 msgid "{0} seasons"
 msgstr ""
+
+msgctxt "#30254"
+msgid "userinput.exe not found"
+msgstr ""
+
+msgctxt "#30255"
+msgid "Please download it from GitHub and manually install it in the addon directory"
+msgstr ""

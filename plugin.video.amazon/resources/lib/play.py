@@ -619,6 +619,9 @@ def Input(mousex=0, mousey=0, click=0, keys=None, delay='200'):
 
     if platform & OS_WINDOWS:
         app = os.path.join(pluginpath, 'tools', 'userinput.exe')
+        if not os.path.exists(app):
+            Dialog.notification(getString(30227), getString(30228), xbmcgui.NOTIFICATION_ERROR)
+            return
         mouse = ' mouse {} {}'.format(mousex, mousey)
         mclk = ' ' + str(click)
         keybd = ' key {} {}'.format(keys, delay)

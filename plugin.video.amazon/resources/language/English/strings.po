@@ -814,3 +814,11 @@ msgstr ""
 msgctxt "#30226"
 msgid "Server settings or advancedsettings.xml not found"
 msgstr ""
+
+msgctxt "#30227"
+msgid "userinput.exe not found"
+msgstr ""
+
+msgctxt "#30228"
+msgid "Please download it from GitHub and manually install it in the addon directory"
+msgstr ""

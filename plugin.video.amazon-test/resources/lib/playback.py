@@ -54,6 +54,10 @@ def _Input(mousex=0, mousey=0, click=0, keys=None, delay='200'):
 
     if g.platform & g.OS_WINDOWS:
         app = os.path.join(g.PLUGIN_PATH, 'tools', 'userinput.exe')
+        if not os.path.exists(app):
+            from .l10n import getString
+            g.dialog.notification(getString(30254), getString(30255), xbmcgui.NOTIFICATION_ERROR)
+            return
         mouse = ' mouse %s %s' % (mousex, mousey)
         mclk = ' ' + str(click)
         keybd = ' key %s %s' % (keys, delay)

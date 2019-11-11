@@ -313,7 +313,6 @@ def LogIn(ask=True):
             kb = xbmc.Keyboard('', msgtxt)
             kb.doModal()
             if kb.isConfirmed() and kb.getText():
-                # xbmc.executebuiltin('ActivateWindow(busydialog)')
                 br['otpCode'] = kb.getText()
             else:
                 return None
@@ -338,7 +337,6 @@ def LogIn(ask=True):
 
             ret = g.dialog.input(q_title[sel])
             if ret:
-                # xbmc.executebuiltin('ActivateWindow(busydialog)')
                 br[q_id[sel]] = ret
             else:
                 return None
@@ -346,7 +344,6 @@ def LogIn(ask=True):
             wnd = _Captcha((getString(30008).split('…')[0]), soup, email)
             wnd.doModal()
             if wnd.email and wnd.cap and wnd.pwd:
-                # xbmc.executebuiltin('ActivateWindow(busydialog)')
                 br['email'] = wnd.email
                 br['password'] = wnd.pwd
                 br['guess'] = wnd.cap
@@ -367,7 +364,6 @@ def LogIn(ask=True):
                 sel = 100 if g.dialog.ok(cs_title, cs_hint) else -1
 
             if sel > -1:
-                # xbmc.executebuiltin('ActivateWindow(busydialog)')
                 if sel < 100:
                     form.set_radio({choices[sel][1]: choices[sel][2]})
             else:
@@ -398,7 +394,7 @@ def LogIn(ask=True):
     def _encode(data):
         k = triple_des(_getmac(), CBC, b"\0\0\0\0\0\0\0\0", padmode=PAD_PKCS5)
         d = k.encrypt(data)
-        return b64encode(d)
+        return b64encode(d).decode('utf-8')
 
     def _decode(data):
         if not data:
@@ -458,7 +454,6 @@ def LogIn(ask=True):
                 return False
 
         if password:
-            # xbmc.executebuiltin('ActivateWindow(busydialog)')
             cj = requests.cookies.RequestsCookieJar()
             br = mechanicalsoup.StatefulBrowser(soup_config={'features': 'html.parser'})
             br.set_cookiejar(cj)
@@ -477,14 +472,13 @@ def LogIn(ask=True):
                 else:
                     break
             else:
-                # xbmc.executebuiltin('Dialog.Close(busydialog)')
                 g.dialog.ok(getString(30200), getString(30213))
                 return False
 
             br['email'] = email
             br['password'] = password
 
-            if 'true' == g.addon.getSetting('rememberme') and user['pv'] and form.find_by_type('input', 'checkbox', {'name': 'rememberMe'}):
+            if 'true' == g.addon.getSetting('rememberme') and form.find_by_type('input', 'checkbox', {'name': 'rememberMe'}):
                 form.set_checkbox({'rememberMe': True})
 
             br.session.headers = [('Accept', 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8'),
@@ -498,9 +492,7 @@ def LogIn(ask=True):
                                   ('User-Agent', getConfig('UserAgent')),
                                   ('Upgrade-Insecure-Requests', '1')]
             br.submit_selected()
-            # br.open_fake_page(open('/storage/emulated/0/Download/Kodi/avod-login-mfa.log').read())
             response, soup = _parseHTML(br)
-            # xbmc.executebuiltin('Dialog.Close(busydialog)')
             WriteLog(response, 'login')
 
             while any(sp in response for sp in ['auth-mfa-form', 'ap_dcq_form', 'ap_captcha_img_label', 'claimspicker', 'fwcim-form', 'auth-captcha-image-container']):

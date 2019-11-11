@@ -737,7 +737,7 @@ def setLoginPW():
 def encode(data):
     k = triple_des(getmac(), CBC, b"\0\0\0\0\0\0\0\0", padmode=PAD_PKCS5)
     d = k.encrypt(data)
-    return b64encode(d)
+    return b64encode(d).decode('utf-8')
 
 
 def decode(data):

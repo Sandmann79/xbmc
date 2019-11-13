@@ -42,7 +42,7 @@ def loadUser(key='', empty=False, cachedUsers=None):
 
 def addUser(user):
     s = Settings()
-    user['save'] = g.addon.getSetting('save_login')
+    user['save'] = 'false'  # g.addon.getSetting('save_login')
     users = loadUsers() if s.multiuser else []
     num = [n for n, i in enumerate(users) if user['name'] == i['name']]
     if num:

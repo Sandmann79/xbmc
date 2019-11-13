@@ -432,7 +432,7 @@ def LogIn(ask=True):
         user = loadUser(empty=ask)
         email = user['email']
         password = _decode(user['password'])
-        savelogin = g.addon.getSetting('save_login') == 'true'
+        savelogin = False  # g.addon.getSetting('save_login') == 'true'
         useMFA = False
 
         if not user['baseurl']:
@@ -503,7 +503,6 @@ def LogIn(ask=True):
                 br.submit_selected()
                 response, soup = _parseHTML(br)
                 WriteLog(response, 'login-mfa')
-                # xbmc.executebuiltin('Dialog.Close(busydialog)')
 
             if 'accountFixup' in response:
                 Log('Login AccountFixup')

@@ -453,7 +453,7 @@ def LogIn(ask):
     user = loadUser()
     email = user['email']
     password = decode(user['password'])
-    savelogin = var.addon.getSetting('save_login') == 'true'
+    savelogin = False  # var.addon.getSetting('save_login') == 'true'
     useMFA = False
     if ask and var.multiuser:
         email = ''
@@ -590,7 +590,7 @@ def loadUser(empty=False):
 
 
 def addUser(user):
-    user['save'] = var.addon.getSetting('save_login')
+    user['save'] = 'false'  # var.addon.getSetting('save_login')
     users = loadUsers() if var.multiuser else []
     num = [n for n, i in enumerate(users) if user['name'] == i['name']]
     if num:

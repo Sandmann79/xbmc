@@ -643,12 +643,12 @@ class PrimeVideo(Singleton):
                 p[m] = self._dateParserData[lang]['months'][p[m]]
             return self._dateParserData[lang]['reassemble'].format(p[0], p[1], p[2])
 
-        def NotifyUser(msg):
+        def NotifyUser(msg, bForceDisplay=False):
             """ Pop up messages while scraping to inform users of progress """
 
             if not hasattr(NotifyUser, 'lastNotification'):
                 NotifyUser.lastNotification = 0
-            if NotifyUser.lastNotification < time.time():
+            if bForceDisplay or (NotifyUser.lastNotification < time.time()):
                 # Only update once every other second, to avoid endless message queue
                 NotifyUser.lastNotification = 1 + time.time()
                 self._g.dialog.notification(self._g.addon.getAddonInfo('name'), msg, time=1000, sound=False)
@@ -758,6 +758,10 @@ class PrimeVideo(Singleton):
                 if not url:
                     return False
                 data = self._GrabJSON(url)
+                if not data:
+                    NotifyUser(getString(30256), True)
+                    Log('Unable to fetch the url: {}'.format(url), Log.ERROR)
+                    return False
                 # from .logging import LogJSON
                 # LogJSON(data, url)
 

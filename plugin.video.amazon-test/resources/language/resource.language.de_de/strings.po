@@ -584,3 +584,7 @@ msgstr ""
 msgctxt "#30255"
 msgid "Please download it from GitHub and manually install it in the addon directory"
 msgstr ""
+
+msgctxt "#30256"
+msgid "Error: servers returned no content (check logs for more information)"
+msgstr ""

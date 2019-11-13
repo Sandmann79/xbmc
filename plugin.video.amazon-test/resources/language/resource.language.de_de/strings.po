@@ -46,8 +46,8 @@ msgid "Stream Bitrate (0 - Ask)"
 msgstr "Stream-Bitrate (0 - Fragen)"
 
 msgctxt "#30005"
-msgid "Subtitles languages"
-msgstr "Untertitel-Sprachen"
+msgid "Audio descriptions (disables 5.1/7.1)"
+msgstr "Audiobeschreibungen (deaktiviert 5.1/7.1)"
 
 msgctxt "#30006"
 msgid "Store Credentials instead of using the Cookie?"
@@ -109,29 +109,17 @@ msgctxt "#30020"
 msgid "Enable DRM check"
 msgstr "DRM-Überprüfung aktivieren"
 
+msgctxt "#30021"
+msgid "Language"
+msgstr "Sprache"
+
 msgctxt "#30022"
 msgid "Keep me logged in"
 msgstr "Angemeldet bleiben"
 
-msgctxt "#30023"
-msgid "None"
-msgstr "Keine"
-
-msgctxt "#30024"
-msgid "All"
-msgstr "Alle"
-
-msgctxt "#30025"
-msgid "From Kodi player language settings"
-msgstr "Spracheinstellung vom Kodi Player"
-
-msgctxt "#30026"
-msgid "From settings, fallback to english"
-msgstr "Kodi-Einstellungen sonst Englisch"
-
-msgctxt "#30027"
-msgid "From settings, fallback to all"
-msgstr "Kodi-Einstellungen sonst alle"
+msgctxt "#30028"
+msgid "Stretching"
+msgstr "Strecken"
 
 msgctxt "#30029"
 msgid "Movie View"
@@ -148,6 +136,14 @@ msgstr "Staffel-Ansicht"
 msgctxt "#30032"
 msgid "Episode View"
 msgstr "Episodenansicht"
+
+msgctxt "#30033"
+msgid "Audio"
+msgstr "Ton"
+
+msgctxt "#30034"
+msgid "Subtitles"
+msgstr "Untertitel"
 
 msgctxt "#30035"
 msgid "Enable Views"
@@ -271,7 +267,7 @@ msgstr "Serie anstelle von Staffeln in der Watchlist anzeigen"
 
 msgctxt "#30072"
 msgid "Verbose Logging"
-msgstr "Ausführliches Logging"
+msgstr "Ausführliches Loggen"
 
 msgctxt "#30073"
 msgid "Display Paid Content"
@@ -579,12 +575,12 @@ msgstr "{0} Staffeln"
 
 msgctxt "#30254"
 msgid "userinput.exe not found"
-msgstr ""
+msgstr "userinput.exe nicht gefunden"
 
 msgctxt "#30255"
 msgid "Please download it from GitHub and manually install it in the addon directory"
-msgstr ""
+msgstr "Bitte von GitHub herunterladen und in den Addon Ordner entpacken"
 
 msgctxt "#30256"
 msgid "Error: servers returned no content (check logs for more information)"
-msgstr ""
+msgstr "Fehler: Keine Inhalte vom Server erhalten (für mehr Infos Logs überprüfen)"

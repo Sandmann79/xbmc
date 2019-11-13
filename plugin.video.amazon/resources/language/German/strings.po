@@ -287,7 +287,7 @@ msgstr "Serie anstelle von Staffeln in der Watchlist anzeigen"
 
 msgctxt "#30072"
 msgid "Verbose logging"
-msgstr "Ausführliches Logging"
+msgstr "Ausführliches Loggen"
 
 msgctxt "#30073"
 msgid "Enable Remote Control"
@@ -791,8 +791,8 @@ msgstr "Serverkonfiguration oder advancedsettings.xml nicht gefunden"
 
 msgctxt "#30227"
 msgid "userinput.exe not found"
-msgstr ""
+msgstr "userinput.exe nicht gefunden"
 
 msgctxt "#30228"
 msgid "Please download it from GitHub and manually install it in the addon directory"
-msgstr ""
+msgstr "Bitte von GitHub herunterladen und in den Addon Ordner entpacken"

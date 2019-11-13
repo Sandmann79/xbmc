@@ -1057,7 +1057,8 @@ class PrimeVideo(Singleton):
                 if 'apiUrl' in cnt['pagination']:
                     nextPage = cnt['pagination']['apiUrl']
                 elif 'paginator' in cnt['pagination']:
-                    nextPage = next((x['href'] for x in cnt['pagination']['paginator'] if 'atv.wps.PaginatorNext' == x['*className*']), None)
+                    nextPage = next((x['href'] for x in cnt['pagination']['paginator'] if
+                                    (('type' in x) and ('NextPage' == x['type'])) or (('*className*' in x) and ('atv.wps.PaginatorNext' == x['*className*']))), None)
                 if nextPage:
                     requestURLs.append(nextPage)
                 else:

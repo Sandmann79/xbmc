@@ -2,10 +2,11 @@
 
 ## Repository instructions
 
-To install this repository in Kodi, [download it from the releases](https://github.com/Sandmann79/xbmc/releases/tag/v1.0.2) and add it via `Addon Browser > Install from ZIP`. Depending on Kodi's version you might first need to enable `Uknown sources` from `Settings > System > Add-ons`.
+To install this repository in Kodi, [download it from the releases](https://github.com/Sandmann79/xbmc/releases/tag/v1.0.2) and add it via `Addon Browser > Install from ZIP`.  
+Depending on Kodi's version you might first need to enable `Unknown sources` from `Settings > System > Add-ons`.
 
 ## FAQs
-You can find an answer the most frequently asked questions in the [Wiki/FAQ]() section.
+You can find an answer the most frequently asked questions in the [Wiki/FAQ](https://github.com/Sandmann79/xbmc/wiki/FAQ) section.
 
 ## Addons
 * [Amazon VOD](plugin.video.amazon-test): Amazon Prime Video Streaming

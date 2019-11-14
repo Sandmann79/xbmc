@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 from collections import OrderedDict
+from copy import deepcopy
 from kodi_six import xbmcplugin, xbmcgui
 import json
 import pickle
@@ -22,7 +23,7 @@ class PrimeVideo(Singleton):
     """ Wrangler of all things PrimeVideo.com """
 
     _catalog = {}  # Catalog cache
-    _videodata = {'urn2gti': {}, 'parents': {}}  # Video data cache
+    _videodata = {'urn2gti': {}}  # Video data cache
     _catalogCache = None  # Catalog cache file name
     _videodataCache = None  # Video data cache file name
     _separator = '/'  # Virtual path separator
@@ -122,7 +123,7 @@ class PrimeVideo(Singleton):
             try:
                 with open(self._videodataCache, 'r') as fp:
                     data = json.load(fp)
-                if ('urn2gti' not in data) or ('parents' not in data):
+                if 'urn2gti' not in data:
                     raise Exception('Old, unsafe cache data')
                 self._videodata = data
             except:
@@ -442,7 +443,6 @@ class PrimeVideo(Singleton):
         for key in [k for k in node if k not in ['ref', 'verb', 'title', 'metadata', 'parent', 'siblings', 'children']]:
             url = self._g.pluginid
             if key in self._videodata:
-                from copy import deepcopy
                 entry = deepcopy(self._videodata[key])
             else:
                 entry = node[key]
@@ -454,7 +454,7 @@ class PrimeVideo(Singleton):
                 if 'tvshow' == self._videodata[key]['metadata']['videometa']['mediatype']:
                     if 1 == len(self._videodata[key]['children']):
                         childgti = self._videodata[key]['children'][0]
-                        entry = self._videodata[childgti]
+                        entry = deepcopy(self._videodata[childgti])
                         itemPathURI += '{}{}'.format(self._separator, quote_plus(childgti.encode('utf-8')))
             except: pass
 
@@ -711,7 +711,7 @@ class PrimeVideo(Singleton):
                 parent = self._videodata[self._videodata['urn2gti'][urn]]['parent']
             bSeasonOnly = (not parent) or (oid == parent)
             if not bSeasonOnly:
-                o[parent] = self._videodata[parent]
+                o[parent] = deepcopy(self._videodata[parent])
                 o = o[parent]
             for sid in season:
                 o[sid] = season[sid]
@@ -741,10 +741,10 @@ class PrimeVideo(Singleton):
                 for gti in siblings:
                     # Add season if we're not inside a season already
                     if (not bEpisodesOnly) and (gti not in o):
-                        o[gti] = self._videodata[gti]
+                        o[gti] = deepcopy(self._videodata[gti])
                         dest = o[gti]
                     else:
-                        o = self._videodata[gti]
+                        o = deepcopy(self._videodata[gti])
                         dest = o
                     # Add cached episodes
                     for c in dest['children']:
@@ -799,10 +799,6 @@ class PrimeVideo(Singleton):
                 for gti, lc in state['collections'].items():
                     for le in lc:
                         for e in le['titleIds']:
-                            if oid == gti:  # Inside the season folder already
-                                o[e] = {}
-                            else:
-                                o[gti][e] = {}
                             GTIs.append(e)
                             # Save parent/children relationships
                             parents[e] = gti
@@ -952,7 +948,7 @@ class PrimeVideo(Singleton):
 
         amzLang = None
         if None is not requestURLs[0]:
-            # Fine the locale amazon's using
+            # Find the locale amazon's using
             cj = MechanizeLogin()
             if cj:
                 amzLang = cj.get('lc-main-av', path='/')

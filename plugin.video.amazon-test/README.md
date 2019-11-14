@@ -1,73 +1,57 @@
 # Amazon Prime Video Addon for Kodi Media Center
-This Addon supports DE/JP/UK/US Amazon accounts, and since version 0.5.0 all the countries where Amazon's **[PrimeVideo](https://www.primevideo.com/)** is available in.
+
+This addon supports amazon accounts from Germany, Japan, United Kingdom and United States (referred to as TLDs), as well as all countries supported by PrimeVideo.com (referred to as PrimeVideo, or PV).
+
+Widevine DRM protected streams are reproduced via `InputStream.Adaptive` henceforth referred to as IS.A.
+
+## Disclaimer
+This addon is not officially commissioned or supported by Amazon, nor are authors associated with it. Amazon, Prime, Amazon Prime and Prime Video are trademarks registered by Amazon Technologies, inc.
 
 ## Features
-* access and edit Amazons Watchlist and Video Library (currently not available for primevideo)
-* export Movies, TV Shows to Kodi Library
-* loads Covers and Fanart from TMDB/TVDB
+* access and edit Amazons Watchlist and Video Library (TLD)
+* export Movies, TV Shows to Kodi Library (TLD)
+* loads Covers and Fanart from TMDB/TVDB (TLD)
+* additional age verification (TLD/PV, requires IS.A)
+* fallback playack methods (TLD/PV, requires IS.A)
+
+## Known limitations
+* HD and FHD video quality are only available on hardware supported devices (Android devices/FireTV/Firesticks). To enable reproduction of such videos you need to enable `Override HDCP status` in IS.A settings, or use a different playback method
+* Some features are not yet implemented for PrimeVideo users
 
 ## Setup instructions
-* download my [Repo](https://github.com/Sandmann79/xbmc/releases) and add it to Kodi via Addon Browser > Install from ZIP
-* install **Amazon VOD** Addon from Sandmann79's Repository
-* at Settings > General you have to choose one of the following Playback Method:
+* install the repository as described in [these instructions](https://github.com/Sandmann79/xbmc/)
+* install **Amazon VOD** video addon from Sandmann79’s Repository
+
+## Playback methods
+Several playback methods are supported, although `InputStream.Adaptive` is the default since Kodi 18 Leia.
+
+### InputStream.Adaptive
+Uses the Inputstream interface with the internal Kodi player, which is available since Kodi 17, to playback Widevine encrypted video streams.
+
+### Android
+Uses the [Amazon Prime Video App](https://play.google.com/store/apps/details?id=com.amazon.avod.thirdpartyclient) for playback. If you own an Amazon FireTV/Stick, you have to install the [Amazon Video Wrapper](https://github.com/Sandmann79/xbmc/raw/master/tools_addon/AmazonVideoWrapper.apk).
 
 ### Browser
-The selected Browser is used as playback for the chosen Video. If the Browser is not installed at default location, you can choose another destination.  
-You can start the Browser in Kiosk mode (without title-/navigation bar) and with an separated profile saved in addon data folder.  
-Furthermore its possible, after a given time, to switch in Fullscreen mode and/or enter the PIN for age restricted videos.  
-For this function are the following external tools needed: [Win] userinput.exe [(Source)](https://github.com/Sandmann79/xbmc/blob/master/tools_addon/userinput.au3), [Linux] xdotool, [Mac] cliclick. The Windows tool is already included and the other ones are available at their respective package manager.  
-You have to sign in a second time directly at the browser.
-### Script/Batch
-The chosen Script or Command Line will be executed.  
-Like in Browser, you can automatically switch to Fullscreen and enter PIN for age restricted videos.  
-It is also possible to detect the video framerate and send it via Parameter **{f}** to the script. The **{u}** Parameter contains the Video URL.  
-**Examples**  
-The following script examples using the tools [DisplayChanger](http://12noon.com/?page_id=80) and [xrandr](http://www.x.org/archive/X11R7.5/doc/man/man1/xrandr.1.html) to switch the framerate.  
-**[Windows]**  
-Use Displaychanger to change refresh rate and start Internet Explorer in Kiosk mode to view the video. Displaychanger can do this in one command line, there is no need for a script file.  
-Addon Settings:  
-**Script:** (path to Displaychanger)\dc64.exe  
-**Parameter:** -refresh={f} "C:\Program Files\Internet Explorer\iexplore.exe" -k "{u}"  
-**[Linux]**  
-This script uses xrandr to change the refresh rate, starts Chrome in Kiosk mode and set the refresh rate back to 60hz.  
-Addon Settings:  
-**Script:** (path to script)\myscript.sh  
-**Parameter:** {f} "{u}"  
-``` script.sh  
+Uses the user selected browser to play the chosen video. You can start the browser in fullscreen/kiosk mode, and with a separate user profile saved in the addon data folder. It's also possible to enter PINs for age restricted videos, but this function needs external tools: [`userinput.exe`](https://github.com/Sandmann79/xbmc/releases/tag/v0.7.5-ui) for Windows ([Sources](https://github.com/Sandmann79/xbmc/blob/master/tools_addon/userinput.au3)), `xdotool` for Linux or `cliclick` for Mac.  
+This mode requires you to be logged both in the addon and in the browser at the same time.
+
+### Command/Script/Batch
+Executes the provided command to start the video. Similarly to the browser mode, you can automatically switch to Fullscreen and enter PIN for age restricted videos. Additionally it is possible to pass the video framerate to the script using `{f}` as a parameter, while `{u}` passes the video URL.
+
+The following script examples use the tools [DisplayChanger](http://12noon.com/?page_id=80) and [xrandr](http://www.x.org/archive/X11R7.5/doc/man/man1/xrandr.1.html) to switch the framerate.  
+#### Windows
+Use Displaychanger to change refresh rate and start Internet Explorer in Kiosk mode. Displaychanger can do this in one command, there is no need for a script file.
+
+**Script:** `<Displaychanger path>\dc64.exe`  
+**Parameters:** `-refresh={f} "C:\Program Files\Internet Explorer\iexplore.exe" -k "{u}"`
+#### Linux
+Use xrandr to change the refresh rate, start Chrome in Kiosk mode and set the refresh rate back to 60hz.
+
+**Script:** `<script path>\myscript.sh`  
+**Parameters:** `{f} "{u}"`  
+```sh
 #!/bin/sh
 /usr/bin/xrandr -r $1
 /usr/bin/google-chrome --kiosk $2
 /usr/bin/xrandr -r 60
 ```
-### Android
-Uses [Amazon Prime Video App](https://play.google.com/store/apps/details?id=com.amazon.avod.thirdpartyclient) for playback.  
-If you own an Amazon FireTV/-Stick, you have to install the [Amazon Video Wrapper](https://github.com/Sandmann79/xbmc/raw/master/tools_addon/AmazonVideoWrapper.apk)
-### Inputstream
-Uses the Inputstream Interface, which is available since Kodi 17 for playback with internal Kodi Player.  
-Here you can configure an age verification regardless from Amazon's one. To disable it, clear the fields.  
-The DRM Check is designed for Kodi 17 or Android. If enabled you can choose a fallback Method. They will be used, if the video isn't playable with internal player.  
-Due changes at Amazons DRM encryption, using Inputstream makes only sense with Kodi 18 alpha builds and up, because the most streams won't play in Kodi 17.  
-~~To encrypt the videos you need to place the Widevine Library at Kodis HOME/cdm folder and~~ enable the Inputstream Adaptive Addon in Addon Browser > VideoPlayer Inputstream.
-
-**Because of integration of the [Inpustream Helper](https://github.com/emilsvennesson/script.module.inputstreamhelper) script, it's not necessary to manually place/install the Widevine Library anymore.**
-
-#### Instructions for manual installation of Widevine Library:
-1) Windows:
-* download and install Kodi 18 [x86](http://mirrors.kodi.tv/nightlies/windows/win32/master/)/[64](http://mirrors.kodi.tv/nightlies/windows/win64/master/)
-* download [Google Chrome portable](https://portableapps.com/apps/internet/google_chrome_portable) use the same arch as Kodi (x86/x64) and install it
-* copy widevine.dll from (Chrome Portable install path)\App\Chrome-bin\(Chrome Version)\WidevineCdm\_platform_specific\(win_x86/win_x64) to %appdata%\Kodi\cdm (create folder, if not exist)
-2) Linux
-* install Kodi as described [here](http://kodi.wiki/view/HOW-TO:Install_Kodi_for_Linux), use the nightly ppa
-* install kodi-inputstream-adaptive from package manager
-* download [Google Chrome](https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb)
-* open google-chrome-stable_current_amd64.deb with some archive manager
-* extract ./opt/google/chrome/libwidevinecdm.so to ~/.kodi/cdm (create folder, if not exist)
-3) LibreELEC
-Please use the guides provided by Millhouse at kodi.tv:
-* [LibreELEC Testbuilds for RaspberryPi (Kodi 18.0)](https://forum.kodi.tv/showthread.php?tid=298461)
-* [LibreELEC Testbuilds for x86_64 (Kodi 18.0)](https://forum.kodi.tv/showthread.php?tid=298462)
-4) OSMC
-Please use the guides provided by gcm at osmc.tv:
- * [OSMC Testbuilds Kodi 18 (Leia) for Raspberry Pi](https://discourse.osmc.tv/t/testing-kodi-18-leia-builds-for-raspberry-pi/20631)
- * [OSMC Testbuilds Kodi 18 (Leia) for Vero 2 & 4K](https://discourse.osmc.tv/t/testing-kodi-18-leia-builds-for-vero-2-4k/23059)
-5) Android needs no Widevine Library - it's already included in the firmware

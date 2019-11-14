@@ -474,9 +474,9 @@ class PrimeVideo(Singleton):
             except: pass
 
             # Can we refresh the cache on this/these item(s)?
-            bCanRefresh = ('ref' in node[key]) or ('lazyLoadURL' in node[key]) or ((key in self._videodata) and ('ref' in self._videodata[key]))
+            bCanRefresh = ('ref' in entry) or ('lazyLoadURL' in entry)
             if ('children' in entry) and (0 < len(entry['children'])):
-                bCanRefresh = bCanRefresh or (0 < len([k for k in entry['children'] if (k in self._videodata) and ('ref' in self._videodata[k])]))
+                bCanRefresh |= (0 < len([k for k in entry['children'] if (k in self._videodata) and ('ref' in self._videodata[k])]))
 
             if bIsVideo:
                 url += '?mode=PlayVideo&name={}&asin={}'.format(self._videodata[key]['metadata']['compactGTI'], key)
@@ -575,30 +575,38 @@ class PrimeVideo(Singleton):
             return
 
         # Only refresh if previously loaded. If not loaded, and specifically asked, perform a full (lazy) loading
-        if 'lazyLoadURL' in node[nodeName]:
-            refreshes.append((node[nodeName], nodeName, False, None))
+        k = breadcrumb[-1]
+        if (k not in node) and (k in self._videodata):
+            node[k] = {}
+
+        if 'lazyLoadURL' in node[k]:
+            refreshes.append((node[k], breadcrumb, False))
         else:
             bShow = False
-            if 'ref' in node[nodeName]:  # ref's in the cache already
-                Log('Refreshing element in the cache: {}'.format(nodeName), Log.DEBUG)
-                targetURL = node[nodeName]['ref']
-            elif 'ref' in self._videodata[nodeName]:  # Movie or Season
-                Log('Refreshing element: {}'.format(nodeName), Log.DEBUG)
-                targetURL = self._videodata[nodeName]['ref']
-            else:  # Show
-                Log('Refreshing Show: {}'.format(nodeName), Log.DEBUG)
+            if 'ref' in node[k]:  # ref's in the cache already
+                Log('Refreshing element in the cache: {}'.format(k), Log.DEBUG)
+                targetURL = node[k]['ref']
+            elif 'ref' in self._videodata[k]:  # Season
+                Log('Refreshing season: {}'.format(k), Log.DEBUG)
+                targetURL = self._videodata[k]['ref']
+            else:  # TV Show
+                Log('Refreshing Show: {}'.format(k), Log.DEBUG)
                 bShow = True
-                for season in [k for k in self._videodata[nodeName]['children'] if (k in self._videodata) and ('ref' in self._videodata[k])]:
-                    node[nodeName][season] = {'lazyLoadURL': self._videodata[season]['ref']}
-                    refreshes.append((node[nodeName][season], season, None, None, True))
+                for season in [k for k in self._videodata[k]['children'] if (k in self._videodata) and ('ref' in self._videodata[k])]:
+                    if (season in node[k]) and ('lazyLoadURL' in node[k][season]):
+                        bRefresh = False
+                    else:
+                        bRefresh = True
+                        node[k][season] = {'lazyLoadURL': self._videodata[season]['ref']}
+                    refreshes.append((node[k][season], breadcrumb + [season], bRefresh))
 
             if not bShow:
                 # Reset the basic metadata
-                title = node[nodeName]['title'] if 'title' in node[nodeName] else None
-                node[nodeName] = {'lazyLoadURL': targetURL}
+                title = node[k]['title'] if 'title' in node[k] else None
+                node[k] = {'lazyLoadURL': targetURL}
                 if title:
-                    node[nodeName]['title'] = title
-                refreshes.append((node[nodeName], nodeName, ancestorNode, ancestorName, True))
+                    node[k]['title'] = title
+                refreshes.append((node[k], breadcrumb, True))
 
         from contextlib import contextmanager
 
@@ -612,7 +620,8 @@ class PrimeVideo(Singleton):
 
         with _busy_dialog():
             for r in refreshes:
-                self._LazyLoad(r[0], r[1], r[2], r[3], r[4])
+                Log('Refresh params: {}'.format(r))
+                self._LazyLoad(r[0], r[1], r[2])
 
     def _LazyLoad(self, obj, breadcrumb=None, bCacheRefresh=False):
         """ Loader and parser of all the PrimeVideo.com queries """
@@ -904,11 +913,11 @@ class PrimeVideo(Singleton):
                         if v in item['contributors']:
                             for p in item['contributors'][v]:
                                 try:
-                                    vd['metadata']['videometa'][k].append(p['name'])
-                                    bUpdated = True
+                                    if (p['name'] not in vd['metadata']['videometa'][k]):
+                                        vd['metadata']['videometa'][k].append(p['name'])
                                 except KeyError:
                                     vd['metadata']['videometa'][k] = [p['name']]
-                                    bUpdated = True
+                                bUpdated = True
 
                 # Season, TV show title
                 if ('seasonNumber' in item) and item['seasonNumber']:

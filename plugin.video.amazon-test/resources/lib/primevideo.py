@@ -344,6 +344,12 @@ class PrimeVideo(Singleton):
             if bRefresh and (i == (pathLen - 1)):
                 break
 
+            # Populate children list to avoid favourite/library traversal errors
+            if 'children' in node:
+                for cid in node['children']:
+                    if cid not in node:
+                        node[cid] = {}
+
             if nodeName not in node:
                 self._g.dialog.notification('Catalog error', 'Catalog path not available…', xbmcgui.NOTIFICATION_ERROR)
                 return (None, None)

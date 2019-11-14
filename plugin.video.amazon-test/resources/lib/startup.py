@@ -9,6 +9,7 @@ from .logging import *
 from .configs import *
 from .common import Globals, Settings
 from .ages import AgeRestrictions
+from kodi_six.utils import py2_decode
 
 
 def EntryPoint():
@@ -56,11 +57,7 @@ def EntryPoint():
         return
 
     if path.startswith('/pv/'):
-        path = path[4:]
-        try:
-            path = path.decode('utf-8')
-        except AttributeError:
-            pass
+        path = py2_decode(path[4:])
         verb, path = path.split('/', 1)
         if 'search' == verb: g.pv.Search()
         elif 'browse' == verb: g.pv.Browse(path)
@@ -76,11 +73,7 @@ def EntryPoint():
     elif mode == 'listCategories':
         g.amz.listCategories(args.get('url', ''), args.get('opt', ''))
     elif mode == 'listContent':
-        url = args.get('url', '')
-        try:
-            url = url.decode('utf-8')
-        except AttributeError:
-            pass
+        url = py2_decode(args.get('url', ''))
         g.amz.listContent(args.get('cat'), url, int(args.get('page', '1')), args.get('opt', ''))
     elif mode == 'PlayVideo':
         from .playback import PlayVideo

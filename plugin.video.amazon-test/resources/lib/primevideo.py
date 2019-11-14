@@ -2,13 +2,12 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 from collections import OrderedDict
+from kodi_six import xbmcplugin, xbmcgui
 import json
 import pickle
 import re
 import sys
 import time
-import xbmcgui
-import xbmcplugin
 
 from .singleton import Singleton
 from .network import getURL, getURLData, MechanizeLogin

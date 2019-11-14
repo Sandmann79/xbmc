@@ -3,6 +3,7 @@
 from __future__ import unicode_literals
 import os.path
 from datetime import date
+
 try:
     from urllib.parse import quote_plus
 except ImportError:
@@ -49,19 +50,15 @@ class AmazonTLD(Singleton):
         return name
 
     def SaveFile(self, filename, data, isdir=None, mode='w'):
-        try:
-            data = data.encode('utf-8')
-        except:
-            pass
+        from contextlib import closing
         if isdir:
             filename = self._cleanName(filename)
             filename = os.path.join(isdir, filename)
             if not xbmcvfs.exists(isdir):
                 xbmcvfs.mkdirs(self._cleanName(isdir.strip(), isfile=False))
         filename = self._cleanName(filename, isfile=False)
-        outfile = xbmcvfs.File(filename, mode)
-        outfile.write(data)
-        outfile.close()
+        with closing(xbmcvfs.File(filename, mode)) as outfile:
+            outfile.write(bytearray(py2_decode(data).encode('utf-8')))
 
     def CreateDirectory(self, dir_path):
         dir_path = self._cleanName(dir_path.strip(), isfile=False)
@@ -133,16 +130,15 @@ class AmazonTLD(Singleton):
 
     def SetupAmazonLibrary(self):
         import xml.etree.ElementTree as et
-        source_path = xbmc.translatePath('special://profile/sources.xml')
-        try:
-            source_path = source_path.decode('utf-8')
-        except AttributeError:
-            pass
+        from contextlib import closing
+        source_path = py2_decode(xbmc.translatePath('special://profile/sources.xml'))
         source_added = False
         source_dict = {self._s.ms_mov: self._s.MOVIE_PATH, self._s.ms_tv: self._s.TV_SHOWS_PATH}
 
         if xbmcvfs.exists(source_path) and xbmcvfs.Stat(source_path).st_size() > 0:
-            root = et.parse(xbmcvfs.File(source_path)).getroot()
+            with closing(xbmcvfs.File(source_path)) as fo:
+                byte_string = bytes(fo.readBytes())
+            root = et.fromstring(byte_string)
         else:
             subtags = ['programs', 'video', 'music', 'pictures', 'files']
             root = et.Element('sources')
@@ -168,8 +164,8 @@ class AmazonTLD(Singleton):
                         source_added = True
 
         if source_added:
-            xml_tree = et.ElementTree(root)
-            xml_tree.write(xbmcvfs.File(source_path, 'w'))
+            with closing(xbmcvfs.File(source_path, 'w')) as fo:
+                fo.write(bytearray(et.tostring(root, 'utf-8')))
             self._g.dialog.ok(getString(30187), getString(30188), getString(30189), getString(30190))
             if self._g.dialog.yesno(getString(30191), getString(30192)):
                 xbmc.executebuiltin('RestartApp')

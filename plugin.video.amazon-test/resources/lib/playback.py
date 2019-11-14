@@ -1,11 +1,12 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
+from kodi_six import xbmcplugin
+from kodi_six.utils import py2_decode
 import os
 import shlex
 import subprocess
 import threading
-import xbmcplugin
 from inputstreamhelper import Helper
 from .network import *
 from .common import Globals, Settings, jsonRPC, sleep
@@ -17,16 +18,10 @@ except:
 
 
 def _getListItem(li):
-    il = xbmc.getInfoLabel('ListItem.%s' % li)
-    try:
-        il = il.decode('utf-8')
-    except:
-        pass
-    return il
+    return py2_decode(xbmc.getInfoLabel('ListItem.%s' % li))
 
 
 def _Input(mousex=0, mousey=0, click=0, keys=None, delay='200'):
-    from common import Globals
     g = Globals()
 
     screenWidth = int(xbmc.getInfoLabel('System.ScreenWidth'))

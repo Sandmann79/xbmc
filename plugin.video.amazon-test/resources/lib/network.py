@@ -2,8 +2,9 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 from base64 import b64encode, b64decode
+from kodi_six.utils import py2_decode
 from os.path import join as OSPJoin
-import xbmcgui
+from kodi_six import xbmcgui
 import json
 import mechanicalsoup
 import pickle
@@ -493,7 +494,7 @@ def LogIn(ask=True):
                                   ('Upgrade-Insecure-Requests', '1')]
             br.submit_selected()
             response, soup = _parseHTML(br)
-            WriteLog(response.replace(email, '**@**'), 'login')
+            WriteLog(response.replace(py2_decode(email), '**@**'), 'login')
 
             while any(sp in response for sp in ['auth-mfa-form', 'ap_dcq_form', 'ap_captcha_img_label', 'claimspicker', 'fwcim-form', 'auth-captcha-image-container']):
                 br = _MFACheck(br, email, soup)
@@ -502,14 +503,14 @@ def LogIn(ask=True):
                 useMFA = True if br.get_current_form().form.find('input', {'name': 'otpCode'}) else False
                 br.submit_selected()
                 response, soup = _parseHTML(br)
-                WriteLog(response.replace(email, '**@**'), 'login-mfa')
+                WriteLog(response.replace(py2_decode(email), '**@**'), 'login-mfa')
 
             if 'accountFixup' in response:
                 Log('Login AccountFixup')
                 skip_link = br.find_link(id='ap-account-fixup-phone-skip-link')
                 br.follow_link(skip_link)
                 response, soup = _parseHTML(br)
-                WriteLog(response.replace(email, '**@**'), 'login-fixup')
+                WriteLog(response.replace(py2_decode(email), '**@**'), 'login-fixup')
 
             if 'action=sign-out' in response:
                 try:
@@ -555,6 +556,11 @@ def LogIn(ask=True):
                 msg = soup.find('div', attrs={'class': 'a-alert-content'})
                 Log('Login MFA: %s' % msg.ul.li.span.get_text(strip=True))
                 g.dialog.ok(getString(30200), getString(30214))
+            elif 'error-slot' in response:
+                msg_title = soup.find('div', attrs={'class': 'ap_error_page_title'}).get_text(strip=True)
+                msg_cont = soup.find('div', attrs={'class': 'ap_error_page_message'}).get_text(strip=True)
+                Log('Login Error: {}'.format(msg_cont))
+                g.dialog.ok(msg_title, msg_cont)
             else:
                 g.dialog.ok(getString(30200), getString(30213))
 
@@ -583,18 +589,18 @@ class _Captcha(pyxbmct.AddonDialogWindow):
             if not head:
                 head = soup.find('div', attrs={'id': 'message_error'})
             title = soup.find('div', attrs={'id': 'ap_captcha_guess_alert'})
-            self.head = head.p.renderContents().strip().encode('utf-8')
+            self.head = head.p.get_text(strip=True)
             self.head = re.sub('(?i)<[^>]*>', '', self.head)
             self.picurl = soup.find('div', attrs={'id': 'ap_captcha_img'}).img.get('src')
         else:
-            self.head = soup.find('span', attrs={'class': 'a-list-item'}).renderContents().strip()
+            self.head = soup.find('span', attrs={'class': 'a-list-item'}).get_text(strip=True)
             title = soup.find('div', attrs={'id': 'auth-guess-missing-alert'}).div.div
             self.picurl = soup.find('div', attrs={'id': 'auth-captcha-image-container'}).img.get('src')
         self.setGeometry(500, 550, 9, 2)
         self.email = email
         self.pwd = ''
         self.cap = ''
-        self.title = title.renderContents().strip()
+        self.title = title.get_text(strip=True)
         self.image = pyxbmct.Image('', aspectRatio=2)
         self.tb_head = pyxbmct.TextBox()
         self.fl_title = pyxbmct.FadeLabel(_alignment=pyxbmct.ALIGN_CENTER)

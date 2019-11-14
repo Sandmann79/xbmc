@@ -5,13 +5,12 @@
 '''
 from __future__ import unicode_literals
 from locale import getdefaultlocale
+from kodi_six import xbmc, xbmcaddon, xbmcgui
+from kodi_six.utils import py2_decode
 from sys import argv
 import hashlib
 import hmac
 import uuid
-import xbmc
-import xbmcaddon
-import xbmcgui
 import json
 from .singleton import Singleton
 from .l10n import *
@@ -69,16 +68,10 @@ class Globals(Singleton):
         # self._globals['dialogprogress'] = xbmcgui.DialogProgress()
         self._globals['hasExtRC'] = xbmc.getCondVisibility('System.HasAddon(script.chromium_remotecontrol)')
 
-        self._globals['DATA_PATH'] = xbmc.translatePath(self.addon.getAddonInfo('profile'))
+        self._globals['DATA_PATH'] = py2_decode(xbmc.translatePath(self.addon.getAddonInfo('profile')))
         self._globals['CONFIG_PATH'] = OSPJoin(self._globals['DATA_PATH'], 'config')
-        self._globals['HOME_PATH'] = xbmc.translatePath('special://home')
-        self._globals['PLUGIN_PATH'] = self._globals['addon'].getAddonInfo('path')
-        # Python27 compat
-        try:
-            for field in ['DATA_PATH', 'HOME_PATH', 'PLUGIN_PATH']:
-                self._globals[field] = self._globals[field].decode('utf-8')
-        except AttributeError:
-            pass
+        self._globals['HOME_PATH'] = py2_decode(xbmc.translatePath('special://home'))
+        self._globals['PLUGIN_PATH'] = py2_decode(self._globals['addon'].getAddonInfo('path'))
 
         # With main PATHs configured, we initialise the get/write path attributes
         # and generate/retrieve the device ID
@@ -157,8 +150,9 @@ class Settings(Singleton):
         if name in ['MOVIE_PATH', 'TV_SHOWS_PATH']:
             export = self._g.DATA_PATH
             if self._gs('enablelibraryfolder') == 'true':
-                export = xbmc.translatePath(self._gs('customlibraryfolder')).decode('utf-8')
-            return OSPJoin(export, 'Movies' if 'MOVIE_PATH' == name else 'TV')
+                export = py2_decode(xbmc.translatePath(self._gs('customlibraryfolder')))
+            export = OSPJoin(export, 'Movies' if 'MOVIE_PATH' == name else 'TV')
+            return export + '\\' if '\\' in export else export + '/'
         elif 'Language' == name:
             # Language settings
             l = jsonRPC('Settings.GetSettingValue', param={'setting': 'locale.audiolanguage'})

@@ -72,7 +72,7 @@ if __name__ == '__main__':
 
             if dtlast + timedelta(days=freqdays) <= today and idletime >= idleupdate:
                 if not update_run:
-                    Log('AmazonDB: Starting DBUpdate ({} / {})'.format(dtlast, today))
+                    Log('Starting DBUpdate ({} / {})'.format(dtlast, today))
                     xbmc.executebuiltin('XBMC.RunPlugin(plugin://{}/?mode=appfeed&sitemode=updateAll)'.format(var.addon.getAddonInfo('id')))
 
             if monitor.waitForAbort(checkfreq):

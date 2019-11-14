@@ -295,28 +295,29 @@ def WriteLog(data, fn=''):
         fn = '-' + fn
     fn = pluginname + fn + '.log'
     path = os.path.join(homepath, fn)
-    logfile = xbmcvfs.File(path, 'w')
-    logfile.write(py2_encode(data))
-    logfile.close()
+    SaveFile(path, data)
 
 
 def Log(msg, level=xbmc.LOGNOTICE):
+    from inspect import currentframe, getframeinfo
+    from os.path import basename as opb
     if level == xbmc.LOGDEBUG and var.verbLog:
         level = xbmc.LOGNOTICE
-    msg = '[{}] {}'.format(pluginname, msg)
-    xbmc.log(msg, level)
+    fi = getframeinfo(currentframe().f_back)
+    msg = '[{0}]{2} {1}'.format(pluginname, msg, '' if not var.verbLog else ' {}:{}'.format(opb(fi.filename), fi.lineno))
+    xbmc.log(py2_encode(msg), level)
 
 
 def SaveFile(filename, data, dirname=None):
+    from contextlib import closing
     if dirname:
         filename = cleanName(filename)
         filename = os.path.join(dirname, filename)
         if not xbmcvfs.exists(dirname):
             xbmcvfs.mkdirs(cleanName(dirname.strip(), isfile=False))
     filename = cleanName(filename, isfile=False)
-    f = xbmcvfs.File(filename, 'w')
-    f.write(py2_encode(data))
-    f.close()
+    with closing(xbmcvfs.File(filename, 'w')) as outfile:
+        outfile.write(bytearray(py2_decode(data).encode('utf-8')))
 
 
 def addDir(name, mode, sitemode, url='', thumb='', fanart='', infoLabels=None, totalItems=0, cm=None, page=1, options=''):
@@ -416,7 +417,7 @@ def getParams(asin, cookie):
     url = BaseUrl + '/gp/video/hover/{}?format=json&refTag=dv-hover&requesterPageType=Detail'.format(asin)
     data = getURL(url, useCookie=cookie, rjson=False)
     if data:
-        data = py2_decode(py2_encode(data), 'unicode_escape')
+        data = data.encode('utf-8').decode('unicode_escape')
         data = re.compile('(<form.*</form>)').findall(data)[0]
         form = BeautifulSoup(data, 'html.parser')
         return form.button
@@ -504,7 +505,7 @@ def LogIn(ask):
                               ('Upgrade-Insecure-Requests', '1')]
         br.submit_selected()
         response, soup = parseHTML(br)
-        WriteLog(response.replace(email, '**@**'), 'login')
+        WriteLog(response.replace(py2_decode(email), '**@**'), 'login')
 
         while any(sp in response for sp in ['auth-mfa-form', 'ap_dcq_form', 'ap_captcha_img_label', 'claimspicker', 'fwcim-form', 'auth-captcha-image-container']):
             br = MFACheck(br, email, soup)
@@ -513,14 +514,14 @@ def LogIn(ask):
             useMFA = True if br.get_current_form().form.find('input', {'name': 'otpCode'}) else False
             br.submit_selected()
             response, soup = parseHTML(br)
-            WriteLog(response.replace(email, '**@**'), 'login-mfa')
+            WriteLog(response.replace(py2_decode(email), '**@**'), 'login-mfa')
 
         if 'accountFixup' in response:
             Log('Login AccountFixup')
             skip_link = br.find_link(id='ap-account-fixup-phone-skip-link')
             br.follow_link(skip_link)
             response, soup = parseHTML(br)
-            WriteLog(response.replace(email, '**@**'), 'login-fixup')
+            WriteLog(response.replace(py2_decode(email), '**@**'), 'login-fixup')
 
         if 'action=sign-out' in response:
             try:
@@ -569,6 +570,11 @@ def LogIn(ask):
             msg = soup.find('div', attrs={'class': 'a-alert-content'})
             Log('Login MFA: {}'.format(msg.ul.li.span.get_text(strip=True)))
             Dialog.ok(getString(30200), getString(30214))
+        elif 'error-slot' in response:
+            msg_title = soup.find('div', attrs={'class': 'ap_error_page_title'}).get_text(strip=True)
+            msg_cont = soup.find('div', attrs={'class': 'ap_error_page_message'}).get_text(strip=True)
+            Log('Login Error: {}'.format(msg_cont))
+            Dialog.ok(msg_title, msg_cont)
         else:
             Dialog.ok(getString(30200), getString(30213))
 

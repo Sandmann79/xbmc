@@ -12,8 +12,9 @@ ms_tv = var.addon.getSetting('mediasource_tv')
 EXPORT_PATH = pldatapath
 if var.addon.getSetting('enablelibraryfolder') == 'true':
     EXPORT_PATH = xbmc.translatePath(var.addon.getSetting('customlibraryfolder'))
-MOVIE_PATH = os.path.join(EXPORT_PATH, 'Movies')
-TV_SHOWS_PATH = os.path.join(EXPORT_PATH, 'TV')
+sep = '\\' if '\\' in EXPORT_PATH else '/'
+MOVIE_PATH = os.path.join(EXPORT_PATH, 'Movies') + sep
+TV_SHOWS_PATH = os.path.join(EXPORT_PATH, 'TV') + sep
 ms_mov = ms_mov if ms_mov else 'Amazon Movies'
 ms_tv = ms_tv if ms_tv else 'Amazon TV'
 
@@ -179,8 +180,7 @@ def SetupAmazonLibrary():
     if xbmcvfs.exists(source_path):
         with closing(xbmcvfs.File(source_path)) as fo:
             byte_string = bytes(fo.readBytes())
-        xml_cont = byte_string.decode('utf-8')
-        root = et.fromstring(xml_cont)
+        root = et.fromstring(byte_string)
     else:
         subtags = ['programs', 'video', 'music', 'pictures', 'files']
         root = et.Element('sources')
@@ -207,7 +207,7 @@ def SetupAmazonLibrary():
 
     if source_added:
         with closing(xbmcvfs.File(source_path, 'w')) as fo:
-            fo.write(bytearray(et.tostring(root)))
-            Dialog.ok(getString(30187), getString(30188), getString(30189), getString(30190))
-            if Dialog.yesno(getString(30191), getString(30192)):
-                xbmc.executebuiltin('RestartApp')
+            fo.write(bytearray(et.tostring(root, 'utf-8')))
+        Dialog.ok(getString(30187), getString(30188), getString(30189), getString(30190))
+        if Dialog.yesno(getString(30191), getString(30192)):
+            xbmc.executebuiltin('RestartApp')

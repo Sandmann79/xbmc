@@ -5,6 +5,7 @@
 # Created: 12/01/2019
 
 from __future__ import unicode_literals
+from kodi_six.utils import py2_decode
 import base64
 from resources.lib.logging import Log
 from contextlib import contextmanager
@@ -68,11 +69,7 @@ class ProxyHTTPD(BaseHTTPRequestHandler):
         except ImportError:
             from urlparse import unquote, urlparse, parse_qsl
 
-        path = urlparse(self.path).path[1:]  # Get URI without the trailing slash
-        try:
-            path = path.decode('utf-8')
-        except AttributeError:
-            pass
+        path = py2_decode(urlparse(self.path).path[1:])  # Get URI without the trailing slash
         path = path.split('/')  # license/<asin>/<ATV endpoint>
         Log('[PS] Requested {} path {}'.format(method, path), Log.DEBUG)
 
@@ -108,11 +105,7 @@ class ProxyHTTPD(BaseHTTPRequestHandler):
         if 'Host' in headers: del headers['Host']  # Forcibly strip the host (py3 compliance)
         Log('[PS] Forwarding the {} request towards {}'.format(method.upper(), endpoint), Log.DEBUG)
         r = session.request(method, endpoint, data=data, headers=headers, cookies=cookie, stream=stream, verify=self.server._s.verifySsl)
-        rc = r.content
-        try:
-            rc = rc.decode('utf-8')
-        except AttributeError:
-            pass
+        rc = py2_decode(r.content)
         return (r.status_code, r.headers, r if stream else rc)
 
     def _gzip(self, data=None, stream=False):
@@ -281,11 +274,7 @@ class ProxyHTTPD(BaseHTTPRequestHandler):
                         fn,
                         variants
                     )
-                    cl = convertLanguage(fn[0:2], ENGLISH_NAME)
-                    try:
-                        cl = cl.decode('utf-8')
-                    except AttributeError:
-                        pass
+                    cl = py2_decode(convertLanguage(fn[0:2], ENGLISH_NAME))
                     newsubs.append((content[sub_type][i], cl, fn, variants, escapedurl))
                 del content[sub_type]  # Reduce the data transfer by removing the lists we merged
 
@@ -334,11 +323,7 @@ class ProxyHTTPD(BaseHTTPRequestHandler):
             bPeriod = False
             Log('[PS] Loading MPD and rebasing as {}'.format(baseurl), Log.DEBUG)
             for chunk in r.iter_content(chunk_size=1048576, decode_unicode=True):
-                try:
-                    chunk = chunk.decode('utf-8')
-                except AttributeError:
-                    pass
-                buffer += chunk
+                buffer += py2_decode(chunk)
 
                 # Flush everything up to audio AdaptationSets as fast as possible
                 pos = re.search(r'(<AdaptationSet[^>]*contentType="video"[^>]*>.*?</AdaptationSet>\s*)' if bPeriod else r'(<Period[^>]*>\s*)', buffer, flags=re.DOTALL)

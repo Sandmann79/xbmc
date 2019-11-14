@@ -3,6 +3,8 @@
 from __future__ import unicode_literals
 from os.path import join as OSPJoin
 from sys import version_info
+from kodi_six import xbmc, xbmcvfs
+from kodi_six.utils import py2_encode
 import xbmc
 import xbmcvfs
 from .common import Globals, Settings
@@ -18,9 +20,7 @@ def Log(msg, level=xbmc.LOGNOTICE):
         level = xbmc.LOGNOTICE
     fi = getframeinfo(currentframe().f_back)
     msg = '[{0}]{2} {1}'.format(g.__plugin__, msg, '' if not s.verbLog else ' {}:{}'.format(opb(fi.filename), fi.lineno))
-    if (3 > version_info[0]) and (isinstance(msg, unicode)):
-        msg = msg.encode('utf-8')
-    xbmc.log(msg, level)
+    xbmc.log(py2_encode(msg), level)
 
 
 def WriteLog(data, fn=''):
@@ -30,10 +30,8 @@ def WriteLog(data, fn=''):
     fn = '-' + fn if fn else ''
     fn = 'avod{}.log'.format(fn)
     path = OSPJoin(g.HOME_PATH, fn)
-    if (3 > version_info[0]) and (isinstance(data, unicode)):
-        data = data.encode('utf-8')
     logfile = xbmcvfs.File(path, 'w')
-    logfile.write(data.__str__())
+    logfile.write(py2_encode(data))
     logfile.close()
 
 

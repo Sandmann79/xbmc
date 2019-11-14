@@ -106,7 +106,8 @@ class PrimeVideo(Singleton):
                 pickle.dump(self._catalog, fp)
         if bFlushVideoData:
             with open(self._videodataCache, 'w+') as fp:
-                json.dump(self._videodata, fp)
+                bPretty = self._s.verbLog
+                json.dump(self._videodata, fp, indent=2 if bPretty else None, separators=None if bPretty else (',', ':'), sort_keys=True)
 
     def _LoadCache(self):
         """ Load cached catalog and video data """

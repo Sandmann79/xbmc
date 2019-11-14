@@ -504,23 +504,23 @@ def LogIn(ask):
                               ('Upgrade-Insecure-Requests', '1')]
         br.submit_selected()
         response, soup = parseHTML(br)
-        WriteLog(response, 'login')
+        WriteLog(response.replace(email, '**@**'), 'login')
 
         while any(sp in response for sp in ['auth-mfa-form', 'ap_dcq_form', 'ap_captcha_img_label', 'claimspicker', 'fwcim-form', 'auth-captcha-image-container']):
             br = MFACheck(br, email, soup)
-            if not br:
+            if False is br:
                 return False
             useMFA = True if br.get_current_form().form.find('input', {'name': 'otpCode'}) else False
             br.submit_selected()
             response, soup = parseHTML(br)
-            WriteLog(response, 'login-mfa')
+            WriteLog(response.replace(email, '**@**'), 'login-mfa')
 
         if 'accountFixup' in response:
             Log('Login AccountFixup')
             skip_link = br.find_link(id='ap-account-fixup-phone-skip-link')
             br.follow_link(skip_link)
             response, soup = parseHTML(br)
-            WriteLog(response, 'login-fixup')
+            WriteLog(response.replace(email, '**@**'), 'login-fixup')
 
         if 'action=sign-out' in response:
             try:

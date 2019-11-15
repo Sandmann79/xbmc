@@ -1,16 +1,17 @@
 ﻿<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <addon id="plugin.video.amazon-test"
        name="Amazon VOD"
-       version="0.7.4"
+       version="0.7.5"
        provider-name="Sandmann79, Varstahl">
   <requires>
     <import addon="xbmc.python" version="2.24.0"/>
     <import addon="script.module.beautifulsoup4" version="4.6.2"/>
-    <import addon="script.module.mechanize" version="0.2.6"/>
+    <import addon="script.module.mechanicalsoup" version="0.12.0"/>
     <import addon="script.module.pydes" version="2.0.1"/>
     <import addon="script.module.pyxbmct" version="1.1.7"/>
     <import addon="script.module.inputstreamhelper" version="0.2.4"/>
     <import addon="script.module.requests" version="2.9.1"/>
+    <import addon="script.module.kodi-six" version="0.0.5"/>
   </requires>
   <extension point="xbmc.python.pluginsource"
              library="default.py">
@@ -28,7 +29,7 @@
 This Addon uses pyDes by Todd Whiteman</disclaimer>
     <disclaimer lang="de">Möglicherweise sind einge Teile dieses Addons in Ihrem Land illegal, Sie sollten dies unbedingt vor der Installation überprüfen.
 Diese Addon verwendet pyDes von Todd Whiteman</disclaimer>
-     <license>GNU GENERAL PUBLIC LICENSE. Version 2, June 1991</license>
+     <license>GNU GENERAL PUBLIC LICENSE. Version 3, 29 June 2007</license>
     <forum>http://www.kodinerds.net/index.php/Thread/44211-Release-Amazon-Prime-Instant-Video</forum>
     <source>https://github.com/Sandmann79/xbmc</source>
   </extension>

@@ -2,12 +2,13 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 from collections import OrderedDict
+from copy import deepcopy
+from kodi_six import xbmcplugin, xbmcgui
+import json
 import pickle
-import time
 import re
 import sys
-import xbmcgui
-import xbmcplugin
+import time
 
 from .singleton import Singleton
 from .network import getURL, getURLData, MechanizeLogin
@@ -22,33 +23,22 @@ class PrimeVideo(Singleton):
     """ Wrangler of all things PrimeVideo.com """
 
     _catalog = {}  # Catalog cache
-    _videodata = {}  # Video data cache
+    _videodata = {'urn2gti': {}}  # Video data cache
     _catalogCache = None  # Catalog cache file name
     _videodataCache = None  # Video data cache file name
-    _recurringPages = {'SeasonScraping': []}  # Avoid LazyLoad infinite recursion on watchlist parsing
     _separator = '/'  # Virtual path separator
 
     def __init__(self, globalsInstance, settingsInstance):
         self._g = globalsInstance
         self._s = settingsInstance
-        """ Data for text extrapolation
-
-            References:
-            https://www.primevideo.com/detail/0ND5POOAYD6A4THTH7C1TD3TYE/ Season, Starring, Genres
-            https://www.primevideo.com/detail/0I5LVHEYZFZ51QTL86QYXWQ1QW/ Director, Starring, Genres
-        """
-        self._seasonRex = r'(Stagione|Staffel|Season|Temporada|Saison|Seizoen|Sezon|S[æeä]song?|सीज़न|சீசன்|సీజన్)'
-        self._directorRex = r'(Direc?tor|Regia|Regie|Réalisation|Regisseur|Reżyser|Instruktør|Regiss[øö]r|निर्देशक|இயக்குனர்|దర్శకుడు)'
-        self._starringRex = r'(Starring|Interpreti|Hauptdarsteller|Reparto|Acteurs principaux|In de hoofdrol|Występują|Atores principais|Medvirkende|I huvudrollerna|' \
-                            r'मुख्य भूमिका में|நடித்தவர்கள்|నటులు:)'
-        self._genresRex = r'(Gene?re[rs]?|Géneros|Gatunki|Gêneros|Sjangrer|शैलियां|வகைகள்|శైలీలు)'
-        self._dateFinder = r'((?:[0-9]+|[^\s]+)(?:\.|\s+de)?\s+(?:[0-9]+|[^\s]+),?(?:\s+de)?\s+(?:[0-9]+))'
         self._dateParserData = {
             """ Data for date string deconstruction and reassembly
 
                 Date references:
                 https://www.primevideo.com/detail/0LCQSTWDMN9V770DG2DKXY3GVF/  09 10 11 12 01 02 03 04 05
                 https://www.primevideo.com/detail/0ND5POOAYD6A4THTH7C1TD3TYE/  06 07 08 09
+
+                Languages: https://www.primevideo.com/settings/language/
             """
             'da_DK': {'deconstruct': r'^([0-9]+)\.?\s+([^\s]+)\s+([0-9]+)', 'reassemble': '{2}-{1:0>2}-{0:0>2}', 'month': 1,
                       'months': {'januar': 1, 'februar': 2, 'marts': 3, 'april': 4, 'maj': 5, 'juni': 6, 'juli': 7, 'august': 8, 'september': 9, 'oktober': 10,
@@ -62,12 +52,18 @@ class PrimeVideo(Singleton):
             'es_ES': {'deconstruct': r'^([0-9]+)\s+de\s+([^\s]+),?\s+de\s+([0-9]+)', 'reassemble': '{2}-{1:0>2}-{0:0>2}', 'month': 1,
                       'months': {'enero': 1, 'febrero': 2, 'marzo': 3, 'abril': 4, 'mayo': 5, 'junio': 6, 'julio': 7, 'agosto': 8, 'septiembre': 9, 'octubre': 10,
                                  'noviembre': 11, 'diciembre': 12}},
+            'fi_FI': {'deconstruct': r'^([0-9]+)\.?\s+([^\s]+)\s+([0-9]+)', 'reassemble': '{2}-{1:0>2}-{0:0>2}', 'month': 1,
+                      'months': {'tammikuuta': 1, 'helmikuuta': 2, 'maaliskuuta': 3, 'huhtikuuta': 4, 'toukokuuta': 5, 'kesäkuuta': 6, 'heinäkuuta': 7, 'elokuuta': 8,
+                                 'syyskuuta': 9, 'lokakuuta': 10, 'marraskuuta': 11, 'joulukuuta': 12}},
             'fr_FR': {'deconstruct': r'^([0-9]+)\s+([^\s]+)\s+([0-9]+)', 'reassemble': '{2}-{1:0>2}-{0:0>2}', 'month': 1,
                       'months': {'janvier': 1, 'février': 2, 'mars': 3, 'avril': 4, 'mai': 5, 'juin': 6, 'juillet': 7, 'aout': 8, 'août': 8, 'septembre': 9,
                                  'octobre': 10, 'novembre': 11, 'décembre': 12}},
             'hi_IN': {'deconstruct': r'^([0-9]+)\s+([^\s]+)\s+([0-9]+)', 'reassemble': '{2}-{1:0>2}-{0:0>2}', 'month': 1,
                       'months': {'जनवरी': 1, 'फ़रवरी': 2, 'मार्च': 3, 'अप्रैल': 4, 'मई': 5, 'जून': 6, 'जुलाई': 7, 'अगस्त': 8, 'सितंबर': 9, 'अक्तूबर': 10,
                                  'नवंबर': 11, 'दिसंबर': 12}},
+            'id_ID': {'deconstruct': r'^([0-9]+)\s+([^\s]+)\s+([0-9]+)', 'reassemble': '{2}-{1:0>2}-{0:0>2}', 'month': 1,
+                      'months': {'januari': 1, 'februari': 2, 'maret': 3, 'april': 4, 'mei': 5, 'juni': 6, 'juli': 7, 'agustus': 8, 'september': 9,
+                                 'oktober': 10, 'november': 11, 'desember': 12}},
             'it_IT': {'deconstruct': r'^([0-9]+)\s+([^\s]+)\s+([0-9]+)', 'reassemble': '{2}-{1:0>2}-{0:0>2}', 'month': 1,
                       'months': {'gennaio': 1, 'febbraio': 2, 'marzo': 3, 'aprile': 4, 'maggio': 5, 'giugno': 6, 'luglio': 7, 'agosto': 8, 'settembre': 9,
                                  'ottobre': 10, 'novembre': 11, 'dicembre': 12}},
@@ -83,6 +79,9 @@ class PrimeVideo(Singleton):
             'pt_BR': {'deconstruct': r'^([0-9]+)\s+de\s+([^\s]+),?\s+de\s+([0-9]+)', 'reassemble': '{2}-{1:0>2}-{0:0>2}', 'month': 1,
                       'months': {'janeiro': 1, 'fevereiro': 2, 'março': 3, 'abril': 4, 'maio': 5, 'junho': 6, 'julho': 7, 'agosto': 8, 'setembro': 9, 'outubro': 10,
                                  'novembro': 11, 'dezembro': 12}},
+            'ru_RU': {'deconstruct': r'^([0-9]+)\s+([^\s]+)\s+([0-9]+)', 'reassemble': '{2}-{1:0>2}-{0:0>2}', 'month': 1,
+                      'months': {'января': 1, 'февраля': 2, 'марта': 3, 'апреля': 4, 'мая': 5, 'июня': 6, 'июля': 7, 'августа': 8, 'сентября': 9,
+                                 'октября': 10, 'ноября': 11, 'декабря': 12}},
             'sv_SE': {'deconstruct': r'^([0-9]+)\s+([^\s]+)\s+([0-9]+)', 'reassemble': '{2}-{1:0>2}-{0:0>2}', 'month': 1,
                       'months': {'januari': 1, 'februari': 2, 'mars': 3, 'april': 4, 'maj': 5, 'juni': 6, 'juli': 7, 'augusti': 8, 'september': 9, 'oktober': 10,
                                  'november': 11, 'december': 12}},
@@ -92,17 +91,24 @@ class PrimeVideo(Singleton):
             'te_IN': {'deconstruct': r'^([0-9]+)\s+([^\s]+),?\s+([0-9]+)', 'reassemble': '{2}-{1:0>2}-{0:0>2}', 'month': 1,
                       'months': {'జనవరి': 1, 'ఫిబ్రవరి': 2, 'మార్చి': 3, 'ఏప్రిల్': 4, 'మే': 5, 'జూన్': 6, 'జులై': 7, 'ఆగస్టు': 8, 'సెప్టెంబర్': 9, 'అక్టోబర్': 10,
                                  'నవంబర్': 11, 'డిసెంబర్': 12}},
+            'tr_TR': {'deconstruct': r'^([0-9]+)\s+([^\s]+)\s+([0-9]+)', 'reassemble': '{2}-{1:0>2}-{0:0>2}', 'month': 1,
+                      'months': {'ocak': 1, 'şubat': 2, 'mart': 3, 'nisan': 4, 'mayıs': 5, 'haziran': 6, 'temmuz': 7, 'ağustos': 8, 'eylül': 9,
+                                 'ekim': 10, 'kasım': 11, 'aralık': 12}},
+            'zh_CN': {'deconstruct': r'^([0-9]+)年([0-9]+)月([0-9]+)日', 'reassemble': '{0}-{1:0>2}-{2:0>2}', 'month': 1},
+            'zh_TW': {'deconstruct': r'^([0-9]+)年([0-9]+)月([0-9]+)日', 'reassemble': '{0}-{1:0>2}-{2:0>2}', 'month': 1},
         }
         self._LoadCache()
 
-    def _Flush(self, FlushVideoData=False):
+    def _Flush(self, bFlushCacheData=True, bFlushVideoData=False):
         """ Cache catalog and video data """
 
-        with open(self._catalogCache, 'w+') as fp:
-            pickle.dump(self._catalog, fp)
-        if FlushVideoData:
+        if bFlushCacheData:
+            with open(self._catalogCache, 'wb+') as fp:
+                pickle.dump(self._catalog, fp)
+        if bFlushVideoData:
             with open(self._videodataCache, 'w+') as fp:
-                pickle.dump(self._videodata, fp)
+                bPretty = self._s.verbLog
+                json.dump(self._videodata, fp, indent=2 if bPretty else None, separators=None if bPretty else (',', ':'), sort_keys=True)
 
     def _LoadCache(self):
         """ Load cached catalog and video data """
@@ -116,57 +122,246 @@ class PrimeVideo(Singleton):
         if exists(self._videodataCache):
             try:
                 with open(self._videodataCache, 'r') as fp:
-                    self._videodata = pickle.load(fp)
+                    data = json.load(fp)
+                if 'urn2gti' not in data:
+                    raise Exception('Old, unsafe cache data')
+                self._videodata = data
             except:
-                Log('Removing corrupted cache file “%s”' % self._videodataCache, Log.DEBUG)
+                Log('Removing corrupted cache file “{}”'.format(self._videodataCache), Log.DEBUG)
                 delete(self._videodataCache)
                 self._g.dialog.notification('Corrupted video cache', 'Unable to load the video cache data', xbmcgui.NOTIFICATION_ERROR)
 
         if exists(self._catalogCache):
             try:
-                with open(self._catalogCache, 'r') as fp:
+                with open(self._catalogCache, 'rb') as fp:
                     cached = pickle.load(fp)
                 if time.time() < cached['expiration']:
                     self._catalog = cached
             except:
-                Log('Removing corrupted cache file “%s”' % self._catalogCache, Log.DEBUG)
+                Log('Removing corrupted cache file “{}”'.format(self._catalogCache), Log.DEBUG)
                 delete(self._catalogCache)
                 self._g.dialog.notification('Corrupted catalog cache', 'Unable to load the catalog cache data', xbmcgui.NOTIFICATION_ERROR)
+
+    def _BeautifyText(self, title):
+        """ Correct stylistic errors in Amazon's titles """
+
+        for t in [(r'\s+-\s*([^&])', r' – \1'),  # Convert dash from small to medium where needed
+                  (r'\s*-\s+([^&])', r' – \1'),  # Convert dash from small to medium where needed
+                  (r'^\s+', ''),  # Remove leading spaces
+                  (r'\s+$', ''),  # Remove trailing spaces
+                  (r' {2,}', ' '),  # Remove double spacing
+                  (r'\.\.\.', '…')]:  # Replace triple dots with ellipsis
+            title = re.sub(t[0], t[1], title)
+        return title
+
+    def _FQify(self, URL):
+        """ Makes sure to provide correct fully qualified URLs """
+        base = self._g.BaseUrl
+        if '://' in URL:  # FQ
+            return URL
+        elif URL.startswith('//'):  # Specified domain, same schema
+            return base.split(':')[0] + ':' + URL
+        elif URL.startswith('/'):  # Relative URL
+            return base + URL
+        else:  # Hope and pray we never reach this ¯\_(ツ)_/¯
+            return base + '/' + URL
+
+    def _GrabJSON(self, url, bRaw=False):
+        """ Extract JSON objects from HTMLs while keeping the API ones intact """
+
+        def Unescape(text):
+            """ Unescape various html/xml entities in dictionary values, courtesy of Fredrik Lundh """
+
+            def fixup(m):
+                """ Unescape entities except for double quotes, lest the JSON breaks """
+                try:
+                    from html.entities import name2codepoint
+                except:
+                    from htmlentitydefs import name2codepoint
+
+                text = m.group(0)  # First group is the text to replace
+
+                # Unescape if possible
+                if text[:2] == "&#":
+                    # character reference
+                    try:
+                        bHex = ("&#x" == text[:3])
+                        char = int(text[3 if bHex else 2:-1], 16 if bHex else 10)
+                        if 34 == char:
+                            text = u'\\"'
+                        else:
+                            try:
+                                text = unichr(char)
+                            except NameError:
+                                text = chr(char)
+                    except ValueError:
+                        pass
+                else:
+                    # named entity
+                    char = text[1:-1]
+                    if 'quot' == char:
+                        text = u'\\"'
+                    elif char in name2codepoint:
+                        char = name2codepoint[char]
+                        try:
+                            text = unichr(char)
+                        except NameError:
+                            text = chr(char)
+                return text
+
+            text = re.sub('&#?\\w+;', fixup, text)
+            try:
+                text = text.encode('latin-1').decode('utf-8')
+            except (UnicodeEncodeError, UnicodeDecodeError):
+                pass
+
+            return text
+
+        def Merge(o, n):
+            """ Merge JSON objects with multiple multi-level collisions """
+            if (not n) or (o == n):  # Nothing to do
+                return
+            elif (type(n) == list) or (type(n) == set):  # Insert into list/set
+                for item in n:
+                    if item not in o:
+                        if type(n) == list:
+                            o.append(item)
+                        else:
+                            o.add(item)
+            elif type(n) == dict:
+                for k in list(n):  # list() instead of .keys() to avoid py3 iteration errors
+                    if k not in o:
+                        o[k] = n[k]  # Insert into dictionary
+                    else:
+                        Merge(o[k], n[k])  # Recurse
+            else:
+                Log('Collision detected during JSON objects merging, overwriting and praying', Log.WARNING)
+                o = n
+
+        def Prune(d):
+            """ Prune some commonly found sensitive info from JSON response bodies """
+            if not d:
+                return
+
+            l = d
+            if isinstance(l, dict):
+                for k in list(l):  # list() instead of .keys() to avoid py3 iteration errors
+                    if k == 'strings':
+                        l[k] = {s: l[k][s] for s in ['AVOD_DP_season_selector'] if s in l[k]}
+                    if (not l[k]) or (k in ['context', 'params', 'playerConfig', 'refine']):
+                        del l[k]
+                l = d.values()
+            for v in l:
+                if isinstance(v, dict) or isinstance(v, list):
+                    Prune(v)
+
+        try:
+            from urlparse import urlparse, parse_qs
+            from urllib import urlencode
+        except:
+            from urllib.parse import urlparse, parse_qs, urlencode
+        if url.startswith('/search/'):
+            np = urlparse(url)
+            qs = parse_qs(np.query)
+            if 'from' in list(qs):  # list() instead of .keys() to avoid py3 iteration errors
+                qs['startIndex'] = qs['from']
+                del qs['from']
+            np = np._replace(path='/gp/video/api' + np.path, query=urlencode([(k, v) for k, l in qs.items() for v in l]))
+            url = np.geturl()
+
+        r = getURL(self._FQify(url), silent=True, useCookie=True, rjson=False)
+        if not r:
+            return None
+        try:
+            r = r.strip()
+            if '{' == r[0:1]:
+                o = json.loads(Unescape(r))
+                if not bRaw:
+                    Prune(o)
+                return o
+        except:
+            pass
+
+        matches = re.findall(r'\s*(?:<script type="text/template">|state:)\s*({[^\n]+})\s*(?:,|</script>)\s*', r)
+        if not matches:
+            Log('No JSON objects found in the page', Log.ERROR)
+            return None
+
+        # Create a single object containing all the data from the multiple JSON objects in the page
+        o = {}
+        for m in matches:
+            m = json.loads(Unescape(m))
+            if 'props' not in m:
+                m = m['widgets']['Storefront']
+            else:
+                m = m['props']
+
+                if not bRaw:
+                    # Prune useless/sensitive info
+                    for k in list(m):  # list() instead of .keys() to avoid py3 iteration errors
+                        if (not m[k]) or (k in ['copyright', 'links', 'logo', 'params', 'playerConfig', 'refine']):
+                            del m[k]
+                    if 'state' in m:
+                        st = m['state']
+                        for k in list(st):  # list() instead of .keys() to avoid py3 iteration errors
+                            if not st[k]:
+                                del st[k]
+                            elif k in ['features', 'customerPreferences']:
+                                del st[k]
+
+            # Prune sensitive context info and merge into o
+            if not bRaw:
+                Prune(m)
+            Merge(o, m)
+
+        return o if o else None
 
     def _TraverseCatalog(self, path, bRefresh=False):
         """ Extract current node, grandparent node and their names """
 
-        from urllib import unquote_plus
+        try:
+            from urllib.parse import unquote_plus
+        except:
+            from urllib import unquote_plus
 
         # Fix the unquote_plus problem with unicode_literals by encoding to latin-1 (byte string) and then decoding
-        pathList = [unquote_plus(p).encode('latin-1').decode('utf-8') for p in path.split(self._separator)]
-        pathLen = len(pathList)
+        pathList = [unquote_plus(p) for p in path.split(self._separator)]
+        for k in pathList:
+            try:
+                pathList[k] = pathList[k].encode('latin-1').decode('utf-8')
+            except: pass
 
         if 0 == len(self._catalog):
             self.BuildRoot()
 
+        # Traverse
         node = self._catalog
-        nodeName = None
-        ancestorNode = None
-        ancestorName = None
+        pathLen = len(pathList)
         for i in range(0, pathLen):
             nodeName = pathList[i]
-            if i == (pathLen - 2):
-                ancestorNode = node
-                ancestorName = nodeName
 
             # Stop one short while refreshing, due to python mutability reasons
             if bRefresh and (i == (pathLen - 1)):
                 break
 
+            # Populate children list to avoid favourite/library traversal errors
+            if 'children' in node:
+                for cid in node['children']:
+                    if cid not in node:
+                        node[cid] = {}
+                        try:
+                            if 0 == len(self._videodata[cid]['children']):
+                                node[cid]['lazyLoadURL'] = self._videodata[cid]['ref']
+                        except: pass
+
             if nodeName not in node:
                 self._g.dialog.notification('Catalog error', 'Catalog path not available…', xbmcgui.NOTIFICATION_ERROR)
-                return (None, None, None, None)
+                return (None, None)
             elif 'lazyLoadURL' in node[nodeName]:
-                self._LazyLoad(node[nodeName], nodeName, ancestorNode, ancestorName)
+                self._LazyLoad(node[nodeName], pathList[0:1 + i])
             node = node[nodeName]
 
-        return (node, nodeName, ancestorNode, ancestorName)
+        return (node, pathList)
 
     def BrowseRoot(self):
         """ Build and load the root PrimeVideo menu """
@@ -180,55 +375,50 @@ class PrimeVideo(Singleton):
     def BuildRoot(self):
         """ Parse the top menu on primevideo.com and build the root catalog """
 
+        home = self._GrabJSON(self._g.BaseUrl)
+        if not home:
+            return False
         self._catalog['root'] = OrderedDict()
-        home = getURL(self._g.BaseUrl, silent=True, useCookie=True, rjson=False)
-        if None is home:
-            self._g.dialog.notification('Connection error', 'Unable to fetch the primevideo.com homepage', xbmcgui.NOTIFICATION_ERROR)
-            Log('Unable to fetch the primevideo.com homepage', Log.ERROR)
+
+        # Insert the watchlist
+        try:
+            watchlist = next((x for x in home['yourAccount']['links'] if '/watchlist/' in x['href']), None)
+            self._catalog['root']['Watchlist'] = {'title': self._BeautifyText(watchlist['text']), 'lazyLoadURL': watchlist['href']}
+        except:
+            Log('Watchlist link not found', Log.ERROR)
+
+        # Insert the main sections, in order
+        try:
+            for link in home['mainMenu']['links']:
+                self._catalog['root'][link['text']] = {'title': self._BeautifyText(link['text']), 'lazyLoadURL': link['href']}
+                if '/home/' in link['href']:
+                    self._catalog['root'][link['text']]['lazyLoadData'] = home
+        except:
+            self._g.dialog.notification('PrimeVideo error', 'Unable to find the navigation menu for primevideo.com', xbmcgui.NOTIFICATION_ERROR)
+            Log('Unable to parse the navigation menu for primevideo.com', Log.ERROR)
             return False
 
-        # Setup watchlist
-        watchlist = re.search(r'<a[^>]* href="(([^"]+)?/watchlist/)[^"]*"[^>]*>(.*?)</a>', home)
-        if None is not watchlist:
-            self._catalog['root']['Watchlist'] = {'title': watchlist.group(3), 'lazyLoadURL': self._g.BaseUrl + watchlist.group(1)}
-
-        # PrimeVideo.com top navigation menu
-        home = re.search(r'<div id="[ap]v-nav-main-menu".*?<ul role="navigation"[^>]*>\s*(.*?)\s*</ul>', home)
-        if None is home:
-            self._g.dialog.notification('PrimeVideo error', 'Unable to find the main primevideo.com navigation section', xbmcgui.NOTIFICATION_ERROR)
-            Log('Unable to find the main primevideo.com navigation section', Log.ERROR)
-            return False
-        for item in re.findall(r'<li[^>]*>\s*(.*?)\s*</li>', home.group(1)):
-            item = re.search(r'<a href="([^"]+)"[^>]*>\s*(.*?)\s*</a>', item)
-            if None is not re.match(r'(/region/[^/]+)?/storefront/home/', item.group(1)):
-                continue
-            # Remove react comments
-            title = re.sub(r'^<!--\s*[^>]+\s*-->', '', re.sub(r'<!--\s*[^>]+\s*-->$', '', item.group(2)))
-            self._catalog['root'][title] = {'title': title, 'lazyLoadURL': self._g.BaseUrl + item.group(1) + '?_encoding=UTF8'}
-        if 0 == len(self._catalog['root']):
-            self._g.dialog.notification('PrimeVideo error', 'Unable to build the root catalog from primevideo.com', xbmcgui.NOTIFICATION_ERROR)
-            Log('Unable to build the root catalog from primevideo.com', Log.ERROR)
-            return False
-
-        # Search method
-        self._catalog['root']['Search'] = {'title': getString(30108), 'verb': 'pv/search/'}
+        # Insert the searching mechanism
+        try:
+            sfa = home['searchBar']['searchFormAction']
+            # Build the query parametrization
+            query = ''
+            if 'query' in sfa:
+                query += '&'.join(['{}={}'.format(k, v) for k, v in sfa['query'].items()])
+            query = query if not query else query + '&'
+            self._catalog['root']['Search'] = {
+                'title': self._BeautifyText(home['searchBar']['searchFormPlaceholder']),
+                'verb': 'pv/search/',
+                'endpoint': '{}?{}phrase={{}}'.format(sfa['partialURL'], query)
+            }
+        except:
+            Log('Search functionality not found', Log.ERROR)
 
         # Set the expiration in 11 hours and flush to disk
         self._catalog['expiration'] = 39600 + int(time.time())
         self._Flush()
 
         return True
-
-    def Search(self):
-        """ Provide search functionality for PrimeVideo """
-
-        searchString = self._g.dialog.input(getString(24121)).strip(' \t\n\r')
-        if 0 == len(searchString):
-            xbmcplugin.endOfDirectory(self._g.pluginhandle, succeeded=False)
-            return
-        Log('Searching "{}"…'.format(searchString), Log.INFO)
-        self._catalog['search'] = OrderedDict([('lazyLoadURL', 'https://www.primevideo.com/search/ref=atv_nb_sr?ie=UTF8&phrase={}'.format(searchString))])
-        self.Browse('search', xbmcplugin.SORT_METHOD_NONE)
 
     def Browse(self, path, forceSort=None):
         """ Display and navigate the menu for PrimeVideo users """
@@ -243,121 +433,103 @@ class PrimeVideo(Singleton):
                 self.BuildRoot()
             return
 
-        from urllib import quote_plus
+        try:
+            from urllib.parse import quote_plus
+        except ImportError:
+            from urllib import quote_plus
 
-        node, nodeName, ancestorNode, ancestorName = self._TraverseCatalog(path)
+        node, breadcrumb = self._TraverseCatalog(path)
         if None is node:
             return
 
         # Populate children list with empty references
+        nodeName = breadcrumb[-1]
         if (nodeName in self._videodata) and ('children' in self._videodata[nodeName]):
             for c in self._videodata[nodeName]['children']:
                 if c not in node:
                     node[c] = {}
 
         folderType = 0 if 'root' == path else 1
-        metaKeys = ['metadata', 'ref', 'title', 'verb', 'children', 'parent']
-        nodeKeys = [k for k in node if k not in metaKeys]
-        i = 0
-        while i < len(nodeKeys):
-            key = nodeKeys[i]
-            i += 1
+        for key in [k for k in node if k not in ['ref', 'verb', 'title', 'metadata', 'parent', 'siblings', 'children']]:
             url = self._g.pluginid
-            entry = node[key] if key not in self._videodata else self._videodata[key]
+            if key in self._videodata:
+                entry = deepcopy(self._videodata[key])
+            else:
+                entry = node[key]
+            title = entry['title'] if 'title' in entry else nodeName
+            itemPathURI = '{}{}{}'.format(path, self._separator, quote_plus(key.encode('utf-8')))
 
-            # Skip items that are out of catalog
-            if ('metadata' in entry) and ('unavailable' in entry['metadata']):
-                continue
-
+            # Squash single season tv shows
             try:
-                bSeason = 'season' == self._videodata[key]['metadata']['videometa']['mediatype']
+                if 'tvshow' == self._videodata[key]['metadata']['videometa']['mediatype']:
+                    if 1 == len(self._videodata[key]['children']):
+                        childgti = self._videodata[key]['children'][0]
+                        entry = deepcopy(self._videodata[childgti])
+                        itemPathURI += '{}{}'.format(self._separator, quote_plus(childgti.encode('utf-8')))
+            except: pass
 
-                # Load series upon entering the show directory
-                if bSeason and ('lazyLoadURL' in node[key]):
-                    self._LazyLoad(node[key], key, ancestorNode[ancestorName], nodeName)
-                    # Due to python mutability shenanigans we need to manually alter the nodes
-                    # instead of waiting for changes to propagate
-                    for ka in [k for k in ancestorNode[ancestorName][nodeName] if k not in metaKeys]:
-                        if ka not in nodeKeys:
-                            nodeKeys.append(ka)
-                        if ka not in node:
-                            node[ka] = ancestorNode[ancestorName][nodeName][ka]
-                    for ka in [k for k in node if k not in metaKeys]:
-                        if ka not in ancestorNode[ancestorName][nodeName]:
-                            ancestorNode[ancestorName][nodeName][ka] = node[ka]
-                    self._Flush()
-
-                # If the series is squashable override the seasons list with the episodes list
-                if 1 == len(nodeKeys):
-                    node = node[key]
-                    i = 0
-                    nodeKeys = [k for k in node if k not in metaKeys]
-                    if (0 == len(nodeKeys)) and (key in self._videodata) and ('children' in self._videodata[key]):
-                        for c in self._videodata[key]['children']:
-                            nodeKeys.append(c)
-                            if c not in node:
-                                node[c] = {}
-                    continue
-            except KeyError:
-                pass
+            # Find out if item's a video leaf
+            bIsVideo = False
+            try: bIsVideo = self._videodata[key]['metadata']['videometa']['mediatype'] in ['episode', 'movie']
+            except: pass
 
             # Can we refresh the cache on this/these item(s)?
-            bCanRefresh = ('ref' in node[key]) or ('lazyLoadURL' in node[key]) or ((key in self._videodata) and ('ref' in self._videodata[key]))
+            bCanRefresh = ('ref' in entry) or ('lazyLoadURL' in entry)
             if ('children' in entry) and (0 < len(entry['children'])):
-                bCanRefresh = bCanRefresh or (0 < len([k for k in entry['children'] if (k in self._videodata) and ('ref' in self._videodata[k])]))
+                bCanRefresh |= (0 < len([k for k in entry['children'] if (k in self._videodata) and ('ref' in self._videodata[k])]))
 
-            refreshPath = '{}{}{}'.format(path, self._separator, quote_plus(key.encode('utf-8')))
-            if (key in self._videodata) and ('metadata' in self._videodata[key]) and ('video' in self._videodata[key]['metadata']):
-                url += '?mode=PlayVideo&name={}&asin={}'.format(self._videodata[key]['metadata']['video'], self._videodata[key]['metadata']['asin'])
+            if bIsVideo:
+                url += '?mode=PlayVideo&name={}&asin={}'.format(self._videodata[key]['metadata']['compactGTI'], key)
             elif 'verb' in entry:
                 url += entry['verb']
-                refreshPath = ''
+                itemPathURI = ''
             else:
-                url += 'pv/browse/' + refreshPath
-            Log('Encoded PrimeVideo URL: {}'.format(url), Log.DEBUG)
-            title = entry['title'] if 'title' in entry else nodeName
+                url += 'pv/browse/' + itemPathURI
+            # Log('Encoded PrimeVideo URL: {}'.format(url), Log.DEBUG)
             item = xbmcgui.ListItem(title)
 
-            if bCanRefresh and (0 < len(refreshPath)):
-                Log('Encoded PrimeVideo refresh URL: pv/refresh/{}'.format(refreshPath), Log.DEBUG)
-                item.addContextMenuItems([('Refresh', 'RunPlugin({}pv/refresh/{})'.format(self._g.pluginid, refreshPath))])
+            if bCanRefresh and (0 < len(itemPathURI)):
+                # Log('Encoded PrimeVideo refresh URL: pv/refresh/{}'.format(itemPathURI), Log.DEBUG)
+                item.addContextMenuItems([('Refresh', 'RunPlugin({}pv/refresh/{})'.format(self._g.pluginid, itemPathURI))])
 
-            folder = True
-            # In case of series find the oldest series and apply its art, also update metadata in case of squashed series
-            if ('metadata' not in entry) and ('children' in entry) and (0 < len(entry['children'])):
-                if 1 == len(entry['children']):
-                    entry['metadata'] = {'artmeta': self._videodata[entry['children'][0]]['metadata']['artmeta'],
-                                         'videometa': self._videodata[entry['children'][0]]['metadata']['videometa']}
-                else:
-                    sn = 90001
+            # In case of tv shows find the oldest season and apply its art
+            try:
+                if ('tvshow' == entry['metadata']['videometa']['mediatype']) and (1 < len(entry['children'])):
+                    sn = None
                     snid = None
                     for child in entry['children']:
-                        if ('season' in self._videodata[child]['metadata']['videometa']) and (sn > self._videodata[child]['metadata']['videometa']['season']):
-                            sn = self._videodata[child]['metadata']['videometa']['season']
-                            snid = child
-                    if None is not snid:
-                        entry['metadata'] = {'artmeta': self._videodata[snid]['metadata']['artmeta'], 'videometa': {'mediatype': 'tvshow'}}
+                        try:
+                            childsn = self._videodata[child]['metadata']['videometa']['season']
+                            if (None is sn) or (sn > childsn):
+                                sn = childsn
+                                snid = child
+                        except: pass
+                    if snid:
+                        entry['metadata']['artmeta'] = self._videodata[snid]['metadata']['artmeta']
+                        entry['metadata']['videometa']['plot'] = getString(30253).format(len(entry['children']))  # "# series" as plot/description
+            except: pass
+
+            folder = True
             if 'metadata' in entry:
                 m = entry['metadata']
-                if 'artmeta' in m: item.setArt(m['artmeta'])
+                if 'artmeta' in m:
+                    item.setArt(m['artmeta'])
                 if 'videometa' in m:
                     # https://codedocs.xyz/xbmc/xbmc/group__python__xbmcgui__listitem.html#ga0b71166869bda87ad744942888fb5f14
                     item.setInfo('video', m['videometa'])
-                    if 'episode' in m['videometa']:
-                        folderType = 4  # Episode
-                    elif 'tvshow' == m['videometa']['mediatype']:
-                        folderType = 2  # Seasons list
-                    elif 'season' == m['videometa']['mediatype']:
-                        folderType = 3  # Season
-                    elif 2 > folderType:  # If it's not been declared series, season or episode yet…
-                        folderType = 5  # … it's a Movie
-                if 'video' in m:
-                    folder = False
-                    item.setProperty('IsPlayable', 'true')
-                    item.setInfo('video', {'title': title})
-                    if 'runtime' in m:
-                        item.setInfo('video', {'duration': m['runtime']})
-                        item.addStreamInfo('video', {'duration': m['runtime']})
+                    try:
+                        folderType = {'movie': 5, 'episode': 4, 'tvshow': 2, 'season': 3}[m['videometa']['mediatype']]
+                    except:
+                        folderType = 2  # Default to category
+
+                    if bIsVideo:
+                        folder = False
+                        item.setProperty('IsPlayable', 'true')
+                        item.setInfo('video', {'title': title})
+                        if 'runtime' in m:
+                            item.setInfo('video', {'duration': m['runtime']})
+                            item.addStreamInfo('video', {'duration': m['runtime']})
+
             # If it's a video leaf without an actual video, something went wrong with Amazon servers, just hide it
             if (not folder) or (4 > folderType):
                 xbmcplugin.addDirectoryItem(self._g.pluginhandle, url, item, isFolder=folder)
@@ -366,13 +538,13 @@ class PrimeVideo(Singleton):
         # Set sort method and view
         # https://codedocs.xyz/xbmc/xbmc/group__python__xbmcplugin.html#ga85b3bff796fd644fb28f87b136025f40
         xbmcplugin.addSortMethod(self._g.pluginhandle, [
-            xbmcplugin.SORT_METHOD_NONE,
-            xbmcplugin.SORT_METHOD_LABEL_IGNORE_THE,
-            xbmcplugin.SORT_METHOD_LABEL_IGNORE_THE,
-            xbmcplugin.SORT_METHOD_LABEL_IGNORE_THE,
-            xbmcplugin.SORT_METHOD_EPISODE,
-            xbmcplugin.SORT_METHOD_LABEL_IGNORE_THE,
-        ][folderType if None is forceSort else forceSort])
+            xbmcplugin.SORT_METHOD_NONE,  # Root
+            xbmcplugin.SORT_METHOD_NONE,  # Category list
+            xbmcplugin.SORT_METHOD_LABEL_IGNORE_THE,  # Category
+            xbmcplugin.SORT_METHOD_LABEL_IGNORE_THE,  # TV Show (Seasons list)
+            xbmcplugin.SORT_METHOD_EPISODE,  # Season (Episodes list)
+            xbmcplugin.SORT_METHOD_LABEL_IGNORE_THE,  # Movies list
+        ][folderType] if None is forceSort else forceSort)
 
         if 'false' == self._g.addon.getSetting("viewenable"):
             # Only vfs and videos to keep Kodi's watched functionalities
@@ -383,39 +555,58 @@ class PrimeVideo(Singleton):
 
         setContentAndView([None, 'videos', 'series', 'season', 'episode', 'movie'][folderType])
 
+    def Search(self):
+        """ Provide search functionality for PrimeVideo """
+
+        searchString = self._g.dialog.input(getString(24121)).strip(' \t\n\r')
+        if 0 == len(searchString):
+            xbmcplugin.endOfDirectory(self._g.pluginhandle, succeeded=False)
+            return
+        Log('Searching "{}"…'.format(searchString), Log.INFO)
+        self._catalog['search'] = OrderedDict([('lazyLoadURL', self._catalog['root']['Search']['endpoint'].format(searchString))])
+        self.Browse('search', xbmcplugin.SORT_METHOD_NONE)
+
     def Refresh(self, path):
         """ Provides cache refresh functionality """
 
         refreshes = []
-        node, nodeName, ancestorNode, ancestorName = self._TraverseCatalog(path, True)
+        node, breadcrumb = self._TraverseCatalog(path, True)
         if None is node:
             return
 
         # Only refresh if previously loaded. If not loaded, and specifically asked, perform a full (lazy) loading
-        if 'lazyLoadURL' in node[nodeName]:
-            refreshes.append((node[nodeName], nodeName, False, None))
+        k = breadcrumb[-1]
+        if (k not in node) and (k in self._videodata):
+            node[k] = {}
+
+        if 'lazyLoadURL' in node[k]:
+            refreshes.append((node[k], breadcrumb, False))
         else:
             bShow = False
-            if 'ref' in node[nodeName]:  # ref's in the cache already
-                Log('Refreshing element in the cache: {}'.format(nodeName), Log.DEBUG)
-                targetURL = node[nodeName]['ref']
-            elif 'ref' in self._videodata[nodeName]:  # Movie or Season
-                Log('Refreshing element: {}'.format(nodeName), Log.DEBUG)
-                targetURL = self._videodata[nodeName]['ref']
-            else:  # Show
-                Log('Refreshing Show: {}'.format(nodeName), Log.DEBUG)
+            if 'ref' in node[k]:  # ref's in the cache already
+                Log('Refreshing element in the cache: {}'.format(k), Log.DEBUG)
+                targetURL = node[k]['ref']
+            elif 'ref' in self._videodata[k]:  # Season
+                Log('Refreshing season: {}'.format(k), Log.DEBUG)
+                targetURL = self._videodata[k]['ref']
+            else:  # TV Show
+                Log('Refreshing Show: {}'.format(k), Log.DEBUG)
                 bShow = True
-                for season in [k for k in self._videodata[nodeName]['children'] if (k in self._videodata) and ('ref' in self._videodata[k])]:
-                    node[nodeName][season] = {'lazyLoadURL': self._videodata[season]['ref']}
-                    refreshes.append((node[nodeName][season], season, None, None, True))
+                for season in [k for k in self._videodata[k]['children'] if (k in self._videodata) and ('ref' in self._videodata[k])]:
+                    if (season in node[k]) and ('lazyLoadURL' in node[k][season]):
+                        bRefresh = False
+                    else:
+                        bRefresh = True
+                        node[k][season] = {'lazyLoadURL': self._videodata[season]['ref']}
+                    refreshes.append((node[k][season], breadcrumb + [season], bRefresh))
 
             if not bShow:
                 # Reset the basic metadata
-                title = node[nodeName]['title'] if 'title' in node[nodeName] else None
-                node[nodeName] = {'lazyLoadURL': targetURL}
+                title = node[k]['title'] if 'title' in node[k] else None
+                node[k] = {'lazyLoadURL': targetURL}
                 if title:
-                    node[nodeName]['title'] = title
-                refreshes.append((node[nodeName], nodeName, ancestorNode, ancestorName, True))
+                    node[k]['title'] = title
+                refreshes.append((node[k], breadcrumb, True))
 
         from contextlib import contextmanager
 
@@ -429,59 +620,11 @@ class PrimeVideo(Singleton):
 
         with _busy_dialog():
             for r in refreshes:
-                self._LazyLoad(r[0], r[1], r[2], r[3], r[4])
+                Log('Refresh params: {}'.format(r))
+                self._LazyLoad(r[0], r[1], r[2])
 
-    def _LazyLoad(self, obj, objName, ancestorNode=None, ancestorName=None, bCacheRefresh=False):
+    def _LazyLoad(self, obj, breadcrumb=None, bCacheRefresh=False):
         """ Loader and parser of all the PrimeVideo.com queries """
-
-        def Unescape(text):
-            """ Unescape various html/xml entities, courtesy of Fredrik Lundh """
-
-            def fixup(m):
-                import htmlentitydefs
-                text = m.group(0)
-                if text[:2] == "&#":
-                    # character reference
-                    try:
-                        if text[:3] == "&#x":
-                            return unichr(int(text[3:-1], 16))
-                        else:
-                            return unichr(int(text[2:-1]))
-                    except ValueError:
-                        pass
-                else:
-                    # named entity
-                    try:
-                        text = unichr(htmlentitydefs.name2codepoint[text[1:-1]])
-                    except KeyError:
-                        pass
-                return text  # leave as is
-
-            # Since we're using this for titles and synopses, and clean up general mess
-            ret = re.sub("&#?\w+;", fixup, text)
-            if ('"' == ret[0:1]) and ('"' == ret[-1:]):
-                ret = ret[1:-1]
-
-            # Try to correct text when Amazon returns latin-1 encoded utf-8 characters
-            # (with the help of https://ftfy.now.sh/)
-            try:
-                ret = ret.encode('latin-1').decode('utf-8')
-            except (UnicodeEncodeError, UnicodeDecodeError):
-                pass
-
-            def BeautifyText(title):
-                """ Correct stylistic errors in Amazon's titles """
-
-                for t in [(r'\s+-\s*([^&])', r' – \1'),  # Convert dash from small to medium where needed
-                          (r'\s*-\s+([^&])', r' – \1'),  # Convert dash from small to medium where needed
-                          (r'^\s+', ''),  # Remove leading spaces
-                          (r'\s+$', ''),  # Remove trailing spaces
-                          (r' {2,}', ' '),  # Remove double spacing
-                          (r'\.\.\.', '…')]:  # Replace triple dots with ellipsis
-                    title = re.sub(t[0], t[1], title)
-                return title
-
-            return BeautifyText(ret)
 
         def MaxSize(imgUrl):
             """ Strip the dynamic resize triggers from the URL (and other effects, such as blur) """
@@ -491,10 +634,8 @@ class PrimeVideo(Singleton):
         def ExtractURN(url):
             """ Extract the unique resource name identifier """
 
-            ret = re.search(r'(/gp/video)?/detail/([^/]+)/', url)
-            if None is not ret:
-                ret = ret.group(2)
-            return ret
+            ret = re.search(r'(?:/gp/video)?/d(?:p|etail)/([^/]+)/', url)
+            return None if not ret else ret.group(1)
 
         def DelocalizeDate(lang, datestr):
             """ Convert language based timestamps into YYYY-MM-DD """
@@ -504,7 +645,7 @@ class PrimeVideo(Singleton):
                 return datestr
             p = re.search(self._dateParserData[lang]['deconstruct'], datestr.lower())
             if None is p:
-                Log('Unable to parse date "{}" with language "{}"{}'.format(datestr, lang, '' if 'en_US' != lang else ': trying english'), Log.WARNING)
+                Log('Unable to parse date "{}" with language "{}"{}'.format(datestr, lang, '' if 'en_US' == lang else ': trying english'), Log.WARNING)
                 if 'en_US' == lang:
                     return datestr
                 # Sometimes Amazon returns english everything, let's try to figure out if this is the case
@@ -514,16 +655,20 @@ class PrimeVideo(Singleton):
                     Log('Unable to parse date "{}" with language "{}": format changed?'.format(datestr, lang), Log.WARNING)
                     return datestr
             p = list(p.groups())
-            p[self._dateParserData[lang]['month']] = self._dateParserData[lang]['months'][p[self._dateParserData[lang]['month']]]
+            m = self._dateParserData[lang]['month']
+            if p[m].isdigit():
+                p[m] = int(p[m])
+            else:
+                p[m] = self._dateParserData[lang]['months'][p[m]]
             return self._dateParserData[lang]['reassemble'].format(p[0], p[1], p[2])
 
-        def NotifyUser(msg):
+        def NotifyUser(msg, bForceDisplay=False):
             """ Pop up messages while scraping to inform users of progress """
 
             if not hasattr(NotifyUser, 'lastNotification'):
                 NotifyUser.lastNotification = 0
-            if NotifyUser.lastNotification < time.time():
-                ''' Only update once every other second, to avoid endless message queue '''
+            if bForceDisplay or (NotifyUser.lastNotification < time.time()):
+                # Only update once every other second, to avoid endless message queue
                 NotifyUser.lastNotification = 1 + time.time()
                 self._g.dialog.notification(self._g.addon.getAddonInfo('name'), msg, time=1000, sound=False)
 
@@ -553,440 +698,394 @@ class PrimeVideo(Singleton):
                         o[i] = DelocalizeDate(amzLang, o[i])
             return o
 
+        def AddSeason(oid, o, title, thumbnail, url):
+            """ Given a season, adds TV Shows to the catalog """
+            urn = ExtractURN(iu)
+            parent = None
+            season = {}
+            bUpdatedVideoData = False
+            if urn not in self._videodata['urn2gti']:
+                # Find the show the season belongs to
+                bUpdatedVideoData |= ParseSinglePage(oid, season, False, url=url)
+                seasonGTI = self._videodata['urn2gti'][urn]
+                try:
+                    # Query an episode to find its ancestors
+                    family = getURLData('catalog/GetPlaybackResources', self._videodata[seasonGTI]['children'][0], silent=True, extra=True, useCookie=True,
+                                        opt='&titleDecorationScheme=primary-content', dRes='CatalogMetadata')[1]['catalogMetadata']['family']['tvAncestors']
+                    # Grab the 'SHOW' ancestor ({SHOW: [{SEASON: [EPISODE, …], …}])
+                    parent = [a['catalog'] for a in family if 'SHOW' == a['catalog']['type']][0]
+                except: pass
+                if parent:
+                    # {'id': gti, 'title': …, 'type': 'SHOW', …}
+                    pid = parent['id']
+                    self._videodata[seasonGTI]['parent'] = pid
+                    self._videodata[pid] = {'title': parent['title'], 'metadata': {'videometa': {'mediatype': 'tvshow'}}, 'children': [seasonGTI]}
+                    for gti in self._videodata[seasonGTI]['siblings']:
+                        self._videodata[gti]['parent'] = pid
+                        if gti not in self._videodata[pid]['children']:
+                            self._videodata[pid]['children'].append(gti)
+                    parent = pid
+                    bUpdatedVideoData = True
+            else:
+                parent = self._videodata[self._videodata['urn2gti'][urn]]['parent']
+            bSeasonOnly = (not parent) or (oid == parent)
+            if not bSeasonOnly:
+                o[parent] = deepcopy(self._videodata[parent])
+                o = o[parent]
+            for sid in season:
+                o[sid] = season[sid]
+            return bUpdatedVideoData
+
+        def ParseSinglePage(oid, o, bCacheRefresh, data=None, url=None):
+            """ Parse PrimeVideo.com single movie/season pages.
+                `url` is discarded in favour of `data`, if present.
+            """
+            urn = ExtractURN(url)
+
+            # Load from cache, if available
+            if (not bCacheRefresh) and (urn in self._videodata['urn2gti']) and (self._videodata['urn2gti'][urn] in self._videodata):
+                gti = self._videodata['urn2gti'][urn]
+                vd = self._videodata[gti]
+                # Movie
+                if 'children' not in vd:
+                    if gti not in o:
+                        o[gti] = vd
+                    return False
+
+                # TV Series
+                bEpisodesOnly = oid == gti
+                siblings = [] if bEpisodesOnly else vd['siblings'][:]
+                siblings.append(gti)
+                siblings = sorted(siblings, key=(lambda k: self._videodata[k]['metadata']['videometa']['season']))
+                for gti in siblings:
+                    # Add season if we're not inside a season already
+                    if (not bEpisodesOnly) and (gti not in o):
+                        o[gti] = deepcopy(self._videodata[gti])
+                        dest = o[gti]
+                    else:
+                        o = deepcopy(self._videodata[gti])
+                        dest = o
+                    # Add cached episodes
+                    for c in dest['children']:
+                        if c not in dest:
+                            dest[c] = {}
+                return False
+
+            if url:
+                url = self._FQify(url)
+            if not data:
+                if not url:
+                    return False
+                data = self._GrabJSON(url)
+                if not data:
+                    NotifyUser(getString(30256), True)
+                    Log('Unable to fetch the url: {}'.format(url), Log.ERROR)
+                    return False
+                # from .logging import LogJSON
+                # LogJSON(data, url)
+
+            # Video/season/movie data are in the `state` field of the response
+            if 'state' not in data:
+                return False
+
+            state = data['state']  # Video info
+            GTIs = []  # List of inserted GTIs
+            parents = {}  # Map of parents
+            bUpdated = False  # Video data updated
+
+            # Seasons (episodes are now listed in self too)
+            # Only add seasons if we are not inside a season already
+            if ('self' in state) and (oid not in state['self']):
+                # "self": {"amzn1.dv.gti.[…]": {"gti": "amzn1.dv.gti.[…]", "link": "/detail/[…]"}}
+                for gti in [k for k in state['self'] if 'season' == state['self'][k]['titleType']]:
+                    s = state['self'][gti]
+                    gti = s['gti']
+                    if gti not in self._videodata:
+                        o[gti] = {('ref' if state['pageTitleId'] == gti else 'lazyLoadURL'): s['link']}
+                        self._videodata[gti] = {'ref': s['link'], 'children': [], 'siblings': []}
+                        bUpdated = True
+                    else:
+                        o[gti] = self._videodata[gti]
+                    GTIs.append(gti)
+                    siblings = [k for k, ss in state['self'].items() if k != gti and ss['titleType'] == s['titleType']]
+                    if siblings != self._videodata[gti]['siblings']:
+                        self._videodata[gti]['siblings'] = siblings
+                        bUpdated = True
+
+            # Episodes lists
+            if 'collections' in state:
+                # "collections": {"amzn1.dv.gti.[…]": [{"titleIds": ["amzn1.dv.gti.[…]", "amzn1.dv.gti.[…]"]}]}
+                for gti, lc in state['collections'].items():
+                    for le in lc:
+                        for e in le['titleIds']:
+                            GTIs.append(e)
+                            # Save parent/children relationships
+                            parents[e] = gti
+                            if e not in self._videodata[gti]['children']:
+                                self._videodata[gti]['children'].append(e)
+                                bUpdated = True
+
+            # Video info
+            if 'detail' not in state:
+                return bUpdated
+
+            if urn not in self._videodata['urn2gti']:
+                self._videodata['urn2gti'][urn] = state['pageTitleId']
+
+            # Both of these versions have been spotted in the wild
+            # { "detail": { … } }
+            # { "detail": { "detail": {…}, "headerDetail": {…} } }
+            details = state['detail']
+            if 'detail' in details:
+                details = details['detail']
+
+            from json import dumps
+            # Get details, seasons first
+            for gti in sorted(details, key=lambda x: 'season' != details[x]['titleType']):
+                item = details[gti]
+                if (oid not in details) and (gti not in GTIs):  # Most likely (surely?) movie
+                    GTIs.append(gti)
+                    o[gti] = {}
+                if gti not in self._videodata:
+                    self._videodata[gti] = {}
+                vd = self._videodata[gti]
+
+                # Meta prep
+                if 'metadata' not in vd:
+                    vd['metadata'] = {'compactGTI': urn, 'artmeta': {}, 'videometa': {}}
+                    bUpdate = True
+                if 'artmeta' not in vd['metadata']:
+                    vd['metadata']['artmeta'] = {}
+                    bUpdate = True
+                if 'videometa' not in vd['metadata']:
+                    vd['metadata']['videometa'] = {}
+                    bUpdate = True
+
+                # Parent
+                if gti in parents:
+                    vd['parent'] = parents[gti]
+                    bUpdate = True
+
+                # Title
+                if bCacheRefresh or ('title' not in vd):
+                    if 'seasonNumber' not in item:
+                        vd['title'] = self._BeautifyText(item['title'])
+                    else:
+                        try:
+                            vd['title'] = state['strings']['AVOD_DP_season_selector'].format(seasonNumber=item['seasonNumber'])
+                        except:
+                            vd['title'] = 'Season {}'.format(item['seasonNumber'])
+                    bUpdated = True
+
+                # Images
+                for k, v in {'thumb': 'packshot', 'poster': 'titleshot', 'fanart': 'heroshot'}.items():
+                    if (bCacheRefresh or (k not in vd['metadata']['artmeta'])) and \
+                       ('images' in item) and (v in item['images']) and item['images'][v]:
+                        vd['metadata']['artmeta'][k] = item['images'][v]
+                        bUpdated = True
+
+                # Synopsis, media type, year, duration
+                for k, v in {'plot': 'synopsis', 'mediatype': 'titleType', 'year': 'releaseYear', 'duration': 'duration'}.items():
+                    if (bCacheRefresh or (k not in vd['metadata']['videometa'])) and (v in item):
+                        vd['metadata']['videometa'][k] = item[v]
+                        bUpdated = True
+
+                # Genres
+                if (bCacheRefresh or ('genre' not in vd['metadata']['videometa'])) and ('genres' in item) and item['genres']:
+                    vd['metadata']['videometa']['genre'] = [g['text'] for g in item['genres']]
+                    bUpdated = True
+
+                # Premiered/Aired
+                if (bCacheRefresh or ('premiered' not in vd['metadata']['videometa'])) and ('releaseDate' in item) and item['releaseDate']:
+                    vd['metadata']['videometa']['premiered'] = DelocalizeDate(amzLang, item['releaseDate'])
+                    vd['metadata']['videometa']['aired'] = vd['metadata']['videometa']['premiered']
+                    bUpdated = True
+
+                # MPAA
+                if (bCacheRefresh or ('mpaa' not in vd['metadata']['videometa'])) and \
+                   ('ratingBadge' in item) and ('displayText' in item['ratingBadge']) and item['ratingBadge']['displayText']:
+                    vd['metadata']['videometa']['mpaa'] = item['ratingBadge']['displayText']
+                    bUpdated = True
+
+                # Contributors (`producers` are ignored)
+                if 'contributors' in item:
+                    for k, v in {'director': 'directors', 'cast': 'starringActors', 'cast': 'supportingActors'}.items():
+                        if v in item['contributors']:
+                            for p in item['contributors'][v]:
+                                try:
+                                    if (p['name'] not in vd['metadata']['videometa'][k]):
+                                        vd['metadata']['videometa'][k].append(p['name'])
+                                except KeyError:
+                                    vd['metadata']['videometa'][k] = [p['name']]
+                                bUpdated = True
+
+                # Season, TV show title
+                if ('seasonNumber' in item) and item['seasonNumber']:
+                    if bCacheRefresh or ('season' not in vd['metadata']['videometa']):
+                        vd['metadata']['videometa']['season'] = item['seasonNumber']
+                        bUpdated = True
+                    if bCacheRefresh or ('tvshowtitle' not in vd['metadata']['videometa']):
+                        vd['metadata']['videometa']['tvshowtitle'] = item['parentTitle']
+                        bUpdated = True
+
+                # Episode, Season, TV show title
+                if ('episodeNumber' in item) and item['episodeNumber']:
+                    if bCacheRefresh or ('episode' not in vd['metadata']['videometa']):
+                        vd['metadata']['videometa']['episode'] = item['episodeNumber']
+                        bUpdated = True
+                    if bCacheRefresh or ('season' not in vd['metadata']['videometa']):
+                        try:
+                            vd['metadata']['videometa']['season'] = self._videodata[vd['parent']]['metadata']['videometa']['season']
+                            bUpdated = True
+                        except: pass
+                    if bCacheRefresh or ('tvshowtitle' not in vd['metadata']['videometa']):
+                        try:
+                            vd['metadata']['videometa']['tvshowtitle'] = self._videodata[vd['parent']]['metadata']['videometa']['parentTitle']
+                            bUpdated = True
+                        except: pass
+
+            # IMDB ratings — "imdb": {"amzn1.dv.gti.[…]": {"score": 8.5}}
+            if ('imdb' in state) and state['imdb']:
+                for gti in state['imdb']:
+                    vmd = self._videodata[gti]['metadata']['videometa']
+                    if (bCacheRefresh or ('rating' not in vmd)) and ('score' in state['imdb'][gti]) and state['imdb'][gti]['score']:
+                        vmd['rating'] = state['imdb'][gti]['score']
+                        bUpdated = True
+
+            # Trailer — "trailer": {"amzn1.dv.gti.[…]": {"playbackID": "amzn1.dv.gti.[…]", "playbackURL": "/detail/[ShortGTI]/ref=atv_dp_watch_trailer?autoplay=trailer"}}
+            if ('trailer' in state) and state['trailer']:
+                for gti in state['trailer']:
+                    if 'trailer' not in self._videodata[gti]:
+                        self._videodata[gti]['trailer'] = True
+                        bUpdated = True
+
+            return bUpdated
+
         if 'lazyLoadURL' not in obj:
             return
         requestURLs = [obj['lazyLoadURL']]
 
         amzLang = None
         if None is not requestURLs[0]:
-            # Fine the locale amazon's using
+            # Find the locale amazon's using
             cj = MechanizeLogin()
             if cj:
-                amzLang = cj.get('lc-main-av', domain='.primevideo.com', path='/')
+                amzLang = cj.get('lc-main-av', path='/')
         amzLang = amzLang if amzLang else 'en_US'
 
         bUpdatedVideoData = False  # Whether or not the pvData has been updated
+        pageNumber = 1  # Page number
 
         while 0 < len(requestURLs):
-            # We linearize and avoid recursion through requestURLs differentiation
-            # - String: request url, the obj parameter is the root object
-            # - Tuple(URL, object, urn, [bFromWidow]): request url, object reference, URN, and if it's from a widow carousel
-            if not isinstance(requestURLs[0], tuple):
-                requestURL = requestURLs[0]
-                o = obj
-                refUrn = objName
-                bFromWidowCarousel = False
-            else:
-                requestURL = requestURLs[0][0]
-                o = requestURLs[0][1]
-                refUrn = requestURLs[0][2]
-                bFromWidowCarousel = 3 < len(requestURLs[0])
-            del requestURLs[0]
+            requestURL = requestURLs.pop(0)  # rULRs: FIFO stack
+            o = obj
 
-            # If we're coming from a widowed carousel we could exploit the cached video data to further improve loading times,
-            # but we also have to watch out for unavailable movies and TV seasons, which might cause data corruption
-            if (not bCacheRefresh) and bFromWidowCarousel and (refUrn in self._videodata) and ('mediatype' in self._videodata[refUrn]['metadata']['videometa']):
-                if ('unavailable' not in self._videodata[refUrn]['metadata']) and ('season' == self._videodata[refUrn]['metadata']['videometa']['mediatype']):
-                    o[self._videodata[refUrn]['parent']] = self._videodata[self._videodata[refUrn]['parent']]
-                    o = o[self._videodata[refUrn]['parent']]
-                o[refUrn] = self._videodata[refUrn]
-                if ('children' in self._videodata[refUrn]) and (0 < len(self._videodata[refUrn]['children'])):
-                    o[refUrn] = {k: {} for k in self._videodata[refUrn]['children']}
-                continue
-
-            couldNotParse = False
+            # Load content
+            bCouldNotParse = False
             try:
-                cnt = getURL(requestURL, silent=False, useCookie=True, rjson=False)
-                if (0 < len(cnt)) and ('lazyLoadURL' in o):
-                    o['ref'] = o['lazyLoadURL']
+                cnt = None
+
+                # Use cached data, if available
+                if 'lazyLoadData' in o:
+                    cnt = o['lazyLoadData']
+                    del o['lazyLoadData']
+
+                # Load content from an external url
+                if not cnt:
+                    urn = ExtractURN(requestURL)
+                    if (not bCacheRefresh) and urn and (urn in self._videodata['urn2gti']):
+                        # There are no API endpoints for movie/series pages, so we handle them in a separate function
+                        bUpdatedVideoData |= ParseSinglePage(breadcrumb[-1], o, False, url=requestURL)
+                        if 'lazyLoadURL' in o:
+                            if 'ref' not in o:
+                                o['ref'] = o['lazyLoadURL']
+                            del o['lazyLoadURL']
+                        continue
+                    else:
+                        cnt = self._GrabJSON(requestURL)
+                        # from .logging import LogJSON
+                        # LogJSON(cnt, requestURL)
+
+                # Don't switch direct action for reference until we have content to show for it
+                if cnt and ('lazyLoadURL' in o):
+                    if 'ref' not in o:
+                        o['ref'] = o['lazyLoadURL']
                     del o['lazyLoadURL']
             except:
-                couldNotParse = True
-            if couldNotParse or (0 == len(cnt)):
+                bCouldNotParse = True
+            if bCouldNotParse or (not cnt):
                 self._g.dialog.notification(getString(30251), requestURL, xbmcgui.NOTIFICATION_ERROR)
                 Log('Unable to fetch the url: {}'.format(requestURL), Log.ERROR)
                 continue
 
-            for t in [('\\\\n', '\n'), ('\\n', '\n'), ('\\\\"', '"'), (r'^\s+', '')]:
-                cnt = re.sub(t[0], t[1], cnt, flags=re.DOTALL)
-            if None is not re.search('<div id="Storefront">', cnt):
-                ''' Categories list '''
-                Log('Storefront page', Log.DEBUG)
-                from BeautifulSoup import BeautifulSoup
-                soup = BeautifulSoup(cnt, convertEntities=BeautifulSoup.HTML_ENTITIES)
+            # Categories
+            if 'collections' in cnt:
+                for collection in cnt['collections']:
+                    o[collection['text']] = {'title': self._BeautifyText(collection['text'])}
+                    if 'seeMoreLink' in collection:
+                        o[collection['text']]['lazyLoadURL'] = collection['seeMoreLink']['url']
+                    else:
+                        o[collection['text']]['lazyLoadURL'] = requestURL
+                        o[collection['text']]['lazyLoadData'] = collection
 
-                # Pagination
-                try:
-                    requestURLs.append(self._g.BaseUrl + Unescape(soup.find("a", "tst-pagination")['href']))
-                except:
-                    pass
+            # Watchlist
+            if ('filters' in cnt) and ('*classHierarchy*' not in cnt):
+                # Don't parse content and forbid pagination on the main watchlist page
+                if 'content' in cnt:
+                    del cnt['content']
+                if 'pagination' in cnt:
+                    del cnt['pagination']
+                for f in cnt['filters']:
+                    o[f['id']] = {'title': f['text'], 'lazyLoadURL': f['apiUrl' if 'apiUrl' in f else 'href']}
 
-                # Categories
-                for section in soup.findAll('div', 'tst-collection'):
-
-                    # We skip carousels without a name (such as the giant one in the homepage)
+            # Watchlist / Widow list / API Search
+            if ('items' in cnt) or (('content' in cnt) and ('items' in cnt['content'])):
+                for item in (cnt if 'items' in cnt else cnt['content'])['items']:
+                    title = item['heading'] if 'heading' in item else item['title']
+                    iu = item['href'] if 'href' in item else item['link']['url']
+                    img = item['imageSrc'] if 'imageSrc' in item else item['image']['url']
                     try:
-                        title = Unescape(section.find('h2').next.strip())
+                        t = item['watchlistAction']['endpoint']['query']['titleType']
                     except:
-                        continue
-
-                    # Widow carousels have no exploration links in the header
-                    o[title] = {'title': title}
-                    try:
-                        link = self._g.BaseUrl + Unescape(section.find('a', 'tst-see-more')['href'])
-                    except:
-                        ''' The carousel has no explore link, we need to parse what we can from the carousel itself '''
-                        for entry in section.findAll('li'):
-                            e = entry.find('div', 'DigitalVideoWebNodeStorefront_TextOverlay__OverlayedTextWrapper')
-                            link = self._g.BaseUrl + Unescape(entry.find('a')['href'])
-                            if None is not e:
-                                # Genres/Categories
-                                e = e.next.strip()
-                                image = MaxSize(Unescape(entry.find('img')['src']))
-                                if None is not re.search(r'/search/', link):
-                                    o[title][e] = {'metadata': {'artmeta': {'thumb': image, 'poster': image}}, 'lazyLoadURL': link, 'title': e}
-                            else:
-                                # Widow carousel with movies/TV series. Most information has been stripped away from
-                                # the carousel, so we can't do more than just forwarding a request
-                                requestURLs.append((link, o[title], ExtractURN(link), True))
+                        t = None
+                    if 'season' != t:
+                        bUpdatedVideoData |= ParseSinglePage(breadcrumb[-1], o, bCacheRefresh, url=iu)
                     else:
-                        ''' The carousel has explore link '''
-                        NotifyUser(getString(30253).format(title))
-                        o[title]['lazyLoadURL'] = link
-            else:
-                if None is not re.search(r'<div\s+[^>]*(?:id="Watchlist"|class="[^"]*DVWebNode-watchlist-wrapper)', cnt, flags=re.DOTALL):
-                    ''' Watchlist '''
-                    if None is not re.search(r'<div\s+[^>]*id="Watchlist"[^>]*>', cnt, flags=re.DOTALL):
-                        ''' Old watchlist, possibly (about to be) deprecated. Leaving it in because I stopped trusting anyone '''
-                        Log('Old watchlist', Log.DEBUG)
-                        if ('Watchlist' == objName):
-                            for entry in re.findall(r'<a href="([^"]+/)[^"/]+" class="DigitalVideoUI_TabHeading__tab[^"]*">(.*?)</a>', cnt, flags=re.DOTALL):
-                                o[Unescape(entry[1])] = {'title': Unescape(entry[1]), 'lazyLoadURL': self._g.BaseUrl + entry[0] + '?sort=DATE_ADDED_DESC'}
-                            continue
-                        for entry in re.findall(r'<div[^>]* class="[^"]*DigitalVideoWebNodeLists_Item__item[^"]*"[^>]*>\s*<a href="((/region/[^/]+)?/detail/[^/]+/)[^"]*"[^>]*>*.*?'
-                                                r'<img src="([^"]+)".*?"[^"]*DigitalVideoWebNodeLists_Item__coreTitle[^"]*"[^>]*>\s*(.*?)\s*</', cnt):
-                            requestURLs.append((self._g.BaseUrl + entry[0], o, ExtractURN(entry[0]), True))
-                        pagination = re.search(r'<ol[^>]* class="[^"]*DigitalVideoUI_Pagination__pagination[^"]*"[^>]*>(.*?)</ol>', cnt)
-                        if None is not pagination:
-                            # We save a semi-static list of scraped pages, to avoid circular loops
-                            if (refUrn not in self._recurringPages):
-                                self._recurringPages[refUrn] = []
-                            currentPage = re.search(r'<a[^>]* href="#"[^>]*>\s*<span>\s*([0-9]+)\s*</span>', pagination.group(0), flags=re.DOTALL).group(1)
-                            if currentPage not in self._recurringPages[refUrn]:
-                                self._recurringPages[refUrn].append(currentPage)
-                            for entry in re.findall(r'<li[^>]*>\s*<a href="(/[^"]+)"[^>]*>\s*<span>\s*([0-9]+)\s*', pagination.group(0)):
-                                if entry[1] not in self._recurringPages[refUrn]:
-                                    requestURLs.append((self._g.BaseUrl + entry[0], o, refUrn))
+                        bUpdatedVideoData |= AddSeason(breadcrumb[-1], o, title, img, iu)
+
+            # Search/list
+            if ('results' in cnt) and ('items' in cnt['results']):
+                for item in cnt['results']['items']:
+                    iu = item['title']['url']
+                    if 'season' not in item:
+                        bUpdatedVideoData |= ParseSinglePage(breadcrumb[-1], o, bCacheRefresh, url=iu)
                     else:
-                        ''' New type of watchlist nobody asked for '''
-                        Log('New watchlist', Log.DEBUG)
-                        if ('Watchlist' == objName):
-                            entries = re.search(r'<div\s+class="[^"]*DVWebNode-watchlist-wrapper[^"]*">\s*<div[^>]*><div[^>]*>.*?</div><div[^>]*><div[^>]*>'
-                                                r'((?:\s*<a href="[^"]+"[^>]*>[^<]+</a>)+)', cnt, flags=re.DOTALL).group(1)
-                            for entry in re.findall(r'href="([^"]+)"[^>]*>(.*?)</a', entries, flags=re.DOTALL):
-                                o[Unescape(entry[1])] = {'title': Unescape(entry[1]), 'lazyLoadURL': self._g.BaseUrl + entry[0]}
-                            continue
-                        for entry in re.findall(r'data-asin="amzn1\.dv\.[^>]+>.*?href="([^"]+)"[^>]*>\s*<img\s*src="[^"]+"\s*alt="[^"]+"', cnt, flags=re.DOTALL):
-                            requestURLs.append((self._g.BaseUrl + entry, o, ExtractURN(entry), True))
-                        pagination = re.search(r'href="([^"]+)"\s*class="[^"]*u-pagination', cnt, flags=re.DOTALL)
-                        if None is not pagination:
-                            requestURLs.append((self._g.BaseUrl + pagination.group(1), o, refUrn))
-                elif None is not re.search(r'<div\s+[^>]*class="[^"]*[ap]v-dp-container', cnt, flags=re.DOTALL):
-                    ''' Movie/series page '''
-                    # Find the biggest fanart available
-                    bgimg = re.search(r'<div\s+[^>]*class="[^"]*[ap]v-hero-background[^>]*(?:>\s*<div\s+[^>]*class="[^"]*[ap]v-bgimg[^>]*)?url\(([^)]+)\)', cnt, flags=re.DOTALL)
-                    bgimg = None if (not bgimg) or re.search(r'_BL\d+_', bgimg.group(1)) else MaxSize(bgimg.group(1))
+                        bUpdatedVideoData |= AddSeason(breadcrumb[-1], o, item['title']['text'], MaxSize(item['packshot']['image']['src']), iu)
 
-                    # Extract the global data
-                    gres = MultiRegexParsing(re.search(r'\s+class="[ap]v-detail-section"[^>]*>\s*(.*?)\s*(?:</section>|<script)', cnt, flags=re.DOTALL).group(1), {
-                        'cast': self._starringRex + r'(?:\s*</span>)\s*</dt>\s*<dd[^>]*>\s*(.*?)\s*</dd>',  # Starring
-                        'director': self._directorRex + r'(?:\s*</span>)\s*</dt>\s*<dd[^>]*>\s*(.*?)\s*</dd>',  # Director
-                        'genre': self._genresRex + r'(?:\s*</span>)\s*</dt>\s*<dd[^>]*>\s*(.*?)\s*</dd>',  # Genre
-                        'mpaa': r'<span data-automation-id="(?:maturity-)?rating-badge"[^>]*>\s*(.*?)\s*</span>',  # Age rating
-                        'plot': r'<div [^>]*data-automation-id="[^"]*synopsis"[^>]*>\s*(?:<p[^>]*>|<div [^>]*>.*?<div [^>]*>)\s*(.*?)\s*(?:</p>|</div>)',  # Synopsis
-                        'rating': r'<span data-automation-id="imdb-rating-badge"[^>]*>\s*([0-9]+)[,.]([0-9]+)\s*</span>',  # IMDb rating
-                        'year': r'<span data-automation-id="release-year-badge"[^>]*>\s*([0-9]+)\s*</span>',  # Year
-                    })
-                    # In case of widowed carousels, we might actually have no videodata
-                    if refUrn not in self._videodata:
-                        self._videodata[refUrn] = {'metadata': {'videometa': {}}, 'children': []}
-                    if 'ref' not in self._videodata[refUrn]:
-                        bUpdatedVideoData = True
-                        self._videodata[refUrn]['ref'] = requestURL
+            # Single page
+            if 'state' in cnt:
+                bUpdatedVideoData |= ParseSinglePage(breadcrumb[-1], o, bCacheRefresh, data=cnt, url=requestURL)
 
-                    results = re.findall(r'<li [^>]*id="[ap]v-ep-(?:bonus-?)?(?:episodes-?)?[0-9]+"[^>]*>(.*?)</li>', cnt, flags=re.DOTALL)
-                    if not results:
-                        ''' Standalone movie '''
-                        Log('Movie page', Log.DEBUG)
-                        if bFromWidowCarousel and (refUrn not in o):
-                            o[refUrn] = {}
-                        if bCacheRefresh or ('video' not in self._videodata[refUrn]['metadata']):
-                            asin = re.search(r'"asin":"([^"]*)"', cnt, flags=re.DOTALL)
-                            if None is asin:
-                                self._videodata[refUrn]['metadata']['unavailable'] = True
-                            else:
-                                bUpdatedVideoData = True
-
-                                meta = self._videodata[refUrn]['metadata']
-                                if 'artmeta' not in meta:
-                                    meta['artmeta'] = {}
-                                if None is not bgimg:
-                                    meta['artmeta']['fanart'] = bgimg
-
-                                meta['asin'] = asin.group(1)
-                                meta['video'] = ExtractURN(requestURL)
-
-                                if 'mediatype' not in meta['videometa']:
-                                    meta['videometa']['mediatype'] = 'movie'
-
-                                # Insert movie information
-                                for i in gres:
-                                    if None is not gres[i]: meta['videometa'][i] = gres[i]
-
-                                # Extract the runtime
-                                success, gpr = getURLData('catalog/GetPlaybackResources', meta['asin'], useCookie=True, extra=True,
-                                                          opt='&titleDecorationScheme=primary-content', dRes='CatalogMetadata')
-                                if not success:
-                                    gpr = None
-                                else:
-                                    if 'runtimeSeconds' in gpr['catalogMetadata']['catalog']:
-                                        meta['runtime'] = gpr['catalogMetadata']['catalog']['runtimeSeconds']
-                                    if 'thumb' not in meta['artmeta']:
-                                        image = MaxSize(gpr['catalogMetadata']['images']['imageUrls']['title'])
-                                        meta['artmeta']['thumb'] = image
-                                        meta['artmeta']['poster'] = image
-                                    if bCacheRefresh or ('title' not in self._videodata[refUrn]):
-                                        self._videodata[refUrn]['title'] = gpr['catalogMetadata']['catalog']['title']
-                                if 'title' in self._videodata[refUrn]:
-                                    NotifyUser(getString(30253).format(self._videodata[refUrn]['title']))
-                    else:
-                        ''' Episode list '''
-                        # Find out what page revision we're in
-                        if None is not re.search(r'(class="_2XnrBy"|for="[^"]*-season-selector)', cnt):
-                            revision = 3
-                        elif None is not re.search(r'<ol[^>]*>\s*<li id="[ap]v-ep-', cnt, flags=re.DOTALL):
-                            revision = 2
-                        elif None is not re.search(r'<h1 [^>]*class="[^"]*DigitalVideoUI', cnt, flags=re.DOTALL):
-                            revision = 1
-                        else:
-                            revision = 0
-                        Log('Season page rev{}'.format(revision), Log.DEBUG)
-
-                        for entry in results:
-                            md = MultiRegexParsing(entry, {
-                                # Episode data
-                                'url': r'<a data-automation-id="ep-playback-[0-9]+"[^>]*data-ref="[^"]*"[^>]*data-title-id="[^"]*"[^>]*href="([^"]*)"',
-                                'asin': r'\s+data-title-id="\s*([^"]+?)\s*"',
-                                'image': r'<div class="[ap]v-bgimg__div"[^>]*url\(([^)]+)\)',
-                                'title': r'<span class="[ap]v-play-title-text">\s*(.*?)\s*</span>',
-                            } if 2 > revision else {
-                                'url': r'<div class="[^"]*episode-playback-title[^"]*"[^>]*>.*?\s+href="([^"]+)"',
-                                'asin': r'\s+data-title-id="\s*([^"]+?)\s*"',
-                                'image': r'<img src="([^"]+)"',
-                                'title': r'<div class="[^"]*episode-title-name[^"]*"[^>]*>(?:\s*<span[^>]*>)?\s*(.*?)\s*</span>',
-                            })
-                            res = MultiRegexParsing(entry, {
-                                'mpaa': r'<span data-automation-id="(?:rating-badge|ep-amr-badge-[0-9]+)"[^>]*>(?:\s*<span[^>]*>)?\s*(.*?)\s*</span>',  # Age rating
-                                'plot': r'<p data-automation-id="ep-synopsis-[0-9]+"[^>]*>\s*(.*?)\s*</p>',  # Synopsis
-                                'premiered': r'<span data-automation-id="ep-air-date-badge-[0-9]+"[^>]*>\s*(.*?)\s*</span>',  # Original air date
-                            } if 2 > revision else {
-                                'mpaa': r'<span data-automation-id="(?:rating-badge|ep-amr-badge-[0-9]+)"[^>]*>(?:\s*<span[^>]*>)?\s*(.*?)\s*</span>',  # Age rating
-                                'plot': r'<label for="[^"]*synopsis-[^>]*>.*?</label>\s*<div[^>]*>\s*(.*?)\s*</div>',  # Synopsis
-                                'premiered': r'<div[^>]*>\s*<div[^>]*>\s*' + self._dateFinder + r'\s*</div>',  # Original air date
-                            })
-
-                            if (None is md['url']) or (None is md['title']):
-                                ''' Some episodes might be not playable until a later date or just N/A, although listed '''
-                                continue
-                            meta = {'artmeta': {'thumb': md['image'], 'poster': md['image'], 'fanart': bgimg},
-                                    'videometa': {'mediatype': 'episode'}, 'asin': md['asin'], 'videoURL': md['url']}
-                            if None is not re.match(r'/[^/]', meta['videoURL']):
-                                meta['videoURL'] = self._g.BaseUrl + meta['videoURL']
-                            meta['video'] = ExtractURN(meta['videoURL'])
-                            eid = meta['video']
-
-                            if bCacheRefresh or (
-                                (eid not in self._videodata) or
-                                ('metadata' not in self._videodata[eid]) or
-                                ('videometa' not in self._videodata[eid]['metadata']) or
-                                (0 == len(self._videodata[eid]['metadata']['videometa']))
-                            ):
-                                # Extract the runtime
-                                success, gpr = getURLData('catalog/GetPlaybackResources', md['asin'], useCookie=True, extra=True,
-                                                          opt='&titleDecorationScheme=primary-content', dRes='CatalogMetadata')
-                                if not success:
-                                    gpr = None
-                                else:
-                                    if 'runtimeSeconds' in gpr['catalogMetadata']['catalog']:
-                                        meta['runtime'] = gpr['catalogMetadata']['catalog']['runtimeSeconds']
-
-                                # If we come from a widowed carousel, we need to build the ancestry
-                                if bFromWidowCarousel:
-                                    for d in gpr['catalogMetadata']['family']['tvAncestors']:
-                                        if 'SHOW' == d['catalog']['type']:
-                                            showId = d['catalog']['id']
-                                            if (showId not in self._videodata):
-                                                self._videodata[showId] = {'title': d['catalog']['title'], 'children': []}
-                                    if 'season' not in self._videodata[refUrn]['metadata']['videometa']:
-                                        for d in gpr['catalogMetadata']['family']['tvAncestors']:
-                                            if 'SEASON' == d['catalog']['type']:
-                                                self._videodata[refUrn]['metadata']['videometa']['season'] = int(d['catalog']['seasonNumber'])
-                                                self._videodata[refUrn]['metadata']['videometa']['mediatype'] = 'season'
-                                    if 'artmeta' not in self._videodata[refUrn]['metadata']:
-                                        thumbnail = MaxSize(Unescape(gpr['catalogMetadata']['images']['imageUrls']['title']))
-                                        self._videodata[refUrn]['metadata']['artmeta'] = {'thumb': thumbnail, 'poster': thumbnail, 'fanart': bgimg}
-                                    if 'title' not in self._videodata[refUrn]:
-                                        bSingle = None is not re.search(r'(class="_2XnrBy"|[ap]v-season-single|DigitalVideoWebNodeDetail_seasons__single)', cnt)
-                                        self._videodata[refUrn]['title'] = Unescape(re.search([
-                                            r'<span class="[^"]*[ap]v-season-single[^"]*">\s*(.*?)\s*(?:</a>|</span>)',  # r0 single
-                                            r'<a class="[^"]*[ap]v-droplist--selected[^"]*"[^>]*>\s*(.*?)\s*</a>',  # r0 multi
-                                            r'<span class="[^"]*DigitalVideoWebNodeDetail_seasons__single[^"]*"[^>]*>\s*<span[^>]*>\s*(.*?)\s*</span>',  # r1 single
-                                            r'<div class="[^"]*dv-node-dp-seasons.*?<label[^>]*>\s*<span[^>]*>\s*(.*?)\s*</span>\s*</label>',  # r1 multi
-                                            r'<span class="[^"]*[ap]v-season-single[^"]*">\s*(.*?)\s*(?:</a>|</span>)',  # r2 single
-                                            r'<label class="[^"]*[ap]v-select-trigger[^"]*"[^>]*>\s*(.*?)\s*</label>',  # r2 multi
-                                            r'<span class="_2XnrBy">\s*<span>\s*(.*?)\s*</span>',  # r3 single
-                                            r'<label[^>]*\s+for="[^"]*-season-selector"[^>]*>\s*<span>\s*(.*?)\s*</span>',  # r3 multi
-                                        ][(revision << 1) + (0 if bSingle else 1)], cnt, flags=re.DOTALL).group(1))
-                                    if 'parent' not in self._videodata[refUrn]:
-                                        self._videodata[refUrn]['parent'] = showId
-                                        if refUrn not in self._videodata[showId]['children']:
-                                            self._videodata[showId]['children'].append(refUrn)
-
-                                # Insert series information
-                                for i in gres:
-                                    if None is not gres[i]:
-                                        # Don't propagate plot to episodes
-                                        if 'plot' != i:
-                                            meta['videometa'][i] = gres[i]
-                                        if bCacheRefresh or (i not in self._videodata[refUrn]['metadata']['videometa']):
-                                            self._videodata[refUrn]['metadata']['videometa'][i] = gres[i]
-
-                                # Insert episode specific information
-                                for i in res:
-                                    if None is not res[i]:
-                                        meta['videometa'][i] = res[i]
-
-                                if ('season' not in meta['videometa']) and ('season' in self._videodata[refUrn]['metadata']['videometa']):
-                                    meta['videometa']['season'] = self._videodata[refUrn]['metadata']['videometa']['season']
-
-                                if None is not re.match(r'^[0-9]+\.', md['title']):
-                                    meta['videometa']['episode'] = int(re.search(r'^([0-9]+)\.', md['title']).group(1))  # Extract the episode number
-                                    md['title'] = re.sub(r'^[0-9]+\.\s*', '', md['title'])  # Clean the title
-                                else:
-                                    # Probably an extra trailer or something, remove season information
-                                    del meta['videometa']['season']
-
-                                bUpdatedVideoData = True
-                                self._videodata[eid] = {'metadata': meta, 'title': md['title'], 'parent': refUrn}
-                                NotifyUser(getString(30253).format(md['title']))
-
-                            if bFromWidowCarousel:
-                                bFromWidowCarousel = False  # Initialisations done (or about to be), avoid nesting
-                                o[self._videodata[refUrn]['parent']] = self._videodata[self._videodata[refUrn]['parent']]
-                                o[self._videodata[refUrn]['parent']][refUrn] = self._videodata[refUrn]
-                                o = o[self._videodata[refUrn]['parent']][refUrn]
-                            if (refUrn in self._videodata) and ('children' in self._videodata[refUrn]) and (eid not in self._videodata[refUrn]['children']):
-                                bUpdatedVideoData = True
-                                self._videodata[refUrn]['children'].append(eid)
-
-                        # Scan the other seasons
-                        seasons = re.search(r'<div class="[^"]*(?:[ap]v-season-selector|-dp-seasons)[^>]*>.*?<ul[^>]*>(.*?)</ul>', cnt, flags=re.DOTALL)
-                        if seasons:
-                            for season in re.findall(r'<a href="([^"]+?)(?:ref=[^"]*)?"[^>]*>(?:\s*<span[^>]*>)*\s*' +
-                                                     self._seasonRex +
-                                                     r'\s+([0-9]+)\s*</(?:a>|span>)', seasons.group(1)):
-                                season = list(season)
-                                if '/' == (season[0][0:1]):
-                                    season[0] = self._g.BaseUrl + season[0]
-                                if season[0] in self._recurringPages['SeasonScraping']:
-                                    continue
-                                self._recurringPages['SeasonScraping'].append(season[0])
-                                seasonURN = ExtractURN(season[0])
-                                if seasonURN not in self._videodata:
-                                    if 'parent' in self._videodata[refUrn]:
-                                        o = ancestorNode[ancestorName][objName] if self._videodata[refUrn]['parent'] in ancestorNode[ancestorName][objName] else ancestorNode
-                                    requestURLs.append((season[0], o, seasonURN, True))
+            # Pagination
+            if 'pagination' in cnt:
+                nextPage = None
+                if 'apiUrl' in cnt['pagination']:
+                    nextPage = cnt['pagination']['apiUrl']
+                elif 'paginator' in cnt['pagination']:
+                    nextPage = next((x['href'] for x in cnt['pagination']['paginator'] if
+                                    (('type' in x) and ('NextPage' == x['type'])) or (('*className*' in x) and ('atv.wps.PaginatorNext' == x['*className*']))), None)
+                if nextPage:
+                    requestURLs.append(nextPage)
                 else:
-                    ''' Movie and series list '''
-                    Log('Movie/series list or search results', Log.DEBUG)
-                    # Are we getting the old or new version of the list?
-                    bNewVersion = None is re.search(r'<li class="[ap]v-result-card">', cnt, flags=re.DOTALL)
-                    for entry in re.findall(r'<div class="[^"]*dvui-beardContainer[^"]*">\s*(.*?)\s*</form>\s*</div>\s*</div>\s*</div>'
-                                            if bNewVersion else r'<li class="[ap]v-result-card">\s*(.*?)\s*</li>',
-                                            cnt, flags=re.DOTALL):
-                        res = MultiRegexParsing(entry, {
-                            'asin': r'\s+data-asin="\s*([^"]+?)\s*"',
-                            'image': r'<a [^>]+><img\s+[^>]*src="([^"]+)"',
-                            'link': r'<a href="([^"]+)"><img',
-                            'season': (r'<span>\s*' if bNewVersion else r'<span class="[ap]v-result-card-season">\s*') + self._seasonRex + r'\s+([0-9]+)\s*</span>',
-                            'title': r'<a class="' + (r'av-beard-title-link' if bNewVersion else r'av-result-card-title') + r'"[^>]*>\s*(.*?)\s*</a>',
-                        })
-                        NotifyUser(getString(30253).format(res['title']))
-                        if None is not re.match(r'/[^/]', res['link']):
-                            res['link'] = self._g.BaseUrl + res['link']
-                        meta = {'artmeta': {'thumb': res['image'], 'poster': res['image']}, 'videometa': {}}
-                        meta['videometa']['mediatype'] = 'movie' if None is res['season'] else 'season'
+                    Log('Unknown error while parsing pagination', Log.ERROR)
 
-                        if None is res['season']:
-                            ''' Movie '''
-                            # Queue the movie page instead of parsing partial information here
-                            urn = ExtractURN(res['link'])
-                            if urn not in o:
-                                o[urn] = {}
-                            if bCacheRefresh or ((urn not in self._videodata) or ('metadata' not in self._videodata[urn]) or ('video' not in self._videodata[urn]['metadata'])):
-                                bUpdatedVideoData = True
-                                self._videodata[urn] = {'metadata': meta, 'title': res['title']}
-                                requestURLs.append((res['link'], o[urn], urn))
-                        else:
-                            ''' Series '''
-                            id = res['title']
-                            sid = ExtractURN(res['link'])
-
-                            if sid not in self._videodata:
-                                self._videodata[sid] = {'children': []}
-
-                            # Extract video metadata
-                            if 'parent' in self._videodata[sid]:
-                                id = self._videodata[sid]['parent']
-                            elif (id is res['title']) and (None is not res['asin']):
-                                success, gpr = getURLData('catalog/GetPlaybackResources', res['asin'], useCookie=True, extra=True,
-                                                          opt='&titleDecorationScheme=primary-content', dRes='CatalogMetadata')
-                                if not success:
-                                    Log('Unable to get the video metadata for {} ({})'.format(res['title'], res['link']), Log.WARNING)
-                                else:
-                                    # Find the show Asin URN, if possible
-                                    for d in gpr['catalogMetadata']['family']['tvAncestors']:
-                                        if 'SHOW' == d['catalog']['type']:
-                                            id = d['catalog']['id']
-                                            self._videodata[sid]['parent'] = id
-                                            break
-                            if id not in o:
-                                o[id] = {'title': res['title']}
-                                if id not in self._videodata:
-                                    self._videodata[id] = {'title': res['title'], 'children': []}
-                            if (sid in self._videodata) and ('children' in self._videodata[sid]) and (0 < len(self._videodata[sid]['children'])):
-                                o[id][sid] = {k: {} for k in self._videodata[sid]['children']}
-                            else:
-                                # Save tree information if id is a URN and not a title name
-                                if (id is not res['title']) and (sid not in self._videodata[id]['children']):
-                                        self._videodata[id]['children'].append(sid)
-                                meta['videometa']['season'] = res['season']['season']
-                                o[id][sid] = {'lazyLoadURL': res['link']}
-                                bUpdatedVideoData = True
-                                self._videodata[sid]['title'] = res['season']['format']
-                                self._videodata[sid]['metadata'] = meta
-
-                    # Next page
-                    pagination = re.search(
-                        r'<li\s+[^>]*class="[^"]*av-pagination-current-page[^"]*"[^>]*>.*?</li>\s*<li\s+[^>]*class="[ap]v-pagination[^>]*>\s*(.*?)\s*</li>',
-                        cnt, flags=re.DOTALL)
-                    if None is not pagination:
-                        nru = Unescape(re.search(r'href="([^"]+)"', pagination.group(1), flags=re.DOTALL).group(1))
-                        if None is not re.match(r'/[^/]', nru):
-                            nru = self._g.BaseUrl + nru
-                        requestURLs.append(nru)
+            # Notify new page
             if 0 < len(requestURLs):
-                NotifyUser(getString(30252))
+                if (0 == (pageNumber % 5)) and bUpdatedVideoData:
+                    self._Flush(bFlushCacheData=False, bFlushVideoData=True)
+                    bUpdatedVideoData = False
+                pageNumber += 1
+                NotifyUser(getString(30252).format(pageNumber))
 
         # Flush catalog and data
-        self._Flush(bCacheRefresh or bUpdatedVideoData)
+        self._Flush(bFlushVideoData=bCacheRefresh or bUpdatedVideoData)

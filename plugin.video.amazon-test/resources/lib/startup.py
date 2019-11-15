@@ -9,6 +9,7 @@ from .logging import *
 from .configs import *
 from .common import Globals, Settings
 from .ages import AgeRestrictions
+from kodi_six.utils import py2_decode
 
 
 def EntryPoint():
@@ -28,9 +29,12 @@ def EntryPoint():
     # warnings.simplefilter('error', requests.packages.urllib3.exceptions.SNIMissingWarning)
     # warnings.simplefilter('error', requests.packages.urllib3.exceptions.InsecurePlatformWarning)
 
-    import urlparse
-    args = dict(urlparse.parse_qsl(urlparse.urlparse(sys.argv[2]).query))
-    path = urlparse.urlparse(sys.argv[0]).path
+    try:
+        from urllib.parse import urlparse, parse_qsl
+    except ImportError:
+        from urlparse import urlparse, parse_qsl
+    args = dict(parse_qsl(urlparse(sys.argv[2]).query))
+    path = urlparse(sys.argv[0]).path
 
     Log('Requested {}'.format(path if 1 < len(path) else args), Log.DEBUG)
     mode = args.get('mode', None)
@@ -53,7 +57,8 @@ def EntryPoint():
         return
 
     if path.startswith('/pv/'):
-        verb, path = path[4:].decode('utf-8').split('/', 1)
+        path = py2_decode(path[4:])
+        verb, path = path.split('/', 1)
         if 'search' == verb: g.pv.Search()
         elif 'browse' == verb: g.pv.Browse(path)
         elif 'refresh' == verb: g.pv.Refresh(path)
@@ -68,7 +73,8 @@ def EntryPoint():
     elif mode == 'listCategories':
         g.amz.listCategories(args.get('url', ''), args.get('opt', ''))
     elif mode == 'listContent':
-        g.amz.listContent(args.get('cat'), args.get('url', '').decode('utf-8'), int(args.get('page', '1')), args.get('opt', ''))
+        url = py2_decode(args.get('url', ''))
+        g.amz.listContent(args.get('cat'), url, int(args.get('page', '1')), args.get('opt', ''))
     elif mode == 'PlayVideo':
         from .playback import PlayVideo
         PlayVideo(args.get('name', ''), args.get('asin'), args.get('adult', '0'), int(args.get('trailer', '0')), int(args.get('selbitrate', '0')))
@@ -86,6 +92,6 @@ def EntryPoint():
     elif mode == 'ageSettings':
         AgeRestrictions().Settings()
     elif mode in ['LogIn', 'remLoginData', 'removeUser', 'renameUser', 'switchUser']:
-        exec '%s()' % mode
+        exec('{}()'.format(mode))
     elif mode in ['checkMissing', 'Search']:
-        exec 'g.amz.%s()' % mode
+        exec('g.amz.{}()'.format(mode))

@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
+from kodi_six import xbmcgui
 import pyxbmct
-import xbmcgui
 from .configs import *
 from .l10n import *
 from .common import Globals

@@ -1,24 +1,27 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
+from kodi_six import xbmcplugin
+from kodi_six.utils import py2_decode
 import os
-from urllib import quote_plus
 import shlex
 import subprocess
 import threading
-import xbmcplugin
 from inputstreamhelper import Helper
 from .network import *
 from .common import Globals, Settings, jsonRPC, sleep
 from .itemlisting import getInfolabels
+try:
+    from urllib.parse import quote_plus
+except:
+    from urllib import quote_plus
 
 
 def _getListItem(li):
-    return xbmc.getInfoLabel('ListItem.%s' % li).decode('utf-8')
+    return py2_decode(xbmc.getInfoLabel('ListItem.%s' % li))
 
 
 def _Input(mousex=0, mousey=0, click=0, keys=None, delay='200'):
-    from common import Globals
     g = Globals()
 
     screenWidth = int(xbmc.getInfoLabel('System.ScreenWidth'))
@@ -46,6 +49,10 @@ def _Input(mousex=0, mousey=0, click=0, keys=None, delay='200'):
 
     if g.platform & g.OS_WINDOWS:
         app = os.path.join(g.PLUGIN_PATH, 'tools', 'userinput.exe')
+        if not os.path.exists(app):
+            from .l10n import getString
+            g.dialog.notification(getString(30254), getString(30255), xbmcgui.NOTIFICATION_ERROR)
+            return
         mouse = ' mouse %s %s' % (mousex, mousey)
         mclk = ' ' + str(click)
         keybd = ' key %s %s' % (keys, delay)
@@ -464,10 +471,10 @@ def PlayVideo(name, asin, adultstr, trailer, forcefb=0):
         elif not g.platform & g.OS_ANDROID:
             _ExtPlayback(videoUrl, asin, isAdult, methodOW, fr)
 
-        if not playable or isinstance(playable, unicode):
+        if not playable or not isinstance(playable, bool):
             if fallback:
                 methodOW = fallback - 1
-                if isinstance(playable, unicode):
+                if not isinstance(playable, bool):
                     fr = playable
                     playable = False
             else:
@@ -644,7 +651,7 @@ class _AmazonPlayer(xbmc.Player):
         from codecs import open as co
         if not xbmcvfs.exists(self.resumedb) or self.content == 2:
             return {}
-        with co(self.resumedb, 'r') as fp:
+        with co(self.resumedb, 'rb') as fp:
             items = pickle.load(fp)
             self.resume = items.get(self.asin, {}).get('resume')
             fp.close()
@@ -655,7 +662,7 @@ class _AmazonPlayer(xbmc.Player):
         if self.content == 2:
             return
         items = self.getResumePoint()
-        with co(self.resumedb, 'w+') as fp:
+        with co(self.resumedb, 'wb+') as fp:
             if self.watched and self.asin in items.keys():
                 del items[self.asin]
             else:

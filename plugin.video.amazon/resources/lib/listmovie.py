@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
+from . import xbmclibrary
+from . import movies as moviesDB
 from .common import *
-import xbmclibrary
-import movies as moviesDB
 
 
 def LIST_MOVIE_ROOT():
@@ -101,12 +101,12 @@ def ADD_MOVIE_ITEM(moviedata, onlyinfo=False, cmmode=0, export=False):
     if export:
         xbmclibrary.EXPORT_MOVIE(asin)
         return
-    cm = [(getString(30180 + cmmode) % getString(30154),
-          'RunPlugin(%s?mode=common&sitemode=toogleWatchlist&asin=%s&remove=%s)' % (sys.argv[0], asin, cmmode)),
-          (getString(30185) % getString(30154),
-          'RunPlugin(%s?mode=xbmclibrary&sitemode=EXPORT_MOVIE&asin=%s)' % (sys.argv[0], asin)),
-          (getString(30183), 'Container.Update(%s?mode=appfeed&sitemode=getSimilarities&asin=%s)' % (sys.argv[0], asin)),
-          (getString(30186), 'RunPlugin(%s?mode=xbmclibrary&sitemode=UpdateLibrary)' % sys.argv[0])]
+    cm = [(getString(30180 + cmmode).format(getString(30154)),
+          'RunPlugin({}?mode=common&sitemode=toogleWatchlist&asin={}&remove={})'.format(sys.argv[0], asin, cmmode)),
+          (getString(30185).format(getString(30154)),
+          'RunPlugin({}?mode=xbmclibrary&sitemode=EXPORT_MOVIE&asin={})'.format(sys.argv[0], asin)),
+          (getString(30183), 'Container.Update({}?mode=appfeed&sitemode=getSimilarities&asin={})'.format(sys.argv[0], asin)),
+          (getString(30186), 'RunPlugin({}?mode=xbmclibrary&sitemode=UpdateLibrary)'.format(sys.argv[0]))]
     if onlyinfo:
         return infoLabels
     else:

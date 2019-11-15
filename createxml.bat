@@ -13,6 +13,8 @@ if not "%1"=="clean" (
 if exist plugin.video.amazon\resources\cache rd /s /q plugin.video.amazon\resources\cache >nul 2>&1
 
 for /f %%f in ('dir %~dp0 /b /a:d') do if exist %~dp0%%f\addon.xml (
+    for /f %%g in ('dir %~dp0%%f /b /a:d /s') do rd /s /q %%g\__pycache__ >nul 2>&1
+	rd /s /q %~dp0%%f\__pycache__ >nul 2>&1
     del /q /s %~dp0%%f\*.pyo >nul 2>&1
     del /q /s %~dp0%%f\*.pyc >nul 2>&1
     if exist %~dp0%%f\.idea rd /q /s %~dp0%%f\.idea >nul 2>&1

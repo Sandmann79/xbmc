@@ -610,9 +610,21 @@ msgid "Connection error"
 msgstr ""
 
 msgctxt "#30252"
-msgid "Loading next page…"
+msgid "Loading page {0}…"
 msgstr ""
 
 msgctxt "#30253"
-msgid "Found “{0}”"
+msgid "{0} seasons"
+msgstr ""
+
+msgctxt "#30254"
+msgid "userinput.exe not found"
+msgstr ""
+
+msgctxt "#30255"
+msgid "Please download it from GitHub and manually install it in the addon directory"
+msgstr ""
+
+msgctxt "#30256"
+msgid "Error: servers returned no content (check logs for more information)"
 msgstr ""

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-import xbmc
+from kodi_six import xbmc
 
 
 def getString(string_id, addonInstance=None):

@@ -1,6 +1,5 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
-import urllib
 import sys
 import re
 import os
@@ -8,6 +7,10 @@ import subprocess
 import xbmcplugin
 import xbmcgui
 import xbmcaddon
+try:
+    from urllib.parse import unquote_plus, quote_plus
+except ImportError:
+    from urllib import unquote_plus, quote_plus
 
 
 addon = xbmcaddon.Addon()
@@ -113,8 +116,8 @@ def addSite(site="", title=""):
                         kiosk = keyboard.getText()
                         custBrowser = Dialog.select(translation(30017), avBrowsers)
                         if custBrowser > -1:
-                            content = "title=%s\nurl=%s\nthumb=DefaultFolder.png\nstopPlayback=%s\nkiosk=%s\nuserAgent=" % (title, url, stopPlayback, kiosk)
-                            if custBrowser > 0: content += "\ncustBrowser=%s" % (custBrowser-1)
+                            content = "title={}\nurl={}\nthumb=DefaultFolder.png\nstopPlayback={}\nkiosk={}\nuserAgent=".format(title, url, stopPlayback, kiosk)
+                            if custBrowser > 0: content += "\ncustBrowser={}".format(custBrowser-1)
                             fh = open(os.path.join(siteFolder, getFileName(title)+".link"), 'w')
                             fh.write(content)
                             fh.close()
@@ -122,7 +125,11 @@ def addSite(site="", title=""):
 
 
 def getFileName(title):
-    return (''.join(c for c in unicode(title, 'utf-8') if c not in '/\\:?"*|<>')).strip()
+    try:
+        title = unicode(title, 'utf-8')
+    except NameError:
+        pass
+    return (''.join(c for c in title if c not in '/\\:?"*|<>')).strip()
 
 
 def getFullPath(path, url, useKiosk, userAgent, selBrowser):
@@ -214,7 +221,7 @@ def editSite(title):
                     custBrowser = Dialog.select(translation(30017), avBrowsers)
                     if custBrowser > -1:
                         content = "title="+title+"\nurl="+url+"\nthumb="+thumb+"\nstopPlayback="+stopPlayback+"\nkiosk="+kiosk+"\nuserAgent="+userAgent
-                        if custBrowser > 0: content += "\ncustBrowser=%s" % (custBrowser-1)
+                        if custBrowser > 0: content += "\ncustBrowser={}".format(custBrowser-1)
                         fh = open(os.path.join(siteFolder, getFileName(title)+".link"), 'w')
                         fh.write(content)
                         fh.close()
@@ -235,7 +242,7 @@ def parameters_string_to_dict(parameters):
 
 
 def addDir(name, url, mode, iconimage, stopPlayback="", kiosk="", custBrowser="", userAgent=""):
-    u = sys.argv[0]+"?url="+urllib.quote_plus(url)+"&mode="+urllib.quote_plus(mode)+"&stopPlayback="+urllib.quote_plus(stopPlayback)+"&kiosk="+urllib.quote_plus(kiosk)+"&custBrowser="+urllib.quote_plus(custBrowser)+"&userAgent="+urllib.quote_plus(userAgent)
+    u = sys.argv[0]+"?url="+quote_plus(url)+"&mode="+quote_plus(mode)+"&stopPlayback="+quote_plus(stopPlayback)+"&kiosk="+quote_plus(kiosk)+"&custBrowser="+quote_plus(custBrowser)+"&userAgent="+quote_plus(userAgent)
     ok = True
     liz = xbmcgui.ListItem(name, iconImage="DefaultFolder.png", thumbnailImage=iconimage)
     liz.setInfo(type="Video", infoLabels={"Title": name})
@@ -244,22 +251,22 @@ def addDir(name, url, mode, iconimage, stopPlayback="", kiosk="", custBrowser=""
 
 
 def addSiteDir(name, url, mode, iconimage, stopPlayback, kiosk, custBrowser, userAgent):
-    u = sys.argv[0]+"?url="+urllib.quote_plus(url)+"&mode="+urllib.quote_plus(mode)+"&stopPlayback="+urllib.quote_plus(stopPlayback)+"&kiosk="+urllib.quote_plus(kiosk)+"&custBrowser="+urllib.quote_plus(custBrowser)+"&userAgent="+urllib.quote_plus(userAgent)
+    u = sys.argv[0]+"?url="+quote_plus(url)+"&mode="+quote_plus(mode)+"&stopPlayback="+quote_plus(stopPlayback)+"&kiosk="+quote_plus(kiosk)+"&custBrowser="+quote_plus(custBrowser)+"&userAgent="+quote_plus(userAgent)
     ok = True
     liz = xbmcgui.ListItem(name, iconImage="DefaultFolder.png", thumbnailImage=iconimage)
     liz.setInfo(type="Video", infoLabels={"Title": name})
-    liz.addContextMenuItems([(translation(30006), 'RunPlugin(plugin://'+addonID+'/?mode=editSite&url='+urllib.quote_plus(name)+')',), (translation(30002), 'RunPlugin(plugin://'+addonID+'/?mode=removeSite&url='+urllib.quote_plus(name)+')',)])
+    liz.addContextMenuItems([(translation(30006), 'RunPlugin(plugin://'+addonID+'/?mode=editSite&url='+quote_plus(name)+')',), (translation(30002), 'RunPlugin(plugin://'+addonID+'/?mode=removeSite&url='+quote_plus(name)+')',)])
     ok = xbmcplugin.addDirectoryItem(handle=int(sys.argv[1]), url=u, listitem=liz, isFolder=False)
     return ok
 
 params = parameters_string_to_dict(sys.argv[2])
-mode = urllib.unquote_plus(params.get('mode', ''))
-name = urllib.unquote_plus(params.get('name', ''))
-url = urllib.unquote_plus(params.get('url', ''))
-stopPlayback = urllib.unquote_plus(params.get('stopPlayback', 'no'))
-kiosk = urllib.unquote_plus(params.get('kiosk', 'yes'))
-userAgent = urllib.unquote_plus(params.get('userAgent', ''))
-custBrowser = urllib.unquote_plus(params.get('custBrowser', ''))
+mode = unquote_plus(params.get('mode', ''))
+name = unquote_plus(params.get('name', ''))
+url = unquote_plus(params.get('url', ''))
+stopPlayback = unquote_plus(params.get('stopPlayback', 'no'))
+kiosk = unquote_plus(params.get('kiosk', 'yes'))
+userAgent = unquote_plus(params.get('userAgent', ''))
+custBrowser = unquote_plus(params.get('custBrowser', ''))
 
 if mode == 'addSite':
     addSite()

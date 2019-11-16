@@ -416,12 +416,12 @@ msgid "Initializing Movie Scan"
 msgstr "מאתחל סריקת סרט"
 
 msgctxt "#30122"
-msgid "Scanning Page %s"
-msgstr "סורק דף %s"
+msgid "Scanning Page {}"
+msgstr "סורק דף {}"
 
 msgctxt "#30123"
-msgid "%s Movies found"
-msgstr "נמצא עבור %s"
+msgid "{} Movies found"
+msgstr "נמצא עבור {}"
 
 msgctxt "#30124"
 msgid "added"
@@ -449,16 +449,16 @@ msgid "Initializing Television Scan"
 msgstr "מאתחל סריקת טלוויזיה"
 
 msgctxt "#30132"
-msgid "%s Shows"
-msgstr "%s סדרות"
+msgid "{} Shows"
+msgstr "{} סדרות"
 
 msgctxt "#30133"
-msgid "%s Seasons"
-msgstr "%s עונות"
+msgid "{} Seasons"
+msgstr "{} עונות"
 
 msgctxt "#30134"
-msgid "%s Episodes"
-msgstr "%s פרקים"
+msgid "{} Episodes"
+msgstr "{} פרקים"
 
 msgctxt "#30135"
 msgid "Updating Database..."
@@ -473,8 +473,8 @@ msgid "Create a new Database?"
 msgstr "ליצור מסד נתונים חדש?"
 
 msgctxt "#30138"
-msgid "This can take up to %s minutes"
-msgstr "זה יכול לקחת עד %s דקות"
+msgid "This can take up to {} minutes"
+msgstr "זה יכול לקחת עד {} דקות"
 
 # empty string with id 30139
 msgctxt "#30140"
@@ -523,12 +523,12 @@ msgid "Movie"
 msgstr "סרט"
 
 msgctxt "#30155"
-msgid "Remove %s"
-msgstr "הסרת %s"
+msgid "Remove {}"
+msgstr "הסרת {}"
 
 msgctxt "#30156"
-msgid "Remove %s from Database?"
-msgstr "האם להסיר את %s ממסד הנתונים?"
+msgid "Remove {} from Database?"
+msgstr "האם להסיר את {} ממסד הנתונים?"
 
 msgctxt "#30157"
 msgid "Popular Movies"
@@ -552,8 +552,8 @@ msgid "TV Rating"
 msgstr "דירוג טלוויזיה"
 
 msgctxt "#30163"
-msgid "Rename %s"
-msgstr "שינוי שם %s"
+msgid "Rename {}"
+msgstr "שינוי שם {}"
 
 msgctxt "#30164"
 msgid "Refresh TVDB Data"
@@ -594,12 +594,12 @@ msgstr "פרק"
 
 # empty strings from id 30174 to 30179
 msgctxt "#30180"
-msgid "Add %s to Watchlist"
-msgstr "הוסף את %s לרשימת הצפייה"
+msgid "Add {} to Watchlist"
+msgstr "הוסף את {} לרשימת הצפייה"
 
 msgctxt "#30181"
-msgid "Remove %s from Watchlist"
-msgstr "הסר את %s מרשימת הצפייה"
+msgid "Remove {} from Watchlist"
+msgstr "הסר את {} מרשימת הצפייה"
 
 # empty string with id 30182
 msgctxt "#30183"
@@ -608,8 +608,8 @@ msgstr "השג דומים"
 
 # empty string with id 30184
 msgctxt "#30185"
-msgid "Export %s"
-msgstr "ייצוא %s"
+msgid "Export {}"
+msgstr "ייצוא {}"
 
 msgctxt "#30186"
 msgid "Update Library"

@@ -11,7 +11,7 @@
   <extension point="xbmc.addon.metadata">
     <summary lang="en">A pure python module which implements the DES and Triple-DES encryption algorithms.</summary>
     <website>http://twhiteman.netfirms.com/des.html</website> 
-    <license>Public Domain</license> 
+    <license>MIT</license> 
     <platform>all</platform> 
     <source>http://sourceforge.net/projects/pydes/</source> 
   </extension>

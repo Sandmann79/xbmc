@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
-import xbmcgui
+from kodi_six import xbmcgui
+from kodi_six.utils import py2_decode
 import json
 from .network import getTerritory
 from .configs import *
@@ -20,7 +21,7 @@ def loadUsers():
 
 def loadUser(key='', empty=False, cachedUsers=None):
     def_keys = {'email': '', 'password': '', 'name': '', 'save': '', 'atvurl': '', 'baseurl': '', 'pv': False, 'mid': '', 'cookie': ''}
-    cur_user = g.addon.getSetting('login_acc').decode('utf-8')
+    cur_user = py2_decode(g.addon.getSetting('login_acc'))
     users = cachedUsers if cachedUsers else loadUsers()
     user = None if empty else [i for i in users if cur_user == i['name']]
     if user:
@@ -38,7 +39,7 @@ def loadUser(key='', empty=False, cachedUsers=None):
 
 def addUser(user):
     s = Settings()
-    user['save'] = g.addon.getSetting('save_login')
+    user['save'] = 'false'  # g.addon.getSetting('save_login')
     users = loadUsers() if s.multiuser else []
     num = [n for n, i in enumerate(users) if user['name'] == i['name']]
     if num:

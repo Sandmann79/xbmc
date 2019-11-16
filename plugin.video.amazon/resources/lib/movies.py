@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
-from service import updateRunning
+from . import db
+from . import appfeed
 from .common import *
-import appfeed
-import db
+from service import updateRunning
 
 MAX_RES = 140
 max_wt = 10800  # 3hrs
@@ -23,11 +23,11 @@ def addMoviedb(moviedata):
 def lookupMoviedb(value, rvalue='distinct *', name='asin', single=True, exact=False, table='movies'):
     db.waitforDB(MovieDB)
     c = MovieDB.cursor()
-    value = value.decode('utf-8')
+    value = py2_decode(value)
     if not db.cur_exec(c, 'counttables', (table,)).fetchone():
         return '' if single else []
 
-    sqlstring = 'select %s from %s where %s ' % (rvalue, table, name)
+    sqlstring = 'select {} from {} where {} '.format(rvalue, table, name)
     retlen = len(rvalue.split(','))
     if not exact:
         value = "%{0}%".format(value)
@@ -63,7 +63,7 @@ def updateMoviedb(asin, col, value):
     db.waitforDB(MovieDB)
     c = MovieDB.cursor()
     asin = '%' + asin + '%'
-    sqlquery = 'update movies set %s=? where asin like (?)' % col
+    sqlquery = 'update movies set {}=? where asin like (?)'.format(col)
     result = db.cur_exec(c, sqlquery, (value, asin)).rowcount
     return result
 
@@ -72,10 +72,10 @@ def loadMoviedb(filterobj=None, value=None, sortcol=False):
     db.waitforDB(MovieDB)
     c = MovieDB.cursor()
     if filterobj:
-        value = "%{0}%".format(value.decode('utf-8'))
-        return db.cur_exec(c, 'select distinct * from movies where %s like (?)' % filterobj, (value,))
+        value = "%{0}%".format(py2_decode(value))
+        return db.cur_exec(c, 'select distinct * from movies where {} like (?)'.format(filterobj), (value,))
     elif sortcol:
-        return db.cur_exec(c, 'select distinct * from movies where %s is not null order by %s asc' % (sortcol, sortcol))
+        return db.cur_exec(c, 'select distinct * from movies where {} is not null order by {} asc'.format(sortcol, sortcol))
     else:
         return db.cur_exec(c, 'select distinct * from movies order by movietitle asc')
 
@@ -83,7 +83,7 @@ def loadMoviedb(filterobj=None, value=None, sortcol=False):
 def getMovieTypes(col):
     db.waitforDB(MovieDB)
     c = MovieDB.cursor()
-    items = db.cur_exec(c, 'select distinct %s from movies' % col)
+    items = db.cur_exec(c, 'select distinct {} from movies'.format(col))
     l = getTypes(items, col)
     c.close()
     return l
@@ -93,7 +93,7 @@ def getMoviedbAsins(isPrime=1, retlist=False):
     db.waitforDB(MovieDB)
     c = MovieDB.cursor()
     content = ''
-    sqlstring = 'select asin from movies where isPrime = (%s)' % isPrime
+    sqlstring = 'select asin from movies where isPrime = ({})'.format(isPrime)
     if retlist:
         content = []
     for item in db.cur_exec(c, sqlstring).fetchall():
@@ -129,7 +129,6 @@ def addMoviesdb(full_update=True, cj=True):
     endIndex = 0
     new_mov = 0
     retrycount = 0
-    retrystart = 0
     approx = 0
 
     while not approx:
@@ -150,7 +149,6 @@ def addMoviesdb(full_update=True, cj=True):
         if titles:
             for title in titles:
                 retrycount = 0
-                retrystart = 0
                 if full_update and dialog.iscanceled():
                     goAhead = -1
                     break
@@ -158,7 +156,7 @@ def addMoviesdb(full_update=True, cj=True):
                     asin = title['titleId']
                     if '_duplicate_' not in title['title']:
                         if var.onlyGer and re.compile(regex_ovf).search(title['title']):
-                            Log('Movie Ignored: %s' % title['title'], xbmc.LOGDEBUG)
+                            Log('Movie Ignored: {}'.format(title['title']), xbmc.LOGDEBUG)
                             found = True
                         else:
                             found, MOVIE_ASINS = compasin(MOVIE_ASINS, asin)
@@ -167,16 +165,12 @@ def addMoviesdb(full_update=True, cj=True):
                             new_mov += ASIN_ADD(title)
         else:
             retrycount += 1
+            endIndex += 1
 
         if retrycount > 2:
-            if not retrystart:
-                retrystart = time.time()
-            elif time.time() > retrystart + max_wt:
-                Log('Maxium wait time exceed, canceling database update')
-                return False
-            wait_time = randint(180, 420)
-            Log('Getting %s times a empty response. Waiting %s sec' % (retrycount, wait_time))
-            sleep(300)
+            wait_time = 3  # randint(180, 420)
+            Log('Getting {} times a empty response. Waiting {} sec'.format(retrycount, wait_time))
+            sleep(wait_time)
             retrycount = 0
 
         endIndex += len(titles)
@@ -187,7 +181,7 @@ def addMoviesdb(full_update=True, cj=True):
         if full_update:
             if approx:
                 MOV_TOTAL = approx
-            dialog.update(int(endIndex * 100.0 / MOV_TOTAL), getString(30122) % page, getString(30123) % new_mov)
+            dialog.update(int(endIndex * 100.0 / MOV_TOTAL), getString(30122).format(page), getString(30123).format(new_mov))
         if full_update and dialog.iscanceled():
             goAhead = -1
 
@@ -199,7 +193,7 @@ def addMoviesdb(full_update=True, cj=True):
         updateLibrary(cj=cj)
         updatePop()
         writeConfig("MoviesTotal", endIndex)
-        Log('Movie Update: New %s Deleted %s Total %s' % (new_mov, deleteremoved(MOVIE_ASINS), endIndex))
+        Log('Movie Update: New {} Deleted {} Total {}'.format(new_mov, deleteremoved(MOVIE_ASINS), endIndex))
         if full_update:
             setNewest()
             dialog.close()
@@ -234,7 +228,7 @@ def updatePop():
 def updateLibrary(asinlist=None, cj=True):
     asins = ''
     if not asinlist:
-        asinlist = SCRAP_ASINS(movielib % lib, cj)
+        asinlist = SCRAP_ASINS(movielib.format(lib), cj)
         MOVIE_ASINS = getMoviedbAsins(0, True)
         for asin in asinlist:
             found, MOVIE_ASINS = compasin(MOVIE_ASINS, asin)

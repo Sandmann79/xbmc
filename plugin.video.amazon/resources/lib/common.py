@@ -210,29 +210,28 @@ class Captcha(pyxbmct.AddonDialogWindow):
 
 
 def getURL(url, useCookie=False, silent=False, headers=None, rjson=True, attempt=1, check=False, postdata=None):
+    if not hasattr(getURL, 'sessions'):
+        getURL.sessions = {}  # Keep-Alive sessions
+    getURL.lastResponseCode = 0
     # Try to extract the host from the URL
     host = re.search('://([^/]+)/', url)
-    method = 'POST' if postdata is not None else 'GET'
-
     # Create sessions for keep-alives and connection pooling
     if None is not host:
         host = host.group(1)
-        if host in var.sessions:
-            session = var.sessions[host]
-        else:
-            session = requests.Session()
-            var.sessions[host] = session
+        if host not in getURL.sessions:
+            getURL.sessions[host] = requests.Session()
+        session = getURL.sessions[host]
     else:
         session = requests.Session()
 
     cj = requests.cookies.RequestsCookieJar()
+    method = 'POST' if postdata is not None else 'GET'
     retval = [] if rjson else ''
     if useCookie:
         cj = MechanizeLogin() if isinstance(useCookie, bool) else useCookie
         if isinstance(cj, bool):
             return retval
     if (not silent) or var.verbLog:
-        dispurl = url
         dispurl = re.sub('(?i){}|{}|&token=\w+|&customerId=\w+'.format(tvdb, tmdb), '', url).strip()
         Log('{}URL: {}'.format('check' if check else method.lower(), dispurl))
 
@@ -244,15 +243,21 @@ def getURL(url, useCookie=False, silent=False, headers=None, rjson=True, attempt
     if 'Accept-Language' not in headers:
         headers['Accept-Language'] = 'de-de, en-gb;q=0.2, en;q=0.1'
 
+    class TryAgain(Exception): pass  # Try again on temporary errors
+    class NoRetries(Exception): pass  # Fail on permanent errors
     try:
         r = session.request(method, url, data=postdata, headers=headers, cookies=cj, verify=var.verifySsl)
         response = r.text if not check else 'OK'
-        if r.status_code == 500:
-            raise requests.exceptions.HTTPError('500')
-        elif r.status_code >= 400 and r.status_code != 500:
-            Log('Error {}'.format(r.status_code))
-            raise requests.exceptions.HTTPError('429')
-    except (requests.exceptions.Timeout,
+        getURL.lastResponseCode = r.status_code  # Set last response code
+        if 500 == r.status_code:
+            Log('HTTP Error 500')
+            return {'message': {'body': {'titles': [], 'endIndex': 0}}}
+        if (408 == r.status_code) or (429 == r.status_code) or (500 < r.status_code):
+            raise TryAgain('{0} error'.format(r.status_code))
+        if 400 <= r.status_code:
+            raise NoRetries('{0} error'.format(r.status_code))
+    except (TryAgain,
+            NoRetries,
             requests.exceptions.ConnectionError,
             requests.exceptions.SSLError,
             requests.exceptions.HTTPError,
@@ -272,13 +277,10 @@ def getURL(url, useCookie=False, silent=False, headers=None, rjson=True, attempt
                       'You can find a Linux guide on how to update Python and its modules for Kodi here: https://goo.gl/CKtygz',
                       'Additionally, follow this guide to update the required modules: https://goo.gl/ksbbU2')
             exit()
-        if '500' in e:
-            Log('HTTP Error 500')
-            return {'message': {'body': {'titles': [], 'endIndex': 0}}}
-        if ('429' in e) or ('Timeout' in eType):
+        if ('429' in str(e)) or ('Timeout' in eType):
             attempt += 1 if not check else 10
             logout = 'Attempt #{}'.format(attempt)
-            if '429' in e:
+            if '429' in str(e):
                 logout += '. Too many requests - Pause 10 sec'
                 sleep(10)
             Log(logout)
@@ -438,8 +440,11 @@ def MechanizeLogin():
         cj = requests.cookies.RequestsCookieJar()
         user = loadUser()
         if user['cookie']:
-            cj.update(pickle.loads(user['cookie']))
-            return cj
+            try:
+                cj.update(requests.utils.cookiejar_from_dict(user['cookie']))
+                return cj
+            except:
+                pass
 
     Log('Login')
     res = False
@@ -547,7 +552,7 @@ def LogIn(ask):
                 user['email'] = email
                 user['password'] = encode(password)
             else:
-                user['cookie'] = pickle.dumps(cj)
+                user['cookie'] = requests.utils.dict_from_cookiejar(cj)
 
             if ask:
                 remLoginData(False)

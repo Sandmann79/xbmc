@@ -63,7 +63,7 @@ def cur_exec(cur, query, param=None):
     syntax = {True: {'counttables': 'SELECT count(*) FROM sqlite_master WHERE type="table" AND name=(?)',
                      'insert ignore': 'insert or ignore'},
               False: {'counttables': 'show tables like ?',
-                      "?": "{}"}}
+                      "?": "%s"}}
 
     for k, v in syntax[var.usesqlite].items():
         query = query.replace(k, v)

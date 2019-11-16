@@ -322,8 +322,10 @@ def addTVdb(full_update=True, libasins=None, cj=True):
 
     while goAhead == 1:
         MAX = randint(20, MAX_RES)
-        jsondata = appfeed.getList('TVEpisode&RollUpToSeason=T', endIndex, isPrime=prime,
-                                   OrderBy='Title', NumberOfResults=MAX, AsinList=new_libasins)
+        if new_libasins:
+            jsondata = appfeed.ASIN_LOOKUP(new_libasins)
+        else:
+            jsondata = appfeed.getList('TVEpisode&RollUpToSeason=T', endIndex, isPrime=prime, OrderBy='Title', NumberOfResults=MAX)
         if not jsondata:
             goAhead = -1
             break
@@ -404,9 +406,9 @@ def addTVdb(full_update=True, libasins=None, cj=True):
             goAhead = 0
 
         if retrycount > 2:
-            wait_time = randint(180, 420)
+            wait_time = 3  # randint(180, 420)
             Log('Getting {} times a empty response. Waiting {} sec'.format(retrycount, wait_time))
-            #sleep(wait_time)
+            sleep(wait_time)
             retrycount = 0
 
     if goAhead == 0:

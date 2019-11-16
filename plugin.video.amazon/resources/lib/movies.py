@@ -168,9 +168,9 @@ def addMoviesdb(full_update=True, cj=True):
             endIndex += 1
 
         if retrycount > 2:
-            wait_time = randint(180, 420)
+            wait_time = 3  # randint(180, 420)
             Log('Getting {} times a empty response. Waiting {} sec'.format(retrycount, wait_time))
-            #sleep(wait_time)
+            sleep(wait_time)
             retrycount = 0
 
         endIndex += len(titles)

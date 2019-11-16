@@ -342,12 +342,11 @@ def LogIn(ask=True):
             else:
                 return None
         elif ('ap_captcha_img_label' in uni_soup) or ('auth-captcha-image-container' in uni_soup):
+            # form.find_by_type('input', 'text', {'id': 'ap-credential-autofill-hint'}):
             wnd = _Captcha((getString(30008).split('…')[0]), soup, email)
             wnd.doModal()
             if wnd.email and wnd.cap and wnd.pwd:
-                br['email'] = wnd.email
-                br['password'] = wnd.pwd
-                br['guess'] = wnd.cap
+                form.set_input({'email': wnd.email, 'password': wnd.pwd, 'guess': wnd.cap})
             else:
                 return None
             del wnd
@@ -458,17 +457,18 @@ def LogIn(ask=True):
             cj = requests.cookies.RequestsCookieJar()
             br = mechanicalsoup.StatefulBrowser(soup_config={'features': 'html.parser'})
             br.set_cookiejar(cj)
+            br.session.verify = s.verifySsl
             caperr = -5
             while caperr:
                 Log('Connect to SignIn Page %s attempts left' % -caperr)
-                br.session.headers = [('User-Agent', getConfig('UserAgent'))]
+                br.session.headers.update({'User-Agent': getConfig('UserAgent')})
                 br.open(user['baseurl'] + ('/gp/aw/si.html' if not user['pv'] else '/auth-redirect/'))
                 try:
                     form = br.select_form('form[name="signIn"]')
                 except mechanicalsoup.LinkNotFoundError:
                     getUA(True)
                     caperr += 1
-                    WriteLog(br.get_current_page(), 'login-si')
+                    WriteLog(str(br.get_current_page()), 'login-si')
                     xbmc.sleep(randint(750, 1500))
                 else:
                     break
@@ -476,22 +476,20 @@ def LogIn(ask=True):
                 g.dialog.ok(getString(30200), getString(30213))
                 return False
 
-            br['email'] = email
-            br['password'] = password
-
+            form.set_input({'email': email, 'password': password})
             if 'true' == g.addon.getSetting('rememberme') and form.find_by_type('input', 'checkbox', {'name': 'rememberMe'}):
                 form.set_checkbox({'rememberMe': True})
 
-            br.session.headers = [('Accept', 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8'),
-                                  ('Accept-Encoding', 'gzip, deflate'),
-                                  ('Accept-Language', g.userAcceptLanguages),
-                                  ('Cache-Control', 'max-age=0'),
-                                  ('Connection', 'keep-alive'),
-                                  ('Content-Type', 'application/x-www-form-urlencoded'),
-                                  ('Host', user['baseurl'].split('//')[1]),
-                                  ('Origin', user['baseurl']),
-                                  ('User-Agent', getConfig('UserAgent')),
-                                  ('Upgrade-Insecure-Requests', '1')]
+            br.session.headers.update({'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+                                       'Accept-Encoding': 'gzip, deflate',
+                                       'Accept-Language': g.userAcceptLanguages,
+                                       'Cache-Control': 'max-age=0',
+                                       'Connection': 'keep-alive',
+                                       'Content-Type': 'application/x-www-form-urlencoded',
+                                       'Host': user['baseurl'].split('//')[1],
+                                       'Origin': user['baseurl'],
+                                       'Upgrade-Insecure-Requests': '1'})
+
             br.submit_selected()
             response, soup = _parseHTML(br)
             WriteLog(response.replace(py2_decode(email), '**@**'), 'login')

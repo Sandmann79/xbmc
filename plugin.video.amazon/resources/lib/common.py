@@ -455,7 +455,7 @@ def MechanizeLogin():
     return res
 
 
-def LogIn(ask):
+def LogIn(ask=True):
     user = loadUser()
     email = user['email']
     password = decode(user['password'])
@@ -478,17 +478,18 @@ def LogIn(ask):
         cj = requests.cookies.RequestsCookieJar()
         br = mechanicalsoup.StatefulBrowser(soup_config={'features': 'html.parser'})
         br.set_cookiejar(cj)
+        br.session.verify=var.verifySsl
         caperr = -5
         while caperr:
             Log('Connect to SignIn Page {} attempts left'.format(-caperr))
-            br.session.headers = [('User-Agent', getConfig('UserAgent'))]
+            br.session.headers.update({'User-Agent': getConfig('UserAgent')})
             br.open(BaseUrl + '/gp/aw/si.html')
             try:
-                br.select_form('form[name="signIn"]')
+                form = br.select_form('form[name="signIn"]')
             except mechanicalsoup.LinkNotFoundError:
                 getUA(True)
                 caperr += 1
-                WriteLog(br.get_current_page(), 'login-si')
+                WriteLog(str(br.get_current_page()), 'login-si')
                 xbmc.sleep(randint(750, 1500))
             else:
                 break
@@ -496,18 +497,17 @@ def LogIn(ask):
             Dialog.ok(getString(30200), getString(30213))
             return False
 
-        br['email'] = email
-        br['password'] = password
-        br.session.headers = [('Accept', 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8'),
-                              ('Accept-Encoding', 'gzip, deflate'),
-                              ('Accept-Language', 'de,en-US;q=0.8,en;q=0.6'),
-                              ('Cache-Control', 'max-age=0'),
-                              ('Connection', 'keep-alive'),
-                              ('Content-Type', 'application/x-www-form-urlencoded'),
-                              ('Host', BaseUrl.split('//')[1]),
-                              ('Origin', BaseUrl),
-                              ('User-Agent', getConfig('UserAgent')),
-                              ('Upgrade-Insecure-Requests', '1')]
+        form.set_input({'email': email, 'password': password})
+
+        br.session.headers.update({'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+                                   'Accept-Encoding': 'gzip, deflate',
+                                   'Accept-Language': 'de,en-US;q=0.8,en;q=0.6',
+                                   'Cache-Control': 'max-age=0',
+                                   'Connection': 'keep-alive',
+                                   'Content-Type': 'application/x-www-form-urlencoded',
+                                   'Host': BaseUrl.split('//')[1],
+                                   'Origin': BaseUrl,
+                                   'Upgrade-Insecure-Requests': '1'})
         br.submit_selected()
         response, soup = parseHTML(br)
         WriteLog(response.replace(py2_decode(email), '**@**'), 'login')
@@ -706,9 +706,7 @@ def MFACheck(br, email, soup):
         wnd = Captcha((getString(30008).split('.')[0]), soup, email)
         wnd.doModal()
         if wnd.email and wnd.cap and wnd.pwd:
-            br['email'] = wnd.email
-            br['password'] = wnd.pwd
-            br['guess'] = wnd.cap
+            form.set_input({'email': wnd.email, 'password': wnd.pwd, 'guess': wnd.cap})
         else:
             return False
         del wnd

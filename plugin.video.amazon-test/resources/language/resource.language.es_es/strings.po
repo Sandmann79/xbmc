@@ -319,11 +319,11 @@ msgstr "Colección"
 
 msgctxt "#30101"
 msgid "Toogle Watched State"
-msgstr ""
+msgstr "Cambiar el estado visto/no visto"
 
 msgctxt "#30102"
 msgid "Force Fallback"
-msgstr ""
+msgstr "Forzar alternativa"
 
 #empty string id 301033
 
@@ -597,7 +597,7 @@ msgstr "No se puede conectar con el servidor"
 
 msgctxt "#30218"
 msgid "Due changes at Amazon's DRM encryption, it's not possible to use Inputstream for this video.\nPlease configure the fallback option in Settings, to use another Playback method."
-msgstr ""
+msgstr "Debido a cambios en el cifrado DRM de Amazon, no es posible usar Inputstream para este video.\nPor favor establece una alternativa en la configuración para usar otro método de reproducción."
 
 msgctxt "#30219"
 msgid "Unable to retrieve Amazon's territorial configuration."

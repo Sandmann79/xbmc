@@ -611,7 +611,7 @@ msgstr "Error de conexión"
 
 msgctxt "#30252"
 msgid "Loading page {0}…"
-msgstr "Cargando la página {0}…"
+msgstr "Cargando página {0}…"
 
 msgctxt "#30253"
 msgid "{0} seasons"

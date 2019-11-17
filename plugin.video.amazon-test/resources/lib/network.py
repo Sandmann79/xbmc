@@ -625,6 +625,7 @@ class _Captcha(pyxbmct.AddonDialogWindow):
         self.connect(self.btn_submit, self.submit)
         self.connect(pyxbmct.ACTION_NAV_BACK, self.close)
         self.username.setText(self.email)
+        self.username.setEnabled(False)
         self.tb_head.setText(self.head)
         self.fl_title.addLabel(self.title)
         self.image.setImage(self.picurl, False)

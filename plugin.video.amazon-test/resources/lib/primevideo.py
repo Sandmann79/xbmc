@@ -643,24 +643,37 @@ class PrimeVideo(Singleton):
             if lang not in self._dateParserData:
                 Log('Unable to decode date "{}": language "{}" not supported'.format(datestr, lang), Log.WARNING)
                 return datestr
-            p = re.search(self._dateParserData[lang]['deconstruct'], datestr.lower())
+            l = lang
+            try:
+                p = re.search(self._dateParserData[l]['deconstruct'], datestr.lower())
+            except: pass
             if None is p:
-                Log('Unable to parse date "{}" with language "{}"{}'.format(datestr, lang, '' if 'en_US' == lang else ': trying english'), Log.WARNING)
-                if 'en_US' == lang:
+                Log('Unable to parse date "{}" with language "{}"{}'.format(datestr, l, '' if 'en_US' == l else ': trying english'), Log.WARNING)
+                if 'en_US' == l:
                     return datestr
                 # Sometimes Amazon returns english everything, let's try to figure out if this is the case
-                lang = 'en_US'
-                p = re.search(self._dateParserData[lang]['deconstruct'], datestr.lower())
+                l = 'en_US'
+                try:
+                    p = re.search(self._dateParserData[l]['deconstruct'], datestr.lower())
+                except: pass
                 if None is p:
-                    Log('Unable to parse date "{}" with language "{}": format changed?'.format(datestr, lang), Log.WARNING)
+                    Log('Unable to parse date "{}" with language "{}": new locale or format changed?'.format(datestr, l), Log.WARNING)
                     return datestr
             p = list(p.groups())
-            m = self._dateParserData[lang]['month']
+            m = self._dateParserData[l]['month']
             if p[m].isdigit():
                 p[m] = int(p[m])
             else:
-                p[m] = self._dateParserData[lang]['months'][p[m]]
-            return self._dateParserData[lang]['reassemble'].format(p[0], p[1], p[2])
+                try:
+                    p[m] = self._dateParserData[l]['months'][p[m]]
+                except:
+                    Log('Unable to parse month of "{}" with language "{}", trying with "{}" localized months'.format(datestr, l, lang), Log.WARNING)
+                    try:
+                        p[m] = {x[0:3]: self._dateParserData[lang]['months'][x] for x in self._dateParserData[lang]['months']}[p[m]]
+                    except:
+                        Log('Unable to parse date "{}" with any known language combination'.format(datestr), Log.WARNING)
+                        return datestr
+            return self._dateParserData[l]['reassemble'].format(p[0], p[1], p[2])
 
         def NotifyUser(msg, bForceDisplay=False):
             """ Pop up messages while scraping to inform users of progress """

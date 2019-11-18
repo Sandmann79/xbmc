@@ -326,7 +326,7 @@ class PrimeVideo(Singleton):
 
         # Fix the unquote_plus problem with unicode_literals by encoding to latin-1 (byte string) and then decoding
         pathList = [unquote_plus(p) for p in path.split(self._separator)]
-        for k in pathList:
+        for k in range(len(pathList)):
             try:
                 pathList[k] = pathList[k].encode('latin-1').decode('utf-8')
             except: pass

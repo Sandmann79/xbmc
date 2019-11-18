@@ -486,8 +486,7 @@ def LogIn(ask=True):
                                        'Cache-Control': 'max-age=0',
                                        'Connection': 'keep-alive',
                                        'Content-Type': 'application/x-www-form-urlencoded',
-                                       'Host': user['baseurl'].split('//')[1],
-                                       'Origin': user['baseurl'],
+                                       'Origin': '/'.join(br.get_url().split('/')[0:3]),
                                        'Upgrade-Insecure-Requests': '1'})
 
             br.submit_selected()

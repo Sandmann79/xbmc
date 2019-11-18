@@ -181,6 +181,7 @@ class Captcha(pyxbmct.AddonDialogWindow):
         self.connect(self.btn_submit, self.submit)
         self.connect(pyxbmct.ACTION_NAV_BACK, self.close)
         self.username.setText(self.email)
+        self.username.setEnabled(False)
         self.tb_head.setText(self.head)
         self.fl_title.addLabel(self.title)
         self.image.setImage(self.picurl, False)
@@ -323,7 +324,8 @@ def SaveFile(filename, data, dirname=None):
 
 
 def addDir(name, mode, sitemode, url='', thumb='', fanart='', infoLabels=None, totalItems=0, cm=None, page=1, options=''):
-    u = {'url': py2_encode(url), 'mode': mode, 'sitemode': sitemode, 'name': py2_encode(name), 'page': page, 'opt': options}
+    name = str(py2_encode(name))
+    u = {'url': py2_encode(url), 'mode': mode, 'sitemode': sitemode, 'name': name, 'page': page, 'opt': options}
     url = '{}?{}'.format(sys.argv[0], urlencode(u))
 
     if not fanart or fanart == na:
@@ -348,7 +350,8 @@ def addDir(name, mode, sitemode, url='', thumb='', fanart='', infoLabels=None, t
 
 def addVideo(name, asin, poster=None, fanart=None, infoLabels=None, totalItems=0, cm=None, trailer=False,
              isAdult=False, isHD=False):
-    u = {'asin': asin, 'mode': 'play', 'name': py2_encode(name), 'sitemode': 'PLAYVIDEO', 'adult': isAdult}
+    name = str(py2_encode(name))
+    u = {'asin': asin, 'mode': 'play', 'name': name, 'sitemode': 'PLAYVIDEO', 'adult': isAdult}
     url = '{}?{}'.format(sys.argv[0], urlencode(u))
 
     if not infoLabels:
@@ -429,7 +432,8 @@ def getParams(asin, cookie):
 def gen_id(renew=False):
     guid = getConfig("GenDeviceID") if not renew else False
     if not guid or len(guid) != 56:
-        guid = hmac.new(getConfig('UserAgent'), uuid.uuid4().bytes, hashlib.sha224).hexdigest()
+        from random import randint
+        guid = hmac.new(bytes(str(randint(1, int('9' * 100))).encode()), uuid.uuid4().bytes, hashlib.sha224).hexdigest()
         writeConfig("GenDeviceID", guid)
     return guid
 
@@ -455,7 +459,7 @@ def MechanizeLogin():
     return res
 
 
-def LogIn(ask):
+def LogIn(ask=True):
     user = loadUser()
     email = user['email']
     password = decode(user['password'])
@@ -478,17 +482,18 @@ def LogIn(ask):
         cj = requests.cookies.RequestsCookieJar()
         br = mechanicalsoup.StatefulBrowser(soup_config={'features': 'html.parser'})
         br.set_cookiejar(cj)
+        br.session.verify=var.verifySsl
         caperr = -5
         while caperr:
             Log('Connect to SignIn Page {} attempts left'.format(-caperr))
-            br.session.headers = [('User-Agent', getConfig('UserAgent'))]
+            br.session.headers.update({'User-Agent': getConfig('UserAgent')})
             br.open(BaseUrl + '/gp/aw/si.html')
             try:
-                br.select_form('form[name="signIn"]')
+                form = br.select_form('form[name="signIn"]')
             except mechanicalsoup.LinkNotFoundError:
                 getUA(True)
                 caperr += 1
-                WriteLog(br.get_current_page(), 'login-si')
+                WriteLog(str(br.get_current_page()), 'login-si')
                 xbmc.sleep(randint(750, 1500))
             else:
                 break
@@ -496,18 +501,17 @@ def LogIn(ask):
             Dialog.ok(getString(30200), getString(30213))
             return False
 
-        br['email'] = email
-        br['password'] = password
-        br.session.headers = [('Accept', 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8'),
-                              ('Accept-Encoding', 'gzip, deflate'),
-                              ('Accept-Language', 'de,en-US;q=0.8,en;q=0.6'),
-                              ('Cache-Control', 'max-age=0'),
-                              ('Connection', 'keep-alive'),
-                              ('Content-Type', 'application/x-www-form-urlencoded'),
-                              ('Host', BaseUrl.split('//')[1]),
-                              ('Origin', BaseUrl),
-                              ('User-Agent', getConfig('UserAgent')),
-                              ('Upgrade-Insecure-Requests', '1')]
+        form.set_input({'email': email, 'password': password})
+
+        br.session.headers.update({'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+                                   'Accept-Encoding': 'gzip, deflate',
+                                   'Accept-Language': 'de,en-US;q=0.8,en;q=0.6',
+                                   'Cache-Control': 'max-age=0',
+                                   'Connection': 'keep-alive',
+                                   'Content-Type': 'application/x-www-form-urlencoded',
+                                   'Host': BaseUrl.split('//')[1],
+                                   'Origin': BaseUrl,
+                                   'Upgrade-Insecure-Requests': '1'})
         br.submit_selected()
         response, soup = parseHTML(br)
         WriteLog(response.replace(py2_decode(email), '**@**'), 'login')
@@ -706,9 +710,7 @@ def MFACheck(br, email, soup):
         wnd = Captcha((getString(30008).split('.')[0]), soup, email)
         wnd.doModal()
         if wnd.email and wnd.cap and wnd.pwd:
-            br['email'] = wnd.email
-            br['password'] = wnd.pwd
-            br['guess'] = wnd.cap
+            form.set_input({'email': wnd.email, 'password': wnd.pwd, 'guess': wnd.cap})
         else:
             return False
         del wnd

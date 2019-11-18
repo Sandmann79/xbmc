@@ -430,7 +430,8 @@ def getParams(asin, cookie):
 def gen_id(renew=False):
     guid = getConfig("GenDeviceID") if not renew else False
     if not guid or len(guid) != 56:
-        guid = hmac.new(getConfig('UserAgent'), uuid.uuid4().bytes, hashlib.sha224).hexdigest()
+        from random import randint
+        guid = hmac.new(bytes(str(randint(1, int('9' * 100))).encode()), uuid.uuid4().bytes, hashlib.sha224).hexdigest()
         writeConfig("GenDeviceID", guid)
     return guid
 

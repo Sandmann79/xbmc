@@ -324,7 +324,8 @@ def SaveFile(filename, data, dirname=None):
 
 
 def addDir(name, mode, sitemode, url='', thumb='', fanart='', infoLabels=None, totalItems=0, cm=None, page=1, options=''):
-    u = {'url': py2_encode(url), 'mode': mode, 'sitemode': sitemode, 'name': py2_encode(name), 'page': page, 'opt': options}
+    name = str(py2_encode(name))
+    u = {'url': py2_encode(url), 'mode': mode, 'sitemode': sitemode, 'name': name, 'page': page, 'opt': options}
     url = '{}?{}'.format(sys.argv[0], urlencode(u))
 
     if not fanart or fanart == na:
@@ -349,7 +350,8 @@ def addDir(name, mode, sitemode, url='', thumb='', fanart='', infoLabels=None, t
 
 def addVideo(name, asin, poster=None, fanart=None, infoLabels=None, totalItems=0, cm=None, trailer=False,
              isAdult=False, isHD=False):
-    u = {'asin': asin, 'mode': 'play', 'name': py2_encode(name), 'sitemode': 'PLAYVIDEO', 'adult': isAdult}
+    name = str(py2_encode(name))
+    u = {'asin': asin, 'mode': 'play', 'name': name, 'sitemode': 'PLAYVIDEO', 'adult': isAdult}
     url = '{}?{}'.format(sys.argv[0], urlencode(u))
 
     if not infoLabels:

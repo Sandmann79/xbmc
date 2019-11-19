@@ -33,7 +33,7 @@ assignees: ''
 
 **Upload Logs**
 Upload `kodi.log` somewhere and post the link here. If you need help finding it, [read the appropriate entry in the FAQs](https://github.com/Sandmann79/xbmc/wiki/FAQ#what-is-debug-logging--how-can-i-enable-debug-logging-in-kodi).
-For Login issues, enable advanced logging in the settings, upload the `(amazon/avod)-login` files from the [userdata](https://kodi.wiki/view/Userdata) folder, and paste the link here, as well.
+For Login issues, enable advanced logging in the settings, upload the `(amazon/avod)-login` files from the [Kodi Home](https://kodi.wiki/view/Special_protocol) folder, and paste the link here, as well.
 
 **Describe the bug**
 A clear and concise description of what the bug is.

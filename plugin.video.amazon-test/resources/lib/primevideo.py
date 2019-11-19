@@ -291,9 +291,9 @@ class PrimeVideo(Singleton):
         o = {}
         for m in matches:
             m = json.loads(Unescape(m))
-            if 'props' not in m:
+            if ('widgets' in m) and ('Storefront' in m['widgets']):
                 m = m['widgets']['Storefront']
-            else:
+            elif 'props' in m:
                 m = m['props']
 
                 if not bRaw:

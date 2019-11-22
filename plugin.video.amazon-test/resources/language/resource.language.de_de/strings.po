@@ -117,6 +117,10 @@ msgctxt "#30022"
 msgid "Keep me logged in"
 msgstr "Angemeldet bleiben"
 
+msgctxt "#30027"
+msgid "Stretch factor"
+msgstr ""
+
 msgctxt "#30028"
 msgid "Stretching"
 msgstr "Strecken"

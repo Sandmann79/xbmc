@@ -105,8 +105,7 @@ class ProxyHTTPD(BaseHTTPRequestHandler):
         if 'Host' in headers: del headers['Host']  # Forcibly strip the host (py3 compliance)
         Log('[PS] Forwarding the {} request towards {}'.format(method.upper(), endpoint), Log.DEBUG)
         r = session.request(method, endpoint, data=data, headers=headers, cookies=cookie, stream=stream, verify=self.server._s.verifySsl)
-        rc = py2_decode(r.content)
-        return (r.status_code, r.headers, r if stream else rc)
+        return (r.status_code, r.headers, r if stream else r.content.decode('utf-8'))
 
     def _gzip(self, data=None, stream=False):
         """Compress the output data"""
@@ -281,19 +280,6 @@ class ProxyHTTPD(BaseHTTPRequestHandler):
         # Create the new merged subtitles list, and append time stretched variants.
         for sub in [x for x in sorted(newsubs, key=lambda sub: (sub[1], sub[2], sub[3]))]:
             content['subtitles'].append(sub[0])
-            # Add multiple options for time stretching
-            if self.server._s.subtitleStretch:
-                from copy import deepcopy
-                cnts = deepcopy(sub[0])
-                urls = 'http://127.0.0.1:{}/subtitles/{}/{}-{{}}{}.srt'.format(
-                    self.server.port,
-                    sub[4],
-                    sub[2],
-                    sub[3]
-                )
-                # Loop-ready for multiple stretches
-                cnts['url'] = urls.format('[–1]')
-                content['subtitles'].append(cnts)
 
         self._SendResponse(status_code, headers, json.dumps(content), True)
 
@@ -391,7 +377,7 @@ class ProxyHTTPD(BaseHTTPRequestHandler):
             content = re.sub(r'\s*<(?:tt:)?br\s*/>\s*', '\n', content)  # Replace <br/> with actual new lines
 
             # Subtitle timing stretch
-            if ('[–1]' in filename):
+            if self.server._s.subtitleStretch:
                 def _stretch(f):
                     millis = int(f.group('h')) * 3600000 + int(f.group('m')) * 60000 + int(f.group('s')) * 1000 + int(f.group('ms'))
                     h, m = divmod(millis * _stretch.factor, 3600000)
@@ -399,7 +385,7 @@ class ProxyHTTPD(BaseHTTPRequestHandler):
                     s, ms = divmod(s, 1000)
                     # Truncate to the decimal of a ms (for lazyness)
                     return '%02d:%02d:%02d,%03d' % (h, m, s, int(ms))
-                _stretch.factor = 24 / 23.976
+                _stretch.factor = self.server._s.subtitleStretchFactor
                 content = re.sub(r'(?P<h>\d+):(?P<m>\d+):(?P<s>\d+),(?P<ms>\d+)', _stretch, content)
 
             # Convert dfxp or ttml2 to srt

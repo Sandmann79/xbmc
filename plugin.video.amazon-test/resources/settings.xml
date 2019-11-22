@@ -38,6 +38,7 @@
         <!-- Subtitles -->
         <setting label="30034" type="lsep"/>
         <setting id="sub_stretch" type="bool" label="30028" default="false"/>
+        <setting id="sub_stretch_factor" type="enum" values="FILM/NTSC (24/23.976)|NTSC/FILM (23.976/24)|PAL/NTSC (25/23.976)|NTSC/PAL (23.976/25)|PAL/FILM (25/24)|FILM/PAL (24/25)" label="30027" default="0" enable="eq(-1,true)"/>
     </category>
     <!-- Connection -->
     <category label="30038">

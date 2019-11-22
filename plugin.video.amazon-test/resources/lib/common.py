@@ -184,6 +184,7 @@ class Settings(Singleton):
         elif 'proxyaddress' == name: return getConfig('proxyaddress')
         elif 'subtitleStretch' == name: return self._gs('sub_stretch') == 'true'
         elif 'audioDescriptions' == name: return self._gs('audio_description') == 'true'
+        elif 'removePosters' == name: return self._gs('pv_episode_thumbnails') == 'true'
 
 
 def jsonRPC(method, props='', param=None):

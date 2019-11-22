@@ -603,7 +603,15 @@ msgctxt "#30219"
 msgid "Unable to retrieve Amazon's territorial configuration."
 msgstr "No es posible obtener la configuración territorial de Amazon."
 
-#empty strings from id 30220 to 30249
+#empty strings from id 30220 to 30248
+
+msgctxt "#30249"
+msgid "Prefer episode thumbnails to posters"
+msgstr "Prefiero miniaturas de episodios a carteles"
+
+msgctxt "#30250"
+msgid "PrimeVideo"
+msgstr "PrimeVideo"
 
 msgctxt "#30251"
 msgid "Connection error"

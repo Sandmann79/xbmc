@@ -95,4 +95,8 @@
         <setting id="remote_vol" type="bool" label="30075" default="false" subsetting="true" enable="eq(-1,true)"/>
         <setting id="logging" type="bool" label="30072" default="false"/>
     </category>
+    <!-- PrimeVideo -->
+    <category label="30250">
+        <setting id="pv_episode_thumbnails" type="bool" label="30249" default="true"/>
+    </category>
 </settings>

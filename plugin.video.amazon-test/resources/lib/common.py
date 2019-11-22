@@ -187,6 +187,7 @@ class Settings(Singleton):
             return [24 / 23.976, 23.976 / 24, 25 / 23.976, 23.976 / 25, 25.0 / 24.0, 24.0 / 25.0][int(self._gs('sub_stretch_factor'))]
         elif 'audioDescriptions' == name: return self._gs('audio_description') == 'true'
         elif 'removePosters' == name: return self._gs('pv_episode_thumbnails') == 'true'
+        elif 'bypassProxy' == name: return self._gs('proxy_mpdalter') == 'false'
 
 
 def jsonRPC(method, props='', param=None):

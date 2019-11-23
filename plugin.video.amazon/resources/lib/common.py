@@ -826,7 +826,7 @@ def SCRAP_ASINS(aurl, cj=True):
     if content:
         if mobileUA(content):
             getUA(True)
-        for asin in re.compile('(?:data-asin|data-asinlist)="(.+?)"', re.DOTALL).findall(content):
+        for asin in re.compile('data-automation-id="(?:wl|yvl)-item-(.+?)"', re.DOTALL).findall(content):
             if asin not in asins:
                 asins.append(asin)
     return asins

@@ -79,7 +79,7 @@ msgstr "Reproducir con"
 
 msgctxt "#30013"
 msgid "Inputstream Addon Settings…"
-msgstr "Configuración del addon Inputstream..."
+msgstr "Configuración del addon Inputstream…"
 
 msgctxt "#30014"
 msgid "Logged in as"
@@ -121,11 +121,11 @@ msgstr "Mantenerme conectado"
 
 msgctxt "#30027"
 msgid "Stretch factor"
-msgstr ""
+msgstr "Factor"
 
 msgctxt "#30028"
 msgid "Stretching"
-msgstr "Alargar"
+msgstr "Reajustar tiempos"
 
 msgctxt "#30029"
 msgid "Movie View"
@@ -233,7 +233,7 @@ msgstr "Mostrar fanart de series en listas de temporadas y episodios"
 
 msgctxt "#30056"
 msgid "TVDb incl. Poster"
-msgstr "TVDb incl. poster"
+msgstr "TVDb incl. póster"
 
 msgctxt "#30057"
 msgid "Wait till PIN Input"
@@ -449,7 +449,7 @@ msgstr "Temporada"
 
 msgctxt "#30168"
 msgid "Year "
-msgstr "Año"
+msgstr "Año "
 
 msgctxt "#30169"
 msgid "Specials"
@@ -611,11 +611,11 @@ msgstr "No es posible obtener la configuración territorial de Amazon."
 
 msgctxt "#30248"
 msgid "Proxy MPD alteration"
-msgstr ""
+msgstr "Usar proxy MPD"
 
 msgctxt "#30249"
 msgid "Prefer episode thumbnails to posters"
-msgstr "Prefiero miniaturas de episodios a carteles"
+msgstr "Usar imágenes de episodios en vez de pósteres"
 
 msgctxt "#30250"
 msgid "PrimeVideo"

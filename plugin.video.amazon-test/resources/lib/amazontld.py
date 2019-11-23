@@ -678,8 +678,9 @@ class AmazonTLD(Singleton):
         name = ''
         season = infoLabels['Season']
         if parent:
-            return infoLabels['DisplayTitle']
-            # name = infoLabels['TVShowTitle'] + ' - '
+            if infoLabels['DisplayTitle'].replace('[COLOR %s]' % self._g.PayCol, '').replace('[/COLOR]', '').lower() != infoLabels['TVShowTitle'].lower():
+                return infoLabels['DisplayTitle']
+            name = infoLabels['TVShowTitle'] + ' - '
         if season != 0 and season < 100:
             name += getString(30167) + ' ' + str(season)
         elif season > 1900:

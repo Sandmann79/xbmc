@@ -67,9 +67,9 @@ def addDir(name, mode='', url='', infoLabels=None, opt='', catalog='Browse', cm=
     else:
         fanart = s.DefaultFanart
 
-    item = xbmcgui.ListItem(name, iconImage=thumb, thumbnailImage=thumb)
+    item = xbmcgui.ListItem(name)
     item.setProperty('IsPlayable', 'false')
-    item.setArt({'fanart': fanart, 'poster': thumb})
+    item.setArt({'fanart': fanart, 'poster': thumb, 'icon': thumb, 'thumb': thumb})
 
     if infoLabels:
         item.setInfo(type='Video', infoLabels=getInfolabels(infoLabels))
@@ -89,8 +89,8 @@ def addVideo(name, asin, infoLabels, cm=None, export=False):
     u = {'asin': asin, 'mode': 'PlayVideo', 'name': py2_encode(name), 'adult': infoLabels['isAdult']}
     url = '{}?{}'.format(g.pluginid, urlencode(u))
 
-    item = xbmcgui.ListItem(name, thumbnailImage=infoLabels['Thumb'])
-    item.setArt({'fanart': infoLabels['Fanart'], 'poster': infoLabels['Thumb']})
+    item = xbmcgui.ListItem(name)
+    item.setArt({'fanart': infoLabels['Fanart'], 'poster': infoLabels['Thumb'], 'thumb': infoLabels['Thumb']})
     item.addStreamInfo('audio', {'codec': 'ac3', 'channels': int(infoLabels['AudioChannels'])})
     item.setProperty('IsPlayable', str(s.playMethod == 3).lower())
 

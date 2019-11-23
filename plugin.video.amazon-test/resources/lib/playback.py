@@ -688,6 +688,8 @@ class _AmazonPlayer(xbmc.Player):
             self.running = False
             if self.video_lastpos > 0 and self.video_totaltime > 0:
                 self.watched = 1 if (self.video_lastpos * 100) / self.video_totaltime >= 90 else 0
+                if self.video_lastpos > 180 and not g.UsePrimeVideo:
+                    g.amz.updateRecents(self.asin)
                 if self.dbid and g.KodiK:
                     dbtype = _getListItem('DBTYPE')
                     params = {'%sid' % dbtype: self.dbid,

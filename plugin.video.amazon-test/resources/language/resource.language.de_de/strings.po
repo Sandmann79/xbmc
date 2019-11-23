@@ -397,6 +397,10 @@ msgctxt "#30135"
 msgid "Display Name"
 msgstr "Anzeigename"
 
+msgctxt "#30136"
+msgid "Recently watched"
+msgstr "Zuletzt gesehen"
+
 msgctxt "#30143"
 msgid "All Movies"
 msgstr "Alle Filme"
@@ -448,6 +452,10 @@ msgstr "Zur Serie wechseln"
 msgctxt "#30183"
 msgid "Get Similarities"
 msgstr "Ähnliche anzeigen"
+
+msgctxt "#30184"
+msgid "Remove {} from List"
+msgstr "{} aus Liste entfernen"
 
 msgctxt "#30185"
 msgid "Export %s"

@@ -421,7 +421,11 @@ msgctxt "#30135"
 msgid "Display Name"
 msgstr ""
 
-#empty strings from id 30136 to 30142
+msgctxt "#30136"
+msgid "Recently watched"
+msgstr ""
+
+#empty strings from id 30137 to 30142
 
 msgctxt "#30143"
 msgid "All Movies"
@@ -485,7 +489,9 @@ msgctxt "#30183"
 msgid "Get Similarities"
 msgstr ""
 
-#empty string with id 30184
+msgctxt "#30184"
+msgid "Remove {} from List"
+msgstr ""
 
 msgctxt "#30185"
 msgid "Export %s"

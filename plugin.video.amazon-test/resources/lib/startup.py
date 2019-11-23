@@ -89,9 +89,11 @@ def EntryPoint():
         aid = g.is_addon if aid == 'is' else aid
         import xbmcaddon
         xbmcaddon.Addon(aid).openSettings()
+    elif mode == 'updateRecents':
+        g.amz.updateRecents(args.get('asin', ''), int(args.get('rem', '0')))
     elif mode == 'ageSettings':
         AgeRestrictions().Settings()
     elif mode in ['LogIn', 'remLoginData', 'removeUser', 'renameUser', 'switchUser']:
         exec('{}()'.format(mode))
-    elif mode in ['checkMissing', 'Search']:
+    elif mode in ['checkMissing', 'Search', 'Recent']:
         exec('g.amz.{}()'.format(mode))

@@ -22,6 +22,7 @@ class AmazonTLD(Singleton):
     def __init__(self, globalsInstance, settingsInstance):
         self._g = globalsInstance
         self._s = settingsInstance
+        self.recentsdb = OSPJoin(g.DATA_PATH, 'recent.db')
         self._initialiseDB()
         self.loadCategories()
 
@@ -34,6 +35,7 @@ class AmazonTLD(Singleton):
             addDir(getString(30134).format(loadUser('name')), 'switchUser', '', cm=self._g.CONTEXTMENU_MULTIUSER)
         addDir('Watchlist', 'getListMenu', self._g.watchlist, cm=cm_wl)
         self.getRootNode()
+        addDir(getString(30136), 'Recent', '')
         addDir(getString(30108), 'Search', '')
         addDir(getString(30100), 'getListMenu', self._g.library, cm=cm_lb)
         xbmcplugin.endOfDirectory(self._g.pluginhandle, updateListing=False)
@@ -177,6 +179,38 @@ class AmazonTLD(Singleton):
             self.listContent('Search', url, 1, 'search')
         else:
             xbmc.executebuiltin('RunPlugin(%s)' % g.pluginid)
+
+    def Recent(self, export=0):
+        rec = []
+        if xbmcvfs.exists(self.recentsdb):
+            with open(self.recentsdb, 'rb') as fp:
+                rec = pickle.load(fp)
+
+        asins = ','.join(rec)
+        url = 'asinlist=' + asins
+        self.listContent('GetASINDetails', url, 1, 'recent', export)
+
+    def updateRecents(self, asin, rem=0):
+        rec = []
+        if xbmcvfs.exists(self.recentsdb):
+            with open(self.recentsdb, 'rb') as fp:
+                rec = pickle.load(fp)
+
+        if rem == 0:
+            content = getATVData('GetASINDetails', 'ASINList=' + asin)['titles'][0]
+            ct, Info = g.amz.getInfos(content, False)
+            asin = Info.get('SeasonAsin', Info.get('SeriesAsin', asin))
+        if asin in rec:
+            rec.remove(asin)
+        if rem == 0:
+            rec.insert(0, asin)
+        if len(rec) > 200:
+            rec = rec[0:200]
+
+        with open(self.recentsdb, 'wb') as fp:
+            pickle.dump(rec, fp)
+        if rem == 1:
+            xbmc.executebuiltin('Container.Update("%s", replace)' % xbmc.getInfoLabel('Container.FolderPath'))
 
     def _createDB(self, menu=False):
         if menu:
@@ -376,6 +410,9 @@ class AmazonTLD(Singleton):
                    'RunPlugin(%s?mode=getListMenu&url=%s&export=1)' % (self._g.pluginid, asin)),
                   (getString(30186), 'UpdateLibrary(video)')]
 
+            if parent == 'recent':
+                cm.append((getString(30184).format(getString(self._g.langID[contentType])),
+                          'RunPlugin(%s?mode=updateRecents&asin=%s&rem=1)' % (self._g.pluginid, asin)))
             if contentType == 'movie' or contentType == 'episode':
                 addVideo(name, asin, infoLabels, cm, export)
             else:
@@ -678,7 +715,7 @@ class AmazonTLD(Singleton):
         name = ''
         season = infoLabels['Season']
         if parent:
-            if infoLabels['DisplayTitle'].replace('[COLOR %s]' % self._g.PayCol, '').replace('[/COLOR]', '').lower() != infoLabels['TVShowTitle'].lower():
+            if infoLabels['Title'].lower() != infoLabels['TVShowTitle'].lower():
                 return infoLabels['DisplayTitle']
             name = infoLabels['TVShowTitle'] + ' - '
         if season != 0 and season < 100:

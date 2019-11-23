@@ -27,7 +27,7 @@
         <setting id="pref_host" type="labelenum" label="30019" visible="eq(-17,3)" values="Auto|Akamai|Cloudfront|Level3|Limelight" default="Auto"/>
         <setting id="is_settings" type="action" label="30013" visible="eq(-18,3)" action="RunPlugin(plugin://plugin.video.amazon-test/?mode=openSettings&url=is)" option="close"/>
         <setting id="age_settings" type="action" label="30018" visible="eq(-19,3)" action="RunPlugin(plugin://plugin.video.amazon-test/?mode=ageSettings)" option="close"/>
-        <setting id="drm_check" type="bool" label="30020" visible="eq(-20,3)" default="true"/>
+        <setting id="drm_check" type="bool" label="30020" visible="eq(-20,3)" default="false"/>
         <setting id="fallback_method" type="enum" label="Fallback" values="None|Browser|Script/Batch|Android" default="0" visible="eq(-21,3)" enable="eq(-1,true)" subsetting="true"/>
         <setting id="proxy_mpdalter" type="bool" label="30248" default="true" visible="eq(-22,3)" />
     </category>
@@ -39,7 +39,7 @@
         <!-- Subtitles -->
         <setting label="30034" type="lsep"/>
         <setting id="sub_stretch" type="bool" label="30028" default="false"/>
-        <setting id="sub_stretch_factor" type="enum" values="FILM/NTSC (24/23.976)|NTSC/FILM (23.976/24)|PAL/NTSC (25/23.976)|NTSC/PAL (23.976/25)|PAL/FILM (25/24)|FILM/PAL (24/25)" label="30027" default="0" enable="eq(-1,true)"/>
+        <setting id="sub_stretch_factor" type="enum" values="FILM/NTSC (24/23.976)|NTSC/FILM (23.976/24)|PAL/NTSC (25/23.976)|NTSC/PAL (23.976/25)|PAL/FILM (25/24)|FILM/PAL (24/25)" label="30027" default="0" enable="eq(-1,true)" subsetting="true"/>
     </category>
     <!-- Connection -->
     <category label="30038">

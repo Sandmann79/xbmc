@@ -119,11 +119,11 @@ msgstr "Angemeldet bleiben"
 
 msgctxt "#30027"
 msgid "Stretch factor"
-msgstr ""
+msgstr "Timing"
 
 msgctxt "#30028"
 msgid "Stretching"
-msgstr "Strecken"
+msgstr "Timings anpassen"
 
 msgctxt "#30029"
 msgid "Movie View"
@@ -567,11 +567,11 @@ msgstr "Die territoriale Konfiguration von Amazon konnte nicht abgerufen werden.
 
 msgctxt "#30248"
 msgid "Proxy MPD alteration"
-msgstr ""
+msgstr "MPD Modifikation aktivieren"
 
 msgctxt "#30249"
 msgid "Prefer episode thumbnails to posters"
-msgstr "Bevorzugen Sie Episoden Miniaturansicht gegenüber Postern"
+msgstr "Episoden Miniaturansicht gegenüber Postern bevorzugen"
 
 msgctxt "#30250"
 msgid "PrimeVideo"

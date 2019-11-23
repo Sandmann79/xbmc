@@ -15,13 +15,12 @@ def addMoviedb(moviedata):
     num = db.cur_exec(c, 'insert ignore into movies values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
                       moviedata).rowcount
 
-    if num:
-        MovieDB.commit()
+    # if num:
+        # MovieDB.commit()
     return num
 
 
 def lookupMoviedb(value, rvalue='distinct *', name='asin', single=True, exact=False, table='movies'):
-    db.waitforDB(MovieDB)
     c = MovieDB.cursor()
     value = py2_decode(value)
     if not db.cur_exec(c, 'counttables', (table,)).fetchone():
@@ -53,14 +52,13 @@ def deleteMoviedb(asin=False):
     if movietitle:
         c = MovieDB.cursor()
         num = db.cur_exec(c, 'delete from movies where asin like (?)', ('%' + asin + '%',)).rowcount
-        if num:
-            MovieDB.commit()
+        # if num:
+            # MovieDB.commit()
 
     return num
 
 
 def updateMoviedb(asin, col, value):
-    db.waitforDB(MovieDB)
     c = MovieDB.cursor()
     asin = '%' + asin + '%'
     sqlquery = 'update movies set {}=? where asin like (?)'.format(col)
@@ -69,7 +67,6 @@ def updateMoviedb(asin, col, value):
 
 
 def loadMoviedb(filterobj=None, value=None, sortcol=False):
-    db.waitforDB(MovieDB)
     c = MovieDB.cursor()
     if filterobj:
         value = "%{0}%".format(py2_decode(value))
@@ -81,7 +78,6 @@ def loadMoviedb(filterobj=None, value=None, sortcol=False):
 
 
 def getMovieTypes(col):
-    db.waitforDB(MovieDB)
     c = MovieDB.cursor()
     items = db.cur_exec(c, 'select distinct {} from movies'.format(col))
     l = getTypes(items, col)
@@ -90,7 +86,6 @@ def getMovieTypes(col):
 
 
 def getMoviedbAsins(isPrime=1, retlist=False):
-    db.waitforDB(MovieDB)
     c = MovieDB.cursor()
     content = ''
     sqlstring = 'select asin from movies where isPrime = ({})'.format(isPrime)
@@ -199,14 +194,13 @@ def addMoviesdb(full_update=True, cj=True):
             dialog.close()
             updateFanart()
         xbmc.executebuiltin("XBMC.Container.Refresh")
-        MovieDB.commit()
+        # MovieDB.commit()
         return True
 
     return False
 
 
 def updatePop():
-    db.waitforDB(MovieDB)
     c = MovieDB.cursor()
     db.cur_exec(c, "update movies set popularity=null")
     Index = 0
@@ -251,7 +245,6 @@ def setNewest(compList=False):
     if not compList:
         compList = getCategories()
     catList = compList['movies']
-    db.waitforDB(MovieDB)
     c = MovieDB.cursor()
     db.cur_exec(c, 'drop table if exists categories')
     db.cur_exec(c, '''create table categories(
@@ -266,7 +259,7 @@ def setNewest(compList=False):
                 count += 1
         else:
             db.cur_exec(c, 'insert ignore into categories values (?,?)', [catid, catList[catid]])
-    MovieDB.commit()
+    # MovieDB.commit()
 
 
 def updateFanart():
@@ -279,7 +272,6 @@ def updateFanart():
     if var.tmdb_art == '2':
         sqlstring += " or fanart like '%images-amazon.com%'"
 
-    db.waitforDB(MovieDB)
     for asin, movie, year, oldfanart in db.cur_exec(c, sqlstring):
         movie = movie.lower().replace('[ov]', '').replace('omu', '').replace('[ultra hd]', '').split('(')[0].strip()
         result = appfeed.getTMDBImages(movie, year=year)
@@ -287,7 +279,7 @@ def updateFanart():
             if result == na or not result:
                 result = oldfanart
         updateMoviedb(asin, 'fanart', result)
-    MovieDB.commit()
+    # MovieDB.commit()
     Log('Movie Update: Updating Fanart Finished')
 
 

@@ -117,9 +117,13 @@ msgctxt "#30022"
 msgid "Keep me logged in"
 msgstr "Angemeldet bleiben"
 
+msgctxt "#30027"
+msgid "Stretch factor"
+msgstr "Timing"
+
 msgctxt "#30028"
 msgid "Stretching"
-msgstr "Strecken"
+msgstr "Timings anpassen"
 
 msgctxt "#30029"
 msgid "Movie View"
@@ -560,6 +564,18 @@ msgstr "Wegen Änderung von Amazons DRM-Verschlüsselung, ist es nicht möglich 
 msgctxt "#30219"
 msgid "Unable to retrieve Amazon's territorial configuration."
 msgstr "Die territoriale Konfiguration von Amazon konnte nicht abgerufen werden."
+
+msgctxt "#30248"
+msgid "Proxy MPD alteration"
+msgstr "MPD Modifikation aktivieren"
+
+msgctxt "#30249"
+msgid "Prefer episode thumbnails to posters"
+msgstr "Episoden Miniaturansicht gegenüber Postern bevorzugen"
+
+msgctxt "#30250"
+msgid "PrimeVideo"
+msgstr "PrimeVideo"
 
 msgctxt "#30251"
 msgid "Connection error"

@@ -29,7 +29,7 @@ def modes():
             cm = json.loads(json.dumps(cm).replace(json.dumps(updateall), updaterun))
 
         if var.multiuser:
-            cm['mu'] = [(getString(30174).split('.')[0], 'RunPlugin({}?mode=common&sitemode=LogIn)'.format(sys.argv[0])),
+            cm['mu'] = [(getString(30174).split('.')[0], 'RunPlugin({}?mode=common&sitemode=MechanizeLogin&ask=true)'.format(sys.argv[0])),
                         (getString(30175).split('.')[0], 'RunPlugin({}?mode=common&sitemode=removeUser)'.format(sys.argv[0])),
                         (getString(30176), 'RunPlugin({}?mode=common&sitemode=renameUser)'.format(sys.argv[0]))]
             addDir(getString(30178) + loadUser()['name'], 'common', 'switchUser', '', cm=cm['mu'])

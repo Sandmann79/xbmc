@@ -291,9 +291,9 @@ class PrimeVideo(Singleton):
         o = {}
         for m in matches:
             m = json.loads(Unescape(m))
-            if 'props' not in m:
+            if ('widgets' in m) and ('Storefront' in m['widgets']):
                 m = m['widgets']['Storefront']
-            else:
+            elif 'props' in m:
                 m = m['props']
 
                 if not bRaw:
@@ -513,6 +513,10 @@ class PrimeVideo(Singleton):
             if 'metadata' in entry:
                 m = entry['metadata']
                 if 'artmeta' in m:
+                    try:
+                        if self._s.removePosters and ('episode' == m['videometa']['mediatype']):
+                            del m['artmeta']['poster']
+                    except: pass
                     item.setArt(m['artmeta'])
                 if 'videometa' in m:
                     # https://codedocs.xyz/xbmc/xbmc/group__python__xbmcgui__listitem.html#ga0b71166869bda87ad744942888fb5f14

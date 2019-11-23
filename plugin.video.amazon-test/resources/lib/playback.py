@@ -95,7 +95,7 @@ def _Input(mousex=0, mousey=0, click=0, keys=None, delay='200'):
         Log('Returncode: %s' % rcode)
 
 
-def PlayVideo(name, asin, adultstr, trailer, forcefb=0):
+def PlayVideo(name, asin, adultstr, streamtype, forcefb=0):
     g = Globals()
     s = Settings()
 
@@ -134,7 +134,7 @@ def PlayVideo(name, asin, adultstr, trailer, forcefb=0):
         if not suc:
             return False, data
 
-        if retmpd and not bypassproxy:
+        if retmpd and ('subtitles' in data):
             subUrls = [sub['url'] for sub in data['subtitles'] if 'url' in sub.keys()]
 
         if 'audioVideoUrls' in data.keys():
@@ -304,7 +304,7 @@ def PlayVideo(name, asin, adultstr, trailer, forcefb=0):
         myWindow = _window(process, asin)
         myWindow.wait()
 
-    def _AndroidPlayback(asin, trailer):
+    def _AndroidPlayback(asin, streamtype):
         manu = ''
         if os.access('/system/bin/getprop', os.X_OK):
             manu = _check_output(['getprop', 'ro.product.manufacturer'])
@@ -317,7 +317,7 @@ def PlayVideo(name, asin, adultstr, trailer, forcefb=0):
             pkg = 'com.amazon.avod.thirdpartyclient'
             act = 'android.intent.action.VIEW'
             url = g.BaseUrl + '/piv-apk-play?asin=' + asin
-            url += '&playTrailer=T' if trailer == 1 else ''
+            url += '&playTrailer=T' if streamtype == 1 else ''
 
         subprocess.Popen(['log', '-p', 'v', '-t', 'Kodi-Amazon', 'Manufacturer: ' + manu])
         subprocess.Popen(['log', '-p', 'v', '-t', 'Kodi-Amazon', 'Starting App: %s Video: %s' % (pkg, url)])
@@ -331,10 +331,10 @@ def PlayVideo(name, asin, adultstr, trailer, forcefb=0):
 
         xbmc.executebuiltin('StartAndroidActivity("%s", "%s", "", "%s")' % (pkg, act, url))
 
-    def _IStreamPlayback(asin, name, trailer, isAdult, extern):
+    def _IStreamPlayback(asin, name, streamtype, isAdult, extern):
         from .ages import AgeRestrictions
-        vMT = ['Feature', 'Trailer', 'LiveStreaming'][trailer]
-        dRes = 'PlaybackUrls' if trailer == 2 else 'PlaybackUrls,SubtitleUrls,ForcedNarratives'
+        vMT = ['Feature', 'Trailer', 'LiveStreaming'][streamtype]
+        dRes = 'PlaybackUrls' if streamtype == 2 else 'PlaybackUrls,SubtitleUrls,ForcedNarratives'
         mpaa_str = AgeRestrictions().GetRestrictedAges() + getString(30171)
         drm_check = g.addon.getSetting("drm_check") == 'true'
 
@@ -362,7 +362,7 @@ def PlayVideo(name, asin, adultstr, trailer, forcefb=0):
             return True
 
         mpd, subs = _ParseStreams(*getURLData('catalog/GetPlaybackResources', asin, extra=True, vMT=vMT, dRes=dRes, useCookie=cookie,
-                                              proxyEndpoint='gpr'), retmpd=True, bypassproxy=trailer == 2)
+                                              proxyEndpoint='gpr'), retmpd=True, bypassproxy=s.bypassProxy or (streamtype == 2))
 
         cj_str = ';'.join(['%s=%s' % (k, v) for k, v in cookie.items()])
         opt = '|Content-Type=application%2Fx-www-form-urlencoded&Cookie=' + quote_plus(cj_str)
@@ -379,7 +379,7 @@ def PlayVideo(name, asin, adultstr, trailer, forcefb=0):
         is_version = KodiAddon(g.is_addon).getAddonInfo('version') if g.is_addon else '0'
         is_binary = xbmc.getCondVisibility('System.HasAddon(kodi.binary.instance.inputstream)')
 
-        if (not s.audioDescriptions) and (trailer != 2):
+        if (not s.audioDescriptions) and (streamtype != 2):
             mpd = re.sub(r'(~|%7E)', '', mpd)
 
         if drm_check and (not g.platform & g.OS_ANDROID) and (not is_binary):
@@ -405,7 +405,7 @@ def PlayVideo(name, asin, adultstr, trailer, forcefb=0):
                 if not thumb:
                     thumb = _getListItem('Art(thumb)')
 
-        if trailer == 1:
+        if streamtype == 1:
             title += ' (Trailer)'
         if not title:
             title = name
@@ -434,7 +434,7 @@ def PlayVideo(name, asin, adultstr, trailer, forcefb=0):
         player.resolve(listitem)
         player.asin = asin
         player.cookie = cookie
-        player.content = trailer
+        player.content = streamtype
         player.extern = extern
 
         starttime = time.time()
@@ -454,7 +454,7 @@ def PlayVideo(name, asin, adultstr, trailer, forcefb=0):
     playable = False
     fallback = int(g.addon.getSetting("fallback_method"))
     methodOW = fallback - 1 if forcefb and fallback else s.playMethod
-    videoUrl = "%s/?autoplay=%s" % (amazonUrl, ('trailer' if trailer == 1 else '1'))
+    videoUrl = "%s/?autoplay=%s" % (amazonUrl, ('trailer' if streamtype == 1 else '1'))
     extern = not xbmc.getInfoLabel('Container.PluginName').startswith('plugin.video.amazon')
     fr = ''
 
@@ -465,9 +465,9 @@ def PlayVideo(name, asin, adultstr, trailer, forcefb=0):
         playable = True
 
         if methodOW == 2 and g.platform & g.OS_ANDROID:
-            _AndroidPlayback(asin, trailer)
+            _AndroidPlayback(asin, streamtype)
         elif methodOW == 3:
-            playable = _IStreamPlayback(asin, name, trailer, isAdult, extern)
+            playable = _IStreamPlayback(asin, name, streamtype, isAdult, extern)
         elif not g.platform & g.OS_ANDROID:
             _ExtPlayback(videoUrl, asin, isAdult, methodOW, fr)
 

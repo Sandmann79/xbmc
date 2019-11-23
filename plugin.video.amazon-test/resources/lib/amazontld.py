@@ -678,8 +678,9 @@ class AmazonTLD(Singleton):
         name = ''
         season = infoLabels['Season']
         if parent:
-            return infoLabels['DisplayTitle']
-            # name = infoLabels['TVShowTitle'] + ' - '
+            if infoLabels['DisplayTitle'].replace('[COLOR %s]' % self._g.PayCol, '').replace('[/COLOR]', '').lower() != infoLabels['TVShowTitle'].lower():
+                return infoLabels['DisplayTitle']
+            name = infoLabels['TVShowTitle'] + ' - '
         if season != 0 and season < 100:
             name += getString(30167) + ' ' + str(season)
         elif season > 1900:
@@ -709,7 +710,7 @@ class AmazonTLD(Singleton):
         if mobileUA(content):
             getUA(True)
 
-        for asin in re.compile('(?:data-asin|data-asinlist)="(.+?)"', re.DOTALL).findall(content):
+        for asin in re.compile('data-automation-id="(?:wl|yvl)-item-(.+?)"', re.DOTALL).findall(content):
             if asin not in asins:
                 asins.append(asin)
         return ','.join(asins)
@@ -721,7 +722,7 @@ class AmazonTLD(Singleton):
                 return
             asins = ''
             for content in cont:
-                asins += self._scrapeAsins('/gp/video/%s/%s/?ie=UTF8&sort=%s' % (listing, content, self._s.wl_order), cj) + ','
+                asins += self._scrapeAsins('/gp/video/mystuff/%s/%s/?ie=UTF8&sort=%s' % (listing, content, self._s.wl_order), cj) + ','
         else:
             asins = listing
 

@@ -291,7 +291,6 @@ def MechanizeLogin():
         except:
             pass
 
-    Log('Login')
     return LogIn(False)
 
 
@@ -428,6 +427,7 @@ def LogIn(ask=True):
 
         g = Globals()
         s = Settings()
+        Log('Login')
         from .users import loadUser, addUser
         user = loadUser(empty=ask)
         email = user['email']

@@ -1,6 +1,5 @@
 from __future__ import unicode_literals
-import xbmc
-import xbmcaddon
+from kodi_six import xbmc, xbmcaddon
 from resources.lib.common import getConfig, writeConfig, Log, var
 var.__init__()
 
@@ -41,6 +40,7 @@ if __name__ == '__main__':
     monitor = xbmc.Monitor()
     Log('AmazonDB: Service Start')
     writeConfig('update_running', 'false')
+    writeConfig('login')
     freq = int('0' + var.addon.getSetting('auto_update'))
     checkfreq = 60
     idleupdate = 300

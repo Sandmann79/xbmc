@@ -7,24 +7,6 @@ dbplugin = 'script.module.amazon.database'
 dbpath = os.path.join(homepath, 'addons', dbplugin, 'lib')
 
 
-def waitforDB(cnx):
-    if not var.usesqlite:
-        return
-
-    c = cnx.cursor()
-    error = True
-
-    while error:
-        error = False
-        try:
-            c.execute('SELECT name FROM sqlite_master WHERE type="table"').fetchone()
-        except:
-            error = True
-            xbmc.sleep(1000)
-            Log('Database locked')
-    c.close()
-
-
 def getDBlocation(retvar):
     custdb = var.addon.getSetting('customdbfolder') == 'true'
     old_dbpath = xbmc.translatePath(getConfig('old_dbfolder'))
@@ -60,6 +42,9 @@ def getDBlocation(retvar):
 
 
 def cur_exec(cur, query, param=None):
+    while var.sqlexec_run and var.usesqlite:
+        sleep(0.3)
+    var.sqlexec_run = True
     syntax = {True: {'counttables': 'SELECT count(*) FROM sqlite_master WHERE type="table" AND name=(?)',
                      'insert ignore': 'insert or ignore'},
               False: {'counttables': 'show tables like ?',
@@ -70,7 +55,7 @@ def cur_exec(cur, query, param=None):
 
     param = '' if not param and var.usesqlite else param
     res = cur.execute(query, param)
-
+    var.sqlexec_run = False
     return res if var.usesqlite else cur
 
 
@@ -95,6 +80,7 @@ def connSQL(dbname):
             createDatabase(cnx, dbname)
         else:
             cnx = dbapi2.connect(DBfile)
+        cnx.isolation_level = None
     else:
         import mysql.connector
         from mysql.connector import errorcode
@@ -107,7 +93,8 @@ def connSQL(dbname):
             'database': dbname,
             'use_unicode': True,
             'get_warnings': True,
-            'buffered': True
+            'buffered': True,
+            'autocommit': True
         }
         try:
             cnx = mysql.connector.connect(**mysql_config)

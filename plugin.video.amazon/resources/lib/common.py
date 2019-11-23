@@ -8,6 +8,7 @@ from random import randint
 from base64 import b64encode, b64decode
 from kodi_six import xbmc, xbmcaddon, xbmcplugin, xbmcgui, xbmcvfs
 from kodi_six.utils import py2_encode, py2_decode
+from inspect import currentframe, getframeinfo
 import uuid
 import mechanicalsoup
 import sys
@@ -46,7 +47,7 @@ class variables:
         self.showfanart = self.addon.getSetting("useshowfanart") == 'true'
         self.tvdb_art = self.addon.getSetting("tvdb_art")
         self.tmdb_art = self.addon.getSetting("tmdb_art")
-
+        self.sqlexec_run = False
         self.sessions = {}
 
         try:
@@ -76,7 +77,7 @@ tvlib = '/gp/video/{}/tv/'
 lib = 'video-library'
 wl = 'watchlist'
 is_addon = 'inputstream.adaptive'
-tmdb = b64decode('YjM0NDkwYzA1NmYwZGQ5ZTNlYzlhZjIxNjdhNzMxZjQ=')
+tmdb = b64decode('ZjA5MGJiNTQ3NThjYWJmMjMxZmI2MDVkM2UzZTA0Njg=')  # 'YjM0NDkwYzA1NmYwZGQ5ZTNlYzlhZjIxNjdhNzMxZjQ='
 tvdb = b64decode('MUQ2MkYyRjkwMDMwQzQ0NA==')
 na = 'not available'
 Dialog = xbmcgui.Dialog()
@@ -302,13 +303,17 @@ def WriteLog(data, fn=''):
 
 
 def Log(msg, level=xbmc.LOGNOTICE):
-    from inspect import currentframe, getframeinfo
-    from os.path import basename as opb
     if level == xbmc.LOGDEBUG and var.verbLog:
         level = xbmc.LOGNOTICE
     fi = getframeinfo(currentframe().f_back)
-    msg = '[{0}]{2} {1}'.format(pluginname, msg, '' if not var.verbLog else ' {}:{}'.format(opb(fi.filename), fi.lineno))
+    msg = '[{0}]{2} {1}'.format(pluginname, msg, '' if not var.verbLog else ' {}:{}'.format(os.path.basename(fi.filename), fi.lineno))
     xbmc.log(py2_encode(msg), level)
+
+
+def LogCaller():
+    fi = getframeinfo(currentframe().f_back.f_back)
+    msg = '[{}] Called from: {}:{}'.format(pluginname, os.path.basename(fi.filename), fi.lineno)
+    xbmc.log(py2_encode(msg), xbmc.LOGNOTICE)
 
 
 def SaveFile(filename, data, dirname=None):
@@ -450,7 +455,6 @@ def MechanizeLogin():
             except:
                 pass
 
-    Log('Login')
     res = False
     if not getConfig('login'):
         writeConfig('login', 'true')
@@ -459,12 +463,14 @@ def MechanizeLogin():
     return res
 
 
-def LogIn(ask=True):
+def LogIn(ask):
+    Log('Login')
     user = loadUser()
     email = user['email']
     password = decode(user['password'])
     savelogin = False  # var.addon.getSetting('save_login') == 'true'
     useMFA = False
+
     if ask and var.multiuser:
         email = ''
 
@@ -482,7 +488,7 @@ def LogIn(ask=True):
         cj = requests.cookies.RequestsCookieJar()
         br = mechanicalsoup.StatefulBrowser(soup_config={'features': 'html.parser'})
         br.set_cookiejar(cj)
-        br.session.verify=var.verifySsl
+        br.session.verify = var.verifySsl
         caperr = -5
         while caperr:
             Log('Connect to SignIn Page {} attempts left'.format(-caperr))
@@ -516,7 +522,8 @@ def LogIn(ask=True):
         response, soup = parseHTML(br)
         WriteLog(response.replace(py2_decode(email), '**@**'), 'login')
 
-        while any(sp in response for sp in ['auth-mfa-form', 'ap_dcq_form', 'ap_captcha_img_label', 'claimspicker', 'fwcim-form', 'auth-captcha-image-container']):
+        while any(sp in response for sp in
+                  ['auth-mfa-form', 'ap_dcq_form', 'ap_captcha_img_label', 'claimspicker', 'fwcim-form', 'auth-captcha-image-container']):
             br = MFACheck(br, email, soup)
             if False is br:
                 return False
@@ -586,7 +593,6 @@ def LogIn(ask=True):
             Dialog.ok(msg_title, msg_cont)
         else:
             Dialog.ok(getString(30200), getString(30213))
-
     return False
 
 
@@ -931,7 +937,7 @@ def getTypes(items, col):
                     if item.lower() not in lowlist and item != '' and item != 0 and item != 'Inc.' and item != 'LLC.':
                         studiolist.append(item)
                         lowlist.append(item.lower())
-        elif 1800 < data < 2200:
+        elif isinstance(data, int) and (1800 < int(data) < 2200):
             try:
                 data = str(data)
             except NameError:

@@ -12,7 +12,6 @@ max_wt = 10800  # 3hr
 
 
 def loadTVShowdb(filterobj=None, value=None, sortcol=None):
-    db.waitforDB(tvDB)
     c = tvDB.cursor()
     if filterobj:
         value = "%{0}%".format(py2_decode(value))
@@ -24,7 +23,6 @@ def loadTVShowdb(filterobj=None, value=None, sortcol=None):
 
 
 def loadTVSeasonsdb(seriesasin=None, sortcol=None, seasonasin=None):
-    db.waitforDB(tvDB)
     c = tvDB.cursor()
     if seriesasin:
         return db.cur_exec(c, 'select distinct * from seasons where seriesasin = (?)', (seriesasin,))
@@ -38,13 +36,11 @@ def loadTVSeasonsdb(seriesasin=None, sortcol=None, seasonasin=None):
 
 
 def loadTVEpisodesdb(seriestitle):
-    db.waitforDB(tvDB)
     c = tvDB.cursor()
     return db.cur_exec(c, 'select distinct * from episodes where seasonasin = (?) order by episode', (seriestitle,))
 
 
 def getShowTypes(col):
-    db.waitforDB(tvDB)
     c = tvDB.cursor()
     items = db.cur_exec(c, 'select distinct {} from shows'.format(col))
     l = getTypes(items, col)
@@ -144,7 +140,6 @@ def fixTitles():
 
 
 def cleanTitle(content):
-    Log('cleaning titlea', xbmc.LOGDEBUG)
     content = content.replace(' und ', '').lower()
     invalid_chars = "?!.:&,;' "
     return ''.join(c for c in content if c not in invalid_chars)
@@ -161,14 +156,13 @@ def addDB(table, data):
         Log('Updating show {} season {} (O:{} N:{})'.format(data[3], data[2], oldepi, data[13]), xbmc.LOGDEBUG)
         num = db.cur_exec(c, 'update seasons set episodetotal=(?) where asin=(?)', (data[13], data[0])).rowcount
 
-    if num:
-        tvDB.commit()
+    # if num:
+        # tvDB.commit()
     c.close()
     return num
 
 
 def lookupTVdb(value, rvalue='distinct *', tbl='episodes', name='asin', single=True, exact=False):
-    db.waitforDB(tvDB)
     c = tvDB.cursor()
     value = py2_decode(value)
     if not db.cur_exec(c, 'counttables', (tbl,)).fetchone():
@@ -236,7 +230,7 @@ def deleteremoved(asins, refresh=True):
                 delSeasons += db.cur_exec(c, 'delete from seasons where season = (?) and asin like (?)', (season, asin)).rowcount
                 if not lookupTVdb(seriesasin, rvalue='asin', tbl='seasons', name='seriesasin'):
                     delShows += db.cur_exec(c, 'delete from shows where asin like (?)', ('%'+seriesasin+'%',)).rowcount
-    tvDB.commit()
+    # tvDB.commit()
     c.close()
     if refresh:
         xbmc.executebuiltin('Container.Refresh')
@@ -430,7 +424,7 @@ def addTVdb(full_update=True, libasins=None, cj=True):
                 setNewest()
                 DialogPG.close()
                 updateFanart()
-            tvDB.commit()
+            # tvDB.commit()
             return True
 
     return False
@@ -629,7 +623,6 @@ def updateFanart():
     if var.tvdb_art == '3':
         sqlstring += " or poster like '%images-amazon.com%'"
         seasons = True
-    db.waitforDB(tvDB)
     for asin, title, oldfanart, oldposter in db.cur_exec(c, sqlstring).fetchall():
         title = title.lower().replace('[ov]', '').replace('[ultra hd]', '').replace('?', '') \
                 .replace('omu', '').split('(')[0].strip()
@@ -660,13 +653,12 @@ def updateFanart():
                         singleasin = '%' + singleasin + '%'
                         db.cur_exec(c, 'update seasons set poster=? where seriesasin like (?) and season = (?)',
                                     (url, singleasin, int(season)))
-    tvDB.commit()
+    # tvDB.commit()
     Log('TV Update: Updating Fanart Finished')
 
 
 def getIMDbID(asins, title):
     url = imdbid = None
-    db.waitforDB(tvDB)
     c = tvDB.cursor()
     for asin in asins.split(','):
         asin = '%' + asin + '%'
@@ -701,7 +693,6 @@ def setNewest(compList=False):
     if not compList:
         compList = getCategories()
     catList = compList['tv_shows']
-    db.waitforDB(tvDB)
     c = tvDB.cursor()
     db.cur_exec(c, 'drop table if exists categories')
     db.cur_exec(c, 'create table categories(title TEXT, asins TEXT)')
@@ -718,7 +709,7 @@ def setNewest(compList=False):
                 count += 1
         else:
             db.cur_exec(c, 'insert ignore into categories values (?,?)', [catid, catList[catid]])
-    tvDB.commit()
+    # tvDB.commit()
 
 
 tvDB = db.connSQL('tv')

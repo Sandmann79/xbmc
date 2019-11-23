@@ -374,7 +374,12 @@ class ProxyHTTPD(BaseHTTPRequestHandler):
             # Apply a bunch of regex to the content instead of line-by-line to save computation time
             content = re.sub(r'<(|/)span[^>]*>', r'<\1i>', content)  # Using (|<search>) instead of ()? to avoid py2.7 empty matching error
             content = re.sub(r'([0-9]{2}:[0-9]{2}:[0-9]{2})\.', r'\1,', content)  # SRT-like timestamps
-            content = re.sub(r'\s*<(?:tt:)?br\s*/>\s*', '\n', content)  # Replace <br/> with actual new lines
+            content = re.sub(r'(?:\s*<(?:tt:)?br\s*/>\s*)+', '\n', content)  # Replace <br/> with actual new lines
+
+            # Fix Spanish characters
+            content = re.sub('\xA8', u'¿', content)
+            content = re.sub('\xAD', u'¡', content)
+            content = re.sub(u'ń', u'ñ', content)
 
             # Subtitle timing stretch
             if self.server._s.subtitleStretch:

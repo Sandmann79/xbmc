@@ -581,7 +581,7 @@ def remLoginData(info=True):
 class _Captcha(pyxbmct.AddonDialogWindow):
     def __init__(self, title='', soup=None, email=None):
         super(_Captcha, self).__init__(title)
-        if soup.find('ap_captcha_img_label'):
+        if soup.find('div', attrs={'id': 'ap_captcha_img_label'}):
             head = soup.find('div', attrs={'id': 'message_warning'})
             if not head:
                 head = soup.find('div', attrs={'id': 'message_error'})

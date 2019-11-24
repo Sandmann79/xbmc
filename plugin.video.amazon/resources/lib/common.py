@@ -72,8 +72,8 @@ CookieFile = os.path.join(pldatapath, 'cookies.lwp')
 def_fanart = os.path.join(pluginpath, 'fanart.jpg')
 BaseUrl = 'https://www.amazon.de'
 ATV_URL = 'https://atv-ps-eu.amazon.de'
-movielib = '/gp/video/{}/movie/'
-tvlib = '/gp/video/{}/tv/'
+movielib = '/gp/video/mystuff/{}/movie/'
+tvlib = '/gp/video/mystuff/{}/tv/'
 lib = 'video-library'
 wl = 'watchlist'
 is_addon = 'inputstream.adaptive'
@@ -139,7 +139,7 @@ class AgeSettings(pyxbmct.AddonDialogWindow):
 class Captcha(pyxbmct.AddonDialogWindow):
     def __init__(self, title='', soup=None, email=None):
         super(Captcha, self).__init__(title)
-        if soup.find('ap_captcha_img_label'):
+        if soup.find('div', attrs={'id': 'ap_captcha_img_label'}):
             head = soup.find('div', attrs={'id': 'message_warning'})
             if not head:
                 head = soup.find('div', attrs={'id': 'message_error'})
@@ -338,10 +338,10 @@ def addDir(name, mode, sitemode, url='', thumb='', fanart='', infoLabels=None, t
     if not thumb:
         thumb = def_fanart
 
-    item = xbmcgui.ListItem(name, thumbnailImage=thumb)
+    item = xbmcgui.ListItem(name)
     item.setProperty('fanart_image', fanart)
     item.setProperty('IsPlayable', 'false')
-    item.setArt({'Poster': thumb})
+    item.setArt({'Poster': thumb, 'fanart': fanart, 'icon': thumb, 'thumb': thumb})
 
     if infoLabels:
         item.setInfo(type='Video', infoLabels=getInfolabels(infoLabels))
@@ -364,8 +364,8 @@ def addVideo(name, asin, poster=None, fanart=None, infoLabels=None, totalItems=0
     if not fanart or fanart == na:
         fanart = def_fanart
 
-    item = xbmcgui.ListItem(name, thumbnailImage=poster)
-    item.setProperty('fanart_image', fanart)
+    item = xbmcgui.ListItem(name)
+    item.setArt({'fanart': fanart, 'poster': poster, 'thumb': poster})
     item.setProperty('IsPlayable', str(var.playMethod == 3).lower())
     cm = cm if cm else []
     cm.insert(0, (getString(30101), 'Action(ToggleWatched)'))
@@ -381,8 +381,6 @@ def addVideo(name, asin, poster=None, fanart=None, infoLabels=None, totalItems=0
 
     if 'Poster' in infoLabels.keys():
         item.setArt({'tvshow.poster': infoLabels['Poster']})
-    else:
-        item.setArt({'Poster': poster})
 
     cm.insert(1, (getString(30118), 'RunPlugin({})'.format(url + '&forcefb=1')))
     item.addContextMenuItems(cm)

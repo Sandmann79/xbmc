@@ -180,22 +180,24 @@ class AmazonTLD(Singleton):
         else:
             xbmc.executebuiltin('RunPlugin(%s)' % g.pluginid)
 
-    def Recent(self, export=0):
-        rec = []
+    def getRecents(self):
+        all_rec = {}
         if xbmcvfs.exists(self.recentsdb):
             with open(self.recentsdb, 'rb') as fp:
-                rec = pickle.load(fp)
+                all_rec = pickle.load(fp)
 
+        cur_user = loadUser('name')
+        user_rec = all_rec.get(cur_user, [])
+        return all_rec, user_rec
+
+    def Recent(self, export=0):
+        all_rec, rec = self.getRecents()
         asins = ','.join(rec)
         url = 'asinlist=' + asins
         self.listContent('GetASINDetails', url, 1, 'recent', export)
 
     def updateRecents(self, asin, rem=0):
-        rec = []
-        if xbmcvfs.exists(self.recentsdb):
-            with open(self.recentsdb, 'rb') as fp:
-                rec = pickle.load(fp)
-
+        all_rec, rec = self.getRecents()
         if rem == 0:
             content = getATVData('GetASINDetails', 'ASINList=' + asin)['titles'][0]
             ct, Info = g.amz.getInfos(content, False)
@@ -208,7 +210,12 @@ class AmazonTLD(Singleton):
             rec = rec[0:200]
 
         with open(self.recentsdb, 'wb') as fp:
-            pickle.dump(rec, fp)
+            cur_user = loadUser('name')
+            if cur_user in all_rec.keys():
+                all_rec[cur_user] = rec
+            else:
+                all_rec.update({cur_user: rec})
+            pickle.dump(all_rec, fp)
         if rem == 1:
             xbmc.executebuiltin('Container.Update("%s", replace)' % xbmc.getInfoLabel('Container.FolderPath'))
 

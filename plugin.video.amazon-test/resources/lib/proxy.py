@@ -376,11 +376,6 @@ class ProxyHTTPD(BaseHTTPRequestHandler):
             content = re.sub(r'([0-9]{2}:[0-9]{2}:[0-9]{2})\.', r'\1,', content)  # SRT-like timestamps
             content = re.sub(r'(?:\s*<(?:tt:)?br\s*/>\s*)+', '\n', content)  # Replace <br/> with actual new lines
 
-            # Fix Spanish characters
-            content = re.sub('\xA8', u'¿', content)
-            content = re.sub('\xAD', u'¡', content)
-            content = re.sub(u'ń', u'ñ', content)
-
             # Subtitle timing stretch
             if self.server._s.subtitleStretch:
                 def _stretch(f):
@@ -399,6 +394,12 @@ class ProxyHTTPD(BaseHTTPRequestHandler):
             for tt in re.compile(r'<(?:tt:)?p begin="([^"]+)"[^>]*end="([^"]+)"[^>]*>\s*(.*?)\s*</(?:tt:)?p>', re.DOTALL).findall(content):
                 text = tt[2]
 
+                # Fix Spanish characters
+                if filename.startswith("es"):
+                    text = text.replace('\xA8', u'¿')
+                    text = text.replace('\xAD', u'¡')
+                    text = text.replace(u'ń', u'ñ')
+            
                 # Embed RTL and change the punctuation where needed
                 if filename.startswith("ar"):
                     from unicodedata import lookup

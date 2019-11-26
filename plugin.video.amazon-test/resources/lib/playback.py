@@ -431,11 +431,11 @@ def PlayVideo(name, asin, adultstr, streamtype, forcefb=0):
         listitem.setMimeType('application/dash+xml')
         listitem.setContentLookup(False)
         player = _AmazonPlayer()
-        player.resolve(listitem)
         player.asin = asin
         player.cookie = cookie
         player.content = streamtype
         player.extern = extern
+        player.resolve(listitem)
 
         starttime = time.time()
         while (not g.monitor.abortRequested()) and player.running:

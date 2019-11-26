@@ -114,7 +114,8 @@ def PlayVideo(name, asin, adultstr, streamtype, forcefb=0):
 
     def _playDummyVid():
         dummy_video = OSPJoin(g.PLUGIN_PATH, 'resources', 'dummy.avi')
-        xbmcplugin.setResolvedUrl(g.pluginhandle, True, xbmcgui.ListItem(path=dummy_video))
+        xbmcplugin.set
+        dUrl(g.pluginhandle, True, xbmcgui.ListItem(path=dummy_video))
         Log('Playing Dummy Video', Log.DEBUG)
         xbmc.Player().stop()
         return
@@ -431,11 +432,11 @@ def PlayVideo(name, asin, adultstr, streamtype, forcefb=0):
         listitem.setMimeType('application/dash+xml')
         listitem.setContentLookup(False)
         player = _AmazonPlayer()
+        player.extern = extern
         player.resolve(listitem)
         player.asin = asin
         player.cookie = cookie
         player.content = streamtype
-        player.extern = extern
 
         starttime = time.time()
         while (not g.monitor.abortRequested()) and player.running:

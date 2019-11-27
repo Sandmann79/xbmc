@@ -338,19 +338,18 @@ class AmazonTLD(Singleton):
         title = infoLabels['TVShowTitle']
         filename = re.sub(r'(?i)\[.*| omu| ov', '', title).strip()
         ExportPath = os.path.join(self._s.TV_SHOWS_PATH, self._cleanName(filename))
-        if not xbmcvfs.exists(os.path.join(ExportPath, 'tvshow.nfo')):
-
-            tvShowInfo = '<?xml version="1.0" encoding="UTF-8"?>\n'
-            tvShowInfo +='<tvshow>\n'
-            tvShowInfo +='<mpaa>%s</mpaa>\n' % infoLabels['MPAA']
-            tvShowInfo +='<plot>%s</plot>\n' % infoLabels['Plot']
-            tvShowInfo +='<showtitle>%s</showtitle>\n' % infoLabels['TVShowTitle']
-            tvShowInfo +='<title>%s</title>\n' % infoLabels['TVShowTitle']
-            tvShowInfo +='<thumb aspect="poster">%s</thumb>\n' % infoLabels['Thumb']
-            tvShowInfo +='<fanart><thumb>%s</thumb></fanart>\n' % infoLabels['Fanart'] 
-            tvShowInfo +='</tvshow>'
-            self.SaveFile('tvshow.nfo', tvShowInfo, ExportPath);
-            Log('Exported TVSeries: ' + ExportPath)
+        #TODO: save tvShow.nfo only if it has changed
+        tvShowInfo = '<?xml version="1.0" encoding="UTF-8"?>\n'
+        tvShowInfo +='<tvshow>\n'
+        tvShowInfo +='<mpaa>%s</mpaa>\n' % infoLabels['MPAA']
+        tvShowInfo +='<plot>%s</plot>\n' % infoLabels['Plot']
+        tvShowInfo +='<showtitle>%s</showtitle>\n' % infoLabels['TVShowTitle']
+        tvShowInfo +='<title>%s</title>\n' % infoLabels['TVShowTitle']
+        tvShowInfo +='<thumb aspect="poster">%s</thumb>\n' % infoLabels['Thumb']
+        tvShowInfo +='<fanart><thumb>%s</thumb></fanart>\n' % infoLabels['Fanart'] 
+        tvShowInfo +='</tvshow>'
+        self.SaveFile('tvshow.nfo', tvShowInfo, ExportPath);
+        Log('Exported TVSeries: ' + ExportPath)
             
     def listContent(self, catalog, url, page, parent, export=False):
         oldurl = url

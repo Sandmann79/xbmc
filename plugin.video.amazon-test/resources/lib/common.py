@@ -38,7 +38,7 @@ class Globals(Singleton):
     is_addon = 'inputstream.adaptive'
     na = 'not available'
     watchlist = 'watchlist'
-    library = 'video-library'
+    library = 'library'
     DBVersion = 1.4
     PayCol = 'FFE95E01'
     tmdb = 'b34490c056f0dd9e3ec9af2167a731f4'  # b64decode('YjM0NDkwYzA1NmYwZGQ5ZTNlYzlhZjIxNjdhNzMxZjQ=')

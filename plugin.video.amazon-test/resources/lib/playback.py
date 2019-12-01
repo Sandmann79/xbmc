@@ -305,14 +305,21 @@ def PlayVideo(name, asin, adultstr, streamtype, forcefb=0):
         myWindow.wait()
 
     def _AndroidPlayback(asin, streamtype):
-        manu = ''
+        manu = net = ''
         if os.access('/system/bin/getprop', os.X_OK):
-            manu = _check_output(['getprop', 'ro.product.manufacturer'])
+            manu = _check_output(['getprop', 'ro.product.manufacturer']).lower()
+            net = _check_output(['getprop', 'ro.telephony.default_network'])
 
-        if manu == 'Amazon':
+        if manu == 'amazon':
             pkg = 'com.fivecent.amazonvideowrapper'
             act = ''
             url = asin
+        elif not net:
+            burl = g.BaseUrl.replace('www', 'app' if g.UsePrimeVideo else 'watch')
+            gti = 'gti' if g.UsePrimeVideo else 'asin'
+            pkg = 'com.amazon.amazonvideo.livingroom'
+            act = 'android.intent.action.VIEW'
+            url = '{}/watch?{}={}'.format(burl, gti, asin)
         else:
             pkg = 'com.amazon.avod.thirdpartyclient'
             act = 'android.intent.action.VIEW'
@@ -322,6 +329,7 @@ def PlayVideo(name, asin, adultstr, streamtype, forcefb=0):
         subprocess.Popen(['log', '-p', 'v', '-t', 'Kodi-Amazon', 'Manufacturer: ' + manu])
         subprocess.Popen(['log', '-p', 'v', '-t', 'Kodi-Amazon', 'Starting App: %s Video: %s' % (pkg, url)])
         Log('Manufacturer: %s' % manu)
+        Log('Default Network: %s' % net)
         Log('Starting App: %s Video: %s' % (pkg, url))
 
         if s.verbLog:
@@ -453,7 +461,8 @@ def PlayVideo(name, asin, adultstr, streamtype, forcefb=0):
     amazonUrl = g.BaseUrl + "/dp/" + (name if g.UsePrimeVideo else asin)
     playable = False
     fallback = int(g.addon.getSetting("fallback_method"))
-    methodOW = fallback - 1 if forcefb and fallback else s.playMethod
+    uhdFB = forcefb < 0
+    methodOW = fallback - 1 if forcefb > 0 and fallback else s.playMethod
     videoUrl = "%s/?autoplay=%s" % (amazonUrl, ('trailer' if streamtype == 1 else '1'))
     extern = not xbmc.getInfoLabel('Container.PluginName').startswith('plugin.video.amazon')
     fr = ''
@@ -464,7 +473,7 @@ def PlayVideo(name, asin, adultstr, streamtype, forcefb=0):
     while not playable:
         playable = True
 
-        if methodOW == 2 and g.platform & g.OS_ANDROID:
+        if (methodOW == 2 or uhdFB) and g.platform & g.OS_ANDROID:
             _AndroidPlayback(asin, streamtype)
         elif methodOW == 3:
             playable = _IStreamPlayback(asin, name, streamtype, isAdult, extern)

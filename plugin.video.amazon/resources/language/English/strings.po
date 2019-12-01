@@ -117,7 +117,11 @@ msgctxt "#30022"
 msgid "Start after 5 minutes of idle"
 msgstr ""
 
-#empty strings from id 30023 to 30026
+msgctxt "#30023"
+msgid "Use android app for 4K videos"
+msgstr ""
+
+#empty strings from id 30024 to 30026
 
 msgctxt "#30027"
 msgid "Multi User Support"

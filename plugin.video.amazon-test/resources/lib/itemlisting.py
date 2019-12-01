@@ -88,6 +88,7 @@ def addVideo(name, asin, infoLabels, cm=None, export=False):
     s = Settings()
     u = {'asin': asin, 'mode': 'PlayVideo', 'name': py2_encode(name), 'adult': infoLabels['isAdult']}
     url = '{}?{}'.format(g.pluginid, urlencode(u))
+    bitrate = '0'
 
     item = xbmcgui.ListItem(name)
     item.setArt({'fanart': infoLabels['Fanart'], 'poster': infoLabels['Thumb'], 'thumb': infoLabels['Thumb']})
@@ -106,6 +107,10 @@ def addVideo(name, asin, infoLabels, cm=None, export=False):
         infoLabels['Trailer'] = url + '&trailer=1&selbitrate=0'
 
     url += '&trailer=2' if "live" in infoLabels['contentType'] else '&trailer=0'
+    
+    if g.addon.getSetting("uhd_android") == 'true' and '4k' in (infoLabels.get('TVShowTitle', '') + name).lower():
+        bitrate = '-1'
+        item.setProperty('IsPlayable', 'false')
 
     if export:
         url += '&selbitrate=0'
@@ -114,7 +119,7 @@ def addVideo(name, asin, infoLabels, cm=None, export=False):
         cm = cm if cm else []
         cm.insert(0, (getString(30101), 'Action(ToggleWatched)'))
         cm.insert(1, (getString(30102), 'RunPlugin({})'.format(url + '&selbitrate=1')))
-        url += '&selbitrate=0'
+        url += '&selbitrate=' + bitrate
         item.setInfo(type='Video', infoLabels=getInfolabels(infoLabels))
         item.addContextMenuItems(cm)
         xbmcplugin.addDirectoryItem(g.pluginhandle, url, item, isFolder=False)

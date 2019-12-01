@@ -28,13 +28,14 @@ if (xbmcvfs.exists('/etc/os-release')) and ('libreelec' in xbmcvfs.File('/etc/os
 
 def PLAYVIDEO():
     amazonUrl = BaseUrl + "/dp/" + var.args.get('asin')
-    trailer = var.args.get('trailer') == '1'
+    trailer = var.args.get('trailer')
     isAdult = var.args.get('adult') == '1'
     playable = False
     fallback = int(var.addon.getSetting("fallback_method"))
     methodOW = fallback - 1 if var.args.get('forcefb') and fallback else var.playMethod
     videoUrl = "{}/?autoplay={}".format(amazonUrl, ('trailer' if trailer == '1' else '1'))
     extern = not xbmc.getInfoLabel('Container.PluginName').startswith('plugin.video.amazon')
+    uhdAndroid = trailer == '-1'
     fr = ''
 
     if extern:
@@ -43,10 +44,10 @@ def PLAYVIDEO():
     while not playable:
         playable = True
 
-        if methodOW == 2 and platform & OS_ANDROID:
-            AndroidPlayback(var.args.get('asin'), trailer)
+        if (methodOW == 2 or uhdAndroid) and platform & OS_ANDROID:
+            AndroidPlayback(var.args.get('asin'), trailer == '1')
         elif methodOW == 3:
-            playable = IStreamPlayback(trailer, isAdult, extern)
+            playable = IStreamPlayback(trailer == '1', isAdult, extern)
         elif not platform & OS_ANDROID:
             ExtPlayback(videoUrl, isAdult, methodOW, fr)
 
@@ -122,14 +123,19 @@ def ExtPlayback(videoUrl, isAdult, method, fr):
 
 
 def AndroidPlayback(asin, trailer):
-    manu = ''
+    manu = net = ''
     if os.access('/system/bin/getprop', os.X_OK):
         manu = check_output(['getprop', 'ro.product.manufacturer'])
+        net = check_output(['getprop', 'ro.telephony.default_network'])
 
     if manu == 'Amazon':
         pkg = 'com.fivecent.amazonvideowrapper'
         act = ''
         url = asin
+    elif not net:
+        pkg = 'com.amazon.amazonvideo.livingroom'
+        act = 'android.intent.action.VIEW'
+        url = '{}/watch?asin={}'.format(BaseUrl.replace('www', 'watch'), asin)
     else:
         pkg = 'com.amazon.avod.thirdpartyclient'
         act = 'android.intent.action.VIEW'

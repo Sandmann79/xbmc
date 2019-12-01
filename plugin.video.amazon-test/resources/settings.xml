@@ -30,6 +30,7 @@
         <setting id="drm_check" type="bool" label="30020" visible="eq(-20,3)" default="false"/>
         <setting id="fallback_method" type="enum" label="Fallback" values="None|Browser|Script/Batch|Android" default="0" visible="eq(-21,3)" enable="eq(-1,true)" subsetting="true"/>
         <setting id="proxy_mpdalter" type="bool" label="30248" default="true" visible="eq(-22,3)" />
+        <setting id="uhd_android" type="bool" label="30023" default="false" visible="eq(-23,3)" enable="System.Platform.Android"/>
     </category>
     <!-- Language -->
     <category label="30021">

@@ -117,6 +117,10 @@ msgctxt "#30022"
 msgid "Keep me logged in"
 msgstr "Angemeldet bleiben"
 
+msgctxt "#30023"
+msgid "Use android app for 4K videos"
+msgstr "Android App für 4K Videos verwenden"
+
 msgctxt "#30027"
 msgid "Stretch factor"
 msgstr "Timing"

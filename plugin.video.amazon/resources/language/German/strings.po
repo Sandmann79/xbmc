@@ -117,6 +117,10 @@ msgctxt "#30022"
 msgid "Start after 5 minutes of idle"
 msgstr "Nach 5 Minuten Leerlauf starten"
 
+msgctxt "#30023"
+msgid "Use android app for 4K videos"
+msgstr "Android App für 4K Videos verwenden"
+
 msgctxt "#30027"
 msgid "Multi User Support"
 msgstr "Mehrbenutzer-Unterstützung"

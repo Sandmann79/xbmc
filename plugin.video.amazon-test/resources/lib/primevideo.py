@@ -689,35 +689,9 @@ class PrimeVideo(Singleton):
                 NotifyUser.lastNotification = 1 + time.time()
                 self._g.dialog.notification(self._g.addon.getAddonInfo('name'), msg, time=1000, sound=False)
 
-        def MultiRegexParsing(content, o):
-            """ Takes a dictionary of regex and applies them to content, returning a filtered dictionary of results """
-
-            for i in o:
-                o[i] = re.search(o[i], content, flags=re.DOTALL)
-                if None is not o[i]:
-                    o[i] = o[i].groups()
-                    o[i] = Unescape(o[i][0]) if 1 == len(o[i]) else list(o[i])
-                    if 'image' == i:
-                        o[i] = MaxSize(o[i])
-                    elif 'season' == i:
-                        o[i] = {'locale': Unescape(o[i][0]), 'season': int(o[i][1]), 'format': Unescape('{} {}'.format(o[i][0], o[i][1]))}
-                    elif ('episode' == i) or ('year' == i):
-                        o[i] = int(o[i])
-                    elif ('cast' == i) or ('genre' == i) or ('director' == i):
-                        o[i] = re.sub(r'\s*</?(a|span|input|label.*?/label)\s*[^>]*>\s*', '', o[i][1])  # Strip everything useless
-                        o[i] = re.split(r'\s*[,;]\s*', o[i])
-                        # Cast is always to be sent as a list, single string is only required/preferred for Genre and Director
-                        if ('cast' != i) and (1 == len(o[i])):
-                            o[i] = o[i][0]
-                    elif 'rating' == i:
-                        o[i] = int(o[i][0]) + (int(o[i][1]) / 10.0)
-                    elif 'premiered' == i:
-                        o[i] = DelocalizeDate(amzLang, o[i])
-            return o
-
         def AddSeason(oid, o, title, thumbnail, url):
             """ Given a season, adds TV Shows to the catalog """
-            urn = ExtractURN(iu)
+            urn = ExtractURN(url)
             parent = None
             season = {}
             bUpdatedVideoData = False
@@ -814,7 +788,7 @@ class PrimeVideo(Singleton):
             # Only add seasons if we are not inside a season already
             if ('self' in state) and (oid not in state['self']):
                 # "self": {"amzn1.dv.gti.[…]": {"gti": "amzn1.dv.gti.[…]", "link": "/detail/[…]"}}
-                for gti in [k for k in state['self'] if 'season' == state['self'][k]['titleType']]:
+                for gti in [k for k in state['self'] if 'season' == state['self'][k]['titleType'].lower()]:
                     s = state['self'][gti]
                     gti = s['gti']
                     if gti not in self._videodata:
@@ -822,9 +796,9 @@ class PrimeVideo(Singleton):
                         self._videodata[gti] = {'ref': s['link'], 'children': [], 'siblings': []}
                         bUpdated = True
                     else:
-                        o[gti] = self._videodata[gti]
+                        o[gti] = deepcopy(self._videodata[gti])
                     GTIs.append(gti)
-                    siblings = [k for k, ss in state['self'].items() if k != gti and ss['titleType'] == s['titleType']]
+                    siblings = [k for k, ss in state['self'].items() if k != gti and ss['titleType'].lower() == s['titleType'].lower()]
                     if siblings != self._videodata[gti]['siblings']:
                         self._videodata[gti]['siblings'] = siblings
                         bUpdated = True
@@ -858,7 +832,7 @@ class PrimeVideo(Singleton):
 
             from json import dumps
             # Get details, seasons first
-            for gti in sorted(details, key=lambda x: 'season' != details[x]['titleType']):
+            for gti in sorted(details, key=lambda x: 'season' != details[x]['titleType'].lower()):
                 item = details[gti]
                 if (oid not in details) and (gti not in GTIs):  # Most likely (surely?) movie
                     GTIs.append(gti)
@@ -901,8 +875,13 @@ class PrimeVideo(Singleton):
                         vd['metadata']['artmeta'][k] = item['images'][v]
                         bUpdated = True
 
+                # Mediatype
+                if (bCacheRefresh or ('mediatype' not in vd['metadata']['videometa'])) and ('titleType' in item) and item['titleType']:
+                    vd['metadata']['videometa']['mediatype'] = item['titleType'].lower()
+                    bUpdated = True
+
                 # Synopsis, media type, year, duration
-                for k, v in {'plot': 'synopsis', 'mediatype': 'titleType', 'year': 'releaseYear', 'duration': 'duration'}.items():
+                for k, v in {'plot': 'synopsis', 'year': 'releaseYear', 'duration': 'duration'}.items():
                     if (bCacheRefresh or (k not in vd['metadata']['videometa'])) and (v in item):
                         vd['metadata']['videometa'][k] = item[v]
                         bUpdated = True
@@ -1062,7 +1041,7 @@ class PrimeVideo(Singleton):
                     iu = item['href'] if 'href' in item else item['link']['url']
                     img = item['imageSrc'] if 'imageSrc' in item else item['image']['url']
                     try:
-                        t = item['watchlistAction']['endpoint']['query']['titleType']
+                        t = item['watchlistAction']['endpoint']['query']['titleType'].lower()
                     except:
                         t = None
                     if 'season' != t:

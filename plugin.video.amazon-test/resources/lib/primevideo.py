@@ -796,6 +796,11 @@ class PrimeVideo(Singleton):
                         self._videodata[gti] = {'ref': s['link'], 'children': [], 'siblings': []}
                         bUpdated = True
                     else:
+                        # Season might be initialized with raw data first, make sure to add the necessary basics
+                        for k, v in {'ref': s['link'], 'children': [], 'siblings': []}.items():
+                            if k not in self._videodata[gti]:
+                                self._videodata[gti][k] = v
+                                bUpdated = True
                         o[gti] = deepcopy(self._videodata[gti])
                     GTIs.append(gti)
                     siblings = [k for k, ss in state['self'].items() if k != gti and ss['titleType'].lower() == s['titleType'].lower()]
@@ -830,8 +835,8 @@ class PrimeVideo(Singleton):
             if 'detail' in details:
                 details = details['detail']
 
-            from json import dumps
             # Get details, seasons first
+            # WARNING: seasons may not have proper initialization at this stage
             for gti in sorted(details, key=lambda x: 'season' != details[x]['titleType'].lower()):
                 item = details[gti]
                 if (oid not in details) and (gti not in GTIs):  # Most likely (surely?) movie

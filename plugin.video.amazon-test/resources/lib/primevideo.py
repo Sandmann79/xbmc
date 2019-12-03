@@ -689,7 +689,7 @@ class PrimeVideo(Singleton):
                 NotifyUser.lastNotification = 1 + time.time()
                 self._g.dialog.notification(self._g.addon.getAddonInfo('name'), msg, time=1000, sound=False)
 
-        def AddSeason(oid, o, title, thumbnail, url):
+        def AddSeason(oid, o, title, url):
             """ Given a season, adds TV Shows to the catalog """
             urn = ExtractURN(url)
             parent = None
@@ -1044,7 +1044,6 @@ class PrimeVideo(Singleton):
                 for item in (cnt if 'items' in cnt else cnt['content'])['items']:
                     title = item['heading'] if 'heading' in item else item['title']
                     iu = item['href'] if 'href' in item else item['link']['url']
-                    img = item['imageSrc'] if 'imageSrc' in item else item['image']['url']
                     try:
                         t = item['watchlistAction']['endpoint']['query']['titleType'].lower()
                     except:
@@ -1052,7 +1051,7 @@ class PrimeVideo(Singleton):
                     if 'season' != t:
                         bUpdatedVideoData |= ParseSinglePage(breadcrumb[-1], o, bCacheRefresh, url=iu)
                     else:
-                        bUpdatedVideoData |= AddSeason(breadcrumb[-1], o, title, img, iu)
+                        bUpdatedVideoData |= AddSeason(breadcrumb[-1], o, title, iu)
 
             # Search/list
             if ('results' in cnt) and ('items' in cnt['results']):
@@ -1061,7 +1060,7 @@ class PrimeVideo(Singleton):
                     if 'season' not in item:
                         bUpdatedVideoData |= ParseSinglePage(breadcrumb[-1], o, bCacheRefresh, url=iu)
                     else:
-                        bUpdatedVideoData |= AddSeason(breadcrumb[-1], o, item['title']['text'], MaxSize(item['packshot']['image']['src']), iu)
+                        bUpdatedVideoData |= AddSeason(breadcrumb[-1], o, item['title']['text'], iu)
 
             # Single page
             if 'state' in cnt:

@@ -838,8 +838,10 @@ class PrimeVideo(Singleton):
             # Get details, seasons first
             # WARNING: seasons may not have proper initialization at this stage
             for gti in sorted(details, key=lambda x: 'season' != details[x]['titleType'].lower()):
-                item = details[gti]
-                if (oid not in details) and (gti not in GTIs):  # Most likely (surely?) movie
+                # not inside a season/show: (oid not in details)
+                #     not already appended: (gti not in GTIs)
+                # part of the page details: ('self' in state) & (gti in state['self'])
+                if (oid not in details) and (gti not in GTIs) and ('self' in state) and (gti in state['self']):
                     GTIs.append(gti)
                     o[gti] = {}
                 if gti not in self._videodata:
@@ -861,6 +863,8 @@ class PrimeVideo(Singleton):
                 if gti in parents:
                     vd['parent'] = parents[gti]
                     bUpdate = True
+
+                item = details[gti]  # Shortcut
 
                 # Title
                 if bCacheRefresh or ('title' not in vd):

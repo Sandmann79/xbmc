@@ -357,7 +357,7 @@ class PrimeVideo(Singleton):
             if nodeName not in node:
                 self._g.dialog.notification('Catalog error', 'Catalog path not available…', xbmcgui.NOTIFICATION_ERROR)
                 return (None, None)
-            elif 'lazyLoadURL' in node[nodeName]:
+            elif ('lazyLoadURL' in node[nodeName]) or ('lazyLoadData' in node[nodeName]):
                 self._LazyLoad(node[nodeName], pathList[0:1 + i])
             node = node[nodeName]
 
@@ -583,7 +583,7 @@ class PrimeVideo(Singleton):
         if (k not in node) and (k in self._videodata):
             node[k] = {}
 
-        if 'lazyLoadURL' in node[k]:
+        if ('lazyLoadURL' in node[k]) or ('lazyLoadData' in node[k]):
             refreshes.append((node[k], breadcrumb, False))
         else:
             bShow = False
@@ -966,9 +966,9 @@ class PrimeVideo(Singleton):
 
             return bUpdated
 
-        if 'lazyLoadURL' not in obj:
+        if ('lazyLoadURL' not in obj) and ('lazyLoadData' not in obj):
             return
-        requestURLs = [obj['lazyLoadURL']]
+        requestURLs = [obj['lazyLoadURL'] if 'lazyLoadURL' in obj else None]
 
         amzLang = None
         if None is not requestURLs[0]:
@@ -1030,7 +1030,6 @@ class PrimeVideo(Singleton):
                     if 'seeMoreLink' in collection:
                         o[collection['text']]['lazyLoadURL'] = collection['seeMoreLink']['url']
                     else:
-                        o[collection['text']]['lazyLoadURL'] = requestURL
                         o[collection['text']]['lazyLoadData'] = collection
 
             # Watchlist

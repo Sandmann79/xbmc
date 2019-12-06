@@ -461,16 +461,16 @@ class PrimeVideo(Singleton):
 
             # Squash single season tv shows
             try:
-                if 'tvshow' == self._videodata[key]['metadata']['videometa']['mediatype']:
-                    if 1 == len(self._videodata[key]['children']):
-                        childgti = self._videodata[key]['children'][0]
+                if 'tvshow' == entry['metadata']['videometa']['mediatype']:
+                    if 1 == len(entry['children']):
+                        childgti = entry['children'][0]
                         entry = deepcopy(self._videodata[childgti])
                         itemPathURI += '{}{}'.format(self._separator, quote_plus(childgti.encode('utf-8')))
             except: pass
 
             # Find out if item's a video leaf
             bIsVideo = False
-            try: bIsVideo = self._videodata[key]['metadata']['videometa']['mediatype'] in ['episode', 'movie']
+            try: bIsVideo = entry['metadata']['videometa']['mediatype'] in ['episode', 'movie', 'video']
             except: pass
 
             # Can we refresh the cache on this/these item(s)?
@@ -479,7 +479,12 @@ class PrimeVideo(Singleton):
                 bCanRefresh |= (0 < len([k for k in entry['children'] if (k in self._videodata) and ('ref' in self._videodata[k])]))
 
             if bIsVideo:
-                url += '?mode=PlayVideo&name={}&asin={}'.format(self._videodata[key]['metadata']['compactGTI'], key)
+                streamtype = ''
+                # if ('trailer' in entry and entry['trailer']):
+                #     streamtype = '&trailer=1'
+                if ('live' in entry and entry['live']):
+                    streamtype = '&trailer=2'
+                url += '?mode=PlayVideo&name={}&asin={}{}'.format(entry['metadata']['compactGTI'], key, streamtype)
             elif 'verb' in entry:
                 url += entry['verb']
                 itemPathURI = ''
@@ -522,7 +527,7 @@ class PrimeVideo(Singleton):
                     # https://codedocs.xyz/xbmc/xbmc/group__python__xbmcgui__listitem.html#ga0b71166869bda87ad744942888fb5f14
                     item.setInfo('video', m['videometa'])
                     try:
-                        folderType = {'movie': 5, 'episode': 4, 'tvshow': 2, 'season': 3}[m['videometa']['mediatype']]
+                        folderType = {'video': 0, 'movie': 5, 'episode': 4, 'tvshow': 2, 'season': 3}[m['videometa']['mediatype']]
                     except:
                         folderType = 2  # Default to category
 
@@ -689,6 +694,23 @@ class PrimeVideo(Singleton):
                 NotifyUser.lastNotification = 1 + time.time()
                 self._g.dialog.notification(self._g.addon.getAddonInfo('name'), msg, time=1000, sound=False)
 
+        def AddLiveEvent(o, item, url):
+            urn = ExtractURN(url)
+            """ Add a live event to the list """
+            if (urn in o):
+                return
+            title = item['title' if 'title' in item else 'heading']
+            o[urn] = OrderedDict({'title': title, 'lazyLoadURL': item['href'] if 'href' in item else item['link']['url'], 'metadata': {'artmeta': {}, 'videometa': {}}})
+            if ('liveInfo' in item) and (('timeBadge' in item['liveInfo']) or (('status' in item['liveInfo']) and ('live' == item['liveInfo']['status'].lower()))):
+                when = 'Live' if 'timeBadge' not in item['liveInfo'] else item['liveInfo']['timeBadge'] 
+                if 'venue' in item['liveInfo']:
+                    when = '{} @ {}'.format(when, item['liveInfo']['venue'])
+                o[urn]['metadata']['videometa']['plot'] = when
+            if 'imageSrc' in item:
+                o[urn]['metadata']['artmeta']['poster'] = item['imageSrc']
+            if ('image' in item) and ('url' in item['image']):
+                o[urn]['metadata']['artmeta']['poster'] = item['image']['url']
+
         def AddSeason(oid, o, title, url):
             """ Given a season, adds TV Shows to the catalog """
             urn = ExtractURN(url)
@@ -772,8 +794,8 @@ class PrimeVideo(Singleton):
                     NotifyUser(getString(30256), True)
                     Log('Unable to fetch the url: {}'.format(url), Log.ERROR)
                     return False
-                # from .logging import LogJSON
-                # LogJSON(data, url)
+            # from .logging import LogJSON
+            # LogJSON(data, url)
 
             # Video/season/movie data are in the `state` field of the response
             if 'state' not in data:
@@ -783,6 +805,65 @@ class PrimeVideo(Singleton):
             GTIs = []  # List of inserted GTIs
             parents = {}  # Map of parents
             bUpdated = False  # Video data updated
+
+            # Find out if it's a live event. Custom parsing rules apply
+            try:
+                if (oid not in state['self']):
+                    ourn = oid
+                    oid = [x for x in state['self'] if oid == state['self'][x]['compactGTI']][0]
+            except: pass
+
+            if ('self' in state) and (oid in state['self']) and ('event' == state['self'][oid]['titleType'].lower()):
+                # List of video streams
+                items = [oid]
+                for i in state['collections'][oid]:
+                    if i['collectionType'] not in ['schedule', 'highlights']:
+                        continue
+                    for id in i['titleIds']:
+                        if id not in items:
+                            items.append(id)
+                items = {v: i for i, v in enumerate(items)}
+
+                details = state['detail']
+                if 'detail' in details:
+                    details = details['detail']
+
+                # Add video streams in order
+                for vid, i in sorted(details.items(), key=lambda t: 9999 if t[0] not in items else items[t[0]]):
+                    if (vid in o) or (vid not in items):
+                        continue
+                    if (vid in state['buyboxTitleId']):
+                        vid = state['buyboxTitleId'][vid]
+                        if vid in o:
+                            continue
+
+                    o[vid] = {'title': i['title'], 'metadata': {'compactGTI': i['compactGti'], 'artmeta': {}, 'videometa': {'mediatype': 'video'}}}
+
+                    if 'liveState' in i:
+                        try:
+                            mats = state['action']['atf'][oid]['playbackActions']['main']['children']
+                            mats = [a['videoMaterialType'].lower() for a in mats if vid == a['playbackID']]
+                            if 'live' in mats:
+                                o[vid]['live'] = True
+                        except: pass
+
+                    # Date and synopsis as a unified synopsis
+                    synopsis = None if 'synopsis' not in i else i['synopsis']
+                    datetime = None if 'pageDateTimeBadge' not in i else i['pageDateTimeBadge']
+                    if not datetime:
+                        datetime = datetime if 'dateTimeBadge' not in i else i['dateTimeBadge']
+                    if datetime:
+                        synopsis = ('{0}\n{1}' if synopsis else '{0}').format(datetime, synopsis)
+                    if synopsis:
+                        o[vid]['metadata']['videometa']['plot'] = synopsis
+
+                    # Images
+                    if 'images' in i:
+                        for k, v in {'thumb': 'packshot', 'poster': 'covershot', 'fanart': 'heroshot'}.items():
+                            if v in i['images']:
+                                o[vid]['metadata']['artmeta'][k] = i['images'][v]
+
+                return False
 
             # Seasons (episodes are now listed in self too)
             # Only add seasons if we are not inside a season already
@@ -1051,7 +1132,16 @@ class PrimeVideo(Singleton):
                         t = item['watchlistAction']['endpoint']['query']['titleType'].lower()
                     except:
                         t = None
-                    if 'season' != t:
+
+                    # Detect if it's a live event (or replay)
+                    try:
+                        bEvent = ('liveInfo' in item) or ('event' == item['watchlistAction']['endpoint']['query']['titleType'].lower())
+                    except:
+                        bEvent = False
+
+                    if bEvent:
+                        AddLiveEvent(o, item, iu)
+                    elif 'season' != t:
                         bUpdatedVideoData |= ParseSinglePage(breadcrumb[-1], o, bCacheRefresh, url=iu)
                     else:
                         bUpdatedVideoData |= AddSeason(breadcrumb[-1], o, title, iu)
@@ -1060,7 +1150,16 @@ class PrimeVideo(Singleton):
             if ('results' in cnt) and ('items' in cnt['results']):
                 for item in cnt['results']['items']:
                     iu = item['title']['url']
-                    if 'season' not in item:
+
+                    # Detect if it's a live event (or replay)
+                    try:
+                        bEvent = ('liveInfo' in item) or ('event' == item['watchlistAction']['endpoint']['query']['titleType'].lower())
+                    except:
+                        bEvent = False
+
+                    if bEvent:
+                        AddLiveEvent(o, item, iu)
+                    elif 'season' not in item:
                         bUpdatedVideoData |= ParseSinglePage(breadcrumb[-1], o, bCacheRefresh, url=iu)
                     else:
                         bUpdatedVideoData |= AddSeason(breadcrumb[-1], o, item['title']['text'], iu)

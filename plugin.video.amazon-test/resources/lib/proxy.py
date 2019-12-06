@@ -297,7 +297,10 @@ class ProxyHTTPD(BaseHTTPRequestHandler):
         baseurl = url_parts.scheme + '://' + url_parts.netloc + re.sub(r'[^/]+$', '', url_parts.path)
 
         def _rebase(data):
-            return data.replace('<BaseURL>', '<BaseURL>' + baseurl)
+            data = data.replace('<BaseURL>', '<BaseURL>' + baseurl)
+            data = re.sub(r'(<SegmentTemplate\s+[^>]*?\s*media=")', r'\1' + baseurl, data)
+            data = re.sub(r'(<SegmentTemplate\s+[^>]*?\s*initialization=")', r'\1' + baseurl, data)
+            return data
 
         # Start the chunked reception
         status_code, headers, r = self._ForwardRequest('get', endpoint, headers, data, True)

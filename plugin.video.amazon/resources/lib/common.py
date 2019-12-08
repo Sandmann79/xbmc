@@ -378,12 +378,10 @@ def addVideo(name, asin, poster=None, fanart=None, infoLabels=None, totalItems=0
     if trailer:
         infoLabels['Trailer'] = url + '&trailer=1'
 
-    if var.addon.getSetting("uhd_android") == 'true' and '4k' in (infoLabels.get('TVShowTitle', '') + name).lower():
-        url += '&trailer=-1'
+    if var.addon.getSetting("uhd_android") == 'true' and [k for k in ['4k', 'uhd', 'ultra hd'] if k in (infoLabels.get('TVShowTitle', '') + name).lower()]:
         item.setProperty('IsPlayable', 'false')
-    else:
-        url += '&trailer=0'
 
+    url += '&trailer=0'
     if 'Poster' in infoLabels.keys():
         item.setArt({'tvshow.poster': infoLabels['Poster']})
 

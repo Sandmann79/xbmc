@@ -108,20 +108,21 @@ def addVideo(name, asin, infoLabels, cm=None, export=False):
 
     url += '&trailer=2' if "live" in infoLabels['contentType'] else '&trailer=0'
     
-    if g.addon.getSetting("uhd_android") == 'true' and '4k' in (infoLabels.get('TVShowTitle', '') + name).lower():
+    if [k for k in ['4k', 'uhd', 'ultra hd'] if k in (infoLabels.get('TVShowTitle', '') + name).lower()]:
         bitrate = '-1'
-        item.setProperty('IsPlayable', 'false')
+        if s.uhdAndroid:
+            item.setProperty('IsPlayable', 'false')
 
     if export:
-        url += '&selbitrate=0'
+        url += '&selbitrate=' + bitrate
         g.amz.Export(infoLabels, url)
     else:
         cm = cm if cm else []
         cm.insert(0, (getString(30101), 'Action(ToggleWatched)'))
         cm.insert(1, (getString(30102), 'RunPlugin({})'.format(url + '&selbitrate=1')))
-        url += '&selbitrate=' + bitrate
         item.setInfo(type='Video', infoLabels=getInfolabels(infoLabels))
         item.addContextMenuItems(cm)
+        url += '&selbitrate=' + bitrate
         xbmcplugin.addDirectoryItem(g.pluginhandle, url, item, isFolder=False)
 
 

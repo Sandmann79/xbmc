@@ -35,7 +35,10 @@ def PLAYVIDEO():
     methodOW = fallback - 1 if var.args.get('forcefb') and fallback else var.playMethod
     videoUrl = "{}/?autoplay={}".format(amazonUrl, ('trailer' if trailer == '1' else '1'))
     extern = not xbmc.getInfoLabel('Container.PluginName').startswith('plugin.video.amazon')
-    uhdAndroid = trailer == '-1'
+    infoLabels = GetStreamInfo(var.args.get('asin'))
+    combititle = infoLabels.get('TVShowTitle', '') + infoLabels.get('Title', '').lower()
+    uhdAndroid = var.addon.getSetting("uhd_android") == 'true' and [k for k in ['4k', 'uhd', 'ultra hd'] if k in combititle]
+
     fr = ''
 
     if extern:
@@ -850,7 +853,7 @@ class AmazonPlayer(xbmc.Player):
             return {}
         with open(self.resumedb, 'rb') as fp:
             items = pickle.load(fp)
-            self.resume = items.get(self.asin, {}).get('resume')
+            self.resume = items.get(self.asin, {}).get('resume', 0)
             fp.close()
         return items
 

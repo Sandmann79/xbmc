@@ -461,7 +461,7 @@ def PlayVideo(name, asin, adultstr, streamtype, forcefb=0):
     amazonUrl = g.BaseUrl + "/dp/" + (name if g.UsePrimeVideo else asin)
     playable = False
     fallback = int(g.addon.getSetting("fallback_method"))
-    uhdFB = forcefb < 0
+    uhdFB = forcefb < 0 and s.uhdAndroid
     methodOW = fallback - 1 if forcefb > 0 and fallback else s.playMethod
     videoUrl = "%s/?autoplay=%s" % (amazonUrl, ('trailer' if streamtype == 1 else '1'))
     extern = not xbmc.getInfoLabel('Container.PluginName').startswith('plugin.video.amazon')

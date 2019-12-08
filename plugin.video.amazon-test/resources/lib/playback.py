@@ -662,7 +662,7 @@ class _AmazonPlayer(xbmc.Player):
             return {}
         with co(self.resumedb, 'rb') as fp:
             items = pickle.load(fp)
-            self.resume = items.get(self.asin, {}).get('resume')
+            self.resume = items.get(self.asin, {}).get('resume', 0)
             fp.close()
         return items
 

@@ -368,6 +368,23 @@ class AmazonTLD(Singleton):
                 addDir(title, mode, url, info, opt)
         xbmcplugin.endOfDirectory(self._g.pluginhandle)
 
+    def exportTVShowNFO(self, infoLabels):
+        title = infoLabels['TVShowTitle']
+        filename = re.sub(r'(?i)\[.*| omu| ov', '', title).strip()
+        ExportPath = os.path.join(self._s.TV_SHOWS_PATH, self._cleanName(filename))
+        #TODO: save tvShow.nfo only if it has changed
+        tvShowInfo = '<?xml version="1.0" encoding="UTF-8"?>\n'
+        tvShowInfo +='<tvshow>\n'
+        tvShowInfo +='<mpaa>%s</mpaa>\n' % infoLabels['MPAA']
+        tvShowInfo +='<plot>%s</plot>\n' % infoLabels['Plot']
+        tvShowInfo +='<showtitle>%s</showtitle>\n' % infoLabels['TVShowTitle']
+        tvShowInfo +='<title>%s</title>\n' % infoLabels['TVShowTitle']
+        tvShowInfo +='<thumb aspect="poster">%s</thumb>\n' % infoLabels['Thumb']
+        tvShowInfo +='<fanart><thumb>%s</thumb></fanart>\n' % infoLabels['Fanart'] 
+        tvShowInfo +='</tvshow>'
+        self.SaveFile('tvshow.nfo', tvShowInfo, ExportPath);
+        Log('Exported TVSeries: ' + ExportPath)
+            
     def listContent(self, catalog, url, page, parent, export=False):
         oldurl = url
         ResPage = 240 if export else self._s.MaxResults
@@ -437,6 +454,8 @@ class AmazonTLD(Singleton):
                             self._g.pluginid, quote_plus(curl))))
 
                 if export:
+                if self._g.addon.getSetting('cr_nfo') == 'true':
+                        self.exportTVShowNFO(infoLabels)
                     url = re.sub(r'(?i)contenttype=\w+', 'ContentType=TVEpisode', url)
                     url = re.sub(r'(?i)&rollupto\w+=\w+', '', url)
                     self.listContent('Browse', url, 1, parent.replace('_show', ''), export)

@@ -368,13 +368,16 @@ class AmazonTLD(Singleton):
                 addDir(title, mode, url, info, opt)
         xbmcplugin.endOfDirectory(self._g.pluginhandle)
 
-    def listContent(self, catalog, url, page, parent, export=False):
+    def listContent(self, catalog, url, page, parent, export=0):
         oldurl = url
         ResPage = 240 if export else self._s.MaxResults
-        url = '%s&NumberOfResults=%s&StartIndex=%s&Detailed=T&mobileClient=true' % (url, ResPage, (page - 1) * ResPage)
-        titles = getATVData(catalog, url)
+        if catalog in (self._g.watchlist, self._g.library):
+            titles, parent = self.getList(catalog, export, url, page)
+            ResPage = 60
+        else:
+            url = '%s&NumberOfResults=%s&StartIndex=%s&Detailed=T' % (url, ResPage, (page - 1) * ResPage)
+            titles = getATVData(catalog, url)
         titlelist = []
-
         if page != 1 and not export:
             addDir(' --= %s =--' % getString(30112), thumb=self._s.HomeIcon)
 
@@ -384,15 +387,19 @@ class AmazonTLD(Singleton):
             else:
                 xbmcplugin.endOfDirectory(self._g.pluginhandle)
             return
-        endIndex = titles['endIndex']
-        numItems = len(titles['titles'])
-        if 'approximateSize' not in titles.keys():
-            if numItems > self._s.MaxResults:
-                endIndex = 0
+
+        if catalog in (self._g.watchlist, self._g.library):
+            endIndex = 0 if len(titles['titles']) < ResPage else 1
         else:
-            if endIndex == 0:
-                if (page * ResPage) <= titles['approximateSize']:
-                    endIndex = 1
+            endIndex = titles['endIndex']
+            numItems = len(titles['titles'])
+            if 'approximateSize' not in titles.keys():
+                if numItems > self._s.MaxResults:
+                    endIndex = 0
+            else:
+                if endIndex == 0:
+                    if (page * ResPage) <= titles['approximateSize']:
+                        endIndex = 1
 
         for item in titles['titles']:
             url = ''
@@ -414,7 +421,7 @@ class AmazonTLD(Singleton):
                   (getString(wlmode + 30180) % getString(self._g.langID[contentType]),
                    'RunPlugin(%s?mode=WatchList&url=%s&opt=%s)' % (self._g.pluginid, wl_asin, wlmode)),
                   (getString(30185) % getString(self._g.langID[contentType]),
-                   'RunPlugin(%s?mode=getListMenu&url=%s&export=1)' % (self._g.pluginid, asin)),
+                   'RunPlugin({}?mode=listContent&cat=GetASINDetails&url=asinList%3D{}&export=1)'.format(self._g.pluginid, asin)),
                   (getString(30186), 'UpdateLibrary(video)')]
 
             if parent == 'recent':
@@ -519,7 +526,7 @@ class AmazonTLD(Singleton):
                                                                                             'opt=rem_%s' % self._g.watchlist)
                 xbmc.executebuiltin('Container.Update("%s", replace)' % cPath)
             elif self._s.wl_export:
-                self._g.amz.getList(asin, 1, '_show' if self._s.dispShowOnly else '')
+                self.listContent('GetASINDetails', 'asinList%3D' + asin, 1, '_show' if self._s.dispShowOnly else '', 1)
                 xbmc.executebuiltin('UpdateLibrary(video)')
         else:
             Log(data['status'] + ': ' + data['reason'])
@@ -739,43 +746,42 @@ class AmazonTLD(Singleton):
 
     def getListMenu(self, listing, export):
         if export:
-            self.getList(listing, export, ['movie', 'tv'])
+            self.listContent(listing, 'MOVIE', 1, listing, export)
+            self.listContent(listing, 'TV', 1, listing, export)
             if export == 2: xbmc.executebuiltin('UpdateLibrary(video)')
         else:
-            addDir(getString(30104), 'getList', listing, export, opt='movie')
-            addDir(getString(30107), 'getList', listing, export, opt='tv')
+            addDir(getString(30104), 'listContent', 'MOVIE', catalog=listing, export=export)
+            addDir(getString(30107), 'listContent', 'TV', catalog=listing, export=export)
             xbmcplugin.endOfDirectory(self._g.pluginhandle, updateListing=False)
 
     def _scrapeAsins(self, aurl, cj):
         asins = []
         url = self._g.BaseUrl + aurl
-        content = getURL(url, useCookie=cj, rjson=False)
-        WriteLog(content, 'watchlist')
-        if mobileUA(content):
-            getUA(True)
+        json = getURL(url, useCookie=cj)
+        WriteLog(str(json), 'watchlist')
 
-        for asin in re.compile('data-automation-id="(?:wl|yvl)-item-(.+?)"', re.DOTALL).findall(content):
-            if asin not in asins:
-                asins.append(asin)
+        for item in json['content'].get('items', []):
+            asins.append(item['titleID'])
         return ','.join(asins)
 
-    def getList(self, listing, export, cont):
+    def getList(self, listing, export, cont, page=1):
         if listing in [self._g.watchlist, self._g.library]:
             cj = MechanizeLogin()
             if not cj:
                 return
-            asins = ''
-            for content in cont:
-                asins += self._scrapeAsins('/gp/video/mystuff/%s/%s/?ie=UTF8&sort=%s' % (listing, content, self._s.wl_order), cj) + ','
+            url = '/gp/video/api/%s/?ie=UTF8&sort=%s&contentType=%s&startIndex=%s' % (listing, self._s.wl_order, cont, (page - 1) * 60)
+            if listing in self._g.library:
+                url += '&libraryType=Items'
+            asins = self._scrapeAsins(url, cj)
         else:
             asins = listing
 
         if export:
             self.SetupLibrary()
 
-        url = 'asinList=' + asins
+        url = 'asinList=%s&NumberOfResults=60StartIndex=0&Detailed=T&mobileClient=true' % asins
         listing += '_show' if (self._s.dispShowOnly and not (export and asins == listing)) or cont == '_show' else ''
-        self.listContent('GetASINDetails', url, 1, listing, export)
+        return getATVData('GetASINDetails', url), listing
 
     def getAsins(self, content, crIL=True):
         if crIL:

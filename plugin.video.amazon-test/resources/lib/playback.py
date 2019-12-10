@@ -314,17 +314,15 @@ def PlayVideo(name, asin, adultstr, streamtype, forcefb=0):
             pkg = 'com.fivecent.amazonvideowrapper'
             act = ''
             url = asin
-        elif not net:
+        else:
             burl = g.BaseUrl.replace('www', 'app' if g.UsePrimeVideo else 'watch')
             gti = 'gti' if g.UsePrimeVideo else 'asin'
-            pkg = 'com.amazon.amazonvideo.livingroom'
+            pkg = 'com.amazon.avod.thirdpartyclient' if net else 'com.amazon.amazonvideo.livingroom'
             act = 'android.intent.action.VIEW'
             url = '{}/watch?{}={}'.format(burl, gti, asin)
-        else:
-            pkg = 'com.amazon.avod.thirdpartyclient'
-            act = 'android.intent.action.VIEW'
-            url = g.BaseUrl + '/piv-apk-play?asin=' + asin
-            url += '&playTrailer=T' if streamtype == 1 else ''
+            if not g.UsePrimeVideo and net:
+                url = g.BaseUrl + '/piv-apk-play?asin=' + asin
+                url += '&playTrailer=T' if streamtype == 1 else ''
 
         subprocess.Popen(['log', '-p', 'v', '-t', 'Kodi-Amazon', 'Manufacturer: ' + manu])
         subprocess.Popen(['log', '-p', 'v', '-t', 'Kodi-Amazon', 'Starting App: %s Video: %s' % (pkg, url)])

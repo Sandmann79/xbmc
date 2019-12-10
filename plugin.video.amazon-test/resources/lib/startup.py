@@ -74,12 +74,12 @@ def EntryPoint():
         g.amz.listCategories(args.get('url', ''), args.get('opt', ''))
     elif mode == 'listContent':
         url = py2_decode(args.get('url', ''))
-        g.amz.listContent(args.get('cat'), url, int(args.get('page', '1')), args.get('opt', ''))
+        g.amz.listContent(args.get('cat'), url, int(args.get('page', '1')), args.get('opt', ''), int(args.get('export', '0')))
     elif mode == 'PlayVideo':
         from .playback import PlayVideo
         PlayVideo(args.get('name', ''), args.get('asin'), args.get('adult', '0'), int(args.get('trailer', '0')), int(args.get('selbitrate', '0')))
     elif mode == 'getList':
-        g.amz.getList(args.get('url', ''), int(args.get('export', '0')), [args.get('opt')])
+        g.amz.getList(args.get('url', ''), int(args.get('export', '0')), args.get('opt'))
     elif mode == 'getListMenu':
         g.amz.getListMenu(args.get('url', ''), int(args.get('export', '0')))
     elif mode == 'WatchList':

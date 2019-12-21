@@ -305,10 +305,10 @@ def PlayVideo(name, asin, adultstr, streamtype, forcefb=0):
         myWindow.wait()
 
     def _AndroidPlayback(asin, streamtype):
-        manu = net = ''
+        manu = avodapp = ''
         if os.access('/system/bin/getprop', os.X_OK):
             manu = _check_output(['getprop', 'ro.product.manufacturer']).lower()
-            net = _check_output(['getprop', 'ro.telephony.default_network'])
+            avodapp = _check_output(['cmd', 'package', 'list', 'packages', 'com.amazon.avod.thirdpartyclient'])
 
         if manu == 'amazon':
             pkg = 'com.fivecent.amazonvideowrapper'
@@ -317,23 +317,23 @@ def PlayVideo(name, asin, adultstr, streamtype, forcefb=0):
         else:
             burl = g.BaseUrl.replace('www', 'app' if g.UsePrimeVideo else 'watch')
             gti = 'gti' if g.UsePrimeVideo else 'asin'
-            pkg = 'com.amazon.avod.thirdpartyclient' if net else 'com.amazon.amazonvideo.livingroom'
+            pkg = 'com.amazon.avod.thirdpartyclient' if avodapp else 'com.amazon.amazonvideo.livingroom'
             act = 'android.intent.action.VIEW'
             url = '{}/watch?{}={}'.format(burl, gti, asin)
-            if not g.UsePrimeVideo and net:
+            if not g.UsePrimeVideo and avodapp:
                 url = g.BaseUrl + '/piv-apk-play?asin=' + asin
                 url += '&playTrailer=T' if streamtype == 1 else ''
 
         subprocess.Popen(['log', '-p', 'v', '-t', 'Kodi-Amazon', 'Manufacturer: ' + manu])
         subprocess.Popen(['log', '-p', 'v', '-t', 'Kodi-Amazon', 'Starting App: %s Video: %s' % (pkg, url)])
         Log('Manufacturer: %s' % manu)
-        Log('Default Network: %s' % net)
         Log('Starting App: %s Video: %s' % (pkg, url))
 
         if s.verbLog:
             if os.access('/system/xbin/su', os.X_OK) or os.access('/system/bin/su', os.X_OK):
-                Log('Logcat:\n' + _check_output(['su', '-c', 'logcat -d | grep -i com.amazon.avod']))
+                Log('Logcat:\n' + _check_output(['su', '-c', 'logcat -d | grep -iE "(avod|amazonvideo)']))
             Log('Properties:\n' + _check_output(['sh', '-c', 'getprop | grep -iE "(ro.product|ro.build|google)"']))
+            Log('Installed Amazon Packages:\n' + _check_output(['sh', '-c', 'cmd package list packages | grep -i amazon']))
 
         xbmc.executebuiltin('StartAndroidActivity("%s", "%s", "", "%s")' % (pkg, act, url))
 

@@ -126,33 +126,34 @@ def ExtPlayback(videoUrl, isAdult, method, fr):
 
 
 def AndroidPlayback(asin, trailer):
-    manu = net = ''
+    manu = avodapp = ''
     if os.access('/system/bin/getprop', os.X_OK):
         manu = check_output(['getprop', 'ro.product.manufacturer'])
-        net = check_output(['getprop', 'ro.telephony.default_network'])
+        avodapp = check_output(['cmd', 'package', 'list', 'packages', 'com.amazon.avod.thirdpartyclient'])
 
     if manu == 'Amazon':
         pkg = 'com.fivecent.amazonvideowrapper'
         act = ''
         url = asin
-    elif not net:
-        pkg = 'com.amazon.amazonvideo.livingroom'
-        act = 'android.intent.action.VIEW'
-        url = '{}/watch?asin={}'.format(BaseUrl.replace('www', 'watch'), asin)
     else:
-        pkg = 'com.amazon.avod.thirdpartyclient'
+        pkg = 'com.amazon.avod.thirdpartyclient' if avodapp else 'com.amazon.amazonvideo.livingroom'
+        url = '{}/watch?asin={}'.format(BaseUrl.replace('www', 'watch'), asin)
         act = 'android.intent.action.VIEW'
-        url = BaseUrl + '/piv-apk-play?asin=' + asin
-        if trailer:
-            url += '&playTrailer=T'
+        if avodapp:
+            url = BaseUrl + '/piv-apk-play?asin=' + asin
+            url += '&playTrailer=T' if trailer else ''
+
     subprocess.Popen(['log', '-p', 'v', '-t', 'Kodi-Amazon', 'Manufacturer: ' + manu])
     subprocess.Popen(['log', '-p', 'v', '-t', 'Kodi-Amazon', 'Starting App: {} Video: {}'.format(pkg, url)])
     Log('Manufacturer: {}'.format(manu))
     Log('Starting App: {} Video: {}'.format(pkg, url))
+
     if var.verbLog:
         if os.access('/system/xbin/su', os.X_OK) or os.access('/system/bin/su', os.X_OK):
             Log('Logcat:\n' + check_output(['su', '-c', 'logcat -d | grep -i com.amazon.avod']))
         Log('Properties:\n' + check_output(['sh', '-c', 'getprop | grep -iE "(ro.product|ro.build|google)"']))
+        Log('Installed Amazon Packages:\n' + check_output(['sh', '-c', 'cmd package list packages | grep -i amazon']))
+
     xbmc.executebuiltin('StartAndroidActivity("{}", "{}", "", "{}")'.format(pkg, act, url))
 
 

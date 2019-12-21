@@ -89,16 +89,19 @@ class AmazonTLD(Singleton):
                 fileinfo += '</actor>\n'
         for key, value in Info.items():
             lkey = key.lower()
-            if lkey == 'tvshowtitle':
-                fileinfo += '<showtitle>%s</showtitle>\n' % value
-            elif lkey == 'premiered' and 'TVShowTitle' in Info:
-                fileinfo += '<aired>%s</aired>\n' % value
-            elif lkey == 'thumb':
-                fileinfo += '<%s aspect="poster" >%s</%s>\n' % (lkey, value, lkey)
-            elif lkey == 'fanart':
-                fileinfo += '<%s>\n    <thumb>%s</thumb>\n</%s>\n' % (lkey, value, lkey)
-            elif lkey not in skip_keys:
-                fileinfo += '<%s>%s</%s>\n' % (lkey, value, lkey)
+            if value:
+                if lkey == 'tvshowtitle':
+                    fileinfo += '<showtitle>%s</showtitle>\n' % value
+                elif lkey == 'premiered' and 'TVShowTitle' in Info:
+                    fileinfo += '<aired>%s</aired>\n' % value
+                elif lkey == 'thumb':
+                    aspect = '' if 'episode' in content else ' aspect="poster"'
+                    fileinfo += '<%s%s>%s</%s>\n' % (lkey, aspect, value, lkey)
+                elif lkey == 'fanart':
+                    fileinfo += '<%s>\n    <thumb>%s</thumb>\n</%s>\n' % (lkey, value, lkey)
+                elif lkey not in skip_keys:
+                    fileinfo += '<%s>%s</%s>\n' % (lkey, value, lkey)
+
         if content != 'tvshow':
             fileinfo += '<fileinfo>\n'
             fileinfo += '   <streamdetails>\n'

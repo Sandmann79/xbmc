@@ -36,9 +36,10 @@ def SetupLibrary():
     SetupAmazonLibrary()
 
 
-def streamDetails(Info, language='ger', hasSubtitles=False):
-    skip_keys = ('ishd', 'isadult', 'audiochannels', 'genre', 'cast', 'duration', 'trailer', 'asins')
-    fileinfo = '<runtime>{}</runtime>'.format(Info['Duration'])
+def streamDetails(Info, content, language='ger', hasSubtitles=False):
+    skip_keys = ('ishd', 'isadult', 'audiochannels', 'genre', 'cast', 'duration', 'trailer', 'asins', 'poster', 'seriesasin')
+    fileinfo = '<{}>'.format(content)
+    fileinfo += '<runtime>{}</runtime>'.format(Info['Duration'])
     if 'Genre' in Info.keys() and Info['Genre']:
         for genre in Info['Genre'].split('/'):
             fileinfo += '<genre>{}</genre>'.format(genre.strip())
@@ -49,12 +50,19 @@ def streamDetails(Info, language='ger', hasSubtitles=False):
             fileinfo += '</actor>'
     for key, value in Info.items():
         lkey = key.lower()
-        if lkey == 'premiered' and 'TVShowTitle' in Info.keys():
-            fileinfo += '<aired>{}</aired>'.format(value)
-        elif lkey == 'fanart':
-            fileinfo += '<{}><thumb>{}</thumb></{}>'.format(lkey, value, lkey)
-        elif lkey not in skip_keys:
-            fileinfo += '<{}>{}</{}>'.format(lkey, value, lkey)
+        if value:
+            if lkey == 'tvshowtitle':
+                fileinfo += '<showtitle>{}</showtitle>'.format(value)
+            if lkey == 'premiered' and 'TVShowTitle' in Info.keys():
+                fileinfo += '<aired>{}</aired>'.format(value)
+            elif lkey == 'thumb':
+                aspect = '' if 'episode' in content else ' aspect="poster"'
+                fileinfo += '<{}{}>{}</{}>'.format(lkey, aspect, value, lkey)
+            elif lkey == 'fanart':
+                fileinfo += '<{}><thumb>{}</thumb></{}>'.format(lkey, value, lkey)
+            elif lkey not in skip_keys:
+                fileinfo += '<{}>{}</{}>'.format(lkey, value, lkey)
+
     fileinfo += '<fileinfo>'
     fileinfo += '<streamdetails>'
     fileinfo += '<audio>'
@@ -79,6 +87,7 @@ def streamDetails(Info, language='ger', hasSubtitles=False):
         fileinfo += '</subtitle>'
     fileinfo += '</streamdetails>'
     fileinfo += '</fileinfo>'
+    fileinfo += '</{}>'.format(content)
     return fileinfo
 
 
@@ -104,10 +113,7 @@ def EXPORT_MOVIE(asin=False, makeNFO=cr_nfo):
 
         if makeNFO:
             nfo_file = filename + ".nfo"
-            nfo = '<movie>'
-            nfo += streamDetails(Info)
-            nfo += '</movie>'
-            SaveFile(nfo_file, nfo, folder)
+            SaveFile(nfo_file, streamDetails(Info, 'movie'), folder)
 
 
 def EXPORT_SHOW(asin=None):
@@ -151,7 +157,7 @@ def EXPORT_EPISODE(asin=None, makeNFO=cr_nfo, dispnotif=True):
             SetupLibrary()
             Log('Amazon Export: {} {}'.format(showname, name))
         seasonpath = os.path.join(directorname, name)
-        filename = '{} - S%02dE%02d - {}'.format(showname, Info['Season'], Info['Episode'], Info['Title'])
+        filename = '{} - S{:02d}E{:02d} - {}'.format(showname, Info['Season'], Info['Episode'], Info['Title'])
         strm_file = filename + ".strm"
         u = '{}?{}'.format(sys.argv[0], urlencode({'asin': asin,
                                                    'mode': 'play',
@@ -164,10 +170,7 @@ def EXPORT_EPISODE(asin=None, makeNFO=cr_nfo, dispnotif=True):
 
         if makeNFO:
             nfo_file = filename + u".nfo"
-            nfo = '<episodedetails>'
-            nfo += streamDetails(Info)
-            nfo += '</episodedetails>'
-            SaveFile(nfo_file, nfo, seasonpath)
+            SaveFile(nfo_file, streamDetails(Info, 'episodedetails'), seasonpath)
 
 
 def SetupAmazonLibrary():

@@ -315,7 +315,7 @@ msgid "Library"
 msgstr "ספרייה"
 
 msgctxt "#30101"
-msgid "Toogle Watched State"
+msgid "Toggle Watched State"
 msgstr "החלף מצב נצפה"
 
 msgctxt "#30102"

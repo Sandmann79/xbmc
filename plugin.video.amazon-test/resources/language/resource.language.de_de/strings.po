@@ -314,7 +314,7 @@ msgid "Library"
 msgstr "Bibliothek"
 
 msgctxt "#30101"
-msgid "Toogle Watched State"
+msgid "Toggle Watched State"
 msgstr "Gesehen-Status ändern"
 
 msgctxt "#30102"

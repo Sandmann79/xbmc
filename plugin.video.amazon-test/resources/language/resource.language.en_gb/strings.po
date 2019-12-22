@@ -326,7 +326,7 @@ msgid "Library"
 msgstr ""
 
 msgctxt "#30101"
-msgid "Toogle Watched State"
+msgid "Toggle Watched State"
 msgstr ""
 
 msgctxt "#30102"

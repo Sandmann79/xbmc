@@ -343,16 +343,6 @@ def PlayVideo(name, asin, adultstr, streamtype, forcefb=0):
         dRes = 'PlaybackUrls' if streamtype == 2 else 'PlaybackUrls,SubtitleUrls,ForcedNarratives'
         mpaa_str = AgeRestrictions().GetRestrictedAges() + getString(30171)
         drm_check = g.addon.getSetting("drm_check") == 'true'
-
-        verifyISA = '{"jsonrpc":"2.0","id":1,"method":"Addons.GetAddonDetails","params":{"addonid":"inputstream.adaptive"}}'
-        if 'error' in xbmc.executeJSONRPC(verifyISA):
-            xbmc.executebuiltin('UpdateAddonRepos', True)
-            xbmc.executebuiltin('InstallAddon(inputstream.adaptive)', True)
-            if 'error' in xbmc.executeJSONRPC(verifyISA):
-                Log('InputStream.Adaptive addon is not installed')
-                _playDummyVid()
-                return True
-
         inputstream_helper = Helper('mpd', drm='com.widevine.alpha')
 
         if not inputstream_helper.check_inputstream():

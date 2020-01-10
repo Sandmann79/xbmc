@@ -3,6 +3,7 @@
 from __future__ import unicode_literals
 from .common import *
 from inputstreamhelper import Helper
+import pyautogui
 import subprocess
 import threading
 import shlex
@@ -602,78 +603,50 @@ def Error(data):
 
 
 def Input(mousex=0, mousey=0, click=0, keys=None, delay='200'):
+    '''Control the user's mouse and/or keyboard.
+
+       Arguments:
+         mousex, mousey - x, y co-ordinates from top left of screen
+         keys - list of keys to press (or just a string? usage seems unclear)
+    '''
     screenWidth = int(xbmc.getInfoLabel('System.ScreenWidth'))
     screenHeight = int(xbmc.getInfoLabel('System.ScreenHeight'))
-    keys_only = sc_only = keybd = ''
     if mousex == -1:
         mousex = screenWidth / 2
 
     if mousey == -1:
         mousey = screenHeight / 2
-    spec_keys = {'{EX}': ('!{F4}', 'alt+F4', 'kd:cmd t:q ku:cmd'),
-                 '{SPC}': ('{SPACE}', 'space', 't:p'),
-                 '{LFT}': ('{LEFT}', 'Left', 'kp:arrow-left'),
-                 '{RGT}': ('{RIGHT}', 'Right', 'kp:arrow-right'),
-                 '{U}': ('{UP}', 'Up', 'kp:arrow-up'),
-                 '{DWN}': ('{DOWN}', 'Down', 'kp:arrow-down'),
-                 '{BACK}': ('{BS}', 'BackSpace', 'kp:delete'),
-                 '{RET}': ('{ENTER}', 'Return', 'kp:return')}
+
+    exit_cmd = {'osWindows': 'alt f4',
+                'osLinux': 'ctrl shift q',
+                'osOSX': 'command q',
+               }.get(platform)
+
+    special_keys = {'{SPC}': 'space',
+                    '{LFT}': 'left',
+                    '{RGT}': 'right',
+                    '{U}': 'up',
+                    '{DWN}': 'down',
+                    '{BACK}': 'backspace',
+                    '{RET}': 'enter',
+                   }
 
     if keys:
-        keys_only = keys
-        for sc in spec_keys:
-            while sc in keys:
-                keys = keys.replace(sc, spec_keys[sc][platform - 1]).strip()
-                keys_only = keys_only.replace(sc, '').strip()
-        sc_only = keys.replace(keys_only, '').strip()
-
-    if platform & OS_WINDOWS:
-        app = os.path.join(pluginpath, 'tools', 'userinput.exe')
-        if not os.path.exists(app):
-            Dialog.notification(getString(30227), getString(30228), xbmcgui.NOTIFICATION_ERROR)
-            return
-        mouse = ' mouse {} {}'.format(mousex, mousey)
-        mclk = ' ' + str(click)
-        keybd = ' key {} {}'.format(keys, delay)
-    elif platform & OS_LINUX:
-        app = 'xdotool'
-        mouse = ' mousemove {} {}'.format(mousex, mousey)
-        mclk = ' click --repeat {} 1'.format(click)
-        if keys_only:
-            keybd = ' type --delay {} {}'.format(delay, keys_only)
-
-        if sc_only:
-            if keybd:
-                keybd += ' && ' + app
-
-            keybd += ' key ' + sc_only
-    elif platform & OS_OSX:
-        app = 'cliclick'
-        mouse = ' m:'
-        if click == 1:
-            mouse = ' c:'
-        elif click == 2:
-            mouse = ' dc:'
-        mouse += '{},{}'.format(mousex, mousey)
-        mclk = ''
-        keybd = ' -w {}'.format(delay)
-        if keys_only:
-            keybd += ' t:{}'.format(keys_only)
-
-        if keys != keys_only:
-            keybd += ' ' + sc_only
-    if keys:
-        cmd = app + keybd
+        if isinstance(keys, str):
+            # we have assumed that this method accepts a list of strings,
+            # so need the below to allow a single key to be passed in as a string as in the current codebase
+            keys = [keys]
+        if '{EX}' in keys:
+            pyautogui.hotkey(exit_cmd)
+        else:
+            parsed_keys = [special_keys.get(key, key) for key in keys]
+            pyautogui.press(parsed_keys, interval=delay)
     else:
-        cmd = app + mouse
+        pyautogui.moveTo(mousex, mousey)
         if click:
-            cmd += mclk
+            pyautogui.click()
 
-    Log('Run command: {}'.format(cmd))
-    rcode = subprocess.call(cmd, shell=True)
-    if rcode:
-        Log('Returncode: {}'.format(rcode))
-
+    Log('Input command: Mouse(x=%s, y=%s, click=%s), Keyboard(%s)' % mousex, mousey, click, keys)
 
 def playDummyVid():
     dummy_video = os.path.join(pluginpath, 'resources', 'dummy.avi')

@@ -176,7 +176,7 @@ class AmazonTLD(Singleton):
                 xbmc.executebuiltin('RestartApp')
 
     def Search(self):
-        searchString = self._g.dialog.input(getString(24121))
+        searchString = self._g.dialog.input(getString(24121)).encode('utf-8')
         if searchString:
             url = 'searchString=%s%s' % (quote_plus(searchString), self._s.OfferGroup)
             self.listContent('Search', url, 1, 'search')

@@ -98,7 +98,7 @@ def EXPORT_MOVIE(asin=False, makeNFO=cr_nfo):
         asin = var.args.get('asin')
     for moviedata in moviesDB.lookupMoviedb(asin, single=False):
         Info = ADD_MOVIE_ITEM(moviedata, onlyinfo=True)
-        filename = Info['Title']
+        filename = Info['Title'].strip()
         folder = os.path.join(MOVIE_PATH, cleanName(filename))
         Log('Amazon Export: ' + filename)
         strm_file = filename + ".strm"

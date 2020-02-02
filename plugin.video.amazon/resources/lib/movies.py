@@ -5,6 +5,7 @@ from . import db
 from . import appfeed
 from .common import *
 from service import updateRunning
+from imdb import IMDb
 
 MAX_RES = 140
 max_wt = 10800  # 3hrs
@@ -325,6 +326,20 @@ def ASIN_ADD(title):
     elif 'amazonRating' in title:
         stars = float(title['amazonRating']['rating']) * 2 if 'rating' in title['amazonRating'] else None
         votes = title['amazonRating']['count'] if 'count' in title['amazonRating'] else None
+    
+    ia = IMDb()
+    movs = ia.search_movie('{}'.format(title['title']))
+    Log('Searching with title: {}'.format(title['title']))
+    if len(movs) > 0:
+        Log('Found in imdb')
+        ia.update(movs[0])
+        stars = movs[0].get('rating')
+    else:
+        Log('not found in imdb with star='+str(stars))
+        if stars >= 8:
+            stars = 1.1
+        else:
+            stars = 1
 
     if 'images' in title['formats'][0].keys():
         try:

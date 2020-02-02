@@ -14,6 +14,7 @@ from .singleton import Singleton
 from .network import *
 from .itemlisting import *
 from .users import *
+from imdb import IMDb
 
 
 class AmazonTLD(Singleton):
@@ -859,6 +860,20 @@ class AmazonTLD(Singleton):
         elif 'amazonRating' in item:
             infoLabels['Rating'] = float(item['amazonRating']['rating']) * 2 if 'rating' in item['amazonRating'] else None
             infoLabels['Votes'] = str(item['amazonRating']['count']) if 'count' in item['amazonRating'] else None
+        stars =infoLabels['Rating']
+        ia = IMDb()
+        movs = ia.search_movie(infoLabels['Title'])
+        if len(movs) > 0:
+            ia.update(movs[0])
+            infoLabels['Rating'] = movs[0].get('rating')
+        else:
+            if stars >= 8:
+                infoLabels['Rating'] = 1.1
+            else:
+                infoLabels['Rating'] = 1
+            
+
+            
 
         if contentType == 'series':
             infoLabels['mediatype'] = 'tvshow'

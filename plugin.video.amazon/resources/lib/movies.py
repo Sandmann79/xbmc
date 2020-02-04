@@ -326,20 +326,25 @@ def ASIN_ADD(title):
     elif 'amazonRating' in title:
         stars = float(title['amazonRating']['rating']) * 2 if 'rating' in title['amazonRating'] else None
         votes = title['amazonRating']['count'] if 'count' in title['amazonRating'] else None
-    
+
     ia = IMDb()
-    movs = ia.search_movie('{}'.format(title['title']))
-    Log('Searching with title: {}'.format(title['title']))
+    name = '{} ({})'.format(title['title'], year)
+    name = name.replace(' [OV]', '')
+    name = name.replace(' [dt./OV]', '')
+    name = name.replace('- Uncut', '')
+    name = name.replace(' (Deutsche Kinofassung)', '')
+    name = name.replace('(Deutsche Kinofassung)', '')
+    movs = ia.search_movie(name)
     if len(movs) > 0:
-        Log('Found in imdb')
+        Log('Found in imdb '+ name)
         ia.update(movs[0])
         stars = movs[0].get('rating')
     else:
-        Log('not found in imdb with star='+str(stars))
         if stars >= 8:
-            stars = 1.1
+            stars = 1.2
         else:
-            stars = 1
+            stars = 1.1
+        Log('not found in imdb {} with star={}'.format(name, str(stars)))
 
     if 'images' in title['formats'][0].keys():
         try:

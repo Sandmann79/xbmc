@@ -74,7 +74,8 @@ class AmazonTLD(Singleton):
         self.SetupAmazonLibrary()
 
     def CreateInfoFile(self, nfofile, path, content, Info, language, hasSubtitles=False):
-        skip_keys = ('ishd', 'isadult', 'audiochannels', 'genre', 'cast', 'duration', 'asins', 'contentType')
+        skip_keys = ('ishd', 'isadult', 'audiochannels', 'genre', 'cast', 'duration', 'asins', 'contentType', 'seriesasin', 'contenttype', 'mediatype',
+                     'poster', 'isprime', 'seasonasin')
         fileinfo = '<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>\n'
         fileinfo += '<%s>\n' % content
         if 'Duration' in Info.keys():
@@ -97,7 +98,7 @@ class AmazonTLD(Singleton):
                 elif lkey == 'thumb':
                     aspect = '' if 'episode' in content else ' aspect="poster"'
                     fileinfo += '<%s%s>%s</%s>\n' % (lkey, aspect, value, lkey)
-                elif lkey == 'fanart':
+                elif lkey == 'fanart' and not 'episode' in content:
                     fileinfo += '<%s>\n    <thumb>%s</thumb>\n</%s>\n' % (lkey, value, lkey)
                 elif lkey not in skip_keys:
                     fileinfo += '<%s>%s</%s>\n' % (lkey, value, lkey)
@@ -786,7 +787,8 @@ class AmazonTLD(Singleton):
         listing += '_show' if (self._s.dispShowOnly and not (export and asins == listing)) or cont == '_show' else ''
         return getATVData('GetASINDetails', url), listing
 
-    def getAsins(self, content, crIL=True):
+    @staticmethod
+    def getAsins(content, crIL=True):
         if crIL:
             infoLabels = {'Plot': None, 'MPAA': None, 'Cast': [], 'Year': None, 'Premiered': None, 'Rating': None,
                           'Votes': None, 'isAdult': 0, 'Director': None,

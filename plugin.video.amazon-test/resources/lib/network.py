@@ -368,12 +368,22 @@ def LogIn(ask=True):
             else:
                 return None
         elif 'fwcim-form' in uni_soup:
-            msg = soup.find('div', attrs={'class': 'a-row a-spacing-micro cvf-widget-input-code-label'}).get_text(strip=True)
-            ret = g.dialog.input(msg)
-            if ret:
-                br['code'] = ret
-            else:
-                return None
+            msg = soup.find('div', attrs={'class': 'a-row a-spacing-micro cvf-widget-input-code-label'})
+            if msg:
+                ret = g.dialog.input(msg.get_text(strip=True))
+                if ret:
+                    br['code'] = ret
+                else:
+                    return None
+            msg = soup.find('img', attrs={'alt': 'captcha'})
+            if msg:
+                wnd = _Challenge(msg)
+                wnd.doModal()
+                if wnd.cap:
+                    form.set_input({'cvf_captcha_input': wnd.cap})
+                else:
+                    return None
+                del wnd
         return br
 
     def _setLoginPW():
@@ -650,4 +660,42 @@ class _Captcha(pyxbmct.AddonDialogWindow):
         self.pwd = self.password.getText()
         self.cap = self.captcha.getText()
         self.email = self.username.getText()
+        self.close()
+
+
+class _Challenge(pyxbmct.AddonDialogWindow):
+    def __init__(self, msg):
+        box = msg.find_parent('div', class_='a-box-inner a-padding-extra-large')
+        self.url = msg['src']
+        self.head = box.find('span', class_='a-size-large').get_text(strip=True)
+        self.hint = box.find('span', class_='a-size-base a-color-secondary').get_text(strip=True)
+        self.task = box.find('label', class_='a-form-label').get_text(strip=True)
+        super(_Challenge, self).__init__(self.head)
+        self.setGeometry(500, 400, 9, 2)
+        self.cap = ''
+        self.tb_hint = pyxbmct.TextBox()
+        self.fl_task = pyxbmct.FadeLabel(_alignment=pyxbmct.ALIGN_CENTER)
+        self.img_url = pyxbmct.Image('')
+        self.ed_cap = pyxbmct.Edit('', _alignment=pyxbmct.ALIGN_LEFT | pyxbmct.ALIGN_CENTER_Y)
+        self.btn_submit = pyxbmct.Button('OK')
+        self.btn_cancel = pyxbmct.Button(getString(30123))
+        self.set_controls()
+
+    def set_controls(self):
+        self.placeControl(self.tb_hint, 0, 1, 3)
+        self.placeControl(self.img_url, 0, 0, 8)
+        self.placeControl(self.fl_task, 5, 1)
+        self.placeControl(self.ed_cap, 6, 1)
+        self.placeControl(self.btn_submit, 7, 1)
+        self.placeControl(self.btn_cancel, 8, 1)
+        self.connect(self.btn_cancel, self.close)
+        self.connect(self.btn_submit, self.submit)
+        self.connect(pyxbmct.ACTION_NAV_BACK, self.close)
+        self.tb_hint.setText(self.hint)
+        self.fl_task.addLabel(self.task)
+        self.img_url.setImage(self.url, False)
+        self.setFocus(self.ed_cap)
+
+    def submit(self):
+        self.cap = self.ed_cap.getText()
         self.close()

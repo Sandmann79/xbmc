@@ -380,6 +380,8 @@ def LogIn(ask=True):
                 wnd = _Challenge(msg)
                 wnd.doModal()
                 if wnd.cap:
+                    submit = soup.find('input', value='verifyCaptcha')
+                    form.choose_submit(submit)
                     form.set_input({'cvf_captcha_input': wnd.cap})
                 else:
                     return None
@@ -554,15 +556,15 @@ def LogIn(ask=True):
             elif 'message_error' in response:
                 writeConfig('login_pass', '')
                 msg = soup.find('div', attrs={'id': 'message_error'})
-                Log('Login Error: %s' % msg.p.get_text(strip=True))
-                g.dialog.ok(getString(30200), getString(30201))
+                Log('Login Error: %s' % msg.get_text(strip=True))
+                g.dialog.ok(getString(30200), msg.get_text(strip=True))
             elif 'message_warning' in response:
                 msg = soup.find('div', attrs={'id': 'message_warning'})
-                Log('Login Warning: %s' % msg.p.get_text(strip=True))
+                Log('Login Warning: %s' % msg.get_text(strip=True))
             elif 'auth-error-message-box' in response:
-                msg = soup.find('div', attrs={'class': 'a-alert-content'})
-                Log('Login MFA: %s' % msg.ul.li.span.get_text(strip=True))
-                g.dialog.ok(getString(30200), getString(30214))
+                msg = soup.find('div', attrs={'id': 'auth-error-message-box'})
+                Log('Login MFA: %s' % msg.get_text(strip=True))
+                g.dialog.ok(msg.div.h4.get_text(strip=True), msg.div.div.get_text(strip=True))
             elif 'error-slot' in response:
                 msg_title = soup.find('div', attrs={'class': 'ap_error_page_title'}).get_text(strip=True)
                 msg_cont = soup.find('div', attrs={'class': 'ap_error_page_message'}).get_text(strip=True)
@@ -666,34 +668,32 @@ class _Captcha(pyxbmct.AddonDialogWindow):
 class _Challenge(pyxbmct.AddonDialogWindow):
     def __init__(self, msg):
         box = msg.find_parent('div', class_='a-box-inner a-padding-extra-large')
-        self.url = msg['src']
         self.head = box.find('span', class_='a-size-large').get_text(strip=True)
         self.hint = box.find('span', class_='a-size-base a-color-secondary').get_text(strip=True)
         self.task = box.find('label', class_='a-form-label').get_text(strip=True)
         super(_Challenge, self).__init__(self.head)
-        self.setGeometry(500, 400, 9, 2)
+        self.setGeometry(500, 400, 7, 2)
         self.cap = ''
         self.tb_hint = pyxbmct.TextBox()
         self.fl_task = pyxbmct.FadeLabel(_alignment=pyxbmct.ALIGN_CENTER)
-        self.img_url = pyxbmct.Image('')
+        self.img_url = pyxbmct.Image(msg['src'], aspectRatio=2)
         self.ed_cap = pyxbmct.Edit('', _alignment=pyxbmct.ALIGN_LEFT | pyxbmct.ALIGN_CENTER_Y)
         self.btn_submit = pyxbmct.Button('OK')
         self.btn_cancel = pyxbmct.Button(getString(30123))
         self.set_controls()
 
     def set_controls(self):
-        self.placeControl(self.tb_hint, 0, 1, 3)
-        self.placeControl(self.img_url, 0, 0, 8)
-        self.placeControl(self.fl_task, 5, 1)
-        self.placeControl(self.ed_cap, 6, 1)
-        self.placeControl(self.btn_submit, 7, 1)
-        self.placeControl(self.btn_cancel, 8, 1)
+        self.placeControl(self.tb_hint, 0, 0, 1, 2)
+        self.placeControl(self.img_url, 1, 0, 3, 2)
+        self.placeControl(self.fl_task, 4, 0, 1, 2)
+        self.placeControl(self.ed_cap, 5, 0, 1, 2)
+        self.placeControl(self.btn_submit, 6, 0)
+        self.placeControl(self.btn_cancel, 6, 1)
         self.connect(self.btn_cancel, self.close)
         self.connect(self.btn_submit, self.submit)
         self.connect(pyxbmct.ACTION_NAV_BACK, self.close)
         self.tb_hint.setText(self.hint)
         self.fl_task.addLabel(self.task)
-        self.img_url.setImage(self.url, False)
         self.setFocus(self.ed_cap)
 
     def submit(self):

@@ -19,8 +19,8 @@
     </extension>
 </addon>
 <addon id="plugin.video.amazon"
-       name="Amazon"
-       version="2.0.7"
+       name="[DISCONTINUED] Amazon"
+       version="2.0.8"
        provider-name="Sandmann79 + BlueCop + Romans I XVI">
   <requires>
     <import addon="xbmc.python" version="2.24.0"/>
@@ -44,9 +44,8 @@
     <reuselanguageinvoker>true</reuselanguageinvoker>
     <summary lang="en">Amazon Prime Video Streaming</summary>
     <summary lang="de">Amazon Prime Instant Video</summary>
-    <description lang="en">Movies and Television Shows for German Prime Members.
-This Addon works only with German Amazon Accounts. For Non-German Accounts use Amazon VOD Addon from my repo.</description>
-    <description lang="de">Filme und Serien für Amazon Prime Mitglieder</description>
+    <description lang="en">Please don't use this Addon anymore, its discontinued and didn't get any updates in the future.</description>
+    <description lang="de">Bitte diese Addon nicht mehr verwenden, es wurde eingestellt und wird keine Updates mehr erhalten.</description>
     <disclaimer lang="en">Some parts of this addon may not be legal in your country of residence - please check with your local laws before installing.
 This Addon uses pyDes by Todd Whiteman</disclaimer>
     <disclaimer lang="de">Möglicherweise sind einge Teile dieses Addons in Ihrem Land illegal, Sie sollten dies unbedingt vor der Installation überprüfen.
@@ -58,7 +57,7 @@ Diese Addon verwendet pyDes von Todd Whiteman</disclaimer>
 </addon>
 <addon id="plugin.video.amazon-test"
        name="Amazon VOD"
-       version="0.8.1"
+       version="0.8.2"
        provider-name="Sandmann79, Varstahl">
   <requires>
     <import addon="xbmc.python" version="2.24.0"/>

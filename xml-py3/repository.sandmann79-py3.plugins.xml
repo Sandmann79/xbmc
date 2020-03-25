@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<addon id="repository.sandmann79-py3.plugins" name="Sandmann79s Repository" version="{ver_add}" provider-name="Sandmann79">
+	<extension point="xbmc.addon.repository" name="Sandmann79s Repository Marix">
+		<info compressed="false">https://raw.githubusercontent.com/Sandmann79/xbmc/master/packages-py3/addons.xml</info>
+		<checksum>https://raw.githubusercontent.com/Sandmann79/xbmc/master/packages-py3/addons.xml.md5</checksum>
+		<datadir zip="true">https://raw.githubusercontent.com/Sandmann79/xbmc/master/packages-py3/</datadir>
+	</extension>
+	<extension point="xbmc.addon.metadata">
+		<summary>Various Addons for Kodi 19 and beyond</summary>
+		<description></description>
+		<disclaimer></disclaimer>
+		<platform>all</platform>
+	</extension>
+</addon>

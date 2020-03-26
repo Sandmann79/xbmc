@@ -36,21 +36,21 @@ for /f %%f in ('dir %~dp0 /b /a:d') do if exist %~dp0%%f\addon.xml (
             )
             if "!line:~-1!"==">" set add=
         )
-        if "%%f" neq "%repo_py3%" (
-            findstr /v /c:"<?xml" %~dp0%%f\addon.xml >> %arc_dir_py2%\addons.xml
-            if not exist %arc_dir_py2%\%%f\%%f-!version!.zip (
-                if exist %arc_dir_py2%\%%f rd /q /s %arc_dir_py2%\%%f >nul 2>&1
-                md %arc_dir_py2%\%%f
-                echo Erstelle %%f v!version!
-                copy %~dp0%%f\addon.xml %arc_dir_py2%\%%f >nul 2>&1
-                if exist %~dp0%%f\icon.png copy %~dp0%%f\icon.png %arc_dir_py2%\%%f >nul 2>&1
-                if exist %~dp0%%f\fanart.jpg copy %~dp0%%f\fanart.jpg %arc_dir_py2%\%%f >nul 2>&1
-                if exist %~dp0%%f\changelog.txt copy %~dp0%%f\changelog.txt %arc_dir_py2%\%%f\changelog-!version!.txt >nul 2>&1
-                %tools_dir%\7za a %arc_dir_py2%\%%f\%%f-!version!.zip %~dp0%%f -tzip > nul
-                %tools_dir%\md5 -l -n %arc_dir_py2%\%%f\%%f-!version!.zip > %arc_dir_py2%\%%f\%%f-!version!.zip.md5
-            ) else (
-                echo %%f v!version! bereits vorhanden
-            )
+        set arc_dir=%arc_dir_py2%
+        if "%%f"=="%repo_py3%" (set arc_dir=%arc_dir_py3%)
+        findstr /v /c:"<?xml" %~dp0%%f\addon.xml >> !arc_dir!\addons.xml
+        if not exist !arc_dir!\%%f\%%f-!version!.zip (
+            if exist !arc_dir!\%%f rd /q /s !arc_dir!\%%f >nul 2>&1
+            md !arc_dir!\%%f
+            echo Erstelle %%f v!version!
+            copy %~dp0%%f\addon.xml !arc_dir!\%%f >nul 2>&1
+            if exist %~dp0%%f\icon.png copy %~dp0%%f\icon.png !arc_dir!\%%f >nul 2>&1
+            if exist %~dp0%%f\fanart.jpg copy %~dp0%%f\fanart.jpg !arc_dir!\%%f >nul 2>&1
+            if exist %~dp0%%f\changelog.txt copy %~dp0%%f\changelog.txt !arc_dir!\%%f\changelog-!version!.txt >nul 2>&1
+            %tools_dir%\7za a !arc_dir!\%%f\%%f-!version!.zip %~dp0%%f -tzip > nul
+            %tools_dir%\md5 -l -n !arc_dir!\%%f\%%f-!version!.zip > !arc_dir!\%%f\%%f-!version!.zip.md5
+        ) else (
+            echo %%f v!version! bereits vorhanden
         )
         if exist %xml_dir_py3%\%%f.xml (
             if not exist %arc_dir_py3%\%%f\%%f-!version!.zip (
@@ -62,7 +62,6 @@ for /f %%f in ('dir %~dp0 /b /a:d') do if exist %~dp0%%f\addon.xml (
                 %tools_dir%\md5 -l -n %arc_dir_py3%\%%f\%%f-!version!.zip > %arc_dir_py3%\%%f\%%f-!version!.zip.md5
             )
             findstr /v /c:"<?xml" %arc_dir_py3%\%%f\addon.xml >> %arc_dir_py3%\addons.xml
-            del /q "%temp%\addon.xml" >nul 2>&1
         )   
     )
 )

@@ -13,6 +13,5 @@ You can find an answer the most frequently asked questions in the [Wiki/FAQ](htt
 * [Browser Launcher](plugin.program.browser.launcher): launch websites in kiosk mode.
 
 ## Python modules
-* [Amazon Database](script.module.amazon.database)
 * [MechanicalSoup](script.module.mechanicalsoup): automated website interaction.
 * [pyDes](script.module.pydes): DES/3DES encryption algorhytms.

@@ -1,16 +1,16 @@
 ﻿<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <addon id="plugin.video.amazon-test"
        name="Amazon VOD"
-       version="0.8.2"
+       version="0.8.2+matrix.1"
        provider-name="Sandmann79, Varstahl">
   <requires>
     <import addon="xbmc.python" version="3.0.0"/>
-    <import addon="script.module.beautifulsoup4" version="4.6.3"/>
-    <import addon="script.module.mechanicalsoup" version="0.12.0"/>
-    <import addon="script.module.pydes" version="2.0.1"/>
-    <import addon="script.module.pyxbmct" version="1.3.1"/>
-    <import addon="script.module.inputstreamhelper" version="0.4.4"/>
-    <import addon="script.module.requests" version="2.22.0"/>
+    <import addon="script.module.beautifulsoup4" version="4.6.3+matrix.1"/>
+    <import addon="script.module.mechanicalsoup" version="0.12.0+matrix.1"/>
+    <import addon="script.module.pydes" version="2.0.1+matrix.1"/>
+    <import addon="script.module.pyxbmct" version="1.3.1+matrix.1"/>
+    <import addon="script.module.inputstreamhelper" version="0.4.4+matrix.1"/>
+    <import addon="script.module.requests" version="2.22.0+matrix.1"/>
     <import addon="script.module.kodi-six" version="0.1.3.1"/>
   </requires>
   <extension point="xbmc.python.pluginsource"

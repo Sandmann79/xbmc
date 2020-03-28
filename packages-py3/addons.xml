@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <addons>
-<addon id="plugin.program.browser.launcher" name="Browser Launcher" version="1.2.4" provider-name="AddonScriptorDE + Sandmann79">
+<addon id="plugin.program.browser.launcher" name="Browser Launcher" version="1.2.4+matrix.1" provider-name="AddonScriptorDE + Sandmann79">
     <requires>
         <import addon="xbmc.python" version="3.0.0"/>
     </requires>
@@ -20,16 +20,16 @@
 </addon>
 <addon id="plugin.video.amazon-test"
        name="Amazon VOD"
-       version="0.8.2"
+       version="0.8.2+matrix.1"
        provider-name="Sandmann79, Varstahl">
   <requires>
     <import addon="xbmc.python" version="3.0.0"/>
-    <import addon="script.module.beautifulsoup4" version="4.6.3"/>
-    <import addon="script.module.mechanicalsoup" version="0.12.0"/>
-    <import addon="script.module.pydes" version="2.0.1"/>
-    <import addon="script.module.pyxbmct" version="1.3.1"/>
-    <import addon="script.module.inputstreamhelper" version="0.4.4"/>
-    <import addon="script.module.requests" version="2.22.0"/>
+    <import addon="script.module.beautifulsoup4" version="4.6.3+matrix.1"/>
+    <import addon="script.module.mechanicalsoup" version="0.12.0+matrix.1"/>
+    <import addon="script.module.pydes" version="2.0.1+matrix.1"/>
+    <import addon="script.module.pyxbmct" version="1.3.1+matrix.1"/>
+    <import addon="script.module.inputstreamhelper" version="0.4.4+matrix.1"/>
+    <import addon="script.module.requests" version="2.22.0+matrix.1"/>
     <import addon="script.module.kodi-six" version="0.1.3.1"/>
   </requires>
   <extension point="xbmc.python.pluginsource"
@@ -68,13 +68,13 @@ Diese Addon verwendet pyDes von Todd Whiteman</disclaimer>
 </addon>
 <addon id="script.module.mechanicalsoup"
 	name="MechanicalSoup"
-	version="0.12.0"
+	version="0.12.0+matrix.1"
 	provider-name="Matthew Hickford, Dan Hemberger, Matthieu Moy">
 	<requires>
 		<import addon="xbmc.python" version="3.0.0"/>
-		<import addon="script.module.requests" version="2.22.0"/>
-		<import addon="script.module.beautifulsoup4" version="4.6.3"/>
-		<import addon="script.module.six" version="1.14.0"/>
+		<import addon="script.module.requests" version="2.22.0+matrix.1"/>
+		<import addon="script.module.beautifulsoup4" version="4.6.3+matrix.1"/>
+		<import addon="script.module.six" version="1.14.0+matrix.1"/>
 	</requires>
 	<extension point="xbmc.python.module" library="lib" />
 	<extension point="xbmc.addon.metadata">
@@ -88,7 +88,7 @@ Diese Addon verwendet pyDes von Todd Whiteman</disclaimer>
 </addon>
 <addon id="script.module.pydes"
        name="pyDes"
-       version="2.0.1"
+       version="2.0.1+matrix.1"
        provider-name="Todd Whiteman">
   <requires>
     <import addon="xbmc.python" version="3.0.0"/>

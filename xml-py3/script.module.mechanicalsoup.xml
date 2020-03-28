@@ -5,9 +5,9 @@
 	provider-name="Matthew Hickford, Dan Hemberger, Matthieu Moy">
 	<requires>
 		<import addon="xbmc.python" version="{ver_py}"/>
-		<import addon="script.module.requests" version="2.22.0"/>
-		<import addon="script.module.beautifulsoup4" version="4.6.3"/>
-		<import addon="script.module.six" version="1.14.0"/>
+		<import addon="script.module.requests" version="2.22.0+matrix.1"/>
+		<import addon="script.module.beautifulsoup4" version="4.6.3+matrix.1"/>
+		<import addon="script.module.six" version="1.14.0+matrix.1"/>
 	</requires>
 	<extension point="xbmc.python.module" library="lib" />
 	<extension point="xbmc.addon.metadata">

@@ -86,6 +86,23 @@ Diese Addon verwendet pyDes von Todd Whiteman</disclaimer>
 		<source>https://github.com/MechanicalSoup/MechanicalSoup</source>
 	</extension>
 </addon>
+<addon id="script.module.pyautogui"
+	name="PyAutoGUI"
+	version="0.9.49+matrix.1"
+	provider-name="Al Sweigart">
+	<requires>
+		<import addon="xbmc.python" version="3.0.0"/>
+	</requires>
+	<extension point="xbmc.python.module" library="lib" />
+	<extension point="xbmc.addon.metadata">
+		<summary lang="en">PyAutoGUI is a cross-platform GUI automation Python module for human beings. Used to programmatically control the mouse and keyboard.</summary>
+		<forum></forum>
+		<website>https://pyautogui.readthedocs.io/</website>
+		<license>see LICENSE.txt</license>
+		<platform>all</platform>
+		<source>https://github.com/asweigart/pyautogui</source>
+	</extension>
+</addon>
 <addon id="script.module.pydes"
        name="pyDes"
        version="2.0.1+matrix.1"

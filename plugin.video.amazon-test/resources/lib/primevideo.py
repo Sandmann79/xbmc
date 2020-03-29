@@ -564,10 +564,10 @@ class PrimeVideo(Singleton):
 
         setContentAndView([None, 'videos', 'series', 'season', 'episode', 'movie'][folderType])
 
-    def Search(self):
+    def Search(self, searchString=None):
         """ Provide search functionality for PrimeVideo """
-
-        searchString = self._g.dialog.input(getString(24121)).strip(' \t\n\r')
+        if searchString is None:
+            searchString = self._g.dialog.input(getString(24121)).strip(' \t\n\r')
         if 0 == len(searchString):
             xbmcplugin.endOfDirectory(self._g.pluginhandle, succeeded=False)
             return

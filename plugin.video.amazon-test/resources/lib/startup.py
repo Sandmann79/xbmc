@@ -93,7 +93,13 @@ def EntryPoint():
         g.amz.updateRecents(args.get('asin', ''), int(args.get('rem', '0')))
     elif mode == 'ageSettings':
         AgeRestrictions().Settings()
+    elif mode == 'Search':
+        searchString = args.get('searchstring')
+        if g.UsePrimeVideo:
+            g.pv.Search(searchString)
+        else:
+            g.amz.Search(searchString)
     elif mode in ['LogIn', 'remLoginData', 'removeUser', 'renameUser', 'switchUser']:
         exec('{}()'.format(mode))
-    elif mode in ['checkMissing', 'Search', 'Recent']:
+    elif mode in ['checkMissing', 'Recent']:
         exec('g.amz.{}()'.format(mode))

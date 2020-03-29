@@ -600,7 +600,10 @@ class _AmazonPlayer(xbmc.Player):
         if not xbmcvfs.exists(self.resumedb) or self.content == 2:
             return {}
         with co(self.resumedb, 'rb') as fp:
-            items = pickle.load(fp)
+            try:
+                items = pickle.load(fp)
+            except KeyError:
+                items = {}
             self.resume = items.get(self.asin, {}).get('resume', 0)
             fp.close()
         return items

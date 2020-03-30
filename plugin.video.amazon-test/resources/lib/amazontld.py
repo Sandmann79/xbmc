@@ -198,7 +198,7 @@ class AmazonTLD(Singleton):
     def Recent(self, export=0):
         all_rec, rec = self.getRecents()
         asins = ','.join(rec)
-        url = 'asinlist=' + asins
+        url = 'asinlist={}&Detailed=T&mobileClient=true'.format(asins)
         self.listContent('GetASINDetails', url, 1, 'recent', export)
 
     def updateRecents(self, asin, rem=0):

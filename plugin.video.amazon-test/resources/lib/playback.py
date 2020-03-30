@@ -3,7 +3,6 @@
 from __future__ import unicode_literals
 from kodi_six import xbmcplugin
 from kodi_six.utils import py2_decode
-import pyautogui
 import os
 import shlex
 import subprocess
@@ -23,6 +22,7 @@ def _getListItem(li):
 
 
 def _Input(mousex=0, mousey=0, click=0, keys=None, delay='0.2'):
+    import pyautogui
     '''Control the user's mouse and/or keyboard.
        Arguments:
          mousex, mousey - x, y co-ordinates from top left of screen

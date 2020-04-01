@@ -11,11 +11,7 @@ set add_ver_py3=+matrix.1
 
 if not "%1"=="clean" (
     if not exist %arc_dir_py2% md %arc_dir_py2%
-    echo ^<?xml version="1.0" encoding="UTF-8" standalone="yes"?^>> %arc_dir_py2%\addons.xml
-    echo ^<addons^>>> %arc_dir_py2%\addons.xml
     if not exist %arc_dir_py3% md %arc_dir_py3%
-    echo ^<?xml version="1.0" encoding="UTF-8" standalone="yes"?^>> %arc_dir_py3%\addons.xml
-    echo ^<addons^>>> %arc_dir_py3%\addons.xml
 )
 
 for /f %%f in ('dir %~dp0 /b /a:d') do if exist %~dp0%%f\addon.xml (
@@ -28,7 +24,6 @@ for /f %%f in ('dir %~dp0 /b /a:d') do if exist %~dp0%%f\addon.xml (
         call :get_version %~dp0%%f\addon.xml
         set arc_dir=%arc_dir_py2%
         if "%%f"=="%repo_py3%" (set arc_dir=%arc_dir_py3%)
-        findstr /v /c:"<?xml" %~dp0%%f\addon.xml >> !arc_dir!\addons.xml
         if not exist !arc_dir!\%%f\%%f-!version!.zip (
             if exist !arc_dir!\%%f rd /q /s !arc_dir!\%%f >nul 2>&1
             md !arc_dir!\%%f
@@ -54,16 +49,19 @@ for /f %%f in ('dir %~dp0 /b /a:d') do if exist %~dp0%%f\addon.xml (
                 cmd /c "cd /d %arc_dir_py3% ^&^& %tools_dir%\7za a %arc_dir_py3%\%%f\%%f-!version_py3!.zip %%f\addon.xml -tzip" > nul
                 %tools_dir%\md5 -l -n %arc_dir_py3%\%%f\%%f-!version_py3!.zip > %arc_dir_py3%\%%f\%%f-!version_py3!.zip.md5
             )
-            findstr /v /c:"<?xml" %arc_dir_py3%\%%f\addon.xml >> %arc_dir_py3%\addons.xml
         )   
     )
 )
 
 if not "%1"=="clean" (
-    echo ^</addons^>>> %arc_dir_py2%\addons.xml
-    echo ^</addons^>>> %arc_dir_py3%\addons.xml
-    %tools_dir%\md5 -l -n %arc_dir_py2%\addons.xml > %arc_dir_py2%\addons.xml.md5
-    %tools_dir%\md5 -l -n %arc_dir_py3%\addons.xml > %arc_dir_py3%\addons.xml.md5
+    for /l %%a in (2,1,3) do (
+        set arcdir=!arc_dir_py%%a!
+        echo ^<?xml version="1.0" encoding="UTF-8" standalone="yes"?^>> !arcdir!\addons.xml
+        echo ^<addons^>>> !arcdir!\addons.xml
+        for /f %%f in ('dir !arcdir!\ /b /a:d') do if exist !arcdir!\%%f\addon.xml (findstr /v /c:"<?xml" !arcdir!\%%f\addon.xml >> !arcdir!\addons.xml)
+        echo ^</addons^>>> !arcdir!\addons.xml
+        %tools_dir%\md5 -l -n !arcdir!\addons.xml > !arcdir!\addons.xml.md5
+    )
 )
 pause
 goto :eof

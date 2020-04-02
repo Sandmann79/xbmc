@@ -20,6 +20,9 @@ from .l10n import *
 from .logging import *
 from .configs import *
 from .common import Globals, Settings, sleep
+import ssl
+from urllib3.poolmanager import PoolManager
+from requests.adapters import HTTPAdapter
 
 
 def _parseHTML(br):
@@ -78,7 +81,6 @@ def mobileUA(content):
 
 
 def getTerritory(user):
-
     area = [{'atvurl': '', 'baseurl': '', 'mid': '', 'pv': False},
             {'atvurl': 'https://atv-ps-eu.amazon.de', 'baseurl': 'https://www.amazon.de', 'mid': 'A1PA6795UKMFR9', 'pv': False},
             {'atvurl': 'https://atv-ps-eu.amazon.co.uk', 'baseurl': 'https://www.amazon.co.uk', 'mid': 'A1F83G8C2ARO7P', 'pv': False},
@@ -150,8 +152,17 @@ def getURL(url, useCookie=False, silent=False, headers=None, rjson=True, attempt
     if 'Accept-Language' not in headers:
         headers['Accept-Language'] = g.userAcceptLanguages
 
-    class TryAgain(Exception): pass  # Try again on temporary errors
-    class NoRetries(Exception): pass  # Fail on permanent errors
+    if 'amazonvideo.com' in host:
+        session.mount('https://', MyTLS1Adapter())
+    else:
+        session.mount('https://', HTTPAdapter())
+
+    class TryAgain(Exception):
+        pass  # Try again on temporary errors
+
+    class NoRetries(Exception):
+        pass  # Fail on permanent errors
+
     try:
         method = 'POST' if postdata is not None else 'GET'
         r = session.request(method, url, data=postdata, headers=headers, cookies=cj, verify=s.verifySsl)
@@ -504,7 +515,8 @@ def LogIn(ask=True):
             response, soup = _parseHTML(br)
             WriteLog(response.replace(py2_decode(email), '**@**'), 'login')
 
-            while any(sp in response for sp in ['auth-mfa-form', 'ap_dcq_form', 'ap_captcha_img_label', 'claimspicker', 'fwcim-form', 'auth-captcha-image-container']):
+            while any(sp in response for sp in
+                      ['auth-mfa-form', 'ap_dcq_form', 'ap_captcha_img_label', 'claimspicker', 'fwcim-form', 'auth-captcha-image-container']):
                 br = _MFACheck(br, email, soup)
                 if br is None:
                     return False
@@ -698,3 +710,10 @@ class _Challenge(pyxbmct.AddonDialogWindow):
     def submit(self):
         self.cap = self.ed_cap.getText()
         self.close()
+
+
+class MyTLS1Adapter(HTTPAdapter):
+    def init_poolmanager(self, connections, maxsize, block=False):
+        Log('TLSv1 Adapter', Log.DEBUG)
+        self.poolmanager = PoolManager(num_pools=connections, maxsize=maxsize, block=block, ssl_version=ssl.PROTOCOL_TLSv1)
+

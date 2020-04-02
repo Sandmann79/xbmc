@@ -21,78 +21,30 @@ def _getListItem(li):
     return py2_decode(xbmc.getInfoLabel('ListItem.%s' % li))
 
 
-def _Input(mousex=0, mousey=0, click=0, keys=None, delay='200'):
+def _Input(mousex=0, mousey=0, click=0, keys=None, delay='0.2'):
+    import pyautogui
+    '''Control the user's mouse and/or keyboard.
+       Arguments:
+         mousex, mousey - x, y co-ordinates from top left of screen
+         keys - list of keys to press or single key
+    '''
     g = Globals()
-
-    screenWidth = int(xbmc.getInfoLabel('System.ScreenWidth'))
-    screenHeight = int(xbmc.getInfoLabel('System.ScreenHeight'))
-    keys_only = sc_only = keybd = ''
-    mousex = screenWidth / 2 if mousex == -1 else mousex
-    mousey = screenHeight / 2 if mousey == -1 else mousey
-
-    spec_keys = {'{EX}': ('!{F4}', 'alt+F4', 'kd:cmd t:q ku:cmd'),
-                 '{SPC}': ('{SPACE}', 'space', 't:p'),
-                 '{LFT}': ('{LEFT}', 'Left', 'kp:arrow-left'),
-                 '{RGT}': ('{RIGHT}', 'Right', 'kp:arrow-right'),
-                 '{U}': ('{UP}', 'Up', 'kp:arrow-up'),
-                 '{DWN}': ('{DOWN}', 'Down', 'kp:arrow-down'),
-                 '{BACK}': ('{BS}', 'BackSpace', 'kp:delete'),
-                 '{RET}': ('{ENTER}', 'Return', 'kp:return')}
+    screenWidth, screenHeight = pyautogui.size()
+    mousex = int(screenWidth / 2) if mousex == -1 else mousex
+    mousey = int(screenHeight / 2) if mousey == -1 else mousey
+    exit_cmd = [('alt', 'f4'), ('ctrl', 'shift', 'q'), ('command', 'q')][(g.platform & -g.platform).bit_length() - 1]
 
     if keys:
-        keys_only = keys
-        for sc in spec_keys:
-            while sc in keys:
-                keys = keys.replace(sc, spec_keys[sc][g.platform - 1]).strip()
-                keys_only = keys_only.replace(sc, '').strip()
-        sc_only = keys.replace(keys_only, '').strip()
-
-    if g.platform & g.OS_WINDOWS:
-        app = os.path.join(g.PLUGIN_PATH, 'tools', 'userinput.exe')
-        if not os.path.exists(app):
-            from .l10n import getString
-            g.dialog.notification(getString(30254), getString(30255), xbmcgui.NOTIFICATION_ERROR)
-            return
-        mouse = ' mouse %s %s' % (mousex, mousey)
-        mclk = ' ' + str(click)
-        keybd = ' key %s %s' % (keys, delay)
-    elif g.platform & g.OS_LINUX:
-        app = 'xdotool'
-        mouse = ' mousemove %s %s' % (mousex, mousey)
-        mclk = ' click --repeat %s 1' % click
-        if keys_only:
-            keybd = ' type --delay %s %s' % (delay, keys_only)
-        if sc_only:
-            if keybd:
-                keybd += ' && ' + app
-            keybd += ' key ' + sc_only
-    elif g.platform & g.OS_OSX:
-        app = 'cliclick'
-        mouse = ' m:'
-        if click == 1:
-            mouse = ' c:'
-        elif click == 2:
-            mouse = ' dc:'
-        mouse += '%s,%s' % (mousex, mousey)
-        mclk = ''
-        keybd = ' -w %s' % delay
-        if keys_only:
-            keybd += ' t:%s' % keys_only
-        if keys != keys_only:
-            keybd += ' ' + sc_only
-
-    if keys:
-        cmd = app + keybd
+        if '{EX}' in keys:
+            pyautogui.hotkey(*exit_cmd)
+        else:
+            pyautogui.press(keys, interval=delay)
     else:
-        cmd = app + mouse
+        pyautogui.moveTo(mousex, mousey)
         if click:
-            cmd += mclk
+            pyautogui.click(clicks=click)
 
-    Log('Run command: %s' % cmd)
-    rcode = subprocess.call(cmd, shell=True)
-
-    if rcode:
-        Log('Returncode: %s' % rcode)
+    Log('Input command: Mouse(x={}, y={}, click={}), Keyboard({})'.format(mousex, mousey, click, keys))
 
 
 def PlayVideo(name, asin, adultstr, streamtype, forcefb=0):
@@ -248,10 +200,10 @@ def PlayVideo(name, asin, adultstr, streamtype, forcefb=0):
         return si
 
     def _ExtPlayback(videoUrl, asin, isAdult, method, fr):
-        waitsec = int(g.addon.getSetting("clickwait")) * 1000
-        waitprepin = int(g.addon.getSetting("waitprepin")) * 1000
+        waitsec = int(g.addon.getSetting("clickwait"))
+        waitprepin = int(g.addon.getSetting("waitprepin"))
         pin = g.addon.getSetting("pin")
-        waitpin = int(g.addon.getSetting("waitpin")) * 1000
+        waitpin = int(g.addon.getSetting("waitpin"))
         pininput = g.addon.getSetting("pininput") == 'true'
         fullscr = g.addon.getSetting("fullscreen") == 'true'
         videoUrl += '&playerDebug=true' if s.verbLog else ''
@@ -282,18 +234,17 @@ def PlayVideo(name, asin, adultstr, streamtype, forcefb=0):
                 waitsec *= 0.75
             else:
                 waitsec = waitprepin
-            xbmc.sleep(int(waitsec))
-            _Input(keys=pin)
+            sleep(waitsec)
+            _Input(keys=list(pin))
             waitsec = waitpin
 
         if fullscr:
-            xbmc.sleep(int(waitsec))
+            sleep(waitsec)
             if s.browser != 0:
                 _Input(keys='f')
             else:
                 _Input(mousex=-1, mousey=350, click=2)
                 xbmc.sleep(500)
-                _Input(mousex=9999, mousey=350)
 
         _Input(mousex=9999, mousey=-1)
 
@@ -343,16 +294,6 @@ def PlayVideo(name, asin, adultstr, streamtype, forcefb=0):
         dRes = 'PlaybackUrls' if streamtype == 2 else 'PlaybackUrls,SubtitleUrls,ForcedNarratives'
         mpaa_str = AgeRestrictions().GetRestrictedAges() + getString(30171)
         drm_check = g.addon.getSetting("drm_check") == 'true'
-
-        verifyISA = '{"jsonrpc":"2.0","id":1,"method":"Addons.GetAddonDetails","params":{"addonid":"inputstream.adaptive"}}'
-        if 'error' in xbmc.executeJSONRPC(verifyISA):
-            xbmc.executebuiltin('UpdateAddonRepos', True)
-            xbmc.executebuiltin('InstallAddon(inputstream.adaptive)', True)
-            if 'error' in xbmc.executeJSONRPC(verifyISA):
-                Log('InputStream.Adaptive addon is not installed')
-                _playDummyVid()
-                return True
-
         inputstream_helper = Helper('mpd', drm='com.widevine.alpha')
 
         if not inputstream_helper.check_inputstream():
@@ -575,18 +516,18 @@ class _window(xbmcgui.WindowDialog):
                       KEY_BUTTON_BACK, ACTION_MOUSE_MOVE]:
             _Input(keys='{EX}')
         elif action in [ACTION_SELECT_ITEM, ACTION_PLAYER_PLAY, ACTION_PAUSE]:
-            _Input(keys='{SPC}')
+            _Input(keys='space')
             showinfo = True
         elif action == ACTION_MOVE_LEFT:
-            _Input(keys='{LFT}')
+            _Input(keys='left')
             showinfo = True
         elif action == ACTION_MOVE_RIGHT:
-            _Input(keys='{RGT}')
+            _Input(keys='right')
             showinfo = True
         elif action == ACTION_MOVE_UP:
-            self._SetVol(+2) if s.RMC_vol else _Input(keys='{U}')
+            self._SetVol(+2) if s.RMC_vol else _Input(keys='up')
         elif action == ACTION_MOVE_DOWN:
-            self._SetVol(-2) if s.RMC_vol else _Input(keys='{DWN}')
+            self._SetVol(-2) if s.RMC_vol else _Input(keys='down')
         # numkeys for pin input
         elif 57 < actionId < 68:
             strKey = str(actionId - 58)
@@ -659,7 +600,10 @@ class _AmazonPlayer(xbmc.Player):
         if not xbmcvfs.exists(self.resumedb) or self.content == 2:
             return {}
         with co(self.resumedb, 'rb') as fp:
-            items = pickle.load(fp)
+            try:
+                items = pickle.load(fp)
+            except KeyError:
+                items = {}
             self.resume = items.get(self.asin, {}).get('resume', 0)
             fp.close()
         return items

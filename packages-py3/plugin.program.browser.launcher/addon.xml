@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<addon id="plugin.program.browser.launcher" name="Browser Launcher" version="1.2.4+matrix.1" provider-name="AddonScriptorDE + Sandmann79">
+    <requires>
+        <import addon="xbmc.python" version="3.0.0"/>
+    </requires>
+    <extension point="xbmc.python.pluginsource" library="default.py">
+        <provides>executable</provides>
+    </extension>
+    <extension point="xbmc.addon.metadata">
+        <platform>all</platform>
+        <summary lang="en">Browser Launcher</summary>
+        <language></language>
+        <description lang="en">Launch websites via selected Browser in Kiosk-mode</description>
+        <description lang="de">Öffnet Websiten mit dem ausgewählten Browser im Vollbildmodus</description>
+        <license>GNU GENERAL PUBLIC LICENSE. Version 2, June 1991</license>
+        <email>AddonScriptorDE at yahoo dot de</email>
+        <website></website>
+    </extension>
+</addon>

@@ -18,7 +18,6 @@ assignees: ''
 
 **Addon used**
 - [ ] Amazon VOD (plugin.video.amazon-test)
-- [ ] Amazon (plugin.video.amazon)
 - [ ] Browser Launcher (plugin.program.browser.launcher)
 - Addon Version [e.g. 0.7.5]
 

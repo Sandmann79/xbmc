@@ -3,16 +3,18 @@
 from __future__ import unicode_literals
 from base64 import b64encode, b64decode
 from kodi_six.utils import py2_decode
-from os.path import join as OSPJoin
 from kodi_six import xbmcgui
+import pickle
 import json
 import mechanicalsoup
-import pickle
 from platform import node
 import pyxbmct
 import re
 import requests
 import uuid
+import ssl
+from urllib3.poolmanager import PoolManager
+from requests.adapters import HTTPAdapter
 from pyDes import *
 from random import randint
 from bs4 import BeautifulSoup
@@ -20,9 +22,6 @@ from .l10n import *
 from .logging import *
 from .configs import *
 from .common import Globals, Settings, sleep
-import ssl
-from urllib3.poolmanager import PoolManager
-from requests.adapters import HTTPAdapter
 
 
 def _parseHTML(br):
@@ -264,28 +263,36 @@ def getATVData(pg_mode, query='', version=2, useCookie=False, site_id=None):
     #                        'All': 'firmware=fmw:22-app:3.0.211.123001&deviceTypeID=A43PXU4ZN2AL1'}
     #                        'All': 'firmware=fmw:045.01E01164A-app:4.7&deviceTypeID=A3VN4E5F7BBC7S'}
     # TypeIDs = {'All': 'firmware=fmw:17-app:2.0.45.1210&deviceTypeID=A2RJLFEH0UEKI9'}
-    _TypeIDs = {'All': 'firmware=fmw:26-app:3.0.265.20347&deviceTypeID=A43PXU4ZN2AL1'}
+    _TypeIDs = {'All': ['firmware=fmw:26-app:3.0.265.20347&deviceTypeID=AOAGZA014O5RE', 'firmware=fmw:26-app:3.0.265.20347&deviceTypeID=A43PXU4ZN2AL1',
+                        'firmware=fmw:045.01E01164A-app:4.7&deviceTypeID=A3VN4E5F7BBC7S']}
 
     g = Globals()
     if '?' in query:
         query = query.split('?')[1]
     if query:
         query = '&IncludeAll=T&AID=1&' + query.replace('HideNum=T', 'HideNum=F')
-    deviceTypeID = _TypeIDs[pg_mode] if pg_mode in _TypeIDs else _TypeIDs['All']
     pg_mode = pg_mode.split('_')[0]
     if '/' not in pg_mode:
         pg_mode = 'catalog/' + pg_mode
-    parameter = '%s&deviceID=%s&format=json&version=%s&formatVersion=3&marketplaceId=%s' % (
-        deviceTypeID, g.deviceID, version, g.MarketID)
-    if site_id:
-        parameter += '&id=' + site_id
-    jsondata = getURL('%s/cdp/%s?%s%s' % (g.ATVUrl, pg_mode, parameter, query), useCookie=useCookie)
-    if not jsondata:
-        return False
 
-    if jsondata['message']['statusCode'] != "SUCCESS":
-        Log('Error Code: ' + jsondata['message']['body']['code'], Log.ERROR)
-        return None
+    titles = 0
+    ids = len(_TypeIDs['All']) - 1
+    att = 0
+    while titles == 0 and att <= ids:
+        deviceTypeID = _TypeIDs['All'][att]
+        parameter = '%s&deviceID=%s&format=json&version=%s&formatVersion=3&marketplaceId=%s' % (
+            deviceTypeID, g.deviceID, version, g.MarketID)
+        if site_id:
+            parameter += '&id=' + site_id
+        jsondata = getURL('%s/cdp/%s?%s%s' % (g.ATVUrl, pg_mode, parameter, query), useCookie=useCookie)
+        if not jsondata:
+            return False
+        if jsondata['message']['statusCode'] != "SUCCESS":
+            Log('Error Code: ' + jsondata['message']['body']['code'], Log.ERROR)
+            return None
+        titles = len(jsondata['message']['body'].get('titles'))
+        att += 1 if 'StartIndex=0' in query else ids + 1
+
     return jsondata['message']['body']
 
 

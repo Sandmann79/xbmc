@@ -119,7 +119,7 @@ def getURL(url, useCookie=False, silent=False, headers=None, rjson=True, attempt
     getURL.lastResponseCode = 0
 
     # Create sessions for keep-alives and connection pooling
-    host = re.search('://([^/]+)/', url)  # Try to extract the host from the URL
+    host = re.search('://([^/]+)(?:/|$)', url)  # Try to extract the host from the URL
     if None is not host:
         host = host.group(1)
         if host not in getURL.sessions:

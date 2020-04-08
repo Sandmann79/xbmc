@@ -224,3 +224,14 @@ def sleep(sec):
         import sys
         Log('Abort requested - exiting addon')
         sys.exit()
+
+
+def key_exists(dictionary, *keys):
+    """ Check if a nested list of keys exists """
+    _p = dictionary
+    for key in keys:
+        try:
+            _p = _p[key]
+        except:
+            return False
+    return True

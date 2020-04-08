@@ -10,6 +10,7 @@ import re
 import sys
 import time
 
+from .common import key_exists
 from .singleton import Singleton
 from .network import getURL, getURLData, MechanizeLogin
 from .logging import Log
@@ -235,7 +236,7 @@ class PrimeVideo(Singleton):
                     else:
                         Merge(o[k], n[k])  # Recurse
             else:
-                Log('Collision detected during JSON objects merging, overwriting and praying', Log.WARNING)
+                Log('Collision detected during JSON objects merging, overwriting and praying (type: {})'.format(type(n)), Log.WARNING)
                 o = n
 
         def Prune(d):
@@ -1114,13 +1115,14 @@ class PrimeVideo(Singleton):
                         o[collection['text']]['lazyLoadData'] = collection
 
             # Watchlist
-            if ('filters' in cnt) and ('*classHierarchy*' not in cnt):
+            wl = cnt['viewOutput']['features']['legacy-watchlist'] if key_exists(cnt, 'viewOutput', 'features', 'legacy-watchlist') else cnt
+            if ('filters' in wl) and ('*classHierarchy*' not in wl):
                 # Don't parse content and forbid pagination on the main watchlist page
                 if 'content' in cnt:
                     del cnt['content']
                 if 'pagination' in cnt:
                     del cnt['pagination']
-                for f in cnt['filters']:
+                for f in wl['filters']:
                     o[f['id']] = {'title': f['text'], 'lazyLoadURL': f['apiUrl' if 'apiUrl' in f else 'href']}
 
             # Watchlist / Widow list / API Search

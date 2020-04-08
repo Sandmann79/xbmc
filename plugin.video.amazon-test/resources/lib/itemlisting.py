@@ -107,7 +107,7 @@ def addVideo(name, asin, infoLabels, cm=None, export=False):
         infoLabels['Trailer'] = url + '&trailer=1&selbitrate=0'
 
     url += '&trailer=2' if "live" in infoLabels['contentType'] else '&trailer=0'
-    
+
     if [k for k in ['4k', 'uhd', 'ultra hd'] if k in (infoLabels.get('TVShowTitle', '') + name).lower()]:
         bitrate = '-1'
         if s.uhdAndroid:

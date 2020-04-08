@@ -14,18 +14,27 @@ g = Globals()
 s = Settings()
 
 
-def LogCaller():
-    fi = getframeinfo(currentframe().f_back.f_back)
-    msg = '[{}] Called from: {}:{}'.format(g.__plugin__, opb(fi.filename), fi.lineno)
-    xbmc.log(py2_encode(msg), xbmc.LOGNOTICE)
-
-
 def Log(msg, level=xbmc.LOGNOTICE):
     if level == xbmc.LOGDEBUG and s.verbLog:
         level = xbmc.LOGNOTICE
     fi = getframeinfo(currentframe().f_back)
     msg = '[{0}]{2} {1}'.format(g.__plugin__, msg, '' if not s.verbLog else ' {}:{}'.format(opb(fi.filename), fi.lineno))
     xbmc.log(py2_encode(msg), level)
+
+
+Log.DEBUG = xbmc.LOGDEBUG
+Log.ERROR = xbmc.LOGERROR
+Log.FATAL = xbmc.LOGFATAL
+Log.INFO = xbmc.LOGINFO
+Log.NOTICE = xbmc.LOGNOTICE
+Log.SEVERE = xbmc.LOGSEVERE
+Log.WARNING = xbmc.LOGWARNING
+
+
+def LogCaller():
+    fi = getframeinfo(currentframe().f_back.f_back)
+    msg = '[{}] Called from: {}:{}'.format(g.__plugin__, opb(fi.filename), fi.lineno)
+    Log(msg, Log.NOTICE)
 
 
 def WriteLog(data, fn=''):
@@ -40,7 +49,7 @@ def WriteLog(data, fn=''):
     logfile.close()
 
 
-def LogJSON(o, url):
+def LogJSON(o, url=None, optionalName=None):
     from json import dump
 
     if not o:
@@ -51,15 +60,13 @@ def LogJSON(o, url):
         LogJSON.counter += 1
     except:
         LogJSON.counter = 0
-    with co(OSPJoin(g.DATA_PATH, '{}_{}.json'.format(datetime.now().strftime('%Y%m%d_%H%M%S%f'), LogJSON.counter)), 'w+', 'utf-8') as f:
-        f.write('/* %s */\n' % url)
+    fn = '{}_{}{}.json'.format(
+        datetime.now().strftime('%Y%m%d_%H%M%S%f'),
+        LogJSON.counter,
+        '_' + optionalName if optionalName else ''
+    )
+    with co(OSPJoin(g.DATA_PATH, fn), 'w+', 'utf-8') as f:
+        if url:
+            f.write('/* %s */\n' % url)
         dump(o, f, sort_keys=True, indent=4)
-
-
-Log.DEBUG = xbmc.LOGDEBUG
-Log.ERROR = xbmc.LOGERROR
-# Log.FATAL = xbmc.LOGFATAL
-Log.INFO = xbmc.LOGINFO
-# Log.NOTICE = xbmc.LOGNOTICE
-# Log.SEVERE = xbmc.LOGSEVERE
-Log.WARNING = xbmc.LOGWARNING
+        Log('Saved JSON data with filename “{}”'.format(fn), Log.DEBUG)

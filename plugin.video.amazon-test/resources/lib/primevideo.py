@@ -236,6 +236,9 @@ class PrimeVideo(Singleton):
                     else:
                         Merge(o[k], n[k])  # Recurse
             else:
+                # from .logging import LogJSON
+                # LogJSON(n, optionalName='CollisionNew')
+                # LogJSON(o, optionalName='CollisionOld')
                 Log('Collision detected during JSON objects merging, overwriting and praying (type: {})'.format(type(n)), Log.WARNING)
                 o = n
 
@@ -249,7 +252,7 @@ class PrimeVideo(Singleton):
                 for k in list(l):  # list() instead of .keys() to avoid py3 iteration errors
                     if k == 'strings':
                         l[k] = {s: l[k][s] for s in ['AVOD_DP_season_selector'] if s in l[k]}
-                    if (not l[k]) or (k in ['context', 'params', 'playerConfig', 'refine']):
+                    if (not l[k]) or (k in ['csrfToken', 'context', 'params', 'playerConfig', 'refine']):
                         del l[k]
                 l = d.values()
             for v in l:

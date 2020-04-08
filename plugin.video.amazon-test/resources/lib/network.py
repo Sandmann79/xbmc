@@ -723,4 +723,3 @@ class MyTLS1Adapter(HTTPAdapter):
     def init_poolmanager(self, connections, maxsize, block=False):
         Log('TLSv1 Adapter', Log.DEBUG)
         self.poolmanager = PoolManager(num_pools=connections, maxsize=maxsize, block=block, ssl_version=ssl.PROTOCOL_TLSv1)
-

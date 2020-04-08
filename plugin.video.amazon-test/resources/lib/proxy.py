@@ -402,7 +402,7 @@ class ProxyHTTPD(BaseHTTPRequestHandler):
                     text = text.replace('\xA8', u'¿')
                     text = text.replace('\xAD', u'¡')
                     text = text.replace(u'ń', u'ñ')
-            
+
                 # Embed RTL and change the punctuation where needed
                 if filename.startswith("ar"):
                     from unicodedata import lookup

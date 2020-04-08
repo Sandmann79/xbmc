@@ -34,7 +34,7 @@ Log.WARNING = xbmc.LOGWARNING
 def LogCaller():
     fi = getframeinfo(currentframe().f_back.f_back)
     msg = '[{}] Called from: {}:{}'.format(g.__plugin__, opb(fi.filename), fi.lineno)
-    Log(msg, Log.NOTICE)
+    xbmc.log(msg, Log.NOTICE)
 
 
 def WriteLog(data, fn=''):

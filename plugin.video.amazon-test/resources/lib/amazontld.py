@@ -784,7 +784,7 @@ class AmazonTLD(Singleton):
         if export:
             self.SetupLibrary()
 
-        url = 'asinList=%s&NumberOfResults=60StartIndex=0&Detailed=T&mobileClient=true' % asins
+        url = 'asinlist=%s&NumberOfResults=60StartIndex=0&Detailed=T&mobileClient=true' % asins
         listing += '_show' if (self._s.dispShowOnly and not (export and asins == listing)) or cont == '_show' else ''
         return getATVData('Browse', url), listing
 

@@ -275,25 +275,27 @@ def getATVData(pg_mode, query='', version=2, useCookie=False, site_id=None):
     if '/' not in pg_mode:
         pg_mode = 'catalog/' + pg_mode
 
-    titles = 0
-    ids = len(_TypeIDs['All']) - 1
-    att = 0
-    while titles == 0 and att <= ids:
-        deviceTypeID = _TypeIDs['All'][att]
-        parameter = '%s&deviceID=%s&format=json&version=%s&formatVersion=3&marketplaceId=%s' % (
-            deviceTypeID, g.deviceID, version, g.MarketID)
-        if site_id:
-            parameter += '&id=' + site_id
-        jsondata = getURL('%s/cdp/%s?%s%s' % (g.ATVUrl, pg_mode, parameter, query), useCookie=useCookie)
-        if not jsondata:
-            return False
-        if jsondata['message']['statusCode'] != "SUCCESS":
-            Log('Error Code: ' + jsondata['message']['body']['code'], Log.ERROR)
-            return None
-        titles = len(jsondata['message']['body'].get('titles'))
-        att += 1 if 'StartIndex=0' in query else ids + 1
+    if 'asinlist=&' not in query:
+        titles = 0
+        ids = len(_TypeIDs['All']) - 1
+        att = 0
+        while titles == 0 and att <= ids:
+            deviceTypeID = _TypeIDs['All'][att]
+            parameter = '%s&deviceID=%s&format=json&version=%s&formatVersion=3&marketplaceId=%s' % (
+                deviceTypeID, g.deviceID, version, g.MarketID)
+            if site_id:
+                parameter += '&id=' + site_id
+            jsondata = getURL('%s/cdp/%s?%s%s' % (g.ATVUrl, pg_mode, parameter, query), useCookie=useCookie)
+            if not jsondata:
+                return False
+            if jsondata['message']['statusCode'] != "SUCCESS":
+                Log('Error Code: ' + jsondata['message']['body']['code'], Log.ERROR)
+                return None
+            titles = len(jsondata['message']['body'].get('titles'))
+            att += 1 if 'StartIndex=0' in query else ids + 1
 
-    return jsondata['message']['body']
+        return jsondata['message']['body']
+    return {}
 
 
 def MechanizeLogin():

@@ -86,6 +86,8 @@ def PlayVideo(name, asin, adultstr, streamtype, forcefb=0):
         if not suc:
             return False, data
 
+        timecodes = data.get('transitionTimecodes', {})
+
         if retmpd and ('subtitles' in data):
             subUrls = [sub['url'] for sub in data['subtitles'] if 'url' in sub.keys()]
 
@@ -122,7 +124,7 @@ def PlayVideo(name, asin, adultstr, streamtype, forcefb=0):
                     continue
 
                 returl = urlset['url'] if bypassproxy else 'http://{}/mpd/{}'.format(s.proxyaddress, quote_plus(urlset['url']))
-                return (returl, subUrls) if retmpd else (True, _extrFr(data))
+                return (returl, subUrls, timecodes) if retmpd else (True, _extrFr(data))
 
         return False, getString(30217)
 
@@ -291,7 +293,7 @@ def PlayVideo(name, asin, adultstr, streamtype, forcefb=0):
     def _IStreamPlayback(asin, name, streamtype, isAdult, extern):
         from .ages import AgeRestrictions
         vMT = ['Feature', 'Trailer', 'LiveStreaming'][streamtype]
-        dRes = 'PlaybackUrls' if streamtype == 2 else 'PlaybackUrls,SubtitleUrls,ForcedNarratives'
+        dRes = 'PlaybackUrls' if streamtype == 2 else 'PlaybackUrls,SubtitleUrls,ForcedNarratives,TransitionTimecodes'
         mpaa_str = AgeRestrictions().GetRestrictedAges() + getString(30171)
         drm_check = g.addon.getSetting("drm_check") == 'true'
         inputstream_helper = Helper('mpd', drm='com.widevine.alpha')
@@ -308,8 +310,9 @@ def PlayVideo(name, asin, adultstr, streamtype, forcefb=0):
             _playDummyVid()
             return True
 
-        mpd, subs = _ParseStreams(*getURLData('catalog/GetPlaybackResources', asin, extra=True, vMT=vMT, dRes=dRes, useCookie=cookie,
-                                              proxyEndpoint='gpr'), retmpd=True, bypassproxy=s.bypassProxy or (streamtype == 2))
+        mpd, subs, timecodes = _ParseStreams(*getURLData('catalog/GetPlaybackResources', asin, extra=True, vMT=vMT, dRes=dRes, useCookie=cookie,
+                                                         proxyEndpoint='gpr'), retmpd=True, bypassproxy=s.bypassProxy or (streamtype == 2))
+        skip = timecodes.get('skipElements')
 
         cj_str = ';'.join(['%s=%s' % (k, v) for k, v in cookie.items()])
         opt = '|Content-Type=application%2Fx-www-form-urlencoded&Cookie=' + quote_plus(cj_str)
@@ -385,15 +388,27 @@ def PlayVideo(name, asin, adultstr, streamtype, forcefb=0):
         player.resolve(listitem)
 
         starttime = time.time()
+        skip_button = _SkipButton()
+
         while (not g.monitor.abortRequested()) and player.running:
             if player.isPlayingVideo():
                 player.video_lastpos = player.getTime()
                 if time.time() > (starttime + player.interval):
                     starttime = time.time()
                     player.updateStream('PLAY')
+                if skip:
+                    for elem in skip:
+                        st_pos = elem.get('startTimecodeMs')
+                        et_pos = (elem.get('endTimecodeMs') - st_pos) * 0.9 + st_pos
+                        btn_type = elem.get('elementType')
+                        if st_pos <= (player.video_lastpos * 1000) <= et_pos:
+                            skip_button.display(elem)
+                        elif skip_button.act_btn == btn_type:
+                            skip_button.hide()
             g.monitor.waitForAbort(1)
+        skip_button.hide()
         player.finished()
-        del player
+        del player, skip_button
         return True
 
     isAdult = adultstr == '1'
@@ -602,7 +617,7 @@ class _AmazonPlayer(xbmc.Player):
         with co(self.resumedb, 'rb') as fp:
             try:
                 items = pickle.load(fp)
-            except KeyError:
+            except (KeyError, pickle.UnpicklingError):
                 items = {}
             self.resume = items.get(self.asin, {}).get('resume', 0)
             fp.close()
@@ -659,3 +674,43 @@ class _AmazonPlayer(xbmc.Player):
                 self.video_totaltime = self.getTotalTime()
                 self.video_lastpos = self.getTime()
         Log('%s: %s/%s' % (msg, self.video_lastpos, self.video_totaltime))
+
+
+class _SkipButton(xbmcgui.WindowDialog):
+    def __init__(self):
+        super(_SkipButton, self).__init__()
+        x = self.getWidth() - 550
+        y = self.getHeight() - 70
+        self.skip_button = xbmcgui.ControlButton(x, y, width=500, height=30, label='', textColor='0xFFFFFFFF', focusedColor='0xFFFFA500',
+                                                 shadowColor='0xFF000000', focusTexture='', noFocusTexture='', alignment=1, font='font14')
+        self.addControl(self.skip_button)
+        self.act_btn = ''
+        self.btn_arr = {'INTRO': 30193, 'RECAP': 30194}
+        self.seek_time = 0
+        self.player = xbmc.Player()
+
+    def display(self, elem):
+        if self.act_btn == '' and xbmcgui.getCurrentWindowId() in (12005, 12901):
+            self.seek_time = (elem.get('endTimecodeMs') / 1000) - 3
+            self.act_btn = elem.get('elementType')
+            self.skip_button.setLabel(getString(self.btn_arr[self.act_btn]))
+            self.skip_button.setVisible(True)
+            self.setFocus(self.skip_button)
+            self.show()
+
+    def hide(self):
+        self.act_btn = ''
+        self.seek_time = 0
+        self.close()
+
+    def onControl(self, control):
+        if control.getId() == self.skip_button.getId() and self.player.isPlayingVideo():
+            Log('Seeking to (+3): {}'.format(self.seek_time), Log.DEBUG)
+            self.player.seekTime(self.seek_time)
+            sleep(0.5)
+            Log('Position: {}'.format(self.player.getTime() - 0.5), Log.DEBUG)
+            self.hide()
+
+    def onAction(self, action):
+        if action in [xbmcgui.ACTION_PREVIOUS_MENU, xbmcgui.ACTION_NAV_BACK]:
+            self.close()

@@ -199,7 +199,7 @@ class AmazonTLD(Singleton):
         all_rec, rec = self.getRecents()
         asins = ','.join(rec)
         url = 'asinlist={}&Detailed=T&mobileClient=true'.format(asins)
-        self.listContent('GetASINDetails', url, 1, 'recent', export)
+        self.listContent('Browse', url, 1, 'recent', export)
 
     def updateRecents(self, asin, rem=0):
         all_rec, rec = self.getRecents()
@@ -786,7 +786,7 @@ class AmazonTLD(Singleton):
 
         url = 'asinList=%s&NumberOfResults=60StartIndex=0&Detailed=T&mobileClient=true' % asins
         listing += '_show' if (self._s.dispShowOnly and not (export and asins == listing)) or cont == '_show' else ''
-        return getATVData('GetASINDetails', url), listing
+        return getATVData('Browse', url), listing
 
     @staticmethod
     def getAsins(content, crIL=True):

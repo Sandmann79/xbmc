@@ -84,7 +84,7 @@ def PlayVideo(name, asin, adultstr, streamtype, forcefb=0):
         subUrls = []
 
         if not suc:
-            return False, data
+            return False, data, None
 
         timecodes = data.get('transitionTimecodes', {})
 
@@ -124,9 +124,9 @@ def PlayVideo(name, asin, adultstr, streamtype, forcefb=0):
                     continue
 
                 returl = urlset['url'] if bypassproxy else 'http://{}/mpd/{}'.format(s.proxyaddress, quote_plus(urlset['url']))
-                return (returl, subUrls, timecodes) if retmpd else (True, _extrFr(data))
+                return (returl, subUrls, timecodes) if retmpd else (True, _extrFr(data), None)
 
-        return False, getString(30217)
+        return False, getString(30217), None
 
     def _getCmdLine(videoUrl, asin, method, fr):
         scr_path = g.addon.getSetting("scr_path")
@@ -143,7 +143,7 @@ def PlayVideo(name, asin, adultstr, streamtype, forcefb=0):
                 return False, nobr_str
 
             if frdetect:
-                suc, fr = _ParseStreams(*getURLData('catalog/GetPlaybackResources', asin, extra=True, useCookie=True)) if not fr else (True, fr)
+                suc, fr = _ParseStreams(*getURLData('catalog/GetPlaybackResources', asin, extra=True, useCookie=True))[:2] if not fr else (True, fr)
                 if not suc:
                     return False, fr
             else:
@@ -312,6 +312,12 @@ def PlayVideo(name, asin, adultstr, streamtype, forcefb=0):
 
         mpd, subs, timecodes = _ParseStreams(*getURLData('catalog/GetPlaybackResources', asin, extra=True, vMT=vMT, dRes=dRes, useCookie=cookie,
                                                          proxyEndpoint='gpr'), retmpd=True, bypassproxy=s.bypassProxy or (streamtype == 2))
+
+        if not mpd:
+            g.dialog.notification(getString(30203), subs, xbmcgui.NOTIFICATION_ERROR)
+            _playDummyVid()
+            return True
+
         skip = timecodes.get('skipElements')
 
         cj_str = ';'.join(['%s=%s' % (k, v) for k, v in cookie.items()])
@@ -319,11 +325,6 @@ def PlayVideo(name, asin, adultstr, streamtype, forcefb=0):
         opt += '|widevine2Challenge=B{SSM}&includeHdcpTestKeyInLicense=true'
         opt += '|JBlicense;hdcpEnforcementResolutionPixels'
         licURL = getURLData('catalog/GetPlaybackResources', asin, opt=opt, extra=True, vMT=vMT, dRes='Widevine2License', retURL=True)
-
-        if not mpd:
-            g.dialog.notification(getString(30203), subs, xbmcgui.NOTIFICATION_ERROR)
-            _playDummyVid()
-            return True
 
         from xbmcaddon import Addon as KodiAddon
         is_version = KodiAddon(g.is_addon).getAddonInfo('version') if g.is_addon else '0'

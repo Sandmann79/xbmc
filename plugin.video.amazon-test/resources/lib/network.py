@@ -153,8 +153,6 @@ def getURL(url, useCookie=False, silent=False, headers=None, rjson=True, attempt
 
     if 'amazonvideo.com' in host:
         session.mount('https://', MyTLS1Adapter())
-    else:
-        session.mount('https://', HTTPAdapter())
 
     class TryAgain(Exception):
         pass  # Try again on temporary errors

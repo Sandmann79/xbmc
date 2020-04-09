@@ -1213,8 +1213,6 @@ class PrimeVideo(Singleton):
                                     (('type' in x) and ('NextPage' == x['type'])) or (('*className*' in x) and ('atv.wps.PaginatorNext' == x['*className*']))), None)
                 if nextPage:
                     requestURLs.append(nextPage)
-                else:
-                    Log('Unknown error while parsing pagination', Log.ERROR)
 
             # Notify new page
             if 0 < len(requestURLs):

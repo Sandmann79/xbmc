@@ -529,7 +529,15 @@ msgctxt "#30192"
 msgid "Do you want to restart Kodi now?"
 msgstr "¿Quieres reiniciar Kodi ahora?"
 
-#empty strings from id 30193 to 30197
+msgctxt "#30193"
+msgid "Skip Intro"
+msgstr ""
+
+msgctxt "#30194"
+msgid "Skip Recap"
+msgstr ""
+
+#empty strings from id 30195 to 30197
 
 msgctxt "#30198"
 msgid "Browser or Script not found. Please check settings."

@@ -319,6 +319,7 @@ def PlayVideo(name, asin, adultstr, streamtype, forcefb=0):
             return True
 
         skip = timecodes.get('skipElements')
+        Log(skip, Log.DEBUG)
 
         cj_str = ';'.join(['%s=%s' % (k, v) for k, v in cookie.items()])
         opt = '|Content-Type=application%2Fx-www-form-urlencoded&Cookie=' + quote_plus(cj_str)
@@ -706,9 +707,9 @@ class _SkipButton(xbmcgui.WindowDialog):
 
     def onControl(self, control):
         if control.getId() == self.skip_button.getId() and self.player.isPlayingVideo():
-            Log('Seeking to (+3): {}'.format(self.seek_time), Log.DEBUG)
-            tc = int(self.seek_time - self.player.getTime())
-            jsonRPC('Player.Seek', param={'playerid': 1, 'value': {'seconds': tc}})
+            perc = self.seek_time * 100 / self.player.getTotalTime()
+            Log('Seeking to (+3): {} / {}%'.format(self.seek_time, perc), Log.DEBUG)
+            jsonRPC('Player.Seek', param={'playerid': 1, 'value': {'percentage': perc}})
             sleep(0.5)
             Log('Position: {}'.format(self.player.getTime()), Log.DEBUG)
             self.hide()

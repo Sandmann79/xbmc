@@ -32,7 +32,8 @@ Uses the Inputstream interface with the internal Kodi player, which is available
 Uses the [Amazon Prime Video App](https://play.google.com/store/apps/details?id=com.amazon.avod.thirdpartyclient) for playback. If you own an Amazon FireTV/Stick, you have to install the [Amazon Video Wrapper](https://github.com/Sandmann79/xbmc/raw/master/tools_addon/AmazonVideoWrapper.apk).
 
 ### Browser
-Uses the user selected browser to play the chosen video. You can start the browser in fullscreen/kiosk mode, and with a separate user profile saved in the addon data folder. It's also possible to enter PINs for age restricted videos, but this function needs external tools: [`userinput.exe`](https://github.com/Sandmann79/xbmc/releases/tag/v0.7.5-ui) for Windows ([Sources](https://github.com/Sandmann79/xbmc/blob/master/tools_addon/userinput.au3)), `xdotool` for Linux or `cliclick` for Mac.  
+Uses the user selected browser to play the chosen video. You can start the browser in fullscreen/kiosk mode, and with a separate user profile saved in the addon data folder. It's also possible to enter PINs for age restricted videos. This is realized by using [PyAutoGUI](https://pyautogui.readthedocs.io/en/latest/).
+
 This mode requires you to be logged both in the addon and in the browser at the same time.
 
 ### Command/Script/Batch

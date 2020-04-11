@@ -707,9 +707,10 @@ class _SkipButton(xbmcgui.WindowDialog):
     def onControl(self, control):
         if control.getId() == self.skip_button.getId() and self.player.isPlayingVideo():
             Log('Seeking to (+3): {}'.format(self.seek_time), Log.DEBUG)
-            self.player.seekTime(self.seek_time)
+            tc = int(self.seek_time - self.player.getTime())
+            jsonRPC('Player.Seek', param={'playerid': 1, 'value': {'seconds': tc}})
             sleep(0.5)
-            Log('Position: {}'.format(self.player.getTime() - 0.5), Log.DEBUG)
+            Log('Position: {}'.format(self.player.getTime()), Log.DEBUG)
             self.hide()
 
     def onAction(self, action):

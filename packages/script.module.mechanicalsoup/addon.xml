@@ -11,11 +11,14 @@
 	</requires>
 	<extension point="xbmc.python.module" library="lib" />
 	<extension point="xbmc.addon.metadata">
-		<summary lang="en">A Python library for automating interaction with websites.</summary>
+		<summary lang="en_GB">A Python library for automating interaction with websites.</summary>
 		<forum></forum>
 		<website>https://mechanicalsoup.readthedocs.io/</website>
 		<license>MIT</license>
 		<platform>all</platform>
 		<source>https://github.com/MechanicalSoup/MechanicalSoup</source>
+        <assets>
+            <icon>icon.png</icon>
+        </assets>
 	</extension>
 </addon>

@@ -9,10 +9,13 @@
   <extension point="xbmc.python.module"
              library="lib" />
   <extension point="xbmc.addon.metadata">
-    <summary lang="en">A pure python module which implements the DES and Triple-DES encryption algorithms.</summary>
+    <summary lang="en_GB">A pure python module which implements the DES and Triple-DES encryption algorithms.</summary>
     <website>http://twhiteman.netfirms.com/des.html</website> 
     <license>MIT</license> 
     <platform>all</platform> 
-    <source>http://sourceforge.net/projects/pydes/</source> 
+    <source>http://sourceforge.net/projects/pydes/</source>
+    <assets>
+      <icon>icon.png</icon>
+    </assets>
   </extension>
 </addon>

@@ -189,6 +189,7 @@ class Settings(Singleton):
         elif 'removePosters' == name: return self._gs('pv_episode_thumbnails') == 'true'
         elif 'bypassProxy' == name: return self._gs('proxy_mpdalter') == 'false'
         elif 'uhdAndroid' == name: return self._gs('uhd_android') == 'true'
+        elif 'dis_skip' == name: return self._gs('dis_skip') == 'true'
 
 
 def jsonRPC(method, props='', param=None):

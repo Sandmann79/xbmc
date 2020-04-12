@@ -398,7 +398,7 @@ def PlayVideo(name, asin, adultstr, streamtype, forcefb=0):
                 if time.time() > (starttime + player.interval):
                     starttime = time.time()
                     player.updateStream('PLAY')
-                if skip:
+                if skip and s.dis_skip is False:
                     for elem in skip:
                         st_pos = elem.get('startTimecodeMs')
                         et_pos = (elem.get('endTimecodeMs') - st_pos) * 0.9 + st_pos

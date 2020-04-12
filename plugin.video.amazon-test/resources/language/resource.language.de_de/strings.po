@@ -121,6 +121,10 @@ msgctxt "#30023"
 msgid "Use android app for 4K videos"
 msgstr "Android App für 4K Videos verwenden"
 
+msgctxt "#30024"
+msgid "Disable skip Intro/Recap button"
+msgstr "Intro/Rückblende Button deaktivieren"
+
 msgctxt "#30027"
 msgid "Stretch factor"
 msgstr "Timing"

@@ -121,7 +121,11 @@ msgctxt "#30023"
 msgid "Use android app for 4K videos"
 msgstr ""
 
-#empty strings from id 30024 to id 30026
+msgctxt "#30024"
+msgid "Disable skip Intro/Recap button"
+msgstr ""
+
+#empty strings from id 30025 to id 30026
 
 msgctxt "#30027"
 msgid "Stretch factor"

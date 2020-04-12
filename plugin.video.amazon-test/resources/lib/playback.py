@@ -707,10 +707,19 @@ class _SkipButton(xbmcgui.WindowDialog):
 
     def onControl(self, control):
         if control.getId() == self.skip_button.getId() and self.player.isPlayingVideo():
-            perc = self.seek_time * 100 / self.player.getTotalTime()
-            Log('Seeking to (+3): {} / {}%'.format(self.seek_time, perc), Log.DEBUG)
-            jsonRPC('Player.Seek', param={'playerid': 1, 'value': {'percentage': perc}})
+            # Workaround for bug in Kodi/ISA:
+            #   Jumping to a specfic/absolute time results in asynchronus subtitles timings.
+            #   So jumping to time and seeking some seconds backwards correct this issue.
+            #   Seeking forwards isn't possible, values lower 60 will be threated as absolut values.
+
+            Log('Seeking to: {}s'.format(self.seek_time), Log.DEBUG)
+            self.player.pause()
             sleep(0.5)
+            self.player.seekTime(self.seek_time)
+            sleep(0.5)
+            jsonRPC('Player.Seek', param={'playerid': 1, 'value': {'seconds': -1}})
+            sleep(0.5)
+            self.player.pause()
             Log('Position: {}'.format(self.player.getTime()), Log.DEBUG)
             self.hide()
 

@@ -672,7 +672,7 @@ class PrimeVideo(Singleton):
             # Sometimes the date is returned with an american format and/or not localized
             if None is p:
                 try:
-                    p = re.search(r'^(?P<m>[^W]+)\s+(?P<d>[0-9]+),\s+(?P<y>[0-9]+)(?:\s+[0-9]+|$)', datestr.lower(), re.UNICODE)
+                    p = re.search(r'^(?P<m>[^W]+)[.,:;\s-]+(?P<d>[0-9]+),\s+(?P<y>[0-9]+)(?:\s+[0-9]+|$)', datestr.lower(), re.UNICODE)
                 except: pass
                 if (None is p) or ('en_US' == lang):
                     Log('Unable to parse date "{}" with language "{}": format changed?'.format(datestr, lang), Log.DEBUG)

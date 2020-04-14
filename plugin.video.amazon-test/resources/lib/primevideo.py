@@ -1046,8 +1046,10 @@ class PrimeVideo(Singleton):
                         vd['metadata']['videometa']['season'] = item['seasonNumber']
                         bUpdated = True
                     if bCacheRefresh or ('tvshowtitle' not in vd['metadata']['videometa']):
-                        vd['metadata']['videometa']['tvshowtitle'] = item['parentTitle']
-                        bUpdated = True
+                        try:
+                            vd['metadata']['videometa']['tvshowtitle'] = item['parentTitle']
+                            bUpdated = True
+                        except: pass
 
                 # Episode, Season, TV show title
                 if ('episodeNumber' in item) and item['episodeNumber']:

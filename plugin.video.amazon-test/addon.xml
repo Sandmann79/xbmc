@@ -35,7 +35,7 @@ Diese Addon verwendet pyDes von Todd Whiteman</disclaimer>
     <license>GPL-3.0-or-later</license>
     <assets>
       <icon>icon.png</icon>
-      <fanart>fanart.jpg</fanart>
+      <fanart>fanart.png</fanart>
     </assets>
   </extension>
 </addon>

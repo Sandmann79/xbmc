@@ -296,8 +296,8 @@ def PlayVideo(name, asin, adultstr, streamtype, forcefb=0):
         dRes = 'PlaybackUrls' if streamtype == 2 else 'PlaybackUrls,SubtitleUrls,ForcedNarratives,TransitionTimecodes'
         mpaa_str = AgeRestrictions().GetRestrictedAges() + getString(30171)
         drm_check = g.addon.getSetting("drm_check") == 'true'
-        inputstream_helper = Helper('mpd', drm='com.widevine.alpha')
 
+        inputstream_helper = Helper('mpd', drm='com.widevine.alpha')
         if not inputstream_helper.check_inputstream():
             Log('No Inputstream Addon found or activated')
             _playDummyVid()
@@ -689,11 +689,16 @@ class _SkipButton(xbmcgui.WindowDialog):
         self.act_btn = ''
         self.btn_arr = {'INTRO': 30193, 'RECAP': 30194}
         self.seek_time = 0
-        self.player = xbmc.Player()
+        self.player = _AmazonPlayer()
+
+    @staticmethod
+    def has_seek_bug():
+        ver = jsonRPC('JSONRPC.Version')['version']
+        return list(ver.values()) < [11, 7, 0]
 
     def display(self, elem):
         if self.act_btn == '' and xbmcgui.getCurrentWindowId() in (12005, 12901):
-            self.seek_time = (elem.get('endTimecodeMs') / 1000) - 3
+            self.seek_time = int(elem.get('endTimecodeMs') / 1000) - 4
             self.act_btn = elem.get('elementType')
             self.skip_button.setLabel(getString(self.btn_arr[self.act_btn]))
             self.skip_button.setVisible(True)
@@ -708,18 +713,21 @@ class _SkipButton(xbmcgui.WindowDialog):
     def onControl(self, control):
         if control.getId() == self.skip_button.getId() and self.player.isPlayingVideo():
             # Workaround for bug in Kodi/ISA:
-            #   Jumping to a specfic/absolute time results in asynchronus subtitles timings.
-            #   So jumping to time and seeking some seconds backwards correct this issue.
-            #   Seeking forwards isn't possible, values lower 60 will be threated as absolut values.
-
-            Log('Seeking to: {}s'.format(self.seek_time), Log.DEBUG)
-            self.player.pause()
-            sleep(0.5)
-            self.player.seekTime(self.seek_time)
-            sleep(0.5)
-            jsonRPC('Player.Seek', param={'playerid': 1, 'value': {'seconds': -1}})
-            sleep(0.5)
-            self.player.pause()
+            #   Jumping to a specfic/absolute time results in asynchronus subtitles timings. Seeking forward/backwards didn't have this issue.
+            #   But just seeking forwards isn't possible, values lower 60 will be threated as absolut values.
+            #   Avoid this by jumping additionally to start with values lower 60.
+            tc = int(self.seek_time - self.player.getTime())
+            Log('Seeking to (+4): {}sec / seek incr {}sec / cur pos {}sec'.format(self.seek_time, tc, self.player.getTime()), Log.DEBUG)
+            seek_back = True if 60 - tc > 0 and self.has_seek_bug() else False  # seeking forward fixed since JSON-RPC v11.7.0
+            if seek_back:
+                tc = self.seek_time
+                self.player.pause()
+                jsonRPC('Player.Seek', param={'playerid': 1, 'value': 0})
+                sleep(0.75)
+            jsonRPC('Player.Seek', param={'playerid': 1, 'value': {'seconds': tc}})
+            sleep(0.75)
+            if seek_back:
+                self.player.pause()
             Log('Position: {}'.format(self.player.getTime()), Log.DEBUG)
             self.hide()
 

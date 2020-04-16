@@ -398,7 +398,7 @@ def PlayVideo(name, asin, adultstr, streamtype, forcefb=0):
                 if time.time() > (starttime + player.interval):
                     starttime = time.time()
                     player.updateStream('PLAY')
-                if skip and s.dis_skip is False:
+                if skip and s.skip_scene > 0:
                     for elem in skip:
                         st_pos = elem.get('startTimecodeMs')
                         et_pos = (elem.get('endTimecodeMs') - st_pos) * 0.9 + st_pos
@@ -687,7 +687,7 @@ class _SkipButton(xbmcgui.WindowDialog):
                                                  shadowColor='0xFF000000', focusTexture='', noFocusTexture='', alignment=1, font='font14')
         self.addControl(self.skip_button)
         self.act_btn = ''
-        self.btn_arr = {'INTRO': 30193, 'RECAP': 30194}
+        self.btn_list = ('SHOW', 'INTRO', 'RECAP', 'INTRO_RECAP')
         self.seek_time = 0
         self.player = _AmazonPlayer()
 
@@ -700,10 +700,13 @@ class _SkipButton(xbmcgui.WindowDialog):
         if self.act_btn == '' and xbmcgui.getCurrentWindowId() in (12005, 12901):
             self.seek_time = int(elem.get('endTimecodeMs') / 1000) - 4
             self.act_btn = elem.get('elementType')
-            self.skip_button.setLabel(getString(self.btn_arr[self.act_btn]))
-            self.skip_button.setVisible(True)
-            self.setFocus(self.skip_button)
-            self.show()
+            if self.act_btn in self.btn_list[s.skip_scene - 1]:
+                self.skipScene()
+            else:
+                self.skip_button.setLabel(getString(self.btn_list.index(self.act_btn) + 30192))
+                self.skip_button.setVisible(True)
+                self.setFocus(self.skip_button)
+                self.show()
 
     def hide(self):
         self.act_btn = ''
@@ -712,24 +715,27 @@ class _SkipButton(xbmcgui.WindowDialog):
 
     def onControl(self, control):
         if control.getId() == self.skip_button.getId() and self.player.isPlayingVideo():
-            # Workaround for bug in Kodi/ISA:
-            #   Jumping to a specfic/absolute time results in asynchronus subtitles timings. Seeking forward/backwards didn't have this issue.
-            #   But just seeking forwards isn't possible, values lower 60 will be threated as absolut values.
-            #   Avoid this by jumping additionally to start with values lower 60.
-            tc = int(self.seek_time - self.player.getTime())
-            Log('Seeking to (+4): {}sec / seek incr {}sec / cur pos {}sec'.format(self.seek_time, tc, self.player.getTime()), Log.DEBUG)
-            seek_back = True if 60 - tc > 0 and self.has_seek_bug() else False  # seeking forward fixed since JSON-RPC v11.7.0
-            if seek_back:
-                tc = self.seek_time
-                self.player.pause()
-                jsonRPC('Player.Seek', param={'playerid': 1, 'value': 0})
-                sleep(0.75)
-            jsonRPC('Player.Seek', param={'playerid': 1, 'value': {'seconds': tc}})
+            self.skipScene()
+
+    def skipScene(self):
+        # Workaround for bug in Kodi/ISA:
+        #   Jumping to a specfic/absolute time results in asynchronus subtitles timings. Seeking forward/backwards didn't have this issue.
+        #   But just seeking forwards isn't possible, values lower 60 will be threated as absolut values.
+        #   Avoid this by jumping additionally to start with values lower 60.
+        tc = int(self.seek_time - self.player.getTime())
+        Log('Seeking to (+4): {}sec / seek incr {}sec / cur pos {}sec'.format(self.seek_time, tc, self.player.getTime()), Log.DEBUG)
+        seek_back = True if 60 - tc > 0 and self.has_seek_bug() else False  # seeking forward fixed since JSON-RPC v11.7.0
+        if seek_back:
+            tc = self.seek_time
+            self.player.pause()
+            jsonRPC('Player.Seek', param={'playerid': 1, 'value': 0})
             sleep(0.75)
-            if seek_back:
-                self.player.pause()
-            Log('Position: {}'.format(self.player.getTime()), Log.DEBUG)
-            self.hide()
+        jsonRPC('Player.Seek', param={'playerid': 1, 'value': {'seconds': tc}})
+        sleep(0.75)
+        if seek_back:
+            self.player.pause()
+        Log('Position: {}'.format(self.player.getTime()), Log.DEBUG)
+        self.hide()
 
     def onAction(self, action):
         if action in [xbmcgui.ACTION_PREVIOUS_MENU, xbmcgui.ACTION_NAV_BACK]:

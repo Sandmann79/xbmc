@@ -31,7 +31,7 @@
         <setting id="fallback_method" type="enum" label="Fallback" values="None|Browser|Script/Batch|Android" default="0" visible="eq(-21,3)" enable="eq(-1,true)" subsetting="true"/>
         <setting id="proxy_mpdalter" type="bool" label="30248" default="true" visible="eq(-22,3)" />
         <setting id="uhd_android" type="bool" label="30023" default="false" visible="eq(-23,3)" enable="System.Platform.Android"/>
-        <setting id="dis_skip" type="bool" label="30024" default="false" visible="eq(-24,3)"/>
+        <setting id="skip_scene" type="enum" label="30081" lvalues="30082|30083|30084|30085|30086" default="1" visible="eq(-24,3)"/>
     </category>
     <!-- Language -->
     <category label="30021">

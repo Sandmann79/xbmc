@@ -121,11 +121,7 @@ msgctxt "#30023"
 msgid "Use android app for 4K videos"
 msgstr ""
 
-msgctxt "#30024"
-msgid "Disable skip Intro/Recap button"
-msgstr ""
-
-#empty strings from id 30025 to id 30026
+#empty strings from id 30024 to id 30026
 
 msgctxt "#30027"
 msgid "Stretch factor"
@@ -323,7 +319,31 @@ msgctxt "#30080"
 msgid "Automatically Watchlist export"
 msgstr ""
 
-#empty strings from id 30081 to 30099
+msgctxt "#30081"
+msgid "Intro/Recap scenes processing"
+msgstr ""
+
+msgctxt "#30082"
+msgid "Do nothing"
+msgstr ""
+
+msgctxt "#30083"
+msgid "Show Skip Button"
+msgstr ""
+
+msgctxt "#30084"
+msgid "Autoskip Intro"
+msgstr ""
+
+msgctxt "#30085"
+msgid "Autoskip Recap"
+msgstr ""
+
+msgctxt "#30086"
+msgid "Autoskip All"
+msgstr ""
+
+#empty strings from id 30087 to 30099
 
 msgctxt "#30100"
 msgid "Library"

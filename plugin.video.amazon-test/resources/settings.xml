@@ -89,6 +89,7 @@
         <setting id="tmdb_art" type="enum" lvalues="30050|30051|30052" label="30016" default="1"/>
         <setting id="tvdb_art" type="enum" lvalues="30050|30053|30054|30056" label="30017" default="1"/>
         <setting id="useshowfanart" type="bool" label="30055" default="true"/>
+        <setting id="pv_episode_thumbnails" type="bool" label="30249" default="true"/>
         <!-- - -->
         <setting label="30070" type="lsep"/>
         <setting id="paycont" type="bool" label="30073" default="false"/>
@@ -98,9 +99,5 @@
         <setting id="remotectrl" type="bool" label="30074" default="false"/>
         <setting id="remote_vol" type="bool" label="30075" default="false" subsetting="true" enable="eq(-1,true)"/>
         <setting id="logging" type="bool" label="30072" default="false"/>
-    </category>
-    <!-- PrimeVideo -->
-    <category label="30250">
-        <setting id="pv_episode_thumbnails" type="bool" label="30249" default="true"/>
     </category>
 </settings>

@@ -87,7 +87,7 @@ msgstr "Angemeldet als"
 
 msgctxt "#30015"
 msgid "Views"
-msgstr "Ansicht"
+msgstr "Ansichten"
 
 msgctxt "#30016"
 msgid "Movie Fanart Source"

@@ -261,10 +261,13 @@ def getATVData(pg_mode, query='', version=2, useCookie=False, site_id=None):
     #                        'All': 'firmware=fmw:22-app:3.0.211.123001&deviceTypeID=A43PXU4ZN2AL1'}
     #                        'All': 'firmware=fmw:045.01E01164A-app:4.7&deviceTypeID=A3VN4E5F7BBC7S'}
     # TypeIDs = {'All': 'firmware=fmw:17-app:2.0.45.1210&deviceTypeID=A2RJLFEH0UEKI9'}
-    _TypeIDs = {'All': ['firmware=fmw:28-app:5.2.3&deviceTypeID=AR8DE21S8PINM', 'firmware=fmw:26-app:3.0.265.20347&deviceTypeID=A1S15DUFSI8AUG',
+    _TypeIDs = {True: ['firmware=fmw:28-app:5.2.3&deviceTypeID=A3SSWQ04XYPXBH', 'firmware=fmw:26-app:3.0.265.20347&deviceTypeID=A1S15DUFSI8AUG',
+                       'firmware=default&deviceTypeID=A1FYY15VCM5WG1'],
+                False: ['firmware=fmw:28-app:5.2.3&deviceTypeID=A1C66CX2XD756O', 'firmware=fmw:26-app:3.0.265.20347&deviceTypeID=A12GXV8XMS007S',
                         'firmware=fmw:045.01E01164A-app:4.7&deviceTypeID=A3VN4E5F7BBC7S']}
 
     g = Globals()
+    s = Settings()
     if '?' in query:
         query = query.split('?')[1]
     if query:
@@ -275,10 +278,10 @@ def getATVData(pg_mode, query='', version=2, useCookie=False, site_id=None):
 
     if 'asinlist=&' not in query:
         titles = 0
-        ids = len(_TypeIDs['All']) - 1
+        ids = len(_TypeIDs[s.removePosters]) - 1
         att = 0
         while titles == 0 and att <= ids:
-            deviceTypeID = _TypeIDs['All'][att]
+            deviceTypeID = _TypeIDs[s.removePosters][att]
             parameter = '%s&deviceID=%s&format=json&version=%s&formatVersion=3&marketplaceId=%s' % (
                 deviceTypeID, g.deviceID, version, g.MarketID)
             if site_id:

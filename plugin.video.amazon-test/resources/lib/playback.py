@@ -683,7 +683,7 @@ class _SkipButton(xbmcgui.WindowDialog):
         super(_SkipButton, self).__init__()
         x = self.getWidth() - 550
         y = self.getHeight() - 70
-        self.skip_button = xbmcgui.ControlButton(x, y, width=500, height=30, label='', textColor='0xFFFFFFFF', focusedColor='0xFFFFA500',
+        self.skip_button = xbmcgui.ControlButton(x, y, width=500, height=30, label='', textColor='0xFFFFFFFF', focusedColor='0xFFFFA500', disabledColor='0xFFFFA500',
                                                  shadowColor='0xFF000000', focusTexture='', noFocusTexture='', alignment=1, font='font14')
         self.addControl(self.skip_button)
         self.act_btn = ''
@@ -700,13 +700,16 @@ class _SkipButton(xbmcgui.WindowDialog):
         if self.act_btn == '' and xbmcgui.getCurrentWindowId() in (12005, 12901):
             self.seek_time = int(elem.get('endTimecodeMs') / 1000) - 4
             self.act_btn = elem.get('elementType')
-            if self.act_btn in self.btn_list[s.skip_scene - 1]:
-                self.skipScene()
-            else:
-                self.skip_button.setLabel(getString(self.btn_list.index(self.act_btn) + 30192))
-                self.skip_button.setVisible(True)
-                self.setFocus(self.skip_button)
-                self.show()
+            autoskip = self.act_btn in self.btn_list[s.skip_scene - 1]
+            langid = 30195 if autoskip else self.btn_list.index(self.act_btn) + 30192
+            self.skip_button.setEnabled(autoskip is False)
+            self.skip_button.setLabel(getString(langid))
+            self.skip_button.setVisible(True)
+            self.setFocus(self.skip_button)
+            self.show()
+            if autoskip:
+                sleep(1)
+                self.skipScene(1000)
 
     def hide(self):
         self.act_btn = ''
@@ -717,7 +720,7 @@ class _SkipButton(xbmcgui.WindowDialog):
         if control.getId() == self.skip_button.getId() and self.player.isPlayingVideo():
             self.skipScene()
 
-    def skipScene(self):
+    def skipScene(self, wait=0):
         # Workaround for bug in Kodi/ISA:
         #   Jumping to a specfic/absolute time results in asynchronus subtitles timings. Seeking forward/backwards didn't have this issue.
         #   But just seeking forwards isn't possible, values lower 60 will be threated as absolut values.
@@ -735,6 +738,7 @@ class _SkipButton(xbmcgui.WindowDialog):
         if seek_back:
             self.player.pause()
         Log('Position: {}'.format(self.player.getTime()), Log.DEBUG)
+        xbmc.sleep(wait)
         self.hide()
 
     def onAction(self, action):

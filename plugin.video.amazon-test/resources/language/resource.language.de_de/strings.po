@@ -525,6 +525,10 @@ msgctxt "#30194"
 msgid "Skip Recap"
 msgstr "Rückblende überspringen"
 
+msgctxt "#30195"
+msgid "Skipping Scene…"
+msgstr "Szene wird übersprungen…"
+
 msgctxt "#30198"
 msgid "Browser or Script not found. Please check settings."
 msgstr "Browser oder Skript nicht gefunden. Bitte Einstellungen überprüfen."

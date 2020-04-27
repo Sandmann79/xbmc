@@ -36,6 +36,7 @@ Diese Addon verwendet pyDes von Todd Whiteman</disclaimer>
     <assets>
       <icon>icon.png</icon>
       <fanart>fanart.png</fanart>
+      <clearlogo>clearlogo.png</clearlogo>
     </assets>
   </extension>
 </addon>

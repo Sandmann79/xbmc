@@ -921,5 +921,4 @@ class AmazonTLD(Singleton):
                 infoLabels['Fanart'] = self._s.DefaultFanart
             if not infoLabels['isPrime'] and not contentType == 'series':
                 infoLabels['DisplayTitle'] = '[COLOR %s]%s[/COLOR]' % (self._g.PayCol, infoLabels['DisplayTitle'])
-
         return contentType, infoLabels

@@ -685,7 +685,6 @@ class _SkipButton(xbmcgui.WindowDialog):
         y = self.getHeight() - 70
         self.skip_button = xbmcgui.ControlButton(x, y, width=500, height=30, label='', textColor='0xFFFFFFFF', focusedColor='0xFFFFA500', disabledColor='0xFFFFA500',
                                                  shadowColor='0xFF000000', focusTexture='', noFocusTexture='', alignment=1, font='font14')
-        self.addControl(self.skip_button)
         self.act_btn = ''
         self.btn_list = ('SHOW', 'INTRO', 'RECAP', 'INTRO_RECAP')
         self.seek_time = 0
@@ -702,6 +701,7 @@ class _SkipButton(xbmcgui.WindowDialog):
             self.act_btn = elem.get('elementType')
             autoskip = self.act_btn in self.btn_list[s.skip_scene - 1]
             langid = 30195 if autoskip else self.btn_list.index(self.act_btn) + 30192
+            self.addControl(self.skip_button)
             self.skip_button.setEnabled(autoskip is False)
             self.skip_button.setLabel(getString(langid))
             self.skip_button.setVisible(True)
@@ -712,6 +712,8 @@ class _SkipButton(xbmcgui.WindowDialog):
                 self.skipScene(1000)
 
     def hide(self):
+        if self.skip_button.getId() > 0:
+            self.removeControl(self.skip_button)
         self.act_btn = ''
         self.seek_time = 0
         self.close()

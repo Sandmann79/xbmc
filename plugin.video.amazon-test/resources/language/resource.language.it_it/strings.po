@@ -324,7 +324,31 @@ msgctxt "#30080"
 msgid "Automatically Watchlist export"
 msgstr "Esporta automaticamente Lista Video"
 
-# empty strings from id 30081 to 30099
+msgctxt "#30081"
+msgid "Intro/Recap scenes processing"
+msgstr ""
+
+msgctxt "#30082"
+msgid "Do nothing"
+msgstr ""
+
+msgctxt "#30083"
+msgid "Show Skip Button"
+msgstr ""
+
+msgctxt "#30084"
+msgid "Autoskip Intro"
+msgstr ""
+
+msgctxt "#30085"
+msgid "Autoskip Recap"
+msgstr ""
+
+msgctxt "#30086"
+msgid "Autoskip All"
+msgstr ""
+
+# empty strings from id 30087 to 30099
 
 msgctxt "#30100"
 msgid "Library"
@@ -515,16 +539,8 @@ msgid "Source folders added/changed"
 msgstr "Cartelle di origine aggiunte/modificate"
 
 msgctxt "#30188"
-msgid "To complete the setup:"
-msgstr "Per completare il setup:"
-
-msgctxt "#30189"
-msgid " 1) Restart Kodi"
-msgstr " 1) Riavvia Kodi"
-
-msgctxt "#30190"
-msgid " 2) Set the content type of added folders"
-msgstr " 2) Imposta il tipo di contenuto delle cartelle aggiunte"
+msgid "To complete the setup restart Kodi and set the content type of added folders."
+msgstr ""
 
 msgctxt "#30191"
 msgid "Restart"
@@ -541,6 +557,10 @@ msgstr "Salta l'introduzione"
 msgctxt "#30194"
 msgid "Skip Recap"
 msgstr "Salta il riassunto"
+
+msgctxt "#30195"
+msgid "Skipping Scene…"
+msgstr ""
 
 #empty strings from id 30195 to 30197
 

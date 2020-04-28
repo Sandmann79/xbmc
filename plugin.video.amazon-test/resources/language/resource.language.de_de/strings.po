@@ -498,16 +498,8 @@ msgid "Source folders added/changed"
 msgstr "Video-Quellen hinzugefügt/geändert"
 
 msgctxt "#30188"
-msgid "To complete the setup:"
-msgstr "Zum Abschluss der Einrichtung:"
-
-msgctxt "#30189"
-msgid " 1) Restart Kodi"
-msgstr " 1) XBMC/Kodi neustarten"
-
-msgctxt "#30190"
-msgid " 2) Set the content type of added folders"
-msgstr " 2) Den Inhalt der Ordner festlegen"
+msgid "To complete the setup restart Kodi and set the content type of added folders."
+msgstr "Zum Abschluss der Einrichtung Kodi neustarten und danach den Inhalt der Ordner festlegen."
 
 msgctxt "#30191"
 msgid "Restart"
@@ -515,7 +507,7 @@ msgstr "Neustart"
 
 msgctxt "#30192"
 msgid "Do you want to restart Kodi now?"
-msgstr "Soll XBMC/Kodi neugestartet werden?"
+msgstr "Kodi neustarten?"
 
 msgctxt "#30193"
 msgid "Skip Intro"

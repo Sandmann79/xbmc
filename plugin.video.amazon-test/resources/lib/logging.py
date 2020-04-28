@@ -14,9 +14,9 @@ g = Globals()
 s = Settings()
 
 
-def Log(msg, level=xbmc.LOGNOTICE):
+def Log(msg, level=xbmc.LOGINFO):
     if level == xbmc.LOGDEBUG and s.verbLog:
-        level = xbmc.LOGNOTICE
+        level = xbmc.LOGINFO
     fi = getframeinfo(currentframe().f_back)
     msg = '[{0}]{2} {1}'.format(g.__plugin__, msg, '' if not s.verbLog else ' {}:{}'.format(opb(fi.filename), fi.lineno))
     xbmc.log(py2_encode(msg), level)
@@ -26,15 +26,13 @@ Log.DEBUG = xbmc.LOGDEBUG
 Log.ERROR = xbmc.LOGERROR
 Log.FATAL = xbmc.LOGFATAL
 Log.INFO = xbmc.LOGINFO
-Log.NOTICE = xbmc.LOGNOTICE
-Log.SEVERE = xbmc.LOGSEVERE
 Log.WARNING = xbmc.LOGWARNING
 
 
 def LogCaller():
     fi = getframeinfo(currentframe().f_back.f_back)
     msg = '[{}] Called from: {}:{}'.format(g.__plugin__, opb(fi.filename), fi.lineno)
-    xbmc.log(msg, Log.NOTICE)
+    xbmc.log(msg, Log.INFO)
 
 
 def WriteLog(data, fn=''):

@@ -98,11 +98,6 @@ def addVideo(name, asin, infoLabels, cm=None, export=False):
     if 'Poster' in infoLabels.keys():
         item.setArt({'tvshow.poster': infoLabels['Poster']})
 
-    if infoLabels['isHD']:
-        item.addStreamInfo('video', {'width': 1920, 'height': 1080})
-    else:
-        item.addStreamInfo('video', {'width': 720, 'height': 480})
-
     if infoLabels['TrailerAvailable']:
         infoLabels['Trailer'] = url + '&trailer=1&selbitrate=0'
 
@@ -110,8 +105,13 @@ def addVideo(name, asin, infoLabels, cm=None, export=False):
 
     if [k for k in ['4k', 'uhd', 'ultra hd'] if k in (infoLabels.get('TVShowTitle', '') + name).lower()]:
         bitrate = '-1'
+        item.addStreamInfo('video', {'width': 3840, 'height': 2160})
         if s.uhdAndroid:
             item.setProperty('IsPlayable', 'false')
+    elif infoLabels['isHD']:
+        item.addStreamInfo('video', {'width': 1920, 'height': 1080})
+    else:
+        item.addStreamInfo('video', {'width': 720, 'height': 480})
 
     if export:
         url += '&selbitrate=' + bitrate

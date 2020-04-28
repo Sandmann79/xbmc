@@ -286,30 +286,35 @@ msgid "Title Descending"
 msgstr "כותרת בסדר יורד"
 
 msgctxt "#30080"
-msgid "Choose Country"
-msgstr "בחירת מדינה"
+msgid "Automatically Watchlist export"
+msgstr ""
 
 msgctxt "#30081"
-msgid "Germany"
-msgstr "גרמניה"
+msgid "Intro/Recap scenes processing"
+msgstr ""
 
 msgctxt "#30082"
-msgid "United Kingdom"
-msgstr "אנגליה"
+msgid "Do nothing"
+msgstr ""
 
 msgctxt "#30083"
-msgid "USA"
-msgstr "ארצות הברית"
+msgid "Show Skip Button"
+msgstr ""
 
 msgctxt "#30084"
-msgid "Japan"
-msgstr "יפן"
+msgid "Autoskip Intro"
+msgstr ""
 
 msgctxt "#30085"
-msgid "Other (primevideo.com)"
-msgstr "אחר (primevideo.com)"
+msgid "Autoskip Recap"
+msgstr ""
 
-# empty strings from id 30086 to 30099
+msgctxt "#30086"
+msgid "Autoskip All"
+msgstr ""
+
+# empty strings from id 30087 to 30099
+
 msgctxt "#30100"
 msgid "Library"
 msgstr "ספרייה"
@@ -455,16 +460,8 @@ msgid "Source folders added/changed"
 msgstr "תיקיות המקור נוספו או שונו"
 
 msgctxt "#30188"
-msgid "To complete the setup:"
-msgstr "כדי להשלים את ההגדרות:"
-
-msgctxt "#30189"
-msgid " 1) Restart Kodi"
-msgstr " 1) אתחל את קודי"
-
-msgctxt "#30190"
-msgid " 2) Set the content type of added folders"
-msgstr " 2) להגדיר את סוג התוכן של תיקיות שנוספו"
+msgid "To complete the setup restart Kodi and set the content type of added folders."
+msgstr ""
 
 msgctxt "#30191"
 msgid "Restart"
@@ -482,7 +479,12 @@ msgctxt "#30194"
 msgid "Skip Recap"
 msgstr ""
 
-#empty strings from id 30195 to 30197
+msgctxt "#30195"
+msgid "Skipping Scene…"
+msgstr ""
+
+#empty strings from id 30196 to 30197
+
 msgctxt "#30198"
 msgid "Browser or Script not found. Please check settings."
 msgstr "לא נמצא דפדפן או סקריפט. נא בדוק את הגדרות."

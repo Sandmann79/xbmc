@@ -172,7 +172,7 @@ class AmazonTLD(Singleton):
         if source_added:
             with closing(xbmcvfs.File(source_path, 'w')) as fo:
                 fo.write(bytearray(et.tostring(root, 'utf-8')))
-            self._g.dialog.ok(getString(30187), getString(30188), getString(30189), getString(30190))
+            self._g.dialog.ok(getString(30187), getString(30188))
             if self._g.dialog.yesno(getString(30191), getString(30192)):
                 xbmc.executebuiltin('RestartApp')
 
@@ -375,14 +375,19 @@ class AmazonTLD(Singleton):
 
     def listContent(self, catalog, url, page, parent, export=0):
         oldurl = url
-        ResPage = 240 if export else self._s.MaxResults
+        titlelist = []
+        ResPage = self._s.MaxResults
+
+        if export:
+            ResPage = 240
+            self.SetupLibrary()
+
         if catalog in (self._g.watchlist, self._g.library):
             titles, parent = self.getList(catalog, export, url, page)
             ResPage = 60
         else:
             url = '%s&NumberOfResults=%s&StartIndex=%s&Detailed=T' % (url, ResPage, (page - 1) * ResPage)
             titles = getATVData(catalog, url)
-        titlelist = []
         if page != 1 and not export:
             addDir(' --= %s =--' % getString(30112), thumb=self._s.HomeIcon)
 
@@ -780,9 +785,6 @@ class AmazonTLD(Singleton):
             asins = self._scrapeAsins(url, cj)
         else:
             asins = listing
-
-        if export:
-            self.SetupLibrary()
 
         url = 'asinlist=%s&NumberOfResults=60StartIndex=0&Detailed=T&mobileClient=true' % asins
         listing += '_show' if (self._s.dispShowOnly and not (export and asins == listing)) or cont == '_show' else ''

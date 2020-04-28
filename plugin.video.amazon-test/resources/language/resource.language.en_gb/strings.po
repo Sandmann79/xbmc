@@ -534,16 +534,10 @@ msgid "Source folders added/changed"
 msgstr ""
 
 msgctxt "#30188"
-msgid "To complete the setup:"
+msgid "To complete the setup restart Kodi and set the content type of added folders."
 msgstr ""
 
-msgctxt "#30189"
-msgid " 1) Restart Kodi"
-msgstr ""
-
-msgctxt "#30190"
-msgid " 2) Set the content type of added folders"
-msgstr ""
+#empty strings from id 30189 to 30190
 
 msgctxt "#30191"
 msgid "Restart"

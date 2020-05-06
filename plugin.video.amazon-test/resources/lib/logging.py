@@ -12,11 +12,12 @@ from .common import Globals, Settings
 
 g = Globals()
 s = Settings()
+def_loglevel = 2  # LOGNOTICE < Kodi Matrix => LOGINFO?
 
 
-def Log(msg, level=xbmc.LOGINFO):
+def Log(msg, level=def_loglevel):
     if level == xbmc.LOGDEBUG and s.verbLog:
-        level = xbmc.LOGINFO
+        level = def_loglevel
     fi = getframeinfo(currentframe().f_back)
     msg = '[{0}]{2} {1}'.format(g.__plugin__, msg, '' if not s.verbLog else ' {}:{}'.format(opb(fi.filename), fi.lineno))
     xbmc.log(py2_encode(msg), level)
@@ -25,7 +26,7 @@ def Log(msg, level=xbmc.LOGINFO):
 Log.DEBUG = xbmc.LOGDEBUG
 Log.ERROR = xbmc.LOGERROR
 Log.FATAL = xbmc.LOGFATAL
-Log.INFO = xbmc.LOGINFO
+Log.INFO = def_loglevel
 Log.WARNING = xbmc.LOGWARNING
 
 

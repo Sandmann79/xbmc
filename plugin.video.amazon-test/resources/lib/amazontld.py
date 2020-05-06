@@ -398,18 +398,15 @@ class AmazonTLD(Singleton):
                 xbmcplugin.endOfDirectory(self._g.pluginhandle)
             return
 
-        if catalog in (self._g.watchlist, self._g.library):
-            endIndex = 0 if len(titles['titles']) < ResPage else 1
+        endIndex = titles['endIndex']
+        numItems = len(titles['titles'])
+        if 'approximateSize' not in titles.keys():
+            if numItems > self._s.MaxResults:
+                endIndex = 0
         else:
-            endIndex = titles['endIndex']
-            numItems = len(titles['titles'])
-            if 'approximateSize' not in titles.keys():
-                if numItems > self._s.MaxResults:
-                    endIndex = 0
-            else:
-                if endIndex == 0:
-                    if (page * ResPage) <= titles['approximateSize']:
-                        endIndex = 1
+            if endIndex == 0:
+                if (page * ResPage) <= titles['approximateSize']:
+                    endIndex = 1
 
         for item in titles['titles']:
             url = ''
@@ -764,31 +761,54 @@ class AmazonTLD(Singleton):
             addDir(getString(30107), 'listContent', 'TV', catalog=listing, export=export)
             xbmcplugin.endOfDirectory(self._g.pluginhandle, updateListing=False)
 
+    def findKey(self, key, obj):
+        if key in obj.keys():
+            return obj[key]
+        for v in obj.values():
+            if isinstance(v, dict):
+                res = self.findKey(key, v)
+                if res: return res
+            elif isinstance(v, list):
+                for d in v:
+                    if isinstance(d, dict):
+                        res = self.findKey(key, d)
+                        if res: return res
+        return []
+
     def _scrapeAsins(self, aurl, cj):
         asins = []
         url = self._g.BaseUrl + aurl
         json = getURL(url, useCookie=cj)
         WriteLog(str(json), 'watchlist')
+        cont = self.findKey('content', json)
+        info = {'approximateSize': cont.get('totalItems', 0),
+                'endIndex': cont.get('nextPageStartIndex', 0)}
 
-        for item in json['content'].get('items', []):
+        for item in cont.get('items', []):
             asins.append(item['titleID'])
-        return ','.join(asins)
+        return info, ','.join(asins)
 
     def getList(self, listing, export, cont, page=1):
+        info = {}
         if listing in [self._g.watchlist, self._g.library]:
             cj = MechanizeLogin()
             if not cj:
                 return
-            url = '/gp/video/api/%s/?ie=UTF8&sort=%s&contentType=%s&startIndex=%s' % (listing, self._s.wl_order, cont, (page - 1) * 60)
-            if listing in self._g.library:
-                url += '&libraryType=Items'
-            asins = self._scrapeAsins(url, cj)
+            args = {listing: {'sort': self._s.wl_order,
+                              'libraryType': 'Items',
+                              'primeOnly': False,
+                              'startIndex': (page - 1) * 60,
+                              'contentType': cont}}
+            url = '/gp/video/api/myStuff{}?viewType={}&args={}'.format(listing.capitalize(), listing, json.dumps(args, separators=(',', ':')))
+            info, asins = self._scrapeAsins(url, cj)
         else:
             asins = listing
 
-        url = 'asinlist=%s&NumberOfResults=60StartIndex=0&Detailed=T&mobileClient=true' % asins
+        url = 'asinlist=%s&StartIndex=0&Detailed=T&mobileClient=true' % asins
         listing += '_show' if (self._s.dispShowOnly and not (export and asins == listing)) or cont == '_show' else ''
-        return getATVData('Browse', url), listing
+        titles = getATVData('Browse', url)
+        titles.update(info)
+        return titles, listing
 
     @staticmethod
     def getAsins(content, crIL=True):

@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <addon id="plugin.video.amazon-test"
        name="Amazon VOD"
-       version="0.8.3"
+       version="0.8.4"
        provider-name="Sandmann79, Varstahl">
   <requires>
     <import addon="xbmc.python" version="2.24.0"/>
@@ -21,7 +21,7 @@
   <extension point="xbmc.service" library="service.py" start="startup" />
   <extension point="xbmc.addon.metadata">
     <platform>all</platform>
-    <reuselanguageinvoker>false</reuselanguageinvoker>
+    <reuselanguageinvoker>true</reuselanguageinvoker>
     <summary lang="en_GB">Amazon Prime Video Streaming</summary>
     <summary lang="de_DE">Amazon Prime Instant Video</summary>
     <description lang="en_GB">Movies and Television Shows for Prime Members</description>
@@ -35,7 +35,8 @@ Diese Addon verwendet pyDes von Todd Whiteman</disclaimer>
     <license>GPL-3.0-or-later</license>
     <assets>
       <icon>icon.png</icon>
-      <fanart>fanart.jpg</fanart>
+      <fanart>fanart.png</fanart>
+      <clearlogo>clearlogo.png</clearlogo>
     </assets>
   </extension>
 </addon>

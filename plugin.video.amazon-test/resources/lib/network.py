@@ -110,7 +110,7 @@ def getTerritory(user):
     return user, True
 
 
-def getURL(url, useCookie=False, silent=False, headers=None, rjson=True, attempt=1, check=False, postdata=None):
+def getURL(url, useCookie=False, silent=False, headers=None, rjson=True, attempt=1, check=False, postdata=None, binary=False):
     if not hasattr(getURL, 'sessions'):
         getURL.sessions = {}  # Keep-Alive sessions
 
@@ -161,10 +161,14 @@ def getURL(url, useCookie=False, silent=False, headers=None, rjson=True, attempt
         pass  # Fail on permanent errors
 
     try:
+        starttime = time.time()
         method = 'POST' if postdata is not None else 'GET'
-        r = session.request(method, url, data=postdata, headers=headers, cookies=cj, verify=s.verifySsl)
+        r = session.request(method, url, data=postdata, headers=headers, cookies=cj, verify=s.verifySsl, stream=True)
         getURL.lastResponseCode = r.status_code  # Set last response code
-        response = r.text if not check else 'OK'
+        response = 'OK'
+        if not check:
+            response = r.content if binary else r.text
+        Log('Download Time: %s' % (time.time() - starttime), Log.DEBUG)
         # 408 Timeout, 429 Too many requests and 5xx errors are temporary
         # Consider everything else definitive fail (like 404s and 403s)
         if (408 == r.status_code) or (429 == r.status_code) or (500 <= r.status_code):
@@ -201,7 +205,8 @@ def getURL(url, useCookie=False, silent=False, headers=None, rjson=True, attempt
                 sleep(wait)
             return getURL(url, useCookie, silent, headers, rjson, attempt, check, postdata)
         return retval
-    return json.loads(response) if rjson else response
+    res = json.loads(response) if rjson else response
+    return res
 
 
 def getURLData(mode, asin, retformat='json', devicetypeid='AOAGZA014O5RE', version=1, firmware='1', opt='', extra=False,
@@ -295,8 +300,30 @@ def getATVData(pg_mode, query='', version=2, useCookie=False, site_id=None):
             titles = len(jsondata['message']['body'].get('titles'))
             att += 1 if 'StartIndex=0' in query else ids + 1
 
-        return jsondata['message']['body']
+        result = jsondata['message']['body']
+        return _sortedResult(result, query) if 'asinlist' in query else result
     return {}
+
+
+def _sortedResult(result, query):
+    try:
+        from urllib.parse import parse_qs
+    except:
+        from urlparse import parse_qs
+
+    asinlist = parse_qs(query.upper(), keep_blank_values=True)['ASINLIST'][0].split(',')
+    sorteditems = ['empty'] * len(asinlist)
+
+    for item in result.get('titles', []):
+        for index, asin in enumerate(asinlist):
+            if asin in str(item):
+                sorteditems[index] = item
+                break
+    if sorteditems.count('empty') > 0:
+        Log('ASINs {} not found'.format([asinlist[n] for n, i in enumerate(sorteditems) if i == 'empty']))
+
+    result['titles'] = sorteditems
+    return result
 
 
 def MechanizeLogin():

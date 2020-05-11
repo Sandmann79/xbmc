@@ -198,7 +198,7 @@ class AmazonTLD(Singleton):
     def Recent(self, export=0):
         all_rec, rec = self.getRecents()
         asins = ','.join(rec)
-        url = 'asinlist={}&Detailed=T&mobileClient=true'.format(asins)
+        url = 'asinlist=' + asins
         self.listContent('Browse', url, 1, 'recent', export)
 
     def updateRecents(self, asin, rem=0):
@@ -778,7 +778,7 @@ class AmazonTLD(Singleton):
     def _scrapeAsins(self, aurl, cj):
         asins = []
         url = self._g.BaseUrl + aurl
-        json = getURL(url, useCookie=cj)
+        json = getURL(url, useCookie=cj, binary=True)
         WriteLog(str(json), 'watchlist')
         cont = self.findKey('content', json)
         info = {'approximateSize': cont.get('totalItems', 0),
@@ -798,13 +798,15 @@ class AmazonTLD(Singleton):
                               'libraryType': 'Items',
                               'primeOnly': False,
                               'startIndex': (page - 1) * 60,
-                              'contentType': cont}}
+                              'contentType': cont},
+                    'shared': {'isPurchaseRow': 0}}
+
             url = '/gp/video/api/myStuff{}?viewType={}&args={}'.format(listing.capitalize(), listing, json.dumps(args, separators=(',', ':')))
             info, asins = self._scrapeAsins(url, cj)
         else:
             asins = listing
 
-        url = 'asinlist=%s&StartIndex=0&Detailed=T&mobileClient=true' % asins
+        url = 'asinlist=%s&StartIndex=0&Detailed=T' % asins
         listing += '_show' if (self._s.dispShowOnly and not (export and asins == listing)) or cont == '_show' else ''
         titles = getATVData('Browse', url)
         titles.update(info)

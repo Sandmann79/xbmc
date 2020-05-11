@@ -121,7 +121,7 @@ msgctxt "#30023"
 msgid "Use android app for 4K videos"
 msgstr ""
 
-#empty strings from id 30024 to id 30026
+# empty strings from id 30024 to id 30026
 
 msgctxt "#30027"
 msgid "Stretch factor"
@@ -159,7 +159,7 @@ msgctxt "#30035"
 msgid "Enable Views"
 msgstr ""
 
-#empty string with id 30036
+# empty string with id 30036
 
 msgctxt "#30037"
 msgid "Disable SSL Certificate Verification"
@@ -173,7 +173,7 @@ msgctxt "#30039"
 msgid "Items Per Page"
 msgstr ""
 
-#empty string with id 30040
+# empty string with id 30040
 
 msgctxt "#30041"
 msgid "Enable Fullscreen Video"
@@ -243,7 +243,7 @@ msgctxt "#30057"
 msgid "Wait till PIN Input"
 msgstr ""
 
-#empty string with id 30058
+# empty string with id 30058
 
 msgctxt "#30059"
 msgid "Use own user profile"
@@ -273,7 +273,7 @@ msgctxt "#30065"
 msgid "Mediasource TV Title"
 msgstr ""
 
-#empty strings from id 30066 to 30069
+# empty strings from id 30066 to 30069
 
 msgctxt "#30070"
 msgid "Miscellaneous"
@@ -343,7 +343,7 @@ msgctxt "#30086"
 msgid "Autoskip All"
 msgstr ""
 
-#empty strings from id 30087 to 30099
+# empty strings from id 30087 to 30099
 
 msgctxt "#30100"
 msgid "Library"
@@ -357,13 +357,13 @@ msgctxt "#30102"
 msgid "Force Fallback"
 msgstr ""
 
-#empty string id 301033
+# empty string id 301033
 
 msgctxt "#30104"
 msgid "Movies"
 msgstr ""
 
-#empty strings from id 30105 to 30106
+# empty strings from id 30105 to 30106
 
 msgctxt "#30107"
 msgid "Television"
@@ -377,7 +377,7 @@ msgctxt "#30109"
 msgid "Choose Bitrate for Playback"
 msgstr ""
 
-#empty string with id 30110
+# empty string with id 30110
 
 msgctxt "#30111"
 msgid "Continue to Page %s"
@@ -399,7 +399,7 @@ msgctxt "#30115"
 msgid "Available Languages:"
 msgstr ""
 
-#empty strings from id 30116 to 30119
+# empty strings from id 30116 to 30119
 
 msgctxt "#30120"
 msgid "PIN (empty for no restriction)"
@@ -417,13 +417,13 @@ msgctxt "#30123"
 msgid "Cancel"
 msgstr ""
 
-#empty strings from id 30124 to 30126
+# empty strings from id 30124 to 30126
 
 msgctxt "#30127"
 msgid "No content found"
 msgstr ""
 
-#empty strings from id 30128 to 30129
+# empty strings from id 30128 to 30129
 
 msgctxt "#30130"
 msgid "Add User…"
@@ -453,19 +453,19 @@ msgctxt "#30136"
 msgid "Recently watched"
 msgstr ""
 
-#empty strings from id 30137 to 30142
+# empty strings from id 30137 to 30142
 
 msgctxt "#30143"
 msgid "All Movies"
 msgstr ""
 
-#empty strings from id 30144 to 30159
+# empty strings from id 30144 to 30159
 
 msgctxt "#30160"
 msgid "All Shows"
 msgstr ""
 
-#empty strings from id 30161 to 30164
+# empty strings from id 30161 to 30164
 
 msgctxt "#30165"
 msgid "Movie"
@@ -487,19 +487,19 @@ msgctxt "#30169"
 msgid "Specials"
 msgstr ""
 
-#empty string with id 30170
+# empty string with id 30170
 
 msgctxt "#30171"
 msgid "Unrated"
 msgstr ""
 
-#empty string with id 30172
+# empty string with id 30172
 
 msgctxt "#30173"
 msgid "Episode"
 msgstr ""
 
-#empty strings from id 30174 to 30179
+# empty strings from id 30174 to 30179
 
 msgctxt "#30180"
 msgid "Add %s to Watchlist"
@@ -537,7 +537,7 @@ msgctxt "#30188"
 msgid "To complete the setup restart Kodi and set the content type of added folders."
 msgstr ""
 
-#empty strings from id 30189 to 30190
+# empty strings from id 30189 to 30190
 
 msgctxt "#30191"
 msgid "Restart"
@@ -559,13 +559,13 @@ msgctxt "#30195"
 msgid "Skipping Scene…"
 msgstr ""
 
-#empty strings from id 30196 to 30197
+# empty strings from id 30196 to 30197
 
 msgctxt "#30198"
 msgid "Browser or Script not found. Please check settings."
 msgstr ""
 
-#empty string with id 30199
+# empty string with id 30199
 
 msgctxt "#30200"
 msgid "Login Error"
@@ -647,7 +647,7 @@ msgctxt "#30219"
 msgid "Unable to retrieve Amazon's territorial configuration."
 msgstr ""
 
-#empty strings from id 30220 to 30247
+# empty strings from id 30220 to 30247
 
 msgctxt "#30248"
 msgid "Proxy MPD alteration"

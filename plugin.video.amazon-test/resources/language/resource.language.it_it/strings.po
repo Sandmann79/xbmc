@@ -562,7 +562,7 @@ msgctxt "#30195"
 msgid "Skipping Scene…"
 msgstr ""
 
-#empty strings from id 30195 to 30197
+# empty strings from id 30195 to 30197
 
 msgctxt "#30198"
 msgid "Browser or Script not found. Please check settings."

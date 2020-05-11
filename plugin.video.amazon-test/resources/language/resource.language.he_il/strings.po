@@ -28,7 +28,7 @@ msgstr "סרטים וסדרות מראה עבור חברים"
 
 msgctxt "Addon Disclaimer"
 msgid ""
-"Some parts of this addon may not be legal in your country of residence - please check with your local laws before installing.\n"
+"Some parts of this addon may not be legal in your country of residence – please check with your local laws before installing.\n"
 "This Addon uses pyDes by Todd Whiteman"
 msgstr ""
 "ייתכן ועל פי החוק חלקים מסוימים של התוכן אינן מותרים לצפייה במחוז מגוריך - אנא בדוק עם החוקים המקומיים לפני התקנת.\n"
@@ -51,8 +51,8 @@ msgid "Stream Bitrate (0 - Ask)"
 msgstr "זרם קצב סיביות (0 - לשאול)"
 
 msgctxt "#30005"
-msgid "Enable Subtitles"
-msgstr "אפשר כתוביות"
+msgid "Audio descriptions (disables 5.1/7.1)"
+msgstr ""
 
 msgctxt "#30006"
 msgid "Store Credentials instead of using the Cookie?"
@@ -65,6 +65,14 @@ msgstr "הסר את האישורים והעוגיות"
 msgctxt "#30008"
 msgid "Sign In…"
 msgstr "כניסה לחשבון."
+
+msgctxt "#30009"
+msgid "Multi User Support"
+msgstr ""
+
+msgctxt "#30010"
+msgid "Remove all Users"
+msgstr ""
 
 # empty strings from id 30009 to 30010
 msgctxt "#30011"
@@ -107,9 +115,27 @@ msgctxt "#30020"
 msgid "Enable DRM check"
 msgstr "אפשר בדיקתDRM"
 
-msgctxt "#30022"
+#, fuzzy
+msgctxt "#30021"
 msgid "Language"
 msgstr "שפה"
+
+msgctxt "#30022"
+msgid "Keep me logged in"
+msgstr ""
+
+msgctxt "#30023"
+msgid "Use android app for 4K videos"
+msgstr ""
+
+# empty strings from id 30024 to id 30026
+msgctxt "#30027"
+msgid "Stretch factor"
+msgstr ""
+
+msgctxt "#30028"
+msgid "Stretching"
+msgstr ""
 
 # empty strings from id 30023 to 30028
 msgctxt "#30029"
@@ -127,6 +153,15 @@ msgstr "תצוגת עונות"
 msgctxt "#30032"
 msgid "Episode View"
 msgstr "תצוגת פרקים"
+
+msgctxt "#30033"
+msgid "Audio"
+msgstr ""
+
+#, fuzzy
+msgctxt "#30034"
+msgid "Subtitles"
+msgstr "אפשר כתוביות"
 
 # empty strings from id 30033 to 30034
 msgctxt "#30035"
@@ -314,7 +349,6 @@ msgid "Autoskip All"
 msgstr ""
 
 # empty strings from id 30087 to 30099
-
 msgctxt "#30100"
 msgid "Library"
 msgstr "ספרייה"
@@ -388,6 +422,37 @@ msgctxt "#30127"
 msgid "No content found"
 msgstr "לא נמצא תוכן"
 
+# empty strings from id 30128 to 30129
+msgctxt "#30130"
+msgid "Add User…"
+msgstr ""
+
+msgctxt "#30131"
+msgid "Delete User…"
+msgstr ""
+
+msgctxt "#30132"
+msgid "Rename User"
+msgstr ""
+
+msgctxt "#30133"
+msgid "Choose User"
+msgstr ""
+
+msgctxt "#30134"
+msgid "Current User: {0}"
+msgstr ""
+
+#, fuzzy
+msgctxt "#30135"
+msgid "Display Name"
+msgstr "הצג תוכן בתשלום"
+
+#, fuzzy
+msgctxt "#30136"
+msgid "Recently watched"
+msgstr "נוספו לאחרונה"
+
 # empty strings from id 30128 to 30142
 msgctxt "#30143"
 msgid "All Movies"
@@ -446,6 +511,11 @@ msgctxt "#30183"
 msgid "Get Similarities"
 msgstr "השג דומים"
 
+#, fuzzy
+msgctxt "#30184"
+msgid "Remove {} from List"
+msgstr "הסר את %s מרשימת הצפייה"
+
 # empty string with id 30184
 msgctxt "#30185"
 msgid "Export %s"
@@ -484,7 +554,6 @@ msgid "Skipping Scene…"
 msgstr ""
 
 # empty strings from id 30196 to 30197
-
 msgctxt "#30198"
 msgid "Browser or Script not found. Please check settings."
 msgstr "לא נמצא דפדפן או סקריפט. נא בדוק את הגדרות."
@@ -569,3 +638,45 @@ msgid ""
 msgstr ""
 "בשל השינויים בהצפנת ה-DRM של אמזון, זה לא ניתן להשתמש Inputstream עבור וידאו זה.\n"
 "נא להגדיר את אפשרות השיחזור בהגדרות, כדי להשתמש בשיטת השמעה אחרת."
+
+msgctxt "#30219"
+msgid "Unable to retrieve Amazon's territorial configuration."
+msgstr ""
+
+# empty strings from id 30220 to 30247
+msgctxt "#30248"
+msgid "Proxy MPD alteration"
+msgstr ""
+
+msgctxt "#30249"
+msgid "Prefer episode thumbnails to posters"
+msgstr ""
+
+msgctxt "#30250"
+msgid "PrimeVideo"
+msgstr "PrimeVideo"
+
+#, fuzzy
+msgctxt "#30251"
+msgid "Connection error"
+msgstr "חיבור"
+
+msgctxt "#30252"
+msgid "Loading page {0}…"
+msgstr ""
+
+msgctxt "#30253"
+msgid "{0} seasons"
+msgstr ""
+
+msgctxt "#30254"
+msgid "userinput.exe not found"
+msgstr ""
+
+msgctxt "#30255"
+msgid "Please download it from GitHub and manually install it in the addon directory"
+msgstr ""
+
+msgctxt "#30256"
+msgid "Error: servers returned no content (check logs for more information)"
+msgstr ""

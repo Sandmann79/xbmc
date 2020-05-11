@@ -11,10 +11,10 @@ msgstr ""
 "PO-Revision-Date: 2020-04-03 16:10+0001\n"
 "Last-Translator: J.M. Pongilioni ('boblo1') <djinn2k2@gmail.com>\n"
 "Language-Team: Spanish\n"
+"Language: es_ES\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Language: es_ES\n"
 "Plural-Forms: nplurals=2; plural=(n != 1)\n"
 
 msgctxt "Addon Summary"
@@ -26,8 +26,12 @@ msgid "Movies and Television Shows for Prime Members"
 msgstr "Películas y series para clientes Prime"
 
 msgctxt "Addon Disclaimer"
-msgid "Some parts of this addon may not be legal in your country of residence – please check with your local laws before installing.\nThis Addon uses pyDes by Todd Whiteman"
-msgstr "Algunas partes de este complemento podrían no ser legales en tu país de residencia - por favor, consulta tu legislación antes de instalarlo.\nEste complemento usa pyDes de Todd Whiteman"
+msgid ""
+"Some parts of this addon may not be legal in your country of residence – please check with your local laws before installing.\n"
+"This Addon uses pyDes by Todd Whiteman"
+msgstr ""
+"Algunas partes de este complemento podrían no ser legales en tu país de residencia - por favor, consulta tu legislación antes de instalarlo.\n"
+"Este complemento usa pyDes de Todd Whiteman"
 
 msgctxt "#30001"
 msgid "Amazon Account"
@@ -122,7 +126,6 @@ msgid "Use android app for 4K videos"
 msgstr "Usar app de Android para vídeos 4K"
 
 # empty strings from id 30024 to id 30026
-
 msgctxt "#30027"
 msgid "Stretch factor"
 msgstr "Factor de estiramiento"
@@ -160,7 +163,6 @@ msgid "Enable Views"
 msgstr "Activar vistas"
 
 # empty string with id 30036
-
 msgctxt "#30037"
 msgid "Disable SSL Certificate Verification"
 msgstr "Desactivar verificación del certificado SSL"
@@ -174,7 +176,6 @@ msgid "Items Per Page"
 msgstr "Elementos por página"
 
 # empty string with id 30040
-
 msgctxt "#30041"
 msgid "Enable Fullscreen Video"
 msgstr "Activar vídeo a pantalla completa"
@@ -244,7 +245,6 @@ msgid "Wait till PIN Input"
 msgstr "Esperar hasta la introducción del PIN"
 
 # empty string with id 30058
-
 msgctxt "#30059"
 msgid "Use own user profile"
 msgstr "Usar perfil del usuario"
@@ -274,7 +274,6 @@ msgid "Mediasource TV Title"
 msgstr "Título de la fuente de series"
 
 # empty strings from id 30066 to 30069
-
 msgctxt "#30070"
 msgid "Miscellaneous"
 msgstr "Varios"
@@ -344,7 +343,6 @@ msgid "Autoskip All"
 msgstr ""
 
 # empty strings from id 30087 to 30099
-
 msgctxt "#30100"
 msgid "Library"
 msgstr "Colección"
@@ -358,13 +356,11 @@ msgid "Force Fallback"
 msgstr "Forzar alternativa"
 
 # empty string id 301033
-
 msgctxt "#30104"
 msgid "Movies"
 msgstr "Películas"
 
 # empty strings from id 30105 to 30106
-
 msgctxt "#30107"
 msgid "Television"
 msgstr "Televisión"
@@ -378,7 +374,6 @@ msgid "Choose Bitrate for Playback"
 msgstr "Elegir la tasa de bits para la reproducción"
 
 # empty string with id 30110
-
 msgctxt "#30111"
 msgid "Continue to Page %s"
 msgstr "Continuar en la página %s"
@@ -400,7 +395,6 @@ msgid "Available Languages:"
 msgstr "Idiomas disponibles:"
 
 # empty strings from id 30116 to 30119
-
 msgctxt "#30120"
 msgid "PIN (empty for no restriction)"
 msgstr "PIN (en blanco significa sin restricciones)"
@@ -418,13 +412,11 @@ msgid "Cancel"
 msgstr "Cancelar"
 
 # empty strings from id 30124 to 30126
-
 msgctxt "#30127"
 msgid "No content found"
 msgstr "No se ha encontrado contenido"
 
 # empty strings from id 30128 to 30129
-
 msgctxt "#30130"
 msgid "Add User…"
 msgstr "Añadir usuario…"
@@ -454,19 +446,16 @@ msgid "Recently watched"
 msgstr "Visto recientemente"
 
 # empty strings from id 30137 to 30142
-
 msgctxt "#30143"
 msgid "All Movies"
 msgstr "Todas las películas"
 
 # empty strings from id 30144 to 30159
-
 msgctxt "#30160"
 msgid "All Shows"
 msgstr "Todas las series"
 
 # empty strings from id 30161 to 30164
-
 msgctxt "#30165"
 msgid "Movie"
 msgstr "Película"
@@ -488,19 +477,16 @@ msgid "Specials"
 msgstr "Especiales"
 
 # empty string with id 30170
-
 msgctxt "#30171"
 msgid "Unrated"
 msgstr "Sin valoración"
 
 # empty string with id 30172
-
 msgctxt "#30173"
 msgid "Episode"
 msgstr "Episodio"
 
 # empty strings from id 30174 to 30179
-
 msgctxt "#30180"
 msgid "Add %s to Watchlist"
 msgstr "Añadir %s a la lista de seguimiento"
@@ -558,13 +544,11 @@ msgid "Skipping Scene…"
 msgstr ""
 
 # empty strings from id 30196 to 30197
-
 msgctxt "#30198"
 msgid "Browser or Script not found. Please check settings."
 msgstr "Navegador o script no encontrado. Por favor, comprueba los ajustes."
 
 # empty string with id 30199
-
 msgctxt "#30200"
 msgid "Login Error"
 msgstr "Error al iniciar sesión"
@@ -638,15 +622,18 @@ msgid "No stream hoster reachable"
 msgstr "No se puede conectar con el servidor"
 
 msgctxt "#30218"
-msgid "Due changes at Amazon's DRM encryption, it's not possible to use Inputstream for this video.\nPlease configure the fallback option in Settings, to use another Playback method."
-msgstr "Debido a cambios en el cifrado DRM de Amazon, no es posible usar InputStream para este vídeo.\nPor favor, establece una alternativa en Ajustes para usar otro método de reproducción."
+msgid ""
+"Due changes at Amazon's DRM encryption, it's not possible to use Inputstream for this video.\n"
+"Please configure the fallback option in Settings, to use another Playback method."
+msgstr ""
+"Debido a cambios en el cifrado DRM de Amazon, no es posible usar InputStream para este vídeo.\n"
+"Por favor, establece una alternativa en Ajustes para usar otro método de reproducción."
 
 msgctxt "#30219"
 msgid "Unable to retrieve Amazon's territorial configuration."
 msgstr "No es posible obtener la configuración territorial de Amazon."
 
 # empty strings from id 30220 to 30247
-
 msgctxt "#30248"
 msgid "Proxy MPD alteration"
 msgstr "Modificación en el Proxy MPD"

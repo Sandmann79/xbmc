@@ -8,14 +8,15 @@ msgstr ""
 "Project-Id-Version: XBMC-Addons\n"
 "Report-Msgid-Bugs-To: alanwww1@xbmc.org\n"
 "POT-Creation-Date: 2016-07-07 19:46+0000\n"
-"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
-"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"PO-Revision-Date: 2020-05-11 18:29+0200\n"
+"Last-Translator: \n"
 "Language-Team: LANGUAGE\n"
+"Language: fr_CA\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Language: fr_CA\n"
 "Plural-Forms: nplurals=2; plural=(n > 1);\n"
+"X-Generator: Poedit 2.3.1\n"
 
 msgctxt "Addon Summary"
 msgid "Amazon Prime Video Streaming"
@@ -26,8 +27,12 @@ msgid "Movies and Television Shows for Prime Members"
 msgstr "Films et émissions de télévision pour les membres principaux"
 
 msgctxt "Addon Disclaimer"
-msgid "Some parts of this addon may not be legal in your country of residence – please check with your local laws before installing.\nThis Addon uses pyDes by Todd Whiteman"
-msgstr "Certaines parties de cet addon peuvent ne pas être légales dans votre pays de résidence – veuillez vérifier avec vos lois locales avant l'installation. \nCet addon utilise pyDes by Todd Whiteman"
+msgid ""
+"Some parts of this addon may not be legal in your country of residence – please check with your local laws before installing.\n"
+"This Addon uses pyDes by Todd Whiteman"
+msgstr ""
+"Certaines parties de cet addon peuvent ne pas être légales dans votre pays de résidence – veuillez vérifier avec vos lois locales avant l'installation. \n"
+"Cet addon utilise pyDes by Todd Whiteman"
 
 msgctxt "#30001"
 msgid "Amazon Account"
@@ -59,7 +64,7 @@ msgstr "Supprimer les informations d'identification et les cookies"
 
 msgctxt "#30008"
 msgid "Sign In…"
-msgstr "Se connecter ..."
+msgstr "Se connecter …"
 
 msgctxt "#30009"
 msgid "Multi User Support"
@@ -91,7 +96,7 @@ msgstr "Vues"
 
 msgctxt "#30016"
 msgid "Movie Fanart Source"
-msgstr "Movie Fanart Source"
+msgstr ""
 
 msgctxt "#30017"
 msgid "TV Show Fanart Source"
@@ -122,18 +127,17 @@ msgid "Use android app for 4K videos"
 msgstr "Utiliser l'application Android pour les vidéos 4K"
 
 # empty strings from id 30024 to id 30026
-
 msgctxt "#30027"
 msgid "Stretch factor"
 msgstr "Facteur d'étirement"
 
 msgctxt "#30028"
 msgid "Stretching"
-msgstr "Stretching"
+msgstr ""
 
 msgctxt "#30029"
 msgid "Movie View"
-msgstr "Movie View"
+msgstr ""
 
 msgctxt "#30030"
 msgid "Show View"
@@ -141,7 +145,7 @@ msgstr "Afficher la vue"
 
 msgctxt "#30031"
 msgid "Season View"
-msgstr "Season View"
+msgstr ""
 
 msgctxt "#30032"
 msgid "Episode View"
@@ -149,7 +153,7 @@ msgstr "Vue épisode"
 
 msgctxt "#30033"
 msgid "Audio"
-msgstr "Audio"
+msgstr ""
 
 msgctxt "#30034"
 msgid "Subtitles"
@@ -160,7 +164,6 @@ msgid "Enable Views"
 msgstr "Activer les vues"
 
 # empty string with id 30036
-
 msgctxt "#30037"
 msgid "Disable SSL Certificate Verification"
 msgstr "Désactiver la vérification du certificat SSL"
@@ -174,7 +177,6 @@ msgid "Items Per Page"
 msgstr "Éléments par page"
 
 # empty string with id 30040
-
 msgctxt "#30041"
 msgid "Enable Fullscreen Video"
 msgstr "Activer la vidéo plein écran"
@@ -197,7 +199,7 @@ msgstr "Saisie automatique du code PIN"
 
 msgctxt "#30046"
 msgid "PIN"
-msgstr "PIN"
+msgstr ""
 
 msgctxt "#30047"
 msgid "Wait after PIN Input"
@@ -213,7 +215,7 @@ msgstr "Détecter la fréquence d'images"
 
 msgctxt "#30050"
 msgid "Amazon"
-msgstr "Amazon"
+msgstr ""
 
 msgctxt "#30051"
 msgid "Load missing from TMDb"
@@ -221,7 +223,7 @@ msgstr "Charge manquante dans TMDb"
 
 msgctxt "#30052"
 msgid "TMDb"
-msgstr "TMDb"
+msgstr ""
 
 msgctxt "#30053"
 msgid "Load missing from TVDb"
@@ -229,7 +231,7 @@ msgstr "Charge manquante dans TVDb"
 
 msgctxt "#30054"
 msgid "TVDb"
-msgstr "TVDb"
+msgstr ""
 
 msgctxt "#30055"
 msgid "Show TV Show Fanart in Season and Episode Lists"
@@ -237,14 +239,13 @@ msgstr "Afficher la série télévisée Fanart dans les listes de saisons et d'�
 
 msgctxt "#30056"
 msgid "TVDb incl. Poster"
-msgstr "TVDb incl. Poster"
+msgstr ""
 
 msgctxt "#30057"
 msgid "Wait till PIN Input"
 msgstr "Attendre la saisie du code PIN"
 
 # empty string with id 30058
-
 msgctxt "#30059"
 msgid "Use own user profile"
 msgstr "Utiliser son propre profil utilisateur"
@@ -274,7 +275,6 @@ msgid "Mediasource TV Title"
 msgstr "Titre TV Mediasource"
 
 # empty strings from id 30066 to 30069
-
 msgctxt "#30070"
 msgid "Miscellaneous"
 msgstr "Divers"
@@ -325,26 +325,25 @@ msgstr "Intro/Recap scenes processing"
 
 msgctxt "#30082"
 msgid "Do nothing"
-msgstr "Do nothing"
+msgstr ""
 
 msgctxt "#30083"
 msgid "Show Skip Button"
-msgstr "Show Skip Button"
+msgstr ""
 
 msgctxt "#30084"
 msgid "Autoskip Intro"
-msgstr "Autoskip Intro"
+msgstr ""
 
 msgctxt "#30085"
 msgid "Autoskip Recap"
-msgstr "Autoskip Recap"
+msgstr ""
 
 msgctxt "#30086"
 msgid "Autoskip All"
-msgstr "Autoskip All"
+msgstr ""
 
 # empty strings from id 30087 to 30099
-
 msgctxt "#30100"
 msgid "Library"
 msgstr "Bibliothèque"
@@ -355,16 +354,14 @@ msgstr "Basculer l'état surveillé"
 
 msgctxt "#30102"
 msgid "Force Fallback"
-msgstr "Force Fallback"
+msgstr ""
 
 # empty string id 301033
-
 msgctxt "#30104"
 msgid "Movies"
-msgstr "Movies"
+msgstr ""
 
 # empty strings from id 30105 to 30106
-
 msgctxt "#30107"
 msgid "Television"
 msgstr "Télévision"
@@ -378,7 +375,6 @@ msgid "Choose Bitrate for Playback"
 msgstr "Choisissez le débit binaire pour la lecture"
 
 # empty string with id 30110
-
 msgctxt "#30111"
 msgid "Continue to Page %s"
 msgstr "Continuer vers la page %s"
@@ -400,7 +396,6 @@ msgid "Available Languages:"
 msgstr "Langues disponibles:"
 
 # empty strings from id 30116 to 30119
-
 msgctxt "#30120"
 msgid "PIN (empty for no restriction)"
 msgstr "PIN (vide pour aucune restriction)"
@@ -418,16 +413,14 @@ msgid "Cancel"
 msgstr "Annuler"
 
 # empty strings from id 30124 to 30126
-
 msgctxt "#30127"
 msgid "No content found"
 msgstr "Aucun contenu trouvé"
 
 # empty strings from id 30128 to 30129
-
 msgctxt "#30130"
 msgid "Add User…"
-msgstr "Ajouter un utilisateur ..."
+msgstr "Ajouter un utilisateur …"
 
 msgctxt "#30131"
 msgid "Delete User…"
@@ -454,22 +447,19 @@ msgid "Recently watched"
 msgstr "Regardé récemment"
 
 # empty strings from id 30137 to 30142
-
 msgctxt "#30143"
 msgid "All Movies"
 msgstr "Tous les films"
 
 # empty strings from id 30144 to 30159
-
 msgctxt "#30160"
 msgid "All Shows"
 msgstr "Tous les spectacles"
 
 # empty strings from id 30161 to 30164
-
 msgctxt "#30165"
 msgid "Movie"
-msgstr "Movie"
+msgstr ""
 
 msgctxt "#30166"
 msgid "Show"
@@ -481,26 +471,23 @@ msgstr "Saison"
 
 msgctxt "#30168"
 msgid "Year "
-msgstr "Année"
+msgstr "Année "
 
 msgctxt "#30169"
 msgid "Specials"
 msgstr "Promotions"
 
 # empty string with id 30170
-
 msgctxt "#30171"
 msgid "Unrated"
 msgstr "Non évalué"
 
 # empty string with id 30172
-
 msgctxt "#30173"
 msgid "Episode"
-msgstr "Episode"
+msgstr ""
 
 # empty strings from id 30174 to 30179
-
 msgctxt "#30180"
 msgid "Add %s to Watchlist"
 msgstr "Ajouter %s à la liste de surveillance"
@@ -535,10 +522,9 @@ msgstr "Dossiers sources ajoutés / modifiés"
 
 msgctxt "#30188"
 msgid "To complete the setup restart Kodi and set the content type of added folders."
-msgstr "Pour terminer la configuration:"
+msgstr "Pour terminer la configuration, redémarrez Kodi et définissez le type de contenu des dossiers ajoutés."
 
 # empty strings from id 30189 to 30190
-
 msgctxt "#30191"
 msgid "Restart"
 msgstr "Redémarrer"
@@ -549,7 +535,7 @@ msgstr "Voulez-vous redémarrer Kodi maintenant?"
 
 msgctxt "#30193"
 msgid "Skip Intro"
-msgstr "Skip Intro"
+msgstr ""
 
 msgctxt "#30194"
 msgid "Skip Recap"
@@ -557,16 +543,14 @@ msgstr "Ignorer la récapitulation"
 
 msgctxt "#30195"
 msgid "Skipping Scene…"
-msgstr "Skipping Scene…"
+msgstr ""
 
 # empty strings from id 30196 to 30197
-
 msgctxt "#30198"
 msgid "Browser or Script not found. Please check settings."
 msgstr "Navigateur ou script introuvable. Veuillez vérifier les paramètres."
 
 # empty string with id 30199
-
 msgctxt "#30200"
 msgid "Login Error"
 msgstr "Erreur de connexion"
@@ -640,15 +624,18 @@ msgid "No stream hoster reachable"
 msgstr "Aucun hébergeur de flux accessible"
 
 msgctxt "#30218"
-msgid "Due changes at Amazon's DRM encryption, it's not possible to use Inputstream for this video.\nPlease configure the fallback option in Settings, to use another Playback method."
-msgstr "En raison de modifications apportées au chiffrement DRM d'Amazon, il n'est pas possible d'utiliser Inputstream pour cette vidéo. \ nVeuillez configurer l'option de secours dans les paramètres pour utiliser une autre méthode de lecture."
+msgid ""
+"Due changes at Amazon's DRM encryption, it's not possible to use Inputstream for this video.\n"
+"Please configure the fallback option in Settings, to use another Playback method."
+msgstr ""
+"En raison de modifications apportées au chiffrement DRM d'Amazon, il n'est pas possible d'utiliser Inputstream pour cette vidéo.\n"
+"Veuillez configurer l'option de secours dans les paramètres pour utiliser une autre méthode de lecture."
 
 msgctxt "#30219"
 msgid "Unable to retrieve Amazon's territorial configuration."
 msgstr "Impossible de récupérer la configuration territoriale d'Amazon."
 
 # empty strings from id 30220 to 30247
-
 msgctxt "#30248"
 msgid "Proxy MPD alteration"
 msgstr "Modification du proxy MPD"
@@ -659,7 +646,7 @@ msgstr "Préférer les miniatures des épisodes aux affiches"
 
 msgctxt "#30250"
 msgid "PrimeVideo"
-msgstr "PrimeVideo"
+msgstr ""
 
 msgctxt "#30251"
 msgid "Connection error"

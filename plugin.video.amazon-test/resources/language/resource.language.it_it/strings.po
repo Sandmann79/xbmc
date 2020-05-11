@@ -8,15 +8,15 @@ msgstr ""
 "Project-Id-Version: XBMC-Addons\n"
 "Report-Msgid-Bugs-To: alanwww1@xbmc.org\n"
 "POT-Creation-Date: 2016-07-07 19:46+0000\n"
-"PO-Revision-Date: 2020-04-03 00:24+0200\n"
+"PO-Revision-Date: 2020-05-11 18:47+0200\n"
+"Last-Translator: \n"
 "Language-Team: LANGUAGE\n"
+"Language: it_IT\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Language: it_IT\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
-"Last-Translator: \n"
-"X-Generator: Poedit 2.3\n"
+"X-Generator: Poedit 2.3.1\n"
 
 msgctxt "Addon Summary"
 msgid "Amazon Prime Video Streaming"
@@ -127,7 +127,6 @@ msgid "Use android app for 4K videos"
 msgstr "Usa app Android per i video in 4K"
 
 # empty strings from id 30024 to id 30026
-
 msgctxt "#30027"
 msgid "Stretch factor"
 msgstr "Fattore di regolazione"
@@ -165,7 +164,6 @@ msgid "Enable Views"
 msgstr "Abilita Viste"
 
 # empty string with id 30036
-
 msgctxt "#30037"
 msgid "Disable SSL Certificate Verification"
 msgstr "Disabilita verifica certificati SSL"
@@ -179,7 +177,6 @@ msgid "Items Per Page"
 msgstr "Elementi per Pagina"
 
 # empty string with id 30040
-
 msgctxt "#30041"
 msgid "Enable Fullscreen Video"
 msgstr "Abilita video a schermo intero"
@@ -249,7 +246,6 @@ msgid "Wait till PIN Input"
 msgstr "Attendere fino all'inserimento del PIN"
 
 # empty string with id 30058
-
 msgctxt "#30059"
 msgid "Use own user profile"
 msgstr "Usa il proprio profilo utente"
@@ -279,7 +275,6 @@ msgid "Mediasource TV Title"
 msgstr "Titolo della sorgente multimediale TV"
 
 # empty strings from id 30066 to 30069
-
 msgctxt "#30070"
 msgid "Miscellaneous"
 msgstr "Miscellanee"
@@ -326,30 +321,29 @@ msgstr "Esporta automaticamente Lista Video"
 
 msgctxt "#30081"
 msgid "Intro/Recap scenes processing"
-msgstr ""
+msgstr "Gestione intro/riepiloghi"
 
 msgctxt "#30082"
 msgid "Do nothing"
-msgstr ""
+msgstr "Non fare nulla"
 
 msgctxt "#30083"
 msgid "Show Skip Button"
-msgstr ""
+msgstr "Mostra il pulsante di salto"
 
 msgctxt "#30084"
 msgid "Autoskip Intro"
-msgstr ""
+msgstr "Salta l'introduzione in automatico"
 
 msgctxt "#30085"
 msgid "Autoskip Recap"
-msgstr ""
+msgstr "Salta il riepilogo in automatico"
 
 msgctxt "#30086"
 msgid "Autoskip All"
-msgstr ""
+msgstr "Salta entrambi in automatico"
 
 # empty strings from id 30087 to 30099
-
 msgctxt "#30100"
 msgid "Library"
 msgstr "Libreria"
@@ -363,13 +357,11 @@ msgid "Force Fallback"
 msgstr "Obbliga Fallback"
 
 # empty string id 301033
-
 msgctxt "#30104"
 msgid "Movies"
 msgstr "Film"
 
 # empty strings from id 30105 to 30106
-
 msgctxt "#30107"
 msgid "Television"
 msgstr "Televisione"
@@ -383,7 +375,6 @@ msgid "Choose Bitrate for Playback"
 msgstr "Scegli Bitrate per la riproduzione"
 
 # empty string with id 30110
-
 msgctxt "#30111"
 msgid "Continue to Page %s"
 msgstr "Continua a pagina %s"
@@ -405,7 +396,6 @@ msgid "Available Languages:"
 msgstr "Lingue disponibili:"
 
 # empty strings from id 30116 to 30119
-
 msgctxt "#30120"
 msgid "PIN (empty for no restriction)"
 msgstr "PIN (vuoto per nessuna restrizione)"
@@ -423,13 +413,11 @@ msgid "Cancel"
 msgstr "Annulla"
 
 # empty strings from id 30124 to 30126
-
 msgctxt "#30127"
 msgid "No content found"
 msgstr "Nessun contenuto trovato"
 
 # empty strings from id 30128 to 30129
-
 msgctxt "#30130"
 msgid "Add User…"
 msgstr "Aggiungi utente…"
@@ -459,19 +447,16 @@ msgid "Recently watched"
 msgstr "Visti di recente"
 
 # empty strings from id 30137 to 30142
-
 msgctxt "#30143"
 msgid "All Movies"
 msgstr "Tutti i Film"
 
 # empty strings from id 30144 to 30159
-
 msgctxt "#30160"
 msgid "All Shows"
 msgstr "Tutte le Serie"
 
 # empty strings from id 30161 to 30164
-
 msgctxt "#30165"
 msgid "Movie"
 msgstr "Film"
@@ -493,19 +478,16 @@ msgid "Specials"
 msgstr "Speciali"
 
 # empty string with id 30170
-
 msgctxt "#30171"
 msgid "Unrated"
 msgstr "Non classificato"
 
 # empty string with id 30172
-
 msgctxt "#30173"
 msgid "Episode"
 msgstr "Episodio"
 
 # empty strings from id 30174 to 30179
-
 msgctxt "#30180"
 msgid "Add %s to Watchlist"
 msgstr "Aggiungi %s alla Lista Video"
@@ -540,7 +522,7 @@ msgstr "Cartelle di origine aggiunte/modificate"
 
 msgctxt "#30188"
 msgid "To complete the setup restart Kodi and set the content type of added folders."
-msgstr ""
+msgstr "Per completare l'installazione riavvia Kodi e imposta il tipo di contenuto delle cartelle aggiunte."
 
 msgctxt "#30191"
 msgid "Restart"
@@ -560,16 +542,14 @@ msgstr "Salta il riassunto"
 
 msgctxt "#30195"
 msgid "Skipping Scene…"
-msgstr ""
+msgstr "Salto in corso…"
 
 # empty strings from id 30195 to 30197
-
 msgctxt "#30198"
 msgid "Browser or Script not found. Please check settings."
 msgstr "Browser o script non trovato. Per favore controlla le impostazioni."
 
 # empty string with id 30199
-
 msgctxt "#30200"
 msgid "Login Error"
 msgstr "Errore di login"
@@ -655,7 +635,6 @@ msgid "Unable to retrieve Amazon's territorial configuration."
 msgstr "Impossibile recuperare la configurazione territoriale di Amazon."
 
 # empty strings from id 30220 to 30247
-
 msgctxt "#30248"
 msgid "Proxy MPD alteration"
 msgstr "Proxy di modifica MPD"

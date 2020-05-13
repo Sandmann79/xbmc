@@ -280,13 +280,14 @@ def getATVData(pg_mode, query='', version=2, useCookie=False, site_id=None):
     pg_mode = pg_mode.split('_')[0]
     if '/' not in pg_mode:
         pg_mode = 'catalog/' + pg_mode
+    rem_pos = False if re.search('(?i)rolluptoseason=t|contenttype=tvseason', query) else s.removePosters
 
     if 'asinlist=&' not in query:
         titles = 0
-        ids = len(_TypeIDs[s.removePosters]) - 1
+        ids = len(_TypeIDs[rem_pos]) - 1
         att = 0
         while titles == 0 and att <= ids:
-            deviceTypeID = _TypeIDs[s.removePosters][att]
+            deviceTypeID = _TypeIDs[rem_pos][att]
             parameter = '%s&deviceID=%s&format=json&version=%s&formatVersion=3&marketplaceId=%s' % (
                 deviceTypeID, g.deviceID, version, g.MarketID)
             if site_id:

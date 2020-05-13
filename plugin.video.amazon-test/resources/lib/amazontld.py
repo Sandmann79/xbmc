@@ -413,9 +413,16 @@ class AmazonTLD(Singleton):
             if 'title' not in item:
                 continue
             wl_asin = item['titleId']
-            if '_show' in parent and item.get('ancestorTitles'):
-                item.update(item['ancestorTitles'][0])
-                url = 'SeriesASIN=%s&ContentType=TVSeason&IncludeBlackList=T' % item['titleId']
+            if item.get('ancestorTitles'):
+                if '_show' in parent:
+                    item.update(item['ancestorTitles'][0])
+                    url = 'SeriesASIN=%s&ContentType=TVSeason&IncludeBlackList=T' % item['titleId']
+                elif re.search('(?i)rolluptoseason=t|contenttype=tvseason', oldurl):
+                    for i in item['ancestorTitles']:
+                        if i['contentType'] == 'SEASON':
+                            item.update(i)
+                            url = 'SeasonASIN=%s&ContentType=TVEpisode&IncludeBlackList=T' % item['titleId']
+
             contentType, infoLabels = self.getInfos(item, export)
             if export and catalog == "Browse" and not infoLabels['isPrime'] and not self._s.payCont and self._g.library not in parent:
                 continue
@@ -423,9 +430,7 @@ class AmazonTLD(Singleton):
             asin = item['titleId']
             wlmode = 1 if self._g.watchlist in parent else 0
             simiUrl = quote_plus('ASIN=' + asin + self._s.OfferGroup)
-            cm = [(getString(30183),
-                   'Container.Update(%s?mode=listContent&cat=GetSimilarities&url=%s&page=1&opt=gs)' % (self._g.pluginid, simiUrl)),
-                  (getString(wlmode + 30180) % getString(self._g.langID[contentType]),
+            cm = [(getString(wlmode + 30180) % getString(self._g.langID[contentType]),
                    'RunPlugin(%s?mode=WatchList&url=%s&opt=%s)' % (self._g.pluginid, wl_asin, wlmode)),
                   (getString(30185) % getString(self._g.langID[contentType]),
                    'RunPlugin({}?mode=listContent&cat=GetASINDetails&url=asinList%3D{}&export=1)'.format(self._g.pluginid, asin)),
@@ -438,7 +443,7 @@ class AmazonTLD(Singleton):
                 addVideo(name, asin, infoLabels, cm, export)
             else:
                 mode = 'listContent'
-                url = url if '_show' in parent and url else item['childTitles'][0]['feedUrl']
+                url = url if url != '' else item['childTitles'][0]['feedUrl']
 
                 if self._g.watchlist in parent:
                     url += self._s.OfferGroup
@@ -736,7 +741,7 @@ class AmazonTLD(Singleton):
         name = ''
         season = infoLabels['Season']
         if parent:
-            if infoLabels['Title'].lower().split('[')[0].strip() != infoLabels['TVShowTitle'].lower().split('[')[0].strip():
+            if infoLabels['Title'].lower().strip() != infoLabels['TVShowTitle'].lower().strip():
                 return infoLabels['DisplayTitle']
             name = infoLabels['Title'] + ' - '
         if season != 0 and season < 100:
@@ -772,7 +777,8 @@ class AmazonTLD(Singleton):
                 for d in v:
                     if isinstance(d, dict):
                         res = self.findKey(key, d)
-                        if res: return res
+                        if res:
+                            return res
         return []
 
     def _scrapeAsins(self, aurl, cj):
@@ -890,21 +896,20 @@ class AmazonTLD(Singleton):
         if contentType == 'series':
             infoLabels['mediatype'] = 'tvshow'
             infoLabels['TVShowTitle'] = item['title']
-            infoLabels['TotalSeasons'] = item['childTitles'][0]['size'] if 'childTitles' in item else None
+            infoLabels['TotalSeasons'] = item['childTitles'][0]['size'] if item.get('childTitles') else None
 
         elif contentType == 'season':
             infoLabels['mediatype'] = 'season'
             infoLabels['Season'] = item['number']
             if item['ancestorTitles']:
-                try:
-                    infoLabels['TVShowTitle'] = item['ancestorTitles'][0]['title']
-                    infoLabels['SeriesAsin'] = item['ancestorTitles'][0]['titleId']
-                except:
-                    pass
+                for content in item['ancestorTitles']:
+                    if content['contentType'] == 'SERIES':
+                        infoLabels['SeriesAsin'] = content['titleId'] if 'titleId' in content else None
+                        infoLabels['TVShowTitle'] = content['title'] if 'title' in content else None
             else:
                 infoLabels['SeriesAsin'] = infoLabels['Asins'].split(',')[0]
                 infoLabels['TVShowTitle'] = item['title']
-            if 'childTitles' in item:
+            if item.get('childTitles'):
                 infoLabels['TotalSeasons'] = 1
                 infoLabels['Episode'] = item['childTitles'][0]['size']
 

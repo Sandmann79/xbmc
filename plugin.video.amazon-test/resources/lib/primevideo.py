@@ -291,7 +291,7 @@ class PrimeVideo(Singleton):
         except:
             pass
 
-        matches = re.findall(r'\s*(?:<script type="text/template">|state:)\s*({[^\n]+})\s*(?:,|</script>)\s*', r)
+        matches = re.findall(r'\s*(?:<script[^>]+type="(?:text/template|application/json)"[^>]*>|state:)\s*({[^\n]+})\s*(?:,|</script>)\s*', r)
         if not matches:
             Log('No JSON objects found in the page', Log.ERROR)
             return None
@@ -413,7 +413,13 @@ class PrimeVideo(Singleton):
                 if 'isHighlighted' in link and link['isHighlighted']:
                     self._catalog['root'][link['text']]['lazyLoadData'] = home
         except:
-            self._g.dialog.notification('PrimeVideo error', 'Unable to find the navigation menu for primevideo.com', xbmcgui.NOTIFICATION_ERROR)
+            self._g.dialog.notification(
+                'PrimeVideo error',
+                'You might be unable to access the service: check the website www.primevideo.com for more information'
+                '' if 'cerberus' in home else ''
+                'Unable to find the navigation menu for primevideo.com',
+                xbmcgui.NOTIFICATION_ERROR
+            )
             Log('Unable to parse the navigation menu for primevideo.com', Log.ERROR)
             return False
 

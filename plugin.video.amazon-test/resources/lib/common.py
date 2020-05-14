@@ -191,6 +191,12 @@ class Settings(Singleton):
         elif 'bypassProxy' == name: return self._gs('proxy_mpdalter') == 'false'
         elif 'uhdAndroid' == name: return self._gs('uhd_android') == 'true'
         elif 'skip_scene' == name: return int('0' + self._gs('skip_scene'))
+        elif 'pagination' == name: return {
+            'all': self._gs('paginate_everything') == 'true',
+            'watchlist': self._gs('paginate_watchlist') == 'true',
+            'collections': self._gs('paginate_collections') == 'true',
+            'search': self._gs('paginate_search') == 'true'
+        }
 
 
 def jsonRPC(method, props='', param=None):

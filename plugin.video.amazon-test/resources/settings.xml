@@ -92,7 +92,6 @@
         <setting id="tmdb_art" type="enum" lvalues="30050|30051|30052" label="30016" default="1"/>
         <setting id="tvdb_art" type="enum" lvalues="30050|30053|30054|30056" label="30017" default="1"/>
         <setting id="useshowfanart" type="bool" label="30055" default="true"/>
-        <setting id="pv_episode_thumbnails" type="bool" label="30249" default="true"/>
         <!-- - -->
         <setting label="30070" type="lsep"/>
         <setting id="paycont" type="bool" label="30073" default="false"/>
@@ -100,5 +99,14 @@
         <setting id="wl_order" type="enum" label="30076" lvalues="30077|30079|30078" default="0"/>
         <setting id="wl_export" type="bool" label="30080" default="false"/>
         <setting id="logging" type="bool" label="30072" default="false"/>
+    </category>
+    <!-- PrimeVideo -->
+    <category label="30250">
+        <setting id="pv_episode_thumbnails" type="bool" label="30249" default="true"/>
+        <setting label="30243" type="lsep"/>
+        <setting id="paginate_everything" type="bool" label="30244" default="false"/>
+        <setting id="paginate_watchlist" type="bool" label="30245" default="false" enable="eq(-1,false)"/>
+        <setting id="paginate_collections" type="bool" label="30246" default="false" enable="eq(-2,false)"/>
+        <setting id="paginate_search" type="bool" label="30247" default="true" enable="eq(-3,false)"/>
     </category>
 </settings>

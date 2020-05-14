@@ -399,6 +399,7 @@ class PrimeVideo(Singleton):
         # Insert the main sections, in order
         try:
             navigation = home['mainMenu']['links']
+            cn = 0
             while navigation:
                 link = navigation.pop(0)
                 # Skip watchlist
@@ -408,10 +409,12 @@ class PrimeVideo(Singleton):
                 if 'links' in link:
                     navigation = link['links'] + navigation
                     continue
-                self._catalog['root'][link['text']] = {'title': self._BeautifyText(link['text']), 'lazyLoadURL': link['href']}
+                cn += 1
+                id = 'coll{}_{}'.format(cn, link['text'])
+                self._catalog['root'][id] = {'title': self._BeautifyText(link['text']), 'lazyLoadURL': link['href']}
                 # Avoid unnecessary calls when loading the current page in the future
                 if 'isHighlighted' in link and link['isHighlighted']:
-                    self._catalog['root'][link['text']]['lazyLoadData'] = home
+                    self._catalog['root'][id]['lazyLoadData'] = home
         except:
             self._g.dialog.notification(
                 'PrimeVideo error',
@@ -445,7 +448,7 @@ class PrimeVideo(Singleton):
 
         return True
 
-    def Browse(self, path, forceSort=None):
+    def Browse(self, path, bNoSort=False):
         """ Display and navigate the menu for PrimeVideo users """
 
         # Add multiuser menu if needed
@@ -565,7 +568,7 @@ class PrimeVideo(Singleton):
                             item.addStreamInfo('video', {'duration': m['runtime']})
 
             # If it's a video leaf without an actual video, something went wrong with Amazon servers, just hide it
-            if (not folder) or (4 > folderType):
+            if ('nextPage' == key) or (not folder) or (4 > folderType):
                 xbmcplugin.addDirectoryItem(self._g.pluginhandle, url, item, isFolder=folder)
             del item
 
@@ -578,7 +581,7 @@ class PrimeVideo(Singleton):
             xbmcplugin.SORT_METHOD_LABEL_IGNORE_THE,  # TV Show (Seasons list)
             xbmcplugin.SORT_METHOD_EPISODE,  # Season (Episodes list)
             xbmcplugin.SORT_METHOD_LABEL_IGNORE_THE,  # Movies list
-        ][folderType] if None is forceSort else forceSort)
+        ][0 if bNoSort or ('nextPage' in node) else folderType])
 
         if 'false' == self._g.addon.getSetting("viewenable"):
             # Only vfs and videos to keep Kodi's watched functionalities
@@ -598,7 +601,7 @@ class PrimeVideo(Singleton):
             return
         Log('Searching "{}"…'.format(searchString), Log.INFO)
         self._catalog['search'] = OrderedDict([('lazyLoadURL', self._catalog['root']['Search']['endpoint'].format(searchString))])
-        self.Browse('search', xbmcplugin.SORT_METHOD_NONE)
+        self.Browse('search', True)
 
     def Refresh(self, path):
         """ Provides cache refresh functionality """
@@ -678,7 +681,6 @@ class PrimeVideo(Singleton):
                 Log('Unable to decode date "{}": language "{}" not supported'.format(datestr, lang), Log.DEBUG)
                 return datestr
 
-            from .logging import LogCaller
             # Try to decode the date as localized format
             try:
                 p = re.search(self._dateParserData[lang]['deconstruct'], datestr.lower())
@@ -768,6 +770,8 @@ class PrimeVideo(Singleton):
             season = {}
             bUpdatedVideoData = False
             if urn not in self._videodata['urn2gti']:
+                # Find all episodes, not just a limited set
+                url += ('&' if '?' in url else '?') + 'episodeListSize=9999'
                 # Find the show the season belongs to
                 bUpdatedVideoData |= ParseSinglePage(oid, season, False, url=url)
                 seasonGTI = self._videodata['urn2gti'][urn]
@@ -1213,19 +1217,52 @@ class PrimeVideo(Singleton):
                             bUpdatedVideoData |= AddSeason(breadcrumb[-1], o, item['title']['text'], iu)
 
                 # Single page
+                bSinglePage = False
                 if 'state' in cnt:
+                    bSinglePage = True
                     bUpdatedVideoData |= ParseSinglePage(breadcrumb[-1], o, bCacheRefresh, data=cnt, url=requestURL)
 
                 # Pagination
-                if 'pagination' in cnt:
+                if ('pagination' in cnt) or (key_exists(cnt, 'viewOutput', 'features', 'legacy-watchlist', 'content', 'seeMoreHref')):
                     nextPage = None
-                    if 'apiUrl' in cnt['pagination']:
-                        nextPage = cnt['pagination']['apiUrl']
-                    elif 'paginator' in cnt['pagination']:
-                        nextPage = next((x['href'] for x in cnt['pagination']['paginator'] if
-                                        (('type' in x) and ('NextPage' == x['type'])) or (('*className*' in x) and ('atv.wps.PaginatorNext' == x['*className*']))), None)
+                    try:
+                        # Dynamic AJAX pagination
+                        seeMore = cnt['viewOutput']['features']['legacy-watchlist']['content']
+                        if seeMore['nextPageStartIndex'] < seeMore['totalItems']:
+                            nextPage = seeMore['seeMoreHref']
+                    except:
+                        # Classic numbered pagination
+                        if 'apiUrl' in cnt['pagination']:
+                            nextPage = cnt['pagination']['apiUrl']
+                        elif 'paginator' in cnt['pagination']:
+                            nextPage = next((x['href'] for x in cnt['pagination']['paginator'] if
+                                            (('type' in x) and ('NextPage' == x['type'])) or (('*className*' in x) and ('atv.wps.PaginatorNext' == x['*className*']))), None)
+
                     if nextPage:
-                        requestURLs.append(nextPage)
+                        # Determine if we can auto page
+                        p = self._s.pagination
+                        bAutoPaginate = True
+                        # Always autoload episode list
+                        if bSinglePage:
+                            pass
+                        # Auto pagination if not disabled for Search and Watchlist
+                        elif ['search'] == breadcrumb:
+                            bAutoPaginate = not (p['all'] or p['search'])
+                        elif 'Watchlist' == breadcrumb[1]:
+                            bAutoPaginate = not (p['all'] or p['watchlist'])
+                        # Always auto load category lists, then paginate if appropriate
+                        elif (2 < len(breadcrumb)) and (p['all'] or p['collections']):
+                            bAutoPaginate = False
+
+                        if bAutoPaginate:
+                            requestURLs.append(nextPage)
+                        else:
+                            # Insert pagination folder
+                            try:
+                                npt = getString(30242).format(cnt['pagination']['page'])
+                            except:
+                                npt = 'Next page…'
+                            o['nextPage'] = {'title': npt, 'lazyLoadURL': nextPage}
 
             # Notify new page
             if 0 < len(requestURLs):

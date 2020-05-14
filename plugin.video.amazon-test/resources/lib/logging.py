@@ -31,8 +31,10 @@ Log.WARNING = xbmc.LOGWARNING
 
 
 def LogCaller():
-    fi = getframeinfo(currentframe().f_back.f_back)
-    msg = '[{}] Called from: {}:{}'.format(g.__plugin__, opb(fi.filename), fi.lineno)
+    frame = currentframe().f_back
+    fcaller = getframeinfo(frame.f_back)
+    fcallee = getframeinfo(frame)
+    msg = '[{}] {}:{} called from: {}:{}'.format(g.__plugin__, opb(fcallee.filename), fcallee.lineno, opb(fcaller.filename), fcaller.lineno)
     xbmc.log(msg, Log.INFO)
 
 

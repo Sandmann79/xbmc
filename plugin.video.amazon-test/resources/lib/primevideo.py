@@ -10,7 +10,7 @@ import re
 import sys
 import time
 
-from .common import key_exists
+from .common import key_exists, return_item
 from .singleton import Singleton
 from .network import getURL, getURLData, MechanizeLogin
 from .logging import Log, LogJSON
@@ -1157,71 +1157,69 @@ class PrimeVideo(Singleton):
                         o[collection['text']]['lazyLoadData'] = collection
 
             # Watchlist
-            wl = cnt['viewOutput']['features']['legacy-watchlist'] if key_exists(cnt, 'viewOutput', 'features', 'legacy-watchlist') else cnt
-            if ('filters' in wl) and ('*classHierarchy*' not in wl):
-                # Don't parse content and forbid pagination on the main watchlist page
-                if 'content' in cnt:
-                    del cnt['content']
-                if 'pagination' in cnt:
-                    del cnt['pagination']
+            if ['root', 'Watchlist'] == breadcrumb:
+                wl = return_item(cnt, 'viewOutput', 'features', 'legacy-watchlist')
                 for f in wl['filters']:
                     o[f['id']] = {'title': f['text'], 'lazyLoadURL': f['apiUrl' if 'apiUrl' in f else 'href']}
+                    if 'applied' in f and f['applied']:
+                        o[f['id']]['lazyLoadData'] = cnt
+            else:
+                # Watchlist / Widow list / API Search
+                vo = return_item(cnt, 'viewOutput', 'features', 'legacy-watchlist', 'content')
+                if ('items' in vo) or (('content' in vo) and ('items' in vo['content'])):
+                    for item in (vo if 'items' in vo else vo['content'])['items']:
+                        title = item['heading'] if 'heading' in item else item['title']
+                        iu = item['href'] if 'href' in item else item['link']['url']
+                        try:
+                            t = item['watchlistAction']['endpoint']['query']['titleType'].lower()
+                        except:
+                            t = None
 
-            # Watchlist / Widow list / API Search
-            if ('items' in cnt) or (('content' in cnt) and ('items' in cnt['content'])):
-                for item in (cnt if 'items' in cnt else cnt['content'])['items']:
-                    title = item['heading'] if 'heading' in item else item['title']
-                    iu = item['href'] if 'href' in item else item['link']['url']
-                    try:
-                        t = item['watchlistAction']['endpoint']['query']['titleType'].lower()
-                    except:
-                        t = None
+                        # Detect if it's a live event (or replay)
+                        try:
+                            bEvent = ('liveInfo' in item) or ('event' == item['watchlistAction']['endpoint']['query']['titleType'].lower())
+                        except:
+                            bEvent = False
 
-                    # Detect if it's a live event (or replay)
-                    try:
-                        bEvent = ('liveInfo' in item) or ('event' == item['watchlistAction']['endpoint']['query']['titleType'].lower())
-                    except:
-                        bEvent = False
+                        if bEvent:
+                            AddLiveEvent(o, item, iu)
+                        elif 'season' != t:
+                            bUpdatedVideoData |= ParseSinglePage(breadcrumb[-1], o, bCacheRefresh, url=iu)
+                        else:
+                            bUpdatedVideoData |= AddSeason(breadcrumb[-1], o, title, iu)
 
-                    if bEvent:
-                        AddLiveEvent(o, item, iu)
-                    elif 'season' != t:
-                        bUpdatedVideoData |= ParseSinglePage(breadcrumb[-1], o, bCacheRefresh, url=iu)
-                    else:
-                        bUpdatedVideoData |= AddSeason(breadcrumb[-1], o, title, iu)
+                # Search/list
+                if ('results' in cnt) and ('items' in cnt['results']):
+                    for item in cnt['results']['items']:
+                        iu = item['title']['url']
 
-            # Search/list
-            if ('results' in cnt) and ('items' in cnt['results']):
-                for item in cnt['results']['items']:
-                    iu = item['title']['url']
+                        # Detect if it's a live event (or replay)
+                        try:
+                            bEvent = ('liveInfo' in item) or ('event' == item['watchlistAction']['endpoint']['query']['titleType'].lower())
+                        except:
+                            bEvent = False
 
-                    # Detect if it's a live event (or replay)
-                    try:
-                        bEvent = ('liveInfo' in item) or ('event' == item['watchlistAction']['endpoint']['query']['titleType'].lower())
-                    except:
-                        bEvent = False
+                        if bEvent:
+                            AddLiveEvent(o, item, iu)
+                        elif 'season' not in item:
+                            bUpdatedVideoData |= ParseSinglePage(breadcrumb[-1], o, bCacheRefresh, url=iu)
+                        else:
+                            bUpdatedVideoData |= AddSeason(breadcrumb[-1], o, item['title']['text'], iu)
 
-                    if bEvent:
-                        AddLiveEvent(o, item, iu)
-                    elif 'season' not in item:
-                        bUpdatedVideoData |= ParseSinglePage(breadcrumb[-1], o, bCacheRefresh, url=iu)
-                    else:
-                        bUpdatedVideoData |= AddSeason(breadcrumb[-1], o, item['title']['text'], iu)
+                # Single page
+                if 'state' in cnt:
+                    bUpdatedVideoData |= ParseSinglePage(breadcrumb[-1], o, bCacheRefresh, data=cnt, url=requestURL)
 
-            # Single page
-            if 'state' in cnt:
-                bUpdatedVideoData |= ParseSinglePage(breadcrumb[-1], o, bCacheRefresh, data=cnt, url=requestURL)
-
-            # Pagination
-            if 'pagination' in cnt:
-                nextPage = None
-                if 'apiUrl' in cnt['pagination']:
-                    nextPage = cnt['pagination']['apiUrl']
-                elif 'paginator' in cnt['pagination']:
-                    nextPage = next((x['href'] for x in cnt['pagination']['paginator'] if
-                                    (('type' in x) and ('NextPage' == x['type'])) or (('*className*' in x) and ('atv.wps.PaginatorNext' == x['*className*']))), None)
-                if nextPage:
-                    requestURLs.append(nextPage)
+                # Pagination
+                if 'pagination' in cnt:
+                    nextPage = None
+                    if 'apiUrl' in cnt['pagination']:
+                        nextPage = cnt['pagination']['apiUrl']
+                    elif 'paginator' in cnt['pagination']:
+                        nextPage = next((x['href'] for x in cnt['pagination']['paginator'] if
+                                        (('type' in x) and ('NextPage' == x['type'])) or (('*className*' in x) and ('atv.wps.PaginatorNext' == x['*className*']))), None)
+                    if nextPage:
+                        requestURLs.append(nextPage)
 
             # Notify new page
             if 0 < len(requestURLs):

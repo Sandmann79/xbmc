@@ -238,3 +238,13 @@ def key_exists(dictionary, *keys):
             return False
     return True
 
+
+def return_item(dictionary, *keys):
+    """ Returns an item nested in the dictionary, or the dictionary itself """
+    _p = dictionary
+    for key in keys:
+        try:
+            _p = _p[key]
+        except:
+            return dictionary
+    return _p

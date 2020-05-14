@@ -13,7 +13,7 @@ import time
 from .common import key_exists
 from .singleton import Singleton
 from .network import getURL, getURLData, MechanizeLogin
-from .logging import Log
+from .logging import Log, LogJSON
 from .itemlisting import setContentAndView
 from .l10n import *
 from .users import *
@@ -242,7 +242,6 @@ class PrimeVideo(Singleton):
                     else:
                         Merge(o[k], n[k])  # Recurse
             else:
-                # from .logging import LogJSON
                 # LogJSON(n, optionalName='CollisionNew')
                 # LogJSON(o, optionalName='CollisionOld')
                 Log('Collision detected during JSON objects merging, overwriting and praying (type: {})'.format(type(n)), Log.WARNING)
@@ -392,16 +391,26 @@ class PrimeVideo(Singleton):
 
         # Insert the watchlist
         try:
-            watchlist = next((x for x in home['yourAccount']['links'] if '/watchlist/' in x['href']), None)
+            watchlist = next((x for x in home['mainMenu']['links'] if 'pv-nav-mystuff' in x['id']), None)
             self._catalog['root']['Watchlist'] = {'title': self._BeautifyText(watchlist['text']), 'lazyLoadURL': watchlist['href']}
         except:
             Log('Watchlist link not found', Log.ERROR)
 
         # Insert the main sections, in order
         try:
-            for link in home['mainMenu']['links']:
+            navigation = home['mainMenu']['links']
+            while navigation:
+                link = navigation.pop(0)
+                # Skip watchlist
+                if 'pv-nav-mystuff' == link['id']:
+                    continue
+                # Substitute drop-down menu with expanded navigation
+                if 'links' in link:
+                    navigation = link['links'] + navigation
+                    continue
                 self._catalog['root'][link['text']] = {'title': self._BeautifyText(link['text']), 'lazyLoadURL': link['href']}
-                if '/home/' in link['href']:
+                # Avoid unnecessary calls when loading the current page in the future
+                if 'isHighlighted' in link and link['isHighlighted']:
                     self._catalog['root'][link['text']]['lazyLoadData'] = home
         except:
             self._g.dialog.notification('PrimeVideo error', 'Unable to find the navigation menu for primevideo.com', xbmcgui.NOTIFICATION_ERROR)
@@ -829,7 +838,6 @@ class PrimeVideo(Singleton):
                     NotifyUser(getString(30256), True)
                     Log('Unable to fetch the url: {}'.format(url), Log.ERROR)
                     return False
-            # from .logging import LogJSON
             # LogJSON(data, url)
 
             # Video/season/movie data are in the `state` field of the response
@@ -1125,7 +1133,6 @@ class PrimeVideo(Singleton):
                         continue
                     else:
                         cnt = self._GrabJSON(requestURL)
-                        # from .logging import LogJSON
                         # LogJSON(cnt, requestURL)
 
                 # Don't switch direct action for reference until we have content to show for it

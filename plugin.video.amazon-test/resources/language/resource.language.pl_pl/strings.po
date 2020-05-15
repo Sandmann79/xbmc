@@ -616,6 +616,34 @@ msgctxt "#30219"
 msgid "Unable to retrieve Amazon's territorial configuration."
 msgstr ""
 
+# empty strings from id 30221 to 30241
+msgctxt "#30242"
+msgid "Page {}"
+msgstr ""
+
+msgctxt "#30243"
+msgid "Pagination"
+msgstr ""
+
+msgctxt "#30244"
+msgid "Everything"
+msgstr ""
+
+#, fuzzy
+msgctxt "#30245"
+msgid "Watchlist"
+msgstr "Dodaj %s do watchlist"
+
+#, fuzzy
+msgctxt "#30246"
+msgid "Collections"
+msgstr "Logowanie i dane"
+
+#, fuzzy
+msgctxt "#30247"
+msgid "Search"
+msgstr "Szukaj"
+
 # empty strings from id 30220 to 30247
 msgctxt "#30248"
 msgid "Proxy MPD alteration"

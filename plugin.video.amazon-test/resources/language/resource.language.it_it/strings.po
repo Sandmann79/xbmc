@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: XBMC-Addons\n"
 "Report-Msgid-Bugs-To: alanwww1@xbmc.org\n"
 "POT-Creation-Date: 2016-07-07 19:46+0000\n"
-"PO-Revision-Date: 2020-05-11 18:47+0200\n"
+"PO-Revision-Date: 2020-05-15 11:24+0200\n"
 "Last-Translator: \n"
 "Language-Team: LANGUAGE\n"
 "Language: it_IT\n"
@@ -633,6 +633,32 @@ msgstr ""
 msgctxt "#30219"
 msgid "Unable to retrieve Amazon's territorial configuration."
 msgstr "Impossibile recuperare la configurazione territoriale di Amazon."
+
+# empty strings from id 30221 to 30241
+msgctxt "#30242"
+msgid "Page {}"
+msgstr "Pagina {}"
+
+msgctxt "#30243"
+msgid "Pagination"
+msgstr "Paginazione"
+
+msgctxt "#30244"
+msgid "Everything"
+msgstr "Tutto"
+
+# empty strings from id 30174 to 30179
+msgctxt "#30245"
+msgid "Watchlist"
+msgstr "Lista Video"
+
+msgctxt "#30246"
+msgid "Collections"
+msgstr "Elenchi"
+
+msgctxt "#30247"
+msgid "Search"
+msgstr "Ricerca"
 
 # empty strings from id 30220 to 30247
 msgctxt "#30248"

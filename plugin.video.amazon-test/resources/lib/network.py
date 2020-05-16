@@ -203,7 +203,7 @@ def getURL(url, useCookie=False, silent=False, headers=None, rjson=True, attempt
             Log('Attempt #{0}{1}'.format(attempt, '' if 0 == wait else ' (Too many requests, pause %s seconds…)' % wait))
             if 0 < wait:
                 sleep(wait)
-            return getURL(url, useCookie, silent, headers, rjson, attempt, check, postdata)
+            return getURL(url, useCookie, silent, headers, rjson, attempt, check, postdata, binary)
         return retval
     res = json.loads(response) if rjson else response
     return res
@@ -280,7 +280,7 @@ def getATVData(pg_mode, query='', version=2, useCookie=False, site_id=None):
     pg_mode = pg_mode.split('_')[0]
     if '/' not in pg_mode:
         pg_mode = 'catalog/' + pg_mode
-    rem_pos = False if re.search('(?i)rolluptoseason=t|contenttype=tvseason', query) else s.removePosters
+    rem_pos = False if re.search('(?i)rolluptoseason=t|contenttype=tvseason', query) else s.useEpiThumbs
 
     if 'asinlist=&' not in query:
         titles = 0

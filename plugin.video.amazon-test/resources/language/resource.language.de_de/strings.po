@@ -611,35 +611,32 @@ msgstr ""
 
 msgctxt "#30219"
 msgid "Unable to retrieve Amazon's territorial configuration."
-msgstr "Die territoriale Konfiguration von Amazon konnte nicht abgerufen werden."
+msgstr "Die Regionskonfiguration konnte nicht von Amazon abgerufen werden."
 
 # empty strings from id 30221 to 30241
 msgctxt "#30242"
 msgid "Page {}"
-msgstr ""
+msgstr "Seite {}"
 
 msgctxt "#30243"
 msgid "Pagination"
-msgstr ""
+msgstr "Seitennummerierung"
 
 msgctxt "#30244"
 msgid "Everything"
-msgstr ""
+msgstr "Überall"
 
-#, fuzzy
 msgctxt "#30245"
 msgid "Watchlist"
-msgstr "%s zur Watchlist hinzufügen"
+msgstr "Watchlist"
 
-#, fuzzy
 msgctxt "#30246"
 msgid "Collections"
-msgstr "Verbindung"
+msgstr "Sammlungen"
 
-#, fuzzy
 msgctxt "#30247"
 msgid "Search"
-msgstr "Suchen"
+msgstr "Suche"
 
 msgctxt "#30248"
 msgid "Proxy MPD alteration"

@@ -38,6 +38,7 @@ class AmazonTLD(Singleton):
         addDir(getString(30136), 'Recent', '')
         addDir(getString(30108), 'Search', '')
         addDir(getString(30100), 'getListMenu', self._g.library, cm=cm_lb)
+        # addDir('[B]{}[/B]'.format(getString(5)), 'openSettings', self._g.addon.getAddonInfo('id'))
         xbmcplugin.endOfDirectory(self._g.pluginhandle, updateListing=False)
 
     @staticmethod

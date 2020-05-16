@@ -78,14 +78,6 @@
         <setting id="episodeview" type="enum" values="List|Poster|IconWall|Shift|InfoWall|WideList|Wall|Banner|FanArt|Custom" label="30032" default="3" enable="eq(-7,true)"/>
         <setting id="episodeid" type="number" label="View ID" enable="eq(-1,9) + eq(-8,true)" subsetting="true" />
     </category>
-    <!-- Export -->
-    <category label="30060">
-        <setting id="enablelibraryfolder" type="bool" label="30061" default="false" />
-        <setting id="customlibraryfolder" type="folder" label="30062" enable="eq(-1,true)" default="special://profile/addon_data/plugin.video.amazon-test" source="auto" option="writeable" subsetting="true" />
-        <setting id="cr_nfo" type="bool" label="30063" default="true" />
-        <setting id="mediasource_movie" type="text" label="30064" default="Amazon Movies" />
-        <setting id="mediasource_tv" type="text" label="30065" default="Amazon TV" />
-    </category>
     <!-- Miscellaneous -->
     <category label="30070">
         <setting label="Fanart" type="lsep"/>
@@ -97,8 +89,20 @@
         <setting id="paycont" type="bool" label="30073" default="false"/>
         <setting id="disptvshow" type="bool" label="30071" default="false"/>
         <setting id="wl_order" type="enum" label="30076" lvalues="30077|30079|30078" default="0"/>
-        <setting id="wl_export" type="bool" label="30080" default="false"/>
         <setting id="logging" type="bool" label="30072" default="false"/>
+    </category>
+    <!-- TLD -->
+    <category label="Amazon.TLD">
+        <setting label="30060" type="lsep"/>
+        <setting id="enablelibraryfolder" type="bool" label="30061" default="false" />
+        <setting id="customlibraryfolder" type="folder" label="30062" enable="eq(-1,true)" default="special://profile/addon_data/plugin.video.amazon-test" source="auto" option="writeable" subsetting="true" />
+        <setting id="cr_nfo" type="bool" label="30063" default="true" />
+        <setting id="mediasource_movie" type="text" label="30064" default="Amazon Movies" />
+        <setting id="mediasource_tv" type="text" label="30065" default="Amazon TV" />
+        <setting type="sep"/>
+        <setting id="wl_export" type="bool" label="30080" default="false"/>
+        <setting label="Artwork" type="lsep"/>
+        <setting id="tld_episode_thumbnails" type="bool" label="30249" default="false"/>
     </category>
     <!-- PrimeVideo -->
     <category label="30250">

@@ -661,7 +661,7 @@ msgstr ""
 
 msgctxt "#30250"
 msgid "PrimeVideo"
-msgstr "PrimeVideo"
+msgstr ""
 
 msgctxt "#30251"
 msgid "Connection error"

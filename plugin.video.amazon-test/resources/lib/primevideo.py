@@ -853,7 +853,7 @@ class PrimeVideo(Singleton):
                     NotifyUser(getString(30256), True)
                     Log('Unable to fetch the url: {}'.format(url), Log.ERROR)
                     return False
-            # LogJSON(data, url)
+                # LogJSON(data, url)
 
             # Video/season/movie data are in the `state` field of the response
             if 'state' not in data:
@@ -1183,7 +1183,11 @@ class PrimeVideo(Singleton):
                 vo = return_item(cnt, 'viewOutput', 'features', 'legacy-watchlist', 'content')
                 if ('items' in vo) or (('content' in vo) and ('items' in vo['content'])):
                     for item in (vo if 'items' in vo else vo['content'])['items']:
-                        title = item['heading'] if 'heading' in item else item['title']
+                        try:
+                            title = item['heading'] if 'heading' in item else item['title']
+                        except:
+                            # Sometimes there are promotional slides with no real content
+                            continue
                         iu = item['href'] if 'href' in item else item['link']['url']
                         try:
                             t = item['watchlistAction']['endpoint']['query']['titleType'].lower()

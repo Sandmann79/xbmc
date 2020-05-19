@@ -65,7 +65,7 @@ def PlayVideo(name, asin, adultstr, streamtype, forcefb=0):
         return out.strip()
 
     def _playDummyVid():
-        dummy_video = OSPJoin(g.PLUGIN_PATH, 'resources', 'dummy.avi')
+        dummy_video = OSPJoin(g.PLUGIN_PATH, 'resources', 'art', 'dummy.avi')
         xbmcplugin.setResolvedUrl(g.pluginhandle, True, xbmcgui.ListItem(path=dummy_video))
         Log('Playing Dummy Video', Log.DEBUG)
         xbmc.Player().stop()

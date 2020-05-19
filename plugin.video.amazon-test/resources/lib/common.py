@@ -174,9 +174,10 @@ class Settings(Singleton):
         elif 'ms_tv' == name: ms_tv = self._gs('mediasource_tv'); return ms_tv if ms_tv else 'Amazon TV'
         elif 'multiuser' == name: return self._gs('multiuser') == 'true'
         elif 'DefaultFanart' == name: return OSPJoin(self._g.PLUGIN_PATH, 'fanart.png')
-        elif 'ThumbIcon' == name: return OSPJoin(self._g.PLUGIN_PATH, 'resources', 'thumb.png')
-        elif 'NextIcon' == name: return OSPJoin(self._g.PLUGIN_PATH, 'resources', 'next.png')
-        elif 'HomeIcon' == name: return OSPJoin(self._g.PLUGIN_PATH, 'resources', 'home.png')
+        elif 'ThumbIcon' == name: return OSPJoin(self._g.PLUGIN_PATH, 'resources', 'art', 'thumb.png')
+        elif 'NextIcon' == name: return OSPJoin(self._g.PLUGIN_PATH, 'resources', 'art', 'next.png')
+        elif 'HomeIcon' == name: return OSPJoin(self._g.PLUGIN_PATH, 'resources', 'art', 'home.png')
+        elif 'PrimeVideoEntitlement' == name: return OSPJoin(self._g.PLUGIN_PATH, 'resources', 'art', 'prime.png')
         elif 'wl_order' == name: return ['DATE_ADDED_DESC', 'TITLE_DESC', 'TITLE_ASC'][int('0' + self._gs('wl_order'))]
         elif 'verifySsl' == name: return self._gs('ssl_verif') == 'false'
         elif 'OfferGroup' == name: return '' if self.payCont else '&OfferGroups=B0043YVHMY'

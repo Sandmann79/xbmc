@@ -391,9 +391,14 @@ class PrimeVideo(Singleton):
 
         # Insert the watchlist
         try:
+            watchlist = next((x for x in home['yourAccount']['links'] if '/watchlist/' in x['href']), None)
+            self._catalog['root']['Watchlist'] = {'title': watchlist['text'], 'lazyLoadURL': self._FQify(watchlist['href'])}
+        except: pass
+        try:
             watchlist = next((x for x in home['mainMenu']['links'] if 'pv-nav-mystuff' in x['id']), None)
             self._catalog['root']['Watchlist'] = {'title': self._BeautifyText(watchlist['text']), 'lazyLoadURL': watchlist['href']}
-        except:
+        except: pass
+        if 'Watchlist' not in self._catalog['root']:
             Log('Watchlist link not found', Log.ERROR)
 
         # Insert the main sections, in order

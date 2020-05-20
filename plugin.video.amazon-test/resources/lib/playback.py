@@ -274,19 +274,18 @@ def PlayVideo(name, asin, adultstr, streamtype, forcefb=0):
             act = 'android.intent.action.VIEW'
             url = '{}/watch?{}={}'.format(burl, gti, asin)
             if not g.UsePrimeVideo and avodapp:
-                url = g.BaseUrl + '/piv-apk-play?asin=' + asin
-                url += '&playTrailer=T' if streamtype == 1 else ''
+                url = '%s/piv-apk-play?asin=%s%s' % (g.BaseUrl, asin, '&playTrailer=T' if streamtype == 1 else '')
 
-        subprocess.Popen(['log', '-p', 'v', '-t', 'Kodi-Amazon', 'Manufacturer: ' + manu])
+        subprocess.Popen(['log', '-p', 'v', '-t', 'Kodi-Amazon', 'Manufacturer: %s' % manu])
         subprocess.Popen(['log', '-p', 'v', '-t', 'Kodi-Amazon', 'Starting App: %s Video: %s' % (pkg, url)])
         Log('Manufacturer: %s' % manu)
         Log('Starting App: %s Video: %s' % (pkg, url))
 
         if s.verbLog:
             if os.access('/system/xbin/su', os.X_OK) or os.access('/system/bin/su', os.X_OK):
-                Log('Logcat:\n' + _check_output(['su', '-c', 'logcat -d | grep -iE "(avod|amazonvideo)']))
-            Log('Properties:\n' + _check_output(['sh', '-c', 'getprop | grep -iE "(ro.product|ro.build|google)"']))
-            Log('Installed Amazon Packages:\n' + _check_output(['sh', '-c', 'cmd package list packages | grep -i amazon']))
+                Log('Logcat:\n%s' % _check_output(['su', '-c', 'logcat -d | grep -iE "(avod|amazonvideo)']))
+            Log('Properties:\n%s' % _check_output(['sh', '-c', 'getprop | grep -iE "(ro.product|ro.build|google)"']))
+            Log('Installed Amazon Packages:\n%s' % _check_output(['sh', '-c', 'cmd package list packages | grep -i amazon']))
 
         xbmc.executebuiltin('StartAndroidActivity("%s", "%s", "", "%s")' % (pkg, act, url))
 

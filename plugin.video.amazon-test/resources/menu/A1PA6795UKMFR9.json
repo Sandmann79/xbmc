@@ -1179,6 +1179,12 @@
         {"title": "Amazon Channels", "id": "channels", "categories": 
             [
                 {"play": "", "infolabel": {"Asins": "amzn1.dv.lcid.2e48b38e-0287-4f78-a92a-1d5c6f2951f0", "Title": "AXN", "Plot": "", "contentType": "live", "Fanart": "", "Thumb": "https://m.media-amazon.com/images/G/03/digital/video/merch/subs/benefit-id/a-f/axnsony/live/web_live-channels-tile._CB529561243_UR267,200_FMPNG_.png"}},
+                {"title": "Bundesliga", "id": "bl_matches", "categories":
+                    [
+                        {"play": "", "infolabel": {"Title": "FC Schalke 04 - FC Augsburg", "Asins": "amzn1.dv.gti.b6b91774-a22d-115d-73ef-4cc083dc82cd", "Plot": "", "contentType": "match", "Fanart": "", "Thumb": "https://m.media-amazon.com/images/S/pv-target-images/3d8f17f8a668b66e73ed3ac7a110a8c55b25c3b2eee0b36b7dd59d419a05b75d.jpg"}},
+                        {"play": "", "infolabel": {"Title": "Hertha BSC - 1. FC Union Berlin", "Asins": "amzn1.dv.gti.acb91773-d7c4-0139-3b28-4adcb7851463", "Plot": "", "contentType": "match", "Fanart": "", "Thumb": "https://m.media-amazon.com/images/S/pv-target-images/d168983c4fdec9303bdf53dd2809c513be4c95fa58ba4215770a936abb57f3b0.jpg"}}
+                    ]
+                },
                 {"play": "", "infolabel": {"Asins": "amzn1.dv.lcid.fafc98d9-fcf6-4482-8edd-d12c35957622", "Title": "Discovery Channel", "Plot": "", "contentType": "live", "Fanart": "", "Thumb": "https://m.media-amazon.com/images/G/03/digital/video/merch/subs/benefit-id/a-f/discoverychannel/heroes/roku_3p-featured-offers-tile_192x192._CB515577429_UR267,200_FMJPG_.jpg"}},
                 {"play": "", "infolabel": {"Asins": "amzn1.dv.lcid.0e9e91f8-2481-4805-b5a0-a0648dcaf273", "Title": "E! Entertainment", "Plot": "", "contentType": "live", "Fanart": "", "Thumb": "https://m.media-amazon.com/images/G/03/digital/video/merch/subs/benefit-id/a-f/eentertainment/live/web_live-channels-tile._CB529559993_UR267,200_FMPNG_.png"}},
                 {"play": "", "infolabel": {"Asins": "amzn1.dv.lcid.ed46da90-5c4f-4d6d-bc77-0c61514855af", "Title": "EDGEsport", "Plot": "", "contentType": "live", "Fanart": "", "Thumb": "https://m.media-amazon.com/images/G/03/digital/video/merch/subs/benefit-id/a-f/edge/live/web_live-channels-tile._V529560020_UR267,200_FMPNG_.png"}},

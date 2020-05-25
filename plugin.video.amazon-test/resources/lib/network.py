@@ -434,6 +434,15 @@ def LogIn(ask=True):
                 else:
                     return None
                 del wnd
+        elif 'validateCaptcha' in uni_soup:
+            wnd = _Challenge(soup)
+            wnd.doModal()
+            if wnd.cap:
+                form.set_input({'captchacharacters': wnd.cap})
+            else:
+                return None
+            del wnd
+
         return br
 
     def _setLoginPW():
@@ -554,7 +563,7 @@ def LogIn(ask=True):
             WriteLog(response.replace(py2_decode(email), '**@**'), 'login')
 
             while any(sp in response for sp in
-                      ['auth-mfa-form', 'ap_dcq_form', 'ap_captcha_img_label', 'claimspicker', 'fwcim-form', 'auth-captcha-image-container']):
+                      ['auth-mfa-form', 'ap_dcq_form', 'ap_captcha_img_label', 'claimspicker', 'fwcim-form', 'auth-captcha-image-container', 'validateCaptcha']):
                 br = _MFACheck(br, email, soup)
                 if br is None:
                     return False
@@ -717,27 +726,35 @@ class _Captcha(pyxbmct.AddonDialogWindow):
 class _Challenge(pyxbmct.AddonDialogWindow):
     def __init__(self, msg):
         box = msg.find_parent('div', class_='a-box-inner a-padding-extra-large')
-        self.head = box.find('span', class_='a-size-large').get_text(strip=True)
-        self.hint = box.find('span', class_='a-size-base a-color-secondary').get_text(strip=True)
-        self.task = box.find('label', class_='a-form-label').get_text(strip=True)
+        if box is None:
+            self.head = msg.find('title').get_text(strip=True)
+            self.hint = msg.find('p', class_='a-last').get_text(strip=True)
+            form = msg.find('form').find('div', class_='a-box-inner')
+            self.task = form.h4.get_text(strip=True)
+            self.img_url = pyxbmct.Image(form.find('img')['src'], aspectRatio=2)
+        else:
+            self.head = box.find('span', class_='a-size-large').get_text(strip=True)
+            self.hint = box.find('span', class_='a-size-base a-color-secondary').get_text(strip=True)
+            self.task = box.find('label', class_='a-form-label').get_text(strip=True)
+            self.img_url = pyxbmct.Image(msg['src'], aspectRatio=2)
+
         super(_Challenge, self).__init__(self.head)
-        self.setGeometry(500, 400, 7, 2)
+        self.setGeometry(500, 450, 8, 2)
         self.cap = ''
         self.tb_hint = pyxbmct.TextBox()
         self.fl_task = pyxbmct.FadeLabel(_alignment=pyxbmct.ALIGN_CENTER)
-        self.img_url = pyxbmct.Image(msg['src'], aspectRatio=2)
         self.ed_cap = pyxbmct.Edit('', _alignment=pyxbmct.ALIGN_LEFT | pyxbmct.ALIGN_CENTER_Y)
         self.btn_submit = pyxbmct.Button('OK')
         self.btn_cancel = pyxbmct.Button(getString(30123))
         self.set_controls()
 
     def set_controls(self):
-        self.placeControl(self.tb_hint, 0, 0, 1, 2)
-        self.placeControl(self.img_url, 1, 0, 3, 2)
-        self.placeControl(self.fl_task, 4, 0, 1, 2)
-        self.placeControl(self.ed_cap, 5, 0, 1, 2)
-        self.placeControl(self.btn_submit, 6, 0)
-        self.placeControl(self.btn_cancel, 6, 1)
+        self.placeControl(self.tb_hint, 0, 0, 2, 2)
+        self.placeControl(self.img_url, 2, 0, 3, 2)
+        self.placeControl(self.fl_task, 5, 0, 1, 2)
+        self.placeControl(self.ed_cap, 6, 0, 1, 2)
+        self.placeControl(self.btn_submit, 7, 0)
+        self.placeControl(self.btn_cancel, 7, 1)
         self.connect(self.btn_cancel, self.close)
         self.connect(self.btn_submit, self.submit)
         self.connect(pyxbmct.ACTION_NAV_BACK, self.close)

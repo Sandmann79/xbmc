@@ -291,8 +291,9 @@ def PlayVideo(name, asin, adultstr, streamtype, forcefb=0):
 
     def _IStreamPlayback(asin, name, streamtype, isAdult, extern):
         from .ages import AgeRestrictions
-        vMT = ['Feature', 'Trailer', 'LiveStreaming'][streamtype]
-        dRes = 'PlaybackUrls' if streamtype == 2 else 'PlaybackUrls,SubtitleUrls,ForcedNarratives,TransitionTimecodes'
+        vMT = ['Feature', 'Trailer', 'LiveStreaming', 'Feature'][streamtype]
+        dRes = 'PlaybackUrls' if streamtype > 1 else 'PlaybackUrls,SubtitleUrls,ForcedNarratives,TransitionTimecodes'
+        opt = '&liveManifestType=live%2Caccumulating' if streamtype == 3 else ''
         mpaa_str = AgeRestrictions().GetRestrictedAges() + getString(30171)
         drm_check = g.addon.getSetting("drm_check") == 'true'
 
@@ -310,7 +311,7 @@ def PlayVideo(name, asin, adultstr, streamtype, forcefb=0):
             return True
 
         mpd, subs, timecodes = _ParseStreams(*getURLData('catalog/GetPlaybackResources', asin, extra=True, vMT=vMT, dRes=dRes, useCookie=cookie,
-                                                         proxyEndpoint='gpr'), retmpd=True, bypassproxy=s.bypassProxy or (streamtype == 2))
+                                                         proxyEndpoint='gpr', opt=opt), retmpd=True, bypassproxy=s.bypassProxy or (streamtype > 1))
 
         if not mpd:
             g.dialog.notification(getString(30203), subs, xbmcgui.NOTIFICATION_ERROR)

@@ -89,6 +89,7 @@ def addVideo(name, asin, infoLabels, cm=None, export=False):
     u = {'asin': asin, 'mode': 'PlayVideo', 'name': py2_encode(name), 'adult': infoLabels['isAdult']}
     url = '{}?{}'.format(g.pluginid, urlencode(u))
     bitrate = '0'
+    streamtypes = {'live': 2, 'match': 3}
 
     item = xbmcgui.ListItem(name)
     item.setArt({'fanart': infoLabels['Fanart'], 'poster': infoLabels['Thumb'], 'thumb': infoLabels['Thumb']})
@@ -101,7 +102,7 @@ def addVideo(name, asin, infoLabels, cm=None, export=False):
     if infoLabels['TrailerAvailable']:
         infoLabels['Trailer'] = url + '&trailer=1&selbitrate=0'
 
-    url += '&trailer=2' if "live" in infoLabels['contentType'] else '&trailer=0'
+    url += '&trailer=%s' % streamtypes.get(infoLabels['contentType'], 0)
 
     if [k for k in ['4k', 'uhd', 'ultra hd'] if k in (infoLabels.get('TVShowTitle', '') + name).lower()]:
         bitrate = '-1'

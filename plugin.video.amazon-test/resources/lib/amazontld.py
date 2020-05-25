@@ -392,7 +392,7 @@ class AmazonTLD(Singleton):
         if page != 1 and not export:
             addDir(' --= %s =--' % getString(30112), thumb=self._s.HomeIcon)
 
-        if not titles or not len(titles['titles']):
+        if not titles or not len(titles.get('titles', [])):
             if 'search' in parent:
                 self._g.dialog.ok(self._g.__plugin__, getString(30202))
             else:

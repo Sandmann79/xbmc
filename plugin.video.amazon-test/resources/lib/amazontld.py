@@ -516,43 +516,30 @@ class AmazonTLD(Singleton):
         Log('Export: ' + filename)
 
     def WatchList(self, asin, remove):
-        action = 'remove' if remove else 'add'
         cookie = MechanizeLogin()
-
         if not cookie:
             return
 
-        par = self.getParams(asin, cookie)
-        data = getURL(par['data-%s-url' % action],
-                      postdata={'itemId': par['data-title-id'],
-                                'dataType': 'json',
-                                'csrfToken': par['data-csrf-token'],
-                                'action': action,
-                                'pageType': par['data-page-type'],
-                                'subPageType': par['data-sub-page-type']},
-                      useCookie=cookie, headers={'x-requested-with': 'XMLHttpRequest'})
-
-        if data['success'] == 1:
-            Log(asin + ' ' + data['status'])
-            if remove:
-                cPath = xbmc.getInfoLabel('Container.FolderPath').replace(asin, '').replace('opt=' + self._g.watchlist,
-                                                                                            'opt=rem_%s' % self._g.watchlist)
-                xbmc.executebuiltin('Container.Update("%s", replace)' % cPath)
-            elif self._s.wl_export:
-                self.listContent('GetASINDetails', 'asinList%3D' + asin, 1, '_show' if self._s.dispShowOnly else '', 1)
-                xbmc.executebuiltin('UpdateLibrary(video)')
-        else:
-            Log(data['status'] + ': ' + data['reason'])
-
-    def getParams(self, asin, cookie):
-        url = self._g.BaseUrl + '/gp/video/hover/%s?format=json&refTag=dv-hover&requesterPageType=Detail' % asin
-        data = getURL(url, useCookie=cookie, rjson=False)
-        if data:
-            data = data.encode('utf-8').decode('unicode_escape')
-            data = re.compile('(<form.*</form>)').findall(data)[0]
-            form = BeautifulSoup(data, 'html.parser')
-            return form.button
-        return ''
+        params = '[{"titleID":"%s","watchlist":true}]' % asin
+        data = getURL('%s/gp/video/api/enrichItemMetadata?itemsToEnrich=%s' % (self._g.BaseUrl, quote_plus(params)), useCookie=cookie)
+        endp = self.findKey('endpoint', data)
+        if endp:
+            action = 'Remove' if remove else 'Add'
+            url = self._g.BaseUrl + endp.get('partialURL')
+            query = endp.get('query')
+            query['tag'] = action
+            data = getURL(url, postdata=query, useCookie=cookie, allow_redirects=False, check=True)
+            if data:
+                Log(action + ' ' + asin)
+                if remove:
+                    cPath = xbmc.getInfoLabel('Container.FolderPath').replace(asin, '').replace('opt=' + self._g.watchlist,
+                                                                                                'opt=rem_%s' % self._g.watchlist)
+                    xbmc.executebuiltin('Container.Update("%s", replace)' % cPath)
+                elif self._s.wl_export:
+                    self.listContent('GetASINDetails', 'asinList%3D' + asin, 1, '_show' if self._s.dispShowOnly else '', 1)
+                    xbmc.executebuiltin('UpdateLibrary(video)')
+            else:
+                Log(data['status'] + ': ' + data['reason'])
 
     def getArtWork(self, infoLabels, contentType):
         if contentType == 'movie' and self._s.tmdb_art == '0':

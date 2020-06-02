@@ -110,7 +110,7 @@ def getTerritory(user):
     return user, True
 
 
-def getURL(url, useCookie=False, silent=False, headers=None, rjson=True, attempt=1, check=False, postdata=None, binary=False):
+def getURL(url, useCookie=False, silent=False, headers=None, rjson=True, attempt=1, check=False, postdata=None, binary=False, allow_redirects=True):
     if not hasattr(getURL, 'sessions'):
         getURL.sessions = {}  # Keep-Alive sessions
 
@@ -163,11 +163,13 @@ def getURL(url, useCookie=False, silent=False, headers=None, rjson=True, attempt
     try:
         starttime = time.time()
         method = 'POST' if postdata is not None else 'GET'
-        r = session.request(method, url, data=postdata, headers=headers, cookies=cj, verify=s.verifySsl, stream=True)
+        r = session.request(method, url, data=postdata, headers=headers, cookies=cj, verify=s.verifySsl, stream=True, allow_redirects=allow_redirects)
         getURL.lastResponseCode = r.status_code  # Set last response code
         response = 'OK'
         if not check:
-            response = r.content if binary else r.text
+            response = r.content.decode('utf-8') if binary else r.text
+        else:
+            rjson = False
         Log('Download Time: %s' % (time.time() - starttime), Log.DEBUG)
         # 408 Timeout, 429 Too many requests and 5xx errors are temporary
         # Consider everything else definitive fail (like 404s and 403s)

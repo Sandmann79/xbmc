@@ -261,7 +261,10 @@ def PlayVideo(name, asin, adultstr, streamtype, forcefb=0):
         manu = avodapp = ''
         if os.access('/system/bin/getprop', os.X_OK):
             manu = _check_output(['getprop', 'ro.product.manufacturer']).lower()
+        if os.access('/system/bin/cmd', os.X_OK):
             avodapp = _check_output(['cmd', 'package', 'list', 'packages', 'com.amazon.avod.thirdpartyclient'])
+        elif os.access('/system/bin/pm', os.X_OK):
+            avodapp = _check_output(['sh', '-c', 'pm', 'list', 'packages', 'com.amazon.avod.thirdpartyclient'])
 
         if manu == 'amazon':
             pkg = 'com.fivecent.amazonvideowrapper'
@@ -282,10 +285,15 @@ def PlayVideo(name, asin, adultstr, streamtype, forcefb=0):
         Log('Starting App: %s Video: %s' % (pkg, url))
 
         if s.verbLog:
+            amaz_pkgs = ''
             if os.access('/system/xbin/su', os.X_OK) or os.access('/system/bin/su', os.X_OK):
                 Log('Logcat:\n%s' % _check_output(['su', '-c', 'logcat -d | grep -iE "(avod|amazonvideo)']))
             Log('Properties:\n%s' % _check_output(['sh', '-c', 'getprop | grep -iE "(ro.product|ro.build|google)"']))
-            Log('Installed Amazon Packages:\n%s' % _check_output(['sh', '-c', 'cmd package list packages | grep -i amazon']))
+            if os.access('/system/bin/cmd', os.X_OK):
+                amaz_pkgs = _check_output(['sh', '-c', 'cmd package list packages | grep -i amazon'])
+            elif os.access('/system/bin/pm', os.X_OK):
+                amaz_pkgs = _check_output(['sh', '-c', 'pm', 'list', 'packages', 'com.amazon'])
+            Log('Installed Amazon Packages:\n%s' % amaz_pkgs)
 
         xbmc.executebuiltin('StartAndroidActivity("%s", "%s", "", "%s")' % (pkg, act, url))
 

@@ -12,7 +12,7 @@ import time
 
 from .common import key_exists, return_item
 from .singleton import Singleton
-from .network import getURL, getURLData, MechanizeLogin
+from .network import getURL, getURLData, MechanizeLogin, FQify, GrabJSON
 from .logging import Log, LogJSON
 from .itemlisting import setContentAndView
 from .l10n import *
@@ -161,170 +161,6 @@ class PrimeVideo(Singleton):
             title = re.sub(t[0], t[1], title)
         return title
 
-    def _FQify(self, URL):
-        """ Makes sure to provide correct fully qualified URLs """
-        base = self._g.BaseUrl
-        if '://' in URL:  # FQ
-            return URL
-        elif URL.startswith('//'):  # Specified domain, same schema
-            return base.split(':')[0] + ':' + URL
-        elif URL.startswith('/'):  # Relative URL
-            return base + URL
-        else:  # Hope and pray we never reach this ¯\_(ツ)_/¯
-            return base + '/' + URL
-
-    def _GrabJSON(self, url, bRaw=False):
-        """ Extract JSON objects from HTMLs while keeping the API ones intact """
-
-        def Unescape(text):
-            """ Unescape various html/xml entities in dictionary values, courtesy of Fredrik Lundh """
-
-            def fixup(m):
-                """ Unescape entities except for double quotes, lest the JSON breaks """
-                try:
-                    from html.entities import name2codepoint
-                except:
-                    from htmlentitydefs import name2codepoint
-
-                text = m.group(0)  # First group is the text to replace
-
-                # Unescape if possible
-                if text[:2] == "&#":
-                    # character reference
-                    try:
-                        bHex = ("&#x" == text[:3])
-                        char = int(text[3 if bHex else 2:-1], 16 if bHex else 10)
-                        if 34 == char:
-                            text = u'\\"'
-                        else:
-                            try:
-                                text = unichr(char)
-                            except NameError:
-                                text = chr(char)
-                    except ValueError:
-                        pass
-                else:
-                    # named entity
-                    char = text[1:-1]
-                    if 'quot' == char:
-                        text = u'\\"'
-                    elif char in name2codepoint:
-                        char = name2codepoint[char]
-                        try:
-                            text = unichr(char)
-                        except NameError:
-                            text = chr(char)
-                return text
-
-            text = re.sub('&#?\\w+;', fixup, text)
-            try:
-                text = text.encode('latin-1').decode('utf-8')
-            except (UnicodeEncodeError, UnicodeDecodeError):
-                pass
-
-            return text
-
-        def Merge(o, n):
-            """ Merge JSON objects with multiple multi-level collisions """
-            if (not n) or (o == n):  # Nothing to do
-                return
-            elif (type(n) == list) or (type(n) == set):  # Insert into list/set
-                for item in n:
-                    if item not in o:
-                        if type(n) == list:
-                            o.append(item)
-                        else:
-                            o.add(item)
-            elif type(n) == dict:
-                for k in list(n):  # list() instead of .keys() to avoid py3 iteration errors
-                    if k not in o:
-                        o[k] = n[k]  # Insert into dictionary
-                    else:
-                        Merge(o[k], n[k])  # Recurse
-            else:
-                # LogJSON(n, optionalName='CollisionNew')
-                # LogJSON(o, optionalName='CollisionOld')
-                Log('Collision detected during JSON objects merging, overwriting and praying (type: {})'.format(type(n)), Log.WARNING)
-                o = n
-
-        def Prune(d):
-            """ Prune some commonly found sensitive info from JSON response bodies """
-            if not d:
-                return
-
-            l = d
-            if isinstance(l, dict):
-                for k in list(l):  # list() instead of .keys() to avoid py3 iteration errors
-                    if k == 'strings':
-                        l[k] = {s: l[k][s] for s in ['AVOD_DP_season_selector'] if s in l[k]}
-                    if (not l[k]) or (k in ['csrfToken', 'context', 'params', 'playerConfig', 'refine']):
-                        del l[k]
-                l = d.values()
-            for v in l:
-                if isinstance(v, dict) or isinstance(v, list):
-                    Prune(v)
-
-        try:
-            from urlparse import urlparse, parse_qs
-            from urllib import urlencode
-        except:
-            from urllib.parse import urlparse, parse_qs, urlencode
-        if url.startswith('/search/'):
-            np = urlparse(url)
-            qs = parse_qs(np.query)
-            if 'from' in list(qs):  # list() instead of .keys() to avoid py3 iteration errors
-                qs['startIndex'] = qs['from']
-                del qs['from']
-            np = np._replace(path='/gp/video/api' + np.path, query=urlencode([(k, v) for k, l in qs.items() for v in l]))
-            url = np.geturl()
-
-        r = getURL(self._FQify(url), silent=True, useCookie=True, rjson=False)
-        if not r:
-            return None
-        try:
-            r = r.strip()
-            if '{' == r[0:1]:
-                o = json.loads(Unescape(r))
-                if not bRaw:
-                    Prune(o)
-                return o
-        except:
-            pass
-
-        matches = re.findall(r'\s*(?:<script[^>]+type="(?:text/template|application/json)"[^>]*>|state:)\s*({[^\n]+})\s*(?:,|</script>)\s*', r)
-        if not matches:
-            Log('No JSON objects found in the page', Log.ERROR)
-            return None
-
-        # Create a single object containing all the data from the multiple JSON objects in the page
-        o = {}
-        for m in matches:
-            m = json.loads(Unescape(m))
-            if ('widgets' in m) and ('Storefront' in m['widgets']):
-                m = m['widgets']['Storefront']
-            elif 'props' in m:
-                m = m['props']
-
-                if not bRaw:
-                    # Prune useless/sensitive info
-                    for k in list(m):  # list() instead of .keys() to avoid py3 iteration errors
-                        if (not m[k]) or (k in ['copyright', 'links', 'logo', 'params', 'playerConfig', 'refine']):
-                            del m[k]
-                    if 'state' in m:
-                        st = m['state']
-                        for k in list(st):  # list() instead of .keys() to avoid py3 iteration errors
-                            if not st[k]:
-                                del st[k]
-                            elif k in ['features', 'customerPreferences']:
-                                del st[k]
-
-            # Prune sensitive context info and merge into o
-            if not bRaw:
-                Prune(m)
-            Merge(o, m)
-
-        return o if o else None
-
     def _TraverseCatalog(self, path, bRefresh=False):
         """ Extract current node, grandparent node and their names """
 
@@ -384,7 +220,7 @@ class PrimeVideo(Singleton):
     def BuildRoot(self):
         """ Parse the top menu on primevideo.com and build the root catalog """
 
-        home = self._GrabJSON(self._g.BaseUrl)
+        home = GrabJSON(self._g.BaseUrl)
         if not home:
             return False
         self._catalog['root'] = OrderedDict()
@@ -392,7 +228,7 @@ class PrimeVideo(Singleton):
         # Insert the watchlist
         try:
             watchlist = next((x for x in home['yourAccount']['links'] if '/watchlist/' in x['href']), None)
-            self._catalog['root']['Watchlist'] = {'title': watchlist['text'], 'lazyLoadURL': self._FQify(watchlist['href'])}
+            self._catalog['root']['Watchlist'] = {'title': watchlist['text'], 'lazyLoadURL': FQify(watchlist['href'])}
         except: pass
         try:
             watchlist = next((x for x in home['mainMenu']['links'] if 'pv-nav-mystuff' in x['id']), None)
@@ -844,11 +680,11 @@ class PrimeVideo(Singleton):
                 return False
 
             if url:
-                url = self._FQify(url)
+                url = FQify(url)
             if not data:
                 if not url:
                     return False
-                data = self._GrabJSON(url)
+                data = GrabJSON(url)
                 if not data:
                     NotifyUser(getString(30256), True)
                     Log('Unable to fetch the url: {}'.format(url), Log.ERROR)
@@ -1147,7 +983,7 @@ class PrimeVideo(Singleton):
                             del o['lazyLoadURL']
                         continue
                     else:
-                        cnt = self._GrabJSON(requestURL)
+                        cnt = GrabJSON(requestURL)
                         # LogJSON(cnt, requestURL)
 
                 # Don't switch direct action for reference until we have content to show for it

@@ -89,7 +89,7 @@ def addVideo(name, asin, infoLabels, cm=None, export=False):
     u = {'asin': asin, 'mode': 'PlayVideo', 'name': py2_encode(name), 'adult': infoLabels['isAdult']}
     url = '{}?{}'.format(g.pluginid, urlencode(u))
     bitrate = '0'
-    streamtypes = {'live': 2, 'match': 3}
+    streamtypes = {'live': 2}
 
     item = xbmcgui.ListItem(name)
     item.setArt({'fanart': infoLabels['Fanart'], 'poster': infoLabels['Thumb'], 'thumb': infoLabels['Thumb']})

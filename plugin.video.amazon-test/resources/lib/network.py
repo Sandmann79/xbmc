@@ -170,7 +170,6 @@ def getURL(url, useCookie=False, silent=False, headers=None, rjson=True, attempt
             response = r.content.decode('utf-8') if binary else r.text
         else:
             rjson = False
-        Log('Download Time: %s' % (time.time() - starttime), Log.DEBUG)
         # 408 Timeout, 429 Too many requests and 5xx errors are temporary
         # Consider everything else definitive fail (like 404s and 403s)
         if (408 == r.status_code) or (429 == r.status_code) or (500 <= r.status_code):
@@ -208,6 +207,7 @@ def getURL(url, useCookie=False, silent=False, headers=None, rjson=True, attempt
             return getURL(url, useCookie, silent, headers, rjson, attempt, check, postdata, binary)
         return retval
     res = json.loads(response) if rjson else response
+    Log('Download Time: %s' % (time.time() - starttime), Log.DEBUG)
     return res
 
 
@@ -241,6 +241,7 @@ def getURLData(mode, asin, retformat='json', devicetypeid='AOAGZA014O5RE', versi
         url += '&videoMaterialType=' + vMT
         url += '&desiredResources=' + dRes
         url += '&supportedDRMKeyScheme=DUAL_KEY' if (not g.platform & g.OS_ANDROID) and ('PlaybackUrls' in dRes) else ''
+
     url += opt
     if retURL:
         return url
@@ -648,6 +649,169 @@ def remLoginData(info=True):
         writeConfig('accounts.lst', '')
         g.addon.setSetting('login_acc', '')
         g.dialog.notification(g.__plugin__, getString(30211), xbmcgui.NOTIFICATION_INFO)
+
+
+def FQify(URL):
+    g = Globals()
+    """ Makes sure to provide correct fully qualified URLs """
+    base = g.BaseUrl
+    if '://' in URL:  # FQ
+        return URL
+    elif URL.startswith('//'):  # Specified domain, same schema
+        return base.split(':')[0] + ':' + URL
+    elif URL.startswith('/'):  # Relative URL
+        return base + URL
+    else:  # Hope and pray we never reach this ¯\_(ツ)_/¯
+        return base + '/' + URL
+
+
+def GrabJSON(url, bRaw=False):
+    """ Extract JSON objects from HTMLs while keeping the API ones intact """
+
+    def Unescape(text):
+        """ Unescape various html/xml entities in dictionary values, courtesy of Fredrik Lundh """
+
+        def fixup(m):
+            """ Unescape entities except for double quotes, lest the JSON breaks """
+            text = m.group(0)  # First group is the text to replace
+
+            # Unescape if possible
+            if text[:2] == "&#":
+                # character reference
+                try:
+                    bHex = ("&#x" == text[:3])
+                    char = int(text[3 if bHex else 2:-1], 16 if bHex else 10)
+                    if 34 == char:
+                        text = u'\\"'
+                    else:
+                        try:
+                            text = unichr(char)
+                        except NameError:
+                            text = chr(char)
+                except ValueError:
+                    pass
+            else:
+                # named entity
+                char = text[1:-1]
+                if 'quot' == char:
+                    text = u'\\"'
+                elif char in name2codepoint:
+                    char = name2codepoint[char]
+                    try:
+                        text = unichr(char)
+                    except NameError:
+                        text = chr(char)
+            return text
+
+        text = re.sub('&#?\\w+;', fixup, text)
+        try:
+            text = text.encode('latin-1').decode('utf-8')
+        except (UnicodeEncodeError, UnicodeDecodeError):
+            pass
+
+        return text
+
+    def Merge(o, n):
+        """ Merge JSON objects with multiple multi-level collisions """
+        if (not n) or (o == n):  # Nothing to do
+            return
+        elif (type(n) == list) or (type(n) == set):  # Insert into list/set
+            for item in n:
+                if item not in o:
+                    if type(n) == list:
+                        o.append(item)
+                    else:
+                        o.add(item)
+        elif type(n) == dict:
+            for k in list(n):  # list() instead of .keys() to avoid py3 iteration errors
+                if k not in o:
+                    o[k] = n[k]  # Insert into dictionary
+                else:
+                    Merge(o[k], n[k])  # Recurse
+        else:
+            # LogJSON(n, optionalName='CollisionNew')
+            # LogJSON(o, optionalName='CollisionOld')
+            Log('Collision detected during JSON objects merging, overwriting and praying (type: {})'.format(type(n)), Log.WARNING)
+            o = n
+
+    def Prune(d):
+        """ Prune some commonly found sensitive info from JSON response bodies """
+        if not d:
+            return
+
+        l = d
+        if isinstance(l, dict):
+            for k in list(l):  # list() instead of .keys() to avoid py3 iteration errors
+                if k == 'strings':
+                    l[k] = {s: l[k][s] for s in ['AVOD_DP_season_selector'] if s in l[k]}
+                if (not l[k]) or (k in ['csrfToken', 'context', 'params', 'playerConfig', 'refine']):
+                    del l[k]
+            l = d.values()
+        for v in l:
+            if isinstance(v, dict) or isinstance(v, list):
+                Prune(v)
+
+    try:
+        from htmlentitydefs import name2codepoint
+        from urlparse import urlparse, parse_qs
+        from urllib import urlencode
+    except:
+        from urllib.parse import urlparse, parse_qs, urlencode
+        from html.entities import name2codepoint
+
+    if url.startswith('/search/'):
+        np = urlparse(url)
+        qs = parse_qs(np.query)
+        if 'from' in list(qs):  # list() instead of .keys() to avoid py3 iteration errors
+            qs['startIndex'] = qs['from']
+            del qs['from']
+        np = np._replace(path='/gp/video/api' + np.path, query=urlencode([(k, v) for k, l in qs.items() for v in l]))
+        url = np.geturl()
+
+    r = getURL(FQify(url), silent=True, useCookie=True, rjson=False)
+    if not r:
+        return None
+    try:
+        r = r.strip()
+        if '{' == r[0:1]:
+            o = json.loads(Unescape(r))
+            if not bRaw:
+                Prune(o)
+            return o
+    except:
+        pass
+    matches = re.findall(r'\s*(?:<script[^>]+type="(?:text/template|application/json)"[^>]*>|state:)\s*({[^\n]+})\s*(?:,|</script>)\s*', r)
+    if not matches:
+        Log('No JSON objects found in the page', Log.ERROR)
+        return None
+
+    # Create a single object containing all the data from the multiple JSON objects in the page
+    o = {}
+    for m in matches:
+        m = json.loads(Unescape(m))
+
+        if ('widgets' in m) and ('Storefront' in m['widgets']):
+            m = m['widgets']['Storefront']
+        elif 'props' in m:
+            m = m['props']
+
+            if not bRaw:
+                # Prune useless/sensitive info
+                for k in list(m):  # list() instead of .keys() to avoid py3 iteration errors
+                    if (not m[k]) or (k in ['copyright', 'links', 'logo', 'params', 'playerConfig', 'refine']):
+                        del m[k]
+                if 'state' in m:
+                    st = m['state']
+                    for k in list(st):  # list() instead of .keys() to avoid py3 iteration errors
+                        if not st[k]:
+                            del st[k]
+                        elif k in ['features', 'customerPreferences']:
+                            del st[k]
+        # Prune sensitive context info and merge into o
+        if not bRaw:
+            Prune(m)
+        Merge(o, m)
+    return o if o else None
 
 
 class _Captcha(pyxbmct.AddonDialogWindow):

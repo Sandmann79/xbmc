@@ -299,9 +299,9 @@ def PlayVideo(name, asin, adultstr, streamtype, forcefb=0):
 
     def _IStreamPlayback(asin, name, streamtype, isAdult, extern):
         from .ages import AgeRestrictions
-        vMT = ['Feature', 'Trailer', 'LiveStreaming', 'Feature'][streamtype]
+        vMT = ['Feature', 'Trailer', 'LiveStreaming'][streamtype]
         dRes = 'PlaybackUrls' if streamtype > 1 else 'PlaybackUrls,SubtitleUrls,ForcedNarratives,TransitionTimecodes'
-        opt = '&liveManifestType=live%2Caccumulating' if streamtype == 3 else ''
+        opt = '&liveManifestType=patternTemplate,accumulating,live' if streamtype > 1 else ''
         mpaa_str = AgeRestrictions().GetRestrictedAges() + getString(30171)
         drm_check = g.addon.getSetting("drm_check") == 'true'
 
@@ -327,7 +327,7 @@ def PlayVideo(name, asin, adultstr, streamtype, forcefb=0):
             return True
 
         skip = timecodes.get('skipElements')
-        Log(skip, Log.DEBUG)
+        Log('Skip Items: %s' % skip, Log.DEBUG)
 
         cj_str = ';'.join(['%s=%s' % (k, v) for k, v in cookie.items()])
         opt = '|Content-Type=application%2Fx-www-form-urlencoded&Cookie=' + quote_plus(cj_str)
@@ -599,7 +599,7 @@ class _AmazonPlayer(xbmc.Player):
 
     def checkResume(self):
         self.dbid = int('0' + _getListItem('DBID'))
-        Log(self.dbid)
+        Log('DBID: %s' % self.dbid)
         if self.dbid:
             dbtype = _getListItem('DBTYPE')
             result = jsonRPC('VideoLibrary.Get%sDetails' % dbtype, 'resume,playcount', {'%sid' % dbtype: self.dbid})

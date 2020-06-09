@@ -103,3 +103,5 @@ def EntryPoint():
         exec('{}()'.format(mode))
     elif mode in ['checkMissing', 'Recent']:
         exec('g.amz.{}()'.format(mode))
+    elif mode == 'Channel':
+        g.amz.Channel(url=args.get('url'), uid=args.get('opt'))

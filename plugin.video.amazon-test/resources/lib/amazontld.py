@@ -35,6 +35,7 @@ class AmazonTLD(Singleton):
             addDir(getString(30134).format(loadUser('name')), 'switchUser', '', cm=self._g.CONTEXTMENU_MULTIUSER)
         addDir('Watchlist', 'getListMenu', self._g.watchlist, cm=cm_wl)
         self.getRootNode()
+        addDir('Channels', 'Channel', '')
         addDir(getString(30136), 'Recent', '')
         addDir(getString(30108), 'Search', '')
         addDir(getString(30100), 'getListMenu', self._g.library, cm=cm_lb)
@@ -225,22 +226,31 @@ class AmazonTLD(Singleton):
         if rem == 1:
             xbmc.executebuiltin('Container.Update("%s", replace)' % xbmc.getInfoLabel('Container.FolderPath'))
 
-    def _createDB(self, menu=False):
-        if menu:
-            c = self._menuDb.cursor()
-            c.execute('drop table if exists menu')
-            c.execute('''CREATE TABLE menu(
+    def _createDB(self, table):
+        c = self._menuDb.cursor()
+        if table == self._menu_tbl:
+            c.execute('drop table if exists %s' % self._menu_tbl)
+            c.execute('''CREATE TABLE %s(
                         node TEXT,
                         title TEXT,
                         category TEXT,
                         content TEXT,
                         id TEXT,
                         infolabel TEXT
-                        );''')
+                        );''' % self._menu_tbl)
             self._menuDb.commit()
-        else:
+        elif table == self._chan_tbl:
+            c.execute('drop table if exists %s' % self._chan_tbl)
+            c.execute('''CREATE TABLE %s(
+                        uid TEXT,
+                        data JSON,
+                        time TIMESTAMP,
+                        ref TEXT
+                        );''' % self._chan_tbl)
+            self._menuDb.commit()
+        elif table == self._art_tbl:
             c = self._db.cursor()
-            c.execute('''CREATE TABLE IF NOT EXISTS art(
+            c.execute('''CREATE TABLE IF NOT EXISTS %s(
                         asin TEXT,
                         season INTEGER,
                         poster TEXT,
@@ -248,7 +258,7 @@ class AmazonTLD(Singleton):
                         fanart TEXT,
                         lastac DATE,
                         PRIMARY KEY(asin, season)
-                        );''')
+                        );''' % self._art_tbl)
             c.execute('''CREATE TABLE IF NOT EXISTS miss(
                         asins TEXT,
                         title TEXT,
@@ -261,11 +271,14 @@ class AmazonTLD(Singleton):
 
     def _initialiseDB(self):
         from sqlite3 import dbapi2 as sqlite
+        self._menu_tbl = 'menu'
+        self._chan_tbl = 'channels'
+        self._art_tbl = 'art'
         self._dbFile = os.path.join(self._g.DATA_PATH, 'art.db')
         self._db = sqlite.connect(self._dbFile)
-        self._createDB()
         self._menuFile = os.path.join(self._g.DATA_PATH, 'menu-%s.db' % self._g.MarketID)
         self._menuDb = sqlite.connect(self._menuFile)
+        self._createDB(self._art_tbl)
 
     def loadCategories(self, force=False):
         if xbmcvfs.exists(self._menuFile) and not force:
@@ -281,7 +294,7 @@ class AmazonTLD(Singleton):
             jsonfile = os.path.join(self._g.PLUGIN_PATH, 'resources', 'menu', self._g.MarketID + '.json')
             jsonfile = jsonfile.replace(self._g.MarketID, 'ATVPDKIKX0DER') if not xbmcvfs.exists(jsonfile) else jsonfile
             data = json.load(open(jsonfile))
-        self._createDB(True)
+        self._createDB(self._menu_tbl)
         self.parseNodes(data)
         self.updateTime()
         self._menuDb.commit()
@@ -290,7 +303,7 @@ class AmazonTLD(Singleton):
     def updateTime(self, savetime=True):
         c = self._menuDb.cursor()
         if savetime:
-            self.wMenuDB(['last_update', '', '', str(time.time()), str(self._g.DBVersion), ''])
+            self.wMenuDB(['last_update', '', '', str(time.time()), str(self._g.DBVersion), ''], self._menu_tbl)
         else:
             try:
                 result = c.execute('select content, id from menu where node = ("last_update")').fetchone()
@@ -310,7 +323,8 @@ class AmazonTLD(Singleton):
         for title, nodeid, id in c.execute('select title, content, id from menu where node = (0)').fetchall():
             result = c.execute('select content from menu where node = (?) and id = (?)', (nodeid, st)).fetchone()
             nodeid = result[0] if result else nodeid
-            addDir(title, 'listCategories', str(nodeid), opt=id)
+            if id != 'channels':
+                addDir(title, 'listCategories', str(nodeid), opt=id)
         c.close()
         return
 
@@ -330,11 +344,12 @@ class AmazonTLD(Singleton):
                         content = entry[e]
                         category = e
             if category:
-                self.wMenuDB([node_id, entry.get('title', ''), category, content, entry.get('id', ''), json.dumps(entry.get('infolabel', ''))])
+                self.wMenuDB([node_id, entry.get('title', ''), category, content, entry.get('id', ''), json.dumps(entry.get('infolabel', ''))], self._menu_tbl)
 
-    def wMenuDB(self, menudata):
+    def wMenuDB(self, menudata, table):
+        asterix = '?,' * len(menudata)
         c = self._menuDb.cursor()
-        c.execute('insert or ignore into menu values (?,?,?,?,?,?)', menudata)
+        c.execute('insert or ignore into %s values (%s)' % (table, asterix[:-1]), menudata)
         c.close()
 
     def getNode(self, node):
@@ -520,9 +535,15 @@ class AmazonTLD(Singleton):
         if not cookie:
             return
 
-        params = '[{"titleID":"%s","watchlist":true}]' % asin
-        data = getURL('%s/gp/video/api/enrichItemMetadata?itemsToEnrich=%s' % (self._g.BaseUrl, quote_plus(params)), useCookie=cookie)
-        endp = self.findKey('endpoint', data)
+        if asin.startswith('{'):
+            endp = json.loads(asin)
+            asin = endp['query']['titleID']
+            remove = endp['query']['tag'].lower() == 'remove'
+        else:
+            params = '[{"titleID":"%s","watchlist":true}]' % asin
+            data = getURL('%s/gp/video/api/enrichItemMetadata?itemsToEnrich=%s' % (self._g.BaseUrl, quote_plus(params)), useCookie=cookie)
+            endp = self.findKey('endpoint', data)
+
         if endp:
             action = 'Remove' if remove else 'Add'
             url = self._g.BaseUrl + endp.get('partialURL')
@@ -607,7 +628,7 @@ class AmazonTLD(Singleton):
         c.execute('drop table if exists miss')
         c.close()
         self._db.commit()
-        self._createDB()
+        self._createDB(self._art_tbl)
         Log('Finished Fanart Update')
 
     def loadArtWork(self, asins, title, year, contentType):
@@ -939,3 +960,160 @@ class AmazonTLD(Singleton):
             if not infoLabels['isPrime'] and not contentType == 'series':
                 infoLabels['DisplayTitle'] = '[COLOR %s]%s[/COLOR]' % (self._g.PayCol, infoLabels['DisplayTitle'])
         return contentType, infoLabels
+
+    def Channel(self, url, uid):
+        def getInfos(item):
+            # runtime: de "1 Std. 26 Min." uk "1h 22min"
+            time_form = {'A1PA6795UKMFR9': '%H Std. %M Min.',
+                         'A1F83G8C2ARO7P': '%Hh %Mmin',
+                         'ATVPDKIKX0DER': '',
+                         'A1VC38T7YXB528': ''}
+            if isinstance(item.get('title'), dict):
+                item['link'] = {'url': item['title'].get('url')}
+                for p in ['title', 'synopsis', 'year']:
+                    item[p] = item.get(p, {}).get('text', '')
+            n = item.get('facetAlternateText', '')
+            wl = item.get('watchlistAction', item.get('watchlistButton'))
+            title = item.get('text', item.get('title', ''))
+            num = item.get('episodeNumber')
+            live = item.get('liveInfo')
+            contr = item.get('contributors', {})
+            rating = item.get('customerReviews', item.get('amazonRating'))
+            runtime = item.get('runtime')
+            il = self.getAsins(item, True)
+            il['Title'] = '%s - %s' % (n, title) if n else title
+            il['Plot'] = item.get('synopsis', '').strip()
+            il['contentType'] = item.get('titleType', '').lower()
+            il['Duration'] = item.get('duration')
+            il['MPAA'] = item.get('ratingBadge', {}).get('simplifiedId')
+            il['isPrime'] = item.get('isPrime', True)
+            il['Genre'] = ' / '.join(i.get('text', '') for i in item.get('genres', []))
+            il['Studio'] = ', '.join(item.get('studios', []))
+            il['Director'] = ', '.join(i['name'] for i in contr.get('directors', []))
+            il['Cast'] = [i['name'] for i in contr.get('starringActors', []) + contr.get('supportingActors', [])]
+            il['Year'] = item.get('releaseYear')
+            if num:
+                il['Episode'] = item.get('episodeNumber')
+                il['Title'] = '%s - %s' % (num, il['Title'])
+            if wl:
+                il['contentType'] = wl['endpoint']['query'].get('titleType', '').lower()
+            if 'images' in item:
+                il['Thumb'] = item['images'].get('titleshot')
+                il['Fanart'] = item['images'].get('heroshot')
+            else:
+                il['Thumb'] = item.get('image', {}).get('url', item.get('facetImage'))
+            if rating and rating.get('value'):
+                il['Rating'] = float(rating['value']) * 2
+                il['Votes'] = str(rating['count'])
+            if live:
+                il['contentType'] = 'event'
+                if not il['Plot']:
+                    il['Plot'] = ' - '.join([live.get('timeBadge', live.get('label', '')), live.get('venue', '')])
+            if item.get('liveState', {}).get('isLive', False):
+                il['contentType'] = 'live'
+            if not il['Title']:
+                il['Title'] = item.get('image', {}).get('alternateText', '')
+                il['contentType'] = 'thumbnail'
+            if item.get('itemType', '').lower() == 'label':
+                il['Plot'] = il['Title']
+                il['Title'] = '-= %s =-' % item['link']['label']
+                il['Thumb'] = self._s.NextIcon
+            if not il['Duration'] and runtime:
+                t = re.findall(r'\d+', runtime)
+                t = ['0'] * (2 - len(t)) + t
+                il['Duration'] = sum(map(lambda a, b: int(a) * b, t, (3600, 60)))
+            il['DisplayTitle'] = self.cleanTitle(il['Title'])
+            if not il['isPrime']:
+                il['DisplayTitle'] = '[COLOR %s]%s[/COLOR]' % (self._g.PayCol, il['DisplayTitle'])
+            return il, il['contentType']
+
+        def getcache(uid):
+            j = {}
+            c = self._menuDb.cursor()
+            for data in c.execute('select data from channels where uid = (?)', (uid,)).fetchall():
+                j = json.loads(data[0])
+            c.close()
+            return j
+
+        def remref(url):
+            f = re.findall('ref=[^?^&]*', url)
+            return url.replace(f[0], '') if f else url
+
+        def crctxmenu(item):
+            cm = []
+            wl = item.get('watchlistAction', item.get('watchlistButton'))
+            if wl:
+                cm.append((wl['text']['string'], 'RunPlugin(%s?mode=WatchList&url=%s)' % (self._g.pluginid, quote_plus(json.dumps(wl['endpoint'])))))
+            return cm
+
+        root_url = '/gp/video/storefront/ref=nav_shopall_nav_sa_aos?filterId=OFFER_FILTER%3DSUBSCRIPTIONS'
+        if not uid and not url:
+            url = root_url
+            uid = 'root'
+
+        data = getcache(uid) if not url else GrabJSON(url)
+        s = time.time()
+        props = data.get('search', data.get('results', data))
+        vw = ''
+        urls = []
+        num_items = 0
+
+        if 'collections' in props:
+            if root_url == url:
+                self._createDB(self._chan_tbl)
+            for col in props.get('collections', []):
+                if col.get('collectionType', '') in ['TwinHero', 'Carousel']:
+                    num_items += 1
+                    il, ct = getInfos(col)
+                    vw = ct if ct else vw
+                    uid = col['webUid']
+                    cm = crctxmenu(col)
+                    addDir(il['DisplayTitle'], 'Channel', '', infoLabels=il, opt=uid, cm=cm)
+                    self.wMenuDB([uid, json.dumps(col), time.time(), ''], self._chan_tbl)
+            self._menuDb.commit()
+        elif 'items' in props:
+            items = props.get('items', [])
+            num_items = len(items)
+            for item in items:
+                il, ct = getInfos(item)
+                chid = item.get('playbackAction', item).get('channelId')
+                playable = item.get('properties', {}).get('isIdPlayable', False)
+                if chid:
+                    ct = 'live'
+                    il['contentType'] = item.get('playbackAction', item).get('videoMaterialType', ct).lower()
+                cm = crctxmenu(item)
+                if playable or chid:
+                    addVideo(il['DisplayTitle'], chid if chid else item['titleID'], il, cm=cm)
+                else:
+                    url = item['link']['url']
+                    if ct == 'season':
+                        url += '?episodeListSize=999'
+                    if il['Title']:
+                        addDir(il['DisplayTitle'], 'Channel', url, infoLabels=il, opt=ct, cm=cm)
+                    urls.append(remref(url))
+                vw = ct if ct else vw
+        elif 'state' in props:
+            pgid = props['state'].get('pageTitleId', '')
+            col = props['state'].get('collections', [])
+            titleids = []
+            if col and len(col.get(pgid, [])) > 0:
+                [titleids.extend(i.get('titleIds', [])) for i in col[pgid] if i.get('collectionType', '') in ['episodes', 'bonus']]
+            if not titleids:
+                titleids.append(pgid)
+            num_items = len(titleids)
+            for asin in titleids:
+                item = props['state'].get('detail', {}).get('detail', {}).get(asin)
+                if item:
+                    il, ct = getInfos(item)
+                    vw = ct if ct else vw
+                    asin = props['state'].get('buyboxTitleId', {}).get(asin, asin)
+                    cm = crctxmenu(item)
+                    addVideo(il['DisplayTitle'], asin, il, cm=cm)
+
+        more = props.get('pagination', props.get('seeMoreLink'))
+        if more and remref(more['url']) not in urls:
+            addDir('-= %s =-' % more['label'], 'Channel', more['url'], thumb=self._s.NextIcon)
+
+        Log('Parsing Channels Page: %ss' % (time.time()-s), Log.DEBUG)
+        setContentAndView(vw)
+        return

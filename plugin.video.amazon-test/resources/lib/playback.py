@@ -387,7 +387,11 @@ def PlayVideo(name, asin, adultstr, streamtype, forcefb=0):
         listitem.setProperty('%s.license_type' % g.is_addon, 'com.widevine.alpha')
         listitem.setProperty('%s.license_key' % g.is_addon, licURL)
         listitem.setProperty('%s.stream_headers' % g.is_addon, 'user-agent=' + getConfig('UserAgent'))
-        listitem.setProperty('inputstreamaddon', g.is_addon)
+        if int(xbmc.getInfoLabel('System.BuildVersion').split('.')[0]) >= 19:
+            listitem.setProperty('inputstream', g.is_addon)
+        else:
+            listitem.setProperty('inputstreamaddon', g.is_addon)
+
         listitem.setMimeType('application/dash+xml')
         listitem.setContentLookup(False)
         player = _AmazonPlayer()

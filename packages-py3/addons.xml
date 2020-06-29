@@ -99,7 +99,7 @@ Diese Addon verwendet pyDes von Todd Whiteman</disclaimer>
 </addon>
 <addon id="script.module.pyautogui"
 	name="PyAutoGUI"
-	version="0.9.49+matrix.1"
+	version="0.9.50+matrix.1"
 	provider-name="Al Sweigart">
 	<requires>
 		<import addon="xbmc.python" version="3.0.0"/>

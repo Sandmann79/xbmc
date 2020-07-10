@@ -5,6 +5,7 @@ from kodi_six import xbmcplugin, xbmcgui
 from kodi_six.utils import py2_encode
 from .common import Globals, Settings
 from .l10n import *
+import sys
 
 try:
     from urllib.parse import urlencode
@@ -53,7 +54,7 @@ def addDir(name, mode='', url='', infoLabels=None, opt='', catalog='Browse', cm=
     if None is thumb:
         thumb = s.DefaultFanart
     u = {'mode': mode, 'url': py2_encode(url), 'page': page, 'opt': opt, 'cat': catalog}
-    url = '{}?{}'.format(g.pluginid, urlencode(u))
+    url = '{}?{}'.format(g.pluginid, urlencode(u)) if mode != 'text' else sys.argv[0]
 
     if not mode:
         url = g.pluginid
@@ -80,7 +81,7 @@ def addDir(name, mode='', url='', infoLabels=None, opt='', catalog='Browse', cm=
 
     if cm:
         item.addContextMenuItems(cm)
-    xbmcplugin.addDirectoryItem(g.pluginhandle, url, item, isFolder=mode != 'switchUser')
+    xbmcplugin.addDirectoryItem(g.pluginhandle, url, item, isFolder=mode not in ['switchUser', 'text'])
 
 
 def addVideo(name, asin, infoLabels, cm=None, export=False):

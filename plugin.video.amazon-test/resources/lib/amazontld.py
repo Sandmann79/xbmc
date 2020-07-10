@@ -206,8 +206,10 @@ class AmazonTLD(Singleton):
     def updateRecents(self, asin, rem=0):
         all_rec, rec = self.getRecents()
         if rem == 0:
-            content = getATVData('GetASINDetails', 'ASINList=' + asin)['titles'][0]
-            ct, Info = g.amz.getInfos(content, False)
+            content = getATVData('GetASINDetails', 'ASINList=' + asin)['titles']
+            if len(content) < 1:
+                return
+            ct, Info = g.amz.getInfos(content[0], False)
             asin = Info.get('SeasonAsin', Info.get('SeriesAsin', asin))
         if asin in rec:
             rec.remove(asin)
@@ -574,7 +576,7 @@ class AmazonTLD(Singleton):
         season = -1 if contentType == 'series' else -2
 
         if contentType == 'season' or contentType == 'episode':
-            asins = infoLabels['SeriesAsin']
+            asins = infoLabels.get('SeriesAsin', asins)
         if 'Season' in infoLabels.keys():
             season = int(infoLabels['Season'])
 
@@ -876,12 +878,9 @@ class AmazonTLD(Singleton):
         infoLabels['isAdult'] = 1 if 'ageVerificationRequired' in str(item.get('restrictions')) else 0
         infoLabels['Genre'] = ' / '.join(item.get('genres', '')).replace('_', ' & ').replace('Musikfilm & Tanz',
                                                                                              'Musikfilm, Tanz')
-        if 'formats' in item and'images' in item['formats'][0].keys():
+        if 'formats' in item and 'images' in item['formats'][0].keys():
             try:
-                thumbnailUrl = item['formats'][0]['images'][0]['uri']
-                thumbnailFilename = thumbnailUrl.split('/')[-1]
-                thumbnailBase = thumbnailUrl.replace(thumbnailFilename, '')
-                infoLabels['Thumb'] = thumbnailBase + thumbnailFilename.split('.')[0] + '.jpg'
+                infoLabels['Thumb'] = self.cleanIMGurl(item['formats'][0]['images'][0]['uri'])
             except:
                 pass
 
@@ -961,13 +960,14 @@ class AmazonTLD(Singleton):
                 infoLabels['DisplayTitle'] = '[COLOR %s]%s[/COLOR]' % (self._g.PayCol, infoLabels['DisplayTitle'])
         return contentType, infoLabels
 
+    @staticmethod
+    def cleanIMGurl(img):
+        # r'\.[^/]+(\.[^/]+$)', '\\1'
+        return re.sub(r'\._.*_\.', r'.', img) if img else None
+
     def Channel(self, url, uid):
         def getInfos(item):
             # runtime: de "1 Std. 26 Min." uk "1h 22min"
-            time_form = {'A1PA6795UKMFR9': '%H Std. %M Min.',
-                         'A1F83G8C2ARO7P': '%Hh %Mmin',
-                         'ATVPDKIKX0DER': '',
-                         'A1VC38T7YXB528': ''}
             if isinstance(item.get('title'), dict):
                 item['link'] = {'url': item['title'].get('url')}
                 for p in ['title', 'synopsis', 'year']:
@@ -980,6 +980,7 @@ class AmazonTLD(Singleton):
             contr = item.get('contributors', {})
             rating = item.get('customerReviews', item.get('amazonRating'))
             runtime = item.get('runtime')
+            livestate = item.get('liveState')
             il = self.getAsins(item, True)
             il['Title'] = '%s - %s' % (n, title) if n else title
             il['Plot'] = item.get('synopsis', '').strip()
@@ -998,10 +999,11 @@ class AmazonTLD(Singleton):
             if wl:
                 il['contentType'] = wl['endpoint']['query'].get('titleType', '').lower()
             if 'images' in item:
-                il['Thumb'] = item['images'].get('titleshot')
-                il['Fanart'] = item['images'].get('heroshot')
+                img = item['images']
+                il['Thumb'] = self.cleanIMGurl(img.get('packshot', img.get('titleshot')))
+                il['Fanart'] = self.cleanIMGurl(img.get('heroshot'))
             else:
-                il['Thumb'] = item.get('image', {}).get('url', item.get('facetImage'))
+                il['Thumb'] = self.cleanIMGurl(item.get('image', {}).get('url', item.get('facetImage')))
             if rating and rating.get('value'):
                 il['Rating'] = float(rating['value']) * 2
                 il['Votes'] = str(rating['count'])
@@ -1009,8 +1011,12 @@ class AmazonTLD(Singleton):
                 il['contentType'] = 'event'
                 if not il['Plot']:
                     il['Plot'] = ' - '.join([live.get('timeBadge', live.get('label', '')), live.get('venue', '')])
-            if item.get('liveState', {}).get('isLive', False):
-                il['contentType'] = 'live'
+            if livestate:
+                il['contentType'] = livestate.get('id', il['contentType'])
+                if livestate.get('isLive', False):
+                    il['contentType'] = 'live'
+                if not il['Plot']:
+                    il['Plot'] = ' - '.join([livestate.get('text', ''), item.get('pageDateTimeBadge', '')])
             if not il['Title']:
                 il['Title'] = item.get('image', {}).get('alternateText', '')
                 il['contentType'] = 'thumbnail'
@@ -1022,9 +1028,13 @@ class AmazonTLD(Singleton):
                 t = re.findall(r'\d+', runtime)
                 t = ['0'] * (2 - len(t)) + t
                 il['Duration'] = sum(map(lambda a, b: int(a) * b, t, (3600, 60)))
+            if 'playbackActions' in item:
+                il['contentType'] = self.findKey('videoMaterialType', item['playbackActions'])
+            elif 'notificationActions' in item:
+                il['contentType'] = 'nostream'
+                il['Title'] = '%s (%s)' % (il['Title'], item['notificationActions'][0]['message']['string'])
             il['DisplayTitle'] = self.cleanTitle(il['Title'])
-            if not il['isPrime']:
-                il['DisplayTitle'] = '[COLOR %s]%s[/COLOR]' % (self._g.PayCol, il['DisplayTitle'])
+            # il = self.getArtWork(il, il['contentType'])
             return il, il['contentType']
 
         def getcache(uid):
@@ -1054,6 +1064,7 @@ class AmazonTLD(Singleton):
         data = getcache(uid) if not url else GrabJSON(url)
         s = time.time()
         props = data.get('search', data.get('results', data))
+        # LogJSON(props)
         vw = ''
         urls = []
         num_items = 0
@@ -1094,26 +1105,39 @@ class AmazonTLD(Singleton):
                 vw = ct if ct else vw
         elif 'state' in props:
             pgid = props['state'].get('pageTitleId', '')
+            act = props['state'].get('action', {})
+            action = act.get('btf', act.get('atf', {}))
+            detail = props['state'].get('detail', {})
             col = props['state'].get('collections', [])
             titleids = []
             if col and len(col.get(pgid, [])) > 0:
-                [titleids.extend(i.get('titleIds', [])) for i in col[pgid] if i.get('collectionType', '') in ['episodes', 'bonus']]
+                [titleids.extend(i.get('titleIds', [])) for i in col[pgid] if i.get('collectionType', '') in ['episodes', 'bonus', 'schedule']]
             if not titleids:
                 titleids.append(pgid)
-            num_items = len(titleids)
             for asin in titleids:
-                item = props['state'].get('detail', {}).get('detail', {}).get(asin)
+                item = detail.get('headerDetail', {}).get(pgid, {})
+                item.update(detail.get('detail', {}).get(asin, {}))
+                item.update(action.get(asin, {}))
                 if item:
                     il, ct = getInfos(item)
                     vw = ct if ct else vw
-                    asin = props['state'].get('buyboxTitleId', {}).get(asin, asin)
                     cm = crctxmenu(item)
-                    addVideo(il['DisplayTitle'], asin, il, cm=cm)
+                    id = self.findKey('playbackID', item.get('playbackActions', {}))
+                    asin = id if id else asin
+                    if 'nostream' in ct:
+                        addDir(il['DisplayTitle'], 'text', infoLabels=il)
+                    else:
+                        addVideo(il['DisplayTitle'], asin, il, cm=cm)
 
         more = props.get('pagination', props.get('seeMoreLink'))
         if more and remref(more['url']) not in urls:
             addDir('-= %s =-' % more['label'], 'Channel', more['url'], thumb=self._s.NextIcon)
 
         Log('Parsing Channels Page: %ss' % (time.time()-s), Log.DEBUG)
+        '''
+        Log(vw)
+        self._db.commit()
+        xbmc.executebuiltin('RunPlugin(%s?mode=checkMissing)' % self._g.pluginid)
+        '''
         setContentAndView(vw)
         return

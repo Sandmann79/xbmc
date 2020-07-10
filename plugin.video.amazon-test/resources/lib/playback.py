@@ -97,6 +97,8 @@ def PlayVideo(name, asin, adultstr, streamtype, forcefb=0):
             defid = data['playbackUrls']['defaultUrlSetId']
             h_dict = data['playbackUrls']['urlSets']
             '''
+            defid_dis = [h_dict[k]['urlSetId'] for k in h_dict if 'DUB' in h_dict[k]['urls']['manifest']['origin']]
+            defid = defid_dis[0] if defid_dis else defid
             failover = h_dict[defid]['failover']
             defid_dis = [failover[k]['urlSetId'] for k in failover if failover[k]['mode'] == 'discontinuous']
             defid = defid_dis[0] if defid_dis else defid
@@ -301,7 +303,7 @@ def PlayVideo(name, asin, adultstr, streamtype, forcefb=0):
         from .ages import AgeRestrictions
         vMT = ['Feature', 'Trailer', 'LiveStreaming'][streamtype]
         dRes = 'PlaybackUrls' if streamtype > 1 else 'PlaybackUrls,SubtitleUrls,ForcedNarratives,TransitionTimecodes'
-        opt = '&liveManifestType=patternTemplate,accumulating,live' if streamtype > 1 else ''
+        opt = '&liveManifestType=accumulating,live&playerType=xp&playerAttributes={"frameRate":"HFR"}' if streamtype > 1 else ''
         mpaa_str = AgeRestrictions().GetRestrictedAges() + getString(30171)
         drm_check = g.addon.getSetting("drm_check") == 'true'
 

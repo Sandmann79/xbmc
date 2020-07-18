@@ -1128,6 +1128,31 @@ class AmazonTLD(Singleton):
                         addDir(il['DisplayTitle'], 'text', infoLabels=il)
                     else:
                         addVideo(il['DisplayTitle'], asin, il, cm=cm)
+        elif 'sections' in props:
+            channels = []
+            [channels.extend(item.get('channels', [])) for item in props['sections']]
+            for item in channels:
+                il = self.getAsins(item, True)
+                pa = item.get('playbackAction')
+                shed = item.get('schedule')
+                asin = ''
+                il['Title'] = item.get('channelName')
+                il['Thumb'] = self.cleanIMGurl(item.get('logo', ''))
+                il['DisplayTitle'] = self.cleanTitle(il['Title'])
+                il['Plot'] = ''
+                if shed:
+                    ts = time.time() * 1000
+                    for sh in shed:
+                        if sh.get('unixStart') <= ts <= sh.get('unixEnd'):
+                            il['Plot'] = sh.get('title', '')
+                            break
+                if pa:
+                    il['contentType'] = vw = pa.get('videoMaterialType').lower()
+                    asin = pa.get('channelId')
+                if asin:
+                    addVideo(il['DisplayTitle'], asin, il)
+                else:
+                    addDir(il['DisplayTitle'], 'text', infoLabels=il)
 
         more = props.get('pagination', props.get('seeMoreLink'))
         if more and remref(more['url']) not in urls:

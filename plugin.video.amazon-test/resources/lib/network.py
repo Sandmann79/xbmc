@@ -767,6 +767,8 @@ def GrabJSON(url, bRaw=False):
             del qs['from']
         np = np._replace(path='/gp/video/api' + np.path, query=urlencode([(k, v) for k, l in qs.items() for v in l]))
         url = np.geturl()
+    if url.startswith('/detail/'):
+       url += ('&' if '?' in url else '?') + 'episodeListSize=9999'    
 
     r = getURL(FQify(url), silent=True, useCookie=True, rjson=False)
     if not r:

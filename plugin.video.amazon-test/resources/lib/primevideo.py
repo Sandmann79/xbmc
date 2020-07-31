@@ -604,17 +604,15 @@ class PrimeVideo(Singleton):
             if ('image' in item) and ('url' in item['image']):
                 o[urn]['metadata']['artmeta']['poster'] = item['image']['url']
 
-        def AddSeason(oid, o, title, url):
+        def AddSeason(oid, o, bCacheRefresh, title, url):
             """ Given a season, adds TV Shows to the catalog """
             urn = ExtractURN(url)
             parent = None
             season = {}
             bUpdatedVideoData = False
-            if urn not in self._videodata['urn2gti']:
-                # Find all episodes, not just a limited set
-                url += ('&' if '?' in url else '?') + 'episodeListSize=9999'
+            if bCacheRefresh or (urn not in self._videodata['urn2gti']):
                 # Find the show the season belongs to
-                bUpdatedVideoData |= ParseSinglePage(oid, season, False, url=url)
+                bUpdatedVideoData |= ParseSinglePage(oid, season, bCacheRefresh, url=url)
                 seasonGTI = self._videodata['urn2gti'][urn]
                 try:
                     # Query an episode to find its ancestors
@@ -958,8 +956,11 @@ class PrimeVideo(Singleton):
         pageNumber = 1  # Page number
 
         while 0 < len(requestURLs):
-            requestURL = requestURLs.pop(0)  # rULRs: FIFO stack
+            requestURL = requestURLs.pop(0)  # rURLs: FIFO stack
             o = obj
+
+            # Too many instances to track, append the episode finder to about every query and cross fingers
+            requestURL += ('&' if '?' in requestURL else '?') + 'episodeListSize=9999'
 
             # Load content
             bCouldNotParse = False
@@ -976,7 +977,7 @@ class PrimeVideo(Singleton):
                     urn = ExtractURN(requestURL)
                     if (not bCacheRefresh) and urn and (urn in self._videodata['urn2gti']):
                         # There are no API endpoints for movie/series pages, so we handle them in a separate function
-                        bUpdatedVideoData |= ParseSinglePage(breadcrumb[-1], o, False, url=requestURL)
+                        bUpdatedVideoData |= ParseSinglePage(breadcrumb[-1], o, bCacheRefresh, url=requestURL)
                         if 'lazyLoadURL' in o:
                             if 'ref' not in o:
                                 o['ref'] = o['lazyLoadURL']
@@ -1041,7 +1042,7 @@ class PrimeVideo(Singleton):
                         elif 'season' != t:
                             bUpdatedVideoData |= ParseSinglePage(breadcrumb[-1], o, bCacheRefresh, url=iu)
                         else:
-                            bUpdatedVideoData |= AddSeason(breadcrumb[-1], o, title, iu)
+                            bUpdatedVideoData |= AddSeason(breadcrumb[-1], o, bCacheRefresh, title, iu)
 
                 # Search/list
                 if ('results' in cnt) and ('items' in cnt['results']):
@@ -1059,7 +1060,7 @@ class PrimeVideo(Singleton):
                         elif 'season' not in item:
                             bUpdatedVideoData |= ParseSinglePage(breadcrumb[-1], o, bCacheRefresh, url=iu)
                         else:
-                            bUpdatedVideoData |= AddSeason(breadcrumb[-1], o, item['title']['text'], iu)
+                            bUpdatedVideoData |= AddSeason(breadcrumb[-1], o, bCacheRefresh, item['title']['text'], iu)
 
                 # Single page
                 bSinglePage = False

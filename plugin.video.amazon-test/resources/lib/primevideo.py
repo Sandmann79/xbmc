@@ -1092,9 +1092,9 @@ class PrimeVideo(Singleton):
                         if bSinglePage:
                             pass
                         # Auto pagination if not disabled for Search and Watchlist
-                        elif ['search'] == breadcrumb:
+                        elif 'search' == breadcrumb[0]:  # /search/*
                             bAutoPaginate = not (p['all'] or p['search'])
-                        elif 'Watchlist' == breadcrumb[1]:
+                        elif 'Watchlist' == breadcrumb[1]:  # /root/watchlist/*
                             bAutoPaginate = not (p['all'] or p['watchlist'])
                         # Always auto load category lists, then paginate if appropriate
                         elif (2 < len(breadcrumb)) and (p['all'] or p['collections']):

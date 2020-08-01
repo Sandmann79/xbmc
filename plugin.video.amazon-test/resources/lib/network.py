@@ -441,7 +441,9 @@ def LogIn(ask=True):
             wnd = _Challenge(soup)
             wnd.doModal()
             if wnd.cap:
-                form.set_input({'captchacharacters': wnd.cap})
+                # MechanicalSoup is using the field names, not IDs
+                # id is captchacharacters, which causes exception to be raised
+                form.set_input({'field-keywords': wnd.cap})
             else:
                 return None
             del wnd

@@ -876,8 +876,11 @@ class AmazonTLD(Singleton):
         infoLabels['TrailerAvailable'] = item.get('trailerAvailable', False)
         infoLabels['Fanart'] = item.get('heroUrl')
         infoLabels['isAdult'] = 1 if 'ageVerificationRequired' in str(item.get('restrictions')) else 0
-        infoLabels['Genre'] = ' / '.join(item.get('genres', '')).replace('_', ' & ').replace('Musikfilm & Tanz',
-                                                                                             'Musikfilm, Tanz')
+        infoLabels['Genre'] = ' / '.join(item.get('genres', ''))\
+            .replace('_', ' & ')\
+            .replace('Musikfilm & Tanz', 'Musikfilm, Tanz')\
+            .replace('ã–', 'ö')
+
         if 'formats' in item and 'images' in item['formats'][0].keys():
             try:
                 infoLabels['Thumb'] = self.cleanIMGurl(item['formats'][0]['images'][0]['uri'])

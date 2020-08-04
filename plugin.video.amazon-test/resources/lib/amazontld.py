@@ -1072,6 +1072,11 @@ class AmazonTLD(Singleton):
         if 'collections' in props:
             if root_url == url:
                 self._createDB(self._chan_tbl)
+                if 'epgIngress' in props:
+                    title = props['epgIngress'].get('label', 'Channel Guide')
+                    url = props['epgIngress'].get('url')
+                    addDir(title, 'Channel', url)
+
             for col in props.get('collections', []):
                 if col.get('collectionType', '') in ['TwinHero', 'Carousel']:
                     num_items += 1
@@ -1129,8 +1134,8 @@ class AmazonTLD(Singleton):
                     else:
                         addVideo(il['DisplayTitle'], asin, il, cm=cm)
         elif 'sections' in props:
-            channels = []
-            [channels.extend(item.get('channels', [])) for item in props['sections']]
+            channels = props['sections'][0].get('channels', [])
+            # [channels.extend(item.get('channels', [])) for item in props['sections']]
             for item in channels:
                 il = self.getAsins(item, True)
                 pa = item.get('playbackAction')

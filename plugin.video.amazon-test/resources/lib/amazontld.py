@@ -1011,15 +1011,15 @@ class AmazonTLD(Singleton):
                 il['Rating'] = float(rating['value']) * 2
                 il['Votes'] = str(rating['count'])
             if live:
+                il['Plot'] += '\n\n' if il['Plot'] else ''
                 il['contentType'] = 'event'
-                if not il['Plot']:
-                    il['Plot'] = ' - '.join([live.get('timeBadge', live.get('label', '')), live.get('venue', '')])
+                il['Plot'] += ' - '.join([live.get('timeBadge', live.get('label', '')), live.get('venue', '')])
             if livestate:
+                il['Plot'] += '\n\n' if il['Plot'] else ''
                 il['contentType'] = livestate.get('id', il['contentType'])
                 if livestate.get('isLive', False):
                     il['contentType'] = 'live'
-                if not il['Plot']:
-                    il['Plot'] = ' - '.join([livestate.get('text', ''), item.get('pageDateTimeBadge', '')])
+                il['Plot'] += ' - '.join([livestate.get('text', ''), item.get('pageDateTimeBadge', '')])
             if not il['Title']:
                 il['Title'] = item.get('image', {}).get('alternateText', '')
                 il['contentType'] = 'thumbnail'
@@ -1137,6 +1137,7 @@ class AmazonTLD(Singleton):
                     else:
                         addVideo(il['DisplayTitle'], asin, il, cm=cm)
         elif 'sections' in props:
+            from datetime import datetime
             channels = props['sections'][0].get('channels', [])
             # [channels.extend(item.get('channels', [])) for item in props['sections']]
             for item in channels:
@@ -1149,10 +1150,12 @@ class AmazonTLD(Singleton):
                 il['DisplayTitle'] = self.cleanTitle(il['Title'])
                 il['Plot'] = ''
                 if shed:
-                    ts = time.time() * 1000
+                    ts = time.time()
                     for sh in shed:
-                        if sh.get('unixStart') <= ts <= sh.get('unixEnd'):
-                            il['Plot'] = sh.get('title', '')
+                        us = sh.get('unixStart') / 1000
+                        ue = sh.get('unixEnd') / 1000
+                        if us <= ts <= ue:
+                            il['Plot'] = '{:%H:%M}-{:%H:%M}  {}'.format(datetime.fromtimestamp(us), datetime.fromtimestamp(ue), sh.get('title', ''))
                             break
                 if pa:
                     il['contentType'] = vw = pa.get('videoMaterialType').lower()

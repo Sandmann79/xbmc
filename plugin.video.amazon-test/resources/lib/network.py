@@ -641,7 +641,7 @@ def LogIn(ask=True):
 
 def remLoginData(info=True):
     for fn in xbmcvfs.listdir(g.DATA_PATH)[1]:
-        if fn.startswith('cookie'):
+        if py2_decode(fn).startswith('cookie'):
             xbmcvfs.delete(OSPJoin(g.DATA_PATH, fn))
     writeConfig('accounts', '')
     writeConfig('login_name', '')

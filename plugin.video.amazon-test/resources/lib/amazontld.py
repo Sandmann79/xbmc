@@ -987,7 +987,7 @@ class AmazonTLD(Singleton):
             il = self.getAsins(item, True)
             il['Title'] = '%s - %s' % (n, title) if n else title
             il['Plot'] = item.get('synopsis', '').strip()
-            il['contentType'] = item.get('titleType', '').lower()
+            il['contentType'] = item.get('titleType', '')
             il['Duration'] = item.get('duration')
             il['MPAA'] = item.get('ratingBadge', {}).get('simplifiedId')
             il['isPrime'] = item.get('isPrime', True)
@@ -1000,7 +1000,7 @@ class AmazonTLD(Singleton):
                 il['Episode'] = item.get('episodeNumber')
                 il['Title'] = '%s - %s' % (num, il['Title'])
             if wl:
-                il['contentType'] = wl['endpoint']['query'].get('titleType', '').lower()
+                il['contentType'] = wl['endpoint']['query'].get('titleType', '')
             if 'images' in item:
                 img = item['images']
                 il['Thumb'] = self.cleanIMGurl(img.get('packshot', img.get('titleshot')))
@@ -1012,7 +1012,7 @@ class AmazonTLD(Singleton):
                 il['Votes'] = str(rating['count'])
             if live:
                 il['Plot'] += '\n\n' if il['Plot'] else ''
-                il['contentType'] = 'event'
+                il['contentType'] = 'live'
                 il['Plot'] += ' - '.join([live.get('timeBadge', live.get('label', '')), live.get('venue', '')])
             if livestate:
                 il['Plot'] += '\n\n' if il['Plot'] else ''
@@ -1037,6 +1037,7 @@ class AmazonTLD(Singleton):
                 il['contentType'] = 'nostream'
                 il['Title'] = '%s (%s)' % (il['Title'], item['notificationActions'][0]['message']['string'])
             il['DisplayTitle'] = self.cleanTitle(il['Title'])
+            il['contentType'] = il['contentType'].lower()
             # il = self.getArtWork(il, il['contentType'])
             return il, il['contentType']
 

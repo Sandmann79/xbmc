@@ -960,7 +960,8 @@ class PrimeVideo(Singleton):
             o = obj
 
             # Too many instances to track, append the episode finder to about every query and cross fingers
-            requestURL += ('&' if '?' in requestURL else '?') + 'episodeListSize=9999'
+            if requestURL is not None:
+                requestURL += ('&' if '?' in requestURL else '?') + 'episodeListSize=9999'
 
             # Load content
             bCouldNotParse = False

@@ -426,9 +426,8 @@ def LogIn(ask=True):
                     br['code'] = ret
                 else:
                     return None
-            msg = soup.find('img', attrs={'alt': 'captcha'})
-            if msg:
-                wnd = _Challenge(msg)
+            if soup.find('img', attrs={'alt': 'captcha'}):
+                wnd = _Challenge(soup)
                 wnd.doModal()
                 if wnd.cap:
                     submit = soup.find('input', value='verifyCaptcha')
@@ -568,7 +567,8 @@ def LogIn(ask=True):
             WriteLog(response.replace(py2_decode(email), '**@**'), 'login')
 
             while any(sp in response for sp in
-                      ['auth-mfa-form', 'ap_dcq_form', 'ap_captcha_img_label', 'claimspicker', 'fwcim-form', 'auth-captcha-image-container', 'validateCaptcha']):
+                      ['auth-mfa-form', 'ap_dcq_form', 'ap_captcha_img_label', 'claimspicker', 'fwcim-form', 'auth-captcha-image-container', 'validateCaptcha',
+                       'pollingForm']):
                 br = _MFACheck(br, email, soup)
                 if br is None:
                     return False
@@ -893,18 +893,19 @@ class _Captcha(pyxbmct.AddonDialogWindow):
 
 class _Challenge(pyxbmct.AddonDialogWindow):
     def __init__(self, msg):
-        box = msg.find_parent('div', class_='a-box-inner a-padding-extra-large')
+        self.head = msg.find('title').get_text(strip=True)
+        img = msg.find('img', attrs={'alt': 'captcha'})
+        box = img.find_parent('div', class_='a-box-inner a-padding-extra-large') if img else None
         if box is None:
-            self.head = msg.find('title').get_text(strip=True)
             self.hint = msg.find('p', class_='a-last').get_text(strip=True)
             form = msg.find('form').find('div', class_='a-box-inner')
             self.task = form.h4.get_text(strip=True)
             self.img_url = pyxbmct.Image(form.find('img')['src'], aspectRatio=2)
         else:
-            self.head = box.find('span', class_='a-size-large').get_text(strip=True)
-            self.hint = box.find('span', class_='a-size-base a-color-secondary').get_text(strip=True)
+            self.hint = '\n'.join([box.find('span', class_=cl).get_text() for cl in ['a-size-large', 'a-size-base a-color-secondary']
+                                   if box.find('span', class_=cl)])
             self.task = box.find('label', class_='a-form-label').get_text(strip=True)
-            self.img_url = pyxbmct.Image(msg['src'], aspectRatio=2)
+            self.img_url = pyxbmct.Image(img['src'], aspectRatio=2)
 
         super(_Challenge, self).__init__(self.head)
         self.setGeometry(500, 450, 8, 2)

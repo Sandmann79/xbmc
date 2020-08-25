@@ -34,8 +34,8 @@ class AmazonTLD(Singleton):
         if self._s.multiuser:
             addDir(getString(30134).format(loadUser('name')), 'switchUser', '', cm=self._g.CONTEXTMENU_MULTIUSER)
         addDir('Watchlist', 'getListMenu', self._g.watchlist, cm=cm_wl)
-        self.getRootNode()
-        addDir('Channels', 'Channel', '')
+        self.listCategories(0)
+        addDir('Channels', 'Channel', '/gp/video/storefront/ref=nav_shopall_nav_sa_aos?filterId=OFFER_FILTER%3DSUBSCRIPTIONS', opt='root')
         addDir(getString(30136), 'Recent', '')
         addDir(getString(30108), 'Search', '')
         addDir(getString(30100), 'getListMenu', self._g.library, cm=cm_lb)
@@ -319,17 +319,6 @@ class AmazonTLD(Singleton):
             return 0
         c.close()
 
-    def getRootNode(self):
-        c = self._menuDb.cursor()
-        st = 'all' if self._s.payCont else 'prime'
-        for title, nodeid, id in c.execute('select title, content, id from menu where node = (0)').fetchall():
-            result = c.execute('select content from menu where node = (?) and id = (?)', (nodeid, st)).fetchone()
-            nodeid = result[0] if result else nodeid
-            if id != 'channels':
-                addDir(title, 'listCategories', str(nodeid), opt=id)
-        c.close()
-        return
-
     def parseNodes(self, data, node_id=''):
         if type(data) != list:
             data = [data]
@@ -341,7 +330,7 @@ class AmazonTLD(Singleton):
                 content = '%s%s' % (node_id, count)
                 category = 'node'
             else:
-                for e in ['query', 'play']:
+                for e in ['query', 'play', 'link']:
                     if e in entry.keys():
                         content = entry[e]
                         category = e
@@ -354,9 +343,9 @@ class AmazonTLD(Singleton):
         c.execute('insert or ignore into %s values (%s)' % (table, asterix[:-1]), menudata)
         c.close()
 
-    def getNode(self, node):
+    def getNode(self, node, dist='distinct *', opt=''):
         c = self._menuDb.cursor()
-        result = c.execute('select distinct * from menu where node = (?)', (node,)).fetchall()
+        result = c.execute('select {} from menu where node = (?){}'.format(dist, opt), (node,)).fetchall()
         c.close()
         return result
 
@@ -369,7 +358,7 @@ class AmazonTLD(Singleton):
             url = 'OrderBy=Title%s&contentType=%s' % (self._s.OfferGroup, all_vid[root][1])
             addDir(getString(all_vid[root][0]), 'listContent', url, opt=all_vid[root][2])
 
-        for node, title, category, content, menu_id, infolabel in cat:
+        for n, title, category, content, menu_id, infolabel in cat:
             infolabel = json.loads(infolabel)
             mode = None
             info = None
@@ -379,17 +368,29 @@ class AmazonTLD(Singleton):
                 info.update(infolabel)
 
             if category == 'node':
-                mode = 'listCategories'
                 url = content
+                mode = 'listCategories'
+                if menu_id in all_vid.keys() and node == 0:
+                    st = 'all' if self._s.payCont else 'prime'
+                    url = self.getNode(content, 'content', ' and id = "{}"'.format(st))
+                    url = url[0][0] if url else content
+                    opt = menu_id
+                if menu_id == 'channels' and node == 0:
+                    continue
             elif category == 'query':
                 mode = 'listContent'
                 opt = 'listcat'
                 url = re.sub('\n|\\n', '', content)
             elif category == 'play':
                 addVideo(info['Title'], info['Asins'], info)
+            elif category == 'link':
+                mode = 'Channel'
+                opt = 'root'
+                url = content
             if mode:
                 addDir(title, mode, url, info, opt)
-        xbmcplugin.endOfDirectory(self._g.pluginhandle)
+        if node != 0:
+            xbmcplugin.endOfDirectory(self._g.pluginhandle)
 
     def listContent(self, catalog, url, page, parent, export=0):
         oldurl = url
@@ -1060,11 +1061,6 @@ class AmazonTLD(Singleton):
                 cm.append((wl['text']['string'], 'RunPlugin(%s?mode=WatchList&url=%s)' % (self._g.pluginid, quote_plus(json.dumps(wl['endpoint'])))))
             return cm
 
-        root_url = '/gp/video/storefront/ref=nav_shopall_nav_sa_aos?filterId=OFFER_FILTER%3DSUBSCRIPTIONS'
-        if not uid and not url:
-            url = root_url
-            uid = 'root'
-
         data = getcache(uid) if not url else GrabJSON(url)
         s = time.time()
         props = data.get('search', data.get('results', data))
@@ -1074,7 +1070,7 @@ class AmazonTLD(Singleton):
         num_items = 0
 
         if 'collections' in props:
-            if root_url == url:
+            if uid == 'root':
                 self._createDB(self._chan_tbl)
                 if 'epgIngress' in props:
                     title = props['epgIngress'].get('label', 'Channel Guide')
@@ -1150,14 +1146,17 @@ class AmazonTLD(Singleton):
                 il['Thumb'] = self.cleanIMGurl(item.get('logo', ''))
                 il['DisplayTitle'] = self.cleanTitle(il['Title'])
                 il['Plot'] = ''
+                upnext = False
                 if shed:
                     ts = time.time()
                     for sh in shed:
                         us = sh.get('unixStart') / 1000
                         ue = sh.get('unixEnd') / 1000
-                        if us <= ts <= ue:
-                            il['Plot'] = '{:%H:%M}-{:%H:%M}  {}'.format(datetime.fromtimestamp(us), datetime.fromtimestamp(ue), sh.get('title', ''))
-                            break
+                        if (us <= ts <= ue) or upnext:
+                            il['Plot'] += '{:%H:%M}-{:%H:%M}  {}\n'.format(datetime.fromtimestamp(us), datetime.fromtimestamp(ue), sh.get('title', ''))
+                            if upnext:
+                                break
+                            upnext = True
                 if pa:
                     il['contentType'] = vw = pa.get('videoMaterialType').lower()
                     asin = pa.get('channelId')

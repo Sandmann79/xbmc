@@ -776,6 +776,10 @@
                 }
             ],
             "title": "TV Shows"
+        },
+        {   "id": "sports",
+            "title": "Sports",
+            "link": "/gp/video/storefront/ref=atv_tc_sports?contentType=merch&merchId=Sports"
         }
     ],
     "title": "Amazon Video"

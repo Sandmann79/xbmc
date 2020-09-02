@@ -700,3 +700,7 @@ msgstr "Veuillez le télécharger depuis GitHub et l'installer manuellement dans
 msgctxt "#30256"
 msgid "Error: servers returned no content (check logs for more information)"
 msgstr "Erreur: les serveurs n'ont renvoyé aucun contenu (consultez les journaux pour plus d'informations)"
+
+msgctxt "#30257"
+msgid "Catalog cache expiration time"
+msgstr ""

@@ -673,3 +673,7 @@ msgstr "Bitte von GitHub herunterladen und in den Addon Ordner entpacken"
 msgctxt "#30256"
 msgid "Error: servers returned no content (check logs for more information)"
 msgstr "Fehler: Keine Inhalte vom Server erhalten (für mehr Infos Logs überprüfen)"
+
+msgctxt "#30257"
+msgid "Catalog cache expiration time"
+msgstr ""

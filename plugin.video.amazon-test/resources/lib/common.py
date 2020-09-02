@@ -199,6 +199,8 @@ class Settings(Singleton):
             'collections': self._gs('paginate_collections') == 'true',
             'search': self._gs('paginate_search') == 'true'
         }
+        elif 'catalogCacheExpiry' == name: 
+            return [3600, 21600, 43200, 86400, 259200, 604800, 1296000, 2592000][int(self._gs('catalog_cache_expiry'))]            
 
 
 def jsonRPC(method, props='', param=None):

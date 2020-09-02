@@ -107,7 +107,7 @@
     <!-- PrimeVideo -->
     <category label="30250">
         <setting id="pv_episode_thumbnails" type="bool" label="30249" default="true"/>
-        <setting id="catalog_cache_expiry" type="enum" values="1 hour|6 hours|12 hours|1 day|3 days|7 days|15 days|30 days" label="30257" default="2"/>
+        <setting id="catalog_cache_expiry" type="enum" lvalues="30258|30259|30260|30261|30262|30263|30264|30265" label="30257" default="2"/>
         <setting label="30243" type="lsep"/>
         <setting id="paginate_everything" type="bool" label="30244" default="false"/>
         <setting id="paginate_watchlist" type="bool" label="30245" default="false" enable="eq(-1,false)"/>

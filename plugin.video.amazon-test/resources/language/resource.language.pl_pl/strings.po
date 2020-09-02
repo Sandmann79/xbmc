@@ -681,3 +681,39 @@ msgstr ""
 msgctxt "#30256"
 msgid "Error: servers returned no content (check logs for more information)"
 msgstr ""
+
+msgctxt "#30257"
+msgid "Catalog cache expiration time"
+msgstr ""
+
+msgctxt "#30258"
+msgid "1 hour"
+msgstr ""
+
+msgctxt "#30259"
+msgid "6 hours"
+msgstr ""
+
+msgctxt "#30260"
+msgid "12 hours"
+msgstr ""
+
+msgctxt "#30261"
+msgid "1 day"
+msgstr ""
+
+msgctxt "#30262"
+msgid "3 days"
+msgstr ""
+
+msgctxt "#30263"
+msgid "7 days"
+msgstr ""
+
+msgctxt "#30264"
+msgid "15 days"
+msgstr ""
+
+msgctxt "#30265"
+msgid "30 days"
+msgstr ""

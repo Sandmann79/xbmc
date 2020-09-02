@@ -283,8 +283,8 @@ class PrimeVideo(Singleton):
         except:
             Log('Search functionality not found', Log.ERROR)
 
-        # Set the expiration in 11 hours and flush to disk
-        self._catalog['expiration'] = 39600 + int(time.time())
+        # Set the expiration based on settings (defaults to 12 hours) and flush to disk
+        self._catalog['expiration'] = self._s.catalogCacheExpiry + int(time.time())
         self._Flush()
 
         return True

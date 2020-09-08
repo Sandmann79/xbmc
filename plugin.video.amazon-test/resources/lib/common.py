@@ -65,7 +65,7 @@ class Globals(Singleton):
         self._globals['monitor'] = xbmc.Monitor()
         self._globals['addon'] = xbmcaddon.Addon()
         self._globals['dialog'] = xbmcgui.Dialog()
-        # self._globals['dialogprogress'] = xbmcgui.DialogProgress()
+        self._globals['dialogprogress'] = xbmcgui.DialogProgress()
         self._globals['hasExtRC'] = xbmc.getCondVisibility('System.HasAddon(script.chromium_remotecontrol)')
 
         self._globals['DATA_PATH'] = py2_decode(xbmc.translatePath(self.addon.getAddonInfo('profile')))
@@ -199,8 +199,8 @@ class Settings(Singleton):
             'collections': self._gs('paginate_collections') == 'true',
             'search': self._gs('paginate_search') == 'true'
         }
-        elif 'catalogCacheExpiry' == name: 
-            return [3600, 21600, 43200, 86400, 259200, 604800, 1296000, 2592000][int(self._gs('catalog_cache_expiry'))]            
+        elif 'catalogCacheExpiry' == name:
+            return [3600, 21600, 43200, 86400, 259200, 604800, 1296000, 2592000][int(self._gs('catalog_cache_expiry'))]
 
 
 def jsonRPC(method, props='', param=None):

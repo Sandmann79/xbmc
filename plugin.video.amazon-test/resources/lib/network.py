@@ -23,6 +23,13 @@ from .logging import *
 from .configs import *
 from .common import Globals, Settings, sleep
 
+try:
+    import urlparse
+    from urllib import urlencode
+except ImportError:
+    import urllib.parse as urlparse
+    from urllib.parse import urlencode
+
 
 def _parseHTML(br):
     soup = br.get_current_page()
@@ -446,7 +453,47 @@ def LogIn(ask=True):
             else:
                 return None
             del wnd
-
+        elif 'pollingForm' in uni_soup:
+            msg = soup.find('span', attrs={'class': 'a-size-medium transaction-approval-word-break a-text-bold'}).get_text(strip=True)
+            rows = soup.find('div', attrs={'id': 'channelDetails'})
+            for row in rows.find_all('div', attrs={'class': 'a-row'}):
+                msg += '\n' + re.sub('\\s{2,}', ': ', row.get_text())
+            pd = g.dialogprogress
+            pd.create('Amazon', msg)
+            refresh = time.time()
+            form_id = form_poll = 'pollingForm'
+            per = 0
+            while not pd.iscanceled():
+                per += 1
+                if per > 100:
+                    per = 0
+                pd.update(per)
+                if pd.iscanceled():
+                    br = None
+                    break
+                if time.time() > refresh + 5:
+                    url = br.get_url()
+                    br.select_form('form[id="{}"]'.format(form_id))
+                    br.submit_selected()
+                    response, soup = _parseHTML(br)
+                    form_id = form_poll
+                    WriteLog(response.replace(py2_decode(email), '**@**'), 'login-pollingform')
+                    stat = soup.find('input', attrs={'name': 'transactionApprovalStatus'})['value']
+                    Log(stat)
+                    if stat in ['TransactionCompleted', 'TransactionCompletionTimeout']:
+                        parsed_url = urlparse.urlparse(url)
+                        query = urlparse.parse_qs(parsed_url.query)
+                        br.open(query['openid.return_to'][0])
+                        response, soup = _parseHTML(br)
+                        WriteLog(response.replace(py2_decode(email), '**@**'), 'login-pollingform-suc')
+                        break
+                    elif stat in ['TransactionExpired', 'TransactionResponded']:
+                        form_id = 'resend-approval-form'
+                    else:
+                        refresh = time.time()
+                    br.open(url)
+                sleep(0.1)
+            pd.close()
         return br
 
     def _setLoginPW():
@@ -572,8 +619,9 @@ def LogIn(ask=True):
                 br = _MFACheck(br, email, soup)
                 if br is None:
                     return False
-                useMFA = True if br.get_current_form().form.find('input', {'name': 'otpCode'}) else False
-                br.submit_selected()
+                if not br.get_current_form() is None:
+                    useMFA = True if br.get_current_form().form.find('input', {'name': 'otpCode'}) else False
+                    br.submit_selected()
                 response, soup = _parseHTML(br)
                 WriteLog(response.replace(py2_decode(email), '**@**'), 'login-mfa')
 

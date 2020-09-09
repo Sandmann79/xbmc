@@ -23,13 +23,6 @@ from .logging import *
 from .configs import *
 from .common import Globals, Settings, sleep
 
-try:
-    import urlparse
-    from urllib import urlencode
-except ImportError:
-    import urllib.parse as urlparse
-    from urllib.parse import urlencode
-
 
 def _parseHTML(br):
     soup = br.get_current_page()
@@ -454,21 +447,29 @@ def LogIn(ask=True):
                 return None
             del wnd
         elif 'pollingForm' in uni_soup:
+            try:
+                from urlparse import urlparse, parse_qs
+            except ImportError:
+                from urllib.parse import urlparse, parse_qs
+
             msg = soup.find('span', attrs={'class': 'a-size-medium transaction-approval-word-break a-text-bold'}).get_text(strip=True)
+            msg += '\n'
             rows = soup.find('div', attrs={'id': 'channelDetails'})
             for row in rows.find_all('div', attrs={'class': 'a-row'}):
-                msg += '\n' + re.sub('\\s{2,}', ': ', row.get_text())
-            pd = g.dialogprogress
-            pd.create('Amazon', msg)
+                msg += re.sub('\\s{2,}', ': ', row.get_text())
+            pd = _ProgressDialog(msg)
+            pd.show()
             refresh = time.time()
             form_id = form_poll = 'pollingForm'
             per = 0
-            while not pd.iscanceled():
-                per += 1
-                if per > 100:
-                    per = 0
-                pd.update(per)
-                if pd.iscanceled():
+            while True:
+                if per > 99:
+                    val = -5
+                if per < 1:
+                    val = 5
+                per += val
+                pd.sl_progress.setPercent(per)
+                if pd.iscanceled:
                     br = None
                     break
                 if time.time() > refresh + 5:
@@ -481,11 +482,9 @@ def LogIn(ask=True):
                     stat = soup.find('input', attrs={'name': 'transactionApprovalStatus'})['value']
                     Log(stat)
                     if stat in ['TransactionCompleted', 'TransactionCompletionTimeout']:
-                        parsed_url = urlparse.urlparse(url)
-                        query = urlparse.parse_qs(parsed_url.query)
+                        parsed_url = urlparse(url)
+                        query = parse_qs(parsed_url.query)
                         br.open(query['openid.return_to'][0])
-                        response, soup = _parseHTML(br)
-                        WriteLog(response.replace(py2_decode(email), '**@**'), 'login-pollingform-suc')
                         break
                     elif stat in ['TransactionExpired', 'TransactionResponded']:
                         form_id = 'resend-approval-form'
@@ -554,7 +553,6 @@ def LogIn(ask=True):
         password = _decode(user['password'])
         savelogin = False  # g.addon.getSetting('save_login') == 'true'
         useMFA = False
-
         if not user['baseurl']:
             user = getTerritory(user)
             if False is user[1]:
@@ -982,6 +980,25 @@ class _Challenge(pyxbmct.AddonDialogWindow):
     def submit(self):
         self.cap = self.ed_cap.getText()
         self.close()
+
+
+class _ProgressDialog(pyxbmct.AddonDialogWindow):
+    def __init__(self, msg):
+        super(_ProgressDialog, self).__init__('Amazon')
+        self.sl_progress = pyxbmct.Slider(textureback=OSPJoin(g.PLUGIN_PATH, 'resources', 'art', 'transp.png'))
+        self.btn_cancel = pyxbmct.Button(getString(30123))
+        self.tb_msg = pyxbmct.TextBox()
+        self.iscanceled = False
+        self.connect(self.btn_cancel, self.cancel)
+        self.setGeometry(500, 400, 6, 3)
+        self.placeControl(self.tb_msg, 0, 0, 4, 3)
+        self.placeControl(self.sl_progress, 4, 0, 0, 3)
+        self.placeControl(self.btn_cancel, 5, 1, 1, 1)
+        self.tb_msg.setText(msg)
+        self.sl_progress.setEnabled(False)
+
+    def cancel(self):
+        self.iscanceled = True
 
 
 class MyTLS1Adapter(HTTPAdapter):

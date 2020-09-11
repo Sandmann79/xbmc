@@ -65,7 +65,7 @@ class Globals(Singleton):
         self._globals['monitor'] = xbmc.Monitor()
         self._globals['addon'] = xbmcaddon.Addon()
         self._globals['dialog'] = xbmcgui.Dialog()
-        self._globals['dialogprogress'] = xbmcgui.DialogProgress()
+        # self._globals['dialogprogress'] = xbmcgui.DialogProgress()
         self._globals['hasExtRC'] = xbmc.getCondVisibility('System.HasAddon(script.chromium_remotecontrol)')
 
         self._globals['DATA_PATH'] = py2_decode(xbmc.translatePath(self.addon.getAddonInfo('profile')))

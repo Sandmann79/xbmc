@@ -553,6 +553,7 @@ def LogIn(ask=True):
         password = _decode(user['password'])
         savelogin = False  # g.addon.getSetting('save_login') == 'true'
         useMFA = False
+
         if not user['baseurl']:
             user = getTerritory(user)
             if False is user[1]:
@@ -1002,6 +1003,10 @@ class _ProgressDialog(pyxbmct.AddonDialogWindow):
 
 
 class MyTLS1Adapter(HTTPAdapter):
-    def init_poolmanager(self, connections, maxsize, block=False):
+    def init_poolmanager(self, connections, maxsize, block=False, *args, **kwargs):
         Log('TLSv1 Adapter', Log.DEBUG)
-        self.poolmanager = PoolManager(num_pools=connections, maxsize=maxsize, block=block, ssl_version=ssl.PROTOCOL_TLSv1)
+        if ssl.OPENSSL_VERSION_INFO[:4] >= (1, 1, 1, 6):  # openssl 1.1.1f
+            context = ssl.create_default_context()
+            context.set_ciphers('DEFAULT@SECLEVEL=1')
+            kwargs['ssl_context'] = context
+        self.poolmanager = PoolManager(num_pools=connections, maxsize=maxsize, block=block, ssl_version=ssl.PROTOCOL_TLSv1, *args, **kwargs)

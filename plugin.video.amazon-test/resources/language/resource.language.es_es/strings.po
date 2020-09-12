@@ -541,7 +541,7 @@ msgstr "Saltar Resumen"
 
 msgctxt "#30195"
 msgid "Skipping Scene…"
-msgstr "Saltando Escena..."
+msgstr "Saltando Escena…"
 
 # empty strings from id 30196 to 30197
 msgctxt "#30198"

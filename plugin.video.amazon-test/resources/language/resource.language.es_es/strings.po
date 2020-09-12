@@ -730,4 +730,4 @@ msgstr "15 días"
 
 msgctxt "#30265"
 msgid "30 days"
-msgstr "20 días"
+msgstr "30 días"

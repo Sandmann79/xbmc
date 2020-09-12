@@ -75,7 +75,7 @@ msgstr "Eliminar todos los usuarios"
 
 msgctxt "#30011"
 msgid "General"
-msgstr ""
+msgstr "General"
 
 msgctxt "#30012"
 msgid "Playback with"
@@ -152,7 +152,7 @@ msgstr "Vista de episodios"
 
 msgctxt "#30033"
 msgid "Audio"
-msgstr ""
+msgstr "Audio"
 
 msgctxt "#30034"
 msgid "Subtitles"
@@ -198,7 +198,7 @@ msgstr "Introducción automática del PIN"
 
 msgctxt "#30046"
 msgid "PIN"
-msgstr ""
+msgstr "PIN"
 
 msgctxt "#30047"
 msgid "Wait after PIN Input"
@@ -214,7 +214,7 @@ msgstr "Detectar tasa de fotogramas"
 
 msgctxt "#30050"
 msgid "Amazon"
-msgstr ""
+msgstr "Amazon"
 
 msgctxt "#30051"
 msgid "Load missing from TMDb"
@@ -222,7 +222,7 @@ msgstr "Descargar lo que falte de TMDb"
 
 msgctxt "#30052"
 msgid "TMDb"
-msgstr ""
+msgstr "TMDb"
 
 msgctxt "#30053"
 msgid "Load missing from TVDb"
@@ -230,7 +230,7 @@ msgstr "Descargar lo que falte de TVDb"
 
 msgctxt "#30054"
 msgid "TVDb"
-msgstr ""
+msgstr "TVDb"
 
 msgctxt "#30055"
 msgid "Show TV Show Fanart in Season and Episode Lists"
@@ -320,27 +320,27 @@ msgstr "Exportar la lista de seguimiento automáticamente"
 
 msgctxt "#30081"
 msgid "Intro/Recap scenes processing"
-msgstr ""
+msgstr "Procesamiento de intros y resúmenes"
 
 msgctxt "#30082"
 msgid "Do nothing"
-msgstr ""
+msgstr "No hacer nada"
 
 msgctxt "#30083"
 msgid "Show Skip Button"
-msgstr ""
+msgstr "Mostrar el botón para saltar"
 
 msgctxt "#30084"
 msgid "Autoskip Intro"
-msgstr ""
+msgstr "Saltar intro automáticamente"
 
 msgctxt "#30085"
 msgid "Autoskip Recap"
-msgstr ""
+msgstr "Saltar resumen automáticamente"
 
 msgctxt "#30086"
 msgid "Autoskip All"
-msgstr ""
+msgstr "Saltar todo automáticamente"
 
 # empty strings from id 30087 to 30099
 msgctxt "#30100"
@@ -521,7 +521,7 @@ msgstr "Carpetas de fuentes añadidas/cambiadas"
 
 msgctxt "#30188"
 msgid "To complete the setup restart Kodi and set the content type of added folders."
-msgstr ""
+msgstr "Para completar la configuración reinicia Kodi y establece el tipo de contenido para las carpetas añadidas."
 
 msgctxt "#30191"
 msgid "Restart"
@@ -533,15 +533,15 @@ msgstr "¿Quieres reiniciar Kodi ahora?"
 
 msgctxt "#30193"
 msgid "Skip Intro"
-msgstr ""
+msgstr "Saltar Intro"
 
 msgctxt "#30194"
 msgid "Skip Recap"
-msgstr ""
+msgstr "Saltar Resumen"
 
 msgctxt "#30195"
 msgid "Skipping Scene…"
-msgstr ""
+msgstr "Saltando Escena..."
 
 # empty strings from id 30196 to 30197
 msgctxt "#30198"
@@ -636,31 +636,28 @@ msgstr "No es posible obtener la configuración territorial de Amazon."
 # empty strings from id 30221 to 30241
 msgctxt "#30242"
 msgid "Page {}"
-msgstr ""
+msgstr "Página {}"
 
 msgctxt "#30243"
 msgid "Pagination"
-msgstr ""
+msgstr "Paginación"
 
 msgctxt "#30244"
 msgid "Everything"
-msgstr ""
+msgstr "Todo"
 
 # empty strings from id 30174 to 30179
-#, fuzzy
 msgctxt "#30245"
 msgid "Watchlist"
-msgstr "Añadir %s a la lista de seguimiento"
+msgstr "Lista de seguimiento"
 
-#, fuzzy
 msgctxt "#30246"
 msgid "Collections"
-msgstr "Conexión"
+msgstr "Colecciones"
 
-#, fuzzy
 msgctxt "#30247"
 msgid "Search"
-msgstr "Buscar"
+msgstr "Búsqueda"
 
 # empty strings from id 30220 to 30247
 msgctxt "#30248"
@@ -673,7 +670,7 @@ msgstr "Preferir miniaturas de episodios a pósteres"
 
 msgctxt "#30250"
 msgid "PrimeVideo"
-msgstr ""
+msgstr "PrimeVideo"
 
 msgctxt "#30251"
 msgid "Connection error"
@@ -701,36 +698,36 @@ msgstr "Error: los servidores no han enviado ningún contenido (comprueba los re
 
 msgctxt "#30257"
 msgid "Catalog cache expiration time"
-msgstr ""
+msgstr "Tiempo para expirar la cache"
 
 msgctxt "#30258"
 msgid "1 hour"
-msgstr ""
+msgstr "1 hora"
 
 msgctxt "#30259"
 msgid "6 hours"
-msgstr ""
+msgstr "6 horas"
 
 msgctxt "#30260"
 msgid "12 hours"
-msgstr ""
+msgstr "12 horas"
 
 msgctxt "#30261"
 msgid "1 day"
-msgstr ""
+msgstr "1 día"
 
 msgctxt "#30262"
 msgid "3 days"
-msgstr ""
+msgstr "3 días"
 
 msgctxt "#30263"
 msgid "7 days"
-msgstr ""
+msgstr "7 días"
 
 msgctxt "#30264"
 msgid "15 days"
-msgstr ""
+msgstr "15 días"
 
 msgctxt "#30265"
 msgid "30 days"
-msgstr ""
+msgstr "20 días"

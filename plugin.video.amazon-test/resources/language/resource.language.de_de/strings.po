@@ -676,36 +676,36 @@ msgstr "Fehler: Keine Inhalte vom Server erhalten (für mehr Infos Logs überpr�
 
 msgctxt "#30257"
 msgid "Catalog cache expiration time"
-msgstr ""
+msgstr "Cache-Ablaufzeit"
 
 msgctxt "#30258"
 msgid "1 hour"
-msgstr ""
+msgstr "1 Stunde"
 
 msgctxt "#30259"
 msgid "6 hours"
-msgstr ""
+msgstr "6 Stunden"
 
 msgctxt "#30260"
 msgid "12 hours"
-msgstr ""
+msgstr "12 Stunden"
 
 msgctxt "#30261"
 msgid "1 day"
-msgstr ""
+msgstr "1 Tag"
 
 msgctxt "#30262"
 msgid "3 days"
-msgstr ""
+msgstr "3 Tage"
 
 msgctxt "#30263"
 msgid "7 days"
-msgstr ""
+msgstr "7 Tage"
 
 msgctxt "#30264"
 msgid "15 days"
-msgstr ""
+msgstr "15 Tage"
 
 msgctxt "#30265"
 msgid "30 days"
-msgstr ""
+msgstr "30 Tage"

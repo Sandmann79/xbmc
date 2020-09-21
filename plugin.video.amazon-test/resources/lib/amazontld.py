@@ -976,7 +976,8 @@ class AmazonTLD(Singleton):
                 item['link'] = {'url': item['title'].get('url')}
                 for p in ['title', 'synopsis', 'year']:
                     item[p] = item.get(p, {}).get('text', '')
-            n = item.get('facetAlternateText', '')
+            facet = item.get('facet')
+            n = facet.get('alternateText', '') if facet else item.get('facetAlternateText', '')
             wl = item.get('watchlistAction', item.get('watchlistButton'))
             title = item.get('text', item.get('title', ''))
             num = item.get('episodeNumber')
@@ -1007,7 +1008,7 @@ class AmazonTLD(Singleton):
                 il['Thumb'] = self.cleanIMGurl(img.get('packshot', img.get('titleshot')))
                 il['Fanart'] = self.cleanIMGurl(img.get('heroshot'))
             else:
-                il['Thumb'] = self.cleanIMGurl(item.get('image', {}).get('url', item.get('facetImage')))
+                il['Thumb'] = self.cleanIMGurl(item.get('image', {}).get('url', facet.get('image', '') if facet else item.get('facetImage')))
             if rating and rating.get('value'):
                 il['Rating'] = float(rating['value']) * 2
                 il['Votes'] = str(rating['count'])

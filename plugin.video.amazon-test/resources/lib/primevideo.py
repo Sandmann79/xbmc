@@ -32,15 +32,17 @@ class PrimeVideo(Singleton):
     def __init__(self, globalsInstance, settingsInstance):
         self._g = globalsInstance
         self._s = settingsInstance
+        """ Data for date string deconstruction and reassembly
+
+            Date references:
+            https://www.primevideo.com/detail/0LCQSTWDMN9V770DG2DKXY3GVF/  09 10 11 12 01 02 03 04 05
+            https://www.primevideo.com/detail/0ND5POOAYD6A4THTH7C1TD3TYE/  06 07 08 09
+
+            Languages: https://www.primevideo.com/settings/language/
+        """
         self._dateParserData = {
-            """ Data for date string deconstruction and reassembly
-
-                Date references:
-                https://www.primevideo.com/detail/0LCQSTWDMN9V770DG2DKXY3GVF/  09 10 11 12 01 02 03 04 05
-                https://www.primevideo.com/detail/0ND5POOAYD6A4THTH7C1TD3TYE/  06 07 08 09
-
-                Languages: https://www.primevideo.com/settings/language/
-            """
+            'generic': r'^(?P<m>[^W]+)[.,:;\s-]+(?P<d>[0-9]+),\s+(?P<y>[0-9]+)(?:\s+[0-9]+|$)',
+            'asianMonthExtractor': r'^([0-9]+)[월月]',
             'da_DK': {'deconstruct': r'^(?P<d>[0-9]+)\.?\s+(?P<m>[^\s]+)\s+(?P<y>[0-9]+)',
                       'months': {'januar': 1, 'februar': 2, 'marts': 3, 'april': 4, 'maj': 5, 'juni': 6, 'juli': 7, 'august': 8, 'september': 9, 'oktober': 10,
                                  'november': 11, 'december': 12}},
@@ -104,6 +106,24 @@ class PrimeVideo(Singleton):
             'zh_TW': {'deconstruct': r'^(?P<y>[0-9]+)年(?P<m>[0-9]+)月(?P<d>[0-9]+)日',
                       'months': {'一月': 1, '二月': 2, '三月': 3, '四月': 4, '五月': 5, '六月': 6, '七月': 7, '八月': 8, '九月': 9, '十月': 10, '十一月': 11, '十二月': 12}},
         }
+        self._TextCleanPatterns = [[r'\s+-\s*([^&])', r' – \1'],  # Convert dash from small to medium where needed
+                                   [r'\s*-\s+([^&])', r' – \1'],  # Convert dash from small to medium where needed
+                                   [r'^\s+', ''],  # Remove leading spaces
+                                   [r'\s+$', ''],  # Remove trailing spaces
+                                   [r' {2,}', ' '],  # Remove double spacing
+                                   [r'\.\.\.', '…']]  # Replace triple dots with ellipsis
+        # rex compilation
+        self._imageRefiner = re.compile(r'\._.*_\.')
+        self._reURN = re.compile(r'(?:/gp/video)?/d(?:p|etail)/([^/]+)/')
+        self._dateParserData['generic'] = re.compile(self._dateParserData['generic'], re.UNICODE)
+        self._dateParserData['asianMonthExtractor'] = re.compile(self._dateParserData['asianMonthExtractor'])
+        for k in self._dateParserData:
+            try:
+                self._dateParserData[k]['deconstruct'] = re.compile(self._dateParserData[k]['deconstruct'])
+            except: pass
+        for i, s in enumerate(self._TextCleanPatterns):
+            self._TextCleanPatterns[i][0] = re.compile(s[0])
+
         self._LoadCache()
 
     def _Flush(self, bFlushCacheData=True, bFlushVideoData=False):
@@ -152,13 +172,8 @@ class PrimeVideo(Singleton):
     def _BeautifyText(self, title):
         """ Correct stylistic errors in Amazon's titles """
 
-        for t in [(r'\s+-\s*([^&])', r' – \1'),  # Convert dash from small to medium where needed
-                  (r'\s*-\s+([^&])', r' – \1'),  # Convert dash from small to medium where needed
-                  (r'^\s+', ''),  # Remove leading spaces
-                  (r'\s+$', ''),  # Remove trailing spaces
-                  (r' {2,}', ' '),  # Remove double spacing
-                  (r'\.\.\.', '…')]:  # Replace triple dots with ellipsis
-            title = re.sub(t[0], t[1], title)
+        for r in self._TextCleanPatterns:
+            title = r[0].sub(r[1], title)
         return title
 
     def _TraverseCatalog(self, path, bRefresh=False):
@@ -507,12 +522,12 @@ class PrimeVideo(Singleton):
         def MaxSize(imgUrl):
             """ Strip the dynamic resize triggers from the URL (and other effects, such as blur) """
 
-            return re.sub(r'\._.*_\.', '.', imgUrl)
+            return self._imageRefiner.sub(r'\._.*_\.', '.', imgUrl)
 
         def ExtractURN(url):
             """ Extract the unique resource name identifier """
 
-            ret = re.search(r'(?:/gp/video)?/d(?:p|etail)/([^/]+)/', url)
+            ret = self._reURN.search(url)
             return None if not ret else ret.group(1)
 
         def DelocalizeDate(lang, datestr):
@@ -524,13 +539,12 @@ class PrimeVideo(Singleton):
 
             # Try to decode the date as localized format
             try:
-                p = re.search(self._dateParserData[lang]['deconstruct'], datestr.lower())
+                p = self._dateParserData[lang]['deconstruct'].search(datestr.lower())
             except: pass
-
             # Sometimes the date is returned with an american format and/or not localized
             if None is p:
                 try:
-                    p = re.search(r'^(?P<m>[^W]+)[.,:;\s-]+(?P<d>[0-9]+),\s+(?P<y>[0-9]+)(?:\s+[0-9]+|$)', datestr.lower(), re.UNICODE)
+                    p = self._dateParserData['generic'].search(datestr.lower())
                 except: pass
                 if (None is p) or ('en_US' == lang):
                     Log('Unable to parse date "{}" with language "{}": format changed?'.format(datestr, lang), Log.DEBUG)
@@ -545,7 +559,7 @@ class PrimeVideo(Singleton):
             else:
                 # Since they're inept, try with asiatic numeric months first
                 try:
-                    p['m'] = int(re.match(r'^([0-9]+)[월月]', p['m'])[1])
+                    p['m'] = int(self._dateParserData['asianMonthExtractor'].match(p['m'])[1])
                 except: pass
 
                 def MonthToInt(langCode):

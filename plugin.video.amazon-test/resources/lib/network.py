@@ -11,8 +11,10 @@ from platform import node
 import pyxbmct
 import re
 import requests
-import uuid
 import ssl
+from timeit import default_timer as timer
+import uuid
+
 from urllib3.poolmanager import PoolManager
 from requests.adapters import HTTPAdapter
 from pyDes import *
@@ -22,6 +24,7 @@ from .l10n import *
 from .logging import *
 from .configs import *
 from .common import Globals, Settings, sleep
+from .metrics import addNetTime
 
 
 def _parseHTML(br):
@@ -161,7 +164,7 @@ def getURL(url, useCookie=False, silent=False, headers=None, rjson=True, attempt
         pass  # Fail on permanent errors
 
     try:
-        starttime = time.time()
+        starttime = timer()
         method = 'POST' if postdata is not None else 'GET'
         r = session.request(method, url, data=postdata, headers=headers, cookies=cj, verify=s.verifySsl, stream=True, allow_redirects=allow_redirects)
         getURL.lastResponseCode = r.status_code  # Set last response code
@@ -207,7 +210,10 @@ def getURL(url, useCookie=False, silent=False, headers=None, rjson=True, attempt
             return getURL(url, useCookie, silent, headers, rjson, attempt, check, postdata, binary)
         return retval
     res = json.loads(response) if rjson else response
-    Log('Download Time: %s' % (time.time() - starttime), Log.DEBUG)
+    duration = timer()
+    duration -= starttime
+    addNetTime(duration)
+    Log('Download Time: %s' % duration, Log.DEBUG)
     return res
 
 

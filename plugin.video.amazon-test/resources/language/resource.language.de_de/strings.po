@@ -525,6 +525,14 @@ msgctxt "#30195"
 msgid "Skipping Scene…"
 msgstr "Szene wird übersprungen…"
 
+msgctxt "#30196"
+msgid "Dump JSON replies"
+msgstr ""
+
+msgctxt "#30197"
+msgid "Dump collisions"
+msgstr ""
+
 msgctxt "#30198"
 msgid "Browser or Script not found. Please check settings."
 msgstr "Browser oder Skript nicht gefunden. Bitte Einstellungen überprüfen."
@@ -613,7 +621,6 @@ msgctxt "#30219"
 msgid "Unable to retrieve Amazon's territorial configuration."
 msgstr "Die Regionskonfiguration konnte nicht von Amazon abgerufen werden."
 
-# empty strings from id 30221 to 30241
 msgctxt "#30242"
 msgid "Page {}"
 msgstr "Seite {}"

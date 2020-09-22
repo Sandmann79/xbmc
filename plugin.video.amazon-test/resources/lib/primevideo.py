@@ -13,7 +13,7 @@ import time
 from .common import key_exists, return_item
 from .singleton import Singleton
 from .network import getURL, getURLData, MechanizeLogin, FQify, GrabJSON
-from .logging import Log, LogJSON
+from .logging import Log
 from .itemlisting import setContentAndView
 from .l10n import *
 from .users import *
@@ -701,7 +701,6 @@ class PrimeVideo(Singleton):
                     NotifyUser(getString(30256), True)
                     Log('Unable to fetch the url: {}'.format(url), Log.ERROR)
                     return False
-                # LogJSON(data, url)
 
             # Video/season/movie data are in the `state` field of the response
             if 'state' not in data:
@@ -1000,7 +999,6 @@ class PrimeVideo(Singleton):
                         continue
                     else:
                         cnt = GrabJSON(requestURL)
-                        # LogJSON(cnt, requestURL)
 
                 # Don't switch direct action for reference until we have content to show for it
                 if cnt and ('lazyLoadURL' in o):

@@ -74,7 +74,6 @@ msgctxt "#30010"
 msgid "Remove all Users"
 msgstr ""
 
-# empty strings from id 30009 to 30010
 msgctxt "#30011"
 msgid "General"
 msgstr "כללי"
@@ -128,7 +127,6 @@ msgctxt "#30023"
 msgid "Use android app for 4K videos"
 msgstr ""
 
-# empty strings from id 30024 to id 30026
 msgctxt "#30027"
 msgid "Stretch factor"
 msgstr ""
@@ -137,7 +135,6 @@ msgctxt "#30028"
 msgid "Stretching"
 msgstr ""
 
-# empty strings from id 30023 to 30028
 msgctxt "#30029"
 msgid "Movie View"
 msgstr "תצוגת סרט"
@@ -163,12 +160,10 @@ msgctxt "#30034"
 msgid "Subtitles"
 msgstr "אפשר כתוביות"
 
-# empty strings from id 30033 to 30034
 msgctxt "#30035"
 msgid "Enable Views"
 msgstr "אפשר תצוגות"
 
-# empty strings id 30036
 msgctxt "#30037"
 msgid "Disable SSL Certificate Verification"
 msgstr "השמת אימות אישור SSL"
@@ -181,7 +176,6 @@ msgctxt "#30039"
 msgid "Items Per Page"
 msgstr "פרטים לעמוד"
 
-# empty string with id 30040
 msgctxt "#30041"
 msgid "Enable Fullscreen Video"
 msgstr "אפשר הפעלת וידאו במסך מלא"
@@ -250,7 +244,6 @@ msgctxt "#30057"
 msgid "Wait till PIN Input"
 msgstr "חכה עד קלט קוד PIN"
 
-# empty string with id 30058
 msgctxt "#30059"
 msgid "Use own user profile"
 msgstr "תשתמש בפרופיל המשתמש שלך"
@@ -279,7 +272,6 @@ msgctxt "#30065"
 msgid "Mediasource TV Title"
 msgstr "שם סדרה Mediasource"
 
-# empty strings from id 30066 to 30069
 msgctxt "#30070"
 msgid "Miscellaneous"
 msgstr "שונות"
@@ -348,7 +340,6 @@ msgctxt "#30086"
 msgid "Autoskip All"
 msgstr ""
 
-# empty strings from id 30087 to 30099
 msgctxt "#30100"
 msgid "Library"
 msgstr "ספרייה"
@@ -361,12 +352,10 @@ msgctxt "#30102"
 msgid "Force Fallback"
 msgstr "אלץ שיחזור"
 
-# empty string id 301033
 msgctxt "#30104"
 msgid "Movies"
 msgstr "סרטים"
 
-# empty strings from id 30105 to 30106
 msgctxt "#30107"
 msgid "Television"
 msgstr "טלוויזיה"
@@ -379,7 +368,6 @@ msgctxt "#30109"
 msgid "Choose Bitrate for Playback"
 msgstr "בחר קצב סיביות להשמעה"
 
-# empty string with id 30110
 msgctxt "#30111"
 msgid "Continue to Page %s"
 msgstr "עבור לדף %s"
@@ -400,7 +388,6 @@ msgctxt "#30115"
 msgid "Available Languages:"
 msgstr "שפות זמינות:"
 
-# empty strings from id 30116 to 30119
 msgctxt "#30120"
 msgid "PIN (empty for no restriction)"
 msgstr "קוד PIN (ריק = ללא הגבלה)"
@@ -417,12 +404,10 @@ msgctxt "#30123"
 msgid "Cancel"
 msgstr "בטל"
 
-# empty strings from id 30124 to 30126
 msgctxt "#30127"
 msgid "No content found"
 msgstr "לא נמצא תוכן"
 
-# empty strings from id 30128 to 30129
 msgctxt "#30130"
 msgid "Add User…"
 msgstr ""
@@ -453,17 +438,14 @@ msgctxt "#30136"
 msgid "Recently watched"
 msgstr "נוספו לאחרונה"
 
-# empty strings from id 30128 to 30142
 msgctxt "#30143"
 msgid "All Movies"
 msgstr "כל הסרטים"
 
-# empty strings from id 30144 to 30159
 msgctxt "#30160"
 msgid "All Shows"
 msgstr "כל הסדרות"
 
-# empty strings from id 30161 to 30164
 msgctxt "#30165"
 msgid "Movie"
 msgstr "סרט"
@@ -484,17 +466,14 @@ msgctxt "#30169"
 msgid "Specials"
 msgstr "מיוחדים"
 
-# empty string with id 30170
 msgctxt "#30171"
 msgid "Unrated"
 msgstr "לא מדורג"
 
-# empty string with id 30172
 msgctxt "#30173"
 msgid "Episode"
 msgstr "פרק"
 
-# empty strings from id 30174 to 30179
 msgctxt "#30180"
 msgid "Add %s to Watchlist"
 msgstr "הוסף את %s לרשימת הצפייה"
@@ -516,7 +495,6 @@ msgctxt "#30184"
 msgid "Remove {} from List"
 msgstr "הסר את %s מרשימת הצפייה"
 
-# empty string with id 30184
 msgctxt "#30185"
 msgid "Export %s"
 msgstr "ייצוא %s"
@@ -553,12 +531,18 @@ msgctxt "#30195"
 msgid "Skipping Scene…"
 msgstr ""
 
-# empty strings from id 30196 to 30197
+msgctxt "#30196"
+msgid "Dump JSON replies"
+msgstr ""
+
+msgctxt "#30197"
+msgid "Dump collisions"
+msgstr ""
+
 msgctxt "#30198"
 msgid "Browser or Script not found. Please check settings."
 msgstr "לא נמצא דפדפן או סקריפט. נא בדוק את הגדרות."
 
-# empty string with id 30199
 msgctxt "#30200"
 msgid "Login Error"
 msgstr "התחבר"
@@ -643,7 +627,6 @@ msgctxt "#30219"
 msgid "Unable to retrieve Amazon's territorial configuration."
 msgstr ""
 
-# empty strings from id 30221 to 30241
 msgctxt "#30242"
 msgid "Page {}"
 msgstr ""
@@ -656,7 +639,6 @@ msgctxt "#30244"
 msgid "Everything"
 msgstr ""
 
-# empty strings from id 30174 to 30179
 #, fuzzy
 msgctxt "#30245"
 msgid "Watchlist"
@@ -672,7 +654,6 @@ msgctxt "#30247"
 msgid "Search"
 msgstr "חיפוש"
 
-# empty strings from id 30220 to 30247
 msgctxt "#30248"
 msgid "Proxy MPD alteration"
 msgstr ""

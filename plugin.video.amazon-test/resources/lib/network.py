@@ -766,7 +766,7 @@ def GrabJSON(url, bRaw=False):
 
         return text
 
-    def Merge(o, n):
+    def Merge(o, n, keys=[]):
         """ Merge JSON objects with multiple multi-level collisions """
         if (not n) or (o == n):  # Nothing to do
             return
@@ -782,11 +782,22 @@ def GrabJSON(url, bRaw=False):
                 if k not in o:
                     o[k] = n[k]  # Insert into dictionary
                 else:
-                    Merge(o[k], n[k])  # Recurse
+                    Merge(o[k], n[k], keys + [k])  # Recurse
         else:
-            # LogJSON(n, optionalName='CollisionNew')
-            # LogJSON(o, optionalName='CollisionOld')
-            Log('Collision detected during JSON objects merging, overwriting and praying (type: {})'.format(type(n)), Log.WARNING)
+            # Ignore reporting collisions on metadata we don't care about
+            if keys not in [
+                ['metadata', 'availability', 'description'],
+                ['metadata', 'availability', 'severity'],
+            ]:
+                s = Settings()
+                k = ' > '.join(keys)
+                if s.dumpJSONCollisions:
+                    LogJSON(n, k, optionalName='CollisionNew')
+                    LogJSON(o, k, optionalName='CollisionOld')
+                Log('Collision detected during JSON objects merging{}, overwriting and praying (type: {})'.format(
+                    ' on key “{}”'.format(k) if keys else '',
+                    type(n)
+                ), Log.WARNING)
             o = n
 
     def Prune(d):
@@ -806,67 +817,73 @@ def GrabJSON(url, bRaw=False):
             if isinstance(v, dict) or isinstance(v, list):
                 Prune(v)
 
-    try:
-        from htmlentitydefs import name2codepoint
-        from urlparse import urlparse, parse_qs
-        from urllib import urlencode
-    except:
-        from urllib.parse import urlparse, parse_qs, urlencode
-        from html.entities import name2codepoint
+    def do(url, bRaw=False):
+        """ Wrapper to facilitate logging """
+        try:
+            from htmlentitydefs import name2codepoint
+            from urlparse import urlparse, parse_qs
+            from urllib import urlencode
+        except:
+            from urllib.parse import urlparse, parse_qs, urlencode
+            from html.entities import name2codepoint
 
-    if url.startswith('/search/'):
-        np = urlparse(url)
-        qs = parse_qs(np.query)
-        if 'from' in list(qs):  # list() instead of .keys() to avoid py3 iteration errors
-            qs['startIndex'] = qs['from']
-            del qs['from']
-        np = np._replace(path='/gp/video/api' + np.path, query=urlencode([(k, v) for k, l in qs.items() for v in l]))
-        url = np.geturl()
+        if url.startswith('/search/'):
+            np = urlparse(url)
+            qs = parse_qs(np.query)
+            if 'from' in list(qs):  # list() instead of .keys() to avoid py3 iteration errors
+                qs['startIndex'] = qs['from']
+                del qs['from']
+            np = np._replace(path='/gp/video/api' + np.path, query=urlencode([(k, v) for k, l in qs.items() for v in l]))
+            url = np.geturl()
 
-    r = getURL(FQify(url), silent=True, useCookie=True, rjson=False)
-    if not r:
-        return None
-    try:
-        r = r.strip()
-        if '{' == r[0:1]:
-            o = json.loads(Unescape(r))
+        r = getURL(FQify(url), silent=True, useCookie=True, rjson=False)
+        if not r:
+            return None
+        try:
+            r = r.strip()
+            if '{' == r[0:1]:
+                o = json.loads(Unescape(r))
+                if not bRaw:
+                    Prune(o)
+                return o
+        except:
+            pass
+        matches = re.findall(r'\s*(?:<script[^>]+type="(?:text/template|application/json)"[^>]*>|state:)\s*({[^\n]+})\s*(?:,|</script>)\s*', r)
+        if not matches:
+            Log('No JSON objects found in the page', Log.ERROR)
+            return None
+
+        # Create a single object containing all the data from the multiple JSON objects in the page
+        o = {}
+        for m in matches:
+            m = json.loads(Unescape(m))
+
+            if ('widgets' in m) and ('Storefront' in m['widgets']):
+                m = m['widgets']['Storefront']
+            elif 'props' in m:
+                m = m['props']
+
+                if not bRaw:
+                    # Prune useless/sensitive info
+                    for k in list(m):  # list() instead of .keys() to avoid py3 iteration errors
+                        if (not m[k]) or (k in ['copyright', 'links', 'logo', 'params', 'playerConfig', 'refine']):
+                            del m[k]
+                    if 'state' in m:
+                        st = m['state']
+                        for k in list(st):  # list() instead of .keys() to avoid py3 iteration errors
+                            if not st[k]:
+                                del st[k]
+                            elif k in ['features', 'customerPreferences']:
+                                del st[k]
+            # Prune sensitive context info and merge into o
             if not bRaw:
-                Prune(o)
-            return o
-    except:
-        pass
-    matches = re.findall(r'\s*(?:<script[^>]+type="(?:text/template|application/json)"[^>]*>|state:)\s*({[^\n]+})\s*(?:,|</script>)\s*', r)
-    if not matches:
-        Log('No JSON objects found in the page', Log.ERROR)
-        return None
+                Prune(m)
+            Merge(o, m)
+        return o if o else None
 
-    # Create a single object containing all the data from the multiple JSON objects in the page
-    o = {}
-    for m in matches:
-        m = json.loads(Unescape(m))
-
-        if ('widgets' in m) and ('Storefront' in m['widgets']):
-            m = m['widgets']['Storefront']
-        elif 'props' in m:
-            m = m['props']
-
-            if not bRaw:
-                # Prune useless/sensitive info
-                for k in list(m):  # list() instead of .keys() to avoid py3 iteration errors
-                    if (not m[k]) or (k in ['copyright', 'links', 'logo', 'params', 'playerConfig', 'refine']):
-                        del m[k]
-                if 'state' in m:
-                    st = m['state']
-                    for k in list(st):  # list() instead of .keys() to avoid py3 iteration errors
-                        if not st[k]:
-                            del st[k]
-                        elif k in ['features', 'customerPreferences']:
-                            del st[k]
-        # Prune sensitive context info and merge into o
-        if not bRaw:
-            Prune(m)
-        Merge(o, m)
-    return o if o else None
+    j = do(url, bRaw)
+    LogJSON(j, url)
+    return j
 
 
 class _Captcha(pyxbmct.AddonDialogWindow):

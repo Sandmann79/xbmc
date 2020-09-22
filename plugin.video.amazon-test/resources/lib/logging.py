@@ -50,10 +50,10 @@ def WriteLog(data, fn=''):
     logfile.close()
 
 
-def LogJSON(o, url=None, optionalName=None):
+def LogJSON(o, comment=None, optionalName=None):
     from json import dump
 
-    if not o:
+    if (not o) or (not s.dumpJSON):
         return
     from codecs import open as co
     from datetime import datetime
@@ -67,7 +67,7 @@ def LogJSON(o, url=None, optionalName=None):
         '_' + optionalName if optionalName else ''
     )
     with co(OSPJoin(g.DATA_PATH, fn), 'w+', 'utf-8') as f:
-        if url:
-            f.write('/* %s */\n' % url)
+        if comment:
+            f.write('/* %s */\n' % comment)
         dump(o, f, sort_keys=True, indent=4)
         Log('Saved JSON data with filename “{}”'.format(fn), Log.DEBUG)

@@ -168,6 +168,8 @@ class Settings(Singleton):
         elif 'dispShowOnly' == name: return self._gs('disptvshow') == 'true'
         elif 'payCont' == name: return self._gs('paycont') == 'true'
         elif 'verbLog' == name: return self._gs('logging') == 'true'
+        elif 'dumpJSON' == name: return self._gs('json_dump') == 'true'
+        elif 'dumpJSONCollisions' == name: return self._gs('json_dump_collisions') == 'true'
         elif 'useIntRC' == name: return self._gs('remotectrl') == 'true'
         elif 'RMC_vol' == name: return self._gs('remote_vol') == 'true'
         elif 'ms_mov' == name: ms_mov = self._gs('mediasource_movie'); return ms_mov if ms_mov else 'Amazon Movies'
@@ -234,7 +236,7 @@ def sleep(sec):
     from .logging import Log
     if Globals().monitor.waitForAbort(sec):
         import sys
-        Log('Abort requested - exiting addon')
+        Log('Abort requested – exiting addon')
         sys.exit()
 
 

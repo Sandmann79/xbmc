@@ -123,7 +123,6 @@ msgctxt "#30023"
 msgid "Use android app for 4K videos"
 msgstr ""
 
-# empty strings from id 30024 to id 30026
 msgctxt "#30027"
 msgid "Stretch factor"
 msgstr ""
@@ -161,7 +160,6 @@ msgctxt "#30035"
 msgid "Enable Views"
 msgstr "Aktywuj zasady wyświetlania mediów"
 
-# empty string with id 30036
 msgctxt "#30037"
 msgid "Disable SSL Certificate Verification"
 msgstr ""
@@ -408,7 +406,6 @@ msgctxt "#30127"
 msgid "No content found"
 msgstr "Brak nowych danych"
 
-# empty strings from id 30128 to 30129
 msgctxt "#30130"
 msgid "Add User…"
 msgstr ""
@@ -530,6 +527,14 @@ msgctxt "#30195"
 msgid "Skipping Scene…"
 msgstr ""
 
+msgctxt "#30196"
+msgid "Dump JSON replies"
+msgstr ""
+
+msgctxt "#30197"
+msgid "Dump collisions"
+msgstr ""
+
 msgctxt "#30198"
 msgid "Browser or Script not found. Please check settings."
 msgstr ""
@@ -616,7 +621,6 @@ msgctxt "#30219"
 msgid "Unable to retrieve Amazon's territorial configuration."
 msgstr ""
 
-# empty strings from id 30221 to 30241
 msgctxt "#30242"
 msgid "Page {}"
 msgstr ""
@@ -644,7 +648,6 @@ msgctxt "#30247"
 msgid "Search"
 msgstr "Szukaj"
 
-# empty strings from id 30220 to 30247
 msgctxt "#30248"
 msgid "Proxy MPD alteration"
 msgstr ""

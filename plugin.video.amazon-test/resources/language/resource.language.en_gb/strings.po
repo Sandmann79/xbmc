@@ -552,7 +552,10 @@ msgctxt "#30198"
 msgid "Browser or Script not found. Please check settings."
 msgstr ""
 
-# empty string with id 30199
+msgctxt "#30199"
+msgid "Raw"
+msgstr ""
+
 msgctxt "#30200"
 msgid "Login Error"
 msgstr ""

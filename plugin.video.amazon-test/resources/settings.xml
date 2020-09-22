@@ -91,7 +91,8 @@
         <setting id="wl_order" type="enum" label="30076" lvalues="30077|30079|30078" default="0"/>
         <setting id="logging" type="bool" label="30072" default="false"/>
         <setting id="json_dump" type="bool" label="30196" default="false"/>
-        <setting id="json_dump_collisions" type="bool" label="30197" default="false" enable="eq(-1,true)" subsetting="true"/>
+        <setting id="json_dump_raw" type="bool" label="30199" default="false" enable="eq(-1,true)" subsetting="true"/>
+        <setting id="json_dump_collisions" type="bool" label="30197" default="false" enable="eq(-2,true)" subsetting="true"/>
     </category>
     <!-- TLD -->
     <category label="Amazon.TLD">

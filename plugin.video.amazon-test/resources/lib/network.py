@@ -720,8 +720,10 @@ def FQify(URL):
         return base + '/' + URL
 
 
-def GrabJSON(url, bRaw=False):
+def GrabJSON(url, postData=None):
     """ Extract JSON objects from HTMLs while keeping the API ones intact """
+
+    s = Settings()
 
     def Unescape(text):
         """ Unescape various html/xml entities in dictionary values, courtesy of Fredrik Lundh """
@@ -789,7 +791,6 @@ def GrabJSON(url, bRaw=False):
                 ['metadata', 'availability', 'description'],
                 ['metadata', 'availability', 'severity'],
             ]:
-                s = Settings()
                 k = ' > '.join(keys)
                 if s.dumpJSONCollisions:
                     LogJSON(n, k, optionalName='CollisionNew')
@@ -817,7 +818,7 @@ def GrabJSON(url, bRaw=False):
             if isinstance(v, dict) or isinstance(v, list):
                 Prune(v)
 
-    def do(url, bRaw=False):
+    def do(url, postData):
         """ Wrapper to facilitate logging """
         try:
             from htmlentitydefs import name2codepoint
@@ -836,7 +837,7 @@ def GrabJSON(url, bRaw=False):
             np = np._replace(path='/gp/video/api' + np.path, query=urlencode([(k, v) for k, l in qs.items() for v in l]))
             url = np.geturl()
 
-        r = getURL(FQify(url), silent=True, useCookie=True, rjson=False)
+        r = getURL(FQify(url), silent=True, useCookie=True, rjson=False, postdata=postData)
         if not r:
             return None
         try:
@@ -863,7 +864,7 @@ def GrabJSON(url, bRaw=False):
             elif 'props' in m:
                 m = m['props']
 
-                if not bRaw:
+                if s.refineJSON:
                     # Prune useless/sensitive info
                     for k in list(m):  # list() instead of .keys() to avoid py3 iteration errors
                         if (not m[k]) or (k in ['copyright', 'links', 'logo', 'params', 'playerConfig', 'refine']):
@@ -876,12 +877,12 @@ def GrabJSON(url, bRaw=False):
                             elif k in ['features', 'customerPreferences']:
                                 del st[k]
             # Prune sensitive context info and merge into o
-            if not bRaw:
+            if s.refineJSON:
                 Prune(m)
             Merge(o, m)
         return o if o else None
 
-    j = do(url, bRaw)
+    j = do(url, postData)
     LogJSON(j, url)
     return j
 

@@ -539,6 +539,10 @@ msgctxt "#30198"
 msgid "Browser or Script not found. Please check settings."
 msgstr ""
 
+msgctxt "#30199"
+msgid "Raw"
+msgstr ""
+
 msgctxt "#30200"
 msgid "Login Error"
 msgstr "Błąd w trakcie logowania"

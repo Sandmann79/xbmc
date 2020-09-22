@@ -538,6 +538,10 @@ msgctxt "#30198"
 msgid "Browser or Script not found. Please check settings."
 msgstr "Browser o script non trovato. Per favore controlla le impostazioni."
 
+msgctxt "#30199"
+msgid "Raw"
+msgstr "Grezzi"
+
 msgctxt "#30200"
 msgid "Login Error"
 msgstr "Errore di login"

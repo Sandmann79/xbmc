@@ -170,6 +170,7 @@ class Settings(Singleton):
         elif 'verbLog' == name: return self._gs('logging') == 'true'
         elif 'dumpJSON' == name: return self._gs('json_dump') == 'true'
         elif 'dumpJSONCollisions' == name: return self._gs('json_dump_collisions') == 'true'
+        elif 'refineJSON' == name: return self._gs('json_dump_raw') == 'false'
         elif 'useIntRC' == name: return self._gs('remotectrl') == 'true'
         elif 'RMC_vol' == name: return self._gs('remote_vol') == 'true'
         elif 'ms_mov' == name: ms_mov = self._gs('mediasource_movie'); return ms_mov if ms_mov else 'Amazon Movies'

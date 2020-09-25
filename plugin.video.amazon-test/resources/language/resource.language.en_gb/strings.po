@@ -125,7 +125,11 @@ msgctxt "#30024"
 msgid "Profiles"
 msgstr ""
 
-# empty strings from id 30025 to id 30026
+msgctxt "#30025"
+msgid "Change text language"
+msgstr ""
+
+# empty strings 30026
 msgctxt "#30027"
 msgid "Stretch factor"
 msgstr ""
@@ -342,7 +346,31 @@ msgctxt "#30086"
 msgid "Autoskip All"
 msgstr ""
 
-# empty strings from id 30087 to 30099
+msgctxt "#30087"
+msgid "Clear cache"
+msgstr ""
+
+msgctxt "#30088"
+msgid "Clear cached catalog or video data?\nVideo data includes series/season metadata."
+msgstr ""
+
+msgctxt "#30089"
+msgid "No"
+msgstr ""
+
+msgctxt "#30090"
+msgid "Catalog"
+msgstr ""
+
+msgctxt "#30091"
+msgid "Video data"
+msgstr ""
+
+msgctxt "#30092"
+msgid "Both"
+msgstr ""
+
+# empty strings from id 30093 to 30099
 msgctxt "#30100"
 msgid "Library"
 msgstr ""

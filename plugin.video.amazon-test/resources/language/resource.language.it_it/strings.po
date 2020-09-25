@@ -130,6 +130,10 @@ msgctxt "#30024"
 msgid "Profiles"
 msgstr "Profili"
 
+msgctxt "#30025"
+msgid "Change text language"
+msgstr "Cambia lingua del testo"
+
 msgctxt "#30027"
 msgid "Stretch factor"
 msgstr "Fattore di regolazione"
@@ -341,6 +345,30 @@ msgstr "Salta il riepilogo in automatico"
 msgctxt "#30086"
 msgid "Autoskip All"
 msgstr "Salta entrambi in automatico"
+
+msgctxt "#30087"
+msgid "Clear cache"
+msgstr "Pulizia della cache"
+
+msgctxt "#30088"
+msgid "Clear cached catalog or video data?\nVideo data includes series/season metadata."
+msgstr "Pulire la cache del catalogo e dei dati video?\nI dati video includono metadati di serie/stagioni."
+
+msgctxt "#30089"
+msgid "No"
+msgstr "No"
+
+msgctxt "#30090"
+msgid "Catalog"
+msgstr "Catalogo"
+
+msgctxt "#30091"
+msgid "Video data"
+msgstr "Dati video"
+
+msgctxt "#30092"
+msgid "Both"
+msgstr "Entrambe"
 
 msgctxt "#30100"
 msgid "Library"

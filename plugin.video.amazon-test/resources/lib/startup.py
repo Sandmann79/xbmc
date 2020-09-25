@@ -63,6 +63,8 @@ def EntryPoint():
         elif 'browse' == verb: g.pv.Browse(path)
         elif 'refresh' == verb: g.pv.Refresh(path)
         elif 'profiles' == verb: g.pv.Profile(path)
+        elif 'languageselect' == verb: g.pv.LanguageSelect()
+        elif 'clearcache' == verb: g.pv.DeleteCache()
     elif None is mode:
         Log('Version: %s' % g.__version__)
         Log('Unicode filename support: %s' % os.path.supports_unicode_filenames)

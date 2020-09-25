@@ -83,6 +83,9 @@ class PrimeVideo(Singleton):
             'pt_BR': {'deconstruct': r'^(?P<d>[0-9]+)\s+de\s+(?P<m>[^\s]+),?\s+de\s+(?P<y>[0-9]+)',
                       'months': {'janeiro': 1, 'fevereiro': 2, 'março': 3, 'abril': 4, 'maio': 5, 'junho': 6, 'julho': 7, 'agosto': 8, 'setembro': 9, 'outubro': 10,
                                  'novembro': 11, 'dezembro': 12}},
+            'pt_PT': {'deconstruct': r'^(?P<d>[0-9]+)\s+de\s+(?P<m>[^\s]+),?\s+de\s+(?P<y>[0-9]+)',
+                      'months': {'janeiro': 1, 'fevereiro': 2, 'março': 3, 'abril': 4, 'maio': 5, 'junho': 6, 'julho': 7, 'agosto': 8, 'setembro': 9, 'outubro': 10,
+                                 'novembro': 11, 'dezembro': 12}},
             'ru_RU': {'deconstruct': r'^(?P<d>[0-9]+)\s+(?P<m>[^\s]+)\s+(?P<y>[0-9]+)',
                       'months': {'января': 1, 'февраля': 2, 'марта': 3, 'апреля': 4, 'мая': 5, 'июня': 6, 'июля': 7, 'августа': 8, 'сентября': 9,
                                  'октября': 10, 'ноября': 11, 'декабря': 12}},
@@ -106,6 +109,31 @@ class PrimeVideo(Singleton):
             'zh_TW': {'deconstruct': r'^(?P<y>[0-9]+)年(?P<m>[0-9]+)月(?P<d>[0-9]+)日',
                       'months': {'一月': 1, '二月': 2, '三月': 3, '四月': 4, '五月': 5, '六月': 6, '七月': 7, '八月': 8, '九月': 9, '十月': 10, '十一月': 11, '十二月': 12}},
         }
+        self._languages = [
+            ('id_ID', 'Bahasa Indonesia'),
+            ('da_DK', 'Dansk'),
+            ('de_DE', 'Deutsch'),
+            ('en_US', 'English'),
+            ('es_ES', 'Español'),
+            ('fr_FR', 'Français'),
+            ('it_IT', 'Italiano'),
+            ('nl_NL', 'Nederlands'),
+            ('nb_NO', 'Norsk'),
+            ('pl_PL', 'Polski'),
+            ('pt_BR', 'Português (Brasil)'),
+            ('pt_PT', 'Português (Portugal)'),
+            ('fi_FI', 'Suomi'),
+            ('sv_SE', 'Svenska'),
+            ('tr_TR', 'Türkçe'),
+            ('ru_RU', 'Русский'),
+            ('hi_IN', 'हिन्दी'),
+            ('ta_IN', 'தமிழ்'),
+            ('te_IN', 'తెలుగు'),
+            ('th_TH', 'ไทย'),
+            ('zh_CN', '简体中文'),
+            ('zh_TW', '繁體中文'),
+            ('ko_KR', '한국어'),
+        ]
         self._TextCleanPatterns = [[r'\s+-\s*([^&])', r' – \1'],  # Convert dash from small to medium where needed
                                    [r'\s*-\s+([^&])', r' – \1'],  # Convert dash from small to medium where needed
                                    [r'^\s+', ''],  # Remove leading spaces
@@ -283,6 +311,44 @@ class PrimeVideo(Singleton):
 
         if 'list' == path[0]: List()
         elif 'switch' == path[0]: Switch()
+
+    def DeleteCache(self):
+        """ Pops up a dialog asking cache purge confirmation """
+        from .dialogs import PV_ClearCache
+        from xbmcvfs import delete
+
+        # ClearCache.value returns a boolean bitmask
+        clear = PV_ClearCache()
+        if 0 > clear.value:
+            return
+
+        # Clear catalog (PVCP)
+        if 1 & clear.value:
+            self._catalog = {}
+            delete(self._catalogCache)
+            Log('Deleting catalog', Log.DEBUG)
+
+        # Clear video data (PVDP)
+        if 2 & clear.value:
+            self._videodata = {'urn2gti': {}}
+            delete(self._videodataCache)
+            Log('Deleting video data', Log.DEBUG)
+
+        del clear
+
+    def LanguageSelect(self):
+        cj = MechanizeLogin()
+        if cj:
+            l = cj.get('lc-main-av', path='/')
+        presel = [i for i, x in enumerate(self._languages) if x[0] == l]
+        sel = self._g.dialog.select(getString(30133), [x[1] for x in self._languages], preselect=presel[0] if presel else -1)
+        if sel < 0:
+            self._g.addon.openSettings()
+        else:
+            Log('Changing text language to [{}] {}'.format(self._languages[sel][0], self._languages[sel][1]), Log.DEBUG)
+            cj.set('lc-main-av', self._languages[sel][0], path='/')
+            saveUserCookies(cj)
+            self.DeleteCache()
 
     def BrowseRoot(self):
         """ Build and load the root PrimeVideo menu """

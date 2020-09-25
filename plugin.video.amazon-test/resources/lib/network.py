@@ -131,12 +131,12 @@ def getURL(url, useCookie=False, silent=False, headers=None, rjson=True, attempt
     else:
         session = requests.Session()
 
-    cj = requests.cookies.RequestsCookieJar()
     retval = [] if rjson else ''
     if useCookie:
         cj = MechanizeLogin() if isinstance(useCookie, bool) else useCookie
         if isinstance(cj, bool):
             return retval
+        session.cookies.update(cj)
 
     from .common import Globals, Settings
     g = Globals()
@@ -166,7 +166,7 @@ def getURL(url, useCookie=False, silent=False, headers=None, rjson=True, attempt
     try:
         starttime = timer()
         method = 'POST' if postdata is not None else 'GET'
-        r = session.request(method, url, data=postdata, headers=headers, cookies=cj, verify=s.verifySsl, stream=True, allow_redirects=allow_redirects)
+        r = session.request(method, url, data=postdata, headers=headers, verify=s.verifySsl, stream=True, allow_redirects=allow_redirects)
         getURL.lastResponseCode = r.status_code  # Set last response code
         response = 'OK'
         if not check:
@@ -179,6 +179,9 @@ def getURL(url, useCookie=False, silent=False, headers=None, rjson=True, attempt
             raise TryAgain('{0} error'.format(r.status_code))
         if 400 <= r.status_code:
             raise NoRetries('{0} error'.format(r.status_code))
+        if useCookie:
+            from .users import saveUserCookies
+            saveUserCookies(session.cookies)
     except (TryAgain,
             NoRetries,
             requests.exceptions.Timeout,

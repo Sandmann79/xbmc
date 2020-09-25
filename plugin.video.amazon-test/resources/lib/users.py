@@ -37,6 +37,24 @@ def loadUser(key='', empty=False, cachedUsers=None):
         return def_keys.get(key, def_keys)
 
 
+def saveUsers(users):
+    writeConfig('accounts.lst', json.dumps(users, indent=2, separators=None, sort_keys=True))
+
+
+def saveUserCookies(cookieJar, cachedUsers=None):
+    if not cookieJar:
+        return
+    cur_user = py2_decode(g.addon.getSetting('login_acc'))
+    users = cachedUsers if cachedUsers else loadUsers()
+    user = [i for i in users if cur_user == i['name']]
+    if not user:
+        return
+    user = user[0]
+    from requests.utils import dict_from_cookiejar as dfcj
+    user['cookie'] = dfcj(cookieJar)
+    saveUsers(users)
+
+
 def addUser(user):
     s = Settings()
     user['save'] = 'false'  # g.addon.getSetting('save_login')
@@ -46,7 +64,7 @@ def addUser(user):
         users[num[0]] = user
     else:
         users.append(user)
-    writeConfig('accounts.lst', json.dumps(users))
+    saveUsers(users)
     if xbmc.getInfoLabel('Container.FolderPath') == g.pluginid:
         xbmc.executebuiltin('Container.Refresh')
 
@@ -74,7 +92,7 @@ def removeUser():
     if sel > -1:
         user = users[sel]
         users.remove(user)
-        writeConfig('accounts.lst', json.dumps(users))
+        saveUsers(users)
         if user['name'] == cur_user:
             g.addon.setSetting('login_acc', '')
             if not switchUser():
@@ -94,4 +112,4 @@ def renameUser():
                 g.addon.setSetting('login_acc', usr)
                 xbmc.executebuiltin('Container.Refresh')
             users[sel]['name'] = usr
-            writeConfig('accounts.lst', json.dumps(users))
+            saveUsers(users)

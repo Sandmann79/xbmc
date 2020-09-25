@@ -116,13 +116,14 @@ def getTerritory(user):
 def getURL(url, useCookie=False, silent=False, headers=None, rjson=True, attempt=1, check=False, postdata=None, binary=False, allow_redirects=True):
     if not hasattr(getURL, 'sessions'):
         getURL.sessions = {}  # Keep-Alive sessions
+        getURL.hostParser = re.compile(r'://([^/]+)(?:/|$)')
 
     # Static variable to store last response code. 0 means generic error (like SSL/connection errors),
     # while every other response code is a specific HTTP status code
     getURL.lastResponseCode = 0
 
     # Create sessions for keep-alives and connection pooling
-    host = re.search('://([^/]+)(?:/|$)', url)  # Try to extract the host from the URL
+    host = getURL.hostParser.search(url)  # Try to extract the host from the URL
     if None is not host:
         host = host.group(1)
         if host not in getURL.sessions:

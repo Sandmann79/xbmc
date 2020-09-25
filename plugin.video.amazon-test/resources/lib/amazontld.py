@@ -166,7 +166,7 @@ class AmazonTLD(Singleton):
                 source_added = True
             else:
                 for tag in video_tag.iter('source'):
-                    if tag.findtext('name') in src_name and tag.findtext('path') not in src_path:
+                    if tag.findtext('name') == src_name and tag.findtext('path') != src_path:
                         tag.find('path').text = src_path
                         Log(src_name + ' source path changed')
                         source_added = True

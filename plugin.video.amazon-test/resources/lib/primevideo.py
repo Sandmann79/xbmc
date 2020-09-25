@@ -1094,10 +1094,12 @@ class PrimeVideo(Singleton):
             # Watchlist
             if ['root', 'Watchlist'] == breadcrumb:
                 wl = return_item(cnt, 'viewOutput', 'features', 'legacy-watchlist')
-                for f in wl['filters']:
-                    o[f['id']] = {'title': f['text'], 'lazyLoadURL': f['apiUrl' if 'apiUrl' in f else 'href']}
-                    if 'applied' in f and f['applied']:
-                        o[f['id']]['lazyLoadData'] = cnt
+                try:
+                    for f in wl['filters']:
+                        o[f['id']] = {'title': f['text'], 'lazyLoadURL': f['apiUrl' if 'apiUrl' in f else 'href']}
+                        if 'applied' in f and f['applied']:
+                            o[f['id']]['lazyLoadData'] = cnt
+                except KeyError: pass  # Empty watchlist
             else:
                 # Watchlist / Widow list / API Search
                 vo = return_item(cnt, 'viewOutput', 'features', 'legacy-watchlist', 'content')

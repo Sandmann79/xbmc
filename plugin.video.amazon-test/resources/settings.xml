@@ -109,6 +109,7 @@
     </category>
     <!-- PrimeVideo -->
     <category label="30250">
+        <setting id="profiles" type="bool" label="30024" default="true"/>
         <setting id="pv_episode_thumbnails" type="bool" label="30249" default="true"/>
         <setting id="catalog_cache_expiry" type="enum" lvalues="30258|30259|30260|30261|30262|30263|30264|30265" label="30257" default="2"/>
         <setting label="30243" type="lsep"/>

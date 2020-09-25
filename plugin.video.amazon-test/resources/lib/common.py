@@ -204,6 +204,7 @@ class Settings(Singleton):
         }
         elif 'catalogCacheExpiry' == name:
             return [3600, 21600, 43200, 86400, 259200, 604800, 1296000, 2592000][int(self._gs('catalog_cache_expiry'))]
+        elif 'profiles' == name: return self._gs('profiles') == 'true'
 
 
 def jsonRPC(method, props='', param=None):

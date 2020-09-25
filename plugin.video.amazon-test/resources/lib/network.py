@@ -788,6 +788,7 @@ def GrabJSON(url, postData=None):
         else:
             # Ignore reporting collisions on metadata we don't care about
             if keys not in [
+                ['csrfToken'],
                 ['metadata', 'availability', 'description'],
                 ['metadata', 'availability', 'severity'],
             ]:
@@ -811,7 +812,7 @@ def GrabJSON(url, postData=None):
             for k in list(l):  # list() instead of .keys() to avoid py3 iteration errors
                 if k == 'strings':
                     l[k] = {s: l[k][s] for s in ['AVOD_DP_season_selector'] if s in l[k]}
-                if (not l[k]) or (k in ['csrfToken', 'context', 'params', 'playerConfig', 'refine']):
+                if (not l[k]) or (k in ['context', 'params', 'playerConfig', 'refine']):
                     del l[k]
             l = d.values()
         for v in l:

@@ -10,7 +10,7 @@ import re
 import sys
 import time
 
-from .common import key_exists, return_item
+from .common import key_exists, return_item, sleep
 from .singleton import Singleton
 from .network import getURL, getURLData, MechanizeLogin, FQify, GrabJSON
 from .logging import Log
@@ -223,6 +223,67 @@ class PrimeVideo(Singleton):
 
         return (node, pathList)
 
+    def _AddDirectoryItem(self, title, artmetadata, verb):
+        item = xbmcgui.ListItem(title)
+        item.setArt(artmetadata)
+        xbmcplugin.addDirectoryItem(self._g.pluginhandle, self._g.pluginid + verb, item, isFolder=True)
+        del item
+
+    def _UpdateProfiles(self, data):
+        if 'cerberus' in data:
+            p = data['cerberus']['activeProfile']
+            self._catalog['profiles'] = {'active': p['id']}
+            self._catalog['profiles'][p['id']] = {
+                'title': p['name'],
+                'metadata': {'artmeta': {'icon': p['avatarUrl']}},
+                'verb': 'pv/profiles/switch/{}'.format(p['id']),
+                'endpoint': p['switchLink'],
+            }
+            if 'otherProfiles' in data['cerberus']:
+                for p in data['cerberus']['otherProfiles']:
+                    self._catalog['profiles'][p['id']] = {
+                        'title': p['name'],
+                        'metadata': {'artmeta': {'icon': p['avatarUrl']}},
+                        'verb': 'pv/profiles/switch/{}'.format(p['id']),
+                        'endpoint': p['switchLink'],
+                    }
+
+    def Profile(self, path):
+        """ Profile actions """
+        path = path.split('/')
+
+        def List():
+            """ List all inactive profiles """
+            # Hit a fast endpoint to grab and update CSRF tokens
+            home = GrabJSON(self._g.BaseUrl + '/help/')
+            self._UpdateProfiles(home)
+            for k, p in self._catalog['profiles'].items():
+                if 'active' == k or k == self._catalog['profiles']['active']:
+                    continue
+                self._AddDirectoryItem(p['title'], p['metadata']['artmeta'], p['verb'])
+            xbmcplugin.endOfDirectory(self._g.pluginhandle, succeeded=True, cacheToDisc=False, updateListing=False)
+
+        def Switch():
+            """ Switch to an inactive profile """
+            # Sometimes the switch just fails due to CSRF, possibly due to problems on Amazon's servers,
+            # so we patiently try a few times
+            for _ in range(0, 5):
+                endpoint = self._catalog['profiles'][path[1]]['endpoint']
+                Log('{} {}'.format(self._g.BaseUrl + endpoint['partialURL'], endpoint['query']))
+                home = GrabJSON(self._g.BaseUrl + endpoint['partialURL'], endpoint['query'])
+                self._UpdateProfiles(home)
+                if path[1] == self._catalog['profiles']['active']:
+                    break
+                sleep(3)
+            if path[1] == self._catalog['profiles']['active']:
+                self.BuildRoot(home if home else {})
+            else:
+                self._g.dialog.notification(self._g.addon.getAddonInfo('name'), 'Profile switching unavailable at the moment, please try again', time=1000, sound=False)
+            xbmcplugin.endOfDirectory(self._g.pluginhandle, succeeded=False, cacheToDisc=False, updateListing=True)
+
+        if 'list' == path[0]: List()
+        elif 'switch' == path[0]: Switch()
+
     def BrowseRoot(self):
         """ Build and load the root PrimeVideo menu """
 
@@ -232,12 +293,15 @@ class PrimeVideo(Singleton):
                 return
         self.Browse('root')
 
-    def BuildRoot(self):
+    def BuildRoot(self, home=None):
         """ Parse the top menu on primevideo.com and build the root catalog """
 
-        home = GrabJSON(self._g.BaseUrl)
-        if not home:
-            return False
+        # Specify `None` instead of just not empty to avoid multiple queries to the same endpoint
+        if (home is None):
+            home = GrabJSON(self._g.BaseUrl)
+            if not home:
+                return False
+            self._UpdateProfiles(home)
         self._catalog['root'] = OrderedDict()
 
         # Insert the watchlist
@@ -316,6 +380,11 @@ class PrimeVideo(Singleton):
             if switchUser():
                 self.BuildRoot()
             return
+
+        # Add Profiles
+        if self._s.profiles and ('root' == path) and ('profiles' in self._catalog):
+            activeProfile = self._catalog['profiles'][self._catalog['profiles']['active']]
+            self._AddDirectoryItem(activeProfile['title'], activeProfile['metadata']['artmeta'], 'pv/profiles/list')
 
         try:
             from urllib.parse import quote_plus
@@ -447,6 +516,7 @@ class PrimeVideo(Singleton):
             folderType = 0 if 2 > folderType else 2
 
         setContentAndView([None, 'videos', 'series', 'season', 'episode', 'movie'][folderType])
+        xbmcplugin.endOfDirectory(self._g.pluginhandle, succeeded=True, cacheToDisc=False)
 
     def Search(self, searchString=None):
         """ Provide search functionality for PrimeVideo """

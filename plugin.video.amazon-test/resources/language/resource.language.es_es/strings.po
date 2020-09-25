@@ -125,6 +125,10 @@ msgctxt "#30023"
 msgid "Use android app for 4K videos"
 msgstr "Usar app de Android para vídeos 4K"
 
+msgctxt "#30024"
+msgid "Profiles"
+msgstr ""
+
 msgctxt "#30027"
 msgid "Stretch factor"
 msgstr "Factor de estiramiento"

@@ -849,7 +849,7 @@ def GrabJSON(url, postData=None):
             r = r.strip()
             if '{' == r[0:1]:
                 o = json.loads(Unescape(r))
-                if not bRaw:
+                if s.refineJSON:
                     Prune(o)
                 return o
         except:

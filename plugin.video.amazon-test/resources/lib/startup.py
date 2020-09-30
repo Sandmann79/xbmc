@@ -104,7 +104,8 @@ def EntryPoint():
             g.amz.Search(searchString)
     elif mode in ['LogIn', 'remLoginData', 'removeUser', 'renameUser', 'switchUser']:
         exec('{}()'.format(mode))
-    elif mode in ['checkMissing', 'Recent']:
+    elif mode in ['checkMissing', 'Recent', 'switchProfile']:
         exec('g.amz.{}()'.format(mode))
     elif mode == 'Channel':
         g.amz.Channel(url=args.get('url'), uid=args.get('opt'))
+

@@ -33,14 +33,16 @@ class AmazonTLD(Singleton):
 
         if self._s.multiuser:
             addDir(getString(30134).format(loadUser('name')), 'switchUser', '', cm=self._g.CONTEXTMENU_MULTIUSER)
+        if self._s.profiles:
+            act, profiles = self.getProfiles()
+            addDir(profiles[act][0], 'switchProfile', '', thumb=profiles[act][2])
         addDir('Watchlist', 'getListMenu', self._g.watchlist, cm=cm_wl)
         self.listCategories(0)
         addDir('Channels', 'Channel', '/gp/video/storefront/ref=nav_shopall_nav_sa_aos?filterId=OFFER_FILTER%3DSUBSCRIPTIONS', opt='root')
         addDir(getString(30136), 'Recent', '')
         addDir(getString(30108), 'Search', '')
         addDir(getString(30100), 'getListMenu', self._g.library, cm=cm_lb)
-        # addDir('[B]{}[/B]'.format(getString(5)), 'openSettings', self._g.addon.getAddonInfo('id'))
-        xbmcplugin.endOfDirectory(self._g.pluginhandle, updateListing=False)
+        xbmcplugin.endOfDirectory(self._g.pluginhandle, updateListing=False, cacheToDisc=False)
 
     @staticmethod
     def _cleanName(name, isfile=True):
@@ -1178,3 +1180,22 @@ class AmazonTLD(Singleton):
         '''
         setContentAndView(vw)
         return
+
+    def getProfiles(self):
+        j = GrabJSON(self._g.BaseUrl + '/gp/video/profiles')
+        profiles = []
+        active = 0
+        for item in j['profiles']:
+            url = self._g.BaseUrl + item['switchLink']['partialURL']
+            q = urlencode(item['switchLink']['query'])
+            profiles.append((item['name'], '{}?{}'.format(url, q), item['avatarUrl']))
+            if item.get('isSelected', False):
+                active = len(profiles) - 1
+        return active, profiles
+
+    def switchProfile(self):
+        active, profiles = self.getProfiles()
+        ret = self._g.dialog.select('Amazon', [i[0] for i in profiles])
+        if ret < 0 or ret == active:
+            return
+        getURL(profiles[ret][1], useCookie=True, rjson=False, silent=True)

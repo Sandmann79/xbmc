@@ -56,6 +56,7 @@
         <!-- - -->
         <setting label="30001" type="lsep"/>
         <setting id="region" type="enum" label="Region" values="Auto|Germany|United Kingdom|USA|Japan|ROE Europe|ROW Europe|ROW Far East|ROW North America" default="0" />
+        <setting id="profiles" type="bool" label="30024" default="true"/>
         <setting id="multiuser" type="bool" label="30009" default="false"/>
         <setting id="rememberme" type="bool" label="30022" default="true"/>
         <!-- Multiuser -->
@@ -112,7 +113,6 @@
     </category>
     <!-- PrimeVideo -->
     <category label="30250">
-        <setting id="profiles" type="bool" label="30024" default="true"/>
         <setting id="pv_episode_thumbnails" type="bool" label="30249" default="true"/>
         <setting id="catalog_cache_expiry" type="enum" lvalues="30258|30259|30260|30261|30262|30263|30264|30265" label="30257" default="2"/>
         <setting id="pv_clearcache" type="action" label="30087" action="RunPlugin(plugin://plugin.video.amazon-test/pv/clearcache/)" option="close"/>

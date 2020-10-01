@@ -283,7 +283,7 @@ class PrimeVideo(Singleton):
         def List():
             """ List all inactive profiles """
             # Hit a fast endpoint to grab and update CSRF tokens
-            home = GrabJSON(self._g.BaseUrl + '/help/')
+            home = GrabJSON(self._g.BaseUrl + '/gp/video/profiles')
             self._UpdateProfiles(home)
             for k, p in self._catalog['profiles'].items():
                 if 'active' == k or k == self._catalog['profiles']['active']:

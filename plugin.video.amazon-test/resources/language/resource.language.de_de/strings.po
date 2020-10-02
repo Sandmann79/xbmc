@@ -26,12 +26,8 @@ msgid "Movies and Television Shows for Prime Members"
 msgstr "Filme und Serien für Prime-Mitglieder"
 
 msgctxt "Addon Disclaimer"
-msgid ""
-"Some parts of this addon may not be legal in your country of residence – please check with your local laws before installing.\n"
-"This Addon uses pyDes by Todd Whiteman"
-msgstr ""
-"Möglicherweise sind einge Teile dieses Addons in Ihrem Land illegal, Sie sollten dies unbedingt vor der Installation überprüfen.\n"
-"Diese Erweiterung verwendet pyDes von Todd Whiteman"
+msgid "Some parts of this addon may not be legal in your country of residence – please check with your local laws before installing."
+msgstr "Möglicherweise sind einge Teile dieses Addons in Ihrem Land illegal, Sie sollten dies unbedingt vor der Installation überprüfen."
 
 msgctxt "#30001"
 msgid "Amazon Account"
@@ -127,11 +123,11 @@ msgstr "Android App für 4K Videos verwenden"
 
 msgctxt "#30024"
 msgid "Profiles"
-msgstr ""
+msgstr "Profile"
 
 msgctxt "#30025"
 msgid "Change text language"
-msgstr ""
+msgstr "Anzeigesprache ändern"
 
 msgctxt "#30027"
 msgid "Stretch factor"
@@ -347,27 +343,27 @@ msgstr "Alles autom. überspringen"
 
 msgctxt "#30087"
 msgid "Clear cache"
-msgstr ""
+msgstr "Cache leeren"
 
 msgctxt "#30088"
 msgid "Clear cached catalog or video data?\nVideo data includes series/season metadata."
-msgstr ""
+msgstr "Katalogcache oder Videoinfos leeren?\nVideoinfos enthalten Serien/Staffel Metadaten."
 
 msgctxt "#30089"
 msgid "No"
-msgstr ""
+msgstr "No"
 
 msgctxt "#30090"
 msgid "Catalog"
-msgstr ""
+msgstr "Katalog"
 
 msgctxt "#30091"
 msgid "Video data"
-msgstr ""
+msgstr "Videoinfos"
 
 msgctxt "#30092"
 msgid "Both"
-msgstr ""
+msgstr "Beides"
 
 msgctxt "#30100"
 msgid "Library"
@@ -559,11 +555,11 @@ msgstr "Szene wird übersprungen…"
 
 msgctxt "#30196"
 msgid "Dump JSON replies"
-msgstr ""
+msgstr "JSON antworten speichern"
 
 msgctxt "#30197"
 msgid "Dump collisions"
-msgstr ""
+msgstr "Kollisionen speichern "
 
 msgctxt "#30198"
 msgid "Browser or Script not found. Please check settings."
@@ -571,7 +567,7 @@ msgstr "Browser oder Skript nicht gefunden. Bitte Einstellungen überprüfen."
 
 msgctxt "#30199"
 msgid "Raw"
-msgstr ""
+msgstr "Rohdaten"
 
 msgctxt "#30200"
 msgid "Login Error"

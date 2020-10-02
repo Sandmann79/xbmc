@@ -26,9 +26,7 @@ msgid "Movies and Television Shows for Prime Members"
 msgstr ""
 
 msgctxt "Addon Disclaimer"
-msgid ""
-"Some parts of this addon may not be legal in your country of residence – please check with your local laws before installing.\n"
-"This Addon uses pyDes by Todd Whiteman"
+msgid "Some parts of this addon may not be legal in your country of residence – please check with your local laws before installing."
 msgstr ""
 
 msgctxt "#30001"

@@ -7,17 +7,13 @@ from kodi_six import xbmcgui
 import pickle
 import json
 import mechanicalsoup
-from platform import node
 import pyxbmct
 import re
 import requests
 import ssl
 from timeit import default_timer as timer
-import uuid
-
 from urllib3.poolmanager import PoolManager
 from requests.adapters import HTTPAdapter
-from pyDes import *
 from random import randint
 from bs4 import BeautifulSoup
 from .l10n import *
@@ -352,10 +348,10 @@ def MechanizeLogin():
         except:
             pass
 
-    return LogIn(False)
+    return LogIn()
 
 
-def LogIn(ask=True):
+def LogIn():
     def _insertLF(string, begin=70):
         spc = string.find(' ', begin)
         return string[:spc] + '\n' + string[spc + 1:] if spc > 0 else string
@@ -513,24 +509,6 @@ def LogIn(ask=True):
             return password
         return False
 
-    def _getmac():
-        mac = uuid.getnode()
-        if (mac >> 40) % 2:
-            mac = node()
-        return uuid.uuid5(uuid.NAMESPACE_DNS, str(mac)).bytes
-
-    def _encode(data):
-        k = triple_des(_getmac(), CBC, b"\0\0\0\0\0\0\0\0", padmode=PAD_PKCS5)
-        d = k.encrypt(data)
-        return b64encode(d).decode('utf-8')
-
-    def _decode(data):
-        if not data:
-            return ''
-        k = triple_des(_getmac(), CBC, b"\0\0\0\0\0\0\0\0", padmode=PAD_PKCS5)
-        d = k.decrypt(b64decode(data))
-        return d
-
     class LoginLocked(Exception):
         pass
 
@@ -558,29 +536,16 @@ def LogIn(ask=True):
         s = Settings()
         Log('Login')
         from .users import loadUser, addUser
-        user = loadUser(empty=ask)
-        email = user['email']
-        password = _decode(user['password'])
-        savelogin = False  # g.addon.getSetting('save_login') == 'true'
-        useMFA = False
-
-        if not user['baseurl']:
-            user = getTerritory(user)
-            if False is user[1]:
-                return False
-            user = user[0]
-
-        if ask:
-            keyboard = xbmc.Keyboard(email, getString(30002))
-            keyboard.doModal()
-            if keyboard.isConfirmed() and keyboard.getText():
-                email = keyboard.getText()
-                password = _setLoginPW()
-        else:
-            if not email or not password:
-                g.dialog.notification(getString(30200), getString(30216))
-                xbmc.executebuiltin('Addon.OpenSettings(%s)' % g.addon.getAddonInfo('id'))
-                return False
+        user = getTerritory(loadUser(empty=True))
+        if False is user[1]:
+            return False
+        user = user[0]
+        password = ''
+        keyboard = xbmc.Keyboard('', getString(30002))
+        keyboard.doModal()
+        if keyboard.isConfirmed() and keyboard.getText():
+            email = keyboard.getText()
+            password = _setLoginPW()
 
         if password:
             cj = requests.cookies.RequestsCookieJar()
@@ -647,28 +612,18 @@ def LogIn(ask=True):
                 except AttributeError:
                     usr = getString(30209)
 
-                if s.multiuser and ask:
+                if s.multiuser:
                     usr = g.dialog.input(getString(30135), usr)
                     if not usr:
                         return False
-                if useMFA:
-                    g.addon.setSetting('save_login', 'false')
-                    savelogin = False
 
                 user['name'] = usr
-                user['email'] = user['password'] = user['cookie'] = ''
+                user['cookie'] = requests.utils.dict_from_cookiejar(cj)
 
-                if savelogin:
-                    user['email'] = email
-                    user['password'] = _encode(password)
-                else:
-                    user['cookie'] = requests.utils.dict_from_cookiejar(cj)
-
-                if ask:
-                    remLoginData(False)
-                    g.addon.setSetting('login_acc', usr)
-                    if not s.multiuser:
-                        g.dialog.ok(getString(30215), '{0} {1}'.format(getString(30014), usr))
+                remLoginData(False)
+                g.addon.setSetting('login_acc', usr)
+                if not s.multiuser:
+                    g.dialog.ok(getString(30215), '{0} {1}'.format(getString(30014), usr))
 
                 addUser(user)
                 g.genID()

@@ -7,7 +7,6 @@
     <import addon="xbmc.python" version="{ver_py}"/>
     <import addon="script.module.beautifulsoup4" version="4.6.3+matrix.1"/>
     <import addon="script.module.mechanicalsoup" version="0.12.0+matrix.1"/>
-    <import addon="script.module.pydes" version="2.0.1+matrix.1"/>
     <import addon="script.module.pyxbmct" version="1.3.1+matrix.1"/>
     <import addon="script.module.inputstreamhelper" version="0.4.4+matrix.1"/>
     <import addon="script.module.requests" version="2.22.0+matrix.1"/>
@@ -25,10 +24,8 @@
     <summary lang="de_DE">Amazon Prime Instant Video</summary>
     <description lang="en_GB">Movies and Television Shows for Prime Members</description>
     <description lang="de_DE">Filme und Serien für Amazon Prime Mitglieder</description>
-    <disclaimer lang="en_GB">Some parts of this addon may not be legal in your country of residence - please check with your local laws before installing.
-This Addon uses pyDes by Todd Whiteman</disclaimer>
-    <disclaimer lang="de_DE">Möglicherweise sind einge Teile dieses Addons in Ihrem Land illegal, Sie sollten dies unbedingt vor der Installation überprüfen.
-Diese Addon verwendet pyDes von Todd Whiteman</disclaimer>
+    <disclaimer lang="en_GB">Some parts of this addon may not be legal in your country of residence - please check with your local laws before installing.</disclaimer>
+    <disclaimer lang="de_DE">Möglicherweise sind einge Teile dieses Addons in Ihrem Land illegal, Sie sollten dies unbedingt vor der Installation überprüfen.</disclaimer>
     <forum>http://www.kodinerds.net/index.php/Thread/44211-Release-Amazon-Prime-Instant-Video</forum>
     <source>https://github.com/Sandmann79/xbmc</source>
     <license>GPL-3.0-or-later</license>

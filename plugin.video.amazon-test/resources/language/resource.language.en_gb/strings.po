@@ -764,3 +764,7 @@ msgstr ""
 msgctxt "#30265"
 msgid "30 days"
 msgstr ""
+
+msgctxt "#30266"
+msgid "Login credentials invalid, please login again."
+msgstr ""

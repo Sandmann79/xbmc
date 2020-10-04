@@ -35,7 +35,8 @@ class AmazonTLD(Singleton):
             addDir(getString(30134).format(loadUser('name')), 'switchUser', '', cm=self._g.CONTEXTMENU_MULTIUSER)
         if self._s.profiles:
             act, profiles = self.getProfiles()
-            addDir(profiles[act][0], 'switchProfile', '', thumb=profiles[act][2])
+            if act is not False:
+                addDir(profiles[act][0], 'switchProfile', '', thumb=profiles[act][2])
         addDir('Watchlist', 'getListMenu', self._g.watchlist, cm=cm_wl)
         self.listCategories(0)
         addDir('Channels', 'Channel', '/gp/video/storefront/ref=nav_shopall_nav_sa_aos?filterId=OFFER_FILTER%3DSUBSCRIPTIONS', opt='root')
@@ -195,7 +196,7 @@ class AmazonTLD(Singleton):
             with open(self.recentsdb, 'rb') as fp:
                 all_rec = pickle.load(fp)
 
-        cur_user = loadUser('name')
+        cur_user = loadUser('name') + getConfig('profileID')
         user_rec = all_rec.get(cur_user, [])
         return all_rec, user_rec
 
@@ -221,7 +222,7 @@ class AmazonTLD(Singleton):
             rec = rec[0:200]
 
         with open(self.recentsdb, 'wb') as fp:
-            cur_user = loadUser('name')
+            cur_user = loadUser('name') + getConfig('profileID')
             if cur_user in all_rec.keys():
                 all_rec[cur_user] = rec
             else:
@@ -398,6 +399,7 @@ class AmazonTLD(Singleton):
         oldurl = url
         titlelist = []
         ResPage = self._s.MaxResults
+        contentType = ''
 
         if export:
             ResPage = 240
@@ -799,6 +801,8 @@ class AmazonTLD(Singleton):
         asins = []
         url = self._g.BaseUrl + aurl
         json = getURL(url, useCookie=cj, binary=True)
+        if not json:
+            return False, False
         WriteLog(str(json), 'watchlist')
         cont = self.findKey('content', json)
         info = {'approximateSize': cont.get('totalItems', 0),
@@ -813,7 +817,7 @@ class AmazonTLD(Singleton):
         if listing in [self._g.watchlist, self._g.library]:
             cj = MechanizeLogin()
             if not cj:
-                return
+                return [], ''
             args = {listing: {'sort': self._s.wl_order,
                               'libraryType': 'Items',
                               'primeOnly': False,
@@ -823,6 +827,10 @@ class AmazonTLD(Singleton):
 
             url = '/gp/video/api/myStuff{}?viewType={}&args={}'.format(listing.capitalize(), listing, json.dumps(args, separators=(',', ':')))
             info, asins = self._scrapeAsins(url, cj)
+            if info is False:
+                Log('Cookie invalid', Log.ERROR)
+                g.dialog.notification(g.__plugin__, getString(30266), xbmcgui.NOTIFICATION_ERROR)
+                return [], ''
         else:
             asins = listing
 
@@ -1183,6 +1191,8 @@ class AmazonTLD(Singleton):
 
     def getProfiles(self):
         j = GrabJSON(self._g.BaseUrl + '/gp/video/profiles')
+        if not j:
+            return False, False
         profiles = []
         active = 0
         for item in j['profiles']:
@@ -1191,6 +1201,7 @@ class AmazonTLD(Singleton):
             profiles.append((item['name'], '{}?{}'.format(url, q), item['avatarUrl']))
             if item.get('isSelected', False):
                 active = len(profiles) - 1
+                writeConfig('profileID', '' if item.get('isDefault', False) else item['name'])
         return active, profiles
 
     def switchProfile(self):

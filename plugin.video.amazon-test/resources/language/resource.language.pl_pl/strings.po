@@ -349,7 +349,9 @@ msgid "Clear cache"
 msgstr ""
 
 msgctxt "#30088"
-msgid "Clear cached catalog or video data?\nVideo data includes series/season metadata."
+msgid ""
+"Clear cached catalog or video data?\n"
+"Video data includes series/season metadata."
 msgstr ""
 
 msgctxt "#30089"
@@ -753,4 +755,8 @@ msgstr ""
 
 msgctxt "#30265"
 msgid "30 days"
+msgstr ""
+
+msgctxt "#30266"
+msgid "Login credentials invalid, please login again."
 msgstr ""

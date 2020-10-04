@@ -128,7 +128,7 @@ def getURL(url, useCookie=False, silent=False, headers=None, rjson=True, attempt
     else:
         session = requests.Session()
 
-    retval = [] if rjson else ''
+    retval = {} if rjson else ''
     if useCookie:
         cj = MechanizeLogin() if isinstance(useCookie, bool) else useCookie
         if isinstance(cj, bool):
@@ -170,6 +170,10 @@ def getURL(url, useCookie=False, silent=False, headers=None, rjson=True, attempt
             response = r.content.decode('utf-8') if binary else r.text
         else:
             rjson = False
+        if useCookie and 'auth-cookie-warning-message' in response:
+            Log('Cookie invalid', Log.ERROR)
+            g.dialog.notification(g.__plugin__, getString(30266), xbmcgui.NOTIFICATION_ERROR)
+            return retval
         # 408 Timeout, 429 Too many requests and 5xx errors are temporary
         # Consider everything else definitive fail (like 404s and 403s)
         if (408 == r.status_code) or (429 == r.status_code) or (500 <= r.status_code):

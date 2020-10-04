@@ -158,7 +158,7 @@ def showSite(url, stopPlayback, kiosk, userAgent, custBrowser):
     elif os.path.exists(path86):
         fullUrl = getFullPath(path86, url, kiosk, userAgent, selBrowser)
     if fullUrl:
-        print fullUrl
+        print(fullUrl)
         if xbmc.getCondVisibility('system.platform.windows'):
             subprocess.Popen(fullUrl, creationflags=priority)
         else:
@@ -244,8 +244,9 @@ def parameters_string_to_dict(parameters):
 def addDir(name, url, mode, iconimage, stopPlayback="", kiosk="", custBrowser="", userAgent=""):
     u = sys.argv[0]+"?url="+quote_plus(url)+"&mode="+quote_plus(mode)+"&stopPlayback="+quote_plus(stopPlayback)+"&kiosk="+quote_plus(kiosk)+"&custBrowser="+quote_plus(custBrowser)+"&userAgent="+quote_plus(userAgent)
     ok = True
-    liz = xbmcgui.ListItem(name, iconImage="DefaultFolder.png", thumbnailImage=iconimage)
+    liz = xbmcgui.ListItem(name)
     liz.setInfo(type="Video", infoLabels={"Title": name})
+    liz.setArt({"icon": iconimage, "thumb": "DefaultFolder.png"})
     ok = xbmcplugin.addDirectoryItem(handle=int(sys.argv[1]), url=u, listitem=liz, isFolder=False)
     return ok
 
@@ -253,8 +254,9 @@ def addDir(name, url, mode, iconimage, stopPlayback="", kiosk="", custBrowser=""
 def addSiteDir(name, url, mode, iconimage, stopPlayback, kiosk, custBrowser, userAgent):
     u = sys.argv[0]+"?url="+quote_plus(url)+"&mode="+quote_plus(mode)+"&stopPlayback="+quote_plus(stopPlayback)+"&kiosk="+quote_plus(kiosk)+"&custBrowser="+quote_plus(custBrowser)+"&userAgent="+quote_plus(userAgent)
     ok = True
-    liz = xbmcgui.ListItem(name, iconImage="DefaultFolder.png", thumbnailImage=iconimage)
+    liz = xbmcgui.ListItem(name)
     liz.setInfo(type="Video", infoLabels={"Title": name})
+    liz.setArt({"icon": iconimage, "thumb": "DefaultFolder.png"})
     liz.addContextMenuItems([(translation(30006), 'RunPlugin(plugin://'+addonID+'/?mode=editSite&url='+quote_plus(name)+')',), (translation(30002), 'RunPlugin(plugin://'+addonID+'/?mode=removeSite&url='+quote_plus(name)+')',)])
     ok = xbmcplugin.addDirectoryItem(handle=int(sys.argv[1]), url=u, listitem=liz, isFolder=False)
     return ok

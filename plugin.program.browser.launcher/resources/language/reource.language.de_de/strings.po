@@ -1,0 +1,99 @@
+# Addon Name: Browser Launcher
+# Addon id: plugin.program.browser.launcher
+msgid ""
+msgstr ""
+"Project-Id-Version: XBMC-Addons\n"
+"Report-Msgid-Bugs-To: alanwww1@xbmc.org\n"
+"POT-Creation-Date: 2016-07-07 19:46+0000\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Language: de\n"
+"Plural-Forms: nplurals=2; plural=(n != 1)\n"
+
+msgctxt "#30001"
+msgid "Add Website"
+msgstr "Website hinzufügen"
+
+msgctxt "#30002"
+msgid "Remove Website"
+msgstr "Website entfernen"
+
+msgctxt "#30003"
+msgid "Title"
+msgstr "Titel"
+
+msgctxt "#30004"
+msgid "URL"
+msgstr ""
+
+msgctxt "#30005"
+msgid "Browser not found"
+msgstr "Browser nicht gefunden"
+
+msgctxt "#30006"
+msgid "Edit Website Settings"
+msgstr "Website Einstellungen ändern"
+
+msgctxt "#30007"
+msgid "Thumbnail"
+msgstr ""
+
+msgctxt "#30009"
+msgid "Stop XBMC playback?"
+msgstr "XBMC Wiedergabe stoppen?"
+
+msgctxt "#30010"
+msgid "Use custom Browser/script path"
+msgstr "Benutzerdefinierten Browser/Skript Pfad nutzen"
+
+msgctxt "#30011"
+msgid "Browser/script path"
+msgstr "Browser/Skript Pfad"
+
+msgctxt "#30012"
+msgid "Use own user profile (Chrome, Firefox, Opera)"
+msgstr "Eigenes Nutzerprofil nutzen (Chrome, Firefox, Opera)"
+
+msgctxt "#30013"
+msgid "Webbrowser"
+msgstr "Vollbildmodus verwenden?"
+
+msgctxt "#30016"
+msgid "Use kiosk mode?"
+msgstr "Vordefinierter Browser"
+
+msgctxt "#30017"
+msgid "Custom Browser"
+msgstr "Prozess Priorität"
+
+msgctxt "#30018"
+msgid "Process Priority"
+msgstr "Niedrig"
+
+msgctxt "#30020"
+msgid "Low"
+msgstr ""
+
+msgctxt "#30021"
+msgid "Below Normal"
+msgstr "Niedriger als normal"
+
+msgctxt "#30022"
+msgid "Normal"
+msgstr ""
+
+msgctxt "#30023"
+msgid "Above Normal"
+msgstr "Höher als normal"
+
+msgctxt "#30024"
+msgid "High"
+msgstr "Hoch"
+
+msgctxt "#30025"
+msgid "Realtime"
+msgstr "Echtzeit"

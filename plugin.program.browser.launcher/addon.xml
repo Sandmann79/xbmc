@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<addon id="plugin.program.browser.launcher" name="Browser Launcher" version="1.2.4" provider-name="AddonScriptorDE + Sandmann79">
+<addon id="plugin.program.browser.launcher" name="Browser Launcher" version="1.2.5-beta" provider-name="AddonScriptorDE + Sandmann79">
     <requires>
         <import addon="xbmc.python" version="2.1.0"/>
     </requires>

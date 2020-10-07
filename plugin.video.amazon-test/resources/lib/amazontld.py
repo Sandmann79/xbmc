@@ -452,7 +452,6 @@ class AmazonTLD(Singleton):
             name = infoLabels['DisplayTitle']
             asin = item['titleId']
             wlmode = 1 if self._g.watchlist in parent else 0
-            simiUrl = quote_plus('ASIN=' + asin + self._s.OfferGroup)
             cm = [(getString(wlmode + 30180) % getString(self._g.langID[contentType]),
                    'RunPlugin(%s?mode=WatchList&url=%s&opt=%s)' % (self._g.pluginid, wl_asin, wlmode)),
                   (getString(30185) % getString(self._g.langID[contentType]),
@@ -1075,7 +1074,6 @@ class AmazonTLD(Singleton):
         data = getcache(uid) if not url else GrabJSON(url)
         s = time.time()
         props = data.get('search', data.get('results', data))
-        # LogJSON(props)
         vw = ''
         urls = []
         num_items = 0
@@ -1100,7 +1098,6 @@ class AmazonTLD(Singleton):
             self._menuDb.commit()
         elif 'items' in props:
             items = props.get('items', [])
-            num_items = len(items)
             for item in items:
                 il, ct = getInfos(item)
                 chid = item.get('playbackAction', item).get('channelId')
@@ -1147,7 +1144,6 @@ class AmazonTLD(Singleton):
         elif 'sections' in props:
             from datetime import datetime
             channels = props['sections'][0].get('channels', [])
-            # [channels.extend(item.get('channels', [])) for item in props['sections']]
             for item in channels:
                 il = self.getAsins(item, True)
                 pa = item.get('playbackAction')

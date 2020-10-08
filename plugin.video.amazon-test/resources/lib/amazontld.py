@@ -1203,6 +1203,6 @@ class AmazonTLD(Singleton):
     def switchProfile(self):
         active, profiles = self.getProfiles()
         ret = self._g.dialog.select('Amazon', [i[0] for i in profiles])
-        if ret < 0 or ret == active:
-            return
-        getURL(profiles[ret][1], useCookie=True, rjson=False, silent=True)
+        if ret >= 0 or ret != active:
+            getURL(profiles[ret][1], useCookie=True, rjson=False, silent=True, check=True)
+        exit()

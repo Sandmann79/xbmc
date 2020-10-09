@@ -42,6 +42,10 @@ msgctxt "#30007"
 msgid "Thumbnail"
 msgstr ""
 
+msgctxt "#30008"
+msgid "General"
+msgstr "Allgemein"
+
 msgctxt "#30009"
 msgid "Stop XBMC playback?"
 msgstr "XBMC Wiedergabe stoppen?"
@@ -60,23 +64,23 @@ msgstr "Eigenes Nutzerprofil nutzen (Chrome, Firefox, Opera)"
 
 msgctxt "#30013"
 msgid "Webbrowser"
-msgstr "Vollbildmodus verwenden?"
+msgstr ""
 
 msgctxt "#30016"
 msgid "Use kiosk mode?"
-msgstr "Vordefinierter Browser"
+msgstr "Vollbildmodus verwenden?"
 
 msgctxt "#30017"
 msgid "Custom Browser"
-msgstr "Prozess Priorität"
+msgstr "Vordefinierter Browser"
 
 msgctxt "#30018"
 msgid "Process Priority"
-msgstr "Niedrig"
+msgstr "Prozess Priorität"
 
 msgctxt "#30020"
 msgid "Low"
-msgstr ""
+msgstr "Niedrig"
 
 msgctxt "#30021"
 msgid "Below Normal"

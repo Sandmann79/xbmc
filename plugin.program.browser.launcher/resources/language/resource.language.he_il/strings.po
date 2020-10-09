@@ -42,6 +42,10 @@ msgctxt "#30007"
 msgid "Thumbnail"
 msgstr "תמונות ממוזערות"
 
+msgctxt "#30008"
+msgid "General"
+msgstr ""
+
 msgctxt "#30009"
 msgid "Stop XBMC playback?"
 msgstr "לעצור את הניגון של קודי?"

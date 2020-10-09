@@ -42,6 +42,10 @@ msgctxt "#30007"
 msgid "Thumbnail"
 msgstr ""
 
+msgctxt "#30008"
+msgid "General"
+msgstr ""
+
 msgctxt "#30009"
 msgid "Stop XBMC playback?"
 msgstr ""

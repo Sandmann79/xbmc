@@ -276,6 +276,14 @@ class PrimeVideo(Singleton):
                         'endpoint': p['switchLink'],
                     }
 
+    def Route(self, verb, path):
+        if 'search' == verb: g.pv.Search()
+        elif 'browse' == verb: g.pv.Browse(path)
+        elif 'refresh' == verb: g.pv.Refresh(path)
+        elif 'profiles' == verb: g.pv.Profile(path)
+        elif 'languageselect' == verb: g.pv.LanguageSelect()
+        elif 'clearcache' == verb: g.pv.DeleteCache()
+
     def Profile(self, path):
         """ Profile actions """
         path = path.split('/')

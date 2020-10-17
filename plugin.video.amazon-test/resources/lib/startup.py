@@ -60,12 +60,7 @@ def EntryPoint():
     if path.startswith('/pv/'):
         path = py2_decode(path[4:])
         verb, path = path.split('/', 1)
-        if 'search' == verb: g.pv.Search()
-        elif 'browse' == verb: g.pv.Browse(path)
-        elif 'refresh' == verb: g.pv.Refresh(path)
-        elif 'profiles' == verb: g.pv.Profile(path)
-        elif 'languageselect' == verb: g.pv.LanguageSelect()
-        elif 'clearcache' == verb: g.pv.DeleteCache()
+        g.pv.Route(verb, path)
     elif None is mode:
         Log('Version: %s' % g.__version__)
         Log('Unicode filename support: %s' % os.path.supports_unicode_filenames)
@@ -109,4 +104,3 @@ def EntryPoint():
         exec('g.amz.{}()'.format(mode))
     elif mode == 'Channel':
         g.amz.Channel(url=args.get('url'), uid=args.get('opt'))
-

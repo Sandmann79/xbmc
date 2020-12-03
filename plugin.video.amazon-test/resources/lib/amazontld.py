@@ -194,7 +194,10 @@ class AmazonTLD(Singleton):
         all_rec = {}
         if xbmcvfs.exists(self.recentsdb):
             with open(self.recentsdb, 'rb') as fp:
-                all_rec = pickle.load(fp)
+                try:
+                    all_rec = pickle.load(fp)
+                except:
+                    pass
 
         cur_user = loadUser('name') + getConfig('profileID')
         user_rec = all_rec.get(cur_user, [])

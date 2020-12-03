@@ -213,7 +213,12 @@ def getURL(url, useCookie=False, silent=False, headers=None, rjson=True, attempt
                 sleep(wait)
             return getURL(url, useCookie, silent, headers, rjson, attempt, check, postdata, binary)
         return retval
-    res = json.loads(response) if rjson else response
+    res = response
+    if rjson:
+        try:
+            res = json.loads(response)
+        except ValueError:
+            res = retval
     duration = timer()
     duration -= starttime
     addNetTime(duration)

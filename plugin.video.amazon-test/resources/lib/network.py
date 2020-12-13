@@ -806,7 +806,7 @@ def GrabJSON(url, postData=None):
             np = np._replace(path='/gp/video/api' + np.path, query=urlencode([(k, v) for k, l in qs.items() for v in l]))
             url = np.geturl()
 
-        r = getURL(FQify(url), silent=True, useCookie=True, rjson=False, postdata=postData)
+        r = getURL(FQify(url), silent=True, useCookie=True, rjson=False, postdata=postData, binary=(not g.UsePrimeVideo))
         if not r:
             return None
         try:

@@ -433,6 +433,19 @@ def LogIn():
                     form.set_radio({choices[sel][1]: choices[sel][2]})
             else:
                 return None
+        elif 'auth-select-device-form' in uni_soup:
+            msg = soup.find('div', attrs={'class': 'a-section auth-pagelet-mobile-container'})
+            sd_hint = msg.div.div.p.get_text(strip=True)
+            sd_form = soup.find('form', attrs={'id': 'auth-select-device-form'})
+            choices = []
+            for c in sd_form.findAll('label'):
+                choices.append((c.span.get_text(strip=True), c.input['name'], c.input['value']))
+            sel = g.dialog.select(sd_hint, [k[0] for k in choices])
+
+            if sel > -1:
+                form.set_radio({choices[sel][1]: choices[sel][2]})
+            else:
+                return None
         elif 'fwcim-form' in uni_soup:
             msg = soup.find('div', attrs={'class': 'a-row a-spacing-micro cvf-widget-input-code-label'})
             if msg:
@@ -598,7 +611,7 @@ def LogIn():
 
             while any(sp in response for sp in
                       ['auth-mfa-form', 'ap_dcq_form', 'ap_captcha_img_label', 'claimspicker', 'fwcim-form', 'auth-captcha-image-container', 'validateCaptcha',
-                       'pollingForm']):
+                       'pollingForm', 'auth-select-device-form']):
                 br = _MFACheck(br, email, soup)
                 if br is None:
                     return False

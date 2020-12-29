@@ -68,7 +68,7 @@ def EntryPoint():
         if g.UsePrimeVideo:
             g.pv.BrowseRoot()
         else:
-            g.amz.BrowseRoot()
+            g.pv.BrowseRoot()
     elif mode == 'listCategories':
         g.amz.listCategories(args.get('url', ''), args.get('opt', ''))
     elif mode == 'listContent':

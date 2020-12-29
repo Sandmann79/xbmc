@@ -129,14 +129,14 @@ class Globals(Singleton):
 
         if self._globals['UsePrimeVideo']:
             """ Initialise PrimeVideo """
-            from .primevideo import PrimeVideo
+            from .web_primevideo import PrimeVideo
             if 'pv' not in self._globals:
                 self._globals['pv'] = PrimeVideo(self, Settings())
         else:
             """ Initialise AmazonTLD """
-            from .amazontld import AmazonTLD
-            if 'amz' not in self._globals:
-                self._globals['amz'] = AmazonTLD(self, Settings())
+            from .web_amazontld import AmazonTLD
+            if 'pv' not in self._globals:
+                self._globals['pv'] = AmazonTLD(self, Settings())
 
 
 class Settings(Singleton):

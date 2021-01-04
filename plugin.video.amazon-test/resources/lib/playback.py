@@ -656,6 +656,11 @@ class _AmazonPlayer(xbmc.Player):
     def onPlayBackStopped(self):
         self.finished()
 
+    def onPlayBackSeek(self, time, seekOffset):
+        cur_sub = jsonRPC('Player.GetProperties', 'currentsubtitle', param={'playerid': 1})
+        Log('Seeking / Current Subtitle: {}'.format(cur_sub), Log.DEBUG)
+        jsonRPC('Player.SetSubtitle', param={'playerid': 1, 'subtitle': cur_sub['index']})
+
     def updateStream(self, event):
         if not self.asin:
             return
@@ -739,11 +744,8 @@ class _SkipButton(xbmcgui.WindowDialog):
 
     def skipScene(self, wait=0):
         Log('Seeking to: {}sec / cur pos {}sec'.format(self.seek_time, self.player.getTime()), Log.DEBUG)
-        cur_sub = jsonRPC('Player.GetProperties', 'currentsubtitle', param={'playerid': 1})
-        Log('Subtitle: {}'.format(cur_sub), Log.DEBUG)
         self.player.seekTime(self.seek_time)
         sleep(0.75)
-        jsonRPC('Player.SetSubtitle', param={'playerid': 1, 'subtitle': cur_sub['index']})
         Log('Position: {}'.format(self.player.getTime()), Log.DEBUG)
         xbmc.sleep(wait)
         self.hide()

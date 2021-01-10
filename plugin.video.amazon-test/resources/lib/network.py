@@ -434,9 +434,8 @@ def LogIn():
             else:
                 return None
         elif 'auth-select-device-form' in uni_soup:
-            msg = soup.find('div', attrs={'class': 'a-section auth-pagelet-mobile-container'})
-            sd_hint = msg.div.div.p.get_text(strip=True)
             sd_form = soup.find('form', attrs={'id': 'auth-select-device-form'})
+            sd_hint = sd_form.parent.p.get_text(strip=True)
             choices = []
             for c in sd_form.findAll('label'):
                 choices.append((c.span.get_text(strip=True), c.input['name'], c.input['value']))
@@ -616,7 +615,6 @@ def LogIn():
                 if br is None:
                     return False
                 if not br.get_current_form() is None:
-                    useMFA = True if br.get_current_form().form.find('input', {'name': 'otpCode'}) else False
                     br.submit_selected()
                 response, soup = _parseHTML(br)
                 WriteLog(response.replace(py2_decode(email), '**@**'), 'login-mfa')

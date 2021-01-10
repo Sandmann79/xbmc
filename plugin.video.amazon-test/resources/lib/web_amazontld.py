@@ -375,7 +375,7 @@ class AmazonTLD(Singleton):
             home = GrabJSON(self._g.BaseUrl + '/gp/video/storefront')
             if not home:
                 return False
-            self._UpdateProfiles(home)
+            self._UpdateProfiles(home['lists'])
         self._catalog['root'] = OrderedDict()
 
         # Insert the watchlist
@@ -397,7 +397,7 @@ class AmazonTLD(Singleton):
             while navigation:
                 link = navigation.pop(0)
                 # Skip watchlist
-                if 'pv-nav-mystuff' == link['id']:
+                if 'pv-nav-mystuff-dropdown' == link['id']:
                     continue
                 # Substitute drop-down menu with expanded navigation
                 #if 'links' in link:
@@ -421,21 +421,11 @@ class AmazonTLD(Singleton):
             return False
 
         # Insert the searching mechanism
-        try:
-            sfa = home['searchBar']['searchFormAction']
-            # Build the query parametrization
-            query = ''
-            if 'query' in sfa:
-                query += '&'.join(['{}={}'.format(k, v) for k, v in sfa['query'].items()])
-            query = query if not query else query + '&'
-            self._catalog['root']['Search'] = {
-                'title': self._BeautifyText(home['searchBar']['searchFormPlaceholder']),
-                'verb': 'pv/search/',
-                'endpoint': '{}?{}phrase={{}}'.format(sfa['partialURL'], query)
-            }
-        except:
-            Log('Search functionality not found', Log.ERROR)
-
+        self._catalog['root']['Search'] = {
+            'title': getString(30108),
+            'verb': 'pv/search/',
+            'endpoint': '/gp/video/search?phrase={{}}'
+        }
         # Set the expiration based on settings (defaults to 12 hours) and flush to disk
         self._catalog['expiration'] = self._s.catalogCacheExpiry + int(time.time())
         self._Flush()

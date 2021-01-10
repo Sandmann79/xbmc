@@ -1199,10 +1199,11 @@ class AmazonTLD(Singleton):
         for item in j['profiles']:
             url = self._g.BaseUrl + item['switchLink']['partialURL']
             q = urlencode(item['switchLink']['query'])
-            profiles.append((item['name'], '{}?{}'.format(url, q), item['avatarUrl']))
+            n = item.get('name', 'Default').encode('utf-8')
+            profiles.append((n, '{}?{}'.format(url, q), item['avatarUrl']))
             if item.get('isSelected', False):
                 active = len(profiles) - 1
-                writeConfig('profileID', '' if item.get('isDefault', False) else item['name'])
+                writeConfig('profileID', '' if item.get('isDefault', False) else n)
         return active, profiles
 
     def switchProfile(self):

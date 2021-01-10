@@ -101,6 +101,7 @@
     </category>
     <!-- TLD -->
     <category label="Amazon.TLD">
+        <setting id="use_webapi" type="bool" label="30093" default="false"/>
         <setting label="30060" type="lsep"/>
         <setting id="enablelibraryfolder" type="bool" label="30061" default="false" />
         <setting id="customlibraryfolder" type="folder" label="30062" enable="eq(-1,true)" default="special://profile/addon_data/plugin.video.amazon-test" source="auto" option="writeable" subsetting="true" />

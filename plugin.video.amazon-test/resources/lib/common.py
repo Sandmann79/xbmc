@@ -134,9 +134,14 @@ class Globals(Singleton):
                 self._globals['pv'] = PrimeVideo(self, Settings())
         else:
             """ Initialise AmazonTLD """
-            from .web_amazontld import AmazonTLD
-            if 'pv' not in self._globals:
-                self._globals['pv'] = AmazonTLD(self, Settings())
+            h = 'pv'
+            if self._globals['addon'].getSetting('use_webapi') == 'true':
+                from .web_amazontld import AmazonTLD
+            else:
+                h = 'amz'
+                from .atv_amazontld import AmazonTLD
+            if h not in self._globals:
+                self._globals[h] = AmazonTLD(self, Settings())
 
 
 class Settings(Singleton):
@@ -206,6 +211,7 @@ class Settings(Singleton):
             return [3600, 21600, 43200, 86400, 259200, 604800, 1296000, 2592000][int(self._gs('catalog_cache_expiry'))]
         elif 'profiles' == name: return self._gs('profiles') == 'true'
         elif 'show_pass' == name: return self._gs('show_pass') == 'true'
+        elif 'useWebApi' == name: return self._gs('use_webapi') == 'true'
 
 
 def jsonRPC(method, props='', param=None):

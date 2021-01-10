@@ -373,7 +373,11 @@ msgctxt "#30092"
 msgid "Both"
 msgstr ""
 
-# empty strings from id 30093 to 30099
+msgctxt "#30093"
+msgid "Use Web API (beta)"
+msgstr ""
+
+# empty strings from id 30094 to 30099
 msgctxt "#30100"
 msgid "Library"
 msgstr ""

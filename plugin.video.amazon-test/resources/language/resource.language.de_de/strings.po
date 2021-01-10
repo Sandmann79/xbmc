@@ -373,6 +373,10 @@ msgctxt "#30092"
 msgid "Both"
 msgstr "Beides"
 
+msgctxt "#30093"
+msgid "Use Web API (beta)"
+msgstr "Web-API verwenden (Beta)"
+
 msgctxt "#30100"
 msgid "Library"
 msgstr "Bibliothek"

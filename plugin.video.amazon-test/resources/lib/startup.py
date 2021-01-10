@@ -65,10 +65,10 @@ def EntryPoint():
         Log('Version: %s' % g.__version__)
         Log('Unicode filename support: %s' % os.path.supports_unicode_filenames)
         Log('Locale: %s / Language: %s' % (g.userAcceptLanguages.split(',')[0], s.Language))
-        if g.UsePrimeVideo:
+        try:
             g.pv.BrowseRoot()
-        else:
-            g.pv.BrowseRoot()
+        except KeyError:
+            g.amz.BrowseRoot()
     elif mode == 'listCategories':
         g.amz.listCategories(args.get('url', ''), args.get('opt', ''))
     elif mode == 'listContent':
@@ -94,9 +94,9 @@ def EntryPoint():
         AgeRestrictions().Settings()
     elif mode == 'Search':
         searchString = args.get('searchstring')
-        if g.UsePrimeVideo:
+        try:
             g.pv.Search(searchString)
-        else:
+        except KeyError:
             g.amz.Search(searchString)
     elif mode in ['LogIn', 'remLoginData', 'removeUser', 'renameUser', 'switchUser']:
         exec('{}()'.format(mode))

@@ -129,6 +129,10 @@ msgctxt "#30025"
 msgid "Change text language"
 msgstr "Anzeigesprache ändern"
 
+msgctxt "#30026"
+msgid "Show password"
+msgstr "Passwort anzeigen"
+
 msgctxt "#30027"
 msgid "Stretch factor"
 msgstr "Timing"

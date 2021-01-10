@@ -522,8 +522,9 @@ def LogIn():
             pd.close()
         return br
 
-    def _setLoginPW():
+    def _setLoginPW(visible):
         keyboard = xbmc.Keyboard('', getString(30003))
+        keyboard.setHiddenInput(visible is False)
         keyboard.doModal(60000)
         if keyboard.isConfirmed() and keyboard.getText():
             password = keyboard.getText()
@@ -566,7 +567,7 @@ def LogIn():
         keyboard.doModal()
         if keyboard.isConfirmed() and keyboard.getText():
             email = keyboard.getText()
-            password = _setLoginPW()
+            password = _setLoginPW(s.show_pass)
 
         if password:
             cj = requests.cookies.RequestsCookieJar()
@@ -603,7 +604,6 @@ def LogIn():
                                        'Content-Type': 'application/x-www-form-urlencoded',
                                        'Origin': '/'.join(br.get_url().split('/')[0:3]),
                                        'Upgrade-Insecure-Requests': '1'})
-
             br.submit_selected()
             response, soup = _parseHTML(br)
             WriteLog(response.replace(py2_decode(email), '**@**'), 'login')

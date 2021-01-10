@@ -129,6 +129,10 @@ msgctxt "#30025"
 msgid "Change text language"
 msgstr ""
 
+msgctxt "#30026"
+msgid "Show password"
+msgstr ""
+
 msgctxt "#30027"
 msgid "Stretch factor"
 msgstr "Factor de estiramiento"

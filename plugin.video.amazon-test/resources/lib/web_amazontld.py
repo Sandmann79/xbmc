@@ -13,7 +13,7 @@ import time
 from .common import key_exists, return_item, sleep
 from .singleton import Singleton
 from .network import getURL, getURLData, MechanizeLogin, FQify, GrabJSON
-from .logging import Log
+from .logging import Log, LogJSON
 from .itemlisting import setContentAndView
 from .l10n import *
 from .users import *
@@ -389,6 +389,11 @@ class AmazonTLD(Singleton):
         except: pass
         if 'Watchlist' not in self._catalog['root']:
             Log('Watchlist link not found', Log.ERROR)
+        else:
+            # hardcoded wl, lib for now
+            self._catalog['root']['Watchlist']['lazyLoadData'] = \
+                {'mmlinks': [{'id': '1', 'text': 'Watchlist', 'href': 'gp/video/mystuff/watchlist/all/ref=atv_wtlp_all'},
+                             {'id': '2', 'text': 'Library', 'href': '/gp/video/mystuff/library/all/ref=atv_yvl_all'}]}
 
         # Insert the main sections, in order
         try:
@@ -397,18 +402,18 @@ class AmazonTLD(Singleton):
             while navigation:
                 link = navigation.pop(0)
                 # Skip watchlist
-                if 'pv-nav-mystuff-dropdown' == link['id']:
+                if 'pv-nav-mystuff' in link['id']:
                     continue
-                # Substitute drop-down menu with expanded navigation
-                #if 'links' in link:
-                #    navigation = link['links'] + navigation
-                #    continue
                 cn += 1
                 id = 'coll{}_{}'.format(cn, link['text'])
                 self._catalog['root'][id] = {'title': self._BeautifyText(link['text']), 'lazyLoadURL': link['href']}
                 # Avoid unnecessary calls when loading the current page in the future
                 if 'isHighlighted' in link and link['isHighlighted']:
                     self._catalog['root'][id]['lazyLoadData'] = home
+                # Adding main menu categories
+                if 'links' in link:
+                    self._catalog['root'][id]['lazyLoadData'] = {'mmlinks': link['links']}
+
         except:
             self._g.dialog.notification(
                 'PrimeVideo error',
@@ -1163,9 +1168,22 @@ class AmazonTLD(Singleton):
                     elif 'items' in collection:
                         cnt['items'] = collection['items']
 
+            # Categories / Genres
+            if 'mmlinks' in cnt:
+                catid = None
+                for lk in cnt['mmlinks']:
+                    if 'heading' in lk.get('features', ''):
+                        catid = lk['id']
+                        o[catid] = {'title': self._BeautifyText(lk['text']), 'lazyLoadURL': lk['href'], 'lazyLoadData': {'mmlinks': []}}
+                    elif catid:
+                        o[catid]['lazyLoadData']['mmlinks'].append(lk)
+                    else:
+                        o[lk['id']] = {'title': self._BeautifyText(lk['text']), 'lazyLoadURL': lk['href']}
+
             # Watchlist
-            if ['root', 'Watchlist'] == breadcrumb:
-                wl = return_item(cnt, 'viewOutput', 'features', 'legacy-watchlist')
+            wl_lib = ['legacy-watchlist', 'legacy-library'][int(breadcrumb[2])-1] if ['root', 'Watchlist'] == breadcrumb[:2] and len(breadcrumb) > 2 else None
+            if wl_lib is not None and len(breadcrumb) == 3:
+                wl = return_item(cnt, 'viewOutput', 'features', wl_lib)
                 try:
                     for f in wl['filters']:
                         o[f['id']] = {'title': f['text'], 'lazyLoadURL': f['apiUrl' if 'apiUrl' in f else 'href']}
@@ -1174,7 +1192,7 @@ class AmazonTLD(Singleton):
                 except KeyError: pass  # Empty watchlist
             else:
                 # Watchlist / Widow list / API Search
-                vo = return_item(cnt, 'viewOutput', 'features', 'legacy-watchlist', 'content')
+                vo = return_item(cnt, 'viewOutput', 'features', wl_lib, 'content')
                 if ('items' in vo) or (('content' in vo) and ('items' in vo['content'])):
                     for item in (vo if 'items' in vo else vo['content'])['items']:
                         try:

@@ -60,7 +60,7 @@ def addDir(name, mode='', url='', infoLabels=None, opt='', catalog='Browse', cm=
         url = g.pluginid
 
     if export:
-        g.amz.Export(infoLabels, url)
+        g.pv.Export(infoLabels, url)
         return
     if infoLabels:
         thumb = infoLabels['Thumb']
@@ -117,7 +117,7 @@ def addVideo(name, asin, infoLabels, cm=None, export=False):
 
     if export:
         url += '&selbitrate=' + bitrate
-        g.amz.Export(infoLabels, url)
+        g.pv.Export(infoLabels, url)
     else:
         cm = cm if cm else []
         cm.insert(0, (getString(30101), 'Action(ToggleWatched)'))

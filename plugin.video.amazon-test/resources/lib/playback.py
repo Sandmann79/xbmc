@@ -354,7 +354,7 @@ def PlayVideo(name, asin, adultstr, streamtype, forcefb=0):
 
         if g.KodiK and extern:
             content = getATVData('GetASINDetails', 'ASINList=' + asin)['titles'][0]
-            ct, Info = g.amz.getInfos(content, False)
+            ct, Info = g.pv.getInfos(content, False)
             title = Info['DisplayTitle']
             thumb = Info.get('Poster', Info['Thumb'])
             mpaa_check = str(Info.get('MPAA', mpaa_str)) in mpaa_str or isAdult
@@ -502,7 +502,7 @@ class _window(xbmcgui.WindowDialog):
             return int(li_dur) * 60
         else:
             content = getATVData('GetASINDetails', 'ASINList=' + asin)['titles'][0]
-            ct, Info = g.amz.getInfos(content, False)
+            ct, Info = g.pv.getInfos(content, False)
             return int(Info.get('Duration', 0))
 
     def close(self):
@@ -670,7 +670,7 @@ class _AmazonPlayer(xbmc.Player):
             self.interval = msg['message']['body']['statusCallbackIntervalSeconds']
         if not self.rec_added and self.video_lastpos > 180 and not g.UsePrimeVideo:
             self.rec_added = True
-            g.amz.updateRecents(self.asin)
+            g.pv.updateRecents(self.asin)
 
     def finished(self, forced=False):
         if self.running and (self.video_lastpos > 0 or forced):

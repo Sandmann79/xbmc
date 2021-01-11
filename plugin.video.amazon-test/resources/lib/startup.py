@@ -65,42 +65,36 @@ def EntryPoint():
         Log('Version: %s' % g.__version__)
         Log('Unicode filename support: %s' % os.path.supports_unicode_filenames)
         Log('Locale: %s / Language: %s' % (g.userAcceptLanguages.split(',')[0], s.Language))
-        try:
-            g.pv.BrowseRoot()
-        except KeyError:
-            g.amz.BrowseRoot()
+        g.pv.BrowseRoot()
     elif mode == 'listCategories':
-        g.amz.listCategories(args.get('url', ''), args.get('opt', ''))
+        g.pv.listCategories(args.get('url', ''), args.get('opt', ''))
     elif mode == 'listContent':
         url = py2_decode(args.get('url', ''))
-        g.amz.listContent(args.get('cat'), url, int(args.get('page', '1')), args.get('opt', ''), int(args.get('export', '0')))
+        g.pv.listContent(args.get('cat'), url, int(args.get('page', '1')), args.get('opt', ''), int(args.get('export', '0')))
     elif mode == 'PlayVideo':
         from .playback import PlayVideo
         PlayVideo(args.get('name', ''), args.get('asin'), args.get('adult', '0'), int(args.get('trailer', '0')), int(args.get('selbitrate', '0')))
     elif mode == 'getList':
-        g.amz.getList(args.get('url', ''), int(args.get('export', '0')), args.get('opt'))
+        g.pv.getList(args.get('url', ''), int(args.get('export', '0')), args.get('opt'))
     elif mode == 'getListMenu':
-        g.amz.getListMenu(args.get('url', ''), int(args.get('export', '0')))
+        g.pv.getListMenu(args.get('url', ''), int(args.get('export', '0')))
     elif mode == 'WatchList':
-        g.amz.WatchList(args.get('url', ''), int(args.get('opt', '0')))
+        g.pv.WatchList(args.get('url', ''), int(args.get('opt', '0')))
     elif mode == 'openSettings':
         aid = args.get('url')
         aid = g.is_addon if aid == 'is' else aid
         import xbmcaddon
         xbmcaddon.Addon(aid).openSettings()
     elif mode == 'updateRecents':
-        g.amz.updateRecents(args.get('asin', ''), int(args.get('rem', '0')))
+        g.pv.updateRecents(args.get('asin', ''), int(args.get('rem', '0')))
     elif mode == 'ageSettings':
         AgeRestrictions().Settings()
     elif mode == 'Search':
         searchString = args.get('searchstring')
-        try:
-            g.pv.Search(searchString)
-        except KeyError:
-            g.amz.Search(searchString)
+        g.pv.Search(searchString)
     elif mode in ['LogIn', 'remLoginData', 'removeUser', 'renameUser', 'switchUser']:
         exec('{}()'.format(mode))
     elif mode in ['checkMissing', 'Recent', 'switchProfile']:
-        exec('g.amz.{}()'.format(mode))
+        exec('g.pv.{}()'.format(mode))
     elif mode == 'Channel':
-        g.amz.Channel(url=args.get('url'), uid=args.get('opt'))
+        g.pv.Channel(url=args.get('url'), uid=args.get('opt'))

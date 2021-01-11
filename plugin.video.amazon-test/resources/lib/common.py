@@ -134,14 +134,12 @@ class Globals(Singleton):
                 self._globals['pv'] = PrimeVideo(self, Settings())
         else:
             """ Initialise AmazonTLD """
-            h = 'pv'
             if self._globals['addon'].getSetting('use_webapi') == 'true':
                 from .web_amazontld import AmazonTLD
             else:
-                h = 'amz'
                 from .atv_amazontld import AmazonTLD
-            if h not in self._globals:
-                self._globals[h] = AmazonTLD(self, Settings())
+            if 'pv' not in self._globals:
+                self._globals['pv'] = AmazonTLD(self, Settings())
 
 
 class Settings(Singleton):

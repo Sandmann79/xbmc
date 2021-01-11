@@ -215,7 +215,7 @@ class AmazonTLD(Singleton):
             content = getATVData('GetASINDetails', 'ASINList=' + asin)['titles']
             if len(content) < 1:
                 return
-            ct, Info = g.amz.getInfos(content[0], False)
+            ct, Info = g.pv.getInfos(content[0], False)
             asin = Info.get('SeasonAsin', Info.get('SeriesAsin', asin))
         if asin in rec:
             rec.remove(asin)

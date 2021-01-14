@@ -764,3 +764,11 @@ msgstr "30 Tage"
 msgctxt "#30266"
 msgid "Login credentials invalid, please login again."
 msgstr "Zugangsdaten ungültig, bitte erneut anmelden."
+
+msgctxt "#30267"
+msgid "Next page…"
+msgstr "Nächste Seite…"
+
+msgctxt "#30268"
+msgid "Refresh"
+msgstr "Aktualisieren"

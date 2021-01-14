@@ -766,3 +766,11 @@ msgstr ""
 msgctxt "#30266"
 msgid "Login credentials invalid, please login again."
 msgstr ""
+
+msgctxt "#30267"
+msgid "Next page…"
+msgstr ""
+
+msgctxt "#30268"
+msgid "Refresh"
+msgstr ""

@@ -407,7 +407,6 @@ def LogIn():
             else:
                 return None
         elif ('ap_captcha_img_label' in uni_soup) or ('auth-captcha-image-container' in uni_soup):
-            # form.find_by_type('input', 'text', {'id': 'ap-credential-autofill-hint'}):
             wnd = _Captcha((getString(30008).split('…')[0]), soup, email)
             wnd.doModal()
             if wnd.email and wnd.cap and wnd.pwd:

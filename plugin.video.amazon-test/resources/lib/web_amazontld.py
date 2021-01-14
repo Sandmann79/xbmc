@@ -108,12 +108,17 @@ class AmazonTLD(Singleton):
                       'months': {'一月': 1, '二月': 2, '三月': 3, '四月': 4, '五月': 5, '六月': 6, '七月': 7, '八月': 8, '九月': 9, '十月': 10, '十一月': 11, '十二月': 12}},
             'zh_TW': {'deconstruct': r'^(?P<y>[0-9]+)年(?P<m>[0-9]+)月(?P<d>[0-9]+)日',
                       'months': {'一月': 1, '二月': 2, '三月': 3, '四月': 4, '五月': 5, '六月': 6, '七月': 7, '八月': 8, '九月': 9, '十月': 10, '十一月': 11, '十二月': 12}},
+            'ja_JP': {'deconstruct': r'^(?P<y>[0-9]+)\/(?P<m>[0-9]+)\/(?P<d>[0-9]+)$'},
+            'en_GB': {'deconstruct': r'^(?P<d>[0-9]+)\s+(?P<m>[^\s]+)?\s+(?P<y>[0-9]+)',
+                      'months': {'january': 1, 'february': 2, 'march': 3, 'april': 4, 'may': 5, 'june': 6, 'july': 7, 'august': 8, 'september': 9,
+                                 'october': 10, 'november': 11, 'december': 12}}
         }
         self._languages = [
             ('id_ID', 'Bahasa Indonesia'),
             ('da_DK', 'Dansk'),
             ('de_DE', 'Deutsch'),
             ('en_US', 'English'),
+            ('en_GB', 'English'),
             ('es_ES', 'Español'),
             ('fr_FR', 'Français'),
             ('it_IT', 'Italiano'),
@@ -133,6 +138,7 @@ class AmazonTLD(Singleton):
             ('zh_CN', '简体中文'),
             ('zh_TW', '繁體中文'),
             ('ko_KR', '한국어'),
+            ('ja_JP', '日本語')
         ]
         self._TextCleanPatterns = [[r'\s+-\s*([^&])', r' – \1'],  # Convert dash from small to medium where needed
                                    [r'\s*-\s+([^&])', r' – \1'],  # Convert dash from small to medium where needed
@@ -258,6 +264,7 @@ class AmazonTLD(Singleton):
         del item
 
     def _UpdateProfiles(self, data):
+        data = data.get('lists', data)
         if 'cerberus' in data:
             p = data['cerberus']['activeProfile']
             self._catalog['profiles'] = {'active': p['id']}
@@ -375,7 +382,7 @@ class AmazonTLD(Singleton):
             home = GrabJSON(self._g.BaseUrl + '/gp/video/storefront')
             if not home:
                 return False
-            self._UpdateProfiles(home['lists'])
+            self._UpdateProfiles(home)
         self._catalog['root'] = OrderedDict()
 
         # Insert the watchlist
@@ -389,31 +396,26 @@ class AmazonTLD(Singleton):
         except: pass
         if 'Watchlist' not in self._catalog['root']:
             Log('Watchlist link not found', Log.ERROR)
-        else:
-            # hardcoded wl, lib for now
-            self._catalog['root']['Watchlist']['lazyLoadData'] = \
-                {'mmlinks': [{'id': '1', 'text': 'Watchlist', 'href': 'gp/video/mystuff/watchlist/all/ref=atv_wtlp_all'},
-                             {'id': '2', 'text': 'Library', 'href': '/gp/video/mystuff/library/all/ref=atv_yvl_all'}]}
 
         # Insert the main sections, in order
         try:
-            navigation = home['lists']['mainMenuLinks']
+            navigation = deepcopy(home['lists']['mainMenuLinks'])
             cn = 0
             while navigation:
                 link = navigation.pop(0)
                 # Skip watchlist
                 if 'pv-nav-mystuff' in link['id']:
                     continue
+                mml = (not g.UsePrimeVideo and 'links' in link)
                 cn += 1
-                id = 'coll{}_{}'.format(cn, link['text'])
+                id = 'coll{}_{}'.format(cn, link['text'] + '_mmlinks' if mml else '')
                 self._catalog['root'][id] = {'title': self._BeautifyText(link['text']), 'lazyLoadURL': link['href']}
                 # Avoid unnecessary calls when loading the current page in the future
                 if 'isHighlighted' in link and link['isHighlighted']:
                     self._catalog['root'][id]['lazyLoadData'] = home
                 # Adding main menu categories
-                if 'links' in link:
-                    self._catalog['root'][id]['lazyLoadData'] = {'mmlinks': link['links']}
-
+                if mml:
+                    self._catalog['root'][id]['lazyLoadData'] = home
         except:
             self._g.dialog.notification(
                 'PrimeVideo error',
@@ -472,7 +474,10 @@ class AmazonTLD(Singleton):
                     node[c] = {}
 
         folderType = 0 if 'root' == path else 1
-        for key in [k for k in node if k not in ['ref', 'verb', 'title', 'metadata', 'parent', 'siblings', 'children']]:
+        nodeKeys = sorted(node) if nodeName.startswith('coll') else node
+
+        for key in [k for k in nodeKeys if k not in ['ref', 'verb', 'title', 'metadata', 'parent', 'siblings', 'children']]:
+            Log(key)
             url = self._g.pluginid
             if key in self._videodata:
                 entry = deepcopy(self._videodata[key])
@@ -517,7 +522,7 @@ class AmazonTLD(Singleton):
 
             if bCanRefresh and (0 < len(itemPathURI)):
                 # Log('Encoded PrimeVideo refresh URL: pv/refresh/{}'.format(itemPathURI), Log.DEBUG)
-                item.addContextMenuItems([('Refresh', 'RunPlugin({}pv/refresh/{})'.format(self._g.pluginid, itemPathURI))])
+                item.addContextMenuItems([(getString(30268), 'RunPlugin({}pv/refresh/{})'.format(self._g.pluginid, itemPathURI))])
 
             # In case of tv shows find the oldest season and apply its art
             try:
@@ -881,7 +886,8 @@ class AmazonTLD(Singleton):
                         if vid in o:
                             continue
 
-                    o[vid] = {'title': i['title'], 'metadata': {'compactGTI': i['compactGti'], 'artmeta': {}, 'videometa': {'mediatype': 'video'}}}
+                    o[vid] = {'title': i['title'], 'metadata': {'compactGTI': i.get('compactGti', i.get('catalogId', vid)),
+                                                                'artmeta': {}, 'videometa': {'mediatype': 'video'}}}
 
                     if 'liveState' in i:
                         try:
@@ -1039,15 +1045,15 @@ class AmazonTLD(Singleton):
 
                 # Contributors (`producers` are ignored)
                 if 'contributors' in item:
-                    for k, v in {'director': 'directors', 'cast': 'starringActors', 'cast': 'supportingActors'}.items():
-                        if v in item['contributors']:
-                            for p in item['contributors'][v]:
+                    for k, v in {'directors': 'director', 'starringActors': 'cast', 'supportingActors': 'cast'}.items():
+                        if k in item['contributors']:
+                            for p in item['contributors'][k]:
                                 if 'name' in p:
                                     try:
-                                        if (p['name'] not in vd['metadata']['videometa'][k]):
-                                            vd['metadata']['videometa'][k].append(p['name'])
+                                        if (p['name'] not in vd['metadata']['videometa'][v]):
+                                            vd['metadata']['videometa'][v].append(p['name'])
                                     except KeyError:
-                                        vd['metadata']['videometa'][k] = [p['name']]
+                                        vd['metadata']['videometa'][v] = [p['name']]
                                     bUpdated = True
 
                 # Season, TV show title
@@ -1102,7 +1108,7 @@ class AmazonTLD(Singleton):
         amzLang = None
         cj = MechanizeLogin()
         if cj:
-            i18 = {'EUR': 'de_DE', 'GBP': 'en_GB', 'JPN': 'jp_JP', 'USD': 'en_US'}
+            i18 = {'EUR': 'de_DE', 'GBP': 'en_GB', 'JPY': 'ja_JP', 'USD': 'en_US'}
             pref = cj.get('i18n-prefs', path='/')
             if pref:
                 amzLang = i18.get(pref)
@@ -1156,8 +1162,25 @@ class AmazonTLD(Singleton):
                 Log('Unable to fetch the url: {}'.format(requestURL), Log.ERROR)
                 continue
 
+            # Submenus
+            mmpos = [len(breadcrumb)-i for i, x in enumerate(breadcrumb) if 'mmlinks' in x]
+            if len(mmpos) > 0 and mmpos[0] < 3:
+                catid = ''
+                pos = 0
+                for link in cnt['lists']['mainMenuLinks']:
+                    for lk in link.get('links', []):
+                        if 'heading' in lk.get('features', ''):
+                            catid = lk['id']
+                            if mmpos[0] == 1:
+                                pos += 1
+                                o['coll{:0>2d}_{}'.format(pos, lk['id'])] = {'title': self._BeautifyText(lk['text']), 'lazyLoadURL': lk['href'], 'lazyLoadData': cnt}
+                            continue
+                        if mmpos[0] == 2 and catid in breadcrumb[-1]:
+                            pos += 1
+                            o['coll{:0>2d}_{}'.format(pos, lk['id'])] = {'title': self._BeautifyText(lk['text']), 'lazyLoadURL': lk['href']}
+                cnt = ''
             # Categories
-            if 'collections' in cnt:
+            elif 'collections' in cnt:
                 for collection in cnt['collections']:
                     if 'text' in collection:
                         o[collection['text']] = {'title': self._BeautifyText(collection['text'])}
@@ -1166,32 +1189,30 @@ class AmazonTLD(Singleton):
                         else:
                             o[collection['text']]['lazyLoadData'] = collection
                     elif 'items' in collection:
-                        cnt['items'] = collection['items']
+                        # LiveTV
+                        if 'items' in cnt.get('results', ''):
+                            cnt['results']['items'].append(collection['items'])
+                        else:
+                            cnt['results'] = {'items': collection['items']}
 
-            # Categories / Genres
-            if 'mmlinks' in cnt:
-                catid = None
-                for lk in cnt['mmlinks']:
-                    if 'heading' in lk.get('features', ''):
-                        catid = lk['id']
-                        o[catid] = {'title': self._BeautifyText(lk['text']), 'lazyLoadURL': lk['href'], 'lazyLoadData': {'mmlinks': []}}
-                    elif catid:
-                        o[catid]['lazyLoadData']['mmlinks'].append(lk)
-                    else:
-                        o[lk['id']] = {'title': self._BeautifyText(lk['text']), 'lazyLoadURL': lk['href']}
-
-            # Watchlist
-            wl_lib = ['legacy-watchlist', 'legacy-library'][int(breadcrumb[2])-1] if ['root', 'Watchlist'] == breadcrumb[:2] and len(breadcrumb) > 2 else None
-            if wl_lib is not None and len(breadcrumb) == 3:
+            # Watchlist / Library
+            wl_lib = 'legacy-' + breadcrumb[2] if ['root', 'Watchlist'] == breadcrumb[:2] and len(breadcrumb) > 2 else ''
+            if ['root', 'Watchlist'] == breadcrumb:
+                wl = return_item(cnt, 'viewOutput', 'features', 'view-filter')
+                for f in wl['filters']:
+                    o[f['viewType']] = {'title': f['text'], 'lazyLoadURL': f['apiUrl' if 'apiUrl' in f else 'href']}
+                    if f.get('active', False):
+                        o[f['viewType']]['lazyLoadData'] = cnt
+            elif len(wl_lib) > 0 and len(breadcrumb) == 3:
                 wl = return_item(cnt, 'viewOutput', 'features', wl_lib)
                 try:
                     for f in wl['filters']:
                         o[f['id']] = {'title': f['text'], 'lazyLoadURL': f['apiUrl' if 'apiUrl' in f else 'href']}
                         if 'applied' in f and f['applied']:
                             o[f['id']]['lazyLoadData'] = cnt
-                except KeyError: pass  # Empty watchlist
+                except KeyError: pass  # Empty list
             else:
-                # Watchlist / Widow list / API Search
+                # Watchlist / Library / Widow list / API Search
                 vo = return_item(cnt, 'viewOutput', 'features', wl_lib, 'content')
                 if ('items' in vo) or (('content' in vo) and ('items' in vo['content'])):
                     for item in (vo if 'items' in vo else vo['content'])['items']:
@@ -1230,7 +1251,7 @@ class AmazonTLD(Singleton):
 
                         # Detect if it's a live event (or replay)
                         try:
-                            bEvent = ('liveInfo' in item) or ('event' == item['watchlistAction']['endpoint']['query']['titleType'].lower())
+                            bEvent = ('liveInfo' in item) or ('channelId' in item) or ('event' == item['watchlistAction']['endpoint']['query']['titleType'].lower())
                         except:
                             bEvent = False
 
@@ -1248,11 +1269,11 @@ class AmazonTLD(Singleton):
                     bUpdatedVideoData |= ParseSinglePage(breadcrumb[-1], o, bCacheRefresh, data=cnt, url=requestURL)
 
                 # Pagination
-                if ('pagination' in cnt) or (key_exists(cnt, 'viewOutput', 'features', 'legacy-watchlist', 'content', 'seeMoreHref')):
+                if ('pagination' in cnt) or (key_exists(cnt, 'viewOutput', 'features', wl_lib, 'content', 'seeMoreHref')):
                     nextPage = None
                     try:
                         # Dynamic AJAX pagination
-                        seeMore = cnt['viewOutput']['features']['legacy-watchlist']['content']
+                        seeMore = cnt['viewOutput']['features'][wl_lib]['content']
                         if seeMore['nextPageStartIndex'] < seeMore['totalItems']:
                             nextPage = seeMore['seeMoreHref']
                     except:
@@ -1286,7 +1307,7 @@ class AmazonTLD(Singleton):
                             try:
                                 npt = getString(30242).format(cnt['pagination']['page'])
                             except:
-                                npt = 'Next page…'
+                                npt = getString(30267)
                             o['nextPage'] = {'title': npt, 'lazyLoadURL': nextPage}
 
             # Notify new page

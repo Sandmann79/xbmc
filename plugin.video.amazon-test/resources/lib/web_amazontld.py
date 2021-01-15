@@ -408,7 +408,7 @@ class AmazonTLD(Singleton):
                     continue
                 mml = (not g.UsePrimeVideo and 'links' in link)
                 cn += 1
-                id = 'coll{}_{}'.format(cn, link['text'] + '_mmlinks' if mml else '')
+                id = 'coll{}_{}'.format(cn, link['text'] + ('_mmlinks' if mml else ''))
                 self._catalog['root'][id] = {'title': self._BeautifyText(link['text']), 'lazyLoadURL': link['href']}
                 # Avoid unnecessary calls when loading the current page in the future
                 if 'isHighlighted' in link and link['isHighlighted']:
@@ -474,10 +474,8 @@ class AmazonTLD(Singleton):
                     node[c] = {}
 
         folderType = 0 if 'root' == path else 1
-        nodeKeys = sorted(node) if nodeName.startswith('coll') else node
-
+        nodeKeys = sorted(node) if ',sortedcoll' in ','.join(node.keys()) else node
         for key in [k for k in nodeKeys if k not in ['ref', 'verb', 'title', 'metadata', 'parent', 'siblings', 'children']]:
-            Log(key)
             url = self._g.pluginid
             if key in self._videodata:
                 entry = deepcopy(self._videodata[key])
@@ -1173,11 +1171,12 @@ class AmazonTLD(Singleton):
                             catid = lk['id']
                             if mmpos[0] == 1:
                                 pos += 1
-                                o['coll{:0>2d}_{}'.format(pos, lk['id'])] = {'title': self._BeautifyText(lk['text']), 'lazyLoadURL': lk['href'], 'lazyLoadData': cnt}
+                                o['sortedcoll{:0>2d}_{}'.format(pos, lk['id'])] = \
+                                    {'title': self._BeautifyText(lk['text']), 'lazyLoadURL': lk['href'], 'lazyLoadData': cnt}
                             continue
                         if mmpos[0] == 2 and catid in breadcrumb[-1]:
                             pos += 1
-                            o['coll{:0>2d}_{}'.format(pos, lk['id'])] = {'title': self._BeautifyText(lk['text']), 'lazyLoadURL': lk['href']}
+                            o['sortedcoll{:0>2d}_{}'.format(pos, lk['id'])] = {'title': self._BeautifyText(lk['text']), 'lazyLoadURL': lk['href']}
                 cnt = ''
             # Categories
             elif 'collections' in cnt:
@@ -1203,6 +1202,7 @@ class AmazonTLD(Singleton):
                     o[f['viewType']] = {'title': f['text'], 'lazyLoadURL': f['apiUrl' if 'apiUrl' in f else 'href']}
                     if f.get('active', False):
                         o[f['viewType']]['lazyLoadData'] = cnt
+            # Watchlist categories
             elif len(wl_lib) > 0 and len(breadcrumb) == 3:
                 wl = return_item(cnt, 'viewOutput', 'features', wl_lib)
                 try:

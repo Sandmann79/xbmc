@@ -254,7 +254,6 @@ class AmazonTLD(Singleton):
             elif ('lazyLoadURL' in node[nodeName]) or ('lazyLoadData' in node[nodeName]):
                 self._LazyLoad(node[nodeName], pathList[0:1 + i])
             node = node[nodeName]
-
         return (node, pathList)
 
     def _AddDirectoryItem(self, title, artmetadata, verb):
@@ -474,7 +473,12 @@ class AmazonTLD(Singleton):
                     node[c] = {}
 
         folderType = 0 if 'root' == path else 1
-        nodeKeys = sorted(node) if ',sortedcoll' in ','.join(node.keys()) else node
+        nodeKeys = sorted(node) if ',sortedcoll' in ','.join(node.keys()) else list(node.keys())
+        # Move nextpage entry to end of list
+        if 'nextPage' in nodeKeys:
+            nodeKeys.pop(nodeKeys.index('nextPage'))
+            nodeKeys.append('nextPage')
+
         for key in [k for k in nodeKeys if k not in ['ref', 'verb', 'title', 'metadata', 'parent', 'siblings', 'children']]:
             url = self._g.pluginid
             if key in self._videodata:
@@ -743,13 +747,24 @@ class AmazonTLD(Singleton):
                 NotifyUser.lastNotification = 1 + time.time()
                 self._g.dialog.notification(self._g.addon.getAddonInfo('name'), msg, time=1000, sound=False)
 
+        def AddLiveTV(o, item):
+            """ Add a direct playable live TV channel to the list """
+            chid = item['channelId']
+            if chid in o:
+                return
+            o[chid] = {'title': item['playbackAction']['label'], 'metadata': {'artmeta': {}, 'videometa': {}}, 'live': True}
+            o[chid]['metadata']['videometa']['plot'] = item['title'] + ('\n\n' + item['synopsis'] if 'synopsis' in item else '')
+            o[chid]['metadata']['artmeta']['poster'] = o[chid]['metadata']['artmeta']['thumb'] = re.sub(r'\._.*_\.', r'.', item['image']['url'])
+            o[chid]['metadata']['videometa']['mediatype'] = 'video'
+            o[chid]['metadata']['compactGTI'] = ExtractURN(item['playbackAction']['fallbackUrl'])
+
         def AddLiveEvent(o, item, url):
             urn = ExtractURN(url)
             """ Add a live event to the list """
             if (urn in o):
                 return
             title = item['title' if 'title' in item else 'heading']
-            o[urn] = OrderedDict({'title': title, 'lazyLoadURL': item['href'] if 'href' in item else item['link']['url'], 'metadata': {'artmeta': {}, 'videometa': {}}})
+            o[urn] = {'title': title, 'lazyLoadURL': item['href'] if 'href' in item else item['link']['url'], 'metadata': {'artmeta': {}, 'videometa': {}}}
             if ('liveInfo' in item) and (('timeBadge' in item['liveInfo']) or (('status' in item['liveInfo']) and ('live' == item['liveInfo']['status'].lower()))):
                 when = 'Live' if 'timeBadge' not in item['liveInfo'] else item['liveInfo']['timeBadge']
                 if 'venue' in item['liveInfo']:
@@ -1189,10 +1204,8 @@ class AmazonTLD(Singleton):
                             o[collection['text']]['lazyLoadData'] = collection
                     elif 'items' in collection:
                         # LiveTV
-                        if 'items' in cnt.get('results', ''):
-                            cnt['results']['items'].append(collection['items'])
-                        else:
-                            cnt['results'] = {'items': collection['items']}
+                        for item in collection['items']:
+                            AddLiveTV(o, item)
 
             # Watchlist / Library
             wl_lib = 'legacy-' + breadcrumb[2] if ['root', 'Watchlist'] == breadcrumb[:2] and len(breadcrumb) > 2 else ''

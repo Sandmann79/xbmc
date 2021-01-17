@@ -102,16 +102,17 @@
     <!-- TLD -->
     <category label="Amazon.TLD">
         <setting id="use_webapi" type="bool" label="30093" default="false"/>
-        <setting label="30060" type="lsep"/>
-        <setting id="enablelibraryfolder" type="bool" label="30061" default="false" />
-        <setting id="customlibraryfolder" type="folder" label="30062" enable="eq(-1,true)" default="special://profile/addon_data/plugin.video.amazon-test" source="auto" option="writeable" subsetting="true" />
-        <setting id="cr_nfo" type="bool" label="30063" default="true" />
-        <setting id="mediasource_movie" type="text" label="30064" default="Amazon Movies" />
-        <setting id="mediasource_tv" type="text" label="30065" default="Amazon TV" />
-        <setting type="sep"/>
-        <setting id="wl_export" type="bool" label="30080" default="false"/>
-        <setting label="Artwork" type="lsep"/>
-        <setting id="tld_episode_thumbnails" type="bool" label="30249" default="false"/>
+        <setting label="30060" type="lsep" visible="eq(-1,false)"/>
+        <setting id="enablelibraryfolder" type="bool" label="30061" default="false" visible="eq(-2,false)"/>
+        <setting id="customlibraryfolder" type="folder" label="30062" enable="eq(-1,true)" default="special://profile/addon_data/plugin.video.amazon-test" source="auto" option="writeable" subsetting="true" visible="eq(-3,false)"/>
+        <setting id="cr_nfo" type="bool" label="30063" default="true" visible="eq(-4,false)" />
+        <setting id="mediasource_movie" type="text" label="30064" default="Amazon Movies" visible="eq(-5,false)" />
+        <setting id="mediasource_tv" type="text" label="30065" default="Amazon TV" visible="eq(-6,false)" />
+        <setting type="sep" visible="eq(-7,false)"/>
+        <setting id="wl_export" type="bool" label="30080" default="false" visible="eq(-8,false)"/>
+        <setting label="Artwork" type="lsep" />
+        <setting id="tld_episode_thumbnails" type="bool" label="30249" default="false" visible="eq(-10,false)"/>
+        <setting id="pv_episode_thumbnails" type="bool" label="30249" default="true" visible="eq(-11,true)" />
     </category>
     <!-- PrimeVideo -->
     <category label="30250">

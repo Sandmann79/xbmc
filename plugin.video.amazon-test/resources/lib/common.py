@@ -267,3 +267,19 @@ def return_item(dictionary, *keys):
         except:
             return dictionary
     return _p
+
+
+def findKey(key, obj):
+    if key in obj.keys():
+        return obj[key]
+    for v in obj.values():
+        if isinstance(v, dict):
+            res = findKey(key, v)
+            if res: return res
+        elif isinstance(v, list):
+            for d in v:
+                if isinstance(d, dict):
+                    res = findKey(key, d)
+                    if res:
+                        return res
+    return []

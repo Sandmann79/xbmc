@@ -10,7 +10,7 @@ import re
 import sys
 import time
 
-from .common import key_exists, return_item, sleep
+from .common import key_exists, return_item, sleep, findKey
 from .singleton import Singleton
 from .network import getURL, getURLData, MechanizeLogin, FQify, GrabJSON
 from .logging import Log, LogJSON
@@ -18,6 +18,11 @@ from .itemlisting import setContentAndView
 from .l10n import *
 from .users import *
 from .playback import PlayVideo
+
+try:
+    from urllib.parse import quote_plus, unquote_plus
+except ImportError:
+    from urllib import quote_plus, unquote_plus
 
 
 class AmazonTLD(Singleton):
@@ -212,12 +217,6 @@ class AmazonTLD(Singleton):
 
     def _TraverseCatalog(self, path, bRefresh=False):
         """ Extract current node, grandparent node and their names """
-
-        try:
-            from urllib.parse import unquote_plus
-        except:
-            from urllib import unquote_plus
-
         # Fix the unquote_plus problem with unicode_literals by encoding to latin-1 (byte string) and then decoding
         pathList = [unquote_plus(p) for p in path.split(self._separator)]
         for k in range(len(pathList)):
@@ -289,6 +288,16 @@ class AmazonTLD(Singleton):
         elif 'profiles' == verb: g.pv.Profile(path)
         elif 'languageselect' == verb: g.pv.LanguageSelect()
         elif 'clearcache' == verb: g.pv.DeleteCache()
+        elif 'wltoogle' == verb: g.pv.Watchlist(path)
+
+    def Watchlist(self, path):
+        path = path.split('/')
+        remove = int(path[-1])
+        params = '[{"titleID":"%s","watchlist":true}]' % path[-2]
+        data = GrabJSON(self._g.BaseUrl + '/gp/video/api/enrichItemMetadata?itemsToEnrich=' + quote_plus(params))
+        endp = findKey('endpoint', data)
+        endp['query']['tag'] = ['Add', 'Remove'][remove]
+        getURL(self._g.BaseUrl + endp['partialURL'], postdata=endp['query'], useCookie=True, allow_redirects=False, check=True)
 
     def Profile(self, path):
         """ Profile actions """
@@ -456,11 +465,6 @@ class AmazonTLD(Singleton):
             activeProfile = self._catalog['profiles'][self._catalog['profiles']['active']]
             self._AddDirectoryItem(activeProfile['title'], activeProfile['metadata']['artmeta'], 'pv/profiles/list')
 
-        try:
-            from urllib.parse import quote_plus
-        except ImportError:
-            from urllib import quote_plus
-
         node, breadcrumb = self._TraverseCatalog(path)
         if None is node:
             return
@@ -487,6 +491,7 @@ class AmazonTLD(Singleton):
                 entry = node[key]
             title = entry['title'] if 'title' in entry else nodeName
             itemPathURI = '{}{}{}'.format(path, self._separator, quote_plus(key.encode('utf-8')))
+            ctxitems = []
 
             # Squash single season tv shows
             try:
@@ -524,7 +529,7 @@ class AmazonTLD(Singleton):
 
             if bCanRefresh and (0 < len(itemPathURI)):
                 # Log('Encoded PrimeVideo refresh URL: pv/refresh/{}'.format(itemPathURI), Log.DEBUG)
-                item.addContextMenuItems([(getString(30268), 'RunPlugin({}pv/refresh/{})'.format(self._g.pluginid, itemPathURI))])
+                ctxitems.append((getString(30268), 'RunPlugin({}pv/refresh/{})'.format(self._g.pluginid, itemPathURI)))
 
             # In case of tv shows find the oldest season and apply its art
             try:
@@ -559,7 +564,10 @@ class AmazonTLD(Singleton):
                         folderType = {'video': 0, 'movie': 5, 'episode': 4, 'tvshow': 2, 'season': 3}[m['videometa']['mediatype']]
                     except:
                         folderType = 2  # Default to category
-
+                    if m['videometa']['mediatype'] in ['movie', 'season']:
+                        in_wl = 1 if path.split('/')[:3] == ['root', 'Watchlist', 'watchlist'] else 0
+                        ctxitems.append((getString(30180 + in_wl) % getString(self._g.langID[m['videometa']['mediatype']]),
+                                         'RunPlugin({}pv/wltoogle/{}/{})'.format(self._g.pluginid, entry['metadata']['compactGTI'], in_wl)))
                     if bIsVideo:
                         folder = False
                         item.setProperty('IsPlayable', 'true')
@@ -568,6 +576,7 @@ class AmazonTLD(Singleton):
                             item.setInfo('video', {'duration': m['runtime']})
                             item.addStreamInfo('video', {'duration': m['runtime']})
 
+            item.addContextMenuItems(ctxitems)
             # If it's a video leaf without an actual video, something went wrong with Amazon servers, just hide it
             if ('nextPage' == key) or (not folder) or (4 > folderType):
                 xbmcplugin.addDirectoryItem(self._g.pluginhandle, url, item, isFolder=folder)
@@ -754,7 +763,7 @@ class AmazonTLD(Singleton):
                 return
             o[chid] = {'title': item['playbackAction']['label'], 'metadata': {'artmeta': {}, 'videometa': {}}, 'live': True}
             o[chid]['metadata']['videometa']['plot'] = item['title'] + ('\n\n' + item['synopsis'] if 'synopsis' in item else '')
-            o[chid]['metadata']['artmeta']['poster'] = o[chid]['metadata']['artmeta']['thumb'] = re.sub(r'\._.*_\.', r'.', item['image']['url'])
+            o[chid]['metadata']['artmeta']['poster'] = o[chid]['metadata']['artmeta']['thumb'] = MaxSize(item['image']['url'])
             o[chid]['metadata']['videometa']['mediatype'] = 'video'
             o[chid]['metadata']['compactGTI'] = ExtractURN(item['playbackAction']['fallbackUrl'])
 
@@ -818,7 +827,6 @@ class AmazonTLD(Singleton):
                 `url` is discarded in favour of `data`, if present.
             """
             urn = ExtractURN(url)
-
             # Load from cache, if available
             if (not bCacheRefresh) and (urn in self._videodata['urn2gti']) and (self._videodata['urn2gti'][urn] in self._videodata):
                 gti = self._videodata['urn2gti'][urn]
@@ -1117,6 +1125,11 @@ class AmazonTLD(Singleton):
             return
         requestURLs = [obj['lazyLoadURL'] if 'lazyLoadURL' in obj else None]
 
+        try:
+            from urllib.parse import urlencode
+        except:
+            from urllib import urlencode
+
         # Find the locale set in the cookies
         amzLang = None
         cj = MechanizeLogin()
@@ -1207,7 +1220,7 @@ class AmazonTLD(Singleton):
                         for item in collection['items']:
                             AddLiveTV(o, item)
 
-            # Watchlist / Library
+            # MyStuff
             wl_lib = 'legacy-' + breadcrumb[2] if ['root', 'Watchlist'] == breadcrumb[:2] and len(breadcrumb) > 2 else ''
             if ['root', 'Watchlist'] == breadcrumb:
                 wl = return_item(cnt, 'viewOutput', 'features', 'view-filter')
@@ -1215,7 +1228,7 @@ class AmazonTLD(Singleton):
                     o[f['viewType']] = {'title': f['text'], 'lazyLoadURL': f['apiUrl' if 'apiUrl' in f else 'href']}
                     if f.get('active', False):
                         o[f['viewType']]['lazyLoadData'] = cnt
-            # Watchlist categories
+            # MyStuff categories
             elif len(wl_lib) > 0 and len(breadcrumb) == 3:
                 wl = return_item(cnt, 'viewOutput', 'features', wl_lib)
                 try:
@@ -1225,7 +1238,7 @@ class AmazonTLD(Singleton):
                             o[f['id']]['lazyLoadData'] = cnt
                 except KeyError: pass  # Empty list
             else:
-                # Watchlist / Library / Widow list / API Search
+                # MyStuff / Widow list / API Search
                 vo = return_item(cnt, 'viewOutput', 'features', wl_lib, 'content')
                 if ('items' in vo) or (('content' in vo) and ('items' in vo['content'])):
                     for item in (vo if 'items' in vo else vo['content'])['items']:
@@ -1264,7 +1277,7 @@ class AmazonTLD(Singleton):
 
                         # Detect if it's a live event (or replay)
                         try:
-                            bEvent = ('liveInfo' in item) or ('channelId' in item) or ('event' == item['watchlistAction']['endpoint']['query']['titleType'].lower())
+                            bEvent = ('liveInfo' in item) or ('event' == item['watchlistAction']['endpoint']['query']['titleType'].lower())
                         except:
                             bEvent = False
 

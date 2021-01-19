@@ -14,6 +14,7 @@ from .singleton import Singleton
 from .network import *
 from .itemlisting import *
 from .users import *
+from .common import findKey
 
 
 class AmazonTLD(Singleton):
@@ -551,7 +552,7 @@ class AmazonTLD(Singleton):
         else:
             params = '[{"titleID":"%s","watchlist":true}]' % asin
             data = getURL('%s/gp/video/api/enrichItemMetadata?itemsToEnrich=%s' % (self._g.BaseUrl, quote_plus(params)), useCookie=cookie)
-            endp = self.findKey('endpoint', data)
+            endp = findKey('endpoint', data)
 
         if endp:
             action = 'Remove' if remove else 'Add'
@@ -784,21 +785,6 @@ class AmazonTLD(Singleton):
             addDir(getString(30107), 'listContent', 'TV', catalog=listing, export=export)
             xbmcplugin.endOfDirectory(self._g.pluginhandle, updateListing=False)
 
-    def findKey(self, key, obj):
-        if key in obj.keys():
-            return obj[key]
-        for v in obj.values():
-            if isinstance(v, dict):
-                res = self.findKey(key, v)
-                if res: return res
-            elif isinstance(v, list):
-                for d in v:
-                    if isinstance(d, dict):
-                        res = self.findKey(key, d)
-                        if res:
-                            return res
-        return []
-
     def _scrapeAsins(self, aurl, cj):
         asins = []
         url = self._g.BaseUrl + aurl
@@ -806,7 +792,7 @@ class AmazonTLD(Singleton):
         if not json:
             return False, False
         WriteLog(str(json), 'watchlist')
-        cont = self.findKey('content', json)
+        cont = findKey('content', json)
         info = {'approximateSize': cont.get('totalItems', 0),
                 'endIndex': cont.get('nextPageStartIndex', 0)}
 
@@ -1046,7 +1032,7 @@ class AmazonTLD(Singleton):
                 t = ['0'] * (2 - len(t)) + t
                 il['Duration'] = sum(map(lambda a, b: int(a) * b, t, (3600, 60)))
             if 'playbackActions' in item:
-                il['contentType'] = self.findKey('videoMaterialType', item['playbackActions'])
+                il['contentType'] = findKey('videoMaterialType', item['playbackActions'])
             elif 'notificationActions' in item:
                 il['contentType'] = 'nostream'
                 il['Title'] = '%s (%s)' % (il['Title'], item['notificationActions'][0]['message']['string'])
@@ -1138,7 +1124,7 @@ class AmazonTLD(Singleton):
                     il, ct = getInfos(item)
                     vw = ct if ct else vw
                     cm = crctxmenu(item)
-                    id = self.findKey('playbackID', item.get('playbackActions', {}))
+                    id = findKey('playbackID', item.get('playbackActions', {}))
                     asin = id if id else asin
                     if 'nostream' in ct:
                         addDir(il['DisplayTitle'], 'text', infoLabels=il)

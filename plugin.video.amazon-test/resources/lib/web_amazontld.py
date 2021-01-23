@@ -291,13 +291,17 @@ class AmazonTLD(Singleton):
         elif 'wltoogle' == verb: g.pv.Watchlist(path)
 
     def Watchlist(self, path):
-        path = path.split('/')
+        path = path.split(self._separator)
         remove = int(path[-1])
         params = '[{"titleID":"%s","watchlist":true}]' % path[-2]
         data = GrabJSON(self._g.BaseUrl + '/gp/video/api/enrichItemMetadata?itemsToEnrich=' + quote_plus(params))
         endp = findKey('endpoint', data)
         endp['query']['tag'] = ['Add', 'Remove'][remove]
-        getURL(self._g.BaseUrl + endp['partialURL'], postdata=endp['query'], useCookie=True, allow_redirects=False, check=True)
+        result = getURL(self._g.BaseUrl + endp['partialURL'], postdata=endp['query'], useCookie=True, allow_redirects=False, check=True)
+        if result and remove == 1:
+            Log('Watchlist: {} {}'.format(endp['query']['tag'].lower(), path[-2]))
+            self.Refresh(self._separator.join(path[:-2]), False)
+            xbmc.executebuiltin('Container.Refresh')
 
     def Profile(self, path):
         """ Profile actions """
@@ -567,7 +571,7 @@ class AmazonTLD(Singleton):
                     if m['videometa']['mediatype'] in ['movie', 'season']:
                         in_wl = 1 if path.split('/')[:3] == ['root', 'Watchlist', 'watchlist'] else 0
                         ctxitems.append((getString(30180 + in_wl) % getString(self._g.langID[m['videometa']['mediatype']]),
-                                         'RunPlugin({}pv/wltoogle/{}/{})'.format(self._g.pluginid, entry['metadata']['compactGTI'], in_wl)))
+                                         'RunPlugin({}pv/wltoogle/{}/{}/{})'.format(self._g.pluginid, path, entry['metadata']['compactGTI'], in_wl)))
                     if bIsVideo:
                         folder = False
                         item.setProperty('IsPlayable', 'true')
@@ -614,7 +618,7 @@ class AmazonTLD(Singleton):
         self._catalog['search'] = OrderedDict([('lazyLoadURL', self._catalog['root']['Search']['endpoint'].format(searchString))])
         self.Browse('search', True)
 
-    def Refresh(self, path):
+    def Refresh(self, path, bRefrehVideodata=True):
         """ Provides cache refresh functionality """
 
         refreshes = []
@@ -644,7 +648,7 @@ class AmazonTLD(Singleton):
                     if (season in node[k]) and ('lazyLoadURL' in node[k][season]):
                         bRefresh = False
                     else:
-                        bRefresh = True
+                        bRefresh = bRefrehVideodata
                         node[k][season] = {'lazyLoadURL': self._videodata[season]['ref']}
                     refreshes.append((node[k][season], breadcrumb + [season], bRefresh))
 
@@ -654,7 +658,7 @@ class AmazonTLD(Singleton):
                 node[k] = {'lazyLoadURL': targetURL}
                 if title:
                     node[k]['title'] = title
-                refreshes.append((node[k], breadcrumb, True))
+                refreshes.append((node[k], breadcrumb, bRefrehVideodata))
 
         from contextlib import contextmanager
 
@@ -677,7 +681,7 @@ class AmazonTLD(Singleton):
         def MaxSize(imgUrl):
             """ Strip the dynamic resize triggers from the URL (and other effects, such as blur) """
 
-            return self._imageRefiner.sub(r'\._.*_\.', '.', imgUrl)
+            return re.sub(r'\._.*_\.', '.', imgUrl)
 
         def ExtractURN(url):
             """ Extract the unique resource name identifier """
@@ -761,11 +765,13 @@ class AmazonTLD(Singleton):
             chid = item['channelId']
             if chid in o:
                 return
-            o[chid] = {'title': item['playbackAction']['label'], 'metadata': {'artmeta': {}, 'videometa': {}}, 'live': True}
+
+            o[chid] = {'title': item['playbackAction']['label'] if 'playbackAction' in item else item['title'],
+                       'metadata': {'artmeta': {}, 'videometa': {}}, 'live': True}
             o[chid]['metadata']['videometa']['plot'] = item['title'] + ('\n\n' + item['synopsis'] if 'synopsis' in item else '')
             o[chid]['metadata']['artmeta']['poster'] = o[chid]['metadata']['artmeta']['thumb'] = MaxSize(item['image']['url'])
             o[chid]['metadata']['videometa']['mediatype'] = 'video'
-            o[chid]['metadata']['compactGTI'] = ExtractURN(item['playbackAction']['fallbackUrl'])
+            o[chid]['metadata']['compactGTI'] = ExtractURN(item['playbackAction']['fallbackUrl']) if 'playbackAction' in item else item['channelId']
 
         def AddLiveEvent(o, item, url):
             urn = ExtractURN(url)
@@ -813,7 +819,7 @@ class AmazonTLD(Singleton):
                     parent = pid
                     bUpdatedVideoData = True
             else:
-                parent = self._videodata[self._videodata['urn2gti'][urn]]['parent']
+                parent = self._videodata[self._videodata['urn2gti'][urn]].get('parent')
             bSeasonOnly = (not parent) or (oid == parent)
             if not bSeasonOnly:
                 o[parent] = deepcopy(self._videodata[parent])
@@ -1003,18 +1009,18 @@ class AmazonTLD(Singleton):
                 # Meta prep
                 if 'metadata' not in vd:
                     vd['metadata'] = {'compactGTI': urn, 'artmeta': {}, 'videometa': {}}
-                    bUpdate = True
+                    bUpdated = True
                 if 'artmeta' not in vd['metadata']:
                     vd['metadata']['artmeta'] = {}
-                    bUpdate = True
+                    bUpdated = True
                 if 'videometa' not in vd['metadata']:
                     vd['metadata']['videometa'] = {}
-                    bUpdate = True
+                    bUpdated = True
 
                 # Parent
                 if gti in parents:
                     vd['parent'] = parents[gti]
-                    bUpdate = True
+                    bUpdated = True
 
                 item = details[gti]  # Shortcut
 

@@ -127,19 +127,12 @@ class Globals(Singleton):
         self._globals['ATVUrl'] = atv
         self._globals['UsePrimeVideo'] = pv
 
-        if self._globals['UsePrimeVideo']:
-            """ Initialise PrimeVideo """
-            from .web_primevideo import PrimeVideo
-            if 'pv' not in self._globals:
-                self._globals['pv'] = PrimeVideo(self, Settings())
+        if self._globals['addon'].getSetting('use_webapi') == 'false' and not self._globals['UsePrimeVideo']:
+            from .atv_api import PrimeVideo
         else:
-            """ Initialise AmazonTLD """
-            if self._globals['addon'].getSetting('use_webapi') == 'true':
-                from .web_amazontld import AmazonTLD
-            else:
-                from .atv_amazontld import AmazonTLD
-            if 'pv' not in self._globals:
-                self._globals['pv'] = AmazonTLD(self, Settings())
+            from .web_api import PrimeVideo
+        if 'pv' not in self._globals:
+            self._globals['pv'] = PrimeVideo(self, Settings())
 
 
 class Settings(Singleton):

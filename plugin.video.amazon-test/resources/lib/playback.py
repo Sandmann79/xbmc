@@ -668,7 +668,7 @@ class _AmazonPlayer(xbmc.Player):
                               (event, self.video_lastpos))
         if suc and 'statusCallbackIntervalSeconds' in str(msg):
             self.interval = msg['message']['body']['statusCallbackIntervalSeconds']
-        if not self.rec_added and self.video_lastpos > 180 and not g.UsePrimeVideo:
+        if not self.rec_added and self.video_lastpos > 180 and not g.UsePrimeVideo and not s.useWebApi:
             self.rec_added = True
             g.pv.updateRecents(self.asin)
 

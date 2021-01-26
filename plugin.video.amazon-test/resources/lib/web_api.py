@@ -25,7 +25,7 @@ except ImportError:
     from urllib import quote_plus, unquote_plus
 
 
-class AmazonTLD(Singleton):
+class PrimeVideo(Singleton):
     """ Wrangler of all things PrimeVideo.com """
 
     _catalog = {}  # Catalog cache
@@ -267,7 +267,7 @@ class AmazonTLD(Singleton):
             p = data['cerberus']['activeProfile']
             self._catalog['profiles'] = {'active': p['id']}
             self._catalog['profiles'][p['id']] = {
-                'title': p['name'],
+                'title': p.get('name', 'Default').encode('utf-8'),
                 'metadata': {'artmeta': {'icon': p['avatarUrl']}},
                 'verb': 'pv/profiles/switch/{}'.format(p['id']),
                 'endpoint': p['switchLink'],
@@ -305,7 +305,7 @@ class AmazonTLD(Singleton):
 
     def Profile(self, path):
         """ Profile actions """
-        path = path.split('/')
+        path = path.split(self._separator)
 
         def List():
             """ List all inactive profiles """
@@ -365,15 +365,38 @@ class AmazonTLD(Singleton):
 
     def LanguageSelect(self):
         cj = MechanizeLogin()
-        if cj:
+        if not cj or (not self._s.useWebApi and not self._g.UsePrimeVideo):
+            return
+        if self._g.UsePrimeVideo:
             l = cj.get('lc-main-av', path='/')
-        presel = [i for i, x in enumerate(self._languages) if x[0] == l]
-        sel = self._g.dialog.select(getString(30133), [x[1] for x in self._languages], preselect=presel[0] if presel else -1)
+            langs = self._languages
+            presel = [i for i, x in enumerate(langs) if x[0] == l]
+        else:
+            # TLDs doesn't store locale in cookie
+            from mechanicalsoup import StatefulBrowser
+            br = StatefulBrowser(soup_config={'features': 'html.parser'})
+            br.set_cookiejar(cj)
+            br.session.headers.update({'User-Agent': getConfig('UserAgent')})
+            br.open(g.BaseUrl + '/gp/customer-preferences/select-language')
+            form = br.select_form('form[method="post"]')
+            langs = [(elem.label.input.get('value'), elem.get_text(strip=True), elem.label.input.get('checked') is not None)
+                     for elem in br.get_current_page().find_all('div', attrs={'data-a-input-name': 'LOP'})]
+            presel = [i for i, x in enumerate(langs) if x[2] is True]
+
+        if len(langs) < 1:
+            self._g.dialog.notification('Amazon', 'No additional languages available')
+            return
+
+        sel = self._g.dialog.select(getString(30115), [x[1] for x in langs], preselect=presel[0] if presel else -1)
         if sel < 0:
             self._g.addon.openSettings()
         else:
-            Log('Changing text language to [{}] {}'.format(self._languages[sel][0], self._languages[sel][1]), Log.DEBUG)
-            cj.set('lc-main-av', self._languages[sel][0], path='/')
+            Log('Changing text language to [{}] {}'.format(langs[sel][0], langs[sel][1]), Log.DEBUG)
+            if self._g.UsePrimeVideo:
+                cj.set('lc-main-av', langs[sel][0], path='/')
+            else:
+                form.set_radio({'LOP': langs[sel][0]})
+                br.submit_selected()
             saveUserCookies(cj)
             self.DeleteCache()
 
@@ -391,7 +414,7 @@ class AmazonTLD(Singleton):
 
         # Specify `None` instead of just not empty to avoid multiple queries to the same endpoint
         if (home is None):
-            home = GrabJSON(self._g.BaseUrl + '/gp/video/storefront')
+            home = GrabJSON(self._g.BaseUrl + ('' if self._g.UsePrimeVideo else '/gp/video/storefront'))
             if not home:
                 return False
             self._UpdateProfiles(home)
@@ -403,6 +426,10 @@ class AmazonTLD(Singleton):
             self._catalog['root']['Watchlist'] = {'title': watchlist['text'], 'lazyLoadURL': FQify(watchlist['href'])}
         except: pass
         try:
+            watchlist = next((x for x in home['mainMenu']['links'] if 'pv-nav-mystuff' in x['id']), None)
+            self._catalog['root']['Watchlist'] = {'title': self._BeautifyText(watchlist['text']), 'lazyLoadURL': watchlist['href']}
+        except: pass
+        try:
             watchlist = next((x for x in home['lists']['mainMenuLinks'] if 'pv-nav-mystuff' in x['id']), None)
             self._catalog['root']['Watchlist'] = {'title': self._BeautifyText(watchlist['text']), 'lazyLoadURL': watchlist['href']}
         except: pass
@@ -411,15 +438,18 @@ class AmazonTLD(Singleton):
 
         # Insert the main sections, in order
         try:
-            navigation = deepcopy(home['lists']['mainMenuLinks'])
+            navigation = deepcopy(home['mainMenu']['links'] if self._g.UsePrimeVideo else home['lists']['mainMenuLinks'])
             cn = 0
             while navigation:
                 link = navigation.pop(0)
                 # Skip watchlist
                 if 'pv-nav-mystuff' in link['id']:
                     continue
-                mml = (not g.UsePrimeVideo and 'links' in link)
+                if self._g.UsePrimeVideo and 'links' in link:
+                    navigation = link['links'] + navigation
+                    continue
                 cn += 1
+                mml = 'links' in link
                 id = 'coll{}_{}'.format(cn, link['text'] + ('_mmlinks' if mml else ''))
                 self._catalog['root'][id] = {'title': self._BeautifyText(link['text']), 'lazyLoadURL': link['href']}
                 # Avoid unnecessary calls when loading the current page in the future
@@ -440,11 +470,29 @@ class AmazonTLD(Singleton):
             return False
 
         # Insert the searching mechanism
-        self._catalog['root']['Search'] = {
-            'title': getString(30108),
-            'verb': 'pv/search/',
-            'endpoint': '/gp/video/search?phrase={{}}'
-        }
+        if self._g.UsePrimeVideo:
+            # Insert the searching mechanism
+            try:
+                sfa = home['searchBar']['searchFormAction']
+                # Build the query parametrization
+                query = ''
+                if 'query' in sfa:
+                    query += '&'.join(['{}={}'.format(k, v) for k, v in sfa['query'].items()])
+                query = query if not query else query + '&'
+                self._catalog['root']['Search'] = {
+                    'title': self._BeautifyText(home['searchBar']['searchFormPlaceholder']),
+                    'verb': 'pv/search/',
+                    'endpoint': '{}?{}phrase={{}}'.format(sfa['partialURL'], query)
+                }
+            except:
+                Log('Search functionality not found', Log.ERROR)
+        else:
+            self._catalog['root']['Search'] = {
+                'title': getString(30108),
+                'verb': 'pv/search/',
+                'endpoint': '/gp/video/search?phrase={{}}'
+            }
+
         # Set the expiration based on settings (defaults to 12 hours) and flush to disk
         self._catalog['expiration'] = self._s.catalogCacheExpiry + int(time.time())
         self._Flush()
@@ -618,7 +666,7 @@ class AmazonTLD(Singleton):
         self._catalog['search'] = OrderedDict([('lazyLoadURL', self._catalog['root']['Search']['endpoint'].format(searchString))])
         self.Browse('search', True)
 
-    def Refresh(self, path, bRefrehVideodata=True):
+    def Refresh(self, path, bRefreshVideodata=True):
         """ Provides cache refresh functionality """
 
         refreshes = []
@@ -648,7 +696,7 @@ class AmazonTLD(Singleton):
                     if (season in node[k]) and ('lazyLoadURL' in node[k][season]):
                         bRefresh = False
                     else:
-                        bRefresh = bRefrehVideodata
+                        bRefresh = bRefreshVideodata
                         node[k][season] = {'lazyLoadURL': self._videodata[season]['ref']}
                     refreshes.append((node[k][season], breadcrumb + [season], bRefresh))
 
@@ -658,7 +706,7 @@ class AmazonTLD(Singleton):
                 node[k] = {'lazyLoadURL': targetURL}
                 if title:
                     node[k]['title'] = title
-                refreshes.append((node[k], breadcrumb, bRefrehVideodata))
+                refreshes.append((node[k], breadcrumb, bRefreshVideodata))
 
         from contextlib import contextmanager
 
@@ -762,16 +810,17 @@ class AmazonTLD(Singleton):
 
         def AddLiveTV(o, item):
             """ Add a direct playable live TV channel to the list """
-            chid = item['channelId']
-            if chid in o:
-                return
+            if 'channelId' in item:
+                chid = item['channelId']
+                if chid in o:
+                    return
 
-            o[chid] = {'title': item['playbackAction']['label'] if 'playbackAction' in item else item['title'],
-                       'metadata': {'artmeta': {}, 'videometa': {}}, 'live': True}
-            o[chid]['metadata']['videometa']['plot'] = item['title'] + ('\n\n' + item['synopsis'] if 'synopsis' in item else '')
-            o[chid]['metadata']['artmeta']['poster'] = o[chid]['metadata']['artmeta']['thumb'] = MaxSize(item['image']['url'])
-            o[chid]['metadata']['videometa']['mediatype'] = 'video'
-            o[chid]['metadata']['compactGTI'] = ExtractURN(item['playbackAction']['fallbackUrl']) if 'playbackAction' in item else item['channelId']
+                o[chid] = {'title': item['playbackAction']['label'] if 'playbackAction' in item else item['title'],
+                           'metadata': {'artmeta': {}, 'videometa': {}}, 'live': True}
+                o[chid]['metadata']['videometa']['plot'] = item['title'] + ('\n\n' + item['synopsis'] if 'synopsis' in item else '')
+                o[chid]['metadata']['artmeta']['poster'] = o[chid]['metadata']['artmeta']['thumb'] = MaxSize(item['image']['url'])
+                o[chid]['metadata']['videometa']['mediatype'] = 'video'
+                o[chid]['metadata']['compactGTI'] = ExtractURN(item['playbackAction']['fallbackUrl']) if 'playbackAction' in item else item['channelId']
 
         def AddLiveEvent(o, item, url):
             urn = ExtractURN(url)
@@ -948,7 +997,7 @@ class AmazonTLD(Singleton):
                 # "self": {"amzn1.dv.gti.[…]": {"gti": "amzn1.dv.gti.[…]", "link": "/detail/[…]"}}
                 for gti in [k for k in state['self'] if 'season' == state['self'][k]['titleType'].lower()]:
                     s = state['self'][gti]
-                    # gti = s['gti']
+                    gti = s['gti'] if self._g.UsePrimeVideo else gti
                     if gti not in self._videodata:
                         o[gti] = {('ref' if state['pageTitleId'] == gti else 'lazyLoadURL'): s['link']}
                         self._videodata[gti] = {'ref': s['link'], 'children': [], 'siblings': []}
@@ -1140,10 +1189,17 @@ class AmazonTLD(Singleton):
         amzLang = None
         cj = MechanizeLogin()
         if cj:
-            i18 = {'EUR': 'de_DE', 'GBP': 'en_GB', 'JPY': 'ja_JP', 'USD': 'en_US'}
-            pref = cj.get('i18n-prefs', path='/')
-            if pref:
-                amzLang = i18.get(pref)
+            if self._g.UsePrimeVideo:
+                amzLang = cj.get('lc-main-av', path='/')
+            else:
+                cval = [v for k, v in cj.items() if 'lc-acb' in k]
+                if cval:
+                    amzLang = cval[0]
+                else:
+                    i18 = {'EUR': 'de_DE', 'GBP': 'en_GB', 'JPY': 'ja_JP', 'USD': 'en_US'}
+                    pref = cj.get('i18n-prefs', path='/')
+                    if pref:
+                        amzLang = i18.get(pref)
 
         amzLang = amzLang if amzLang else 'en_US'
 

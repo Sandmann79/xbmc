@@ -17,7 +17,7 @@ from .users import *
 from .common import findKey
 
 
-class AmazonTLD(Singleton):
+class PrimeVideo(Singleton):
     """ Wrangler of all things Amazon.(com|co.uk|de|jp) """
 
     def __init__(self, globalsInstance, settingsInstance):

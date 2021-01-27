@@ -1275,6 +1275,11 @@ class PrimeVideo(Singleton):
                         o[collection['text']] = {'title': self._BeautifyText(collection['text'])}
                         if 'seeMoreLink' in collection:
                             o[collection['text']]['lazyLoadURL'] = collection['seeMoreLink']['url']
+                        elif 'paginationTargetId' in collection:
+                            q = ['{}={}'.format(k.replace('paginationServiceToken', 'serviceToken'), ','.join(v) if isinstance(v, list) else quote_plus(v))
+                                 for k, v in collection.items() if k in ['collectionType', 'paginationServiceToken', 'paginationTargetId', 'tags']]
+                            q.append('startIndex=0&pageSize=20&pageType=home&pageId=home&facetType=' + collection['facet']['facetType'])
+                            o[collection['text']]['lazyLoadURL'] = '/gp/video/api/paginateCollection?' + '&'.join(q)
                         else:
                             o[collection['text']]['lazyLoadData'] = collection
                     elif 'items' in collection:
@@ -1357,7 +1362,7 @@ class PrimeVideo(Singleton):
                     bUpdatedVideoData |= ParseSinglePage(breadcrumb[-1], o, bCacheRefresh, data=cnt, url=requestURL)
 
                 # Pagination
-                if ('pagination' in cnt) or (key_exists(cnt, 'viewOutput', 'features', wl_lib, 'content', 'seeMoreHref')):
+                if ('pagination' in cnt) or (key_exists(cnt, 'viewOutput', 'features', wl_lib, 'content', 'seeMoreHref')) or ('hasMoreItems' in cnt):
                     nextPage = None
                     try:
                         # Dynamic AJAX pagination
@@ -1366,11 +1371,16 @@ class PrimeVideo(Singleton):
                             nextPage = seeMore['seeMoreHref']
                     except:
                         # Classic numbered pagination
-                        if 'apiUrl' in cnt['pagination']:
-                            nextPage = cnt['pagination']['apiUrl']
-                        elif 'paginator' in cnt['pagination']:
-                            nextPage = next((x['href'] for x in cnt['pagination']['paginator'] if
-                                            (('type' in x) and ('NextPage' == x['type'])) or (('*className*' in x) and ('atv.wps.PaginatorNext' == x['*className*']))), None)
+                        if 'pagination' in cnt:
+                            if 'apiUrl' in cnt['pagination']:
+                                nextPage = cnt['pagination']['apiUrl']
+                            elif 'paginator' in cnt['pagination']:
+                                nextPage = next((x['href'] for x in cnt['pagination']['paginator'] if
+                                                 (('type' in x) and ('NextPage' == x['type'])) or (
+                                                             ('*className*' in x) and ('atv.wps.PaginatorNext' == x['*className*']))), None)
+                        elif cnt.get('hasMoreItems', False) and 'startIndex=' in requestURL:
+                            idx = int(re.search(r'startIndex=(\d*)', requestURL).group(1))
+                            nextPage = requestURL.replace('startIndex={}'.format(idx), 'startIndex={}'.format(idx+20))
 
                     if nextPage:
                         # Determine if we can auto page

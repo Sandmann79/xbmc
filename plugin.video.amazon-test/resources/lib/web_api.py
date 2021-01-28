@@ -275,7 +275,7 @@ class PrimeVideo(Singleton):
             if 'otherProfiles' in data['cerberus']:
                 for p in data['cerberus']['otherProfiles']:
                     self._catalog['profiles'][p['id']] = {
-                        'title': p['name'],
+                        'title': p.get('name', 'Default').encode('utf-8'),
                         'metadata': {'artmeta': {'icon': p['avatarUrl']}},
                         'verb': 'pv/profiles/switch/{}'.format(p['id']),
                         'endpoint': p['switchLink'],
@@ -510,6 +510,7 @@ class PrimeVideo(Singleton):
         if ('root' + self._separator + 'SwitchUser') == path:
             if switchUser():
                 self.BuildRoot()
+                xbmc.executebuiltin('Container.Refresh')
             return
 
         # Add Profiles
@@ -1192,6 +1193,7 @@ class PrimeVideo(Singleton):
             if self._g.UsePrimeVideo:
                 amzLang = cj.get('lc-main-av', path='/')
             else:
+                # after first language change lc-acb(de/uk) cookie gets stored
                 cval = [v for k, v in cj.items() if 'lc-acb' in k]
                 if cval:
                     amzLang = cval[0]
@@ -1252,36 +1254,37 @@ class PrimeVideo(Singleton):
 
             # Submenus
             mmpos = [len(breadcrumb)-i for i, x in enumerate(breadcrumb) if 'mmlinks' in x]
-            if len(mmpos) > 0 and mmpos[0] < 3:
+            if len(mmpos) > 0 and (mmpos[0] == 1 or (mmpos[0] == 2 and 'genres' in breadcrumb[-1])):
                 catid = ''
-                pos = 0
                 for link in cnt['lists']['mainMenuLinks']:
                     for lk in link.get('links', []):
                         if 'heading' in lk.get('features', ''):
                             catid = lk['id']
-                            if mmpos[0] == 1:
-                                pos += 1
-                                o['sortedcoll{:0>2d}_{}'.format(pos, lk['id'])] = \
+                            if mmpos[0] == 1 and 'genres' in catid:
+                                o['sortedcoll{:0>3d}_{}'.format(len(o), lk['id'])] = \
                                     {'title': self._BeautifyText(lk['text']), 'lazyLoadURL': lk['href'], 'lazyLoadData': cnt}
                             continue
-                        if mmpos[0] == 2 and catid in breadcrumb[-1]:
-                            pos += 1
-                            o['sortedcoll{:0>2d}_{}'.format(pos, lk['id'])] = {'title': self._BeautifyText(lk['text']), 'lazyLoadURL': lk['href']}
+                        if (mmpos[0] == 2 and catid in breadcrumb[-1]) or (mmpos[0] == 1 and 'categories' in catid):
+                            o['sortedcoll{:0>3d}_{}'.format(len(o), lk['id'])] = {'title': self._BeautifyText(lk['text']), 'lazyLoadURL': lk['href']}
                 cnt = ''
             # Categories
             elif 'collections' in cnt:
                 for collection in cnt['collections']:
                     if 'text' in collection:
-                        o[collection['text']] = {'title': self._BeautifyText(collection['text'])}
+                        txt = collection['text']
+                        if 'Channels' in breadcrumb[-1] and 'facet' in collection and collection['facet'].get('alternateText'):
+                            txt = '{} - {}'.format(collection['facet']['alternateText'], txt)
+                        id = 'sortedcoll{:0>3d}_{}'.format(len(o), txt)
+                        o[id] = {'title': self._BeautifyText(txt)}
                         if 'seeMoreLink' in collection:
-                            o[collection['text']]['lazyLoadURL'] = collection['seeMoreLink']['url']
+                            o[id]['lazyLoadURL'] = collection['seeMoreLink']['url']
                         elif 'paginationTargetId' in collection:
                             q = ['{}={}'.format(k.replace('paginationServiceToken', 'serviceToken'), ','.join(v) if isinstance(v, list) else quote_plus(v))
                                  for k, v in collection.items() if k in ['collectionType', 'paginationServiceToken', 'paginationTargetId', 'tags']]
                             q.append('startIndex=0&pageSize=20&pageType=home&pageId=home&facetType=' + collection['facet']['facetType'])
-                            o[collection['text']]['lazyLoadURL'] = '/gp/video/api/paginateCollection?' + '&'.join(q)
+                            o[id]['lazyLoadURL'] = '/gp/video/api/paginateCollection?' + '&'.join(q)
                         else:
-                            o[collection['text']]['lazyLoadData'] = collection
+                            o[id]['lazyLoadData'] = collection
                     elif 'items' in collection:
                         # LiveTV
                         for item in collection['items']:

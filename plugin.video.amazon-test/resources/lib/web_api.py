@@ -5,7 +5,6 @@ from collections import OrderedDict
 from copy import deepcopy
 from kodi_six import xbmcplugin, xbmcgui
 import json
-import pickle
 import re
 import sys
 import time
@@ -18,6 +17,11 @@ from .itemlisting import setContentAndView
 from .l10n import *
 from .users import *
 from .playback import PlayVideo
+
+try:
+    import cPickle as pickle
+except ImportError:
+    import pickle
 
 try:
     from urllib.parse import quote_plus, unquote_plus
@@ -170,7 +174,7 @@ class PrimeVideo(Singleton):
 
         if bFlushCacheData:
             with open(self._catalogCache, 'wb+') as fp:
-                pickle.dump(self._catalog, fp)
+                pickle.dump(self._catalog, fp, -1)
         if bFlushVideoData:
             with open(self._videodataCache, 'w+') as fp:
                 bPretty = self._s.verbLog
@@ -246,14 +250,13 @@ class PrimeVideo(Singleton):
                             if 0 == len(self._videodata[cid]['children']):
                                 node[cid]['lazyLoadURL'] = self._videodata[cid]['ref']
                         except: pass
-
             if nodeName not in node:
                 self._g.dialog.notification('Catalog error', 'Catalog path not available…', xbmcgui.NOTIFICATION_ERROR)
-                return (None, None)
+                return None, None
             elif ('lazyLoadURL' in node[nodeName]) or ('lazyLoadData' in node[nodeName]):
                 self._LazyLoad(node[nodeName], pathList[0:1 + i])
             node = node[nodeName]
-        return (node, pathList)
+        return node, pathList
 
     def _AddDirectoryItem(self, title, artmetadata, verb):
         item = xbmcgui.ListItem(title)
@@ -372,7 +375,7 @@ class PrimeVideo(Singleton):
             langs = self._languages
             presel = [i for i, x in enumerate(langs) if x[0] == l]
         else:
-            # TLDs doesn't store locale in cookie
+            # TLDs doesn't store locale in cookie by default
             from mechanicalsoup import StatefulBrowser
             br = StatefulBrowser(soup_config={'features': 'html.parser'})
             br.set_cookiejar(cj)
@@ -413,7 +416,7 @@ class PrimeVideo(Singleton):
         """ Parse the top menu on primevideo.com and build the root catalog """
 
         # Specify `None` instead of just not empty to avoid multiple queries to the same endpoint
-        if (home is None):
+        if home is None:
             home = GrabJSON(self._g.BaseUrl + ('' if self._g.UsePrimeVideo else '/gp/video/storefront'))
             if not home:
                 return False
@@ -530,13 +533,14 @@ class PrimeVideo(Singleton):
                     node[c] = {}
 
         folderType = 0 if 'root' == path else 1
-        nodeKeys = sorted(node) if ',sortedcoll' in ','.join(node.keys()) else list(node.keys())
+        nodeKeys = sorted([k for k in node if k not in ['ref', 'verb', 'title', 'metadata', 'parent', 'siblings', 'children', 'pos']],
+                          key=lambda x: (node[x].get('pos', 999) if isinstance(node[x], dict) else 999))
         # Move nextpage entry to end of list
         if 'nextPage' in nodeKeys:
             nodeKeys.pop(nodeKeys.index('nextPage'))
             nodeKeys.append('nextPage')
 
-        for key in [k for k in nodeKeys if k not in ['ref', 'verb', 'title', 'metadata', 'parent', 'siblings', 'children']]:
+        for key in nodeKeys:
             url = self._g.pluginid
             if key in self._videodata:
                 entry = deepcopy(self._videodata[key])
@@ -817,7 +821,7 @@ class PrimeVideo(Singleton):
                     return
 
                 o[chid] = {'title': item['playbackAction']['label'] if 'playbackAction' in item else item['title'],
-                           'metadata': {'artmeta': {}, 'videometa': {}}, 'live': True}
+                           'metadata': {'artmeta': {}, 'videometa': {}}, 'live': True, 'pos': len(o)}
                 o[chid]['metadata']['videometa']['plot'] = item['title'] + ('\n\n' + item['synopsis'] if 'synopsis' in item else '')
                 o[chid]['metadata']['artmeta']['poster'] = o[chid]['metadata']['artmeta']['thumb'] = MaxSize(item['image']['url'])
                 o[chid]['metadata']['videometa']['mediatype'] = 'video'
@@ -829,7 +833,7 @@ class PrimeVideo(Singleton):
             if (urn in o):
                 return
             title = item['title' if 'title' in item else 'heading']
-            o[urn] = {'title': title, 'lazyLoadURL': item['href'] if 'href' in item else item['link']['url'], 'metadata': {'artmeta': {}, 'videometa': {}}}
+            o[urn] = {'title': title, 'lazyLoadURL': item['href'] if 'href' in item else item['link']['url'], 'metadata': {'artmeta': {}, 'videometa': {}}, 'pos': len(o)}
             if ('liveInfo' in item) and (('timeBadge' in item['liveInfo']) or (('status' in item['liveInfo']) and ('live' == item['liveInfo']['status'].lower()))):
                 when = 'Live' if 'timeBadge' not in item['liveInfo'] else item['liveInfo']['timeBadge']
                 if 'venue' in item['liveInfo']:
@@ -1261,11 +1265,11 @@ class PrimeVideo(Singleton):
                         if 'heading' in lk.get('features', ''):
                             catid = lk['id']
                             if mmpos[0] == 1 and 'genres' in catid:
-                                o['sortedcoll{:0>3d}_{}'.format(len(o), lk['id'])] = \
-                                    {'title': self._BeautifyText(lk['text']), 'lazyLoadURL': lk['href'], 'lazyLoadData': cnt}
+                                o[lk['id']] = \
+                                    {'title': self._BeautifyText(lk['text']), 'lazyLoadURL': lk['href'], 'lazyLoadData': cnt, 'pos': len(o)}
                             continue
                         if (mmpos[0] == 2 and catid in breadcrumb[-1]) or (mmpos[0] == 1 and 'categories' in catid):
-                            o['sortedcoll{:0>3d}_{}'.format(len(o), lk['id'])] = {'title': self._BeautifyText(lk['text']), 'lazyLoadURL': lk['href']}
+                            o[lk['id']] = {'title': self._BeautifyText(lk['text']), 'lazyLoadURL': lk['href'], 'pos': len(o)}
                 cnt = ''
             # Categories
             elif 'collections' in cnt:
@@ -1274,8 +1278,8 @@ class PrimeVideo(Singleton):
                         txt = collection['text']
                         if 'Channels' in breadcrumb[-1] and 'facet' in collection and collection['facet'].get('alternateText'):
                             txt = '{} - {}'.format(collection['facet']['alternateText'], txt)
-                        id = 'sortedcoll{:0>3d}_{}'.format(len(o), txt)
-                        o[id] = {'title': self._BeautifyText(txt)}
+                        id = txt
+                        o[id] = {'title': self._BeautifyText(txt), 'pos': len(o)}
                         if 'seeMoreLink' in collection:
                             o[id]['lazyLoadURL'] = collection['seeMoreLink']['url']
                         elif 'paginationTargetId' in collection:
@@ -1295,7 +1299,7 @@ class PrimeVideo(Singleton):
             if ['root', 'Watchlist'] == breadcrumb:
                 wl = return_item(cnt, 'viewOutput', 'features', 'view-filter')
                 for f in wl['filters']:
-                    o[f['viewType']] = {'title': f['text'], 'lazyLoadURL': f['apiUrl' if 'apiUrl' in f else 'href']}
+                    o[f['viewType']] = {'title': f['text'], 'lazyLoadURL': f['apiUrl' if 'apiUrl' in f else 'href'], 'pos': len(o)}
                     if f.get('active', False):
                         o[f['viewType']]['lazyLoadData'] = cnt
             # MyStuff categories
@@ -1303,7 +1307,7 @@ class PrimeVideo(Singleton):
                 wl = return_item(cnt, 'viewOutput', 'features', wl_lib)
                 try:
                     for f in wl['filters']:
-                        o[f['id']] = {'title': f['text'], 'lazyLoadURL': f['apiUrl' if 'apiUrl' in f else 'href']}
+                        o[f['id']] = {'title': f['text'], 'lazyLoadURL': f['apiUrl' if 'apiUrl' in f else 'href'], 'pos': len(o)}
                         if 'applied' in f and f['applied']:
                             o[f['id']]['lazyLoadData'] = cnt
                 except KeyError: pass  # Empty list

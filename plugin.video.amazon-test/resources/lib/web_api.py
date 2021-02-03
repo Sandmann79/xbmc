@@ -368,7 +368,7 @@ class PrimeVideo(Singleton):
 
     def LanguageSelect(self):
         cj = MechanizeLogin()
-        if not cj or (not self._s.useWebApi and not self._g.UsePrimeVideo):
+        if not cj:
             return
         if self._g.UsePrimeVideo:
             l = cj.get('lc-main-av', path='/')
@@ -387,7 +387,7 @@ class PrimeVideo(Singleton):
             presel = [i for i, x in enumerate(langs) if x[2] is True]
 
         if len(langs) < 1:
-            self._g.dialog.notification('Amazon', 'No additional languages available')
+            self._g.dialog.notification(g.__plugin__, getString(30270))
             return
 
         sel = self._g.dialog.select(getString(30115), [x[1] for x in langs], preselect=presel[0] if presel else -1)

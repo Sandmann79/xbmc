@@ -377,6 +377,10 @@ msgctxt "#30093"
 msgid "Use Web API (beta)"
 msgstr ""
 
+msgctxt "#30094"
+msgid "Refer to PrimeVideo settings for more options"
+msgstr ""
+
 # empty strings from id 30094 to 30099
 msgctxt "#30100"
 msgid "Library"
@@ -782,4 +786,12 @@ msgstr ""
 
 msgctxt "#30268"
 msgid "Refresh"
+msgstr ""
+
+msgctxt "#30269"
+msgid "Not available, enable WebAPI to use this future"
+msgstr ""
+
+msgctxt "#30270"
+msgid "No additional languages available"
 msgstr ""

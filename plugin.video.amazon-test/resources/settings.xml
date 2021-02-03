@@ -112,7 +112,7 @@
         <setting id="wl_export" type="bool" label="30080" default="false" visible="eq(-8,false)"/>
         <setting label="Artwork" type="lsep" />
         <setting id="tld_episode_thumbnails" type="bool" label="30249" default="false" visible="eq(-10,false)"/>
-        <setting id="pv_episode_thumbnails" type="bool" label="30249" default="true" visible="eq(-11,true)" />
+        <setting type="action" label="30094" action="" visible="eq(-11,true)" />
     </category>
     <!-- PrimeVideo -->
     <category label="30250">

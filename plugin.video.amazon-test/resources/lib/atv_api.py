@@ -1199,3 +1199,37 @@ class PrimeVideo(Singleton):
             if ret >= 0 and ret != active:
                 getURL(profiles[ret][1], useCookie=True, rjson=False, silent=True, check=True)
         exit()
+
+    def Route(self, mode, args):
+        if mode == 'listCategories':
+            self.listCategories(args.get('url', ''), args.get('opt', ''))
+        elif mode == 'listContent':
+            url = py2_decode(args.get('url', ''))
+            self.listContent(args.get('cat'), url, int(args.get('page', '1')), args.get('opt', ''), int(args.get('export', '0')))
+        elif mode == 'getList':
+            self.getList(args.get('url', ''), int(args.get('export', '0')), args.get('opt'))
+        elif mode == 'getListMenu':
+            self.getListMenu(args.get('url', ''), int(args.get('export', '0')))
+        elif mode == 'WatchList':
+            self.WatchList(args.get('url', ''), int(args.get('opt', '0')))
+        elif mode == 'Search':
+            searchString = args.get('searchstring')
+            self.Search(searchString)
+        elif mode in ['checkMissing', 'Recent', 'switchProfile']:
+            exec ('g.pv.{}()'.format(mode))
+        elif mode == 'Channel':
+            self.Channel(url=args.get('url'), uid=args.get('opt'))
+        elif mode == 'updateRecents':
+            self.updateRecents(args.get('asin', ''), int(args.get('rem', '0')))
+        elif mode == 'languageselect':
+            g.dialog.notification(g.__plugin__, getString(30269))
+        elif mode == 'ageSettings':
+            AgeRestrictions().Settings()
+
+
+
+
+
+
+
+

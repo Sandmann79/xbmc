@@ -9,7 +9,6 @@ from .users import *
 from .logging import *
 from .configs import *
 from .common import Globals, Settings
-from .ages import AgeRestrictions
 from kodi_six.utils import py2_decode
 
 
@@ -66,35 +65,15 @@ def EntryPoint():
         Log('Unicode filename support: %s' % os.path.supports_unicode_filenames)
         Log('Locale: %s / Language: %s' % (g.userAcceptLanguages.split(',')[0], s.Language))
         g.pv.BrowseRoot()
-    elif mode == 'listCategories':
-        g.pv.listCategories(args.get('url', ''), args.get('opt', ''))
-    elif mode == 'listContent':
-        url = py2_decode(args.get('url', ''))
-        g.pv.listContent(args.get('cat'), url, int(args.get('page', '1')), args.get('opt', ''), int(args.get('export', '0')))
     elif mode == 'PlayVideo':
         from .playback import PlayVideo
         PlayVideo(args.get('name', ''), args.get('asin'), args.get('adult', '0'), int(args.get('trailer', '0')), int(args.get('selbitrate', '0')))
-    elif mode == 'getList':
-        g.pv.getList(args.get('url', ''), int(args.get('export', '0')), args.get('opt'))
-    elif mode == 'getListMenu':
-        g.pv.getListMenu(args.get('url', ''), int(args.get('export', '0')))
-    elif mode == 'WatchList':
-        g.pv.WatchList(args.get('url', ''), int(args.get('opt', '0')))
     elif mode == 'openSettings':
         aid = args.get('url')
         aid = g.is_addon if aid == 'is' else aid
         import xbmcaddon
         xbmcaddon.Addon(aid).openSettings()
-    elif mode == 'updateRecents':
-        g.pv.updateRecents(args.get('asin', ''), int(args.get('rem', '0')))
-    elif mode == 'ageSettings':
-        AgeRestrictions().Settings()
-    elif mode == 'Search':
-        searchString = args.get('searchstring')
-        g.pv.Search(searchString)
     elif mode in ['LogIn', 'remLoginData', 'removeUser', 'renameUser', 'switchUser']:
         exec('{}()'.format(mode))
-    elif mode in ['checkMissing', 'Recent', 'switchProfile']:
-        exec('g.pv.{}()'.format(mode))
-    elif mode == 'Channel':
-        g.pv.Channel(url=args.get('url'), uid=args.get('opt'))
+    else:
+        g.pv.Route(mode, args)

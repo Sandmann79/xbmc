@@ -714,8 +714,8 @@ msgid "Loading page {0}…"
 msgstr "Lade Seite {0}…"
 
 msgctxt "#30253"
-msgid "{0} seasons"
-msgstr "{0} Staffeln"
+msgid "{0} seasons available"
+msgstr "{0} Staffeln verfügbar"
 
 msgctxt "#30254"
 msgid "userinput.exe not found"

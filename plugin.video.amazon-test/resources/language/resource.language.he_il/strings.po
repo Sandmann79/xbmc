@@ -722,7 +722,7 @@ msgid "Loading page {0}…"
 msgstr ""
 
 msgctxt "#30253"
-msgid "{0} seasons"
+msgid "{0} seasons available"
 msgstr ""
 
 msgctxt "#30254"

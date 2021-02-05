@@ -493,7 +493,7 @@ class PrimeVideo(Singleton):
             self._catalog['root']['Search'] = {
                 'title': getString(30108),
                 'verb': 'pv/search/',
-                'endpoint': '/gp/video/search?phrase={{}}'
+                'endpoint': '/gp/video/search?phrase={}'
             }
 
         # Set the expiration based on settings (defaults to 12 hours) and flush to disk
@@ -602,7 +602,8 @@ class PrimeVideo(Singleton):
                         except: pass
                     if snid:
                         entry['metadata']['artmeta'] = self._videodata[snid]['metadata']['artmeta']
-                        entry['metadata']['videometa']['plot'] = getString(30253).format(len(entry['children']))  # "# series" as plot/description
+                        entry['metadata']['videometa']['plot'] = '{}\n\n{}'.format(getString(30253).format(len(entry['children'])),
+                                                                                   self._videodata[snid]['metadata']['videometa']['plot'])  # "# series" as plot/description
             except: pass
 
             folder = True
@@ -650,12 +651,13 @@ class PrimeVideo(Singleton):
             xbmcplugin.SORT_METHOD_LABEL_IGNORE_THE,  # Movies list
         ][0 if bNoSort or ('nextPage' in node) else folderType])
 
-        if 'false' == self._g.addon.getSetting("viewenable"):
-            # Only vfs and videos to keep Kodi's watched functionalities
-            folderType = 0 if 2 > folderType else 1
-        else:
-            # Actual views, set the main categories as vfs
-            folderType = 0 if 2 > folderType else 2
+        if self._g.UsePrimeVideo:
+            if 'false' == self._g.addon.getSetting("viewenable"):
+                # Only vfs and videos to keep Kodi's watched functionalities
+                folderType = 0 if 2 > folderType else 1
+            else:
+                # Actual views, set the main categories as vfs
+                folderType = 0 if 2 > folderType else 2
 
         setContentAndView([None, 'videos', 'series', 'season', 'episode', 'movie'][folderType])
         xbmcplugin.endOfDirectory(self._g.pluginhandle, succeeded=True, cacheToDisc=False)
@@ -697,7 +699,7 @@ class PrimeVideo(Singleton):
             else:  # TV Show
                 Log('Refreshing Show: {}'.format(k), Log.DEBUG)
                 bShow = True
-                for season in [k for k in self._videodata[k]['children'] if (k in self._videodata) and ('ref' in self._videodata[k])]:
+                for season in [l for l in self._videodata[k]['children'] if (l in self._videodata) and ('ref' in self._videodata[l])]:
                     if (season in node[k]) and ('lazyLoadURL' in node[k][season]):
                         bRefresh = False
                     else:
@@ -1126,7 +1128,7 @@ class PrimeVideo(Singleton):
 
                 # Contributors (`producers` are ignored)
                 if 'contributors' in item:
-                    for k, v in {'directors': 'director', 'starringActors': 'cast', 'supportingActors': 'cast'}.items():
+                    for k, v in OrderedDict([('directors', 'director'), ('starringActors', 'cast'), ('supportingActors', 'cast')]).items():
                         if k in item['contributors']:
                             for p in item['contributors'][k]:
                                 if 'name' in p:

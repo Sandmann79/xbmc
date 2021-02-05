@@ -714,8 +714,9 @@ msgctxt "#30252"
 msgid "Loading page {0}…"
 msgstr "Caricamento pagina {0}…"
 
+#, fuzzy
 msgctxt "#30253"
-msgid "{0} seasons"
+msgid "{0} seasons available"
 msgstr "{0} stagioni"
 
 msgctxt "#30254"

@@ -296,15 +296,26 @@ class PrimeVideo(Singleton):
     def Watchlist(self, path):
         path = path.split(self._separator)
         remove = int(path[-1])
-        params = '[{"titleID":"%s","watchlist":true}]' % path[-2]
-        data = GrabJSON(self._g.BaseUrl + '/gp/video/api/enrichItemMetadata?itemsToEnrich=' + quote_plus(params))
-        endp = findKey('endpoint', data)
-        endp['query']['tag'] = ['Add', 'Remove'][remove]
-        result = getURL(self._g.BaseUrl + endp['partialURL'], postdata=endp['query'], useCookie=True, allow_redirects=False, check=True)
-        if result and remove == 1:
-            Log('Watchlist: {} {}'.format(endp['query']['tag'].lower(), path[-2]))
-            self.Refresh(self._separator.join(path[:-2]), False)
-            xbmc.executebuiltin('Container.Refresh')
+        action = ['Add', 'Remove'][remove]
+        gtis = unquote_plus(path[-2]).split(',')
+        params = '['
+        for gti in gtis if remove else [gtis[0]]:
+            params += '{"titleID":"%s","watchlist":true},' % gti
+        data = GrabJSON(self._g.BaseUrl + '/gp/video/api/enrichItemMetadata?itemsToEnrich=' + quote_plus(params[:-1]+']'))
+        for enrich in list(data['enrichments']):
+            endp = data['enrichments'][enrich]['watchlistAction']['endpoint']
+            if (endp['query']['tag'] == action and remove) or not remove:
+                endp['query']['tag'] = action
+                result = getURL(self._g.BaseUrl + endp['partialURL'], postdata=endp['query'], useCookie=True, allow_redirects=False, check=True)
+                if result:
+                    Log('Watchlist: {} {}'.format(endp['query']['tag'].lower(), enrich))
+
+        if result:
+            if remove == 1:
+                self.Refresh(self._separator.join(path[:-2]), False)
+                xbmc.executebuiltin('Container.Refresh')
+            else:
+                self.Refresh('root/Watchlist', False)
 
     def Profile(self, path):
         """ Profile actions """
@@ -622,10 +633,12 @@ class PrimeVideo(Singleton):
                         folderType = {'video': 0, 'movie': 5, 'episode': 4, 'tvshow': 2, 'season': 3}[m['videometa']['mediatype']]
                     except:
                         folderType = 2  # Default to category
-                    if m['videometa']['mediatype'] in ['movie', 'season']:
+
+                    if folderType in [5, 3, 2]:
+                        gtis = ','.join(entry['children']) if 'children' in entry else entry['metadata']['compactGTI']
                         in_wl = 1 if path.split('/')[:3] == ['root', 'Watchlist', 'watchlist'] else 0
                         ctxitems.append((getString(30180 + in_wl) % getString(self._g.langID[m['videometa']['mediatype']]),
-                                         'RunPlugin({}pv/wltoogle/{}/{}/{})'.format(self._g.pluginid, path, entry['metadata']['compactGTI'], in_wl)))
+                                         'RunPlugin({}pv/wltoogle/{}/{}/{})'.format(self._g.pluginid, path, quote_plus(gtis), in_wl)))
                     if bIsVideo:
                         folder = False
                         item.setProperty('IsPlayable', 'true')
@@ -651,14 +664,7 @@ class PrimeVideo(Singleton):
             xbmcplugin.SORT_METHOD_LABEL_IGNORE_THE,  # Movies list
         ][0 if bNoSort or ('nextPage' in node) else folderType])
 
-        if self._g.UsePrimeVideo:
-            if 'false' == self._g.addon.getSetting("viewenable"):
-                # Only vfs and videos to keep Kodi's watched functionalities
-                folderType = 0 if 2 > folderType else 1
-            else:
-                # Actual views, set the main categories as vfs
-                folderType = 0 if 2 > folderType else 2
-
+        folderType = 0 if 2 > folderType else folderType
         setContentAndView([None, 'videos', 'series', 'season', 'episode', 'movie'][folderType])
         xbmcplugin.endOfDirectory(self._g.pluginhandle, succeeded=True, cacheToDisc=False)
 
@@ -1086,9 +1092,9 @@ class PrimeVideo(Singleton):
                         vd['title'] = self._BeautifyText(item['title'])
                     else:
                         try:
-                            vd['title'] = state['strings']['AVOD_DP_season_selector'].format(seasonNumber=item['seasonNumber'])
+                            vd['title'] = data['strings']['AVOD_DP_season_selector'].format(seasonNumber=item['seasonNumber'])
                         except:
-                            vd['title'] = 'Season {}'.format(item['seasonNumber'])
+                            vd['title'] = '{} {}'.format(getString(30167), item['seasonNumber'])
                     bUpdated = True
 
                 # Images

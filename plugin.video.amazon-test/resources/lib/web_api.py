@@ -631,7 +631,8 @@ class PrimeVideo(Singleton):
                     # https://codedocs.xyz/xbmc/xbmc/group__python__xbmcgui__listitem.html#ga0b71166869bda87ad744942888fb5f14
                     item.setInfo('video', m['videometa'])
                     try:
-                        folderType = {'video': 0, 'movie': 5, 'episode': 4, 'tvshow': 2, 'season': 3}[m['videometa']['mediatype']]
+                        if folderType not in [2, 5]:  # dont't use season view on tvshow or movies list
+                            folderType = {'video': 0, 'movie': 5, 'episode': 4, 'tvshow': 2, 'season': 3}[m['videometa']['mediatype']]
                     except:
                         folderType = 2  # Default to category
                     if folderType in [5, 3, 2] and not self._g.UsePrimeVideo:
@@ -658,10 +659,10 @@ class PrimeVideo(Singleton):
         xbmcplugin.addSortMethod(self._g.pluginhandle, [
             xbmcplugin.SORT_METHOD_NONE,  # Root
             xbmcplugin.SORT_METHOD_NONE,  # Category list
-            xbmcplugin.SORT_METHOD_LABEL_IGNORE_THE,  # Category
+            xbmcplugin.SORT_METHOD_NONE,  # Category
             xbmcplugin.SORT_METHOD_LABEL_IGNORE_THE,  # TV Show (Seasons list)
             xbmcplugin.SORT_METHOD_EPISODE,  # Season (Episodes list)
-            xbmcplugin.SORT_METHOD_LABEL_IGNORE_THE,  # Movies list
+            xbmcplugin.SORT_METHOD_NONE,  # Movies list
         ][0 if bNoSort or ('nextPage' in node) else folderType])
 
         folderType = 0 if 2 > folderType else folderType
@@ -1324,6 +1325,7 @@ class PrimeVideo(Singleton):
                 vo = return_item(cnt, 'viewOutput', 'features', wl_lib, 'content')
                 if ('items' in vo) or (('content' in vo) and ('items' in vo['content'])):
                     for item in (vo if 'items' in vo else vo['content'])['items']:
+                        oldk = list(o)
                         try:
                             title = item['heading'] if 'heading' in item else item['title']
                         except:
@@ -1351,10 +1353,13 @@ class PrimeVideo(Singleton):
                             bUpdatedVideoData |= ParseSinglePage(breadcrumb[-1], o, bCacheRefresh, url=iu)
                         else:
                             bUpdatedVideoData |= AddSeason(breadcrumb[-1], o, bCacheRefresh, title, iu)
-
+                        newitem = list(set(list(o)) - set(oldk))
+                        if newitem:
+                            o[newitem[0]]['pos'] = len(o)
                 # Search/list
                 if ('results' in cnt) and ('items' in cnt['results']):
                     for item in cnt['results']['items']:
+                        oldk = list(o)
                         iu = item['title']['url']
 
                         # Detect if it's a live event (or replay)
@@ -1370,6 +1375,9 @@ class PrimeVideo(Singleton):
                         else:
                             bUpdatedVideoData |= AddSeason(breadcrumb[-1], o, bCacheRefresh, item['title']['text'], iu)
 
+                        newitem = list(set(list(o)) - set(oldk))
+                        if newitem:
+                            o[newitem[0]]['pos'] = len(o)
                 # Single page
                 bSinglePage = False
                 if 'state' in cnt:

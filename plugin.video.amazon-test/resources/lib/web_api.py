@@ -544,6 +544,7 @@ class PrimeVideo(Singleton):
                     node[c] = {}
 
         folderType = 0 if 'root' == path else 1
+        folderTypeList = []
         nodeKeys = sorted([k for k in node if k not in ['ref', 'verb', 'title', 'metadata', 'parent', 'siblings', 'children', 'pos']],
                           key=lambda x: (node[x].get('pos', 999) if isinstance(node[x], dict) else 999))
         # Move nextpage entry to end of list
@@ -613,9 +614,9 @@ class PrimeVideo(Singleton):
                         except: pass
                     if snid:
                         entry['metadata']['artmeta'] = self._videodata[snid]['metadata']['artmeta']
-                        entry['metadata']['videometa']['cast'] = self._videodata[snid]['metadata']['videometa']['cast']
+                        entry['metadata']['videometa']['cast'] = self._videodata[snid]['metadata']['videometa'].get('cast', [])
                         entry['metadata']['videometa']['plot'] = '{}\n\n{}'.format(getString(30253).format(len(entry['children'])),
-                                                                                   self._videodata[snid]['metadata']['videometa']['plot'])  # "# series" as plot/description
+                                                                                   self._videodata[snid]['metadata']['videometa'].get('plot', ''))  # "# series" as plot/description
             except: pass
 
             folder = True
@@ -631,8 +632,7 @@ class PrimeVideo(Singleton):
                     # https://codedocs.xyz/xbmc/xbmc/group__python__xbmcgui__listitem.html#ga0b71166869bda87ad744942888fb5f14
                     item.setInfo('video', m['videometa'])
                     try:
-                        if folderType not in [2, 5]:  # dont't use season view on tvshow or movies list
-                            folderType = {'video': 0, 'movie': 5, 'episode': 4, 'tvshow': 2, 'season': 3}[m['videometa']['mediatype']]
+                        folderType = {'video': 0, 'movie': 5, 'episode': 4, 'tvshow': 2, 'season': 3}[m['videometa']['mediatype']]
                     except:
                         folderType = 2  # Default to category
                     if folderType in [5, 3, 2] and not self._g.UsePrimeVideo:
@@ -648,6 +648,7 @@ class PrimeVideo(Singleton):
                             item.setInfo('video', {'duration': m['runtime']})
                             item.addStreamInfo('video', {'duration': m['runtime']})
 
+            folderTypeList.append(folderType)
             item.addContextMenuItems(ctxitems)
             # If it's a video leaf without an actual video, something went wrong with Amazon servers, just hide it
             if ('nextPage' == key) or (not folder) or (4 > folderType):
@@ -655,6 +656,8 @@ class PrimeVideo(Singleton):
             del item
 
         # Set sort method and view
+        # leave folderType if its a single content list or use the most common foldertype for mixed content, except episodes or seasons (it will break sorting)
+        folderType = folderType if 2 > len(set(folderTypeList)) else sorted([(folderTypeList.count(x), x) for x in set(folderTypeList) if x not in [3, 4]], reverse=True)[0][1]
         # https://codedocs.xyz/xbmc/xbmc/group__python__xbmcplugin.html#ga85b3bff796fd644fb28f87b136025f40
         xbmcplugin.addSortMethod(self._g.pluginhandle, [
             xbmcplugin.SORT_METHOD_NONE,  # Root
@@ -834,7 +837,7 @@ class PrimeVideo(Singleton):
                 o[chid]['metadata']['videometa']['plot'] = item['title'] + ('\n\n' + item['synopsis'] if 'synopsis' in item else '')
                 o[chid]['metadata']['artmeta']['poster'] = o[chid]['metadata']['artmeta']['thumb'] = MaxSize(item['image']['url'])
                 o[chid]['metadata']['videometa']['mediatype'] = 'video'
-                o[chid]['metadata']['compactGTI'] = ExtractURN(item['playbackAction']['fallbackUrl']) if 'playbackAction' in item else item['channelId']
+                o[chid]['metadata']['compactGTI'] = ExtractURN(item['playbackAction']['fallbackUrl']) if 'playbackAction' in item else chid
 
         def AddLiveEvent(o, item, url):
             urn = ExtractURN(url)
@@ -842,7 +845,7 @@ class PrimeVideo(Singleton):
             if (urn in o):
                 return
             title = item['title' if 'title' in item else 'heading']
-            o[urn] = {'title': title, 'lazyLoadURL': item['href'] if 'href' in item else item['link']['url'], 'metadata': {'artmeta': {}, 'videometa': {}}, 'pos': len(o)}
+            o[urn] = {'title': title, 'lazyLoadURL': item['href'] if 'href' in item else item['link']['url'], 'metadata': {'artmeta': {}, 'videometa': {}}}
             if ('liveInfo' in item) and (('timeBadge' in item['liveInfo']) or (('status' in item['liveInfo']) and ('live' == item['liveInfo']['status'].lower()))):
                 when = 'Live' if 'timeBadge' not in item['liveInfo'] else item['liveInfo']['timeBadge']
                 if 'venue' in item['liveInfo']:
@@ -1287,6 +1290,7 @@ class PrimeVideo(Singleton):
                         txt = collection['text']
                         if 'Channels' in breadcrumb[-1] and 'facet' in collection and collection['facet'].get('alternateText'):
                             txt = '{} - {}'.format(collection['facet']['alternateText'], txt)
+                        txt = 'Highlights' if 'Hero Carousel' in txt else txt
                         id = txt
                         o[id] = {'title': self._BeautifyText(txt), 'pos': len(o)}
                         if 'seeMoreLink' in collection:
@@ -1353,6 +1357,7 @@ class PrimeVideo(Singleton):
                             bUpdatedVideoData |= ParseSinglePage(breadcrumb[-1], o, bCacheRefresh, url=iu)
                         else:
                             bUpdatedVideoData |= AddSeason(breadcrumb[-1], o, bCacheRefresh, title, iu)
+
                         newitem = list(set(list(o)) - set(oldk))
                         if newitem:
                             o[newitem[0]]['pos'] = len(o)

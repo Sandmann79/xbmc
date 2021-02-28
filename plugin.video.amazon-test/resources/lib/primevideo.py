@@ -959,11 +959,17 @@ class PrimeVideo(Singleton):
                 self._videodata['urn2gti'][urn] = state['pageTitleId']
 
             # Both of these versions have been spotted in the wild
-            # { "detail": { … } }
-            # { "detail": { "detail": {…}, "headerDetail": {…} } }
+            # { "detail": { "headerDetail": {…}, "amzn1.dv.gti.[…]": {…} }
+            # { "detail": { "detail": { "amzn1.dv.gti.[…]": {…} }, "headerDetail": {…} } }
             details = state['detail']
             if 'detail' in details:
                 details = details['detail']
+            # headerDetail contains sometimes gtis/asins, which are not included in details
+            if 'headerDetail' in state['detail']:
+                details.update(state['detail']['headerDetail'])
+                del state['detail']['headerDetail']
+            if 'btfMoreDetails' in state['detail']:
+                del state['detail']['btfMoreDetails']
 
             # Get details, seasons first
             # WARNING: seasons may not have proper initialization at this stage

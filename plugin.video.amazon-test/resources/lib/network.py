@@ -506,7 +506,6 @@ def LogIn():
                     form_id = form_poll
                     WriteLog(response.replace(py2_decode(email), '**@**'), 'login-pollingform')
                     stat = soup.find('input', attrs={'name': 'transactionApprovalStatus'})['value']
-                    Log(stat)
                     if stat in ['TransactionCompleted', 'TransactionCompletionTimeout']:
                         parsed_url = urlparse(url)
                         query = parse_qs(parsed_url.query)
@@ -700,6 +699,13 @@ def FQify(URL):
 
 def GrabJSON(url, postData=None):
     """ Extract JSON objects from HTMLs while keeping the API ones intact """
+    try:
+        from htmlentitydefs import name2codepoint
+        from urlparse import urlparse, parse_qs
+        from urllib import urlencode
+    except:
+        from urllib.parse import urlparse, parse_qs, urlencode
+        from html.entities import name2codepoint
 
     s = Settings()
 
@@ -799,13 +805,6 @@ def GrabJSON(url, postData=None):
 
     def do(url, postData):
         """ Wrapper to facilitate logging """
-        try:
-            from htmlentitydefs import name2codepoint
-            from urlparse import urlparse, parse_qs
-            from urllib import urlencode
-        except:
-            from urllib.parse import urlparse, parse_qs, urlencode
-            from html.entities import name2codepoint
 
         if url.startswith('/search/'):
             np = urlparse(url)
@@ -828,7 +827,7 @@ def GrabJSON(url, postData=None):
                 return o
         except:
             pass
-        matches = re.findall(r'\s*(?:<script[^>]+type="(?:text/template|application/json)"[^>]*>|state:)\s*({[^\n]+})\s*(?:,|</script>)\s*', r)
+        matches = [r] if r.startswith('{') else re.findall(r'\s*(?:<script[^>]+type="(?:text/template|application/json)"[^>]*>|state:)\s*({[^\n]+})\s*(?:,|</script>)\s*', r)
         if not matches:
             Log('No JSON objects found in the page', Log.ERROR)
             return None

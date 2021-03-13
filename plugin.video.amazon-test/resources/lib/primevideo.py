@@ -1163,7 +1163,7 @@ class PrimeVideo(Singleton):
             except:
                 bCouldNotParse = True
             if bCouldNotParse or (not cnt):
-                self._g.dialog.notification(getString(30251), requestURL, xbmcgui.NOTIFICATION_ERROR)
+                self._g.dialog.notification(getString(30251), requestURL[:48], xbmcgui.NOTIFICATION_ERROR)
                 Log('Unable to fetch the url: {}'.format(requestURL), Log.ERROR)
                 continue
 
@@ -1237,7 +1237,6 @@ class PrimeVideo(Singleton):
                 if 'state' in cnt:
                     bSinglePage = True
                     bUpdatedVideoData |= ParseSinglePage(breadcrumb[-1], o, bCacheRefresh, data=cnt, url=requestURL)
-
                 # Pagination
                 if ('pagination' in cnt) or (key_exists(cnt, 'viewOutput', 'features', 'legacy-watchlist', 'content', 'seeMoreHref')):
                     nextPage = None

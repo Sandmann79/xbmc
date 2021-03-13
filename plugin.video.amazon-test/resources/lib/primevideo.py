@@ -876,6 +876,11 @@ class PrimeVideo(Singleton):
                 details = state['detail']
                 if 'detail' in details:
                     details = details['detail']
+                if 'headerDetail' in state['detail']:
+                    details.update(state['detail']['headerDetail'])
+                    del state['detail']['headerDetail']
+                if 'btfMoreDetails' in state['detail']:
+                    del state['detail']['btfMoreDetails']
 
                 # Add video streams in order
                 for vid, i in sorted(details.items(), key=lambda t: 9999 if t[0] not in items else items[t[0]]):

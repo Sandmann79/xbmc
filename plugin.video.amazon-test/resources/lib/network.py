@@ -507,7 +507,6 @@ def LogIn():
                     form_id = form_poll
                     WriteLog(response.replace(py2_decode(email), '**@**'), 'login-pollingform')
                     stat = soup.find('input', attrs={'name': 'transactionApprovalStatus'})['value']
-                    Log(stat)
                     if stat in ['TransactionCompleted', 'TransactionCompletionTimeout']:
                         parsed_url = urlparse(url)
                         query = parse_qs(parsed_url.query)

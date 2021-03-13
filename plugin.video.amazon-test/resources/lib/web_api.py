@@ -456,14 +456,14 @@ class PrimeVideo(Singleton):
             cn = 0
             while navigation:
                 link = navigation.pop(0)
+                mml = 'links' in link
                 # Skip watchlist
                 if 'pv-nav-mystuff' in link['id']:
                     continue
-                if self._g.UsePrimeVideo and 'links' in link:
+                if self._g.UsePrimeVideo and mml:
                     navigation = link['links'] + navigation
                     continue
                 cn += 1
-                mml = 'links' in link
                 id = 'coll{}_{}'.format(cn, link['text'] + ('_mmlinks' if mml else ''))
                 self._catalog['root'][id] = {'title': self._BeautifyText(link['text']), 'lazyLoadURL': link['href']}
                 # Avoid unnecessary calls when loading the current page in the future
@@ -613,6 +613,7 @@ class PrimeVideo(Singleton):
                         except: pass
                     if snid:
                         entry['metadata']['artmeta'] = self._videodata[snid]['metadata']['artmeta']
+                        entry['metadata']['videometa']['cast'] = self._videodata[snid]['metadata']['videometa']['cast']
                         entry['metadata']['videometa']['plot'] = '{}\n\n{}'.format(getString(30253).format(len(entry['children'])),
                                                                                    self._videodata[snid]['metadata']['videometa']['plot'])  # "# series" as plot/description
             except: pass
@@ -633,8 +634,7 @@ class PrimeVideo(Singleton):
                         folderType = {'video': 0, 'movie': 5, 'episode': 4, 'tvshow': 2, 'season': 3}[m['videometa']['mediatype']]
                     except:
                         folderType = 2  # Default to category
-
-                    if folderType in [5, 3, 2]:
+                    if folderType in [5, 3, 2] and not self._g.UsePrimeVideo:
                         gtis = ','.join(entry['children']) if 'children' in entry else entry['metadata']['compactGTI']
                         in_wl = 1 if path.split('/')[:3] == ['root', 'Watchlist', 'watchlist'] else 0
                         ctxitems.append((getString(30180 + in_wl) % getString(self._g.langID[m['videometa']['mediatype']]),
@@ -1401,6 +1401,7 @@ class PrimeVideo(Singleton):
                         # Determine if we can auto page
                         p = self._s.pagination
                         bAutoPaginate = True
+                        preloadPages = 2 if (p['all'] or p['collections']) else 10
                         # Always autoload episode list
                         if bSinglePage:
                             pass
@@ -1409,9 +1410,13 @@ class PrimeVideo(Singleton):
                             bAutoPaginate = not (p['all'] or p['search'])
                         elif 'Watchlist' == breadcrumb[1]:  # /root/watchlist/*
                             bAutoPaginate = not (p['all'] or p['watchlist'])
-                        # Always auto load category lists, then paginate if appropriate
-                        elif (2 < len(breadcrumb)) and (p['all'] or p['collections']):
+                        # Always auto load category lists for pv, on tld load only 10 pages at most, then paginate if appropriate
+                        elif (2 < len(breadcrumb) and (p['all'] or p['collections'])) if self._g.UsePrimeVideo else pageNumber >= preloadPages:
                             bAutoPaginate = False
+                            if not self._g.UsePrimeVideo:
+                                try:
+                                    del(cnt['pagination']['page'])
+                                except KeyError: pass
 
                         if bAutoPaginate:
                             requestURLs.append(nextPage)

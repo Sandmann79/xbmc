@@ -13,7 +13,7 @@
 from __future__ import absolute_import, division, print_function
 
 
-__version__ = "0.9.50"
+__version__ = "0.9.51"
 
 import sys
 import time
@@ -23,6 +23,7 @@ import platform
 import re
 import functools
 import inspect
+from contextlib import contextmanager
 
 
 class PyAutoGUIException(Exception):
@@ -750,7 +751,7 @@ def position(x=None, y=None):
     Returns:
       (x, y) tuple of the current xy coordinates of the mouse cursor.
 
-    NOTE: The position() functon doesn't check for failsafe.
+    NOTE: The position() function doesn't check for failsafe.
     """
     posx, posy = platformModule._position()
     posx = int(posx)
@@ -975,7 +976,10 @@ def click(
     _logScreenshot(logScreenshot, "click", "%s,%s,%s,%s" % (button, clicks, x, y), folder=".")
 
     if sys.platform == 'darwin':
-        platformModule._multiClick(x, y, button, clicks)
+        for i in range(clicks):
+            failSafeCheck()
+            if button in (LEFT, MIDDLE, RIGHT):
+                platformModule._multiClick(x, y, button, 1, interval)
     else:
         for i in range(clicks):
             failSafeCheck()
@@ -987,9 +991,9 @@ def click(
 
 @_genericPyAutoGUIChecks
 def leftClick(x=None, y=None, interval=0.0, duration=0.0, tween=linear, logScreenshot=None, _pause=True):
-    """Performs a right mouse button click.
+    """Performs a left mouse button click.
 
-    This is a wrapper function for click('right', x, y).
+    This is a wrapper function for click('left', x, y).
 
     The x and y parameters detail where the mouse event happens. If None, the
     current mouse position is used. If a float value, it is rounded down. If
@@ -1047,7 +1051,7 @@ def rightClick(x=None, y=None, interval=0.0, duration=0.0, tween=linear, logScre
 def middleClick(x=None, y=None, interval=0.0, duration=0.0, tween=linear, logScreenshot=None, _pause=True):
     """Performs a middle mouse button click.
 
-    This is a wrapper function for click('right', x, y).
+    This is a wrapper function for click('middle', x, y).
 
     The x and y parameters detail where the mouse event happens. If None, the
     current mouse position is used. If a float value, it is rounded down. If
@@ -1104,8 +1108,8 @@ def doubleClick(x=None, y=None, interval=0.0, button=LEFT, duration=0.0, tween=l
         x, y = _normalizeXYArgs(x, y)
         _mouseMoveDrag("move", x, y, 0, 0, duration=0, tween=None)
         x, y = platformModule._position()
-        _logScreenshot(logScreenshot, "click", "%s,2,%s,%s" % (button, x, y), folder=".")
         platformModule._multiClick(x, y, button, 2)
+        _logScreenshot(logScreenshot, 'click', '%s,2,%s,%s' % (button, x, y), folder='.')
     else:
         # Click for Windows or Linux:
         click(x, y, 2, interval, button, duration, tween, logScreenshot, _pause=False)
@@ -1596,6 +1600,44 @@ def press(keys, presses=1, interval=0.0, logScreenshot=None, _pause=True):
             platformModule._keyDown(k)
             platformModule._keyUp(k)
         time.sleep(interval)
+
+
+@contextmanager
+@_genericPyAutoGUIChecks
+def hold(keys, logScreenshot=None, _pause=True):
+    """Context manager that performs a keyboard key press down upon entry,
+    followed by a release upon exit.
+
+    Args:
+      key (str, list): The key to be pressed. The valid names are listed in
+      KEYBOARD_KEYS. Can also be a list of such strings.
+      pause (float, optional): How many seconds in the end of function process.
+      None by default, for no pause in the end of function process.
+    Returns:
+      None
+    """
+    if type(keys) == str:
+        if len(keys) > 1:
+            keys = keys.lower()
+        keys = [keys] # If keys is 'enter', convert it to ['enter'].
+    else:
+        lowerKeys = []
+        for s in keys:
+            if len(s) > 1:
+                lowerKeys.append(s.lower())
+            else:
+                lowerKeys.append(s)
+        keys = lowerKeys
+    _logScreenshot(logScreenshot, "press", ",".join(keys), folder=".")
+    for k in keys:
+        failSafeCheck()
+        platformModule._keyDown(k)
+    try:
+        yield
+    finally:
+        for k in keys:
+            failSafeCheck()
+            platformModule._keyUp(k)
 
 
 @_genericPyAutoGUIChecks

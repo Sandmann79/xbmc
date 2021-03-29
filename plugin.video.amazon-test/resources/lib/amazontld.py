@@ -558,7 +558,7 @@ class AmazonTLD(Singleton):
             url = self._g.BaseUrl + endp.get('partialURL')
             query = endp.get('query')
             query['tag'] = action
-            data = getURL(url, postdata=query, useCookie=cookie, allow_redirects=False, check=True)
+            data = getURL(url, postdata=query, useCookie=cookie, check=True)
             if data:
                 Log(action + ' ' + asin)
                 if remove:
@@ -568,8 +568,6 @@ class AmazonTLD(Singleton):
                 elif self._s.wl_export:
                     self.listContent('GetASINDetails', 'asinList%3D' + asin, 1, '_show' if self._s.dispShowOnly else '', 1)
                     xbmc.executebuiltin('UpdateLibrary(video)')
-            else:
-                Log(data['status'] + ': ' + data['reason'])
 
     def getArtWork(self, infoLabels, contentType):
         if contentType == 'movie' and self._s.tmdb_art == '0':
@@ -776,12 +774,12 @@ class AmazonTLD(Singleton):
 
     def getListMenu(self, listing, export):
         if export:
-            self.listContent(listing, 'MOVIE', 1, listing, export)
-            self.listContent(listing, 'TV', 1, listing, export)
+            self.listContent(listing, 'movie', 1, listing, export)
+            self.listContent(listing, 'tv', 1, listing, export)
             if export == 2: xbmc.executebuiltin('UpdateLibrary(video)')
         else:
-            addDir(getString(30104), 'listContent', 'MOVIE', catalog=listing, export=export)
-            addDir(getString(30107), 'listContent', 'TV', catalog=listing, export=export)
+            addDir(getString(30104), 'listContent', 'movie', catalog=listing, export=export)
+            addDir(getString(30107), 'listContent', 'tv', catalog=listing, export=export)
             xbmcplugin.endOfDirectory(self._g.pluginhandle, updateListing=False)
 
     def findKey(self, key, obj):
@@ -802,7 +800,7 @@ class AmazonTLD(Singleton):
     def _scrapeAsins(self, aurl, cj):
         asins = []
         url = self._g.BaseUrl + aurl
-        json = getURL(url, useCookie=cj, binary=True)
+        json = GrabJSON(url)
         if not json:
             return False, False
         WriteLog(str(json), 'watchlist')
@@ -820,14 +818,7 @@ class AmazonTLD(Singleton):
             cj = MechanizeLogin()
             if not cj:
                 return [], ''
-            args = {listing: {'sort': self._s.wl_order,
-                              'libraryType': 'Items',
-                              'primeOnly': False,
-                              'startIndex': (page - 1) * 60,
-                              'contentType': cont},
-                    'shared': {'isPurchaseRow': 0}}
-
-            url = '/gp/video/api/myStuff{}?viewType={}&args={}'.format(listing.capitalize(), listing, json.dumps(args, separators=(',', ':')))
+            url = '/gp/video/mystuff/{}/{}/?page={}&sort={}'.format(listing, cont, page, self._s.wl_order)
             info, asins = self._scrapeAsins(url, cj)
             if info is False:
                 Log('Cookie invalid', Log.ERROR)

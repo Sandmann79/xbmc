@@ -123,11 +123,11 @@ msgstr "Usar app de Android para vídeos 4K"
 
 msgctxt "#30024"
 msgid "Profiles"
-msgstr ""
+msgstr "Perfiles"
 
 msgctxt "#30025"
 msgid "Change text language"
-msgstr ""
+msgstr "Cambiar el idioma del texto"
 
 msgctxt "#30026"
 msgid "Show password"
@@ -347,29 +347,31 @@ msgstr "Saltar todo automáticamente"
 
 msgctxt "#30087"
 msgid "Clear cache"
-msgstr ""
+msgstr "Limpiar caché"
 
 msgctxt "#30088"
 msgid ""
 "Clear cached catalog or video data?\n"
 "Video data includes series/season metadata."
 msgstr ""
+"¿Borrar catálogo o datos de video en caché?\n"
+"Los datos de video incluyen metadatos de series / temporadas."
 
 msgctxt "#30089"
 msgid "No"
-msgstr ""
+msgstr "No"
 
 msgctxt "#30090"
 msgid "Catalog"
-msgstr ""
+msgstr "Catálogo"
 
 msgctxt "#30091"
 msgid "Video data"
-msgstr ""
+msgstr "Datos de video"
 
 msgctxt "#30092"
 msgid "Both"
-msgstr ""
+msgstr "Ambos"
 
 msgctxt "#30100"
 msgid "Library"
@@ -561,11 +563,11 @@ msgstr "Saltando Escena…"
 
 msgctxt "#30196"
 msgid "Dump JSON replies"
-msgstr ""
+msgstr "Volcar respuestas JSON"
 
 msgctxt "#30197"
 msgid "Dump collisions"
-msgstr ""
+msgstr "Volcar colisiones"
 
 msgctxt "#30198"
 msgid "Browser or Script not found. Please check settings."
@@ -757,4 +759,4 @@ msgstr "30 días"
 
 msgctxt "#30266"
 msgid "Login credentials invalid, please login again."
-msgstr ""
+msgstr "Las credenciales de inicio de sesión no son válidas, vuelva a iniciar sesión."

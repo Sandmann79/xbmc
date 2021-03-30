@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <addon id="script.module.pyautogui"
 	name="PyAutoGUI"
-	version="0.9.50+matrix.1"
+	version="0.9.51+matrix.1"
 	provider-name="Al Sweigart">
 	<requires>
 		<import addon="xbmc.python" version="3.0.0"/>

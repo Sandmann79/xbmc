@@ -165,7 +165,7 @@ def getURL(url, useCookie=False, silent=False, headers=None, rjson=True, attempt
         method = 'POST' if postdata is not None else 'GET'
         r = session.request(method, url, data=postdata, headers=headers, verify=s.verifySsl, stream=True, allow_redirects=allow_redirects)
         getURL.lastResponseCode = r.status_code  # Set last response code
-        response = 'OK'
+        response = 'OK' if 400 > r.status_code >= 200 else ''
         if not check:
             response = r.content.decode('utf-8') if binary else r.text
         else:

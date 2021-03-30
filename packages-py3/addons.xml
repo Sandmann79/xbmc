@@ -23,7 +23,7 @@
 </addon>
 <addon id="plugin.video.amazon-test"
        name="Amazon VOD"
-       version="0.9.0+matrix.1"
+       version="0.9.2+matrix.1"
        provider-name="Sandmann79, Varstahl">
   <requires>
     <import addon="xbmc.python" version="3.0.0"/>
@@ -73,7 +73,7 @@
 </addon>
 <addon id="script.module.mechanicalsoup"
 	name="MechanicalSoup"
-	version="0.12.0+matrix.1"
+	version="1.0.0+matrix.1"
 	provider-name="Matthew Hickford, Dan Hemberger, Matthieu Moy">
 	<requires>
 		<import addon="xbmc.python" version="3.0.0"/>
@@ -96,7 +96,7 @@
 </addon>
 <addon id="script.module.pyautogui"
 	name="PyAutoGUI"
-	version="0.9.50+matrix.1"
+	version="0.9.51+matrix.1"
 	provider-name="Al Sweigart">
 	<requires>
 		<import addon="xbmc.python" version="3.0.0"/>

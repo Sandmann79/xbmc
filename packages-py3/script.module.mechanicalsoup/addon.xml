@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <addon id="script.module.mechanicalsoup"
 	name="MechanicalSoup"
-	version="0.12.0+matrix.1"
+	version="1.0.0+matrix.1"
 	provider-name="Matthew Hickford, Dan Hemberger, Matthieu Moy">
 	<requires>
 		<import addon="xbmc.python" version="3.0.0"/>

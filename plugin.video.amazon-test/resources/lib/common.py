@@ -5,7 +5,7 @@
 '''
 from __future__ import unicode_literals
 from locale import getdefaultlocale
-from kodi_six import xbmc, xbmcaddon, xbmcgui
+from kodi_six import xbmcaddon, xbmcgui
 from kodi_six.utils import py2_decode
 from sys import argv
 import hashlib
@@ -15,6 +15,11 @@ import json
 from .singleton import Singleton
 from .l10n import *
 from .configs import *
+
+try:
+    from xbmcvfs import translatePath
+except ImportError:
+    from xbmc import translatePath
 
 # Usage:
 #   gs = Globals()/Settings()
@@ -68,9 +73,9 @@ class Globals(Singleton):
         # self._globals['dialogprogress'] = xbmcgui.DialogProgress()
         self._globals['hasExtRC'] = xbmc.getCondVisibility('System.HasAddon(script.chromium_remotecontrol)')
 
-        self._globals['DATA_PATH'] = py2_decode(xbmc.translatePath(self.addon.getAddonInfo('profile')))
+        self._globals['DATA_PATH'] = py2_decode(translatePath(self.addon.getAddonInfo('profile')))
         self._globals['CONFIG_PATH'] = OSPJoin(self._globals['DATA_PATH'], 'config')
-        self._globals['HOME_PATH'] = py2_decode(xbmc.translatePath('special://home'))
+        self._globals['HOME_PATH'] = py2_decode(translatePath('special://home'))
         self._globals['PLUGIN_PATH'] = py2_decode(self._globals['addon'].getAddonInfo('path'))
 
         # With main PATHs configured, we initialise the get/write path attributes
@@ -150,7 +155,7 @@ class Settings(Singleton):
         if name in ['MOVIE_PATH', 'TV_SHOWS_PATH']:
             export = self._g.DATA_PATH
             if self._gs('enablelibraryfolder') == 'true':
-                export = py2_decode(xbmc.translatePath(self._gs('customlibraryfolder')))
+                export = py2_decode(translatePath(self._gs('customlibraryfolder')))
             export = OSPJoin(export, 'Movies' if 'MOVIE_PATH' == name else 'TV')
             return export + '\\' if '\\' in export else export + '/'
         elif 'Language' == name:

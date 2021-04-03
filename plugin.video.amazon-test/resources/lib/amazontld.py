@@ -142,7 +142,8 @@ class AmazonTLD(Singleton):
     def SetupAmazonLibrary(self):
         import xml.etree.ElementTree as et
         from contextlib import closing
-        source_path = py2_decode(xbmc.translatePath('special://profile/sources.xml'))
+        from .common import translatePath
+        source_path = py2_decode(translatePath('special://profile/sources.xml'))
         source_added = False
         source_dict = {self._s.ms_mov: self._s.MOVIE_PATH, self._s.ms_tv: self._s.TV_SHOWS_PATH}
 

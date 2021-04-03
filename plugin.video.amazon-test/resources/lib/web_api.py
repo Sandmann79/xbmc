@@ -306,7 +306,7 @@ class PrimeVideo(Singleton):
             endp = data['enrichments'][enrich]['watchlistAction']['endpoint']
             if (endp['query']['tag'] == action and remove) or not remove:
                 endp['query']['tag'] = action
-                result = getURL(self._g.BaseUrl + endp['partialURL'], postdata=endp['query'], useCookie=True, allow_redirects=False, check=True)
+                result = getURL(self._g.BaseUrl + endp['partialURL'], postdata=endp['query'], useCookie=True, check=True)
                 if result:
                     Log('Watchlist: {} {}'.format(endp['query']['tag'].lower(), enrich))
 
@@ -635,7 +635,7 @@ class PrimeVideo(Singleton):
                         folderType = {'video': 0, 'movie': 5, 'episode': 4, 'tvshow': 2, 'season': 3}[m['videometa']['mediatype']]
                     except:
                         folderType = 2  # Default to category
-                    if folderType in [5, 3, 2] and not self._g.UsePrimeVideo:
+                    if folderType in [5, 3, 2, 0] and not self._g.UsePrimeVideo:
                         gtis = ','.join(entry['children']) if 'children' in entry else entry['metadata']['compactGTI']
                         in_wl = 1 if path.split('/')[:3] == ['root', 'Watchlist', 'watchlist'] else 0
                         ctxitems.append((getString(30180 + in_wl) % getString(self._g.langID[m['videometa']['mediatype']]),
@@ -846,6 +846,8 @@ class PrimeVideo(Singleton):
                 return
             title = item['title' if 'title' in item else 'heading']
             o[urn] = {'title': title, 'lazyLoadURL': item['href'] if 'href' in item else item['link']['url'], 'metadata': {'artmeta': {}, 'videometa': {}}}
+            o[urn]['metadata']['videometa']['mediatype'] = 'video'
+            o[urn]['metadata']['compactGTI'] = ExtractURN(item['playbackAction']['fallbackUrl']) if 'playbackAction' in item else urn
             if ('liveInfo' in item) and (('timeBadge' in item['liveInfo']) or (('status' in item['liveInfo']) and ('live' == item['liveInfo']['status'].lower()))):
                 when = 'Live' if 'timeBadge' not in item['liveInfo'] else item['liveInfo']['timeBadge']
                 if 'venue' in item['liveInfo']:

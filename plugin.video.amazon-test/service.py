@@ -8,7 +8,7 @@ from resources.lib.logging import Log
 from resources.lib.configs import *
 
 
-class BackgroundService():
+class BackgroundService:
     freqCheck = 60
     freqExport = 86400  # 24 * 60 * 60 seconds
     lastCheck = 0
@@ -56,13 +56,13 @@ class BackgroundService():
         _stop_servers()
         Log('Service stopped')
 
-    def export_watchlist(self, cur_time=0, override=False):
-        """ Export the watchlist every self.freqExport seconds or when triggered by override """
-        if override or (cur_time >= (self.freqExport + self.lastExport)):
+    def export_watchlist(self, cur_time=0):
+        """ Export the watchlist every self.freqExport seconds """
+        if cur_time >= (self.freqExport + self.lastExport):
             Log('Service: Exporting the Watchlist')
             self.lastExport = cur_time
             writeConfig('last_wl_export', cur_time)
-            xbmc.executebuiltin('XBMC.RunPlugin(plugin://plugin.video.amazon-test/?mode=getListMenu&url=watchlist&export=2)')
+            xbmc.executebuiltin('RunPlugin(plugin://plugin.video.amazon-test/?mode=getListMenu&url=watchlist&export=2)')
 
 
 if __name__ == '__main__':

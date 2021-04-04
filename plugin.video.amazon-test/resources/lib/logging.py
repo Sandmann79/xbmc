@@ -3,7 +3,6 @@
 from __future__ import unicode_literals
 from inspect import currentframe, getframeinfo
 from os.path import join as OSPJoin, basename as opb
-from sys import version_info
 from kodi_six import xbmc, xbmcvfs
 from kodi_six.utils import py2_encode
 import xbmc
@@ -12,7 +11,7 @@ from .common import Globals, Settings
 
 g = Globals()
 s = Settings()
-def_loglevel = 2  # LOGNOTICE < Kodi Matrix => LOGINFO?
+def_loglevel = 2 if g.KodiVersion < 19 else 1
 
 
 def Log(msg, level=def_loglevel):

@@ -61,7 +61,6 @@ class BackgroundService:
         if cur_time >= (self.freqExport + self.lastExport):
             Log('Service: Exporting the Watchlist')
             self.lastExport = cur_time
-            writeConfig('last_wl_export', cur_time)
             xbmc.executebuiltin('RunPlugin(plugin://plugin.video.amazon-test/?mode=getListMenu&url=watchlist&export=2)')
 
 

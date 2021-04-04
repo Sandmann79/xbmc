@@ -777,7 +777,9 @@ class AmazonTLD(Singleton):
         if export:
             self.listContent(listing, 'movie', 1, listing, export)
             self.listContent(listing, 'tv', 1, listing, export)
-            if export == 2: xbmc.executebuiltin('UpdateLibrary(video)')
+            if export == 2:
+                writeConfig('last_wl_export', time.time())
+                xbmc.executebuiltin('UpdateLibrary(video)')
         else:
             addDir(getString(30104), 'listContent', 'movie', catalog=listing, export=export)
             addDir(getString(30107), 'listContent', 'tv', catalog=listing, export=export)

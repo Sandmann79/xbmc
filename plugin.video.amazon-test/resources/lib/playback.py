@@ -352,7 +352,7 @@ def PlayVideo(name, asin, adultstr, streamtype, forcefb=0):
 
         Log(mpd, Log.DEBUG)
 
-        if g.KodiK and extern:
+        if g.KodiVersion < 18 and extern:
             content = getATVData('GetASINDetails', 'ASINList=' + asin)['titles'][0]
             ct, Info = g.amz.getInfos(content, False)
             title = Info['DisplayTitle']
@@ -377,7 +377,7 @@ def PlayVideo(name, asin, adultstr, streamtype, forcefb=0):
 
         listitem = xbmcgui.ListItem(label=title, path=mpd)
 
-        if g.KodiK and extern:
+        if g.KodiVersion < 18 and extern:
             listitem.setInfo('video', getInfolabels(Info))
 
         if 'adaptive' in g.is_addon:
@@ -616,7 +616,7 @@ class _AmazonPlayer(xbmc.Player):
             self.getResumePoint()
         if self.resume > 180 and self.extern:
             Log('Displaying Resumedialog')
-            res_string = getString(12022).replace("%s", "{}") if g.KodiK else getString(12022)
+            res_string = getString(12022).replace("%s", "{}") if g.KodiVersion < 18 else getString(12022)
             sel = g.dialog.contextmenu([res_string.format(time.strftime("%H:%M:%S", time.gmtime(self.resume))), getString(12021)])
             if sel > -1:
                 self.resume = self.resume if sel == 0 else 0
@@ -678,7 +678,7 @@ class _AmazonPlayer(xbmc.Player):
             self.updateStream('STOP')
             if self.video_lastpos > 0 and self.video_totaltime > 0:
                 self.watched = 1 if (self.video_lastpos * 100) / self.video_totaltime >= 90 else 0
-                if self.dbid and g.KodiK:
+                if self.dbid and g.KodiVersion < 18:
                     dbtype = _getListItem('DBTYPE')
                     params = {'%sid' % dbtype: self.dbid,
                               'resume': {'position': 0 if self.watched else self.video_lastpos,

@@ -965,6 +965,7 @@ class _Challenge(pyxbmct.AddonDialogWindow):
         self.btn_submit = pyxbmct.Button('OK')
         self.btn_cancel = pyxbmct.Button(getString(30123))
         self.set_controls()
+        self.set_navigation()
 
     def set_controls(self):
         self.placeControl(self.tb_hint, 0, 0, 2, 2)
@@ -979,6 +980,18 @@ class _Challenge(pyxbmct.AddonDialogWindow):
         self.tb_hint.setText(self.hint)
         self.fl_task.addLabel(self.task)
         self.setFocus(self.ed_cap)
+
+    def set_navigation(self):
+        self.ed_cap.controlUp(self.btn_submit)
+        self.ed_cap.controlDown(self.btn_submit)
+        self.btn_submit.controlUp(self.ed_cap)
+        self.btn_submit.controlDown(self.ed_cap)
+        self.btn_cancel.controlUp(self.ed_cap)
+        self.btn_cancel.controlDown(self.ed_cap)
+        self.btn_submit.controlRight(self.btn_cancel)
+        self.btn_submit.controlLeft(self.btn_cancel)
+        self.btn_cancel.controlRight(self.btn_submit)
+        self.btn_cancel.controlLeft(self.btn_submit)
 
     def submit(self):
         self.cap = self.ed_cap.getText()

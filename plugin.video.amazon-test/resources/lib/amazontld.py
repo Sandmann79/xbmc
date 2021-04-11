@@ -36,7 +36,7 @@ class AmazonTLD(Singleton):
         if self._s.profiles:
             act, profiles = self.getProfiles()
             if act is not False:
-                addDir(profiles[act][0], 'switchProfile', '', thumb=profiles[act][2])
+                addDir(profiles[act][0], 'switchProfile', '', thumb=profiles[act][3])
         addDir('Watchlist', 'getListMenu', self._g.watchlist, cm=cm_wl)
         self.listCategories(0)
         addDir('Channels', 'Channel', '/gp/video/storefront/ref=nav_shopall_nav_sa_aos?filterId=OFFER_FILTER%3DSUBSCRIPTIONS', opt='root')
@@ -1192,9 +1192,8 @@ class AmazonTLD(Singleton):
         active = 0
         for item in j['profiles']:
             url = self._g.BaseUrl + item['switchLink']['partialURL']
-            q = urlencode(item['switchLink']['query'])
             n = item.get('name', 'Default').encode('utf-8')
-            profiles.append((n, '{}?{}'.format(url, q), item['avatarUrl']))
+            profiles.append((n, url, item['switchLink']['query'], item['avatarUrl']))
             if item.get('isSelected', False):
                 active = len(profiles) - 1
                 writeConfig('profileID', '' if item.get('isDefault', False) else n)
@@ -1205,5 +1204,5 @@ class AmazonTLD(Singleton):
         if active is not False:
             ret = self._g.dialog.select('Amazon', [i[0] for i in profiles])
             if ret >= 0 and ret != active:
-                getURL(profiles[ret][1], useCookie=True, rjson=False, silent=True, check=True)
+                getURL(profiles[ret][1], postdata=profiles[ret][2], useCookie=True, rjson=False, check=True)
         exit()

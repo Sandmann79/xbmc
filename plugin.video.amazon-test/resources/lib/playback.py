@@ -17,6 +17,16 @@ except:
     from urllib import quote_plus
 
 
+def _playDummyVid():
+    if not hasattr(_playDummyVid, 'played'):
+        dummy_video = OSPJoin(g.PLUGIN_PATH, 'resources', 'art', 'dummy.avi')
+        xbmcplugin.setResolvedUrl(g.pluginhandle, True, xbmcgui.ListItem(path=dummy_video))
+        Log('Playing Dummy Video', Log.DEBUG)
+        xbmc.Player().stop()
+    _playDummyVid.played = True
+    return
+
+
 def _getListItem(li):
     return py2_decode(xbmc.getInfoLabel('ListItem.%s' % li))
 
@@ -63,13 +73,6 @@ def PlayVideo(name, asin, adultstr, streamtype, forcefb=0):
                 e.output = str(out) + str(err)
                 Log(e, Log.ERROR)
         return out.strip()
-
-    def _playDummyVid():
-        dummy_video = OSPJoin(g.PLUGIN_PATH, 'resources', 'art', 'dummy.avi')
-        xbmcplugin.setResolvedUrl(g.pluginhandle, True, xbmcgui.ListItem(path=dummy_video))
-        Log('Playing Dummy Video', Log.DEBUG)
-        xbmc.Player().stop()
-        return
 
     def _extrFr(data):
         fps_string = re.compile('frameRate="([^"]*)').findall(data)[0]
@@ -497,7 +500,7 @@ class _window(xbmcgui.WindowDialog):
         li_dur = xbmc.getInfoLabel('ListItem.Duration')
         if li_dur:
             if ':' in li_dur:
-                return sum(i * int(t) for i, t in zip([3600, 60, 1], li_dur.split(":")))
+                return sum(i * int(t) for i, t in zip([1, 60, 3600], reversed(li_dur.split(":"))))
             return int(li_dur) * 60
         else:
             content = getATVData('GetASINDetails', 'ASINList=' + asin)['titles'][0]
@@ -513,7 +516,9 @@ class _window(xbmcgui.WindowDialog):
         Log('Dur:%s State:%s PlbTm:%s' % (self._vidDur, watched, pBTime), Log.DEBUG)
 
         if pBTime > self._vidDur * 0.9 and not watched:
-            xbmc.executebuiltin("Action(ToggleWatched)")
+            _playDummyVid()
+            Log('Toogle watched state', Log.DEBUG)
+            xbmc.executebuiltin('Action(ToggleWatched)')
 
     def onAction(self, action):
         if not s.useIntRC:

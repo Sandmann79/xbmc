@@ -223,7 +223,7 @@ msgstr "Amazon"
 
 msgctxt "#30051"
 msgid "Load missing from TMDb"
-msgstr "Fehlende von TMDb laden'"
+msgstr "Fehlende von TMDb laden"
 
 msgctxt "#30052"
 msgid "TMDb"

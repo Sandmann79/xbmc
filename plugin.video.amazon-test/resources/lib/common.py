@@ -211,6 +211,7 @@ class Settings(Singleton):
             return [3600, 21600, 43200, 86400, 259200, 604800, 1296000, 2592000][int(self._gs('catalog_cache_expiry'))]
         elif 'profiles' == name: return self._gs('profiles') == 'true'
         elif 'show_pass' == name: return self._gs('show_pass') == 'true'
+        elif 'use_h265' == name: return self._gs('use_h265') == 'true'
 
 
 def jsonRPC(method, props='', param=None):

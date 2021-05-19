@@ -252,6 +252,7 @@ def getURLData(mode, asin, retformat='json', devicetypeid='AOAGZA014O5RE', versi
         url += '&resourceUsage=ImmediateConsumption&consumptionType=Streaming&deviceDrmOverride=CENC' \
                '&deviceStreamingTechnologyOverride=DASH&deviceProtocolOverride=Https' \
                '&deviceBitrateAdaptationsOverride=CVBR%2CCBR&audioTrackId=all'
+        url += '&deviceVideoCodecOverride=H265' if s.use_h265 else ''
         url += '&languageFeature=MLFv2'  # Audio Description tracks
         url += '&videoMaterialType=' + vMT
         url += '&desiredResources=' + dRes

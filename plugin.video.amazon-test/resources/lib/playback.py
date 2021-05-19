@@ -133,7 +133,7 @@ def PlayVideo(name, asin, adultstr, streamtype, forcefb=0):
 
         return False, getString(30217), None
 
-    def _getCmdLine(videoUrl, asin, method, fr):
+    def _getCmdLine(videoUrl, asin):
         scr_path = g.addon.getSetting("scr_path")
         br_path = g.addon.getSetting("br_path").strip()
         scr_param = g.addon.getSetting("scr_param").strip()
@@ -143,12 +143,12 @@ def PlayVideo(name, asin, adultstr, streamtype, forcefb=0):
         nobr_str = getString(30198)
         frdetect = g.addon.getSetting("framerate") == 'true'
 
-        if method == 1:
+        if s.playMethod == 1:
             if not xbmcvfs.exists(scr_path):
                 return False, nobr_str
 
             if frdetect:
-                suc, fr = _ParseStreams(*getURLData('catalog/GetPlaybackResources', asin, extra=True, useCookie=True))[:2] if not fr else (True, fr)
+                suc, fr = _ParseStreams(*getURLData('catalog/GetPlaybackResources', asin, extra=True, useCookie=True))[:2]
                 if not suc:
                     return False, fr
             else:
@@ -206,7 +206,7 @@ def PlayVideo(name, asin, adultstr, streamtype, forcefb=0):
         si.dwFlags = subprocess.STARTF_USESHOWWINDOW
         return si
 
-    def _ExtPlayback(videoUrl, asin, isAdult, method, fr):
+    def _ExtPlayback(videoUrl, asin, isAdult):
         waitsec = int(g.addon.getSetting("clickwait"))
         waitprepin = int(g.addon.getSetting("waitprepin"))
         pin = g.addon.getSetting("pin")
@@ -218,7 +218,7 @@ def PlayVideo(name, asin, adultstr, streamtype, forcefb=0):
         xbmc.Player().stop()
         # xbmc.executebuiltin('ActivateWindow(busydialog)')
 
-        suc, url = _getCmdLine(videoUrl, asin, method, fr)
+        suc, url = _getCmdLine(videoUrl, asin)
         if not suc:
             g.dialog.notification(getString(30203), url, xbmcgui.NOTIFICATION_ERROR)
             return
@@ -308,28 +308,24 @@ def PlayVideo(name, asin, adultstr, streamtype, forcefb=0):
         dRes = 'PlaybackUrls' if streamtype > 1 else 'PlaybackUrls,SubtitleUrls,ForcedNarratives,TransitionTimecodes'
         opt = '&liveManifestType=accumulating,live&playerType=xp&playerAttributes={"frameRate":"HFR"}' if streamtype > 1 else ''
         mpaa_str = AgeRestrictions().GetRestrictedAges() + getString(30171)
-        drm_check = g.addon.getSetting("drm_check") == 'true'
 
         inputstream_helper = Helper('mpd', drm='com.widevine.alpha')
         if not inputstream_helper.check_inputstream():
             Log('No Inputstream Addon found or activated')
-            _playDummyVid()
-            return True
+            return False
 
         cookie = MechanizeLogin()
         if not cookie:
             g.dialog.notification(getString(30203), getString(30200), xbmcgui.NOTIFICATION_ERROR)
             Log('Login error at playback')
-            _playDummyVid()
-            return True
+            return False
 
         mpd, subs, timecodes = _ParseStreams(*getURLData('catalog/GetPlaybackResources', asin, extra=True, vMT=vMT, dRes=dRes, useCookie=cookie,
                                                          proxyEndpoint='gpr', opt=opt), retmpd=True, bypassproxy=s.bypassProxy or (streamtype > 1))
 
         if not mpd:
             g.dialog.notification(getString(30203), subs, xbmcgui.NOTIFICATION_ERROR)
-            _playDummyVid()
-            return True
+            return False
 
         skip = timecodes.get('skipElements')
         Log('Skip Items: %s' % skip, Log.DEBUG)
@@ -342,16 +338,9 @@ def PlayVideo(name, asin, adultstr, streamtype, forcefb=0):
 
         from xbmcaddon import Addon as KodiAddon
         is_version = KodiAddon(g.is_addon).getAddonInfo('version') if g.is_addon else '0'
-        is_binary = xbmc.getCondVisibility('System.HasAddon(kodi.binary.instance.inputstream)')
 
         if (not s.audioDescriptions) and (streamtype != 2):
             mpd = re.sub(r'(~|%7E)', '', mpd)
-
-        if drm_check and (not g.platform & g.OS_ANDROID) and (not is_binary):
-            mpdcontent = getURL(mpd, useCookie=cookie, rjson=False)
-            if 'avc1.4D00' in mpdcontent:
-                # xbmc.executebuiltin('ActivateWindow(busydialog)')
-                return _extrFr(mpdcontent)
 
         Log(mpd, Log.DEBUG)
 
@@ -428,39 +417,22 @@ def PlayVideo(name, asin, adultstr, streamtype, forcefb=0):
 
     isAdult = adultstr == '1'
     amazonUrl = g.BaseUrl + "/dp/" + (name if g.UsePrimeVideo else asin)
-    playable = False
-    fallback = int(g.addon.getSetting("fallback_method"))
     uhdFB = forcefb < 0 and s.uhdAndroid
-    methodOW = fallback - 1 if forcefb > 0 and fallback else s.playMethod
     videoUrl = "%s/?autoplay=%s" % (amazonUrl, ('trailer' if streamtype == 1 else '1'))
     extern = not xbmc.getInfoLabel('Container.PluginName').startswith('plugin.video.amazon')
-    fr = ''
+    suc = False
 
     if extern:
         Log('External Call', Log.DEBUG)
 
-    while not playable:
-        playable = True
+    if (s.playMethod == 2 or uhdFB) and g.platform & g.OS_ANDROID:
+        _AndroidPlayback(asin, streamtype)
+    elif s.playMethod == 3:
+        suc = _IStreamPlayback(asin, name, streamtype, isAdult, extern)
+    elif not g.platform & g.OS_ANDROID:
+        _ExtPlayback(videoUrl, asin, isAdult)
 
-        if (methodOW == 2 or uhdFB) and g.platform & g.OS_ANDROID:
-            _AndroidPlayback(asin, streamtype)
-        elif methodOW == 3:
-            playable = _IStreamPlayback(asin, name, streamtype, isAdult, extern)
-        elif not g.platform & g.OS_ANDROID:
-            _ExtPlayback(videoUrl, asin, isAdult, methodOW, fr)
-
-        if not playable or not isinstance(playable, bool):
-            if fallback:
-                methodOW = fallback - 1
-                if not isinstance(playable, bool):
-                    fr = playable
-                    playable = False
-            else:
-                xbmc.sleep(500)
-                g.dialog.ok(getString(30203), getString(30218))
-                playable = True
-
-    if methodOW != 3:
+    if not suc:
         _playDummyVid()
 
 

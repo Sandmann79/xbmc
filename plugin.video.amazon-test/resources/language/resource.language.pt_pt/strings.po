@@ -106,8 +106,8 @@ msgid "Prefered Host"
 msgstr "Host preferido"
 
 msgctxt "#30020"
-msgid "Enable DRM check"
-msgstr "Ativar verificação de DRM"
+msgid "Use H.265 Videocodec"
+msgstr ""
 
 msgctxt "#30021"
 msgid "Language"
@@ -662,10 +662,6 @@ msgstr "Credenciais inexistentes. Vá a Definições, Ligação e inicie sessão
 msgctxt "#30217"
 msgid "No stream hoster reachable"
 msgstr "Nenhum host de stream alcançável."
-
-msgctxt "#30218"
-msgid "Due changes at Amazon's DRM encryption, it's not possible to use Inputstream for this video.\nPlease configure the fallback option in Settings, to use another Playback method."
-msgstr "Devido a alterações na encriptação DRM da Amazon, não é possivel usar o Inputstream neste vídeo.\nConfigure um fallback nas Definições para usar outro método de Reprodução."
 
 msgctxt "#30219"
 msgid "Unable to retrieve Amazon's territorial configuration."

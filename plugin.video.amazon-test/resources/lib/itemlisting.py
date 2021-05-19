@@ -95,7 +95,7 @@ def addVideo(name, asin, infoLabels, cm=None, export=False):
     item = xbmcgui.ListItem(name)
     item.setArt({'fanart': infoLabels['Fanart'], 'poster': infoLabels['Thumb'], 'thumb': infoLabels['Thumb']})
     item.addStreamInfo('audio', {'codec': 'ac3', 'channels': int(infoLabels['AudioChannels'])})
-    item.setProperty('IsPlayable', str(s.playMethod == 3).lower())
+    item.setProperty('IsPlayable', 'true')  # always true, to view watched state
 
     if 'Poster' in infoLabels.keys():
         item.setArt({'tvshow.poster': infoLabels['Poster']})
@@ -108,8 +108,6 @@ def addVideo(name, asin, infoLabels, cm=None, export=False):
     if [k for k in ['4k', 'uhd', 'ultra hd'] if k in (infoLabels.get('TVShowTitle', '') + name).lower()]:
         bitrate = '-1'
         item.addStreamInfo('video', {'width': 3840, 'height': 2160})
-        if s.uhdAndroid:
-            item.setProperty('IsPlayable', 'false')
     elif infoLabels['isHD']:
         item.addStreamInfo('video', {'width': 1920, 'height': 1080})
     else:

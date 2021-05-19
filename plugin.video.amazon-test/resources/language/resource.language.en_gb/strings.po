@@ -106,7 +106,7 @@ msgid "Prefered Host"
 msgstr ""
 
 msgctxt "#30020"
-msgid "Enable DRM check"
+msgid "Use H.265 Videocodec"
 msgstr ""
 
 msgctxt "#30021"
@@ -669,10 +669,6 @@ msgstr ""
 
 msgctxt "#30217"
 msgid "No stream hoster reachable"
-msgstr ""
-
-msgctxt "#30218"
-msgid "Due changes at Amazon's DRM encryption, it's not possible to use Inputstream for this video.\nPlease configure the fallback option in Settings, to use another Playback method."
 msgstr ""
 
 msgctxt "#30219"

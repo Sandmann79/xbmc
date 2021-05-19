@@ -107,8 +107,8 @@ msgid "Prefered Host"
 msgstr "מארח מועדף"
 
 msgctxt "#30020"
-msgid "Enable DRM check"
-msgstr "אפשר בדיקתDRM"
+msgid "Use H.265 Videocodec"
+msgstr ""
 
 #, fuzzy
 msgctxt "#30021"
@@ -660,14 +660,6 @@ msgstr "אין אישורים, אנא עבור להגדרות חיבור, ותת
 msgctxt "#30217"
 msgid "No stream hoster reachable"
 msgstr "מארח ההזרמה לא נגיש"
-
-msgctxt "#30218"
-msgid ""
-"Due changes at Amazon's DRM encryption, it's not possible to use Inputstream for this video.\n"
-"Please configure the fallback option in Settings, to use another Playback method."
-msgstr ""
-"בשל השינויים בהצפנת ה-DRM של אמזון, זה לא ניתן להשתמש Inputstream עבור וידאו זה.\n"
-"נא להגדיר את אפשרות השיחזור בהגדרות, כדי להשתמש בשיטת השמעה אחרת."
 
 msgctxt "#30219"
 msgid "Unable to retrieve Amazon's territorial configuration."

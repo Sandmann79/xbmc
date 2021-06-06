@@ -570,6 +570,8 @@ class PrimeVideo(Singleton):
                 elif self._s.wl_export:
                     self.listContent('GetASINDetails', 'asinList%3D' + asin, 1, '_show' if self._s.dispShowOnly else '', 1)
                     xbmc.executebuiltin('UpdateLibrary(video)')
+            else:
+                Log('Error while {}ing {}'.format(action.lower(), asin), Log.ERROR)
 
     def getArtWork(self, infoLabels, contentType):
         if contentType == 'movie' and self._s.tmdb_art == '0':
@@ -776,20 +778,20 @@ class PrimeVideo(Singleton):
 
     def getListMenu(self, listing, export):
         if export:
-            self.listContent(listing, 'movie', 1, listing, export)
-            self.listContent(listing, 'tv', 1, listing, export)
+            self.listContent(listing, 'MOVIE', 1, listing, export)
+            self.listContent(listing, 'TV', 1, listing, export)
             if export == 2:
                 writeConfig('last_wl_export', time.time())
                 xbmc.executebuiltin('UpdateLibrary(video)')
         else:
-            addDir(getString(30104), 'listContent', 'movie', catalog=listing, export=export)
-            addDir(getString(30107), 'listContent', 'tv', catalog=listing, export=export)
+            addDir(getString(30104), 'listContent', 'MOVIE', catalog=listing, export=export)
+            addDir(getString(30107), 'listContent', 'TV', catalog=listing, export=export)
             xbmcplugin.endOfDirectory(self._g.pluginhandle, updateListing=False)
 
     def _scrapeAsins(self, aurl, cj):
         asins = []
         url = self._g.BaseUrl + aurl
-        json = GrabJSON(url)
+        json = getURL(url, useCookie=cj)
         if not json:
             return False, False
         WriteLog(str(json), 'watchlist')
@@ -807,7 +809,14 @@ class PrimeVideo(Singleton):
             cj = MechanizeLogin()
             if not cj:
                 return [], ''
-            url = '/gp/video/mystuff/{}/{}/?page={}&sort={}'.format(listing, cont, page, self._s.wl_order)
+            args = {listing: {'sort': self._s.wl_order,
+                              'libraryType': 'Items',
+                              'primeOnly': False,
+                              'startIndex': (page - 1) * 60,
+                              'contentType': cont},
+                    'shared': {'isPurchaseRow': 0}}
+
+            url = '/gp/video/api/myStuff{}?viewType={}&args={}'.format(listing.capitalize(), listing, json.dumps(args, separators=(',', ':')))
             info, asins = self._scrapeAsins(url, cj)
             if info is False:
                 Log('Cookie invalid', Log.ERROR)

@@ -139,7 +139,6 @@ def getURL(url, useCookie=False, silent=False, headers=None, rjson=True, attempt
     g = Globals()
     s = Settings()
     if (not silent) or s.verbLog:
-        dispurl = url
         dispurl = re.sub('(?i)%s|%s|&token=\\w+|&customerId=\\w+' % (g.tvdb, g.tmdb), '', url).strip()
         Log('%sURL: %s' % ('check' if check else 'post' if postdata is not None else 'get', dispurl))
 
@@ -150,6 +149,9 @@ def getURL(url, useCookie=False, silent=False, headers=None, rjson=True, attempt
         headers['Host'] = host
     if 'Accept-Language' not in headers:
         headers['Accept-Language'] = g.userAcceptLanguages
+    if '/api/' in url:
+        headers['X-Requested-With'] = 'XMLHttpRequest'
+        binary = True
 
     if 'amazonvideo.com' in host:
         session.mount('https://', MyTLS1Adapter())

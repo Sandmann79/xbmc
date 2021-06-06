@@ -569,6 +569,8 @@ class AmazonTLD(Singleton):
                 elif self._s.wl_export:
                     self.listContent('GetASINDetails', 'asinList%3D' + asin, 1, '_show' if self._s.dispShowOnly else '', 1)
                     xbmc.executebuiltin('UpdateLibrary(video)')
+            else:
+                Log('Error while {}ing {}'.format(action.lower(), asin), Log.ERROR)
 
     def getArtWork(self, infoLabels, contentType):
         if contentType == 'movie' and self._s.tmdb_art == '0':
@@ -803,7 +805,7 @@ class AmazonTLD(Singleton):
     def _scrapeAsins(self, aurl, cj):
         asins = []
         url = self._g.BaseUrl + aurl
-        json = getURL(url, useCookie=cj, binary=True)
+        json = getURL(url, useCookie=cj)
         if not json:
             return False, False
         WriteLog(str(json), 'watchlist')

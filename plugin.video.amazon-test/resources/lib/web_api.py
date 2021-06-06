@@ -1416,8 +1416,9 @@ class PrimeVideo(Singleton):
                                 nextPage = cnt['pagination']['apiUrl']
                             elif 'paginator' in cnt['pagination']:
                                 nextPage = next((x['href'] for x in cnt['pagination']['paginator'] if
-                                                 (('type' in x) and ('NextPage' == x['type'])) or (
-                                                             ('*className*' in x) and ('atv.wps.PaginatorNext' == x['*className*']))), None)
+                                                 (('type' in x) and ('NextPage' == x['type'])) or
+                                                 (('*className*' in x) and ('atv.wps.PaginatorNext' == x['*className*'])) or
+                                                 (('__type' in x) and ('PaginatorNext' in x['__type']))), None)
                         elif cnt.get('hasMoreItems', False) and 'startIndex=' in requestURL:
                             idx = int(re.search(r'startIndex=(\d*)', requestURL).group(1))
                             nextPage = requestURL.replace('startIndex={}'.format(idx), 'startIndex={}'.format(idx+20))

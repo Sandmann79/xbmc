@@ -151,7 +151,6 @@ def getURL(url, useCookie=False, silent=False, headers=None, rjson=True, attempt
         headers['Accept-Language'] = g.userAcceptLanguages
     if '/api/' in url:
         headers['X-Requested-With'] = 'XMLHttpRequest'
-        binary = True
 
     if 'amazonvideo.com' in host:
         session.mount('https://', MyTLS1Adapter())
@@ -809,16 +808,16 @@ def GrabJSON(url, postData=None):
     def do(url, postData):
         """ Wrapper to facilitate logging """
 
-        if url.startswith('/search/'):
+        if url.startswith('/search/') or url.startswith('/gp/video/search/'):
             np = urlparse(url)
             qs = parse_qs(np.query)
             if 'from' in list(qs):  # list() instead of .keys() to avoid py3 iteration errors
                 qs['startIndex'] = qs['from']
                 del qs['from']
-            np = np._replace(path='/gp/video/api' + np.path, query=urlencode([(k, v) for k, l in qs.items() for v in l]))
+            np = np._replace(path='/gp/video/api' + np.path.replace('/gp/video', ''), query=urlencode([(k, v) for k, l in qs.items() for v in l]))
             url = np.geturl()
 
-        r = getURL(FQify(url), silent=True, useCookie=True, rjson=False, postdata=postData, binary='/api/' in url)
+        r = getURL(FQify(url), silent=True, useCookie=True, rjson=False, postdata=postData)
         if not r:
             return None
         try:

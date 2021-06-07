@@ -1251,7 +1251,9 @@ class PrimeVideo(Singleton):
                             nextPage = cnt['pagination']['apiUrl']
                         elif 'paginator' in cnt['pagination']:
                             nextPage = next((x['href'] for x in cnt['pagination']['paginator'] if
-                                            (('type' in x) and ('NextPage' == x['type'])) or (('*className*' in x) and ('atv.wps.PaginatorNext' == x['*className*']))), None)
+                                             (('type' in x) and ('NextPage' == x['type'])) or
+                                             (('*className*' in x) and ('atv.wps.PaginatorNext' == x['*className*'])) or
+                                             (('__type' in x) and ('PaginatorNext' in x['__type']))), None)
 
                     if nextPage:
                         # Determine if we can auto page

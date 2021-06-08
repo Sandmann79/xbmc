@@ -12,7 +12,7 @@ This addon is not officially commissioned or supported by Amazon, nor are author
 * export Movies, TV Shows to Kodi Library (TLD)
 * loads Covers and Fanart from TMDB/TVDB (TLD)
 * additional age verification (TLD/PV, requires IS.A)
-* H.265 Videoplayack with Widevine L1 devices (TLD/PV, requires IS.A)
+* H.265 video playback with Widevine L1 devices (TLD/PV, requires IS.A)
 
 ## Known limitations
 * HD and FHD video quality are only available on hardware supported devices (Android devices/FireTV/Firesticks). To enable reproduction of such videos you need to enable `Override HDCP status` in IS.A settings, or use a different playback method

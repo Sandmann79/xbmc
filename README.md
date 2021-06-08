@@ -14,4 +14,4 @@ You can find an answer the most frequently asked questions in the [Wiki/FAQ](htt
 
 ## Python modules
 * [MechanicalSoup](script.module.mechanicalsoup): automated website interaction.
-* [pyDes](script.module.pydes): DES/3DES encryption algorhytms.
+* [PyAutoGUI](script.module.pyautogui): mouse & keyboard controlling.

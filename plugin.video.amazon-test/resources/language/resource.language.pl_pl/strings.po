@@ -170,6 +170,10 @@ msgctxt "#30035"
 msgid "Enable Views"
 msgstr "Aktywuj zasady wyświetlania mediów"
 
+msgctxt "#30036"
+msgid "Show Recently watched menu entry"
+msgstr ""
+
 msgctxt "#30037"
 msgid "Disable SSL Certificate Verification"
 msgstr ""
@@ -278,6 +282,10 @@ msgstr ""
 
 msgctxt "#30065"
 msgid "Mediasource TV Title"
+msgstr ""
+
+msgctxt "#30066"
+msgid "Send video progress to Amazon at least at percent played (0 to disable)"
 msgstr ""
 
 msgctxt "#30070"

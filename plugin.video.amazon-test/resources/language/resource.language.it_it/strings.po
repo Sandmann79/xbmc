@@ -170,6 +170,11 @@ msgctxt "#30035"
 msgid "Enable Views"
 msgstr "Abilita Viste"
 
+#, fuzzy
+msgctxt "#30036"
+msgid "Show Recently watched menu entry"
+msgstr "Visti di recente"
+
 msgctxt "#30037"
 msgid "Disable SSL Certificate Verification"
 msgstr "Disabilita verifica certificati SSL"
@@ -277,6 +282,10 @@ msgstr "Titolo della sorgente multimediale del Film"
 msgctxt "#30065"
 msgid "Mediasource TV Title"
 msgstr "Titolo della sorgente multimediale TV"
+
+msgctxt "#30066"
+msgid "Send video progress to Amazon at least at percent played (0 to disable)"
+msgstr ""
 
 msgctxt "#30070"
 msgid "Miscellaneous"

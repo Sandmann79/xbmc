@@ -212,6 +212,7 @@ class Settings(Singleton):
         elif 'profiles' == name: return self._gs('profiles') == 'true'
         elif 'show_pass' == name: return self._gs('show_pass') == 'true'
         elif 'use_h265' == name: return self._gs('use_h265') == 'true'
+        elif 'show_recents' == name: return self._gs('show_recents') == 'true'
 
 
 def jsonRPC(method, props='', param=None):

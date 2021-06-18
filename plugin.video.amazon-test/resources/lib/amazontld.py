@@ -40,7 +40,8 @@ class AmazonTLD(Singleton):
         addDir('Watchlist', 'getListMenu', self._g.watchlist, cm=cm_wl)
         self.listCategories(0)
         addDir('Channels', 'Channel', '/gp/video/storefront/ref=nav_shopall_nav_sa_aos?filterId=OFFER_FILTER%3DSUBSCRIPTIONS', opt='root')
-        addDir(getString(30136), 'Recent', '')
+        if self._s.show_recents:
+            addDir(getString(30136), 'Recent', '')
         addDir(getString(30108), 'Search', '')
         addDir(getString(30100), 'getListMenu', self._g.library, cm=cm_lb)
         xbmcplugin.endOfDirectory(self._g.pluginhandle, updateListing=False, cacheToDisc=False)
@@ -211,6 +212,9 @@ class AmazonTLD(Singleton):
         self.listContent('Browse', url, 1, 'recent', export)
 
     def updateRecents(self, asin, rem=0):
+        if not self._s.show_recents:
+            return
+
         all_rec, rec = self.getRecents()
         if rem == 0:
             content = getATVData('GetASINDetails', 'ASINList=' + asin)['titles']

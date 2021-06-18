@@ -19,10 +19,9 @@ except:
 
 def _playDummyVid():
     if not hasattr(_playDummyVid, 'played'):
-        dummy_video = OSPJoin(g.PLUGIN_PATH, 'resources', 'art', 'dummy.avi')
+        dummy_video = OSPJoin(g.PLUGIN_PATH, 'resources', 'art', 'dummy.wav')
         xbmcplugin.setResolvedUrl(g.pluginhandle, True, xbmcgui.ListItem(path=dummy_video))
-        Log('Playing Dummy Video', Log.DEBUG)
-        xbmc.Player().stop()
+        Log('Playing Dummy Audio', Log.DEBUG)
     _playDummyVid.played = True
     return
 
@@ -72,7 +71,7 @@ def PlayVideo(name, asin, adultstr, streamtype, forcefb=0):
                 e = subprocess.CalledProcessError(retcode, c)
                 e.output = str(out) + str(err)
                 Log(e, Log.ERROR)
-        return out.strip()
+        return out.decode('utf-8').strip()
 
     def _extrFr(data):
         fps_string = re.compile('frameRate="([^"]*)').findall(data)[0]

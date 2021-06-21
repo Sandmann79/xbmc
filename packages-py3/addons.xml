@@ -23,7 +23,7 @@
 </addon>
 <addon id="plugin.video.amazon-test"
        name="Amazon VOD"
-       version="0.9.4+matrix.1"
+       version="0.9.5~beta+matrix.1"
        provider-name="Sandmann79, Varstahl">
   <requires>
     <import addon="xbmc.python" version="3.0.0"/>
@@ -61,9 +61,9 @@
 </addon>
 <addon id="repository.sandmann79-py3.plugins" name="Sandmann79s Repository Matrix" version="1.0.0" provider-name="Sandmann79">
 	<extension point="xbmc.addon.repository" name="Sandmann79s Repository Matrix">
-		<info compressed="false">https://raw.githubusercontent.com/Sandmann79/xbmc/master/packages-py3/addons.xml</info>
-		<checksum>https://raw.githubusercontent.com/Sandmann79/xbmc/master/packages-py3/addons.xml.md5</checksum>
-		<datadir zip="true">https://raw.githubusercontent.com/Sandmann79/xbmc/master/packages-py3/</datadir>
+		<info compressed="false">https://raw.githubusercontent.com/Sandmann79/xbmc/repo_update/packages-py3/addons.xml</info>
+		<checksum>https://raw.githubusercontent.com/Sandmann79/xbmc/repo_update/packages-py3/addons.xml.md5</checksum>
+		<datadir zip="true">https://raw.githubusercontent.com/Sandmann79/xbmc/repo_update/packages-py3/</datadir>
 	</extension>
 	<extension point="xbmc.addon.metadata">
 		<summary>Various Addons for Kodi 19 and beyond</summary>

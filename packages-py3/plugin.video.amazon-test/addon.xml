@@ -1,0 +1,31 @@
+﻿<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<addon id="plugin.video.amazon-test"
+       name="Amazon VOD"
+       version="0.9.5~beta"
+       provider-name="Sandmann79, Varstahl">
+  <requires>
+    <import addon="repository.sandmann79.plugins" version="1.0.4"/>
+  </requires>
+  <extension point="xbmc.python.pluginsource"
+             library="default.py">
+	<provides>video</provides>
+  </extension>
+  <extension point="xbmc.addon.metadata">
+    <platform>all</platform>
+    <reuselanguageinvoker>true</reuselanguageinvoker>
+    <summary lang="en_GB">Amazon Prime Video Streaming</summary>
+    <summary lang="de_DE">Amazon Prime Instant Video</summary>
+    <description lang="en_GB">Movies and Television Shows for Prime Members</description>
+    <description lang="de_DE">Filme und Serien für Amazon Prime Mitglieder</description>
+    <disclaimer lang="en_GB">Some parts of this addon may not be legal in your country of residence - please check with your local laws before installing.</disclaimer>
+    <disclaimer lang="de_DE">Möglicherweise sind einge Teile dieses Addons in Ihrem Land illegal, Sie sollten dies unbedingt vor der Installation überprüfen.</disclaimer>
+    <forum>http://www.kodinerds.net/index.php/Thread/44211-Release-Amazon-Prime-Instant-Video</forum>
+    <source>https://github.com/Sandmann79/xbmc</source>
+    <license>GPL-3.0-or-later</license>
+    <assets>
+      <icon>icon.png</icon>
+      <fanart>fanart.png</fanart>
+      <clearlogo>clearlogo.png</clearlogo>
+    </assets>
+  </extension>
+</addon>

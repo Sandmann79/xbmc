@@ -1,19 +1,87 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <addons>
-<addon id="repository.sandmann79-py3.plugins" name="[COLOR red][Deprecated][/COLOR] Sandmann79s Repository Matrix" version="1.0.1" provider-name="Sandmann79">
+<addon id="plugin.program.browser.launcher" name="Browser Launcher" version="1.2.6~beta" provider-name="AddonScriptorDE + Sandmann79">
+    <requires>
+        <import addon="repository.sandmann79.plugins" version="1.0.4"/>
+    </requires>
+    <extension point="xbmc.python.pluginsource" library="default.py">
+        <provides>executable</provides>
+    </extension>
+    <extension point="xbmc.addon.metadata">
+        <platform>all</platform>
+        <summary lang="en_GB">Browser Launcher</summary>
+        <language></language>
+        <description lang="en_GB">Launch websites via selected Browser in Kiosk-mode</description>
+        <description lang="de_DE">Öffnet Websiten mit dem ausgewählten Browser im Vollbildmodus</description>
+        <email>AddonScriptorDE at yahoo dot de</email>
+        <website></website>
+        <license>GPL-2.0-only</license>
+        <assets>
+            <icon>icon.png</icon>
+        </assets>
+    </extension>
+</addon>
+<addon id="plugin.video.amazon-test"
+       name="Amazon VOD"
+       version="0.9.5~beta"
+       provider-name="Sandmann79, Varstahl">
+  <requires>
+    <import addon="repository.sandmann79.plugins" version="1.0.4"/>
+  </requires>
+  <extension point="xbmc.python.pluginsource"
+             library="default.py">
+	<provides>video</provides>
+  </extension>
+  <extension point="xbmc.addon.metadata">
+    <platform>all</platform>
+    <reuselanguageinvoker>true</reuselanguageinvoker>
+    <summary lang="en_GB">Amazon Prime Video Streaming</summary>
+    <summary lang="de_DE">Amazon Prime Instant Video</summary>
+    <description lang="en_GB">Movies and Television Shows for Prime Members</description>
+    <description lang="de_DE">Filme und Serien für Amazon Prime Mitglieder</description>
+    <disclaimer lang="en_GB">Some parts of this addon may not be legal in your country of residence - please check with your local laws before installing.</disclaimer>
+    <disclaimer lang="de_DE">Möglicherweise sind einge Teile dieses Addons in Ihrem Land illegal, Sie sollten dies unbedingt vor der Installation überprüfen.</disclaimer>
+    <forum>http://www.kodinerds.net/index.php/Thread/44211-Release-Amazon-Prime-Instant-Video</forum>
+    <source>https://github.com/Sandmann79/xbmc</source>
+    <license>GPL-3.0-or-later</license>
+    <assets>
+      <icon>icon.png</icon>
+      <fanart>fanart.png</fanart>
+      <clearlogo>clearlogo.png</clearlogo>
+    </assets>
+  </extension>
+</addon>
+<addon id="repository.sandmann79-py3.plugins" name="[COLOR red][BROKEN][/COLOR] Sandmann79s Repository Matrix" version="1.0.1" provider-name="Sandmann79">
     <extension point="xbmc.addon.repository" name="Sandmann79s Repository Matrix">
+        <info compressed="false">https://raw.githubusercontent.com/Sandmann79/xbmc/repo/packages-py3/addons.xml</info>
+        <checksum>https://raw.githubusercontent.com/Sandmann79/xbmc/repo/packages-py3/addons.xml.md5</checksum>
+        <datadir zip="true">https://raw.githubusercontent.com/Sandmann79/xbmc/repo/packages-py3/</datadir>
+    </extension>
+    <extension point="xbmc.addon.metadata">
+        <summary>Old Repository for Kodi Matrix addons</summary>
+        <description></description>
+        <disclaimer></disclaimer>
+        <platform>all</platform>
+        <lifecyclestate type="broken">This repo has been integrated at main repo called [COLOR green]Sandmann79s Repository[/COLOR] and contains no usefull addons anymore.
+        Please uninstall this repo.</lifecyclestate>
+        <news>v1.0.1 (2021-06-22)
+- added broken state
+        </news>
+    </extension>
+</addon>
+<addon id="repository.sandmann79.plugins" name="Sandmann79s Repository" version="1.0.4" provider-name="Sandmann79">
+    <extension point="xbmc.addon.repository" name="Sandmann79s Repository">
         <info compressed="false">https://raw.githubusercontent.com/Sandmann79/xbmc/repo/packages/addons.xml</info>
         <checksum>https://raw.githubusercontent.com/Sandmann79/xbmc/repo/packages/addons.xml.md5</checksum>
         <datadir zip="true">https://raw.githubusercontent.com/Sandmann79/xbmc/repo/packages/</datadir>
     </extension>
     <extension point="xbmc.addon.metadata">
-        <summary>Old Repository for Kodi Matrix addons</summary>
-        <description>This repo has been integrated at main repo called [COLOR green]Sandmann79s Repository[/COLOR] and won't receive future updates.
-Please install [COLOR green]Sandmann79s Repository[/COLOR] and remove this repo afterwards.</description>
+        <summary>Various Addons for Kodi 18 and beyond</summary>
+        <description></description>
         <disclaimer></disclaimer>
         <platform>all</platform>
-        <news>v1.0.1 (2021-06-22)
-- Points now to Leia/Unified Repository
+        <news>v1.0.4 (2021-06-22)
+- From now on the default repository for all supported Kodi versions
         </news>
     </extension>
 </addon>

@@ -1,18 +1,19 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<addon id="repository.sandmann79-py3.plugins" name="[COLOR red][Deprecated][/COLOR] Sandmann79s Repository Matrix" version="1.0.1" provider-name="Sandmann79">
+<addon id="repository.sandmann79-py3.plugins" name="[COLOR red][BROKEN][/COLOR] Sandmann79s Repository Matrix" version="1.0.1" provider-name="Sandmann79">
     <extension point="xbmc.addon.repository" name="Sandmann79s Repository Matrix">
-        <info compressed="false">https://raw.githubusercontent.com/Sandmann79/xbmc/repo/packages/addons.xml</info>
-        <checksum>https://raw.githubusercontent.com/Sandmann79/xbmc/repo/packages/addons.xml.md5</checksum>
-        <datadir zip="true">https://raw.githubusercontent.com/Sandmann79/xbmc/repo/packages/</datadir>
+        <info compressed="false">https://raw.githubusercontent.com/Sandmann79/xbmc/repo/packages-py3/addons.xml</info>
+        <checksum>https://raw.githubusercontent.com/Sandmann79/xbmc/repo/packages-py3/addons.xml.md5</checksum>
+        <datadir zip="true">https://raw.githubusercontent.com/Sandmann79/xbmc/repo/packages-py3/</datadir>
     </extension>
     <extension point="xbmc.addon.metadata">
         <summary>Old Repository for Kodi Matrix addons</summary>
-        <description>This repo has been integrated at main repo called [COLOR green]Sandmann79s Repository[/COLOR] and won't receive future updates.
-Please install [COLOR green]Sandmann79s Repository[/COLOR] and remove this repo afterwards.</description>
+        <description></description>
         <disclaimer></disclaimer>
         <platform>all</platform>
+        <lifecyclestate type="broken">This repo has been integrated at main repo called [COLOR green]Sandmann79s Repository[/COLOR] and contains no usefull addons anymore.
+        Please uninstall this repo.</lifecyclestate>
         <news>v1.0.1 (2021-06-22)
-- Points now to Leia/Unified Repository
+- added broken state
         </news>
     </extension>
 </addon>

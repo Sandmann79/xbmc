@@ -1,11 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <addon id="plugin.program.browser.launcher" name="Browser Launcher" version="1.2.6~beta+matrix.1" provider-name="AddonScriptorDE + Sandmann79">
-    <requires>
-        <import addon="repository.sandmann79.plugins" version="1.0.4"/>
-    </requires>
     <extension point="xbmc.python.pluginsource" library="default.py">
         <provides>executable</provides>
     </extension>
+    <extension point="xbmc.service" library="service.py" start="startup" />
     <extension point="xbmc.addon.metadata">
         <platform>all</platform>
         <summary lang="en_GB">Browser Launcher</summary>

@@ -3,13 +3,11 @@
        name="Amazon VOD"
        version="{ver_add}"
        provider-name="Sandmann79, Varstahl">
-  <requires>
-    <import addon="repository.sandmann79.plugins" version="1.0.4"/>
-  </requires>
   <extension point="xbmc.python.pluginsource"
              library="default.py">
 	<provides>video</provides>
   </extension>
+  <extension point="xbmc.service" library="service.py" start="startup" />
   <extension point="xbmc.addon.metadata">
     <platform>all</platform>
     <reuselanguageinvoker>true</reuselanguageinvoker>

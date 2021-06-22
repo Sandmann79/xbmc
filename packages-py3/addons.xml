@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <addons>
-<addon id="plugin.program.browser.launcher" name="Browser Launcher" version="1.2.6~beta" provider-name="AddonScriptorDE + Sandmann79">
+<addon id="plugin.program.browser.launcher" name="Browser Launcher" version="1.2.6~beta+matrix.1" provider-name="AddonScriptorDE + Sandmann79">
     <requires>
         <import addon="repository.sandmann79.plugins" version="1.0.4"/>
     </requires>
@@ -23,7 +23,7 @@
 </addon>
 <addon id="plugin.video.amazon-test"
        name="Amazon VOD"
-       version="0.9.5~beta"
+       version="0.9.5~beta+matrix.1"
        provider-name="Sandmann79, Varstahl">
   <requires>
     <import addon="repository.sandmann79.plugins" version="1.0.4"/>

@@ -6,7 +6,7 @@ set arc_dir_py3=%~dp0packages-py3
 set xml_dir_py3=%~dp0xml-py3
 set repo_py3=repository.sandmann79-py3.plugins
 set v_py3=3.0.0
-set add_ver_py3=+matrix.1
+set add_ver_py3=~beta+matrix.1
 
 
 if not "%1"=="clean" (
@@ -41,6 +41,7 @@ for /f %%f in ('dir %~dp0 /b /a:d') do if exist %~dp0%%f\addon.xml (
         )
         if exist %xml_dir_py3%\%%f.xml (
             set version_py3=!version!%add_ver_py3%
+            if "%%f"=="repository.sandmann79.plugins" set version_py3=!version!
             if not exist %arc_dir_py3%\%%f\%%f-!version_py3!.zip (
                 if exist %arc_dir_py3%\%%f rd /q /s %arc_dir_py3%\%%f >nul 2>&1
                 md %arc_dir_py3%\%%f

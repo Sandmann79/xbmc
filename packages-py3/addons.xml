@@ -8,11 +8,10 @@
     </extension>
     <extension point="xbmc.addon.metadata">
         <summary>Old Repository for Kodi Matrix addons</summary>
-        <description></description>
+        <description>This repo has been integrated at main repo called [COLOR green]Sandmann79s Repository[/COLOR] and won't receive future updates.
+Please install [COLOR green]Sandmann79s Repository[/COLOR] and remove this repo afterwards.</description>
         <disclaimer></disclaimer>
         <platform>all</platform>
-        <lifecyclestate type="deprecated">This repo has been integrated at main repo called [COLOR green]Sandmann79s Repository[/COLOR] and won't receive future updates.
-        Please install [COLOR green]Sandmann79s Repository[/COLOR] and remove this repo afterwards.</lifecyclestate>
         <news>v1.0.1 (2021-06-22)
 - Points now to Leia/Unified Repository
         </news>

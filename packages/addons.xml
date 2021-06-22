@@ -1,9 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <addons>
-<addon id="plugin.program.browser.launcher" name="Browser Launcher" version="1.2.5" provider-name="AddonScriptorDE + Sandmann79">
-    <requires>
-        <import addon="xbmc.python" version="2.1.0"/>
-    </requires>
+<addon id="plugin.program.browser.launcher" name="Browser Launcher" version="1.2.6" provider-name="AddonScriptorDE + Sandmann79">
     <extension point="xbmc.python.pluginsource" library="default.py">
         <provides>executable</provides>
     </extension>
@@ -23,10 +20,9 @@
 </addon>
 <addon id="plugin.video.amazon-test"
        name="Amazon VOD"
-       version="0.9.5~beta"
+       version="0.9.5"
        provider-name="Sandmann79, Varstahl">
   <requires>
-    <import addon="xbmc.python" version="2.24.0"/>
     <import addon="script.module.beautifulsoup4" version="4.6.2"/>
     <import addon="script.module.mechanicalsoup" version="0.12.0"/>
     <import addon="script.module.pyxbmct" version="1.1.7"/>
@@ -59,25 +55,27 @@
     </assets>
   </extension>
 </addon>
-<addon id="repository.sandmann79.plugins" name="Sandmann79s Repository Leia" version="1.0.3" provider-name="Sandmann79">
-	<extension point="xbmc.addon.repository" name="Sandmann79s Repository Leia">
-		<info compressed="false">https://raw.githubusercontent.com/Sandmann79/xbmc/repo/packages/addons.xml</info>
-		<checksum>https://raw.githubusercontent.com/Sandmann79/xbmc/repo/packages/addons.xml.md5</checksum>
-		<datadir zip="true">https://raw.githubusercontent.com/Sandmann79/xbmc/repo/packages/</datadir>
-	</extension>
-	<extension point="xbmc.addon.metadata">
-		<summary>Various Addons for Kodi 18 and below</summary>
-		<description></description>
-		<disclaimer></disclaimer>
-		<platform>all</platform>
-	</extension>
+<addon id="repository.sandmann79.plugins" name="Sandmann79s Repository" version="1.0.4" provider-name="Sandmann79">
+    <extension point="xbmc.addon.repository" name="Sandmann79s Repository">
+        <info compressed="false">https://raw.githubusercontent.com/Sandmann79/xbmc/repo/packages/addons.xml</info>
+        <checksum>https://raw.githubusercontent.com/Sandmann79/xbmc/repo/packages/addons.xml.md5</checksum>
+        <datadir zip="true">https://raw.githubusercontent.com/Sandmann79/xbmc/repo/packages/</datadir>
+    </extension>
+    <extension point="xbmc.addon.metadata">
+        <summary>Various Addons for Kodi 18 and beyond</summary>
+        <description></description>
+        <disclaimer></disclaimer>
+        <platform>all</platform>
+        <news>v1.0.4 (2021-06-22)
+- From now on the default repository for all supported Kodi versions
+        </news>
+    </extension>
 </addon>
 <addon id="script.module.mechanicalsoup"
 	name="MechanicalSoup"
-	version="1.0.0"
+	version="1.0.1"
 	provider-name="Matthew Hickford, Dan Hemberger, Matthieu Moy">
 	<requires>
-		<import addon="xbmc.python" version="2.25.0"/>
 		<import addon="script.module.requests" version="2.0.0"/>
 		<import addon="script.module.beautifulsoup4" version="4.4.0"/>
 		<import addon="script.module.six" version="1.4.0"/>
@@ -97,11 +95,8 @@
 </addon>
 <addon id="script.module.pyautogui"
 	name="PyAutoGUI"
-	version="0.9.51"
+	version="0.9.52"
 	provider-name="Al Sweigart">
-	<requires>
-		<import addon="xbmc.python" version="2.25.0"/>
-	</requires>
 	<extension point="xbmc.python.module" library="lib" />
 	<extension point="xbmc.addon.metadata">
 		<summary lang="en_GB">PyAutoGUI is a cross-platform GUI automation Python module for human beings. Used to programmatically control the mouse and keyboard.</summary>

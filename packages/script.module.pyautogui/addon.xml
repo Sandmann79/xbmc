@@ -1,11 +1,8 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <addon id="script.module.pyautogui"
 	name="PyAutoGUI"
-	version="0.9.51"
+	version="0.9.52"
 	provider-name="Al Sweigart">
-	<requires>
-		<import addon="xbmc.python" version="2.25.0"/>
-	</requires>
 	<extension point="xbmc.python.module" library="lib" />
 	<extension point="xbmc.addon.metadata">
 		<summary lang="en_GB">PyAutoGUI is a cross-platform GUI automation Python module for human beings. Used to programmatically control the mouse and keyboard.</summary>

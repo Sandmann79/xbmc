@@ -11,10 +11,10 @@ msgstr ""
 "PO-Revision-Date: 2021-03-01 12:00+0000\n"
 "Last-Translator: ShakeSAC\n"
 "Language-Team: Português\n"
+"Language: pt_PT\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Language: pt_PT\n"
 "Plural-Forms: nplurals=2; plural=(n != 1)\n"
 
 msgctxt "Addon Summary"
@@ -169,6 +169,11 @@ msgctxt "#30035"
 msgid "Enable Views"
 msgstr "Ativar Vistas"
 
+#, fuzzy
+msgctxt "#30036"
+msgid "Show Recently watched menu entry"
+msgstr "Vistos Recentemente"
+
 # empty string with id 30036
 msgctxt "#30037"
 msgid "Disable SSL Certificate Verification"
@@ -280,6 +285,10 @@ msgctxt "#30065"
 msgid "Mediasource TV Title"
 msgstr ""
 
+msgctxt "#30066"
+msgid "Send video progress to Amazon at least at percent played (0 to disable)"
+msgstr ""
+
 # empty strings from id 30066 to 30069
 msgctxt "#30070"
 msgid "Miscellaneous"
@@ -354,8 +363,12 @@ msgid "Clear cache"
 msgstr "Limpar cache"
 
 msgctxt "#30088"
-msgid "Clear cached catalog or video data?\nVideo data includes series/season metadata."
-msgstr "Limpar catálogo em cache ou dados de vídeo?\nDados de vídeo incluem metadados de séries/temporadas."
+msgid ""
+"Clear cached catalog or video data?\n"
+"Video data includes series/season metadata."
+msgstr ""
+"Limpar catálogo em cache ou dados de vídeo?\n"
+"Dados de vídeo incluem metadados de séries/temporadas."
 
 msgctxt "#30089"
 msgid "No"

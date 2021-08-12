@@ -170,6 +170,11 @@ msgctxt "#30035"
 msgid "Enable Views"
 msgstr "Activer les vues"
 
+#, fuzzy
+msgctxt "#30036"
+msgid "Show Recently watched menu entry"
+msgstr "Regardé récemment"
+
 msgctxt "#30037"
 msgid "Disable SSL Certificate Verification"
 msgstr "Désactiver la vérification du certificat SSL"
@@ -277,6 +282,10 @@ msgstr "Titre du film Mediasource"
 msgctxt "#30065"
 msgid "Mediasource TV Title"
 msgstr "Titre TV Mediasource"
+
+msgctxt "#30066"
+msgid "Send video progress to Amazon at least at percent played (0 to disable)"
+msgstr ""
 
 msgctxt "#30070"
 msgid "Miscellaneous"
@@ -655,14 +664,6 @@ msgstr "Aucune information d'identification présente, veuillez vous rendre dans
 msgctxt "#30217"
 msgid "No stream hoster reachable"
 msgstr "Aucun hébergeur de flux accessible"
-
-msgctxt "#30218"
-msgid ""
-"Due changes at Amazon's DRM encryption, it's not possible to use Inputstream for this video.\n"
-"Please configure the fallback option in Settings, to use another Playback method."
-msgstr ""
-"En raison de modifications apportées au chiffrement DRM d'Amazon, il n'est pas possible d'utiliser Inputstream pour cette vidéo.\n"
-"Veuillez configurer l'option de secours dans les paramètres pour utiliser une autre méthode de lecture."
 
 msgctxt "#30219"
 msgid "Unable to retrieve Amazon's territorial configuration."

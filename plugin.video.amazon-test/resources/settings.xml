@@ -31,9 +31,10 @@
         <setting id="proxy_mpdalter" type="bool" label="30248" default="true" visible="eq(-21,3)" />
         <setting id="uhd_android" type="bool" label="30023" default="false" visible="eq(-22,3)" enable="System.Platform.Android"/>
         <setting id="skip_scene" type="enum" label="30081" lvalues="30082|30083|30084|30085|30086" default="1" visible="eq(-23,3)"/>
+        <setting id="send_vp" type="slider" label="30066" range="0,2,90" default="4" option="percent" visible="eq(-24,3)"/>
         <!-- Browser/Script -->
-        <setting id="remotectrl" type="bool" label="30074" default="false" visible="lt(-24,2)"/>
-        <setting id="remote_vol" type="bool" label="30075" default="false" subsetting="true" enable="eq(-1,true)" visible="lt(-25,2)"/>
+        <setting id="remotectrl" type="bool" label="30074" default="false" visible="lt(-25,2)"/>
+        <setting id="remote_vol" type="bool" label="30075" default="false" subsetting="true" enable="eq(-1,true)" visible="lt(-26,2)"/>
     </category>
     <!-- Language -->
     <category label="30021">
@@ -100,6 +101,7 @@
     </category>
     <!-- TLD -->
     <category label="Amazon.TLD">
+        <setting id="show_recents" type="bool" label="30036" default="true" />
         <setting id="use_webapi" type="bool" label="30093" default="false"/>
         <setting label="30060" type="lsep" visible="eq(-1,false)"/>
         <setting id="enablelibraryfolder" type="bool" label="30061" default="false" visible="eq(-2,false)"/>

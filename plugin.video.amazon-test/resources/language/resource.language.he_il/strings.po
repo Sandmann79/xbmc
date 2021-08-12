@@ -172,6 +172,11 @@ msgctxt "#30035"
 msgid "Enable Views"
 msgstr "אפשר תצוגות"
 
+#, fuzzy
+msgctxt "#30036"
+msgid "Show Recently watched menu entry"
+msgstr "נוספו לאחרונה"
+
 msgctxt "#30037"
 msgid "Disable SSL Certificate Verification"
 msgstr "השמת אימות אישור SSL"
@@ -279,6 +284,10 @@ msgstr "שם הסרט Mediasource"
 msgctxt "#30065"
 msgid "Mediasource TV Title"
 msgstr "שם סדרה Mediasource"
+
+msgctxt "#30066"
+msgid "Send video progress to Amazon at least at percent played (0 to disable)"
+msgstr ""
 
 msgctxt "#30070"
 msgid "Miscellaneous"

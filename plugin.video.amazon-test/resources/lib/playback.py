@@ -19,10 +19,9 @@ except:
 
 def _playDummyVid():
     if not hasattr(_playDummyVid, 'played'):
-        dummy_video = OSPJoin(g.PLUGIN_PATH, 'resources', 'art', 'dummy.avi')
+        dummy_video = OSPJoin(g.PLUGIN_PATH, 'resources', 'art', 'dummy.wav')
         xbmcplugin.setResolvedUrl(g.pluginhandle, True, xbmcgui.ListItem(path=dummy_video))
-        Log('Playing Dummy Video', Log.DEBUG)
-        xbmc.Player().stop()
+        Log('Playing Dummy Audio', Log.DEBUG)
     _playDummyVid.played = True
     return
 
@@ -72,7 +71,7 @@ def PlayVideo(name, asin, adultstr, streamtype, forcefb=0):
                 e = subprocess.CalledProcessError(retcode, c)
                 e.output = str(out) + str(err)
                 Log(e, Log.ERROR)
-        return out.strip()
+        return out.decode('utf-8').strip()
 
     def _extrFr(data):
         fps_string = re.compile('frameRate="([^"]*)').findall(data)[0]
@@ -399,7 +398,7 @@ def PlayVideo(name, asin, adultstr, streamtype, forcefb=0):
                 player.video_lastpos = player.getTime()
                 if time.time() > (starttime + player.interval):
                     starttime = time.time()
-                    player.updateStream('PLAY')
+                    player.updateStream()
                 if skip and s.skip_scene > 0:
                     for elem in skip:
                         st_pos = elem.get('startTimecodeMs')
@@ -553,7 +552,7 @@ class _AmazonPlayer(xbmc.Player):
         self.dbid = 0
         self.asin = ''
         self.cookie = None
-        self.interval = 180
+        self.interval = 60
         self.running = False
         self.extern = False
         self.resume = 0
@@ -561,6 +560,8 @@ class _AmazonPlayer(xbmc.Player):
         self.content = 0
         self.rec_added = False
         self.resumedb = OSPJoin(g.DATA_PATH, 'resume.db')
+        self.sendvp = int('0' + self._g.addon.getSetting('send_vp'))
+        self.event = 'START'
 
     def resolve(self, li):
         if self.extern and not self.checkResume():
@@ -575,7 +576,6 @@ class _AmazonPlayer(xbmc.Player):
         xbmcplugin.setResolvedUrl(self._g.pluginhandle, True, li)
         self.running = True
         self.getTimes('Starting Playback')
-        self.updateStream('START')
 
     def checkResume(self):
         self.dbid = int('0' + _getListItem('DBID'))
@@ -635,15 +635,18 @@ class _AmazonPlayer(xbmc.Player):
     def onPlayBackSeek(self, time, seekOffset):
         cur_sub = jsonRPC('Player.GetProperties', 'currentsubtitle', param={'playerid': 1})
         Log('Seeking / Current Subtitle: {}'.format(cur_sub), Log.DEBUG)
-        jsonRPC('Player.SetSubtitle', param={'playerid': 1, 'subtitle': cur_sub['index']})
+        if cur_sub:
+            jsonRPC('Player.SetSubtitle', param={'playerid': 1, 'subtitle': cur_sub['index']})
 
-    def updateStream(self, event):
+    def updateStream(self):
         if not self.asin:
             return
-        suc, msg = getURLData('usage/UpdateStream', self.asin, useCookie=self.cookie, opt='&event=%s&timecode=%s' %
-                              (event, self.video_lastpos))
-        if suc and 'statusCallbackIntervalSeconds' in str(msg):
-            self.interval = msg['message']['body']['statusCallbackIntervalSeconds']
+        perc = (self.video_lastpos * 100) / self.video_totaltime if self.video_lastpos > 0 and self.video_totaltime > 0 else 0
+        if 0 < self.sendvp <= perc:
+            suc, msg = getURLData('usage/UpdateStream', self.asin, useCookie=self.cookie, opt='&event=%s&timecode=%s' % (self.event, self.video_lastpos))
+            self.event = 'PLAY'
+            if suc and 'statusCallbackIntervalSeconds' in str(msg):
+                self.interval = msg['message']['body']['statusCallbackIntervalSeconds']
         if not self.rec_added and self.video_lastpos > 180 and not g.UsePrimeVideo and not s.useWebApi:
             self.rec_added = True
             g.pv.updateRecents(self.asin)
@@ -651,7 +654,8 @@ class _AmazonPlayer(xbmc.Player):
     def finished(self, forced=False):
         if self.running and (self.video_lastpos > 0 or forced):
             self.running = False
-            self.updateStream('STOP')
+            self.event = 'STOP'
+            self.updateStream()
             if self.video_lastpos > 0 and self.video_totaltime > 0:
                 self.watched = 1 if (self.video_lastpos * 100) / self.video_totaltime >= 90 else 0
                 if self.dbid and g.KodiVersion < 18:

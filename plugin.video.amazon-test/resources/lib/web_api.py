@@ -845,14 +845,19 @@ class PrimeVideo(Singleton):
             if (urn in o):
                 return
             title = item['title' if 'title' in item else 'heading']
-            o[urn] = {'title': title, 'lazyLoadURL': item['href'] if 'href' in item else item['link']['url'], 'metadata': {'artmeta': {}, 'videometa': {}}}
+            liveInfo = item.get('liveInfo', item.get('liveEvent', {}))
+            liveStat = liveInfo.get('status', liveInfo.get('liveStateType', '')).lower() == 'live'
+            liveTime = liveInfo.get('timeBadge', liveInfo.get('dateTime'))
+            o[urn] = {'title': title, 'lazyLoadURL': item['href'] if 'href' in item else item['link']['url'],
+                      'metadata': {'artmeta': {}, 'videometa': {}}, 'live': liveStat, 'pos': len(o)}
             o[urn]['metadata']['videometa']['mediatype'] = 'video'
             o[urn]['metadata']['compactGTI'] = ExtractURN(item['playbackAction']['fallbackUrl']) if 'playbackAction' in item else urn
-            if ('liveInfo' in item) and (('timeBadge' in item['liveInfo']) or (('status' in item['liveInfo']) and ('live' == item['liveInfo']['status'].lower()))):
-                when = 'Live' if 'timeBadge' not in item['liveInfo'] else item['liveInfo']['timeBadge']
-                if 'venue' in item['liveInfo']:
-                    when = '{} @ {}'.format(when, item['liveInfo']['venue'])
-                o[urn]['metadata']['videometa']['plot'] = when
+            when = ''
+            if (liveInfo and liveTime) or liveStat:
+                when = 'Live' if not liveTime else liveTime
+                if 'venue' in liveInfo:
+                    when = '{} @ {}\n\n'.format(when, liveInfo['venue'])
+            o[urn]['metadata']['videometa']['plot'] = when + item.get('synopsis', '')
             if 'imageSrc' in item:
                 o[urn]['metadata']['artmeta']['poster'] = item['imageSrc']
             if ('image' in item) and ('url' in item['image']):

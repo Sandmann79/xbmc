@@ -832,9 +832,15 @@ class PrimeVideo(Singleton):
                 if chid in o:
                     return
 
-                o[chid] = {'title': item['playbackAction']['label'] if 'playbackAction' in item else item['title'],
-                           'metadata': {'artmeta': {}, 'videometa': {}}, 'live': True, 'pos': len(o)}
-                o[chid]['metadata']['videometa']['plot'] = item['title'] + ('\n\n' + item['synopsis'] if 'synopsis' in item else '')
+                if 'station' in item:
+                    title = item['station']['name']
+                elif 'playbackAction' in item:
+                    title = item['playbackAction']['label']
+                else:
+                    title = item['title']
+
+                o[chid] = {'title': title, 'metadata': {'artmeta': {}, 'videometa': {}}, 'live': True, 'pos': len(o)}
+                o[chid]['metadata']['videometa']['plot'] = title + ('\n\n' + item['synopsis'] if 'synopsis' in item else '')
                 o[chid]['metadata']['artmeta']['poster'] = o[chid]['metadata']['artmeta']['thumb'] = MaxSize(item['image']['url'])
                 o[chid]['metadata']['videometa']['mediatype'] = 'video'
                 o[chid]['metadata']['compactGTI'] = ExtractURN(item['playbackAction']['fallbackUrl']) if 'playbackAction' in item else chid
@@ -956,11 +962,10 @@ class PrimeVideo(Singleton):
             bUpdated = False  # Video data updated
 
             # Find out if it's a live event. Custom parsing rules apply
-            try:
-                if (oid not in state['self']):
-                    ourn = oid
-                    oid = [x for x in state['self'] if oid == state['self'][x]['compactGTI']][0]
-            except: pass
+            if oid not in state['self']:
+                res = [x for x in state['self'] if oid == (state['self'][x]['compactGTI'] if self._g.UsePrimeVideo else x)]
+                if len(res) > 1:
+                    oid = res[0]
 
             if ('self' in state) and (oid in state['self']) and ('event' == state['self'][oid]['titleType'].lower()):
                 # List of video streams
@@ -1053,7 +1058,7 @@ class PrimeVideo(Singleton):
                             GTIs.append(e)
                             # Save parent/children relationships
                             parents[e] = gti
-                            if e not in self._videodata[gti]['children']:
+                            if gti in self._videodata and e not in self._videodata[gti]['children']:
                                 self._videodata[gti]['children'].append(e)
                                 bUpdated = True
 
@@ -1353,19 +1358,23 @@ class PrimeVideo(Singleton):
                         except:
                             # Sometimes there are promotional slides with no real content
                             continue
+
+                        if 'station' in item:
+                            AddLiveTV(o, item)
+
                         try:
                             iu = item['href'] if 'href' in item else item['link']['url']
                         except:
                             # Sometimes there are promotional slides with no real content
                             continue
+
                         try:
                             t = item['watchlistAction']['endpoint']['query']['titleType'].lower()
                         except:
                             t = None
-
                         # Detect if it's a live event (or replay)
                         try:
-                            bEvent = ('liveInfo' in item) or ('event' == item['watchlistAction']['endpoint']['query']['titleType'].lower())
+                            bEvent = ('liveInfo' in item) or ('event' == t)
                         except:
                             bEvent = False
 

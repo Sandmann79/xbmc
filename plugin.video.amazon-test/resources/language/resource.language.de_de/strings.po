@@ -521,6 +521,10 @@ msgctxt "#30173"
 msgid "Episode"
 msgstr "Episode"
 
+msgctxt "#30174"
+msgid "Event"
+msgstr "Veranstaltung"
+
 msgctxt "#30180"
 msgid "Add %s to Watchlist"
 msgstr "%s zur Watchlist hinzufügen"

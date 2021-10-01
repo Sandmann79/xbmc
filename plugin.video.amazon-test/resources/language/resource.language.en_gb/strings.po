@@ -532,7 +532,11 @@ msgctxt "#30173"
 msgid "Episode"
 msgstr ""
 
-# empty strings from id 30174 to 30179
+msgctxt "#30174"
+msgid "Event"
+msgstr ""
+
+# empty strings from id 30175 to 30179
 msgctxt "#30180"
 msgid "Add %s to Watchlist"
 msgstr ""

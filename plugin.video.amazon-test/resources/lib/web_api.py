@@ -517,7 +517,7 @@ class PrimeVideo(Singleton):
         """ Display and navigate the menu for PrimeVideo users """
 
         # Add multiuser menu if needed
-        if (self._s.multiuser) and ('root' == path) and (1 < len(loadUsers())):
+        if self._s.multiuser and ('root' == path) and (1 < len(loadUsers())):
             li = xbmcgui.ListItem(getString(30134).format(loadUser('name')))
             li.addContextMenuItems(self._g.CONTEXTMENU_MULTIUSER)
             xbmcplugin.addDirectoryItem(self._g.pluginhandle, '{}pv/browse/root{}SwitchUser'.format(self._g.pluginid, self._separator), li, isFolder=False)
@@ -585,7 +585,7 @@ class PrimeVideo(Singleton):
                 streamtype = ''
                 # if ('trailer' in entry and entry['trailer']):
                 #     streamtype = '&trailer=1'
-                if ('live' in entry and entry['live']):
+                if 'live' in entry and entry['live']:
                     streamtype = '&trailer=2'
                 url += '?mode=PlayVideo&name={}&asin={}{}'.format(entry['metadata']['compactGTI'], key, streamtype)
             elif 'verb' in entry:
@@ -647,6 +647,15 @@ class PrimeVideo(Singleton):
                         if 'runtime' in m:
                             item.setInfo('video', {'duration': m['runtime']})
                             item.addStreamInfo('video', {'duration': m['runtime']})
+                if 'schedule' in m:
+                    ts = time.time()
+                    from datetime import datetime as dt
+                    for sh in m['schedule']:
+                        us = sh.get('start') / 1000
+                        ue = sh.get('end') / 1000
+                        if us <= ts <= ue:
+                            item.setInfo('video', {'plot': '{:%H:%M} - {:%H:%M}  {}\n\n{}'.format(dt.fromtimestamp(us), dt.fromtimestamp(ue),
+                                                                                                  sh['metadata']['title'], sh['metadata'].get('synopsis', ''))})
 
             folderTypeList.append(folderType)
             item.addContextMenuItems(ctxitems)
@@ -808,7 +817,7 @@ class PrimeVideo(Singleton):
                     MonthToInt('en_US')
 
                 # (╯°□°）╯︵ ┻━┻
-                if (not isinstance(p['m'], int)):
+                if not isinstance(p['m'], int):
                     Log('Unable to parse month "{}" with any known language combination'.format(datestr), Log.WARNING)
                     return datestr
 
@@ -832,14 +841,16 @@ class PrimeVideo(Singleton):
                 if chid in o:
                     return
 
+                o[chid] = {'metadata': {'artmeta': {}, 'videometa': {}}, 'live': True, 'pos': len(o)}
                 if 'station' in item:
                     title = item['station']['name']
+                    o[chid]['metadata']['schedule'] = item['station'].get('schedule', {})
                 elif 'playbackAction' in item:
                     title = item['playbackAction']['label']
                 else:
                     title = item['title']
 
-                o[chid] = {'title': title, 'metadata': {'artmeta': {}, 'videometa': {}}, 'live': True, 'pos': len(o)}
+                o[chid]['title'] = title
                 o[chid]['metadata']['videometa']['plot'] = title + ('\n\n' + item['synopsis'] if 'synopsis' in item else '')
                 o[chid]['metadata']['artmeta']['poster'] = o[chid]['metadata']['artmeta']['thumb'] = MaxSize(item['image']['url'])
                 o[chid]['metadata']['videometa']['mediatype'] = 'video'
@@ -848,7 +859,7 @@ class PrimeVideo(Singleton):
         def AddLiveEvent(o, item, url):
             urn = ExtractURN(url)
             """ Add a live event to the list """
-            if (urn in o):
+            if urn in o:
                 return
             title = item['title' if 'title' in item else 'heading']
             liveInfo = item.get('liveInfo', item.get('liveEvent', {}))
@@ -865,11 +876,11 @@ class PrimeVideo(Singleton):
                     when = '{} @ {}\n\n'.format(when, liveInfo['venue'])
             o[urn]['metadata']['videometa']['plot'] = when + item.get('synopsis', '')
             if 'imageSrc' in item:
-                o[urn]['metadata']['artmeta']['poster'] = item['imageSrc']
+                o[urn]['metadata']['artmeta']['thumb'] = MaxSize(item['imageSrc'])
             if ('image' in item) and ('url' in item['image']):
-                o[urn]['metadata']['artmeta']['poster'] = item['image']['url']
+                o[urn]['metadata']['artmeta']['thumb'] = MaxSize(item['image']['url'])
 
-        def AddSeason(oid, o, bCacheRefresh, title, url):
+        def AddSeason(oid, o, bCacheRefresh, url):
             """ Given a season, adds TV Shows to the catalog """
             urn = ExtractURN(url)
             parent = None
@@ -963,7 +974,7 @@ class PrimeVideo(Singleton):
 
             # Find out if it's a live event. Custom parsing rules apply
             if oid not in state['self']:
-                res = [x for x in state['self'] if oid == (state['self'][x]['compactGTI'] if self._g.UsePrimeVideo else x)]
+                res = [x for x in state['self'] if oid in (state['self'][x]['compactGTI'] if self._g.UsePrimeVideo else state['self'][x]['asins'])]
                 if len(res) > 1:
                     oid = res[0]
 
@@ -1310,6 +1321,9 @@ class PrimeVideo(Singleton):
             elif 'collections' in cnt:
                 for collection in cnt['collections']:
                     if 'text' in collection:
+                        if 'ChartsCarousel' in collection['collectionType']:
+                            # there's no contenttype defined inside, so it looks ugly at addon
+                            continue
                         txt = collection['text']
                         if 'Channels' in breadcrumb[-1] and 'facet' in collection and collection['facet'].get('alternateText'):
                             txt = '{} - {}'.format(collection['facet']['alternateText'], txt)
@@ -1359,31 +1373,30 @@ class PrimeVideo(Singleton):
                             # Sometimes there are promotional slides with no real content
                             continue
 
-                        if 'station' in item:
-                            AddLiveTV(o, item)
-
                         try:
                             iu = item['href'] if 'href' in item else item['link']['url']
                         except:
-                            # Sometimes there are promotional slides with no real content
-                            continue
+                            iu = None
 
                         try:
                             t = item['watchlistAction']['endpoint']['query']['titleType'].lower()
                         except:
-                            t = None
+                            t = ''
+
                         # Detect if it's a live event (or replay)
                         try:
                             bEvent = ('liveInfo' in item) or ('event' == t)
                         except:
                             bEvent = False
 
-                        if bEvent:
+                        if 'station' in item:
+                            AddLiveTV(o, item)
+                        elif bEvent:
                             AddLiveEvent(o, item, iu)
                         elif 'season' != t:
                             bUpdatedVideoData |= ParseSinglePage(breadcrumb[-1], o, bCacheRefresh, url=iu)
                         else:
-                            bUpdatedVideoData |= AddSeason(breadcrumb[-1], o, bCacheRefresh, title, iu)
+                            bUpdatedVideoData |= AddSeason(breadcrumb[-1], o, bCacheRefresh, iu)
 
                         newitem = list(set(list(o)) - set(oldk))
                         if newitem:
@@ -1405,7 +1418,7 @@ class PrimeVideo(Singleton):
                         elif 'season' not in item:
                             bUpdatedVideoData |= ParseSinglePage(breadcrumb[-1], o, bCacheRefresh, url=iu)
                         else:
-                            bUpdatedVideoData |= AddSeason(breadcrumb[-1], o, bCacheRefresh, item['title']['text'], iu)
+                            bUpdatedVideoData |= AddSeason(breadcrumb[-1], o, bCacheRefresh, iu)
 
                         newitem = list(set(list(o)) - set(oldk))
                         if newitem:

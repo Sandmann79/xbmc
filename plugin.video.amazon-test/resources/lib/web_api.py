@@ -9,7 +9,7 @@ import re
 import sys
 import time
 
-from .common import key_exists, return_item, sleep, findKey
+from .common import key_exists, return_item, return_value, sleep, findKey
 from .singleton import Singleton
 from .network import getURL, getURLData, MechanizeLogin, FQify, GrabJSON
 from .logging import Log, LogJSON
@@ -654,8 +654,9 @@ class PrimeVideo(Singleton):
                         us = sh.get('start') / 1000
                         ue = sh.get('end') / 1000
                         if us <= ts <= ue:
+                            shm = sh['metadata']
                             item.setInfo('video', {'plot': '{:%H:%M} - {:%H:%M}  {}\n\n{}'.format(dt.fromtimestamp(us), dt.fromtimestamp(ue),
-                                                                                                  sh['metadata']['title'], sh['metadata'].get('synopsis', ''))})
+                                                                                                  shm.get('title', ''), shm.get('synopsis', ''))})
 
             folderTypeList.append(folderType)
             item.addContextMenuItems(ctxitems)
@@ -803,12 +804,12 @@ class PrimeVideo(Singleton):
                         if 'months' in self._dateParserData[langCode]:
                             # Try to treat the month name as shortened
                             for monthName in self._dateParserData[langCode]['months']:
-                                if (monthName.startswith(p['m'])):
+                                if monthName.startswith(p['m']):
                                     p['m'] = self._dateParserData[langCode]['months'][monthName]
                                     break
 
                 # Delocalize date with the provided locale
-                if (not isinstance(p['m'], int)):
+                if not isinstance(p['m'], int):
                     MonthToInt(lang)
 
                 # If all else failed, try en_US if applicable
@@ -840,7 +841,6 @@ class PrimeVideo(Singleton):
                 chid = item['channelId']
                 if chid in o:
                     return
-
                 o[chid] = {'metadata': {'artmeta': {}, 'videometa': {}}, 'live': True, 'pos': len(o)}
                 if 'station' in item:
                     title = item['station']['name']
@@ -861,24 +861,27 @@ class PrimeVideo(Singleton):
             """ Add a live event to the list """
             if urn in o:
                 return
-            title = item['title' if 'title' in item else 'heading']
+            title = return_value(item, 'title' if 'title' in item else 'heading', 'text')
             liveInfo = item.get('liveInfo', item.get('liveEvent', {}))
             liveStat = liveInfo.get('status', liveInfo.get('liveStateType', '')).lower() == 'live'
             liveTime = liveInfo.get('timeBadge', liveInfo.get('dateTime'))
-            o[urn] = {'title': title, 'lazyLoadURL': item['href'] if 'href' in item else item['link']['url'],
+            o[urn] = {'title': title, 'lazyLoadURL': url,
                       'metadata': {'artmeta': {}, 'videometa': {}}, 'live': liveStat, 'pos': len(o)}
             o[urn]['metadata']['videometa']['mediatype'] = 'video'
             o[urn]['metadata']['compactGTI'] = ExtractURN(item['playbackAction']['fallbackUrl']) if 'playbackAction' in item else urn
             when = ''
-            if (liveInfo and liveTime) or liveStat:
+            if liveTime or liveStat:
                 when = 'Live' if not liveTime else liveTime
                 if 'venue' in liveInfo:
-                    when = '{} @ {}\n\n'.format(when, liveInfo['venue'])
-            o[urn]['metadata']['videometa']['plot'] = when + item.get('synopsis', '')
+                    when = '{} @ {}'.format(when, liveInfo['venue'])
+                when += '\n\n'
+            o[urn]['metadata']['videometa']['plot'] = when + return_value(item, 'synopsis', 'text')
             if 'imageSrc' in item:
                 o[urn]['metadata']['artmeta']['thumb'] = MaxSize(item['imageSrc'])
-            if ('image' in item) and ('url' in item['image']):
+            elif 'image' in item and 'url' in item['image']:
                 o[urn]['metadata']['artmeta']['thumb'] = MaxSize(item['image']['url'])
+            elif key_exists(item, 'packshot', 'image', 'src'):
+                o[urn]['metadata']['artmeta']['thumb'] = MaxSize(item['packshot']['image']['src'])
 
         def AddSeason(oid, o, bCacheRefresh, url):
             """ Given a season, adds TV Shows to the catalog """
@@ -1321,13 +1324,13 @@ class PrimeVideo(Singleton):
             elif 'collections' in cnt:
                 for collection in cnt['collections']:
                     if 'text' in collection:
-                        if 'ChartsCarousel' in collection['collectionType']:
+                        txt = collection['text']
+                        if 'ChartsCarousel' in collection['collectionType'] or 'Hero Carousel' in txt:
                             # there's no contenttype defined inside, so it looks ugly at addon
                             continue
-                        txt = collection['text']
-                        if 'Channels' in breadcrumb[-1] and 'facet' in collection and collection['facet'].get('alternateText'):
+                        if ('Channels' in breadcrumb[-1] or findKey("channelId", collection))\
+                                and 'facet' in collection and collection['facet'].get('alternateText'):
                             txt = '{} - {}'.format(collection['facet']['alternateText'], txt)
-                        txt = 'Highlights' if 'Hero Carousel' in txt else txt
                         id = txt
                         o[id] = {'title': self._BeautifyText(txt), 'pos': len(o)}
                         if 'seeMoreLink' in collection:
@@ -1362,67 +1365,30 @@ class PrimeVideo(Singleton):
                             o[f['id']]['lazyLoadData'] = cnt
                 except KeyError: pass  # Empty list
             else:
-                # MyStuff / Widow list / API Search
-                vo = return_item(cnt, 'viewOutput', 'features', wl_lib, 'content')
+                vo = cnt['results'] if 'results' in cnt else return_item(cnt, 'viewOutput', 'features', wl_lib, 'content')
                 if ('items' in vo) or (('content' in vo) and ('items' in vo['content'])):
                     for item in (vo if 'items' in vo else vo['content'])['items']:
-                        oldk = list(o)
-                        try:
-                            title = item['heading'] if 'heading' in item else item['title']
-                        except:
-                            # Sometimes there are promotional slides with no real content
-                            continue
+                        if 'heading' in item or 'title' in item:
+                            oldk = list(o)
+                            iu = item['href'] if 'href' in item else item['link' if 'link' in item else 'title'].get('url')
+                            try:
+                                wl = 'watchlistAction' if 'watchlistAction' in item else 'watchlistButton'
+                                t = item[wl]['endpoint']['query']['titleType'].lower()
+                            except:
+                                t = ''
+                            if 'station' in item:
+                                AddLiveTV(o, item)
+                            elif ('liveInfo' in item) or ('event' == t):
+                                AddLiveEvent(o, item, iu)
+                            elif 'season' != t and 'season' not in item:
+                                bUpdatedVideoData |= ParseSinglePage(breadcrumb[-1], o, bCacheRefresh, url=iu)
+                            else:
+                                bUpdatedVideoData |= AddSeason(breadcrumb[-1], o, bCacheRefresh, iu)
 
-                        try:
-                            iu = item['href'] if 'href' in item else item['link']['url']
-                        except:
-                            iu = None
+                            newitem = list(set(list(o)) - set(oldk))
+                            if newitem:
+                                o[newitem[0]]['pos'] = len(o)
 
-                        try:
-                            t = item['watchlistAction']['endpoint']['query']['titleType'].lower()
-                        except:
-                            t = ''
-
-                        # Detect if it's a live event (or replay)
-                        try:
-                            bEvent = ('liveInfo' in item) or ('event' == t)
-                        except:
-                            bEvent = False
-
-                        if 'station' in item:
-                            AddLiveTV(o, item)
-                        elif bEvent:
-                            AddLiveEvent(o, item, iu)
-                        elif 'season' != t:
-                            bUpdatedVideoData |= ParseSinglePage(breadcrumb[-1], o, bCacheRefresh, url=iu)
-                        else:
-                            bUpdatedVideoData |= AddSeason(breadcrumb[-1], o, bCacheRefresh, iu)
-
-                        newitem = list(set(list(o)) - set(oldk))
-                        if newitem:
-                            o[newitem[0]]['pos'] = len(o)
-                # Search/list
-                if ('results' in cnt) and ('items' in cnt['results']):
-                    for item in cnt['results']['items']:
-                        oldk = list(o)
-                        iu = item['title']['url']
-
-                        # Detect if it's a live event (or replay)
-                        try:
-                            bEvent = ('liveInfo' in item) or ('event' == item['watchlistAction']['endpoint']['query']['titleType'].lower())
-                        except:
-                            bEvent = False
-
-                        if bEvent:
-                            AddLiveEvent(o, item, iu)
-                        elif 'season' not in item:
-                            bUpdatedVideoData |= ParseSinglePage(breadcrumb[-1], o, bCacheRefresh, url=iu)
-                        else:
-                            bUpdatedVideoData |= AddSeason(breadcrumb[-1], o, bCacheRefresh, iu)
-
-                        newitem = list(set(list(o)) - set(oldk))
-                        if newitem:
-                            o[newitem[0]]['pos'] = len(o)
                 # Single page
                 bSinglePage = False
                 if 'state' in cnt:

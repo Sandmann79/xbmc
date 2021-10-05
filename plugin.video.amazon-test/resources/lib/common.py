@@ -269,6 +269,17 @@ def return_item(dictionary, *keys):
     return _p
 
 
+def return_value(dictionary, *keys):
+    """ Returns an value nested in the dictionary, or the dictionary itself """
+    _p = dictionary
+    for key in keys:
+        try:
+            _p = _p[key]
+        except:
+            return _p
+    return _p
+
+
 def findKey(key, obj):
     if key in obj.keys():
         return obj[key]

@@ -1368,9 +1368,13 @@ class PrimeVideo(Singleton):
                 vo = cnt['results'] if 'results' in cnt else return_item(cnt, 'viewOutput', 'features', wl_lib, 'content')
                 if ('items' in vo) or (('content' in vo) and ('items' in vo['content'])):
                     for item in (vo if 'items' in vo else vo['content'])['items']:
-                        if 'heading' in item or 'title' in item:
+                        tile = key_exists(item, 'image', 'alternateText')
+                        if 'heading' in item or 'title' in item or tile:
                             oldk = list(o)
-                            iu = item['href'] if 'href' in item else item['link' if 'link' in item else 'title'].get('url')
+                            try:
+                                iu = item['href'] if 'href' in item else item['link' if 'link' in item else 'title']['url']
+                            except:
+                                iu = None
                             try:
                                 wl = 'watchlistAction' if 'watchlistAction' in item else 'watchlistButton'
                                 t = item[wl]['endpoint']['query']['titleType'].lower()
@@ -1378,6 +1382,9 @@ class PrimeVideo(Singleton):
                                 t = ''
                             if 'station' in item:
                                 AddLiveTV(o, item)
+                            elif tile and iu:
+                                id = 'tile_{}'.format(len(o))
+                                o[id] = {'title': item['image']['alternateText'], 'lazyLoadURL': iu, 'metadata': {'artmeta': {'thumb': item['image']['url']}}}
                             elif ('liveInfo' in item) or ('event' == t):
                                 AddLiveEvent(o, item, iu)
                             elif 'season' != t and 'season' not in item:

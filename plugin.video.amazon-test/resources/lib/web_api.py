@@ -13,10 +13,9 @@ from .common import key_exists, return_item, return_value, sleep, findKey
 from .singleton import Singleton
 from .network import getURL, getURLData, MechanizeLogin, FQify, GrabJSON
 from .logging import Log, LogJSON
-from .itemlisting import setContentAndView
+from .itemlisting import setContentAndView, addVideo, addDir
 from .l10n import *
 from .users import *
-from .playback import PlayVideo
 
 try:
     import cPickle as pickle
@@ -258,12 +257,6 @@ class PrimeVideo(Singleton):
             node = node[nodeName]
         return node, pathList
 
-    def _AddDirectoryItem(self, title, artmetadata, verb):
-        item = xbmcgui.ListItem(title)
-        item.setArt(artmetadata)
-        xbmcplugin.addDirectoryItem(self._g.pluginhandle, self._g.pluginid + verb, item, isFolder=True)
-        del item
-
     def _UpdateProfiles(self, data):
         data = data.get('lists', data)
         if 'cerberus' in data:
@@ -271,7 +264,7 @@ class PrimeVideo(Singleton):
             self._catalog['profiles'] = {'active': p['id']}
             self._catalog['profiles'][p['id']] = {
                 'title': p.get('name', 'Default').encode('utf-8'),
-                'metadata': {'artmeta': {'icon': p['avatarUrl']}},
+                'metadata': {'artmeta': {'thumb': p['avatarUrl']}},
                 'verb': 'pv/profiles/switch/{}'.format(p['id']),
                 'endpoint': p['switchLink'],
             }
@@ -279,7 +272,7 @@ class PrimeVideo(Singleton):
                 for p in data['cerberus']['otherProfiles']:
                     self._catalog['profiles'][p['id']] = {
                         'title': p.get('name', 'Default').encode('utf-8'),
-                        'metadata': {'artmeta': {'icon': p['avatarUrl']}},
+                        'metadata': {'artmeta': {'thumb': p['avatarUrl']}},
                         'verb': 'pv/profiles/switch/{}'.format(p['id']),
                         'endpoint': p['switchLink'],
                     }
@@ -329,7 +322,7 @@ class PrimeVideo(Singleton):
             for k, p in self._catalog['profiles'].items():
                 if 'active' == k or k == self._catalog['profiles']['active']:
                     continue
-                self._AddDirectoryItem(p['title'], p['metadata']['artmeta'], p['verb'])
+                addDir(p['title'], 'True', p['verb'], p['metadata']['artmeta'])
             xbmcplugin.endOfDirectory(self._g.pluginhandle, succeeded=True, cacheToDisc=False, updateListing=False)
 
         def Switch():
@@ -518,9 +511,7 @@ class PrimeVideo(Singleton):
 
         # Add multiuser menu if needed
         if self._s.multiuser and ('root' == path) and (1 < len(loadUsers())):
-            li = xbmcgui.ListItem(getString(30134).format(loadUser('name')))
-            li.addContextMenuItems(self._g.CONTEXTMENU_MULTIUSER)
-            xbmcplugin.addDirectoryItem(self._g.pluginhandle, '{}pv/browse/root{}SwitchUser'.format(self._g.pluginid, self._separator), li, isFolder=False)
+            addDir(getString(30134).format(loadUser('name')), '', 'pv/browse/root{}SwitchUser'.format(self._separator), cm=self._g.CONTEXTMENU_MULTIUSER)
         if ('root' + self._separator + 'SwitchUser') == path:
             if switchUser():
                 self.BuildRoot()
@@ -530,7 +521,7 @@ class PrimeVideo(Singleton):
         # Add Profiles
         if self._s.profiles and ('root' == path) and ('profiles' in self._catalog):
             activeProfile = self._catalog['profiles'][self._catalog['profiles']['active']]
-            self._AddDirectoryItem(activeProfile['title'], activeProfile['metadata']['artmeta'], 'pv/profiles/list')
+            addDir(activeProfile['title'], 'True', 'pv/profiles/list', activeProfile['metadata']['artmeta'])
 
         node, breadcrumb = self._TraverseCatalog(path)
         if None is node:
@@ -553,12 +544,11 @@ class PrimeVideo(Singleton):
             nodeKeys.append('nextPage')
 
         for key in nodeKeys:
-            url = self._g.pluginid
             if key in self._videodata:
                 entry = deepcopy(self._videodata[key])
             else:
                 entry = node[key]
-            title = entry['title'] if 'title' in entry else nodeName
+            title = entry.get('title', nodeName)
             itemPathURI = '{}{}{}'.format(path, self._separator, quote_plus(key.encode('utf-8')))
             ctxitems = []
 
@@ -572,9 +562,10 @@ class PrimeVideo(Singleton):
             except: pass
 
             # Find out if item's a video leaf
-            bIsVideo = False
+            infoLabel = {'title': title}
+
             try: bIsVideo = entry['metadata']['videometa']['mediatype'] in ['episode', 'movie', 'video']
-            except: pass
+            except: bIsVideo = False
 
             # Can we refresh the cache on this/these item(s)?
             bCanRefresh = ('ref' in entry) or ('lazyLoadURL' in entry)
@@ -582,19 +573,13 @@ class PrimeVideo(Singleton):
                 bCanRefresh |= (0 < len([k for k in entry['children'] if (k in self._videodata) and ('ref' in self._videodata[k])]))
 
             if bIsVideo:
-                streamtype = ''
-                # if ('trailer' in entry and entry['trailer']):
-                #     streamtype = '&trailer=1'
-                if 'live' in entry and entry['live']:
-                    streamtype = '&trailer=2'
-                url += '?mode=PlayVideo&name={}&asin={}{}'.format(entry['metadata']['compactGTI'], key, streamtype)
+                infoLabel['contentType'] = 'live' if entry.get('live', False) else entry['metadata']['videometa']['mediatype']
             elif 'verb' in entry:
-                url += entry['verb']
+                url = entry['verb']
                 itemPathURI = ''
             else:
-                url += 'pv/browse/' + itemPathURI
+                url = 'pv/browse/' + itemPathURI
             # Log('Encoded PrimeVideo URL: {}'.format(url), Log.DEBUG)
-            item = xbmcgui.ListItem(title)
 
             if bCanRefresh and (0 < len(itemPathURI)):
                 # Log('Encoded PrimeVideo refresh URL: pv/refresh/{}'.format(itemPathURI), Log.DEBUG)
@@ -627,10 +612,10 @@ class PrimeVideo(Singleton):
                         if self._s.removePosters and ('episode' == m['videometa']['mediatype']):
                             del m['artmeta']['poster']
                     except: pass
-                    item.setArt(m['artmeta'])
+                    infoLabel.update(m['artmeta'])
                 if 'videometa' in m:
                     # https://codedocs.xyz/xbmc/xbmc/group__python__xbmcgui__listitem.html#ga0b71166869bda87ad744942888fb5f14
-                    item.setInfo('video', m['videometa'])
+                    infoLabel.update(m['videometa'])
                     try:
                         folderType = {'video': 0, 'movie': 5, 'episode': 4, 'tvshow': 2, 'season': 3}[m['videometa']['mediatype']]
                     except:
@@ -642,11 +627,8 @@ class PrimeVideo(Singleton):
                                          'RunPlugin({}pv/wltoogle/{}/{}/{})'.format(self._g.pluginid, path, quote_plus(gtis), in_wl)))
                     if bIsVideo:
                         folder = False
-                        item.setProperty('IsPlayable', 'true')
-                        item.setInfo('video', {'title': title})
                         if 'runtime' in m:
-                            item.setInfo('video', {'duration': m['runtime']})
-                            item.addStreamInfo('video', {'duration': m['runtime']})
+                            infoLabel['duration'] = m['runtime']
                 if 'schedule' in m:
                     ts = time.time()
                     from datetime import datetime as dt
@@ -655,15 +637,13 @@ class PrimeVideo(Singleton):
                         ue = sh.get('end') / 1000
                         if us <= ts <= ue:
                             shm = sh['metadata']
-                            item.setInfo('video', {'plot': '{:%H:%M} - {:%H:%M}  {}\n\n{}'.format(dt.fromtimestamp(us), dt.fromtimestamp(ue),
-                                                                                                  shm.get('title', ''), shm.get('synopsis', ''))})
+                            infoLabel['plot'] = '{:%H:%M} - {:%H:%M}  {}\n\n{}'.format(dt.fromtimestamp(us), dt.fromtimestamp(ue),
+                                                                                       shm.get('title', ''), shm.get('synopsis', ''))
 
             folderTypeList.append(folderType)
-            item.addContextMenuItems(ctxitems)
             # If it's a video leaf without an actual video, something went wrong with Amazon servers, just hide it
             if ('nextPage' == key) or (not folder) or (4 > folderType):
-                xbmcplugin.addDirectoryItem(self._g.pluginhandle, url, item, isFolder=folder)
-            del item
+                addVideo(title, key, infoLabel, cm=ctxitems) if bIsVideo else addDir(title, str(folder), url, infoLabel, cm=ctxitems)
 
         # Set sort method and view
         # leave folderType if its a single content list or use the most common foldertype for mixed content, except episodes or seasons (it will break sorting)
@@ -841,7 +821,7 @@ class PrimeVideo(Singleton):
                 chid = item['channelId']
                 if chid in o:
                     return
-                o[chid] = {'metadata': {'artmeta': {}, 'videometa': {}}, 'live': True, 'pos': len(o)}
+                o[chid] = {'metadata': {'artmeta': {}, 'videometa': {'mediatype': 'video'}}, 'live': True, 'pos': len(o)}
                 if 'station' in item:
                     title = item['station']['name']
                     o[chid]['metadata']['schedule'] = item['station'].get('schedule', {})
@@ -853,7 +833,6 @@ class PrimeVideo(Singleton):
                 o[chid]['title'] = title
                 o[chid]['metadata']['videometa']['plot'] = title + ('\n\n' + item['synopsis'] if 'synopsis' in item else '')
                 o[chid]['metadata']['artmeta']['poster'] = o[chid]['metadata']['artmeta']['thumb'] = MaxSize(item['image']['url'])
-                o[chid]['metadata']['videometa']['mediatype'] = 'video'
                 o[chid]['metadata']['compactGTI'] = ExtractURN(item['playbackAction']['fallbackUrl']) if 'playbackAction' in item else chid
 
         def AddLiveEvent(o, item, url):
@@ -866,8 +845,7 @@ class PrimeVideo(Singleton):
             liveStat = liveInfo.get('status', liveInfo.get('liveStateType', '')).lower() == 'live'
             liveTime = liveInfo.get('timeBadge', liveInfo.get('dateTime'))
             o[urn] = {'title': title, 'lazyLoadURL': url,
-                      'metadata': {'artmeta': {}, 'videometa': {}}, 'live': liveStat, 'pos': len(o)}
-            o[urn]['metadata']['videometa']['mediatype'] = 'video'
+                      'metadata': {'artmeta': {}, 'videometa': {'mediatype': 'video'}}, 'live': liveStat, 'pos': len(o)}
             o[urn]['metadata']['compactGTI'] = ExtractURN(item['playbackAction']['fallbackUrl']) if 'playbackAction' in item else urn
             when = ''
             if liveTime or liveStat:
@@ -1452,7 +1430,7 @@ class PrimeVideo(Singleton):
                                 npt = getString(30242).format(cnt['pagination']['page'])
                             except:
                                 npt = getString(30267)
-                            o['nextPage'] = {'title': npt, 'lazyLoadURL': nextPage}
+                            o['nextPage'] = {'title': npt, 'lazyLoadURL': nextPage, 'metadata': {'artmeta': {'thumb': self._s.NextIcon}}}
 
             # Notify new page
             if 0 < len(requestURLs):

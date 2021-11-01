@@ -51,56 +51,61 @@ def setContentAndView(content, updateListing=False):
 def addDir(name, mode='', url='', infoLabels=None, opt='', catalog='Browse', cm=None, page=1, export=False, thumb=None):
     g = Globals()
     s = Settings()
-    if None is thumb:
-        thumb = s.DefaultFanart
-    u = {'mode': mode, 'url': py2_encode(url), 'page': page, 'opt': opt, 'cat': catalog}
-    url = '{}?{}'.format(g.pluginid, urlencode(u)) if mode != 'text' else sys.argv[0]
+    useatv = not g.UsePrimeVideo and not s.useWebApi
+    folder = mode not in ['switchUser', 'text'] if useatv else mode == 'True'
+    sep = '?' if useatv else ''
+    u = urlencode({'mode': mode, 'url': py2_encode(url), 'page': page, 'opt': opt, 'cat': catalog}) if useatv else url
+    url = '{}{}{}'.format(g.pluginid, sep, u) if mode != 'text' else sys.argv[0]
 
-    if not mode:
+    if not infoLabels:
+        infoLabels = {}
+    if mode == '' and useatv:
         url = g.pluginid
-
     if export:
         g.pv.Export(infoLabels, url)
         return
-    if infoLabels:
-        thumb = infoLabels['Thumb']
-        fanart = infoLabels['Fanart']
-    else:
-        fanart = s.DefaultFanart
+    thumb = infoLabels.get('thumb', thumb)
+    fanart = infoLabels.get('fanart', s.DefaultFanart)
+    poster = infoLabels.get('poster', thumb)
 
     item = xbmcgui.ListItem(name)
     item.setProperty('IsPlayable', 'false')
-    item.setArt({'fanart': fanart, 'poster': thumb, 'icon': thumb, 'thumb': thumb})
+    item.setArt({'fanart': fanart, 'poster': poster, 'icon': thumb, 'thumb': thumb})
 
     if infoLabels:
         item.setInfo(type='Video', infoLabels=getInfolabels(infoLabels))
         if 'TotalSeasons' in infoLabels:
             item.setProperty('TotalSeasons', str(infoLabels['TotalSeasons']))
-        if 'Poster' in infoLabels.keys():
-            item.setArt({'tvshow.poster': infoLabels['Poster']})
+        if 'poster' in infoLabels:
+            item.setArt({'tvshow.poster': infoLabels['poster']})
 
     if cm:
         item.addContextMenuItems(cm)
-    xbmcplugin.addDirectoryItem(g.pluginhandle, url, item, isFolder=mode not in ['switchUser', 'text'])
+    xbmcplugin.addDirectoryItem(g.pluginhandle, url, item, isFolder=folder)
 
 
 def addVideo(name, asin, infoLabels, cm=None, export=False):
     g = Globals()
     s = Settings()
-    u = {'asin': asin, 'mode': 'PlayVideo', 'name': py2_encode(name), 'adult': infoLabels['isAdult']}
+    u = {'asin': asin, 'mode': 'PlayVideo', 'name': py2_encode(name), 'adult': infoLabels.get('isAdult', 0)}
     url = '{}?{}'.format(g.pluginid, urlencode(u))
     bitrate = '0'
     streamtypes = {'live': 2}
+    thumb = infoLabels.get('thumb', s.DefaultFanart)
+    fanart = infoLabels.get('fanart', s.DefaultFanart)
+    poster = infoLabels.get('poster', thumb)
 
     item = xbmcgui.ListItem(name)
-    item.setArt({'fanart': infoLabels['Fanart'], 'poster': infoLabels['Thumb'], 'thumb': infoLabels['Thumb']})
-    item.addStreamInfo('audio', {'codec': 'ac3', 'channels': int(infoLabels['AudioChannels'])})
+    item.setArt({'fanart': fanart, 'poster': poster, 'thumb': thumb})
     item.setProperty('IsPlayable', 'true')  # always true, to view watched state
 
-    if 'Poster' in infoLabels.keys():
-        item.setArt({'tvshow.poster': infoLabels['Poster']})
+    if 'AudioChannels' in infoLabels:
+        item.addStreamInfo('audio', {'codec': 'ac3', 'channels': int(infoLabels['AudioChannels'])})
 
-    if infoLabels['TrailerAvailable']:
+    if 'poster' in infoLabels.keys():
+        item.setArt({'tvshow.poster': infoLabels['poster']})
+
+    if infoLabels.get('TrailerAvailable'):
         infoLabels['Trailer'] = url + '&trailer=1&selbitrate=0'
 
     url += '&trailer=%s' % streamtypes.get(infoLabels['contentType'], 0)
@@ -108,10 +113,8 @@ def addVideo(name, asin, infoLabels, cm=None, export=False):
     if [k for k in ['4k', 'uhd', 'ultra hd'] if k in (infoLabels.get('TVShowTitle', '') + name).lower()]:
         bitrate = '-1'
         item.addStreamInfo('video', {'width': 3840, 'height': 2160})
-    elif infoLabels['isHD']:
+    elif infoLabels.get('isHD'):
         item.addStreamInfo('video', {'width': 1920, 'height': 1080})
-    else:
-        item.addStreamInfo('video', {'width': 720, 'height': 480})
 
     if export:
         url += '&selbitrate=' + bitrate
@@ -119,7 +122,6 @@ def addVideo(name, asin, infoLabels, cm=None, export=False):
     else:
         cm = cm if cm else []
         cm.insert(0, (getString(30101), 'Action(ToggleWatched)'))
-        cm.insert(1, (getString(30102), 'RunPlugin({})'.format(url + '&selbitrate=1')))
         item.setInfo(type='Video', infoLabels=getInfolabels(infoLabels))
         item.addContextMenuItems(cm)
         url += '&selbitrate=' + bitrate

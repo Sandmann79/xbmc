@@ -585,7 +585,7 @@ class PrimeVideo(Singleton):
 
         c = self._db.cursor()
         asins = infoLabels['Asins']
-        infoLabels['Banner'] = None
+        infoLabels['banner'] = None
         season = -1 if contentType == 'series' else -2
 
         if contentType == 'season' or contentType == 'episode':
@@ -600,30 +600,30 @@ class PrimeVideo(Singleton):
                                ('%' + asin + '%',)).fetchone()
             if result:
                 if result[0] and contentType != 'episode' and result[0] != self._g.na:
-                    infoLabels['Thumb'] = result[0]
+                    infoLabels['thumb'] = result[0]
                 if result[0] and contentType != 'movie' and result[0] != self._g.na:
-                    infoLabels['Poster'] = result[0]
+                    infoLabels['poster'] = result[0]
                 if result[1] and result[1] != self._g.na:
-                    infoLabels['Fanart'] = result[1]
+                    infoLabels['fanart'] = result[1]
                 if result[2] and result[2] != self._g.na:
-                    infoLabels['Banner'] = result[2]
+                    infoLabels['banner'] = result[2]
                 if season > -1:
                     result = c.execute('select poster, fanart from art where asin like (?) and season = -1',
                                        ('%' + asin + '%',)).fetchone()
                     if result:
                         if result[0] and result[0] != self._g.na and contentType == 'episode':
-                            infoLabels['Poster'] = result[0]
+                            infoLabels['poster'] = result[0]
                         if result[1] and result[1] != self._g.na and self._s.showfanart:
-                            infoLabels['Fanart'] = result[1]
+                            infoLabels['fanart'] = result[1]
                 return infoLabels
             elif season > -1 and self._s.showfanart:
                 result = c.execute('select poster,fanart from art where asin like (?) and season = -1',
                                    ('%' + asin + '%',)).fetchone()
                 if result:
                     if result[0] and result[0] != self._g.na and contentType == 'episode':
-                        infoLabels['Poster'] = result[0]
+                        infoLabels['poster'] = result[0]
                     if result[1] and result[1] != self._g.na:
-                        infoLabels['Fanart'] = result[1]
+                        infoLabels['fanart'] = result[1]
                     return infoLabels
 
         if contentType != 'episode':
@@ -840,7 +840,7 @@ class PrimeVideo(Singleton):
         if crIL:
             infoLabels = {'Plot': None, 'MPAA': None, 'Cast': [], 'Year': None, 'Premiered': None, 'Rating': None,
                           'Votes': None, 'isAdult': 0, 'Director': None,
-                          'Genre': None, 'Studio': None, 'Thumb': None, 'Fanart': None, 'isHD': False, 'isPrime': False,
+                          'Genre': None, 'Studio': None, 'thumb': None, 'fanart': None, 'isHD': False, 'isPrime': False,
                           'AudioChannels': 1, 'TrailerAvailable': False}
         asins = content.get('titleId', '')
 
@@ -880,7 +880,7 @@ class PrimeVideo(Singleton):
         infoLabels['Cast'] = item.get('starringCast', '').split(',')
         infoLabels['Duration'] = str(item['runtime']['valueMillis'] / 1000) if 'runtime' in item else None
         infoLabels['TrailerAvailable'] = item.get('trailerAvailable', False)
-        infoLabels['Fanart'] = item.get('heroUrl')
+        infoLabels['fanart'] = item.get('heroUrl')
         infoLabels['isAdult'] = 1 if 'ageVerificationRequired' in str(item.get('restrictions')) else 0
         infoLabels['Genre'] = ' / '.join(item.get('genres', ''))\
             .replace('_', ' & ')\
@@ -889,7 +889,7 @@ class PrimeVideo(Singleton):
 
         if 'formats' in item and 'images' in item['formats'][0].keys():
             try:
-                infoLabels['Thumb'] = self.cleanIMGurl(item['formats'][0]['images'][0]['uri'])
+                infoLabels['thumb'] = self.cleanIMGurl(item['formats'][0]['images'][0]['uri'])
             except:
                 pass
 
@@ -961,10 +961,10 @@ class PrimeVideo(Singleton):
         infoLabels = self.getArtWork(infoLabels, contentType)
 
         if not export:
-            if not infoLabels['Thumb']:
-                infoLabels['Thumb'] = self._s.DefaultFanart
-            if not infoLabels['Fanart']:
-                infoLabels['Fanart'] = self._s.DefaultFanart
+            if not infoLabels['thumb']:
+                infoLabels['thumb'] = self._s.DefaultFanart
+            if not infoLabels['fanart']:
+                infoLabels['fanart'] = self._s.DefaultFanart
             if not infoLabels['isPrime'] and not contentType == 'series':
                 infoLabels['DisplayTitle'] = '[COLOR %s]%s[/COLOR]' % (self._g.PayCol, infoLabels['DisplayTitle'])
         return contentType, infoLabels
@@ -1010,10 +1010,10 @@ class PrimeVideo(Singleton):
                 il['contentType'] = wl['endpoint']['query'].get('titleType', '')
             if 'images' in item:
                 img = item['images']
-                il['Thumb'] = self.cleanIMGurl(img.get('packshot', img.get('titleshot')))
-                il['Fanart'] = self.cleanIMGurl(img.get('heroshot'))
+                il['thumb'] = self.cleanIMGurl(img.get('packshot', img.get('titleshot')))
+                il['fanart'] = self.cleanIMGurl(img.get('heroshot'))
             else:
-                il['Thumb'] = self.cleanIMGurl(item.get('image', {}).get('url', facet.get('image', '') if facet else item.get('facetImage')))
+                il['thumb'] = self.cleanIMGurl(item.get('image', {}).get('url', facet.get('image', '') if facet else item.get('facetImage')))
             if rating and rating.get('value'):
                 il['Rating'] = float(rating['value']) * 2
                 il['Votes'] = str(rating['count'])
@@ -1033,7 +1033,7 @@ class PrimeVideo(Singleton):
             if item.get('itemType', '').lower() == 'label':
                 il['Plot'] = il['Title']
                 il['Title'] = '-= %s =-' % item['link']['label']
-                il['Thumb'] = self._s.NextIcon
+                il['thumb'] = self._s.NextIcon
             if not il['Duration'] and runtime:
                 t = re.findall(r'\d+', runtime)
                 t = ['0'] * (2 - len(t)) + t
@@ -1146,7 +1146,7 @@ class PrimeVideo(Singleton):
                 shed = item.get('schedule')
                 asin = ''
                 il['Title'] = item.get('channelName')
-                il['Thumb'] = self.cleanIMGurl(item.get('logo', ''))
+                il['thumb'] = self.cleanIMGurl(item.get('logo', ''))
                 il['DisplayTitle'] = self.cleanTitle(il['Title'])
                 il['Plot'] = ''
                 upnext = False

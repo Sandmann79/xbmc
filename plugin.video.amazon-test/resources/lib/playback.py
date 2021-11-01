@@ -347,7 +347,7 @@ def PlayVideo(name, asin, adultstr, streamtype, forcefb=0):
             content = getATVData('GetASINDetails', 'ASINList=' + asin)['titles'][0]
             ct, Info = g.pv.getInfos(content, False)
             title = Info['DisplayTitle']
-            thumb = Info.get('Poster', Info['Thumb'])
+            thumb = Info.get('poster', Info['thumb'])
             mpaa_check = str(Info.get('MPAA', mpaa_str)) in mpaa_str or isAdult
         else:
             mpaa_check = _getListItem('MPAA') in mpaa_str + mpaa_str.replace(' ', '') or isAdult

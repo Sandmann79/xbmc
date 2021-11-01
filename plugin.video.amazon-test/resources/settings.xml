@@ -91,8 +91,6 @@
         <setting id="useshowfanart" type="bool" label="30055" default="true"/>
         <!-- - -->
         <setting label="30070" type="lsep"/>
-        <setting id="paycont" type="bool" label="30073" default="false"/>
-        <setting id="disptvshow" type="bool" label="30071" default="false"/>
         <setting id="wl_order" type="enum" label="30076" lvalues="30077|30079|30078" default="0"/>
         <setting id="logging" type="bool" label="30072" default="false"/>
         <setting id="json_dump" type="bool" label="30196" default="false"/>
@@ -101,19 +99,21 @@
     </category>
     <!-- TLD -->
     <category label="Amazon.TLD">
-        <setting id="show_recents" type="bool" label="30036" default="true" />
         <setting id="use_webapi" type="bool" label="30093" default="false"/>
-        <setting label="30060" type="lsep" visible="eq(-1,false)"/>
-        <setting id="enablelibraryfolder" type="bool" label="30061" default="false" visible="eq(-2,false)"/>
-        <setting id="customlibraryfolder" type="folder" label="30062" enable="eq(-1,true)" default="special://profile/addon_data/plugin.video.amazon-test" source="auto" option="writeable" subsetting="true" visible="eq(-3,false)"/>
-        <setting id="cr_nfo" type="bool" label="30063" default="true" visible="eq(-4,false)" />
-        <setting id="mediasource_movie" type="text" label="30064" default="Amazon Movies" visible="eq(-5,false)" />
-        <setting id="mediasource_tv" type="text" label="30065" default="Amazon TV" visible="eq(-6,false)" />
-        <setting type="sep" visible="eq(-7,false)"/>
-        <setting id="wl_export" type="bool" label="30080" default="false" visible="eq(-8,false)"/>
-        <setting label="Artwork" type="lsep" />
-        <setting id="tld_episode_thumbnails" type="bool" label="30249" default="false" visible="eq(-10,false)"/>
-        <setting type="action" label="30094" action="" visible="eq(-11,true)" />
+        <setting id="show_recents" type="bool" label="30036" default="true" visible="eq(-1,false)"/>
+        <setting label="30060" type="lsep" visible="eq(-2,false)"/>
+        <setting id="enablelibraryfolder" type="bool" label="30061" default="false" visible="eq(-3,false)"/>
+        <setting id="customlibraryfolder" type="folder" label="30062" enable="eq(-1,true)" default="special://profile/addon_data/plugin.video.amazon-test" source="auto" option="writeable" subsetting="true" visible="eq(-4,false)"/>
+        <setting id="cr_nfo" type="bool" label="30063" default="true" visible="eq(-5,false)" />
+        <setting id="mediasource_movie" type="text" label="30064" default="Amazon Movies" visible="eq(-6,false)" />
+        <setting id="mediasource_tv" type="text" label="30065" default="Amazon TV" visible="eq(-7,false)" />
+        <setting type="sep" visible="eq(-8,false)"/>
+        <setting id="paycont" type="bool" label="30073" default="false" visible="eq(-9,false)" />
+        <setting id="disptvshow" type="bool" label="30071" default="false" visible="eq(-10,false)" />
+        <setting id="wl_export" type="bool" label="30080" default="false" visible="eq(-11,false)"/>
+        <setting label="Artwork" type="lsep" visible="eq(-12,false)"/>
+        <setting id="tld_episode_thumbnails" type="bool" label="30249" default="false" visible="eq(-13,false)"/>
+        <setting type="action" label="30094" action="" visible="eq(-14,true)" />
     </category>
     <!-- PrimeVideo -->
     <category label="30250">

@@ -12,6 +12,7 @@ import re
 import requests
 import ssl
 import sys
+
 from timeit import default_timer as timer
 from urllib3.poolmanager import PoolManager
 from requests.adapters import HTTPAdapter

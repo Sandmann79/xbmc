@@ -1028,7 +1028,7 @@ class MyTLS1Adapter(HTTPAdapter):
         Log('TLSv1 Adapter', Log.DEBUG)
         if ssl.OPENSSL_VERSION_INFO[:4] >= (1, 1, 1, 6):  # openssl 1.1.1f
             context = ssl.create_default_context()
-            if sys.version_info.major >= 3 and sys.version_info.minor >= 7:
+            if sys.version_info >= (3, 7):
                 context.minimum_version = ssl.TLSVersion.TLSv1
             context.set_ciphers('DEFAULT@SECLEVEL=1')
             kwargs['ssl_context'] = context

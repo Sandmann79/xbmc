@@ -11,6 +11,8 @@ import pyxbmct
 import re
 import requests
 import ssl
+import sys
+
 from timeit import default_timer as timer
 from urllib3.poolmanager import PoolManager
 from requests.adapters import HTTPAdapter
@@ -1026,6 +1028,8 @@ class MyTLS1Adapter(HTTPAdapter):
         Log('TLSv1 Adapter', Log.DEBUG)
         if ssl.OPENSSL_VERSION_INFO[:4] >= (1, 1, 1, 6):  # openssl 1.1.1f
             context = ssl.create_default_context()
+            if sys.version_info >= (3, 7):
+                context.minimum_version = ssl.TLSVersion.TLSv1
             context.set_ciphers('DEFAULT@SECLEVEL=1')
             kwargs['ssl_context'] = context
         self.poolmanager = PoolManager(num_pools=connections, maxsize=maxsize, block=block, ssl_version=ssl.PROTOCOL_TLSv1, *args, **kwargs)

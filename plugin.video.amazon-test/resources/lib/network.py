@@ -93,7 +93,7 @@ def getTerritory(user):
         user.update(area)
     else:
         Log('Retrieve territoral config')
-        data = getURL('https://na.api.amazonvideo.com/cdp/usage/v2/GetAppStartupConfig?deviceTypeID=A28RQHJKHM2A2W&deviceID=%s&firmware=1&version=1&format=json'
+        data = getURL('https://atv-ps.amazon.com/cdp/usage/v2/GetAppStartupConfig?deviceTypeID=A28RQHJKHM2A2W&deviceID=%s&firmware=1&version=1&format=json'
                       % g.deviceID)
         if not hasattr(data, 'keys'):
             return user, False
@@ -105,7 +105,6 @@ def getTerritory(user):
             user['baseurl'] = data['territoryConfig']['primeSignupBaseUrl']
             user['mid'] = data['territoryConfig']['avMarketplace']
             user['pv'] = 'primevideo' in host
-
     return user, True
 
 

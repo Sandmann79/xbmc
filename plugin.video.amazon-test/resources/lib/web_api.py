@@ -1187,7 +1187,7 @@ class PrimeVideo(Singleton):
                         except: pass
                     if bCacheRefresh or ('tvshowtitle' not in vd['metadata']['videometa']):
                         try:
-                            vd['metadata']['videometa']['tvshowtitle'] = self._videodata[vd['parent']]['metadata']['videometa']['parentTitle']
+                            vd['metadata']['videometa']['tvshowtitle'] = self._videodata[vd['parent']]['metadata']['videometa']['tvshowtitle']
                             bUpdated = True
                         except: pass
 

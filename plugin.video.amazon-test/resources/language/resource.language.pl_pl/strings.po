@@ -381,8 +381,8 @@ msgid "Library"
 msgstr "Biblioteka"
 
 msgctxt "#30101"
-msgid "Przełącz stan oglądania"
-msgstr ""
+msgid "Toggle Watched State"
+msgstr "Przełącz stan oglądania"
 
 msgctxt "#30102"
 msgid "Force Fallback"
@@ -462,7 +462,7 @@ msgstr "Wybierz użytkownia"
 
 msgctxt "#30134"
 msgid "Current User: {0}"
-msgstr "Aktualny użytkownik" {0}"
+msgstr "Aktualny użytkownik {0}"
 
 msgctxt "#30135"
 msgid "Display Name"
@@ -551,7 +551,7 @@ msgstr "Uruchom ponownie"
 
 msgctxt "#30192"
 msgid "Do you want to restart Kodi now?"
-msgstr "Czy chesz ponownie uruchomić Kodi??"
+msgstr "Czy chesz ponownie uruchomić Kodi?"
 
 msgctxt "#30193"
 msgid "Skip Intro"

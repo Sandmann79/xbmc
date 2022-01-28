@@ -577,7 +577,7 @@ def LogIn():
             while caperr:
                 Log('Connect to SignIn Page %s attempts left' % -caperr)
                 br.session.headers.update({'User-Agent': getConfig('UserAgent')})
-                br.open(user['baseurl'] + ('/gp/aw/si.html' if not user['pv'] else '/auth-redirect/'))
+                br.open(user['baseurl'] + ('/gp/flex/sign-out.html' if not user['pv'] else '/auth-redirect/'))
                 try:
                     form = br.select_form('form[name="signIn"]')
                 except mechanicalsoup.LinkNotFoundError:

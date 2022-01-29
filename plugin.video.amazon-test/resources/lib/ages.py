@@ -21,7 +21,7 @@ class AgeRestrictions:
             'A1VC38T7YXB528': ['', ('全ての観客', 'g'), ('親の指導・助言', 'pg12'), ('R-15指定', 'r15+'), ('成人映画', 'r18+,nr')]
         }
         PinReq = int(getConfig('pin_req', '0'))
-        self.Ages = ['', ''] if self._g.MarketID not in AgesCfg.keys() else AgesCfg[self._g.MarketID]
+        self.Ages = AgesCfg.get(self._g.MarketID, ['', ('', '')])
         self._AgeRating = self.Ages[0]
         self.Ages = self.Ages[1:]
         self._RestrAges = ','.join(a[1] for a in self.Ages[PinReq:]) if getConfig('age_pin') else ''
@@ -30,7 +30,7 @@ class AgeRestrictions:
         AgePin = getConfig('age_pin')
         if AgePin:
             pin = self._g.dialog.input('PIN', type=xbmcgui.INPUT_ALPHANUM, option=xbmcgui.ALPHANUM_HIDE_INPUT)
-            return True if pin == AgePin else False
+            return pin == AgePin
         return True
 
     def GetRestrictedAges(self):
@@ -49,9 +49,12 @@ class _AgeSettings(pyxbmct.AddonDialogWindow):
         self._g = Globals()
         super(_AgeSettings, self).__init__(title)
         self.age_list = [age[0] for age in AgeRestrictions().Ages]
+        if len(self.age_list) == 1:
+            self._g.dialog.ok(self._g.__plugin__, 'Age Restrictions are currently unavaiable in your region (ID {}).'.format(self._g.MarketID))
+            exit()
         self.pin_req = int(getConfig('pin_req', '0'))
         self.pin = pyxbmct.Edit('', _alignment=pyxbmct.ALIGN_CENTER)
-        self.btn_ages = pyxbmct.Button(self.age_list[self.pin_req])
+        self.btn_ages = pyxbmct.Button(self.age_list[0 if self.pin_req > len(self.age_list) else self.pin_req])
         self.btn_save = pyxbmct.Button(getString(30122))
         self.btn_close = pyxbmct.Button(getString(30123))
         self.setGeometry(500, 300, 5, 2)

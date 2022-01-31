@@ -19,19 +19,19 @@ msgstr ""
 
 msgctxt "Addon Summary"
 msgid "Amazon Prime Video Streaming"
-msgstr ""
+msgstr "Amazon Prime Video"
 
 msgctxt "Addon Description"
 msgid "Movies and Television Shows for Prime Members"
-msgstr ""
+msgstr "Filmy i seriale dla użytkowników Prime"
 
 msgctxt "Addon Disclaimer"
 msgid "Some parts of this addon may not be legal in your country of residence – please check with your local laws before installing."
-msgstr ""
+msgstr "Niektóre części tego dodatku mogą nie być legalne w Twoim kraju zamieszkania – przed instalacją sprawdź lokalne przepisy."
 
 msgctxt "#30001"
 msgid "Amazon Account"
-msgstr "Logowanie do Amazon Prime Instant Video"
+msgstr "Konto Amazon"
 
 msgctxt "#30002"
 msgid "Email Adress"
@@ -43,15 +43,15 @@ msgstr "Hasło"
 
 msgctxt "#30004"
 msgid "Stream Bitrate (0 - Ask)"
-msgstr "Stream bitrate (0 - pytanie)"
+msgstr "Stream bitrate (0 - pytaj)"
 
 msgctxt "#30005"
 msgid "Audio descriptions (disables 5.1/7.1)"
-msgstr ""
+msgstr "Audiodeskrypcja (wyłącza 5.1/7.1)"
 
 msgctxt "#30006"
 msgid "Store Credentials instead of using the Cookie?"
-msgstr "Zapisać dane logowania?"
+msgstr "Zapisać dane logowania zamiast używać plików cookie?"
 
 msgctxt "#30007"
 msgid "Remove Credentials and Cookie"
@@ -59,15 +59,15 @@ msgstr "Usuń dane logowania i cookies"
 
 msgctxt "#30008"
 msgid "Sign In…"
-msgstr ""
+msgstr "Zaloguj…"
 
 msgctxt "#30009"
 msgid "Multi User Support"
-msgstr ""
+msgstr "Wsparcie dla wielu użytkowników"
 
 msgctxt "#30010"
 msgid "Remove all Users"
-msgstr ""
+msgstr "Usuń wszystkich użytkowników"
 
 msgctxt "#30011"
 msgid "General"
@@ -75,116 +75,112 @@ msgstr "Ogólne"
 
 msgctxt "#30012"
 msgid "Playback with"
-msgstr "Odtwarzanie"
+msgstr "Odtwarzanie z"
 
 msgctxt "#30013"
 msgid "Inputstream Addon Settings…"
-msgstr ""
+msgstr "Ustawienia dodatku Inputstream…"
 
 msgctxt "#30014"
 msgid "Logged in as"
-msgstr ""
+msgstr "Zalogowany jako"
 
 msgctxt "#30015"
 msgid "Views"
-msgstr "Wyświetlanie"
+msgstr "Widok"
 
 msgctxt "#30016"
 msgid "Movie Fanart Source"
-msgstr "Pobieraj brakujący Fanart przez TMDB (w tle)"
+msgstr "Żródło fanartów dla filmów"
 
 msgctxt "#30017"
 msgid "TV Show Fanart Source"
-msgstr "Pobieraj brakujący Fanart TV przez TVDB (w tle)"
+msgstr "Żródło fanartów dla filmów"
 
 msgctxt "#30018"
 msgid "Age restrictions…"
-msgstr ""
+msgstr "Ograniczenia wiekowe…"
 
 msgctxt "#30019"
 msgid "Prefered Host"
-msgstr ""
+msgstr "Preferowane źródło"
 
 msgctxt "#30020"
 msgid "Use H.265 Videocodec"
-msgstr ""
+msgstr "Używaj kodeka H.265"
 
 msgctxt "#30021"
 msgid "Language"
-msgstr ""
+msgstr "Język"
 
 msgctxt "#30022"
 msgid "Keep me logged in"
-msgstr ""
+msgstr "Pozostaw mnie zalogowanym"
 
 msgctxt "#30023"
 msgid "Use android app for 4K videos"
-msgstr ""
+msgstr "Używaj aplikacji android dla 4K"
 
 msgctxt "#30024"
 msgid "Profiles"
-msgstr ""
+msgstr "Profile"
 
 msgctxt "#30025"
 msgid "Change text language"
-msgstr ""
+msgstr "Zmień język tekstu"
 
 msgctxt "#30026"
 msgid "Show password"
-msgstr ""
+msgstr "Pokaż hasło"
 
 msgctxt "#30027"
 msgid "Stretch factor"
-msgstr ""
+msgstr "Współczynnik rozciągania"
 
 msgctxt "#30028"
 msgid "Stretching"
-msgstr ""
+msgstr "Rozciąganie"
 
 msgctxt "#30029"
 msgid "Movie View"
-msgstr "Wyświetlaj filmy"
+msgstr "Widok filmów"
 
 msgctxt "#30030"
 msgid "Show View"
-msgstr "Wyświetlaj seriale"
+msgstr "Widok seriali"
 
 msgctxt "#30031"
 msgid "Season View"
-msgstr "Wyświetlaj sezony"
+msgstr "Widok sezonów"
 
 msgctxt "#30032"
 msgid "Episode View"
-msgstr "Wyświetlaj epizody"
+msgstr "Widok odcinków"
 
 msgctxt "#30033"
 msgid "Audio"
-msgstr ""
+msgstr "Dźwięk"
 
 #, fuzzy
 msgctxt "#30034"
 msgid "Subtitles"
-msgstr "Aktywuj napisy"
+msgstr "Napisy"
 
 msgctxt "#30035"
 msgid "Enable Views"
-msgstr "Aktywuj zasady wyświetlania mediów"
-
-msgctxt "#30036"
-msgid "Show Recently watched menu entry"
-msgstr ""
+msgstr "Aktywuj widoki"
 
 msgctxt "#30037"
 msgid "Disable SSL Certificate Verification"
-msgstr ""
+msgstr "Wyłącz weryfikację certyfikatu SSL"
 
 msgctxt "#30038"
 msgid "Connection"
-msgstr "Logowanie i dane"
+msgstr "Połączenie"
 
 msgctxt "#30039"
 msgid "Items Per Page"
-msgstr "Ilość elementów na stronie"
+msgstr "Elementów na stronę"
 
 msgctxt "#30041"
 msgid "Enable Fullscreen Video"
@@ -196,7 +192,7 @@ msgstr "Tryb przeglądarki Kiosk"
 
 msgctxt "#30043"
 msgid "Use custom Browser path"
-msgstr "Jeśli możliwe, to odtwarzaj w jakości HD"
+msgstr "Użyj własnej ścieżki przeglądarki"
 
 msgctxt "#30044"
 msgid "Wait till Fullscreen (sec)"
@@ -216,11 +212,11 @@ msgstr "Oczekiwanie po wpisaniu PIN"
 
 msgctxt "#30048"
 msgid "Script path"
-msgstr ""
+msgstr "Ścieżka skryptu"
 
 msgctxt "#30049"
 msgid "Detect Framerate"
-msgstr ""
+msgstr "Wykryj liczbę klatek na sekundę"
 
 msgctxt "#30050"
 msgid "Amazon"
@@ -232,7 +228,7 @@ msgstr "Brakujące z TMDb"
 
 msgctxt "#30052"
 msgid "TMDb"
-msgstr "Kompletne z TMDb"
+msgstr "TMDb"
 
 msgctxt "#30053"
 msgid "Load missing from TVDb"
@@ -240,11 +236,11 @@ msgstr "Brakujące z TVDb"
 
 msgctxt "#30054"
 msgid "TVDb"
-msgstr "Kompletne z TVDb"
+msgstr "TVDb"
 
 msgctxt "#30055"
 msgid "Show TV Show Fanart in Season and Episode Lists"
-msgstr "Pokazuj Fanart serialu w liście sezonów i epizodów"
+msgstr "Pokazuj Fanart serialu w liście sezonów i odcinków"
 
 msgctxt "#30056"
 msgid "TVDb incl. Poster"
@@ -252,16 +248,16 @@ msgstr "TVDb w tym Plakat"
 
 msgctxt "#30057"
 msgid "Wait till PIN Input"
-msgstr ""
+msgstr "Czekaj na wprowadzenie PIN"
 
 msgctxt "#30059"
 msgid "Use own user profile"
-msgstr ""
+msgstr "Użyj własnego profilu użytkownika"
 
 #, fuzzy
 msgctxt "#30060"
 msgid "Export"
-msgstr "Dodaj %s do biblioteki"
+msgstr "Eksportuj"
 
 #, fuzzy
 msgctxt "#30061"
@@ -274,113 +270,111 @@ msgstr "Ścieżka"
 
 msgctxt "#30063"
 msgid "Create Video Information File"
-msgstr ""
+msgstr "Utwórz plik informacji"
 
 msgctxt "#30064"
 msgid "Mediasource Movie Title"
-msgstr ""
+msgstr "Tytuł filmu z źródła"
 
 msgctxt "#30065"
 msgid "Mediasource TV Title"
-msgstr ""
-
-msgctxt "#30066"
-msgid "Send video progress to Amazon at least at percent played (0 to disable)"
-msgstr ""
+msgstr "Tytuł serialu z źródła"
 
 msgctxt "#30070"
 msgid "Miscellaneous"
-msgstr ""
+msgstr "Różne"
 
 msgctxt "#30071"
 msgid "Display TV-Show instead of Seasons in Watchlist"
-msgstr ""
+msgstr "Pokazuj serial zamiast sezonów w obserwowanych"
 
 msgctxt "#30072"
 msgid "Verbose Logging"
-msgstr ""
+msgstr "Pełne rejestrowanie"
 
 msgctxt "#30073"
 msgid "Display Paid Content"
-msgstr ""
+msgstr "Wyświetl płatną zawartość"
 
 msgctxt "#30074"
 msgid "Remote Control support"
-msgstr ""
+msgstr "Obsługa zdlanego sterowania"
 
 msgctxt "#30075"
 msgid "UP/DOWN controls Kodi Volume"
-msgstr ""
+msgstr "GÓRA/DÓŁ steruje głośnością Kodi"
 
 msgctxt "#30076"
 msgid "Watchlist/Library Order"
-msgstr ""
+msgstr "Kolejność Obserwowanych/Biblioteki"
 
 msgctxt "#30077"
 msgid "Recently Added"
-msgstr ""
+msgstr "Ostatnio dodane"
 
 msgctxt "#30078"
 msgid "Title Ascending"
-msgstr ""
+msgstr "Tytuł rosnąco"
 
 msgctxt "#30079"
 msgid "Title Descending"
-msgstr ""
+msgstr "Tytuł malejąco"
 
 msgctxt "#30080"
 msgid "Automatically Watchlist export"
-msgstr ""
+msgstr "Automatycznie eksportuj obserwowane"
 
 msgctxt "#30081"
 msgid "Intro/Recap scenes processing"
-msgstr ""
+msgstr "Przetwarzanie czołówki/podsumowania"
 
 msgctxt "#30082"
 msgid "Do nothing"
-msgstr ""
+msgstr "Nic nie rób"
 
 msgctxt "#30083"
 msgid "Show Skip Button"
-msgstr ""
+msgstr "Pokaż przycisk pominięcia"
 
 msgctxt "#30084"
 msgid "Autoskip Intro"
-msgstr ""
+msgstr "Pomijaj czołówkę automatycznie"
 
 msgctxt "#30085"
 msgid "Autoskip Recap"
-msgstr ""
+msgstr "Pomijaj podsumowanie automatycznie"
 
 msgctxt "#30086"
 msgid "Autoskip All"
-msgstr ""
+msgstr "Pomijaj wszystko automatycznie"
 
 msgctxt "#30087"
 msgid "Clear cache"
-msgstr ""
+msgstr "Wyczyść cache"
 
 msgctxt "#30088"
 msgid ""
 "Clear cached catalog or video data?\n"
 "Video data includes series/season metadata."
 msgstr ""
+"Wyczyścić katalog lub dane wideo w pamięci podręcznej?\n"
+"Dane wideo obejmują metadane serialu/sezonu."
 
 msgctxt "#30089"
 msgid "No"
-msgstr ""
+msgstr "Nie"
 
 msgctxt "#30090"
 msgid "Catalog"
-msgstr ""
+msgstr "Katalog"
 
 msgctxt "#30091"
 msgid "Video data"
-msgstr ""
+msgstr "Dane wideo"
 
 msgctxt "#30092"
 msgid "Both"
-msgstr ""
+msgstr "Oba"
 
 msgctxt "#30093"
 msgid "Use Web API (beta)"
@@ -396,11 +390,11 @@ msgstr "Biblioteka"
 
 msgctxt "#30101"
 msgid "Toggle Watched State"
-msgstr ""
+msgstr "Przełącz stan oglądania"
 
 msgctxt "#30102"
 msgid "Force Fallback"
-msgstr ""
+msgstr "Wymuś tryb awaryjny"
 
 msgctxt "#30104"
 msgid "Movies"
@@ -416,19 +410,19 @@ msgstr "Szukaj"
 
 msgctxt "#30109"
 msgid "Choose Bitrate for Playback"
-msgstr "Wybierz jakość i odtwarzaj"
+msgstr "Wybierz szybkość transmisji do odtwarzania"
 
 msgctxt "#30111"
 msgid "Continue to Page %s"
-msgstr "Dalej %s"
+msgstr "Kontynuuj do strony %s"
 
 msgctxt "#30112"
 msgid "Back to Main Menu"
-msgstr "Wróć %s"
+msgstr "Wróć do Głównego Menu"
 
 msgctxt "#30113"
 msgid "Choose Language for Playback"
-msgstr "Wybierz język i odtwarzaj"
+msgstr "Wybierz język dla odtwarzania"
 
 msgctxt "#30114"
 msgid "Choose Stream Quality:"
@@ -440,59 +434,59 @@ msgstr "Dostępne języki:"
 
 msgctxt "#30120"
 msgid "PIN (empty for no restriction)"
-msgstr ""
+msgstr "PIN (pusty dla braku ograniczeń"
 
 msgctxt "#30121"
 msgid "PIN Request at"
-msgstr ""
+msgstr "Żądanie PIN w"
 
 msgctxt "#30122"
 msgid "Apply"
-msgstr ""
+msgstr "Zaakceptuj"
 
 msgctxt "#30123"
 msgid "Cancel"
-msgstr ""
+msgstr "Anuluj"
 
 msgctxt "#30127"
 msgid "No content found"
-msgstr "Brak nowych danych"
+msgstr "Nie znaleziono treści"
 
 msgctxt "#30130"
 msgid "Add User…"
-msgstr ""
+msgstr "Dodaj użytkownika…"
 
 msgctxt "#30131"
 msgid "Delete User…"
-msgstr ""
+msgstr "Usuń użytkwonika…"
 
 msgctxt "#30132"
 msgid "Rename User"
-msgstr ""
+msgstr "Przemianuj użytkownika"
 
 msgctxt "#30133"
 msgid "Choose User"
-msgstr ""
+msgstr "Wybierz użytkownia"
 
 msgctxt "#30134"
 msgid "Current User: {0}"
-msgstr ""
+msgstr "Aktualny użytkownik {0}"
 
 msgctxt "#30135"
 msgid "Display Name"
-msgstr ""
+msgstr "Wyświetlana nazwa"
 
 msgctxt "#30136"
 msgid "Recently watched"
-msgstr ""
+msgstr "Ostatnio oglądane"
 
 msgctxt "#30143"
 msgid "All Movies"
-msgstr "Wszystkie"
+msgstr "Wszystkie filmy"
 
 msgctxt "#30160"
 msgid "All Shows"
-msgstr "Wszystkie"
+msgstr "Wszystkie seriale"
 
 msgctxt "#30165"
 msgid "Movie"
@@ -516,7 +510,7 @@ msgstr "Specjalne"
 
 msgctxt "#30171"
 msgid "Unrated"
-msgstr "Nie sprawdzone"
+msgstr "nieoceniony"
 
 msgctxt "#30173"
 msgid "Episode"
@@ -528,28 +522,28 @@ msgstr ""
 
 msgctxt "#30180"
 msgid "Add %s to Watchlist"
-msgstr "Dodaj %s do watchlist"
+msgstr "Dodaj %s do Obserwowanych"
 
 msgctxt "#30181"
 msgid "Remove %s from Watchlist"
-msgstr "Usuń %s z watchlist"
+msgstr "Usuń %s z Obserwowanych"
 
 msgctxt "#30182"
 msgid "Go to TV-Show"
-msgstr ""
+msgstr "Idź do serialu"
 
 msgctxt "#30183"
 msgid "Get Similarities"
-msgstr ""
+msgstr "Znajdź podobne"
 
 #, fuzzy
 msgctxt "#30184"
 msgid "Remove {} from List"
-msgstr "Usuń %s z watchlist"
+msgstr "Usuń {} z list"
 
 msgctxt "#30185"
 msgid "Export %s"
-msgstr "Dodaj %s do biblioteki"
+msgstr "Eksportuj %s"
 
 msgctxt "#30186"
 msgid "Update Library"
@@ -557,11 +551,11 @@ msgstr "Aktualizuj bibliotekę"
 
 msgctxt "#30187"
 msgid "Source folders added/changed"
-msgstr "Źródła Amazon Video dodane"
+msgstr "Dodano/zmieniono foldery źródłowe"
 
 msgctxt "#30188"
 msgid "To complete the setup restart Kodi and set the content type of added folders."
-msgstr ""
+msgstr "Aby zakończyć instalację, uruchom ponownie Kodi i ustaw typ zawartości dodawanych folderów."
 
 msgctxt "#30191"
 msgid "Restart"
@@ -569,39 +563,39 @@ msgstr "Uruchom ponownie"
 
 msgctxt "#30192"
 msgid "Do you want to restart Kodi now?"
-msgstr "Uruchomić ponownie XBMC/Kodi?"
+msgstr "Czy chesz ponownie uruchomić Kodi?"
 
 msgctxt "#30193"
 msgid "Skip Intro"
-msgstr ""
+msgstr "Pomiń czołówkę"
 
 msgctxt "#30194"
 msgid "Skip Recap"
-msgstr ""
+msgstr "Pomiń podsumowanie"
 
 msgctxt "#30195"
 msgid "Skipping Scene…"
-msgstr ""
+msgstr "Pomiń scenę…"
 
 msgctxt "#30196"
 msgid "Dump JSON replies"
-msgstr ""
+msgstr "Zapisz odpowiedzi JSON"
 
 msgctxt "#30197"
 msgid "Dump collisions"
-msgstr ""
+msgstr "Zapisz kolizje"
 
 msgctxt "#30198"
 msgid "Browser or Script not found. Please check settings."
-msgstr ""
+msgstr "Nie znaleziono przeglądarki lub skryptu. Sprawdź ustawienia."
 
 msgctxt "#30199"
 msgid "Raw"
-msgstr ""
+msgstr "Raw"
 
 msgctxt "#30200"
 msgid "Login Error"
-msgstr "Błąd w trakcie logowania"
+msgstr "Błąd logowania"
 
 msgctxt "#30201"
 msgid "Wrong Email Adress or Password"
@@ -641,61 +635,61 @@ msgstr "Nieznane: "
 
 msgctxt "#30210"
 msgid "Please remove Credentials and Cookie in Settings"
-msgstr ""
+msgstr "Usuń dane logowania i pliki cookie w ustawieniach"
 
 msgctxt "#30211"
 msgid "Credentials and Cookie(s) removed"
-msgstr ""
+msgstr "Dane logowania i pliki cookie usunięte"
 
 msgctxt "#30212"
 msgid "Captcha Request, please change IP or try again later"
-msgstr ""
+msgstr "Wymagana Captcha, zmień adres IP lub spróbuj ponownie później"
 
 msgctxt "#30213"
 msgid "Unknown Error, please enable advanced debugging in settings and check avod-login.log/avod-login-si.log/avod-login-mfa.log"
-msgstr ""
+msgstr "Nieznany błąd, włącz zaawansowane debugowanie w ustawieniach i sprawdź avod-login.log/avod-login-si.log/avod-login-mfa.log"
 
 msgctxt "#30214"
 msgid "Wrong Code"
-msgstr ""
+msgstr "Zły kod"
 
 msgctxt "#30215"
 msgid "Login successful"
-msgstr ""
+msgstr "Udane logowanie"
 
 msgctxt "#30216"
 msgid "No credentials present, please go to Settings-Connection and sign in"
-msgstr ""
+msgstr "Brak danych logowania, przejdź do Ustawienia-Połączenie i zaloguj się"
 
 msgctxt "#30217"
 msgid "No stream hoster reachable"
-msgstr ""
+msgstr "Brak dostępnego hosta transmisji"
 
 msgctxt "#30219"
 msgid "Unable to retrieve Amazon's territorial configuration."
-msgstr ""
+msgstr "Nie można pobrać konfiguracji regionalnej Amazon."
 
 msgctxt "#30242"
 msgid "Page {}"
-msgstr ""
+msgstr "Strona {}"
 
 msgctxt "#30243"
 msgid "Pagination"
-msgstr ""
+msgstr "Stronnicowanie"
 
 msgctxt "#30244"
 msgid "Everything"
-msgstr ""
+msgstr "Wszystki"
 
 #, fuzzy
 msgctxt "#30245"
 msgid "Watchlist"
-msgstr "Dodaj %s do watchlist"
+msgstr "Obserwowane"
 
 #, fuzzy
 msgctxt "#30246"
 msgid "Collections"
-msgstr "Logowanie i dane"
+msgstr "Kolekcje"
 
 #, fuzzy
 msgctxt "#30247"
@@ -704,11 +698,11 @@ msgstr "Szukaj"
 
 msgctxt "#30248"
 msgid "Proxy MPD alteration"
-msgstr ""
+msgstr "Zmiana proxy MPD"
 
 msgctxt "#30249"
 msgid "Prefer episode thumbnails to posters"
-msgstr ""
+msgstr "Preferuj miniatury odcinków"
 
 msgctxt "#30250"
 msgid "PrimeVideo"
@@ -717,11 +711,11 @@ msgstr "PrimeVideo"
 #, fuzzy
 msgctxt "#30251"
 msgid "Connection error"
-msgstr "Logowanie i dane"
+msgstr "Błąd połączenia"
 
 msgctxt "#30252"
 msgid "Loading page {0}…"
-msgstr ""
+msgstr "Ładowanie strony {0}…"
 
 msgctxt "#30253"
 msgid "{0} seasons available"
@@ -729,55 +723,55 @@ msgstr ""
 
 msgctxt "#30254"
 msgid "userinput.exe not found"
-msgstr ""
+msgstr "userinput.exe nie znalezione"
 
 msgctxt "#30255"
 msgid "Please download it from GitHub and manually install it in the addon directory"
-msgstr ""
+msgstr "Pobierz z GitHub i ręcznie zainstaluj w katalogu dodatków"
 
 msgctxt "#30256"
 msgid "Error: servers returned no content (check logs for more information)"
-msgstr ""
+msgstr "Błąd: serwery nie zwróciły żadnej treści (sprawdź logi, aby uzyskać więcej informacji)"
 
 msgctxt "#30257"
 msgid "Catalog cache expiration time"
-msgstr ""
+msgstr "Czas wygaśnięcia pamięci podręcznej"
 
 msgctxt "#30258"
 msgid "1 hour"
-msgstr ""
+msgstr "1 godzina"
 
 msgctxt "#30259"
 msgid "6 hours"
-msgstr ""
+msgstr "6 godzin"
 
 msgctxt "#30260"
 msgid "12 hours"
-msgstr ""
+msgstr "12 godzin"
 
 msgctxt "#30261"
 msgid "1 day"
-msgstr ""
+msgstr "1 dzień"
 
 msgctxt "#30262"
 msgid "3 days"
-msgstr ""
+msgstr "3 dni"
 
 msgctxt "#30263"
 msgid "7 days"
-msgstr ""
+msgstr "7 dni"
 
 msgctxt "#30264"
 msgid "15 days"
-msgstr ""
+msgstr "15 dni"
 
 msgctxt "#30265"
 msgid "30 days"
-msgstr ""
+msgstr "30 dni"
 
 msgctxt "#30266"
 msgid "Login credentials invalid, please login again."
-msgstr ""
+msgstr "Dane logowania są nieprawidłowe, zaloguj się ponownie."
 
 msgctxt "#30267"
 msgid "Next page…"

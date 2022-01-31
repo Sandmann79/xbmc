@@ -285,7 +285,7 @@ class PrimeVideo(Singleton):
         elif 'languageselect' == verb: g.pv.LanguageSelect()
         elif 'clearcache' == verb: g.pv.DeleteCache()
         elif 'wltoogle' == verb: g.pv.Watchlist(path)
-        elif 'ageSettings' == verb: g.dialog.ok(g.__plugin__, 'Age Restrictions are currently unavaiable for Primevideo / WebApi users')
+        elif 'ageSettings' == verb: g.dialog.ok(g.__plugin__, 'Age Restrictions are currently unavailable for Primevideo / WebApi users')
 
     def Watchlist(self, path):
         path = path.split(self._separator)

@@ -525,6 +525,10 @@ msgctxt "#30173"
 msgid "Episode"
 msgstr "פרק"
 
+msgctxt "#30174"
+msgid "Event"
+msgstr ""
+
 msgctxt "#30180"
 msgid "Add %s to Watchlist"
 msgstr "הוסף את %s לרשימת הצפייה"

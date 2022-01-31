@@ -99,7 +99,7 @@ msgstr "Fonte de Fanart para Séries"
 
 msgctxt "#30018"
 msgid "Age restrictions…"
-msgstr "Restrições de idade..."
+msgstr "Restrições de idade…"
 
 msgctxt "#30019"
 msgid "Prefered Host"
@@ -463,11 +463,11 @@ msgstr "Conteúdo não encontrado"
 # empty strings from id 30128 to 30129
 msgctxt "#30130"
 msgid "Add User…"
-msgstr "Adicionar Utilizador..."
+msgstr "Adicionar Utilizador…"
 
 msgctxt "#30131"
 msgid "Delete User…"
-msgstr "Apagar Utilizador..."
+msgstr "Apagar Utilizador…"
 
 msgctxt "#30132"
 msgid "Rename User"
@@ -586,7 +586,7 @@ msgstr "Saltar Recapitulação"
 
 msgctxt "#30195"
 msgid "Skipping Scene…"
-msgstr "Saltar Cena..."
+msgstr "Saltar Cena…"
 
 msgctxt "#30196"
 msgid "Dump JSON replies"
@@ -723,7 +723,7 @@ msgstr "Erro de ligação"
 
 msgctxt "#30252"
 msgid "Loading page {0}…"
-msgstr "A carregar página {0}..."
+msgstr "A carregar página {0}…"
 
 msgctxt "#30253"
 msgid "{0} seasons"

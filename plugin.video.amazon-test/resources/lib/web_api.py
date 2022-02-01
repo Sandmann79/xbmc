@@ -870,6 +870,7 @@ class PrimeVideo(Singleton):
             bUpdatedVideoData = False
             if bCacheRefresh or (urn not in self._videodata['urn2gti']):
                 # Find the show the season belongs to
+                url += ('&' if '?' in url else '?') + 'episodeListSize=9999'
                 bUpdatedVideoData |= ParseSinglePage(oid, season, bCacheRefresh, url=url)
                 seasonGTI = self._videodata['urn2gti'][urn]
                 try:
@@ -984,7 +985,7 @@ class PrimeVideo(Singleton):
                 for vid, i in sorted(details.items(), key=lambda t: 9999 if t[0] not in items else items[t[0]]):
                     if (vid in o) or (vid not in items):
                         continue
-                    if (vid in state['buyboxTitleId']):
+                    if vid in state['buyboxTitleId']:
                         vid = state['buyboxTitleId'][vid]
                         if vid in o:
                             continue
@@ -1159,7 +1160,7 @@ class PrimeVideo(Singleton):
                             for p in item['contributors'][k]:
                                 if 'name' in p:
                                     try:
-                                        if (p['name'] not in vd['metadata']['videometa'][v]):
+                                        if p['name'] not in vd['metadata']['videometa'][v]:
                                             vd['metadata']['videometa'][v].append(p['name'])
                                     except KeyError:
                                         vd['metadata']['videometa'][v] = [p['name']]

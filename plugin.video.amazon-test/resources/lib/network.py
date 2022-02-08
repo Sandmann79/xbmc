@@ -481,9 +481,9 @@ def LogIn():
             except ImportError:
                 from urllib.parse import urlparse, parse_qs
 
-            msg = soup.find('span', attrs={'class': 'a-size-medium transaction-approval-word-break a-text-bold'}).get_text(strip=True)
+            msg = soup.find('span', attrs={'class': 'transaction-approval-word-break'}).get_text(strip=True)
             msg += '\n'
-            rows = soup.find('div', attrs={'id': 'channelDetails'})
+            rows = soup.find('div', attrs={'id': re.compile('.*channelDetails.*')})
             for row in rows.find_all('div', attrs={'class': 'a-row'}):
                 msg += re.sub('\\s{2,}', ': ', row.get_text())
             pd = _ProgressDialog(msg)

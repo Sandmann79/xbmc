@@ -125,5 +125,6 @@
         <setting id="paginate_watchlist" type="bool" label="30245" default="false" enable="eq(-1,false)"/>
         <setting id="paginate_collections" type="bool" label="30246" default="false" enable="eq(-2,false)"/>
         <setting id="paginate_search" type="bool" label="30247" default="true" enable="eq(-3,false)"/>
+        <setting id="reset_home" type="action" label="30095" action="RunPlugin(plugin://plugin.video.amazon-test/pv/sethome/)" option="close"/>
     </category>
 </settings>

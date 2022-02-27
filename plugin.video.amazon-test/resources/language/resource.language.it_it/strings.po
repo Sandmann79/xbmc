@@ -391,6 +391,10 @@ msgctxt "#30094"
 msgid "Refer to PrimeVideo settings for more options"
 msgstr ""
 
+msgctxt "#30095"
+msgid "Reset addon home page to default"
+msgstr ""
+
 msgctxt "#30100"
 msgid "Library"
 msgstr "Libreria"
@@ -790,4 +794,8 @@ msgstr ""
 
 msgctxt "#30270"
 msgid "No additional languages available"
+msgstr ""
+
+msgctxt "#30271"
+msgid "Set as default addon home page"
 msgstr ""

@@ -389,6 +389,10 @@ msgctxt "#30094"
 msgid "Refer to PrimeVideo settings for more options"
 msgstr "Mehr Optionen im PrimeVideo Tab"
 
+msgctxt "#30095"
+msgid "Reset addon home page to default"
+msgstr "Startseite auf Standard zurücksetzen"
+
 msgctxt "#30100"
 msgid "Library"
 msgstr "Bibliothek"
@@ -788,3 +792,7 @@ msgstr "Nicht verfügbar, WebAPI aktivieren um dieses Funktion zu verwenden"
 msgctxt "#30270"
 msgid "No additional languages available"
 msgstr "Keine weiteren Sprachen verfügbar"
+
+msgctxt "#30271"
+msgid "Set as default addon home page"
+msgstr "Als Addon Startseite festlegen"

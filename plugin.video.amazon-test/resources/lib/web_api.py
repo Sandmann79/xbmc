@@ -286,6 +286,7 @@ class PrimeVideo(Singleton):
         elif 'clearcache' == verb: g.pv.DeleteCache()
         elif 'wltoogle' == verb: g.pv.Watchlist(path)
         elif 'ageSettings' == verb: g.dialog.ok(g.__plugin__, 'Age Restrictions are currently unavailable for Primevideo / WebApi users')
+        elif 'sethome' == verb: g.pv.SetHome(path)
 
     def Watchlist(self, path):
         path = path.split(self._separator)
@@ -408,6 +409,11 @@ class PrimeVideo(Singleton):
             saveUserCookies(cj)
             self.DeleteCache()
 
+    @staticmethod
+    def SetHome(path):
+        path = unquote_plus(path) if path else 'root'
+        writeConfig('home', path)
+
     def BrowseRoot(self):
         """ Build and load the root PrimeVideo menu """
 
@@ -415,7 +421,7 @@ class PrimeVideo(Singleton):
             ''' Build the root catalog '''
             if not self.BuildRoot():
                 return
-        self.Browse('root')
+        self.Browse(getConfig('home', 'root'))
 
     def BuildRoot(self, home=None):
         """ Parse the top menu on primevideo.com and build the root catalog """
@@ -640,6 +646,8 @@ class PrimeVideo(Singleton):
                             shm = sh['metadata']
                             infoLabel['plot'] = '{:%H:%M} - {:%H:%M}  {}\n\n{}'.format(dt.fromtimestamp(us), dt.fromtimestamp(ue),
                                                                                        shm.get('title', ''), shm.get('synopsis', ''))
+            else:
+                ctxitems.append((getString(30271), 'RunPlugin({}pv/sethome/{})'.format(self._g.pluginid, quote_plus(itemPathURI))))
 
             folderTypeList.append(folderType)
             # If it's a video leaf without an actual video, something went wrong with Amazon servers, just hide it

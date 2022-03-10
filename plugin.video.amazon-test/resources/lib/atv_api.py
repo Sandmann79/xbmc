@@ -15,6 +15,7 @@ from .network import *
 from .itemlisting import *
 from .users import *
 from .common import findKey
+from .export import SetupLibrary
 
 
 class PrimeVideo(Singleton):
@@ -46,143 +47,6 @@ class PrimeVideo(Singleton):
         addDir(getString(30108), 'Search', '')
         addDir(getString(30100), 'getListMenu', self._g.library, cm=cm_lb)
         xbmcplugin.endOfDirectory(self._g.pluginhandle, updateListing=False, cacheToDisc=False)
-
-    @staticmethod
-    def _cleanName(name, isfile=True):
-        notallowed = ['<', '>', ':', '"', '\\', '/', '|', '*', '?', '´']
-        if not isfile:
-            notallowed = ['<', '>', '"', '|', '*', '?', '´']
-        for c in notallowed:
-            name = name.replace(c, '')
-        if not os.path.supports_unicode_filenames and not isfile:
-            name = name.encode('utf-8')
-        return name
-
-    def SaveFile(self, filename, data, isdir=None, mode='w'):
-        from contextlib import closing
-        if isdir:
-            filename = self._cleanName(filename)
-            filename = os.path.join(isdir, filename)
-            if not xbmcvfs.exists(isdir):
-                xbmcvfs.mkdirs(self._cleanName(isdir.strip(), isfile=False))
-        filename = self._cleanName(filename, isfile=False)
-        with closing(xbmcvfs.File(filename, mode)) as outfile:
-            outfile.write(bytearray(py2_decode(data).encode('utf-8')))
-
-    def CreateDirectory(self, dir_path):
-        dir_path = self._cleanName(dir_path.strip(), isfile=False)
-        if not xbmcvfs.exists(dir_path):
-            return xbmcvfs.mkdirs(dir_path)
-        return False
-
-    def SetupLibrary(self):
-        self.CreateDirectory(self._s.MOVIE_PATH)
-        self.CreateDirectory(self._g.HOME_PATH)
-        self.SetupAmazonLibrary()
-
-    def CreateInfoFile(self, nfofile, path, content, Info, language, hasSubtitles=False):
-        skip_keys = ('ishd', 'isadult', 'audiochannels', 'genre', 'cast', 'duration', 'asins', 'contentType', 'seriesasin', 'contenttype', 'mediatype',
-                     'poster', 'isprime', 'seasonasin')
-        fileinfo = '<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>\n'
-        fileinfo += '<%s>\n' % content
-        if 'Duration' in Info.keys():
-            fileinfo += '<runtime>%s</runtime>\n' % Info['Duration']
-        if 'Genre' in Info.keys():
-            for genre in Info['Genre'].split('/'):
-                fileinfo += '<genre>%s</genre>\n' % genre.strip()
-        if 'Cast' in Info.keys():
-            for actor in Info['Cast']:
-                fileinfo += '<actor>\n'
-                fileinfo += '    <name>%s</name>\n' % actor.strip()
-                fileinfo += '</actor>\n'
-        for key, value in Info.items():
-            lkey = key.lower()
-            if value:
-                if lkey == 'tvshowtitle':
-                    fileinfo += '<showtitle>%s</showtitle>\n' % value
-                elif lkey == 'premiered' and 'TVShowTitle' in Info:
-                    fileinfo += '<aired>%s</aired>\n' % value
-                elif lkey == 'thumb':
-                    aspect = '' if 'episode' in content else ' aspect="poster"'
-                    fileinfo += '<%s%s>%s</%s>\n' % (lkey, aspect, value, lkey)
-                elif lkey == 'fanart' and not 'episode' in content:
-                    fileinfo += '<%s>\n    <thumb>%s</thumb>\n</%s>\n' % (lkey, value, lkey)
-                elif lkey not in skip_keys:
-                    fileinfo += '<%s>%s</%s>\n' % (lkey, value, lkey)
-
-        if content != 'tvshow':
-            fileinfo += '<fileinfo>\n'
-            fileinfo += '   <streamdetails>\n'
-            fileinfo += '       <audio>\n'
-            fileinfo += '           <channels>%s</channels>\n' % Info['AudioChannels']
-            fileinfo += '           <codec>aac</codec>\n'
-            fileinfo += '       </audio>\n'
-            fileinfo += '       <video>\n'
-            fileinfo += '           <codec>h264</codec>\n'
-            fileinfo += '           <durationinseconds>%s</durationinseconds>\n' % Info['Duration']
-            if Info['isHD']:
-                fileinfo += '           <height>1080</height>\n'
-                fileinfo += '           <width>1920</width>\n'
-            else:
-                fileinfo += '           <height>480</height>\n'
-                fileinfo += '           <width>720</width>\n'
-            if language:
-                fileinfo += '           <language>%s</language>\n' % language
-            fileinfo += '           <scantype>Progressive</scantype>\n'
-            fileinfo += '       </video>\n'
-            if hasSubtitles:
-                fileinfo += '       <subtitle>\n'
-                fileinfo += '           <language>ger</language>\n'
-                fileinfo += '       </subtitle>\n'
-            fileinfo += '   </streamdetails>\n'
-            fileinfo += '</fileinfo>\n'
-        fileinfo += '</%s>\n' % content
-
-        self.SaveFile(nfofile + '.nfo', fileinfo, path)
-        return
-
-    def SetupAmazonLibrary(self):
-        import xml.etree.ElementTree as et
-        from contextlib import closing
-        from .common import translatePath
-        source_path = py2_decode(translatePath('special://profile/sources.xml'))
-        source_added = False
-        source_dict = {self._s.ms_mov: self._s.MOVIE_PATH, self._s.ms_tv: self._s.TV_SHOWS_PATH}
-
-        if xbmcvfs.exists(source_path) and xbmcvfs.Stat(source_path).st_size() > 0:
-            with closing(xbmcvfs.File(source_path)) as fo:
-                byte_string = bytes(fo.readBytes())
-            root = et.fromstring(byte_string)
-        else:
-            subtags = ['programs', 'video', 'music', 'pictures', 'files']
-            root = et.Element('sources')
-            for cat in subtags:
-                cat_tag = et.SubElement(root, cat)
-                et.SubElement(cat_tag, 'default', attrib={'pathversion': '1'})
-
-        for src_name, src_path in source_dict.items():
-            video_tag = root.find('video')
-            if not any(src_name == i.text for i in video_tag.iter()):
-                source_tag = et.SubElement(video_tag, 'source')
-                name_tag = et.SubElement(source_tag, 'name')
-                path_tag = et.SubElement(source_tag, 'path', attrib={'pathversion': '1'})
-                name_tag.text = src_name
-                path_tag.text = src_path
-                Log(src_name + ' source path added')
-                source_added = True
-            else:
-                for tag in video_tag.iter('source'):
-                    if tag.findtext('name') == src_name and tag.findtext('path') != src_path:
-                        tag.find('path').text = src_path
-                        Log(src_name + ' source path changed')
-                        source_added = True
-
-        if source_added:
-            with closing(xbmcvfs.File(source_path, 'w')) as fo:
-                fo.write(bytearray(et.tostring(root, 'utf-8')))
-            self._g.dialog.ok(getString(30187), getString(30188))
-            if self._g.dialog.yesno(getString(30191), getString(30192)):
-                xbmc.executebuiltin('RestartApp')
 
     def Search(self, searchString=None):
         if searchString is None:
@@ -394,7 +258,7 @@ class PrimeVideo(Singleton):
                 opt = 'listcat'
                 url = re.sub('\n|\\n', '', content)
             elif category == 'play':
-                addVideo(info['Title'], info['Asins'], info)
+                addVideo(info['title'], info['Asins'], info)
             elif category == 'link':
                 mode = 'Channel'
                 opt = 'root'
@@ -412,7 +276,7 @@ class PrimeVideo(Singleton):
 
         if export:
             ResPage = 240
-            self.SetupLibrary()
+            SetupLibrary()
 
         if catalog in (self._g.watchlist, self._g.library):
             titles, parent = self.getList(catalog, export, url, page)
@@ -516,35 +380,6 @@ class PrimeVideo(Singleton):
         title = title.replace('\u2013', '-').replace('\u00A0', ' ').replace('[dt./OV]', '').replace('_DUPLICATE_', '')
         return title.strip()
 
-    def Export(self, infoLabels, url):
-        isEpisode = infoLabels['contentType'] != 'movie'
-        language = xbmc.convertLanguage(self._s.Language, xbmc.ISO_639_2)
-        ExportPath = self._s.MOVIE_PATH
-        nfoType = 'movie'
-        title = infoLabels['Title']
-
-        if isEpisode:
-            ExportPath = self._s.TV_SHOWS_PATH
-            title = infoLabels['TVShowTitle']
-
-        tl = title.lower()
-        if '[omu]' in tl or '[ov]' in tl or ' omu' in tl:
-            language = ''
-        filename = re.sub(r'(?i)\[.*| omu| ov', '', title).strip()
-        ExportPath = os.path.join(ExportPath, self._cleanName(filename))
-
-        if isEpisode:
-            infoLabels['TVShowTitle'] = filename
-            nfoType = 'episodedetails'
-            filename = '%s - S%02dE%02d - %s' % (infoLabels['TVShowTitle'], infoLabels['Season'],
-                                                 infoLabels['Episode'], infoLabels['Title'])
-
-        if self._g.addon.getSetting('cr_nfo') == 'true':
-            self.CreateInfoFile(filename, ExportPath, nfoType, infoLabels, language)
-
-        self.SaveFile(filename + '.strm', url, ExportPath)
-        Log('Export: ' + filename)
-
     def WatchList(self, asin, remove):
         cookie = MechanizeLogin()
         if not cookie:
@@ -627,9 +462,9 @@ class PrimeVideo(Singleton):
                     return infoLabels
 
         if contentType != 'episode':
-            title = infoLabels['Title']
+            title = infoLabels['title']
             if contentType == 'season':
-                title = infoLabels['TVShowTitle']
+                title = infoLabels['tvshowtitle']
             c.execute('insert or ignore into miss values (?,?,?,?)', (asins, title, infoLabels['Year'], contentType))
         c.close()
         self._db.commit()
@@ -765,9 +600,9 @@ class PrimeVideo(Singleton):
         name = ''
         season = infoLabels['Season']
         if parent:
-            if infoLabels['Title'].lower().strip() != infoLabels['TVShowTitle'].lower().strip():
+            if infoLabels['title'].lower().strip() != infoLabels['tvshowtitle'].lower().strip():
                 return infoLabels['DisplayTitle']
-            name = infoLabels['Title'] + ' - '
+            name = infoLabels['title'] + ' - '
         if season != 0 and season < 100:
             name += getString(30167) + ' ' + str(season)
         elif season > 1900:
@@ -838,10 +673,9 @@ class PrimeVideo(Singleton):
     @staticmethod
     def getAsins(content, crIL=True):
         if crIL:
-            infoLabels = {'Plot': None, 'MPAA': None, 'Cast': [], 'Year': None, 'Premiered': None, 'Rating': None,
-                          'Votes': None, 'isAdult': 0, 'Director': None,
-                          'Genre': None, 'Studio': None, 'thumb': None, 'fanart': None, 'isHD': False, 'isPrime': False,
-                          'AudioChannels': 1, 'TrailerAvailable': False}
+            infoLabels = {'plot': None, 'mpaa': None, 'cast': [], 'year': None, 'premiered': None, 'rating': None, 'votes': None, 'isAdult': 0,
+                          'director': None, 'genre': None, 'studio': None, 'thumb': None, 'fanart': None, 'isHD': False, 'isPrime': False,
+                          'audiochannels': 1, 'TrailerAvailable': False}
         asins = content.get('titleId', '')
 
         for offerformat in content.get('formats', []):
@@ -857,9 +691,9 @@ class PrimeVideo(Singleton):
                         asins += ',' + newasin
             if crIL:
                 if 'STEREO' in offerformat['audioFormatTypes']:
-                    infoLabels['AudioChannels'] = 2
+                    infoLabels['audiochannels'] = 2
                 if 'AC_3_5_1' in offerformat['audioFormatTypes']:
-                    infoLabels['AudioChannels'] = 6
+                    infoLabels['audiochannels'] = 6
 
         del content
 
@@ -870,19 +704,19 @@ class PrimeVideo(Singleton):
 
     def getInfos(self, item, export):
         infoLabels = self.getAsins(item)
-        infoLabels['DisplayTitle'] = infoLabels['Title'] = self.cleanTitle(item['title'])
+        infoLabels['DisplayTitle'] = infoLabels['title'] = self.cleanTitle(item['title'])
         infoLabels['contentType'] = contentType = item['contentType'].lower()
 
         infoLabels['mediatype'] = 'movie'
-        infoLabels['Plot'] = item.get('synopsis')
-        infoLabels['Director'] = item.get('director')
-        infoLabels['Studio'] = item.get('studioOrNetwork')
-        infoLabels['Cast'] = item.get('starringCast', '').split(',')
-        infoLabels['Duration'] = str(item['runtime']['valueMillis'] / 1000) if 'runtime' in item else None
+        infoLabels['plot'] = item.get('synopsis')
+        infoLabels['director'] = item.get('director')
+        infoLabels['studio'] = item.get('studioOrNetwork')
+        infoLabels['cast'] = item.get('starringCast', '').split(',')
+        infoLabels['duration'] = str(item['runtime']['valueMillis'] / 1000) if 'runtime' in item else None
         infoLabels['TrailerAvailable'] = item.get('trailerAvailable', False)
         infoLabels['fanart'] = item.get('heroUrl')
         infoLabels['isAdult'] = 1 if 'ageVerificationRequired' in str(item.get('restrictions')) else 0
-        infoLabels['Genre'] = ' / '.join(item.get('genres', ''))\
+        infoLabels['genre'] = ' / '.join(item.get('genres', ''))\
             .replace('_', ' & ')\
             .replace('Musikfilm & Tanz', 'Musikfilm, Tanz')\
             .replace('ã–', 'ö')
@@ -894,41 +728,41 @@ class PrimeVideo(Singleton):
                 pass
 
         if 'releaseOrFirstAiringDate' in item:
-            infoLabels['Premiered'] = item['releaseOrFirstAiringDate']['valueFormatted'].split('T')[0]
-            infoLabels['Year'] = int(infoLabels['Premiered'].split('-')[0])
+            infoLabels['premiered'] = item['releaseOrFirstAiringDate']['valueFormatted'].split('T')[0]
+            infoLabels['year'] = int(infoLabels['Premiered'].split('-')[0])
 
         if 'regulatoryRating' in item:
             if item['regulatoryRating'] == 'not_checked' or not item['regulatoryRating']:
-                infoLabels['MPAA'] = getString(30171)
+                infoLabels['mpaa'] = getString(30171)
             else:
-                infoLabels['MPAA'] = AgeRestrictions().GetAgeRating() + item['regulatoryRating']
+                infoLabels['mpaa'] = AgeRestrictions().GetAgeRating() + item['regulatoryRating']
 
         if 'customerReviewCollection' in item:
-            infoLabels['Rating'] = float(item['customerReviewCollection']['customerReviewSummary']['averageOverallRating']) * 2
-            infoLabels['Votes'] = str(item['customerReviewCollection']['customerReviewSummary']['totalReviewCount'])
+            infoLabels['rating'] = float(item['customerReviewCollection']['customerReviewSummary']['averageOverallRating']) * 2
+            infoLabels['votes'] = str(item['customerReviewCollection']['customerReviewSummary']['totalReviewCount'])
         elif 'amazonRating' in item:
-            infoLabels['Rating'] = float(item['amazonRating']['rating']) * 2 if 'rating' in item['amazonRating'] else None
-            infoLabels['Votes'] = str(item['amazonRating']['count']) if 'count' in item['amazonRating'] else None
+            infoLabels['rating'] = float(item['amazonRating']['rating']) * 2 if 'rating' in item['amazonRating'] else None
+            infoLabels['votes'] = str(item['amazonRating']['count']) if 'count' in item['amazonRating'] else None
 
         if contentType == 'series':
             infoLabels['mediatype'] = 'tvshow'
-            infoLabels['TVShowTitle'] = item['title']
-            infoLabels['TotalSeasons'] = item['childTitles'][0]['size'] if item.get('childTitles') else None
+            infoLabels['tvshowtitle'] = item['title']
+            infoLabels['totalseasons'] = item['childTitles'][0]['size'] if item.get('childTitles') else None
 
         elif contentType == 'season':
             infoLabels['mediatype'] = 'season'
-            infoLabels['Season'] = item['number']
+            infoLabels['season'] = item['number']
             if item['ancestorTitles']:
                 for content in item['ancestorTitles']:
                     if content['contentType'] == 'SERIES':
                         infoLabels['SeriesAsin'] = content['titleId'] if 'titleId' in content else None
-                        infoLabels['TVShowTitle'] = content['title'] if 'title' in content else None
+                        infoLabels['tvshowtitle'] = content['title'] if 'title' in content else None
             else:
                 infoLabels['SeriesAsin'] = infoLabels['Asins'].split(',')[0]
-                infoLabels['TVShowTitle'] = item['title']
+                infoLabels['tvshowtitle'] = item['title']
             if item.get('childTitles'):
-                infoLabels['TotalSeasons'] = 1
-                infoLabels['Episode'] = item['childTitles'][0]['size']
+                infoLabels['totalseasons'] = 1
+                infoLabels['episode'] = item['childTitles'][0]['size']
 
         elif contentType == 'episode':
             infoLabels['mediatype'] = 'episode'
@@ -936,27 +770,27 @@ class PrimeVideo(Singleton):
                 for content in item['ancestorTitles']:
                     if content['contentType'] == 'SERIES':
                         infoLabels['SeriesAsin'] = content['titleId'] if 'titleId' in content else None
-                        infoLabels['TVShowTitle'] = content['title'] if 'title' in content else None
+                        infoLabels['tvshowtitle'] = content['title'] if 'title' in content else None
                     elif content['contentType'] == 'SEASON':
-                        infoLabels['Season'] = content['number'] if 'number' in content else None
+                        infoLabels['season'] = content['number'] if 'number' in content else None
                         infoLabels['SeasonAsin'] = content['titleId'] if 'titleId' in content else None
                         seasontitle = content['title'] if 'title' in content else None
                 if 'SeriesAsin' not in infoLabels.keys() and 'SeasonAsin' in infoLabels.keys():
                     infoLabels['SeriesAsin'] = infoLabels['SeasonAsin']
-                    infoLabels['TVShowTitle'] = seasontitle
+                    infoLabels['tvshowtitle'] = seasontitle
             else:
                 infoLabels['SeriesAsin'] = ''
 
             if 'number' in item.keys():
-                infoLabels['Episode'] = item['number']
+                infoLabels['episode'] = item['number']
                 if item['number'] > 0:
-                    infoLabels['DisplayTitle'] = '%s - %s' % (item['number'], infoLabels['Title'])
+                    infoLabels['DisplayTitle'] = '%s - %s' % (item['number'], infoLabels['title'])
                 else:
-                    if ':' in infoLabels['Title']:
-                        infoLabels['DisplayTitle'] = infoLabels['Title'].split(':')[1].strip()
+                    if ':' in infoLabels['title']:
+                        infoLabels['DisplayTitle'] = infoLabels['title'].split(':')[1].strip()
 
-        if 'TVShowTitle' in infoLabels:
-            infoLabels['TVShowTitle'] = self.cleanTitle(infoLabels['TVShowTitle'])
+        if 'tvshowtitle' in infoLabels:
+            infoLabels['tvshowtitle'] = self.cleanTitle(infoLabels['tvshowtitle'])
 
         infoLabels = self.getArtWork(infoLabels, contentType)
 
@@ -992,20 +826,20 @@ class PrimeVideo(Singleton):
             runtime = item.get('runtime')
             livestate = item.get('liveState')
             il = self.getAsins(item, True)
-            il['Title'] = '%s - %s' % (n, title) if n else title
-            il['Plot'] = item.get('synopsis', '').strip()
+            il['title'] = '%s - %s' % (n, title) if n else title
+            il['plot'] = item.get('synopsis', '').strip()
             il['contentType'] = item.get('titleType', '')
-            il['Duration'] = item.get('duration')
-            il['MPAA'] = item.get('ratingBadge', {}).get('simplifiedId')
+            il['duration'] = item.get('duration')
+            il['mpaa'] = item.get('ratingBadge', {}).get('simplifiedId')
             il['isPrime'] = item.get('isPrime', True)
-            il['Genre'] = ' / '.join(i.get('text', '') for i in item.get('genres', []))
-            il['Studio'] = ', '.join(item.get('studios', []))
-            il['Director'] = ', '.join(i['name'] for i in contr.get('directors', []))
-            il['Cast'] = [i['name'] for i in contr.get('starringActors', []) + contr.get('supportingActors', [])]
-            il['Year'] = item.get('releaseYear')
+            il['genre'] = ' / '.join(i.get('text', '') for i in item.get('genres', []))
+            il['studio'] = ', '.join(item.get('studios', []))
+            il['director'] = ', '.join(i['name'] for i in contr.get('directors', []))
+            il['cast'] = [i['name'] for i in contr.get('starringActors', []) + contr.get('supportingActors', [])]
+            il['year'] = item.get('releaseYear')
             if num:
-                il['Episode'] = item.get('episodeNumber')
-                il['Title'] = '%s - %s' % (num, il['Title'])
+                il['episode'] = item.get('episodeNumber')
+                il['title'] = '%s - %s' % (num, il['title'])
             if wl:
                 il['contentType'] = wl['endpoint']['query'].get('titleType', '')
             if 'images' in item:
@@ -1015,35 +849,35 @@ class PrimeVideo(Singleton):
             else:
                 il['thumb'] = self.cleanIMGurl(item.get('image', {}).get('url', facet.get('image', '') if facet else item.get('facetImage')))
             if rating and rating.get('value'):
-                il['Rating'] = float(rating['value']) * 2
-                il['Votes'] = str(rating['count'])
+                il['rating'] = float(rating['value']) * 2
+                il['votes'] = str(rating['count'])
             if live:
-                il['Plot'] += '\n\n' if il['Plot'] else ''
+                il['plot'] += '\n\n' if il['Plot'] else ''
                 il['contentType'] = 'live'
-                il['Plot'] += ' - '.join([live.get('timeBadge', live.get('label', '')), live.get('venue', '')])
+                il['plot'] += ' - '.join([live.get('timeBadge', live.get('label', '')), live.get('venue', '')])
             if livestate:
-                il['Plot'] += '\n\n' if il['Plot'] else ''
+                il['plot'] += '\n\n' if il['Plot'] else ''
                 il['contentType'] = livestate.get('id', il['contentType'])
                 if livestate.get('isLive', False):
                     il['contentType'] = 'live'
-                il['Plot'] += ' - '.join([livestate.get('text', ''), item.get('pageDateTimeBadge', '')])
-            if not il['Title']:
-                il['Title'] = item.get('image', {}).get('alternateText', '')
+                il['plot'] += ' - '.join([livestate.get('text', ''), item.get('pageDateTimeBadge', '')])
+            if not il['title']:
+                il['title'] = item.get('image', {}).get('alternateText', '')
                 il['contentType'] = 'thumbnail'
             if item.get('itemType', '').lower() == 'label':
-                il['Plot'] = il['Title']
-                il['Title'] = '-= %s =-' % item['link']['label']
+                il['plot'] = il['title']
+                il['title'] = '-= %s =-' % item['link']['label']
                 il['thumb'] = self._s.NextIcon
-            if not il['Duration'] and runtime:
+            if not il['duration'] and runtime:
                 t = re.findall(r'\d+', runtime)
                 t = ['0'] * (2 - len(t)) + t
-                il['Duration'] = sum(map(lambda a, b: int(a) * b, t, (3600, 60)))
+                il['duration'] = sum(map(lambda a, b: int(a) * b, t, (3600, 60)))
             if 'playbackActions' in item:
                 il['contentType'] = findKey('videoMaterialType', item['playbackActions'])
             elif 'notificationActions' in item:
                 il['contentType'] = 'nostream'
-                il['Title'] = '%s (%s)' % (il['Title'], item['notificationActions'][0]['message']['string'])
-            il['DisplayTitle'] = self.cleanTitle(il['Title'])
+                il['title'] = '%s (%s)' % (il['title'], item['notificationActions'][0]['message']['string'])
+            il['DisplayTitle'] = self.cleanTitle(il['title'])
             il['contentType'] = il['contentType'].lower()
             # il = self.getArtWork(il, il['contentType'])
             return il, il['contentType']
@@ -1108,7 +942,7 @@ class PrimeVideo(Singleton):
                     url = item['link']['url']
                     if ct == 'season':
                         url += '?episodeListSize=999'
-                    if il['Title']:
+                    if il['title']:
                         addDir(il['DisplayTitle'], 'Channel', url, infoLabels=il, opt=ct, cm=cm)
                     urls.append(remref(url))
                 vw = ct if ct else vw
@@ -1145,9 +979,9 @@ class PrimeVideo(Singleton):
                 pa = item.get('playbackAction')
                 shed = item.get('schedule')
                 asin = ''
-                il['Title'] = item.get('channelName')
+                il['title'] = item.get('channelName')
                 il['thumb'] = self.cleanIMGurl(item.get('logo', ''))
-                il['DisplayTitle'] = self.cleanTitle(il['Title'])
+                il['DisplayTitle'] = self.cleanTitle(il['title'])
                 il['Plot'] = ''
                 upnext = False
                 if shed:

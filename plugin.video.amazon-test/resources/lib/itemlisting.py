@@ -5,6 +5,7 @@ from kodi_six import xbmcplugin, xbmcgui
 from kodi_six.utils import py2_encode
 from .common import Globals, Settings
 from .l10n import *
+from .export import Export
 import sys
 
 try:
@@ -62,7 +63,7 @@ def addDir(name, mode='', url='', infoLabels=None, opt='', catalog='Browse', cm=
     if mode == '' and useatv:
         url = g.pluginid
     if export:
-        g.pv.Export(infoLabels, url)
+        Export(infoLabels, url)
         return
     thumb = infoLabels.get('thumb', thumb)
     fanart = infoLabels.get('fanart', s.DefaultFanart)
@@ -74,8 +75,8 @@ def addDir(name, mode='', url='', infoLabels=None, opt='', catalog='Browse', cm=
 
     if infoLabels:
         item.setInfo(type='Video', infoLabels=getInfolabels(infoLabels))
-        if 'TotalSeasons' in infoLabels:
-            item.setProperty('TotalSeasons', str(infoLabels['TotalSeasons']))
+        if 'totalseasons' in infoLabels:
+            item.setProperty('totalseasons', str(infoLabels['totalseasons']))
         if 'poster' in infoLabels:
             item.setArt({'tvshow.poster': infoLabels['poster']})
 
@@ -99,18 +100,18 @@ def addVideo(name, asin, infoLabels, cm=None, export=False):
     item.setArt({'fanart': fanart, 'poster': poster, 'thumb': thumb})
     item.setProperty('IsPlayable', 'true')  # always true, to view watched state
 
-    if 'AudioChannels' in infoLabels:
-        item.addStreamInfo('audio', {'codec': 'ac3', 'channels': int(infoLabels['AudioChannels'])})
+    if 'audiochannels' in infoLabels:
+        item.addStreamInfo('audio', {'codec': 'ac3', 'channels': int(infoLabels['audiochannels'])})
 
     if 'poster' in infoLabels.keys():
         item.setArt({'tvshow.poster': infoLabels['poster']})
 
     if infoLabels.get('TrailerAvailable'):
-        infoLabels['Trailer'] = url + '&trailer=1&selbitrate=0'
+        infoLabels['trailer'] = url + '&trailer=1&selbitrate=0'
 
     url += '&trailer=%s' % streamtypes.get(infoLabels['contentType'], 0)
 
-    if [k for k in ['4k', 'uhd', 'ultra hd'] if k in (infoLabels.get('TVShowTitle', '') + name).lower()]:
+    if [k for k in ['4k', 'uhd', 'ultra hd'] if k in (infoLabels.get('tvshowtitle', '') + name).lower()]:
         bitrate = '-1'
         item.addStreamInfo('video', {'width': 3840, 'height': 2160})
     elif infoLabels.get('isHD'):
@@ -118,7 +119,7 @@ def addVideo(name, asin, infoLabels, cm=None, export=False):
 
     if export:
         url += '&selbitrate=' + bitrate
-        g.pv.Export(infoLabels, url)
+        Export(infoLabels, url)
     else:
         cm = cm if cm else []
         cm.insert(0, (getString(30101), 'Action(ToggleWatched)'))

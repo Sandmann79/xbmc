@@ -3,19 +3,16 @@
 from __future__ import unicode_literals
 from collections import OrderedDict
 from copy import deepcopy
-from kodi_six import xbmcplugin, xbmcgui
-import json
+from kodi_six import xbmcplugin
 import re
-import sys
-import time
 
 from .common import key_exists, return_item, return_value, sleep, findKey
 from .singleton import Singleton
 from .network import getURL, getURLData, MechanizeLogin, FQify, GrabJSON
 from .logging import Log, LogJSON
 from .itemlisting import setContentAndView, addVideo, addDir
-from .l10n import *
 from .users import *
+from .export import SetupLibrary
 
 try:
     import cPickle as pickle
@@ -513,9 +510,20 @@ class PrimeVideo(Singleton):
 
         return True
 
-    def Browse(self, path, bNoSort=False):
+    def Browse(self, path, bNoSort=False, export=False):
         """ Display and navigate the menu for PrimeVideo users """
 
+        nodeKeys = []
+        path_sep = path.split(self._separator)
+        if 'export=' in path_sep[-1]:
+            export = True
+            path = '/'.join(path_sep[:-1])
+            if path_sep[-1] == 'export=single':
+                nodeKeys = [path_sep[-2]]
+                nodeName = ''
+        if export:
+            SetupLibrary()
+        Log(path_sep)
         # Add multiuser menu if needed
         if self._s.multiuser and ('root' == path) and (1 < len(loadUsers())):
             addDir(getString(30134).format(loadUser('name')), '', 'pv/browse/root{}SwitchUser'.format(self._separator), cm=self._g.CONTEXTMENU_MULTIUSER)
@@ -530,25 +538,27 @@ class PrimeVideo(Singleton):
             activeProfile = self._catalog['profiles'][self._catalog['profiles']['active']]
             addDir(activeProfile['title'], 'True', 'pv/profiles/list', activeProfile['metadata']['artmeta'])
 
-        node, breadcrumb = self._TraverseCatalog(path)
-        if None is node:
-            return
+        if 1 > len(nodeKeys):
+            node, breadcrumb = self._TraverseCatalog(path)
+            if None is node:
+                return
 
-        # Populate children list with empty references
-        nodeName = breadcrumb[-1]
-        if (nodeName in self._videodata) and ('children' in self._videodata[nodeName]):
-            for c in self._videodata[nodeName]['children']:
-                if c not in node:
-                    node[c] = {}
+            # Populate children list with empty references
+            nodeName = breadcrumb[-1]
+            if (nodeName in self._videodata) and ('children' in self._videodata[nodeName]):
+                for c in self._videodata[nodeName]['children']:
+                    if c not in node:
+                        node[c] = {}
+
+            nodeKeys = sorted([k for k in node if k not in ['ref', 'verb', 'title', 'metadata', 'parent', 'siblings', 'children', 'pos']],
+                              key=lambda x: (node[x].get('pos', 999) if isinstance(node[x], dict) else 999))
+            # Move nextpage entry to end of list
+            if 'nextPage' in nodeKeys:
+                nodeKeys.pop(nodeKeys.index('nextPage'))
+                nodeKeys.append('nextPage')
 
         folderType = 0 if 'root' == path else 1
         folderTypeList = []
-        nodeKeys = sorted([k for k in node if k not in ['ref', 'verb', 'title', 'metadata', 'parent', 'siblings', 'children', 'pos']],
-                          key=lambda x: (node[x].get('pos', 999) if isinstance(node[x], dict) else 999))
-        # Move nextpage entry to end of list
-        if 'nextPage' in nodeKeys:
-            nodeKeys.pop(nodeKeys.index('nextPage'))
-            nodeKeys.append('nextPage')
 
         for key in nodeKeys:
             if key in self._videodata:
@@ -623,19 +633,22 @@ class PrimeVideo(Singleton):
                 if 'videometa' in m:
                     # https://codedocs.xyz/xbmc/xbmc/group__python__xbmcgui__listitem.html#ga0b71166869bda87ad744942888fb5f14
                     infoLabel.update(m['videometa'])
+                    if bIsVideo:
+                        folder = False
+                        if 'runtime' in m:
+                            infoLabel['duration'] = m['runtime']
                     try:
                         folderType = {'video': 0, 'movie': 5, 'episode': 4, 'tvshow': 2, 'season': 3}[m['videometa']['mediatype']]
                     except:
                         folderType = 2  # Default to category
                     if folderType in [5, 3, 2, 0]:
+
                         gtis = ','.join(entry['children']) if 'children' in entry else entry['metadata']['compactGTI']
                         in_wl = 1 if path.split('/')[:3] == ['root', 'Watchlist', 'watchlist'] else 0
                         ctxitems.append((getString(30180 + in_wl) % getString(self._g.langID[m['videometa']['mediatype']]),
                                          'RunPlugin({}pv/wltoogle/{}/{}/{})'.format(self._g.pluginid, path, quote_plus(gtis), in_wl)))
-                    if bIsVideo:
-                        folder = False
-                        if 'runtime' in m:
-                            infoLabel['duration'] = m['runtime']
+                        ctxitems.append((getString(30185) % getString(self._g.langID[m['videometa']['mediatype']]),
+                                         'RunPlugin({}pv/browse/{}/export={})'.format(self._g.pluginid, itemPathURI, 'multi' if folder else 'single')))
                 if 'schedule' in m:
                     ts = time.time()
                     from datetime import datetime as dt
@@ -652,24 +665,28 @@ class PrimeVideo(Singleton):
             folderTypeList.append(folderType)
             # If it's a video leaf without an actual video, something went wrong with Amazon servers, just hide it
             if ('nextPage' == key) or (not folder) or (4 > folderType):
-                addVideo(title, key, infoLabel, cm=ctxitems) if bIsVideo else addDir(title, str(folder), url, infoLabel, cm=ctxitems)
+                addVideo(title, key, infoLabel, cm=ctxitems, export=export) if bIsVideo else addDir(title, str(folder), url, infoLabel, cm=ctxitems)
+                if export and folder:
+                    self.Browse(itemPathURI, export=True)
 
-        # Set sort method and view
-        # leave folderType if its a single content list or use the most common foldertype for mixed content, except episodes or seasons (it will break sorting)
-        folderType = folderType if 2 > len(set(folderTypeList)) else sorted([(folderTypeList.count(x), x) for x in set(folderTypeList) if x not in [3, 4]], reverse=True)[0][1]
-        # https://codedocs.xyz/xbmc/xbmc/group__python__xbmcplugin.html#ga85b3bff796fd644fb28f87b136025f40
-        xbmcplugin.addSortMethod(self._g.pluginhandle, [
-            xbmcplugin.SORT_METHOD_NONE,  # Root
-            xbmcplugin.SORT_METHOD_NONE,  # Category list
-            xbmcplugin.SORT_METHOD_NONE,  # Category
-            xbmcplugin.SORT_METHOD_LABEL_IGNORE_THE,  # TV Show (Seasons list)
-            xbmcplugin.SORT_METHOD_EPISODE,  # Season (Episodes list)
-            xbmcplugin.SORT_METHOD_NONE,  # Movies list
-        ][0 if bNoSort or ('nextPage' in node) else folderType])
+        if not export:
+            # Set sort method and view
+            # leave folderType if its a single content list or use the most common foldertype for mixed content, except episodes or seasons (it will break sorting)
+            folderType = folderType if 2 > len(set(folderTypeList)) else \
+            sorted([(folderTypeList.count(x), x) for x in set(folderTypeList) if x not in [3, 4]], reverse=True)[0][1]
+            # https://codedocs.xyz/xbmc/xbmc/group__python__xbmcplugin.html#ga85b3bff796fd644fb28f87b136025f40
+            xbmcplugin.addSortMethod(self._g.pluginhandle, [
+                xbmcplugin.SORT_METHOD_NONE,  # Root
+                xbmcplugin.SORT_METHOD_NONE,  # Category list
+                xbmcplugin.SORT_METHOD_NONE,  # Category
+                xbmcplugin.SORT_METHOD_LABEL_IGNORE_THE,  # TV Show (Seasons list)
+                xbmcplugin.SORT_METHOD_EPISODE,  # Season (Episodes list)
+                xbmcplugin.SORT_METHOD_NONE,  # Movies list
+            ][0 if bNoSort or ('nextPage' in node) else folderType])
 
-        folderType = 0 if 2 > folderType else folderType
-        setContentAndView([None, 'videos', 'series', 'season', 'episode', 'movie'][folderType])
-        xbmcplugin.endOfDirectory(self._g.pluginhandle, succeeded=True, cacheToDisc=False)
+            folderType = 0 if 2 > folderType else folderType
+            setContentAndView([None, 'videos', 'series', 'season', 'episode', 'movie'][folderType])
+            xbmcplugin.endOfDirectory(self._g.pluginhandle, succeeded=True, cacheToDisc=False)
 
     def Search(self, searchString=None):
         """ Provide search functionality for PrimeVideo """

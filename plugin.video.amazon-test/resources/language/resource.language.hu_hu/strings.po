@@ -1,0 +1,776 @@
+#XBMC Media Center language file
+# Addon Name: Amazon VOD
+# Addon id: plugin.video.amazon-test
+# Addon version: 0.2.6
+# Addon Provider: Sandmann79
+msgid ""
+msgstr ""
+"Project-Id-Version: XBMC-Addons\n"
+"Report-Msgid-Bugs-To: alanwww1@xbmc.org\n"
+"POT-Creation-Date: 2016-07-07 19:46+0000\n"
+"PO-Revision-Date: 2022-03-17 HO:MI+ZONE\n"
+"Last-Translator: frodo19\n"
+"Language-Team: Hungarian\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Language: hu\n"
+"Plural-Forms: nplurals=2; plural=(n != 1)\n"
+
+msgctxt "Addon Summary"
+msgid "Amazon Prime Video Streaming"
+msgstr "Amazon Prime Videó kiegészítő"
+
+msgctxt "Addon Description"
+msgid "Movies and Television Shows for Prime Members"
+msgstr "Filmek és Sorozatok a Prime előfizetőknek"
+
+msgctxt "Addon Disclaimer"
+msgid "Some parts of this addon may not be legal in your country of residence – please check with your local laws before installing."
+msgstr "Előfordulhat, hogy ennek a kiegészítőnek egyes részei nem legálisak az Ön lakóhelye szerinti országban – kérjük, ellenőrizze a helyi törvényeket a telepítés előtt"
+
+msgctxt "#30001"
+msgid "Amazon Account"
+msgstr "Amazon fiók"
+
+msgctxt "#30002"
+msgid "Email Adress"
+msgstr "Email cím"
+
+msgctxt "#30003"
+msgid "Password"
+msgstr "Jelszó"
+
+msgctxt "#30004"
+msgid "Stream Bitrate (0 - Ask)"
+msgstr "Stream Bitráta (0 - Kérdezz)"
+
+msgctxt "#30005"
+msgid "Audio descriptions (disables 5.1/7.1)"
+msgstr "Hang kommentárok (5.1/7.1 letiltása)"
+
+msgctxt "#30006"
+msgid "Store Credentials instead of using the Cookie?"
+msgstr "Hitelesítési adatokat tárol a Cookie használata helyett?"
+
+msgctxt "#30007"
+msgid "Remove Credentials and Cookie"
+msgstr "A hitelesítő adatok és a cookie-k eltávolítása"
+
+msgctxt "#30008"
+msgid "Sign In…"
+msgstr "Bejelentkezés…"
+
+msgctxt "#30009"
+msgid "Multi User Support"
+msgstr "Többszörös felhasználói fiók"
+
+msgctxt "#30010"
+msgid "Remove all Users"
+msgstr "Minden felhasználó törlése"
+
+msgctxt "#30011"
+msgid "General"
+msgstr "Általános"
+
+msgctxt "#30012"
+msgid "Playback with"
+msgstr "Lejátszás vele"
+
+msgctxt "#30013"
+msgid "Inputstream Addon Settings…"
+msgstr "Inputstream kiegészítő beállítások"
+
+msgctxt "#30014"
+msgid "Logged in as"
+msgstr "Bejelentkezve mint"
+
+msgctxt "#30015"
+msgid "Views"
+msgstr "Nézetek"
+
+msgctxt "#30016"
+msgid "Movie Fanart Source"
+msgstr "Film fanart forrás"
+
+msgctxt "#30017"
+msgid "TV Show Fanart Source"
+msgstr "Sorozat fanart forrás"
+
+msgctxt "#30018"
+msgid "Age restrictions…"
+msgstr "Életkor korlátozása"
+
+msgctxt "#30019"
+msgid "Prefered Host"
+msgstr "Preferált host"
+
+msgctxt "#30020"
+msgid "Use H.265 Videocodec"
+msgstr "H.265 kodek használata"
+
+msgctxt "#30021"
+msgid "Language"
+msgstr "Nyelv"
+
+msgctxt "#30022"
+msgid "Keep me logged in"
+msgstr "Hagyj bejelentkezve"
+
+msgctxt "#30023"
+msgid "Use android app for 4K videos"
+msgstr "Android app használata a 4K videókhoz"
+
+msgctxt "#30024"
+msgid "Profiles"
+msgstr "Profilok"
+
+msgctxt "#30025"
+msgid "Change text language"
+msgstr "Nyelv választása"
+
+msgctxt "#30026"
+msgid "Show password"
+msgstr "Jelszó mutatása"
+
+msgctxt "#30027"
+msgid "Stretch factor"
+msgstr "Igazítási faktor"
+
+msgctxt "#30028"
+msgid "Stretching"
+msgstr "Igazítás"
+
+msgctxt "#30029"
+msgid "Movie View"
+msgstr "Film nézet"
+
+msgctxt "#30030"
+msgid "Show View"
+msgstr "Sorozat nézet"
+
+msgctxt "#30031"
+msgid "Season View"
+msgstr "Évad nézet"
+
+msgctxt "#30032"
+msgid "Episode View"
+msgstr "Epizód nézet"
+
+msgctxt "#30033"
+msgid "Audio"
+msgstr "Hang"
+
+msgctxt "#30034"
+msgid "Subtitles"
+msgstr "Feliratok"
+
+msgctxt "#30035"
+msgid "Enable Views"
+msgstr "Nézetek engedélyezése"
+
+msgctxt "#30036"
+msgid "Show Recently watched menu entry"
+msgstr "A legutóbb megtekintett menübejegyzés megjelenítése"
+
+msgctxt "#30037"
+msgid "Disable SSL Certificate Verification"
+msgstr "SSL Certificate Verification kikapcsolása"
+
+msgctxt "#30038"
+msgid "Connection"
+msgstr "Kapcsolódás"
+
+msgctxt "#30039"
+msgid "Items Per Page"
+msgstr "Elemek oldalanként"
+
+# empty string with id 30040
+msgctxt "#30041"
+msgid "Enable Fullscreen Video"
+msgstr "Teljesképernyős videó engedélyezése"
+
+msgctxt "#30042"
+msgid "Browser Kiosk Mode"
+msgstr "Böngésző mód"
+
+msgctxt "#30043"
+msgid "Use custom Browser path"
+msgstr "Böngésző elérési út"
+
+msgctxt "#30044"
+msgid "Wait till Fullscreen (sec)"
+msgstr "Várakozás a teljes képernyőre (mp)"
+
+msgctxt "#30045"
+msgid "Automatic PIN Input"
+msgstr "Automatikus PTN bevitel"
+
+msgctxt "#30046"
+msgid "PIN"
+msgstr "PIN"
+
+msgctxt "#30047"
+msgid "Wait after PIN Input"
+msgstr "Várakozás a PIN bevitel után"
+
+msgctxt "#30048"
+msgid "Script path"
+msgstr "Szkript elérési útja"
+
+msgctxt "#30049"
+msgid "Detect Framerate"
+msgstr "Észlelt framerate"
+
+msgctxt "#30050"
+msgid "Amazon"
+msgstr "Amazon"
+
+msgctxt "#30051"
+msgid "Load missing from TMDb"
+msgstr "Hiányzó elem betöltése az TMDb-ről"
+
+msgctxt "#30052"
+msgid "TMDb"
+msgstr "TMDb"
+
+msgctxt "#30053"
+msgid "Load missing from TVDb"
+msgstr "Hiányzó elem betöltése az TVDb-ről"
+
+msgctxt "#30054"
+msgid "TVDb"
+msgstr "TVDb"
+
+msgctxt "#30055"
+msgid "Show TV Show Fanart in Season and Episode Lists"
+msgstr "Mutasd a Sorozat fanartot az évad- és epizódlistákban"
+
+msgctxt "#30056"
+msgid "TVDb incl. Poster"
+msgstr "TVDb poszterrel együtt"
+
+msgctxt "#30057"
+msgid "Wait till PIN Input"
+msgstr "Várakozás a PIN beviteléig"
+
+# empty string with id 30058
+msgctxt "#30059"
+msgid "Use own user profile"
+msgstr "Saját felhasználói profil használata"
+
+msgctxt "#30060"
+msgid "Export"
+msgstr "Exportálás"
+
+msgctxt "#30061"
+msgid "Custom Export Folder"
+msgstr "Saját mappa az exportáláshoz"
+
+msgctxt "#30062"
+msgid "Path"
+msgstr "Elérési út"
+
+msgctxt "#30063"
+msgid "Create Video Information File"
+msgstr "Filminformációs fájl létrehozása"
+
+msgctxt "#30064"
+msgid "Mediasource Movie Title"
+msgstr "Médiaforrás filmcím"
+
+msgctxt "#30065"
+msgid "Mediasource TV Title"
+msgstr "Médiaforrás sorozatmcím"
+
+msgctxt "#30066"
+msgid "Send video progress to Amazon at least at percent played (0 to disable)"
+msgstr "Videó lejátszási helyzet elküldése az Amazonnak, minimum lejátszási százalékban (0 a letiltáshoz)"
+
+# empty strings from id 30067 to 30069
+msgctxt "#30070"
+msgid "Miscellaneous"
+msgstr "Egyebek"
+
+msgctxt "#30071"
+msgid "Display TV-Show instead of Seasons in Watchlist"
+msgstr "Sorozat mutatása évadok helyett, a lejátszási listában"
+
+msgctxt "#30072"
+msgid "Verbose Logging"
+msgstr "Bővített naplózás"
+
+msgctxt "#30073"
+msgid "Display Paid Content"
+msgstr "Előfizetéses tartalom mutatása"
+
+msgctxt "#30074"
+msgid "Remote Control support"
+msgstr "Távirányító támogatás"
+
+msgctxt "#30075"
+msgid "UP/DOWN controls Kodi Volume"
+msgstr "FEL/LE a Kodi hangerőt állítja"
+
+msgctxt "#30076"
+msgid "Watchlist/Library Order"
+msgstr "Lejátszási lista / Médiatár rendezés"
+
+msgctxt "#30077"
+msgid "Recently Added"
+msgstr "Utoljára hozzáadva"
+
+msgctxt "#30078"
+msgid "Title Ascending"
+msgstr "Cím szerint növekvő"
+
+msgctxt "#30079"
+msgid "Title Descending"
+msgstr "Cím szerint csökkenő"
+
+msgctxt "#30080"
+msgid "Automatically Watchlist export"
+msgstr "Automatikus nézett lista exportálás"
+
+msgctxt "#30081"
+msgid "Intro/Recap scenes processing"
+msgstr "Bemutató/Emlékeztető: "
+
+msgctxt "#30082"
+msgid "Do nothing"
+msgstr "Ne tegyen semmit"
+
+msgctxt "#30083"
+msgid "Show Skip Button"
+msgstr "Mutassa az átugrás gombot"
+
+msgctxt "#30084"
+msgid "Autoskip Intro"
+msgstr "Bemutató automatikus átugrása"
+
+msgctxt "#30085"
+msgid "Autoskip Recap"
+msgstr "Emlékeztető automatikus átugrása"
+
+msgctxt "#30086"
+msgid "Autoskip All"
+msgstr "mindet átugorja"
+
+msgctxt "#30087"
+msgid "Clear cache"
+msgstr "Cache törlése"
+
+msgctxt "#30088"
+msgid "Clear cached catalog or video data?\nVideo data includes series/season metadata."
+msgstr "Törli a gyorsítótárazott katalógus- vagy videóadatokat?\nVideóadatok sorozatok/évadok metaadataival együtt"
+
+msgctxt "#30089"
+msgid "No"
+msgstr "Nem"
+
+msgctxt "#30090"
+msgid "Catalog"
+msgstr "Katalógus"
+
+msgctxt "#30091"
+msgid "Video data"
+msgstr "Videó adat"
+
+msgctxt "#30092"
+msgid "Both"
+msgstr "Mindkettő"
+
+# empty strings from id 30093 to 30099
+msgctxt "#30100"
+msgid "Library"
+msgstr "Médiatár"
+
+msgctxt "#30101"
+msgid "Toggle Watched State"
+msgstr "Nézett állapot váltása"
+
+msgctxt "#30102"
+msgid "Force Fallback"
+msgstr "Erőltetett háttér"
+
+# empty string id 301033
+msgctxt "#30104"
+msgid "Movies"
+msgstr "Filmek"
+
+# empty strings from id 30105 to 30106
+msgctxt "#30107"
+msgid "Television"
+msgstr "Televíziók"
+
+msgctxt "#30108"
+msgid "Search"
+msgstr "Keresés"
+
+msgctxt "#30109"
+msgid "Choose Bitrate for Playback"
+msgstr "Lejátszási bitráta kiválasztása"
+
+# empty string with id 30110
+msgctxt "#30111"
+msgid "Continue to Page %s"
+msgstr "Folytatás, oldal %s"
+
+msgctxt "#30112"
+msgid "Back to Main Menu"
+msgstr "Vissza a főmenübe"
+
+msgctxt "#30113"
+msgid "Choose Language for Playback"
+msgstr "Nyelvválasztás a lejátszáshoz"
+
+msgctxt "#30114"
+msgid "Choose Stream Quality:"
+msgstr "Stream minőség kiválasztás:"
+
+msgctxt "#30115"
+msgid "Available Languages:"
+msgstr "Elérhető nyelvek:"
+
+# empty strings from id 30116 to 30119
+msgctxt "#30120"
+msgid "PIN (empty for no restriction)"
+msgstr "PIN (ha üres nincs korlátozva)"
+
+msgctxt "#30121"
+msgid "PIN Request at"
+msgstr "PIN-kérés"
+
+msgctxt "#30122"
+msgid "Apply"
+msgstr "Alkalmaz"
+
+msgctxt "#30123"
+msgid "Cancel"
+msgstr "Törlés"
+
+# empty strings from id 30124 to 30126
+msgctxt "#30127"
+msgid "No content found"
+msgstr "Tartalom nem található"
+
+# empty strings from id 30128 to 30129
+msgctxt "#30130"
+msgid "Add User…"
+msgstr "Felhasználó hozzáadása…"
+
+msgctxt "#30131"
+msgid "Delete User…"
+msgstr "Felhasználó törlése…"
+
+msgctxt "#30132"
+msgid "Rename User"
+msgstr "Felhasználó átnevezése"
+
+msgctxt "#30133"
+msgid "Choose User"
+msgstr "Felhasználó kiválasztása"
+
+msgctxt "#30134"
+msgid "Current User: {0}"
+msgstr "Aktuális Felhasználó: (0)"
+
+msgctxt "#30135"
+msgid "Display Name"
+msgstr "Név mutatása"
+
+msgctxt "#30136"
+msgid "Recently watched"
+msgstr "Utoljára hozzáadva"
+
+# empty strings from id 30137 to 30142
+msgctxt "#30143"
+msgid "All Movies"
+msgstr "Minden film"
+
+# empty strings from id 30144 to 30159
+msgctxt "#30160"
+msgid "All Shows"
+msgstr "Minden sorozat"
+
+# empty strings from id 30161 to 30164
+msgctxt "#30165"
+msgid "Movie"
+msgstr "Film"
+
+msgctxt "#30166"
+msgid "Show"
+msgstr "Sorozat"
+
+msgctxt "#30167"
+msgid "Season"
+msgstr "Évad"
+
+msgctxt "#30168"
+msgid "Year "
+msgstr "Év"
+
+msgctxt "#30169"
+msgid "Specials"
+msgstr "Különlegességek"
+
+# empty string with id 30170
+msgctxt "#30171"
+msgid "Unrated"
+msgstr "Nem értékelt"
+
+# empty string with id 30172
+msgctxt "#30173"
+msgid "Episode"
+msgstr "Epizód"
+
+# empty strings from id 30174 to 30179
+msgctxt "#30180"
+msgid "Add %s to Watchlist"
+msgstr "Hozzáad a %s lejátszási listához"
+
+msgctxt "#30181"
+msgid "Remove %s from Watchlist"
+msgstr "Töröl a %s lejátszási listából"
+
+msgctxt "#30182"
+msgid "Go to TV-Show"
+msgstr "Sorozathoz ugrás"
+
+msgctxt "#30183"
+msgid "Get Similarities"
+msgstr "Hasonlóak"
+
+msgctxt "#30184"
+msgid "Remove {} from List"
+msgstr "Törlés {} a listából"
+
+msgctxt "#30185"
+msgid "Export %s"
+msgstr "Exportál %s"
+
+msgctxt "#30186"
+msgid "Update Library"
+msgstr "Médiatár frissítése"
+
+msgctxt "#30187"
+msgid "Source folders added/changed"
+msgstr "Forrásmappák hozzáadva/módosítva"
+
+msgctxt "#30188"
+msgid "To complete the setup restart Kodi and set the content type of added folders."
+msgstr "A beállítás befejezéséhez indítsa újra a Kodit, és állítsa be a hozzáadott mappák tartalomtípusát."
+
+# empty strings from id 30189 to 30190
+msgctxt "#30191"
+msgid "Restart"
+msgstr "Újraindítás"
+
+msgctxt "#30192"
+msgid "Do you want to restart Kodi now?"
+msgstr "Kodi újraindítása most?"
+
+msgctxt "#30193"
+msgid "Skip Intro"
+msgstr "Bevezető átugrása"
+
+msgctxt "#30194"
+msgid "Skip Recap"
+msgstr "Emlékeztető átugrása"
+
+msgctxt "#30195"
+msgid "Skipping Scene…"
+msgstr "Átugrott jelenet…"
+
+msgctxt "#30196"
+msgid "Dump JSON replies"
+msgstr ""
+
+msgctxt "#30197"
+msgid "Dump collisions"
+msgstr "Dump JSON válasz"
+
+msgctxt "#30198"
+msgid "Browser or Script not found. Please check settings."
+msgstr "A böngésző vagy a szkript nem található. Kérjük, ellenőrizze a beállításokat."
+
+msgctxt "#30199"
+msgid "Raw"
+msgstr "Raw"
+
+msgctxt "#30200"
+msgid "Login Error"
+msgstr "Bejelentkezési hiba"
+
+msgctxt "#30201"
+msgid "Wrong Email Adress or Password"
+msgstr "Rossz email cím vagy jelszó"
+
+msgctxt "#30202"
+msgid "No Search Results"
+msgstr "Nincs találat"
+
+msgctxt "#30203"
+msgid "Unable to Play"
+msgstr "Nem játszható le"
+
+msgctxt "#30204"
+msgid "Invalid Request"
+msgstr "Hibás lekérdezés"
+
+msgctxt "#30205"
+msgid "Playback Limit reached, try again later"
+msgstr "Lejátszási limit elérve, próbálja később"
+
+msgctxt "#30206"
+msgid "Product not purchased"
+msgstr "Nincs megvásárolva"
+
+msgctxt "#30207"
+msgid "This Video is unavailable in your Country"
+msgstr "Ez a videó nem érhető el az Ön országában"
+
+msgctxt "#30208"
+msgid "Playback currently not possible, try again later"
+msgstr "Lejátszás nem lehetséges, próbálja később"
+
+msgctxt "#30209"
+msgid "Unknown"
+msgstr "Ismeretlen"
+
+msgctxt "#30210"
+msgid "Please remove Credentials and Cookie in Settings"
+msgstr "Kérjük, távolítsa el a hitelesítési adatokat és a cookie-kat a Beállításokban"
+
+msgctxt "#30211"
+msgid "Credentials and Cookie(s) removed"
+msgstr "Hitelesítési adatok és a cookie-k törölve"
+
+msgctxt "#30212"
+msgid "Captcha Request, please change IP or try again later"
+msgstr "Captcha kérés, módosítsa az IP-címet, vagy próbálja újra később"
+
+msgctxt "#30213"
+msgid "Unknown Error, please enable advanced debugging in settings and check avod-login.log/avod-login-si.log/avod-login-mfa.log"
+msgstr "Ismeretlen hiba, kérjük, engedélyezze a speciális hibakeresést a beállításokban, és ellenőrizze az avod-login.log/avod-login-si.log/avod-login-mfa.log fájlokat"
+
+msgctxt "#30214"
+msgid "Wrong Code"
+msgstr "Hibás kód"
+
+msgctxt "#30215"
+msgid "Login successful"
+msgstr "Bejelentkezés sikeres"
+
+msgctxt "#30216"
+msgid "No credentials present, please go to Settings-Connection and sign in"
+msgstr "Nincsenek hitelesítési adatok, lépjen a Beállítások-Kapcsolat menüpontra, és jelentkezzen be"
+
+msgctxt "#30217"
+msgid "No stream hoster reachable"
+msgstr "Nem érhető el tartalomszolgáltató "
+
+msgctxt "#30219"
+msgid "Unable to retrieve Amazon's territorial configuration."
+msgstr "Nem sikerült lekérni az Amazon területi konfigurációját."
+
+# empty strings from id 30220 to 30241
+msgctxt "#30242"
+msgid "Page {}"
+msgstr "Oldal {}"
+
+msgctxt "#30243"
+msgid "Pagination"
+msgstr "Oldalszámozás "
+
+msgctxt "#30244"
+msgid "Everything"
+msgstr "Minden"
+
+msgctxt "#30245"
+msgid "Watchlist"
+msgstr "Lejátszási lista"
+
+msgctxt "#30246"
+msgid "Collections"
+msgstr "Gyűjtemények"
+
+msgctxt "#30247"
+msgid "Search"
+msgstr "Keresés"
+
+msgctxt "#30248"
+msgid "Proxy MPD alteration"
+msgstr "Proxy MPD módosítása"
+
+msgctxt "#30249"
+msgid "Prefer episode thumbnails to posters"
+msgstr "Sorozat bélyegkép használata poszter helyett"
+
+msgctxt "#30250"
+msgid "PrimeVideo"
+msgstr "Prime Video"
+
+msgctxt "#30251"
+msgid "Connection error"
+msgstr "Csatlakozási hiba"
+
+msgctxt "#30252"
+msgid "Loading page {0}…"
+msgstr "Oldal betöltése {0}"
+
+msgctxt "#30253"
+msgid "{0} seasons"
+msgstr "{0} évadok"
+
+msgctxt "#30254"
+msgid "userinput.exe not found"
+msgstr "userinput.exe nem található"
+
+msgctxt "#30255"
+msgid "Please download it from GitHub and manually install it in the addon directory"
+msgstr "Kérjük, töltse le a GitHubról, és telepítse manuálisan a kiegészítők közé"
+
+msgctxt "#30256"
+msgid "Error: servers returned no content (check logs for more information)"
+msgstr "Hiba: a szerverek nem adtak vissza tartalmat (további információért ellenőrizze a naplókat)"
+
+msgctxt "#30257"
+msgid "Catalog cache expiration time"
+msgstr "katalógus gyorsítótár lejárati ideje"
+
+msgctxt "#30258"
+msgid "1 hour"
+msgstr "1 óra"
+
+msgctxt "#30259"
+msgid "6 hours"
+msgstr "6 óra"
+
+msgctxt "#30260"
+msgid "12 hours"
+msgstr "12 óra"
+
+msgctxt "#30261"
+msgid "1 day"
+msgstr "1 nap"
+
+msgctxt "#30262"
+msgid "3 days"
+msgstr "3 nap"
+
+msgctxt "#30263"
+msgid "7 days"
+msgstr "7 nap"
+
+msgctxt "#30264"
+msgid "15 days"
+msgstr "15 nap"
+
+msgctxt "#30265"
+msgid "30 days"
+msgstr "30 nap"
+
+msgctxt "#30266"
+msgid "Login credentials invalid, please login again."
+msgstr "A bejelentkezési adatok érvénytelenek, kérjük, jelentkezzen be újra."

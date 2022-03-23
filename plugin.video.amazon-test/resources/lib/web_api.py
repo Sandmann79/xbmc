@@ -345,24 +345,25 @@ class PrimeVideo(Singleton):
         if 'list' == path[0]: List()
         elif 'switch' == path[0]: Switch()
 
-    def DeleteCache(self):
+    def DeleteCache(self, clear=0):
         """ Pops up a dialog asking cache purge confirmation """
         from .dialogs import PV_ClearCache
         from xbmcvfs import delete
 
         # ClearCache.value returns a boolean bitmask
-        clear = PV_ClearCache()
-        if 0 > clear.value:
+        if 0 == clear:
+            clear = PV_ClearCache().value
+        if 0 > clear:
             return
 
         # Clear catalog (PVCP)
-        if 1 & clear.value:
+        if 1 & clear:
             self._catalog = {}
             delete(self._catalogCache)
             Log('Deleting catalog', Log.DEBUG)
 
         # Clear video data (PVDP)
-        if 2 & clear.value:
+        if 2 & clear:
             self._videodata = {'urn2gti': {}}
             delete(self._videodataCache)
             Log('Deleting video data', Log.DEBUG)
@@ -510,26 +511,37 @@ class PrimeVideo(Singleton):
 
         return True
 
-    def Browse(self, path, bNoSort=False, export=False):
+    def Browse(self, path, bNoSort=False, export=0):
         """ Display and navigate the menu for PrimeVideo users """
 
         nodeKeys = []
         path_sep = path.split(self._separator)
+        # export: 1=folder without refresh 2=single file (episode/movie) 3=folder with refresh 4=watchlist 5=watchlist (auto)
         if 'export=' in path_sep[-1]:
-            export = True
+            export = int(path_sep[-1].split('=')[1])
             path = '/'.join(path_sep[:-1])
-            if path_sep[-1] == 'export=single':
+            if export == 2:
                 nodeKeys = [path_sep[-2]]
                 nodeName = ''
         if export:
             SetupLibrary()
-        Log(path_sep)
+        if export == 3:
+            self.Refresh(path, busy=False)
+        elif export > 3:
+            Log('Export of watchlist started')
+            self.Browse(path + '/ALL', export=3)
+            if export == 5:
+                writeConfig('last_wl_export', time.time())
+                xbmc.executebuiltin('UpdateLibrary(video)')
+            Log('Export of watchlist finished')
+            return
+
         # Add multiuser menu if needed
         if self._s.multiuser and ('root' == path) and (1 < len(loadUsers())):
             addDir(getString(30134).format(loadUser('name')), '', 'pv/browse/root{}SwitchUser'.format(self._separator), cm=self._g.CONTEXTMENU_MULTIUSER)
         if ('root' + self._separator + 'SwitchUser') == path:
             if switchUser():
-                self.BuildRoot()
+                self.DeleteCache(1)
                 xbmc.executebuiltin('Container.Refresh')
             return
 
@@ -557,9 +569,9 @@ class PrimeVideo(Singleton):
                 nodeKeys.pop(nodeKeys.index('nextPage'))
                 nodeKeys.append('nextPage')
 
+        ft_exp = (2, 0, 1, 3, 0, 2)
         folderType = 0 if 'root' == path else 1
         folderTypeList = []
-
         for key in nodeKeys:
             if key in self._videodata:
                 entry = deepcopy(self._videodata[key])
@@ -642,13 +654,14 @@ class PrimeVideo(Singleton):
                     except:
                         folderType = 2  # Default to category
                     if folderType in [5, 3, 2, 0]:
-
                         gtis = ','.join(entry['children']) if 'children' in entry else entry['metadata']['compactGTI']
                         in_wl = 1 if path.split('/')[:3] == ['root', 'Watchlist', 'watchlist'] else 0
                         ctxitems.append((getString(30180 + in_wl) % getString(self._g.langID[m['videometa']['mediatype']]),
                                          'RunPlugin({}pv/wltoogle/{}/{}/{})'.format(self._g.pluginid, path, quote_plus(gtis), in_wl)))
                         ctxitems.append((getString(30185) % getString(self._g.langID[m['videometa']['mediatype']]),
-                                         'RunPlugin({}pv/browse/{}/export={})'.format(self._g.pluginid, itemPathURI, 'multi' if folder else 'single')))
+                                         'RunPlugin({}pv/browse/{}/export={})'.format(self._g.pluginid, itemPathURI, ft_exp[folderType])))
+                        ctxitems.append((getString(30186), 'UpdateLibrary(video)'))
+
                 if 'schedule' in m:
                     ts = time.time()
                     from datetime import datetime as dt
@@ -661,13 +674,19 @@ class PrimeVideo(Singleton):
                                                                                        shm.get('title', ''), shm.get('synopsis', ''))
             else:
                 ctxitems.append((getString(30271), 'RunPlugin({}pv/sethome/{})'.format(self._g.pluginid, quote_plus(itemPathURI))))
+                if itemPathURI.split(self._separator)[-3:] == ['root', 'Watchlist', 'watchlist']:
+                    ctxitems.append((getString(30185) % 'Watchlist', 'RunPlugin({}pv/browse/{}/export={})'.format(self._g.pluginid, itemPathURI, 4)))
+                    ctxitems.append((getString(30186), 'UpdateLibrary(video)'))
 
             folderTypeList.append(folderType)
             # If it's a video leaf without an actual video, something went wrong with Amazon servers, just hide it
             if ('nextPage' == key) or (not folder) or (4 > folderType):
+                if export and 4 == folderType and bIsVideo:
+                    if 'episode' not in infoLabel or 'season' not in infoLabel or 'tvshowtitle' not in infoLabel or 'trailer' in infoLabel['title']:
+                        break
                 addVideo(title, key, infoLabel, cm=ctxitems, export=export) if bIsVideo else addDir(title, str(folder), url, infoLabel, cm=ctxitems)
                 if export and folder:
-                    self.Browse(itemPathURI, export=True)
+                    self.Browse(itemPathURI, export=ft_exp[folderType])
 
         if not export:
             # Set sort method and view
@@ -699,7 +718,7 @@ class PrimeVideo(Singleton):
         self._catalog['search'] = OrderedDict([('lazyLoadURL', self._catalog['root']['Search']['endpoint'].format(searchString))])
         self.Browse('search', True)
 
-    def Refresh(self, path, bRefreshVideodata=True):
+    def Refresh(self, path, bRefreshVideodata=True, busy=True):
         """ Provides cache refresh functionality """
 
         refreshes = []
@@ -745,7 +764,8 @@ class PrimeVideo(Singleton):
 
         @contextmanager
         def _busy_dialog():
-            xbmc.executebuiltin('ActivateWindow(busydialognocancel)')
+            if busy:
+                xbmc.executebuiltin('ActivateWindow(busydialognocancel)')
             try:
                 yield
             finally:

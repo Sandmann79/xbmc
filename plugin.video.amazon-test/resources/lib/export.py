@@ -14,6 +14,7 @@ _g = Globals()
 
 def Export(infoLabels, url):
     isEpisode = infoLabels['contentType'] != 'movie'
+    isEvent = 'tvshowtitle' not in infoLabels and isEpisode
     language = xbmc.convertLanguage(_s.Language, xbmc.ISO_639_2)
     ExportPath = _s.MOVIE_PATH
     nfoType = 'movie'
@@ -21,7 +22,8 @@ def Export(infoLabels, url):
 
     if isEpisode:
         ExportPath = _s.TV_SHOWS_PATH
-        title = infoLabels['tvshowtitle']
+        if not isEvent:
+            title = infoLabels['tvshowtitle']
 
     tl = title.lower()
     if '[omu]' in tl or '[ov]' in tl or ' omu' in tl:
@@ -32,8 +34,9 @@ def Export(infoLabels, url):
     if isEpisode:
         infoLabels['tvshowtitle'] = filename
         nfoType = 'episodedetails'
-        filename = '%s - S%02dE%02d - %s' % (infoLabels['tvshowtitle'], infoLabels['season'],
-                                             infoLabels['episode'], infoLabels['title'])
+        if not isEvent:
+            filename = '%s - S%02dE%02d - %s' % (infoLabels['tvshowtitle'], infoLabels['season'],
+                                                 infoLabels['episode'], infoLabels['title'])
 
     if _g.addon.getSetting('cr_nfo') == 'true':
         CreateInfoFile(filename, ExportPath, nfoType, infoLabels, language)
@@ -98,7 +101,7 @@ def CreateInfoFile(nfofile, path, content, Info, language, hasSubtitles=False):
         if value:
             if lkey == 'tvshowtitle':
                 fileinfo += '<showtitle>%s</showtitle>\n' % value
-            elif lkey == 'premiered' and 'TVShowTitle' in Info:
+            elif lkey == 'premiered' and 'tvshowtitle' in Info:
                 fileinfo += '<aired>%s</aired>\n' % value
             elif lkey == 'thumb':
                 aspect = '' if 'episode' in content else ' aspect="poster"'
@@ -118,7 +121,8 @@ def CreateInfoFile(nfofile, path, content, Info, language, hasSubtitles=False):
             fileinfo += '       </audio>\n'
         fileinfo += '       <video>\n'
         fileinfo += '           <codec>h264</codec>\n'
-        fileinfo += '           <durationinseconds>%s</durationinseconds>\n' % Info['duration']
+        if 'duration' in Info:
+            fileinfo += '           <durationinseconds>%s</durationinseconds>\n' % Info['duration']
         if 'isHD' in Info:
             if Info['isHD']:
                 fileinfo += '           <height>1080</height>\n'

@@ -8,8 +8,6 @@ from locale import getdefaultlocale
 from kodi_six import xbmcaddon, xbmcgui
 from kodi_six.utils import py2_decode
 from sys import argv
-import hashlib
-import hmac
 import uuid
 import json
 from .singleton import Singleton
@@ -50,6 +48,9 @@ class Globals(Singleton):
     tvdb = '1D62F2F90030C444'  # b64decode('MUQ2MkYyRjkwMDMwQzQ0NA==')
     langID = {'movie': 30165, 'series': 30166, 'season': 30167, 'episode': 30173, 'tvshow': 30166, 'video': 30173, 'event': 30174}
     KodiVersion = int(xbmc.getInfoLabel('System.BuildVersion').split('.')[0])
+    dtid_android = 'A43PXU4ZN2AL1'
+    dtid_web = 'AOAGZA014O5RE'
+    headers_android = {'Accept-Charset': 'utf-8', 'User-Agent': 'Dalvik/2.1.0 (Linux; U; Android 11; SHIELD Android TV RQ1A.210105.003)', 'X-Requested-With': 'com.amazon.avod.thirdpartyclient'}
 
     """ Allow the usage of dot notation for data inside the _globals dictionary, without explicit function call """
     def __getattr__(self, name): return self._globals[name]
@@ -82,7 +83,6 @@ class Globals(Singleton):
         # and generate/retrieve the device ID
         getConfig.configPath = self._globals['CONFIG_PATH']
         writeConfig.configPath = self._globals['CONFIG_PATH']
-        self._globals['deviceID'] = self.genID()
 
         self._globals['__plugin__'] = self._globals['addon'].getAddonInfo('name')
         self._globals['__authors__'] = self._globals['addon'].getAddonInfo('author')
@@ -114,23 +114,20 @@ class Globals(Singleton):
 
     @staticmethod
     def genID(renew=False):
-        guid = getConfig("GenDeviceID") if not renew else False
-        if not guid or len(guid) != 56:
-            from random import randint
-            r = randint(1, int('9' * 100))
-            try:
-                r = unicode(r)
-            except NameError:
-                r = bytes(str(r), 'utf-8')
-            guid = hmac.new(r, uuid.uuid4().bytes, hashlib.sha224).hexdigest()
-            writeConfig("GenDeviceID", guid)
-        return guid
+        from .users import loadUser, addUser
+        user = loadUser()
+        if renew or len(user.get('deviceid', '')) != 32:
+            user['deviceid'] = uuid.uuid4().hex
+            addUser(user)
+            writeConfig('GenDeviceID', '')
+        return user['deviceid']
 
     def InitialiseProvider(self, mid, burl, atv, pv):
         self._globals['MarketID'] = mid
         self._globals['BaseUrl'] = burl
         self._globals['ATVUrl'] = atv
         self._globals['UsePrimeVideo'] = pv
+        self._globals['deviceID'] = self.genID()
 
         if self._globals['addon'].getSetting('use_webapi') == 'false' and not self._globals['UsePrimeVideo']:
             from .atv_api import PrimeVideo
@@ -208,7 +205,7 @@ class Settings(Singleton):
         elif 'profiles' == name: return self._gs('profiles') == 'true'
         elif 'show_pass' == name: return self._gs('show_pass') == 'true'
         elif 'useWebApi' == name: return self._gs('use_webapi') == 'true'
-        elif 'use_h265' == name: return self._gs('use_h265') == 'true'
+        elif 'enable_uhd' == name: return self._gs('uhd') == 'true'
         elif 'show_recents' == name: return self._gs('show_recents') == 'true'
 
 

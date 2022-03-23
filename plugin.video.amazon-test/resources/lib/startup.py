@@ -73,6 +73,11 @@ def EntryPoint():
         aid = g.is_addon if aid == 'is' else aid
         import xbmcaddon
         xbmcaddon.Addon(aid).openSettings()
+    elif mode == 'exportWatchlist':
+        if hasattr(g.pv, 'getListMenu'):
+            g.pv.getListMenu('watchlist', export=2)
+        else:
+            g.pv.Browse('root/Watchlist/watchlist', export=5)
     elif mode in ['LogIn', 'remLoginData', 'removeUser', 'renameUser', 'switchUser']:
         exec('{}()'.format(mode))
     else:

@@ -112,7 +112,6 @@ def addVideo(name, asin, infoLabels, cm=None, export=False):
     url += '&trailer=%s' % streamtypes.get(infoLabels['contentType'], 0)
 
     if [k for k in ['4k', 'uhd', 'ultra hd'] if k in (infoLabels.get('tvshowtitle', '') + name).lower()]:
-        bitrate = '-1'
         item.addStreamInfo('video', {'width': 3840, 'height': 2160})
     elif infoLabels.get('isHD'):
         item.addStreamInfo('video', {'width': 1920, 'height': 1080})

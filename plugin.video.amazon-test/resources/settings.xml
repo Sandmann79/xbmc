@@ -27,11 +27,12 @@
         <setting id="pref_host" type="labelenum" label="30019" visible="eq(-17,3)" values="Auto|Akamai|Cloudfront|Level3|Limelight" default="Auto"/>
         <setting id="is_settings" type="action" label="30013" visible="eq(-18,3)" action="RunPlugin(plugin://plugin.video.amazon-test/?mode=openSettings&url=is)" option="close"/>
         <setting id="age_settings" type="action" label="30018" visible="eq(-19,3)" action="RunPlugin(plugin://plugin.video.amazon-test/?mode=ageSettings)" option="close"/>
-        <setting id="use_h265" type="bool" label="30020" visible="eq(-20,3)" default="false"/>
-        <setting id="proxy_mpdalter" type="bool" label="30248" default="true" visible="eq(-21,3)" />
-        <setting id="uhd_android" type="bool" label="30023" default="false" visible="eq(-22,3)" enable="System.Platform.Android"/>
-        <setting id="skip_scene" type="enum" label="30081" lvalues="30082|30083|30084|30085|30086" default="1" visible="eq(-23,3)"/>
-        <setting id="send_vp" type="slider" label="30066" range="0,2,90" default="4" option="percent" visible="eq(-24,3)"/>
+        <setting id="enable_uhd" type="bool" label="UltraHD (Android + Widevine L1)" visible="eq(-20,3)" enable="System.Platform.Android" default="false"/>
+        <setting id="enable_hdr10" type="bool" label="HDR10+ (Android + Widevine L1)" visible="eq(-21,3)" enable="System.Platform.Android" default="false"/>
+        <setting id="enable_dovi" type="bool" label="Dolby Vision (Android + Widevine L1)" visible="eq(-22,3)" enable="System.Platform.Android" default="false"/>
+        <setting id="proxy_mpdalter" type="bool" label="30248" default="true" visible="eq(-23,3)" />
+        <setting id="skip_scene" type="enum" label="30081" lvalues="30082|30083|30084|30085|30086" default="1" visible="eq(-24,3)"/>
+        <setting id="send_vp" type="slider" label="30066" range="0,2,90" default="4" option="percent" visible="eq(-25,3)"/>
         <!-- Browser/Script -->
         <setting id="remotectrl" type="bool" label="30074" default="false" visible="lt(-25,2)"/>
         <setting id="remote_vol" type="bool" label="30075" default="false" subsetting="true" enable="eq(-1,true)" visible="lt(-26,2)"/>

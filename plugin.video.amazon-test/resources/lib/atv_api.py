@@ -2,6 +2,8 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 import os.path
+import pickle
+
 from datetime import date
 
 try:
@@ -426,7 +428,7 @@ class PrimeVideo(Singleton):
         if contentType == 'season' or contentType == 'episode':
             asins = infoLabels.get('SeriesAsin', asins)
         if 'Season' in infoLabels.keys():
-            season = int(infoLabels['Season'])
+            season = int(infoLabels['season'])
 
         extra = ' and season = %s' % season if season > -2 else ''
 
@@ -465,7 +467,7 @@ class PrimeVideo(Singleton):
             title = infoLabels['title']
             if contentType == 'season':
                 title = infoLabels['tvshowtitle']
-            c.execute('insert or ignore into miss values (?,?,?,?)', (asins, title, infoLabels['Year'], contentType))
+            c.execute('insert or ignore into miss values (?,?,?,?)', (asins, title, infoLabels['year'], contentType))
         c.close()
         self._db.commit()
         return infoLabels
@@ -598,7 +600,7 @@ class PrimeVideo(Singleton):
 
     def formatSeason(self, infoLabels, parent):
         name = ''
-        season = infoLabels['Season']
+        season = infoLabels['season']
         if parent:
             if infoLabels['title'].lower().strip() != infoLabels['tvshowtitle'].lower().strip():
                 return infoLabels['DisplayTitle']
@@ -729,7 +731,7 @@ class PrimeVideo(Singleton):
 
         if 'releaseOrFirstAiringDate' in item:
             infoLabels['premiered'] = item['releaseOrFirstAiringDate']['valueFormatted'].split('T')[0]
-            infoLabels['year'] = int(infoLabels['Premiered'].split('-')[0])
+            infoLabels['year'] = int(infoLabels['premiered'].split('-')[0])
 
         if 'regulatoryRating' in item:
             if item['regulatoryRating'] == 'not_checked' or not item['regulatoryRating']:

@@ -28,6 +28,8 @@ try:
 except ImportError:
     from urllib.parse import urlparse, parse_qs, urlencode
 
+domain_regex = r'[^\.]+\.([^/]+)(?:/|$)'
+
 
 def _parseHTML(br):
     soup = br.get_current_page()
@@ -85,6 +87,7 @@ def mobileUA(content):
 
 
 def getTerritory(user):
+    user['deviceid'] = g.genID(user)
     area = [{'atvurl': '', 'baseurl': '', 'mid': '', 'pv': False},
             {'atvurl': 'https://atv-ps-eu.amazon.de', 'baseurl': 'https://www.amazon.de', 'mid': 'A1PA6795UKMFR9', 'pv': False},
             {'atvurl': 'https://atv-ps-eu.amazon.co.uk', 'baseurl': 'https://www.amazon.co.uk', 'mid': 'A1F83G8C2ARO7P', 'pv': False},
@@ -99,8 +102,9 @@ def getTerritory(user):
         user.update(area)
     else:
         Log('Retrieve territoral config')
+
         data = getURL('https://atv-ps.amazon.com/cdp/usage/v2/GetAppStartupConfig?deviceTypeID=A28RQHJKHM2A2W&deviceID=%s&firmware=1&version=1&format=json'
-                      % g.deviceID)
+                      % user['deviceid'])
         if not hasattr(data, 'keys'):
             return user, False
         if 'customerConfig' in data.keys():
@@ -242,6 +246,7 @@ def getURLData(mode, asin, retformat='json', devicetypeid=g.dtid_web, version=2,
         from urllib import quote_plus
 
     g = Globals()
+    playback_req = 'PlaybackUrls' in dRes or 'Widevine2License' in dRes
     url = g.ATVUrl + '/cdp/' + mode
     url += '?asin=' + asin
     url += '&deviceTypeID=' + devicetypeid
@@ -251,8 +256,7 @@ def getURLData(mode, asin, retformat='json', devicetypeid=g.dtid_web, version=2,
     url += '&format=' + retformat
     url += '&version=' + str(version)
     url += '&gascEnabled=' + str(g.UsePrimeVideo).lower()
-    if 'SubtitleUrls' in dRes:
-        url += "&subtitleFormat=TTMLv2"
+    url += "&subtitleFormat=TTMLv2" if 'SubtitleUrls' in dRes else ''
     if extra:
         url += '&resourceUsage=ImmediateConsumption&consumptionType=Streaming&deviceDrmOverride=CENC' \
                '&deviceStreamingTechnologyOverride=DASH&deviceProtocolOverride=Https' \
@@ -260,11 +264,11 @@ def getURLData(mode, asin, retformat='json', devicetypeid=g.dtid_web, version=2,
         url += '&languageFeature=MLFv2'  # Audio Description tracks
         url += '&videoMaterialType=' + vMT
         url += '&desiredResources=' + dRes
-        url += '&supportedDRMKeyScheme=DUAL_KEY' if 'PlaybackUrls' in dRes else ''
+        url += '&supportedDRMKeyScheme=DUAL_KEY' if playback_req else ''
         if devicetypeid == g.dtid_android:
-            url += '&deviceVideoCodecOverride=H264' + ',H265' if s.uhd else ''
+            url += '&deviceVideoCodecOverride=H264' + (',H265' if s.uhd else '')
             url += '&deviceHdrFormatsOverride=' + supported_hdr()
-            url += '&deviceVideoQualityOverride=' + 'UHD' if s.uhd else 'HD'
+            url += '&deviceVideoQualityOverride=' + ('UHD' if s.uhd else 'HD')
 
     url += opt
     if retURL:
@@ -584,7 +588,7 @@ def LogIn():
             br.set_cookiejar(cj)
             br.session.verify = s.verifySsl
             br.set_verbose(2)
-            clientid = b16encode(g.genID().encode() + b'#' + g.dtid_android.encode()).decode().lower()
+            clientid = b16encode(user['deviceid'].encode() + b'#' + g.dtid_android.encode()).decode().lower()
             verifier = urlsafe_b64encode(os.urandom(32)).rstrip(b"=")
             challenge = urlsafe_b64encode(sha256(verifier).digest()).rstrip(b"=")
             br.session.headers.update(g.headers_android)
@@ -691,7 +695,7 @@ def LogIn():
 def registerDevice(url, user, verifier, clientid):
     parsed_url = parse_qs(urlparse(url).query)
     auth_code = parsed_url["openid.oa2.authorization_code"][0]
-    domain = re.compile(r'[^\.]+\.([^/]+)(?:/|$)').search(user['baseurl']).group(1)
+    domain = re.compile(domain_regex).search(user['baseurl']).group(1)
 
     data = {
         'auth_data': {
@@ -701,7 +705,7 @@ def registerDevice(url, user, verifier, clientid):
             'code_algorithm': 'SHA-256',
             'client_domain': 'DeviceLegacy',
         },
-        'registration_data': deviceData(),
+        'registration_data': deviceData(user),
         'requested_token_type': [
             'bearer',
             'website_cookies',
@@ -732,11 +736,11 @@ def registerDevice(url, user, verifier, clientid):
     return user
 
 
-def deviceData():
+def deviceData(user):
     return {
         'domain': 'DeviceLegacy',
         'device_type': g.dtid_android,
-        'device_serial': g.genID(),
+        'device_serial': user['deviceid'],
         'app_name': 'com.amazon.avod.thirdpartyclient',
         'app_version': '296016847',
         'device_model': 'mdarcy/nvidia/SHIELD Android TV',
@@ -757,9 +761,9 @@ def getToken():
 
 
 def refreshToken(user):
-    domain = re.compile(r'[^\.]+\.([^/]+)(?:/|$)').search(user['baseurl']).group(1)
+    domain = re.compile(domain_regex).search(user['baseurl']).group(1)
     token = user['token']
-    data = deviceData()
+    data = deviceData(user)
     data['requested_token_type'] = 'access_token'
     data['source_token_type'] = 'refresh_token'
     data['source_token'] = token['refresh']

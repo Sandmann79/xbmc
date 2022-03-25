@@ -4,7 +4,6 @@ from __future__ import unicode_literals
 from kodi_six import xbmcgui
 from kodi_six.utils import py2_decode
 import json
-from .network import getTerritory
 from .configs import *
 from .common import Globals, Settings
 from .l10n import *
@@ -27,6 +26,7 @@ def loadUser(key='', empty=False, cachedUsers=None):
     if user:
         user = user[0]
         if key and key not in user.keys():
+            from .network import getTerritory
             user = getTerritory(user)
             if False is user[1]:
                 g.dialog.notification(g.__plugin__, getString(30219), xbmcgui.NOTIFICATION_ERROR)

@@ -50,7 +50,7 @@ def EntryPoint():
         # Set marketplace, base and atv urls, prime video usage and
         # initialise either AmazonTLD or PrimeVideo
         g.InitialiseProvider(loadUser('mid', cachedUsers=users), loadUser('baseurl', cachedUsers=users),
-                             loadUser('atvurl', cachedUsers=users), loadUser('pv', cachedUsers=users))
+                             loadUser('atvurl', cachedUsers=users), loadUser('pv', cachedUsers=users), loadUser('deviceid', cachedUsers=users))
     elif mode != 'LogIn':
         g.dialog.notification(getString(30200), getString(30216))
         xbmc.executebuiltin('Addon.OpenSettings(%s)' % g.addon.getAddonInfo('id'))

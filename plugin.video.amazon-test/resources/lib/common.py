@@ -113,21 +113,21 @@ class Globals(Singleton):
         ]
 
     @staticmethod
-    def genID(renew=False):
-        from .users import loadUser, addUser
-        user = loadUser()
-        if renew or len(user.get('deviceid', '')) != 32:
+    def genID(user=None):
+        from .users import loadUser
+        if None is user:
+            user = loadUser()
+        if len(user.get('deviceid', '')) != 32:
             user['deviceid'] = uuid.uuid4().hex
-            addUser(user)
             writeConfig('GenDeviceID', '')
         return user['deviceid']
 
-    def InitialiseProvider(self, mid, burl, atv, pv):
+    def InitialiseProvider(self, mid, burl, atv, pv, did):
         self._globals['MarketID'] = mid
         self._globals['BaseUrl'] = burl
         self._globals['ATVUrl'] = atv
         self._globals['UsePrimeVideo'] = pv
-        self._globals['deviceID'] = self.genID()
+        self._globals['deviceID'] = did
 
         if self._globals['addon'].getSetting('use_webapi') == 'false' and not self._globals['UsePrimeVideo']:
             from .atv_api import PrimeVideo
@@ -205,7 +205,7 @@ class Settings(Singleton):
         elif 'profiles' == name: return self._gs('profiles') == 'true'
         elif 'show_pass' == name: return self._gs('show_pass') == 'true'
         elif 'useWebApi' == name: return self._gs('use_webapi') == 'true'
-        elif 'enable_uhd' == name: return self._gs('uhd') == 'true'
+        elif 'uhd' == name: return self._gs('enable_uhd') == 'true'
         elif 'show_recents' == name: return self._gs('show_recents') == 'true'
 
 

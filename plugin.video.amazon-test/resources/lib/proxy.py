@@ -96,11 +96,14 @@ class ProxyHTTPD(BaseHTTPRequestHandler):
         else:
             session = requests.Session()
 
-        cookie = MechanizeLogin()
+        cookie = MechanizeLogin(useToken=True)
         if not cookie:
             Log('[PS] Not logged in', Log.DEBUG)
             self.send_error(440)
             return (None, None, None)
+        if isinstance(cookie, dict):
+            headers.update(cookie)
+            cookie = None
 
         if 'Host' in headers: del headers['Host']  # Forcibly strip the host (py3 compliance)
         Log('[PS] Forwarding the {} request towards {}'.format(method.upper(), endpoint), Log.DEBUG)

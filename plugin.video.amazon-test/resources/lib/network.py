@@ -87,7 +87,8 @@ def mobileUA(content):
 
 
 def getTerritory(user):
-    user['deviceid'] = g.genID(user)
+    from uuid import uuid4
+    user['deviceid'] = uuid4().hex
     area = [{'atvurl': '', 'baseurl': '', 'mid': '', 'pv': False},
             {'atvurl': 'https://atv-ps-eu.amazon.de', 'baseurl': 'https://www.amazon.de', 'mid': 'A1PA6795UKMFR9', 'pv': False},
             {'atvurl': 'https://atv-ps-eu.amazon.co.uk', 'baseurl': 'https://www.amazon.co.uk', 'mid': 'A1F83G8C2ARO7P', 'pv': False},
@@ -257,6 +258,7 @@ def getURLData(mode, asin, retformat='json', devicetypeid=g.dtid_web, version=2,
     url += '&version=' + str(version)
     url += '&gascEnabled=' + str(g.UsePrimeVideo).lower()
     url += "&subtitleFormat=TTMLv2" if 'SubtitleUrls' in dRes else ''
+    url += '&operatingSystemName=Windows' if playback_req and (g.platform & g.OS_ANDROID) and devicetypeid == g.dtid_web else ''  # cookie auth on android
     if extra:
         url += '&resourceUsage=ImmediateConsumption&consumptionType=Streaming&deviceDrmOverride=CENC' \
                '&deviceStreamingTechnologyOverride=DASH&deviceProtocolOverride=Https' \
@@ -365,11 +367,16 @@ def _sortedResult(result, query):
     return result
 
 
-def MechanizeLogin():
+def MechanizeLogin(useToken=False):
+    if useToken and g.platform & g.OS_ANDROID:
+        token = getToken()
+        if token:
+            return token
+
+    # if Token not requested or not avaiable use cookie
     from .users import loadUser
     cj = requests.cookies.RequestsCookieJar()
     cookie = loadUser('cookie')
-
     if cookie:
         try:
             cj.update(requests.utils.cookiejar_from_dict(cookie))
@@ -377,10 +384,10 @@ def MechanizeLogin():
         except:
             pass
 
-    return LogIn()
+    return LogIn(useToken)
 
 
-def LogIn():
+def LogIn(retToken=False):
     def _insertLF(string, begin=70):
         spc = string.find(' ', begin)
         return string[:spc] + '\n' + string[spc + 1:] if spc > 0 else string
@@ -668,7 +675,7 @@ def LogIn():
                     g.dialog.ok(getString(30215), '{0} {1}'.format(getString(30014), user['name']))
 
                 addUser(user)
-                return cj
+                return getToken(user) if retToken else cj
             elif 'message_error' in response:
                 writeConfig('login_pass', '')
                 msg = soup.find('div', attrs={'id': 'message_error'})
@@ -748,9 +755,10 @@ def deviceData(user):
     }
 
 
-def getToken():
+def getToken(user=None):
     from .users import loadUser, addUser
-    user = loadUser()
+    if user is None:
+        user = loadUser()
     token = user.get('token')
     if token is not None:
         if int(time.time()) > token['expires']:

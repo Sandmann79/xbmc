@@ -8,7 +8,6 @@ from locale import getdefaultlocale
 from kodi_six import xbmcaddon, xbmcgui
 from kodi_six.utils import py2_decode
 from sys import argv
-import uuid
 import json
 from .singleton import Singleton
 from .l10n import *
@@ -111,16 +110,6 @@ class Globals(Singleton):
             (getString(30131, self._globals['addon']).split('…')[0], 'RunPlugin({}?mode=removeUser)'.format(self.pluginid)),
             (getString(30132, self._globals['addon']), 'RunPlugin({}?mode=renameUser)'.format(self.pluginid))
         ]
-
-    @staticmethod
-    def genID(user=None):
-        from .users import loadUser
-        if None is user:
-            user = loadUser()
-        if len(user.get('deviceid', '')) != 32:
-            user['deviceid'] = uuid.uuid4().hex
-            writeConfig('GenDeviceID', '')
-        return user['deviceid']
 
     def InitialiseProvider(self, mid, burl, atv, pv, did):
         self._globals['MarketID'] = mid

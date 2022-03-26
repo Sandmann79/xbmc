@@ -319,8 +319,9 @@ def PlayVideo(name, asin, adultstr, streamtype, forcefb=0):
             g.dialog.notification(getString(30203), getString(30200), xbmcgui.NOTIFICATION_ERROR)
             Log('Login error at playback')
 
+        bypassproxy = s.bypassProxy or (streamtype > 1)
         mpd, subs, timecodes = _ParseStreams(*getURLData('catalog/GetPlaybackResources', asin, extra=True, vMT=vMT, dRes=dRes, useCookie=cookie, devicetypeid=dtid,
-                                                         proxyEndpoint='gpr', opt=opt), retmpd=True, bypassproxy=s.bypassProxy or (streamtype > 1))
+                                                         proxyEndpoint=(None if bypassproxy else 'gpr'), opt=opt), retmpd=True, bypassproxy=bypassproxy)
 
         if not mpd:
             g.dialog.notification(getString(30203), subs, xbmcgui.NOTIFICATION_ERROR)
@@ -333,7 +334,7 @@ def PlayVideo(name, asin, adultstr, streamtype, forcefb=0):
         from xbmcaddon import Addon as KodiAddon
         is_version = KodiAddon(g.is_addon).getAddonInfo('version') if g.is_addon else '0'
 
-        if (not s.audioDescriptions) and (streamtype != 2) and (not g.platform & g.OS_ANDROID):
+        if (not s.audioDescriptions) and (streamtype != 2) and (dtid == g.dtid_web):
             mpd = re.sub(r'(~|%7E)', '', mpd)
 
         Log(mpd, Log.DEBUG)
@@ -410,12 +411,12 @@ def PlayVideo(name, asin, adultstr, streamtype, forcefb=0):
         return True
 
     def _getPlaybackVars():
-        cookie = getToken() if g.platform & g.OS_ANDROID else MechanizeLogin()
+        cookie = MechanizeLogin(useToken=True)
         cj_str = cookie
         dtid = g.dtid_web
 
         if cookie:
-            if g.platform & g.OS_ANDROID:
+            if isinstance(cookie, dict):
                 dtid = g.dtid_android
                 headers = g.headers_android
             else:

@@ -318,6 +318,9 @@ def PlayVideo(name, asin, adultstr, streamtype, forcefb=0):
         if not cookie:
             g.dialog.notification(getString(30203), getString(30200), xbmcgui.NOTIFICATION_ERROR)
             Log('Login error at playback')
+        if (g.platform & g.OS_ANDROID) and not isinstance(cookie, dict) and getConfig('uhdinfo') == '':
+            g.dialog.ok(g.__plugin__, getString(30272))
+            writeConfig('uhdinfo', '1')
 
         bypassproxy = s.bypassProxy or (streamtype > 1)
         mpd, subs, timecodes = _ParseStreams(*getURLData('catalog/GetPlaybackResources', asin, extra=True, vMT=vMT, dRes=dRes, useCookie=cookie, devicetypeid=dtid,
@@ -411,8 +414,8 @@ def PlayVideo(name, asin, adultstr, streamtype, forcefb=0):
         return True
 
     def _getPlaybackVars():
-        cookie = MechanizeLogin(useToken=True)
-        cj_str = cookie
+        cookie = MechanizeLogin(preferToken=True)
+        cj_str = deepcopy(cookie)
         dtid = g.dtid_web
 
         if cookie:
@@ -422,7 +425,6 @@ def PlayVideo(name, asin, adultstr, streamtype, forcefb=0):
             else:
                 cj_str = {'Cookie': ';'.join(['%s=%s' % (k, v) for k, v in cookie.items()])}
                 headers = {'User-Agent': getConfig('UserAgent')}
-
             cj_str.update({'Content-Type': 'application/x-www-form-urlencoded'})
             cj_str.update(headers)
             opt = '|' + urlencode(cj_str)

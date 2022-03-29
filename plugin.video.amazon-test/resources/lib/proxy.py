@@ -96,7 +96,7 @@ class ProxyHTTPD(BaseHTTPRequestHandler):
         else:
             session = requests.Session()
 
-        cookie = MechanizeLogin(useToken=True)
+        cookie = MechanizeLogin(preferToken=True)
         if not cookie:
             Log('[PS] Not logged in', Log.DEBUG)
             self.send_error(440)

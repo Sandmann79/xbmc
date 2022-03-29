@@ -16,6 +16,8 @@ from timeit import default_timer as timer
 from random import randint
 from bs4 import BeautifulSoup
 from hashlib import sha256
+from copy import deepcopy
+
 from .l10n import *
 from .logging import *
 from .configs import *
@@ -87,8 +89,9 @@ def mobileUA(content):
 
 
 def getTerritory(user):
-    from uuid import uuid4
-    user['deviceid'] = uuid4().hex
+    if len(user.get('deviceid', '')) != 32:
+        from uuid import uuid4
+        user['deviceid'] = uuid4().hex
     area = [{'atvurl': '', 'baseurl': '', 'mid': '', 'pv': False},
             {'atvurl': 'https://atv-ps-eu.amazon.de', 'baseurl': 'https://www.amazon.de', 'mid': 'A1PA6795UKMFR9', 'pv': False},
             {'atvurl': 'https://atv-ps-eu.amazon.co.uk', 'baseurl': 'https://www.amazon.co.uk', 'mid': 'A1F83G8C2ARO7P', 'pv': False},
@@ -140,7 +143,7 @@ def getURL(url, useCookie=False, silent=False, headers=None, rjson=True, attempt
         session = requests.Session()
 
     retval = {} if rjson else ''
-    headers = {} if not headers else headers
+    headers = {} if not headers else deepcopy(headers)
     if useCookie:
         cj = MechanizeLogin() if isinstance(useCookie, bool) else useCookie
         if isinstance(cj, bool):
@@ -367,8 +370,8 @@ def _sortedResult(result, query):
     return result
 
 
-def MechanizeLogin(useToken=False):
-    if useToken and g.platform & g.OS_ANDROID:
+def MechanizeLogin(preferToken=False):
+    if preferToken and g.platform & g.OS_ANDROID:
         token = getToken()
         if token:
             return token
@@ -384,7 +387,7 @@ def MechanizeLogin(useToken=False):
         except:
             pass
 
-    return LogIn(useToken)
+    return LogIn(preferToken)
 
 
 def LogIn(retToken=False):

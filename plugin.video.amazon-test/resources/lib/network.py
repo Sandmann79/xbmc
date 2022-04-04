@@ -526,7 +526,7 @@ def LogIn(retToken=False):
                 if time.time() > refresh + 5:
                     url = br.get_url()
                     br.select_form('form[id="{}"]'.format(form_id))
-                    resp = br.submit_selected()
+                    br.submit_selected()
                     response, soup = _parseHTML(br)
                     form_id = form_poll
                     WriteLog(response.replace(py2_decode(email), '**@**'), 'login-pollingform')
@@ -640,9 +640,11 @@ def LogIn(retToken=False):
                 return False
 
             form.set_input({'email': email, 'password': password})
-            if 'true' == g.addon.getSetting('rememberme') and form.find_by_type('input', 'checkbox', {'name': 'rememberMe'}):
-                form.set_checkbox({'rememberMe': True})
-            resp = br.submit_selected()
+            if 'true' == g.addon.getSetting('rememberme'):
+                try:
+                    form.set_checkbox({'rememberMe': True})
+                except: pass
+            br.submit_selected()
             response, soup = _parseHTML(br)
             WriteLog(response.replace(py2_decode(email), '**@**'), 'login')
 
@@ -653,10 +655,11 @@ def LogIn(retToken=False):
                 if br is None:
                     return False
                 if not br.get_current_form() is None:
-                    resp = br.submit_selected()
+                    br.submit_selected()
                 response, soup = _parseHTML(br)
                 WriteLog(response.replace(py2_decode(email), '**@**'), 'login-mfa')
 
+            url = br.get_url()
             if 'accountFixup' in response:
                 Log('Login AccountFixup')
                 skip_link = br.find_link(id='ap-account-fixup-phone-skip-link')
@@ -664,8 +667,8 @@ def LogIn(retToken=False):
                 response, soup = _parseHTML(br)
                 WriteLog(response.replace(py2_decode(email), '**@**'), 'login-fixup')
 
-            if 'action=sign-out' in response or 'openid.oa2.authorization_code' in resp.url:
-                user = registerDevice(resp.url, user, verifier, clientid)
+            if 'openid.oa2.authorization_code' in url:
+                user = registerDevice(url, user, verifier, clientid)
 
                 if s.multiuser:
                     user['name'] = g.dialog.input(getString(30135), user['name'])
@@ -998,6 +1001,7 @@ class _Captcha(pyxbmct.AddonDialogWindow):
             self.head = soup.find('span', attrs={'class': 'a-list-item'}).get_text(strip=True)
             title = soup.find('div', attrs={'id': 'auth-guess-missing-alert'}).div.div
             self.picurl = soup.find('div', attrs={'id': 'auth-captcha-image-container'}).img.get('src')
+        self._s = Settings()
         self.setGeometry(500, 550, 9, 2)
         self.email = email
         self.pwd = ''
@@ -1030,6 +1034,7 @@ class _Captcha(pyxbmct.AddonDialogWindow):
         self.connect(pyxbmct.ACTION_NAV_BACK, self.close)
         self.username.setText(self.email)
         self.username.setEnabled(False)
+        self.password.setType(0 if self._s.show_pass else 6, '')
         self.tb_head.setText(self.head)
         self.fl_title.addLabel(self.title)
         self.image.setImage(self.picurl, False)

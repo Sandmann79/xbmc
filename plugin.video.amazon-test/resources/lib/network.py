@@ -108,7 +108,6 @@ def getTerritory(user):
         user.update(area)
     else:
         Log('Retrieve territoral config')
-
         data = getURL('https://atv-ps.amazon.com/cdp/usage/v2/GetAppStartupConfig?deviceTypeID=A28RQHJKHM2A2W&deviceID=%s&firmware=1&version=1&format=json'
                       % user['deviceid'])
         if not hasattr(data, 'keys'):

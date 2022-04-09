@@ -515,16 +515,22 @@ class PrimeVideo(Singleton):
         """ Display and navigate the menu for PrimeVideo users """
 
         nodeKeys = []
+        maincall = False
         path_sep = path.split(self._separator)
         # export: 1=folder without refresh 2=single file (episode/movie) 3=folder with refresh 4=watchlist 5=watchlist (auto)
         if 'export=' in path_sep[-1]:
             export = int(path_sep[-1].split('=')[1])
             path = '/'.join(path_sep[:-1])
+            if export > 9:
+                Log('Export started')
+                maincall = True
+                export -= 10
             if export == 2:
                 nodeKeys = [path_sep[-2]]
                 nodeName = ''
         if export:
             SetupLibrary()
+            writeConfig('exporting', time.time())
         if export == 3:
             self.Refresh(path, busy=False)
         elif export > 3:
@@ -534,7 +540,15 @@ class PrimeVideo(Singleton):
                 writeConfig('last_wl_export', time.time())
                 xbmc.executebuiltin('UpdateLibrary(video)')
             Log('Export of watchlist finished')
+            writeConfig('exporting', '')
             return
+
+        if export == 0 and getConfig('exporting') != '':
+            if (float(getConfig('exporting', 0)) + 60) > time.time():
+                self._g.dialog.notification(self._g.__plugin__, 'Export process is running, please wait until it is finished')
+                return
+            else:
+                writeConfig('exporting', '')
 
         # Add multiuser menu if needed
         if self._s.multiuser and ('root' == path) and (1 < len(loadUsers())):
@@ -659,7 +673,7 @@ class PrimeVideo(Singleton):
                         ctxitems.append((getString(30180 + in_wl) % getString(self._g.langID[m['videometa']['mediatype']]),
                                          'RunPlugin({}pv/wltoogle/{}/{}/{})'.format(self._g.pluginid, path, quote_plus(gtis), in_wl)))
                         ctxitems.append((getString(30185) % getString(self._g.langID[m['videometa']['mediatype']]),
-                                         'RunPlugin({}pv/browse/{}/export={})'.format(self._g.pluginid, itemPathURI, ft_exp[folderType])))
+                                         'RunPlugin({}pv/browse/{}/export={})'.format(self._g.pluginid, itemPathURI, ft_exp[folderType] + 10)))
                         ctxitems.append((getString(30186), 'UpdateLibrary(video)'))
 
                 if 'schedule' in m:
@@ -706,6 +720,9 @@ class PrimeVideo(Singleton):
             folderType = 0 if 2 > folderType else folderType
             setContentAndView([None, 'videos', 'series', 'season', 'episode', 'movie'][folderType])
             xbmcplugin.endOfDirectory(self._g.pluginhandle, succeeded=True, cacheToDisc=False)
+        elif maincall:
+            writeConfig('exporting', '')
+            Log('Export finished')
 
     def Search(self, searchString=None):
         """ Provide search functionality for PrimeVideo """

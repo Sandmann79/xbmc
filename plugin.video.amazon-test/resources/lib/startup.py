@@ -2,13 +2,14 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 import os.path
+import sys
 
 from .network import *
 from .users import *
 from .logging import *
 from .configs import *
 from .common import Globals, Settings
-from .ages import AgeRestrictions
+from kodi_six.utils import py2_decode
 
 
 def EntryPoint():
@@ -49,58 +50,35 @@ def EntryPoint():
         # Set marketplace, base and atv urls, prime video usage and
         # initialise either AmazonTLD or PrimeVideo
         g.InitialiseProvider(loadUser('mid', cachedUsers=users), loadUser('baseurl', cachedUsers=users),
-                             loadUser('atvurl', cachedUsers=users), loadUser('pv', cachedUsers=users))
+                             loadUser('atvurl', cachedUsers=users), loadUser('pv', cachedUsers=users), loadUser('deviceid', cachedUsers=users))
     elif mode != 'LogIn':
         g.dialog.notification(getString(30200), getString(30216))
         xbmc.executebuiltin('Addon.OpenSettings(%s)' % g.addon.getAddonInfo('id'))
         return
 
     if path.startswith('/pv/'):
-        path = path[4:]
-        try:
-            path = path.decode('utf-8')
-        except AttributeError:
-            pass
+        path = py2_decode(path[4:])
         verb, path = path.split('/', 1)
-        if 'search' == verb: g.pv.Search()
-        elif 'browse' == verb: g.pv.Browse(path)
-        elif 'refresh' == verb: g.pv.Refresh(path)
+        g.pv.Route(verb, path)
     elif None is mode:
         Log('Version: %s' % g.__version__)
         Log('Unicode filename support: %s' % os.path.supports_unicode_filenames)
         Log('Locale: %s / Language: %s' % (g.userAcceptLanguages.split(',')[0], s.Language))
-        if g.UsePrimeVideo:
-            g.pv.BrowseRoot()
-        else:
-            g.amz.BrowseRoot()
-    elif mode == 'listCategories':
-        g.amz.listCategories(args.get('url', ''), args.get('opt', ''))
-    elif mode == 'listContent':
-        url = args.get('url', '')
-        try:
-            url = url.decode('utf-8')
-        except AttributeError:
-            pass
-        g.amz.listContent(args.get('cat'), url, int(args.get('page', '1')), args.get('opt', ''))
+        g.pv.BrowseRoot()
     elif mode == 'PlayVideo':
         from .playback import PlayVideo
         PlayVideo(args.get('name', ''), args.get('asin'), args.get('adult', '0'), int(args.get('trailer', '0')), int(args.get('selbitrate', '0')))
-    elif mode == 'getList':
-        g.amz.getList(args.get('url', ''), int(args.get('export', '0')), [args.get('opt')])
-    elif mode == 'getListMenu':
-        g.amz.getListMenu(args.get('url', ''), int(args.get('export', '0')))
-    elif mode == 'WatchList':
-        g.amz.WatchList(args.get('url', ''), int(args.get('opt', '0')))
     elif mode == 'openSettings':
         aid = args.get('url')
         aid = g.is_addon if aid == 'is' else aid
         import xbmcaddon
         xbmcaddon.Addon(aid).openSettings()
-    elif mode == 'ageSettings':
-        AgeRestrictions().Settings()
+    elif mode == 'exportWatchlist':
+        if hasattr(g.pv, 'getListMenu'):
+            g.pv.getListMenu('watchlist', export=2)
+        else:
+            g.pv.Browse('root/Watchlist/watchlist', export=5)
     elif mode in ['LogIn', 'remLoginData', 'removeUser', 'renameUser', 'switchUser']:
         exec('{}()'.format(mode))
-    elif mode in ['checkMissing', 'Search']:
-        exec('g.amz.{}()'.format(mode))
-    elif mode == 'getPage':
-        g.amz.getPage(args.get('url'), args.get('opt'))
+    else:
+        g.pv.Route(mode, args)

@@ -26,7 +26,7 @@ msgid "Movies and Television Shows for Prime Members"
 msgstr ""
 
 msgctxt "Addon Disclaimer"
-msgid "Some parts of this addon may not be legal in your country of residence – please check with your local laws before installing.\nThis Addon uses pyDes by Todd Whiteman"
+msgid "Some parts of this addon may not be legal in your country of residence – please check with your local laws before installing."
 msgstr ""
 
 msgctxt "#30001"
@@ -106,7 +106,7 @@ msgid "Prefered Host"
 msgstr ""
 
 msgctxt "#30020"
-msgid "Enable DRM check"
+msgid "Use H.265 Videocodec"
 msgstr ""
 
 msgctxt "#30021"
@@ -117,7 +117,25 @@ msgctxt "#30022"
 msgid "Keep me logged in"
 msgstr ""
 
-#empty strings from id 30023 to id 30027
+msgctxt "#30023"
+msgid "Use android app for 4K videos"
+msgstr ""
+
+msgctxt "#30024"
+msgid "Profiles"
+msgstr ""
+
+msgctxt "#30025"
+msgid "Change text language"
+msgstr ""
+
+msgctxt "#30026"
+msgid "Show password"
+msgstr ""
+
+msgctxt "#30027"
+msgid "Stretch factor"
+msgstr ""
 
 msgctxt "#30028"
 msgid "Stretching"
@@ -151,7 +169,9 @@ msgctxt "#30035"
 msgid "Enable Views"
 msgstr ""
 
-#empty string with id 30036
+msgctxt "#30036"
+msgid "Show Recently watched menu entry"
+msgstr ""
 
 msgctxt "#30037"
 msgid "Disable SSL Certificate Verification"
@@ -165,8 +185,7 @@ msgctxt "#30039"
 msgid "Items Per Page"
 msgstr ""
 
-#empty string with id 30040
-
+# empty string with id 30040
 msgctxt "#30041"
 msgid "Enable Fullscreen Video"
 msgstr ""
@@ -235,8 +254,7 @@ msgctxt "#30057"
 msgid "Wait till PIN Input"
 msgstr ""
 
-#empty string with id 30058
-
+# empty string with id 30058
 msgctxt "#30059"
 msgid "Use own user profile"
 msgstr ""
@@ -265,8 +283,11 @@ msgctxt "#30065"
 msgid "Mediasource TV Title"
 msgstr ""
 
-#empty strings from id 30066 to 30069
+msgctxt "#30066"
+msgid "Send video progress to Amazon at least at percent played (0 to disable)"
+msgstr ""
 
+# empty strings from id 30067 to 30069
 msgctxt "#30070"
 msgid "Miscellaneous"
 msgstr ""
@@ -311,28 +332,85 @@ msgctxt "#30080"
 msgid "Automatically Watchlist export"
 msgstr ""
 
-#empty strings from id 30081 to 30099
+msgctxt "#30081"
+msgid "Intro/Recap scenes processing"
+msgstr ""
 
+msgctxt "#30082"
+msgid "Do nothing"
+msgstr ""
+
+msgctxt "#30083"
+msgid "Show Skip Button"
+msgstr ""
+
+msgctxt "#30084"
+msgid "Autoskip Intro"
+msgstr ""
+
+msgctxt "#30085"
+msgid "Autoskip Recap"
+msgstr ""
+
+msgctxt "#30086"
+msgid "Autoskip All"
+msgstr ""
+
+msgctxt "#30087"
+msgid "Clear cache"
+msgstr ""
+
+msgctxt "#30088"
+msgid "Clear cached catalog or video data?\nVideo data includes series/season metadata."
+msgstr ""
+
+msgctxt "#30089"
+msgid "No"
+msgstr ""
+
+msgctxt "#30090"
+msgid "Catalog"
+msgstr ""
+
+msgctxt "#30091"
+msgid "Video data"
+msgstr ""
+
+msgctxt "#30092"
+msgid "Both"
+msgstr ""
+
+msgctxt "#30093"
+msgid "Use Web API (beta)"
+msgstr ""
+
+msgctxt "#30094"
+msgid "Refer to PrimeVideo settings for more options"
+msgstr ""
+
+msgctxt "#30095"
+msgid "Reset addon home page to default"
+msgstr ""
+
+# empty strings from id 30095 to 30099
 msgctxt "#30100"
 msgid "Library"
 msgstr ""
 
 msgctxt "#30101"
-msgid "Toogle Watched State"
+msgid "Toggle Watched State"
 msgstr ""
 
 msgctxt "#30102"
 msgid "Force Fallback"
 msgstr ""
 
-#empty string id 301033
-
+# empty string id 301033
 msgctxt "#30104"
 msgid "Movies"
 msgstr ""
 
-#empty strings from id 30105 to 30106
-
+# empty strings from id 30105 to 30106
 msgctxt "#30107"
 msgid "Television"
 msgstr ""
@@ -345,8 +423,7 @@ msgctxt "#30109"
 msgid "Choose Bitrate for Playback"
 msgstr ""
 
-#empty string with id 30110
-
+# empty string with id 30110
 msgctxt "#30111"
 msgid "Continue to Page %s"
 msgstr ""
@@ -367,8 +444,7 @@ msgctxt "#30115"
 msgid "Available Languages:"
 msgstr ""
 
-#empty strings from id 30116 to 30119
-
+# empty strings from id 30116 to 30119
 msgctxt "#30120"
 msgid "PIN (empty for no restriction)"
 msgstr ""
@@ -385,14 +461,12 @@ msgctxt "#30123"
 msgid "Cancel"
 msgstr ""
 
-#empty strings from id 30124 to 30126
-
+# empty strings from id 30124 to 30126
 msgctxt "#30127"
 msgid "No content found"
 msgstr ""
 
-#empty strings from id 30128 to 30129
-
+# empty strings from id 30128 to 30129
 msgctxt "#30130"
 msgid "Add User…"
 msgstr ""
@@ -417,20 +491,21 @@ msgctxt "#30135"
 msgid "Display Name"
 msgstr ""
 
-#empty strings from id 30136 to 30142
+msgctxt "#30136"
+msgid "Recently watched"
+msgstr ""
 
+# empty strings from id 30137 to 30142
 msgctxt "#30143"
 msgid "All Movies"
 msgstr ""
 
-#empty strings from id 30144 to 30159
-
+# empty strings from id 30144 to 30159
 msgctxt "#30160"
 msgid "All Shows"
 msgstr ""
 
-#empty strings from id 30161 to 30164
-
+# empty strings from id 30161 to 30164
 msgctxt "#30165"
 msgid "Movie"
 msgstr ""
@@ -451,20 +526,21 @@ msgctxt "#30169"
 msgid "Specials"
 msgstr ""
 
-#empty string with id 30170
-
+# empty string with id 30170
 msgctxt "#30171"
 msgid "Unrated"
 msgstr ""
 
-#empty string with id 30172
-
+# empty string with id 30172
 msgctxt "#30173"
 msgid "Episode"
 msgstr ""
 
-#empty strings from id 30174 to 30179
+msgctxt "#30174"
+msgid "Event"
+msgstr ""
 
+# empty strings from id 30175 to 30179
 msgctxt "#30180"
 msgid "Add %s to Watchlist"
 msgstr ""
@@ -481,7 +557,9 @@ msgctxt "#30183"
 msgid "Get Similarities"
 msgstr ""
 
-#empty string with id 30184
+msgctxt "#30184"
+msgid "Remove {} from List"
+msgstr ""
 
 msgctxt "#30185"
 msgid "Export %s"
@@ -496,17 +574,10 @@ msgid "Source folders added/changed"
 msgstr ""
 
 msgctxt "#30188"
-msgid "To complete the setup:"
+msgid "To complete the setup restart Kodi and set the content type of added folders."
 msgstr ""
 
-msgctxt "#30189"
-msgid " 1) Restart Kodi"
-msgstr ""
-
-msgctxt "#30190"
-msgid " 2) Set the content type of added folders"
-msgstr ""
-
+# empty strings from id 30189 to 30190
 msgctxt "#30191"
 msgid "Restart"
 msgstr ""
@@ -515,13 +586,33 @@ msgctxt "#30192"
 msgid "Do you want to restart Kodi now?"
 msgstr ""
 
-#empty strings from id 30193 to 30197
+msgctxt "#30193"
+msgid "Skip Intro"
+msgstr ""
+
+msgctxt "#30194"
+msgid "Skip Recap"
+msgstr ""
+
+msgctxt "#30195"
+msgid "Skipping Scene…"
+msgstr ""
+
+msgctxt "#30196"
+msgid "Dump JSON replies"
+msgstr ""
+
+msgctxt "#30197"
+msgid "Dump collisions"
+msgstr ""
 
 msgctxt "#30198"
 msgid "Browser or Script not found. Please check settings."
 msgstr ""
 
-#empty string with id 30199
+msgctxt "#30199"
+msgid "Raw"
+msgstr ""
 
 msgctxt "#30200"
 msgid "Login Error"
@@ -595,24 +686,134 @@ msgctxt "#30217"
 msgid "No stream hoster reachable"
 msgstr ""
 
-msgctxt "#30218"
-msgid "Due changes at Amazon's DRM encryption, it's not possible to use Inputstream for this video.\nPlease configure the fallback option in Settings, to use another Playback method."
-msgstr ""
-
 msgctxt "#30219"
 msgid "Unable to retrieve Amazon's territorial configuration."
 msgstr ""
 
-#empty strings from id 30220 to 30249
+# empty strings from id 30220 to 30241
+msgctxt "#30242"
+msgid "Page {}"
+msgstr ""
+
+msgctxt "#30243"
+msgid "Pagination"
+msgstr ""
+
+msgctxt "#30244"
+msgid "Everything"
+msgstr ""
+
+msgctxt "#30245"
+msgid "Watchlist"
+msgstr ""
+
+msgctxt "#30246"
+msgid "Collections"
+msgstr ""
+
+msgctxt "#30247"
+msgid "Search"
+msgstr ""
+
+msgctxt "#30248"
+msgid "Proxy MPD alteration"
+msgstr ""
+
+msgctxt "#30249"
+msgid "Prefer episode thumbnails to posters"
+msgstr ""
+
+msgctxt "#30250"
+msgid "PrimeVideo"
+msgstr ""
 
 msgctxt "#30251"
 msgid "Connection error"
 msgstr ""
 
 msgctxt "#30252"
-msgid "Loading next page…"
+msgid "Loading page {0}…"
 msgstr ""
 
 msgctxt "#30253"
-msgid "Found “{0}”"
+msgid "{0} seasons available"
+msgstr ""
+
+msgctxt "#30254"
+msgid "userinput.exe not found"
+msgstr ""
+
+msgctxt "#30255"
+msgid "Please download it from GitHub and manually install it in the addon directory"
+msgstr ""
+
+msgctxt "#30256"
+msgid "Error: servers returned no content (check logs for more information)"
+msgstr ""
+
+msgctxt "#30257"
+msgid "Catalog cache expiration time"
+msgstr ""
+
+msgctxt "#30258"
+msgid "1 hour"
+msgstr ""
+
+msgctxt "#30259"
+msgid "6 hours"
+msgstr ""
+
+msgctxt "#30260"
+msgid "12 hours"
+msgstr ""
+
+msgctxt "#30261"
+msgid "1 day"
+msgstr ""
+
+msgctxt "#30262"
+msgid "3 days"
+msgstr ""
+
+msgctxt "#30263"
+msgid "7 days"
+msgstr ""
+
+msgctxt "#30264"
+msgid "15 days"
+msgstr ""
+
+msgctxt "#30265"
+msgid "30 days"
+msgstr ""
+
+msgctxt "#30266"
+msgid "Login credentials invalid, please login again."
+msgstr ""
+
+msgctxt "#30267"
+msgid "Next page…"
+msgstr ""
+
+msgctxt "#30268"
+msgid "Refresh"
+msgstr ""
+
+msgctxt "#30269"
+msgid "Not available, enable WebAPI to use this future"
+msgstr ""
+
+msgctxt "#30270"
+msgid "No additional languages available"
+msgstr ""
+
+msgctxt "#30271"
+msgid "Set as default addon home page"
+msgstr ""
+
+msgctxt "#30272"
+msgid ""
+"You are using an Android device that is not yet registered with Amazon, so at most HD playback is possible.\n"
+"In order to register this device and thus use the UHD playback, they must log in again in the addon with their Amazon credentials.\n"
+"This message will be displayed once."
 msgstr ""

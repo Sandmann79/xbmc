@@ -5,6 +5,7 @@
 # Created: 12/01/2019
 
 from __future__ import unicode_literals
+from kodi_six.utils import py2_decode
 import base64
 from resources.lib.logging import Log
 from contextlib import contextmanager
@@ -68,11 +69,7 @@ class ProxyHTTPD(BaseHTTPRequestHandler):
         except ImportError:
             from urlparse import unquote, urlparse, parse_qsl
 
-        path = urlparse(self.path).path[1:]  # Get URI without the trailing slash
-        try:
-            path = path.decode('utf-8')
-        except AttributeError:
-            pass
+        path = py2_decode(urlparse(self.path).path[1:])  # Get URI without the trailing slash
         path = path.split('/')  # license/<asin>/<ATV endpoint>
         Log('[PS] Requested {} path {}'.format(method, path), Log.DEBUG)
 
@@ -99,27 +96,26 @@ class ProxyHTTPD(BaseHTTPRequestHandler):
         else:
             session = requests.Session()
 
-        cookie = MechanizeLogin()
+        cookie = MechanizeLogin(preferToken=True)
         if not cookie:
             Log('[PS] Not logged in', Log.DEBUG)
             self.send_error(440)
             return (None, None, None)
+        if isinstance(cookie, dict):
+            headers.update(cookie)
+            cookie = None
 
+        if 'Host' in headers: del headers['Host']  # Forcibly strip the host (py3 compliance)
         Log('[PS] Forwarding the {} request towards {}'.format(method.upper(), endpoint), Log.DEBUG)
         r = session.request(method, endpoint, data=data, headers=headers, cookies=cookie, stream=stream, verify=self.server._s.verifySsl)
-        rc = r.content
-        try:
-            rc = rc.decode('utf-8')
-        except AttributeError:
-            pass
-        return (r.status_code, r.headers, r if stream else rc)
+        return (r.status_code, r.headers, r if stream else r.content.decode('utf-8'))
 
     def _gzip(self, data=None, stream=False):
         """Compress the output data"""
 
-        from StringIO import StringIO
+        from io import BytesIO
         from gzip import GzipFile
-        out = StringIO()
+        out = BytesIO()
         f = GzipFile(fileobj=out, mode='w', compresslevel=5)
         if not stream:
             f.write(data)
@@ -174,15 +170,16 @@ class ProxyHTTPD(BaseHTTPRequestHandler):
         # Log('[PS] Chunked transfer: sending chunk', Log.DEBUG)
 
         if None is not data:
-            gzstream[0].write(data)
+            gzstream[0].write(data.encode('utf-8'))
             gzstream[0].flush()
         chunk = gzstream[1].getvalue()
-        gzstream[1].truncate(0)
+        gzstream[1].seek(0)
+        gzstream[1].truncate()
 
         if 0 == len(chunk):
             return
 
-        data = b'{}\r\n{}\r\n'.format(hex(chunk)[2:].upper(), chunk)
+        data = b'%s\r\n%s\r\n' % (hex(len(chunk))[2:].upper().encode(), chunk)
         self.wfile.write(data)
 
     def _EndChunkedTransfer(self, gzstream):
@@ -199,7 +196,10 @@ class ProxyHTTPD(BaseHTTPRequestHandler):
     def do_POST(self):
         """Respond to POST requests"""
 
-        from urlparse import unquote
+        try:
+            from urllib.parse import unquote
+        except ImportError:
+            from urlparse import unquote
 
         path, headers, data = self._ParseBaseRequest('POST')
         if None is path: return
@@ -213,7 +213,10 @@ class ProxyHTTPD(BaseHTTPRequestHandler):
     def do_GET(self):
         """Respond to GET requests"""
 
-        from urlparse import unquote
+        try:
+            from urllib.parse import unquote
+        except ImportError:
+            from urlparse import unquote
 
         path, headers, data = self._ParseBaseRequest('GET')
         if None is path: return
@@ -273,37 +276,23 @@ class ProxyHTTPD(BaseHTTPRequestHandler):
                         fn,
                         variants
                     )
-                    cl = convertLanguage(fn[0:2], ENGLISH_NAME)
-                    try:
-                        cl = cl.decode('utf-8')
-                    except AttributeError:
-                        pass
+                    cl = py2_decode(convertLanguage(fn[0:2], ENGLISH_NAME))
                     newsubs.append((content[sub_type][i], cl, fn, variants, escapedurl))
                 del content[sub_type]  # Reduce the data transfer by removing the lists we merged
 
         # Create the new merged subtitles list, and append time stretched variants.
         for sub in [x for x in sorted(newsubs, key=lambda sub: (sub[1], sub[2], sub[3]))]:
             content['subtitles'].append(sub[0])
-            # Add multiple options for time stretching
-            if self.server._s.subtitleStretch:
-                from copy import deepcopy
-                cnts = deepcopy(sub[0])
-                urls = 'http://127.0.0.1:{}/subtitles/{}/{}-{{}}{}.srt'.format(
-                    self.server.port,
-                    sub[4],
-                    sub[2],
-                    sub[3]
-                )
-                # Loop-ready for multiple stretches
-                cnts['url'] = urls.format('[–1]')
-                content['subtitles'].append(cnts)
 
         self._SendResponse(status_code, headers, json.dumps(content), True)
 
     def _AlterMPD(self, endpoint, headers, data):
         """ MPD alteration for better language parsing """
 
-        from urlparse import urlparse
+        try:
+            from urllib.parse import urlparse
+        except ImportError:
+            from urlparse import urlparse
         import re
 
         # Extrapolate the base CDN url to avoid proxying data we don't need to
@@ -311,7 +300,10 @@ class ProxyHTTPD(BaseHTTPRequestHandler):
         baseurl = url_parts.scheme + '://' + url_parts.netloc + re.sub(r'[^/]+$', '', url_parts.path)
 
         def _rebase(data):
-            return data.replace('<BaseURL>', '<BaseURL>' + baseurl)
+            data = data.replace('<BaseURL>', '<BaseURL>' + baseurl)
+            data = re.sub(r'(<SegmentTemplate\s+[^>]*?\s*media=")', r'\1' + baseurl, data)
+            data = re.sub(r'(<SegmentTemplate\s+[^>]*?\s*initialization=")', r'\1' + baseurl, data)
+            return data
 
         # Start the chunked reception
         status_code, headers, r = self._ForwardRequest('get', endpoint, headers, data, True)
@@ -323,11 +315,7 @@ class ProxyHTTPD(BaseHTTPRequestHandler):
             bPeriod = False
             Log('[PS] Loading MPD and rebasing as {}'.format(baseurl), Log.DEBUG)
             for chunk in r.iter_content(chunk_size=1048576, decode_unicode=True):
-                try:
-                    chunk = chunk.decode('utf-8')
-                except AttributeError:
-                    pass
-                buffer += chunk
+                buffer += py2_decode(chunk)
 
                 # Flush everything up to audio AdaptationSets as fast as possible
                 pos = re.search(r'(<AdaptationSet[^>]*contentType="video"[^>]*>.*?</AdaptationSet>\s*)' if bPeriod else r'(<Period[^>]*>\s*)', buffer, flags=re.DOTALL)
@@ -392,10 +380,10 @@ class ProxyHTTPD(BaseHTTPRequestHandler):
             # Apply a bunch of regex to the content instead of line-by-line to save computation time
             content = re.sub(r'<(|/)span[^>]*>', r'<\1i>', content)  # Using (|<search>) instead of ()? to avoid py2.7 empty matching error
             content = re.sub(r'([0-9]{2}:[0-9]{2}:[0-9]{2})\.', r'\1,', content)  # SRT-like timestamps
-            content = re.sub(r'\s*<(?:tt:)?br\s*/>\s*', '\n', content)  # Replace <br/> with actual new lines
+            content = re.sub(r'(?:\s*<(?:tt:)?br\s*/>\s*)+', '\n', content)  # Replace <br/> with actual new lines
 
             # Subtitle timing stretch
-            if ('[–1]' in filename):
+            if self.server._s.subtitleStretch:
                 def _stretch(f):
                     millis = int(f.group('h')) * 3600000 + int(f.group('m')) * 60000 + int(f.group('s')) * 1000 + int(f.group('ms'))
                     h, m = divmod(millis * _stretch.factor, 3600000)
@@ -403,7 +391,7 @@ class ProxyHTTPD(BaseHTTPRequestHandler):
                     s, ms = divmod(s, 1000)
                     # Truncate to the decimal of a ms (for lazyness)
                     return '%02d:%02d:%02d,%03d' % (h, m, s, int(ms))
-                _stretch.factor = 24 / 23.976
+                _stretch.factor = self.server._s.subtitleStretchFactor
                 content = re.sub(r'(?P<h>\d+):(?P<m>\d+):(?P<s>\d+),(?P<ms>\d+)', _stretch, content)
 
             # Convert dfxp or ttml2 to srt
@@ -411,6 +399,12 @@ class ProxyHTTPD(BaseHTTPRequestHandler):
             srt = ''
             for tt in re.compile(r'<(?:tt:)?p begin="([^"]+)"[^>]*end="([^"]+)"[^>]*>\s*(.*?)\s*</(?:tt:)?p>', re.DOTALL).findall(content):
                 text = tt[2]
+
+                # Fix Spanish characters
+                if filename.startswith("es"):
+                    text = text.replace('\xA8', u'¿')
+                    text = text.replace('\xAD', u'¡')
+                    text = text.replace(u'ń', u'ñ')
 
                 # Embed RTL and change the punctuation where needed
                 if filename.startswith("ar"):

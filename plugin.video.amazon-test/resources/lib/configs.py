@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
+from kodi_six import xbmcvfs
 import time
-import xbmcvfs
 from os.path import join as OSPJoin
 
 
@@ -40,7 +40,7 @@ def writeConfig(cfile, value):
             return True
         else:
             l = xbmcvfs.File(cfglockfile)
-            modified = float(l.read())
+            modified = float('0'+l.read())
             l.close()
             if time.time() - modified > 0.1:
                 xbmcvfs.delete(cfglockfile)

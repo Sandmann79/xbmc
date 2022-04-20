@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<addons>
+<addon id="plugin.program.browser.launcher" name="Browser Launcher" version="1.2.5+matrix.1" provider-name="AddonScriptorDE + Sandmann79">
+    <requires>
+        <import addon="xbmc.python" version="3.0.0"/>
+    </requires>
+    <extension point="xbmc.python.pluginsource" library="default.py">
+        <provides>executable</provides>
+    </extension>
+    <extension point="xbmc.addon.metadata">
+        <platform>all</platform>
+        <summary lang="en_GB">Browser Launcher</summary>
+        <language></language>
+        <description lang="en_GB">Launch websites via selected Browser in Kiosk-mode</description>
+        <description lang="de_DE">Öffnet Websiten mit dem ausgewählten Browser im Vollbildmodus</description>
+        <email>AddonScriptorDE at yahoo dot de</email>
+        <website></website>
+        <license>GPL-2.0-only</license>
+        <assets>
+            <icon>icon.png</icon>
+        </assets>
+    </extension>
+</addon>
+<addon id="plugin.video.amazon-test"
+       name="Amazon VOD"
+       version="0.9.4+matrix.1"
+       provider-name="Sandmann79, Varstahl">
+  <requires>
+    <import addon="xbmc.python" version="3.0.0"/>
+    <import addon="script.module.beautifulsoup4" version="4.6.3+matrix.1"/>
+    <import addon="script.module.mechanicalsoup" version="0.12.0+matrix.1"/>
+    <import addon="script.module.pyxbmct" version="1.3.1+matrix.1"/>
+    <import addon="script.module.inputstreamhelper" version="0.4.4+matrix.1"/>
+    <import addon="script.module.requests" version="2.22.0+matrix.1"/>
+    <import addon="script.module.kodi-six" version="0.1.3.1"/>
+    <import addon="script.module.pyautogui" version="0.9.49+matrix.1"/>
+  </requires>
+  <extension point="xbmc.python.pluginsource"
+             library="default.py">
+	<provides>video</provides>
+  </extension>
+  <extension point="xbmc.service" library="service.py" start="startup" />
+  <extension point="xbmc.addon.metadata">
+    <platform>all</platform>
+    <reuselanguageinvoker>true</reuselanguageinvoker>
+    <summary lang="en_GB">Amazon Prime Video Streaming</summary>
+    <summary lang="de_DE">Amazon Prime Instant Video</summary>
+    <description lang="en_GB">Movies and Television Shows for Prime Members</description>
+    <description lang="de_DE">Filme und Serien für Amazon Prime Mitglieder</description>
+    <disclaimer lang="en_GB">Some parts of this addon may not be legal in your country of residence - please check with your local laws before installing.</disclaimer>
+    <disclaimer lang="de_DE">Möglicherweise sind einge Teile dieses Addons in Ihrem Land illegal, Sie sollten dies unbedingt vor der Installation überprüfen.</disclaimer>
+    <forum>http://www.kodinerds.net/index.php/Thread/44211-Release-Amazon-Prime-Instant-Video</forum>
+    <source>https://github.com/Sandmann79/xbmc</source>
+    <license>GPL-3.0-or-later</license>
+    <assets>
+      <icon>icon.png</icon>
+      <fanart>fanart.png</fanart>
+      <clearlogo>clearlogo.png</clearlogo>
+    </assets>
+  </extension>
+</addon>
+<addon id="repository.sandmann79-py3.plugins" name="Sandmann79s Repository Matrix" version="1.0.0" provider-name="Sandmann79">
+	<extension point="xbmc.addon.repository" name="Sandmann79s Repository Matrix">
+		<info compressed="false">https://raw.githubusercontent.com/Sandmann79/xbmc/master/packages-py3/addons.xml</info>
+		<checksum>https://raw.githubusercontent.com/Sandmann79/xbmc/master/packages-py3/addons.xml.md5</checksum>
+		<datadir zip="true">https://raw.githubusercontent.com/Sandmann79/xbmc/master/packages-py3/</datadir>
+	</extension>
+	<extension point="xbmc.addon.metadata">
+		<summary>Various Addons for Kodi 19 and beyond</summary>
+		<description></description>
+		<disclaimer></disclaimer>
+		<platform>all</platform>
+	</extension>
+</addon>
+<addon id="script.module.mechanicalsoup"
+	name="MechanicalSoup"
+	version="1.0.0+matrix.1"
+	provider-name="Matthew Hickford, Dan Hemberger, Matthieu Moy">
+	<requires>
+		<import addon="xbmc.python" version="3.0.0"/>
+		<import addon="script.module.requests" version="2.22.0+matrix.1"/>
+		<import addon="script.module.beautifulsoup4" version="4.6.3+matrix.1"/>
+		<import addon="script.module.six" version="1.14.0+matrix.1"/>
+	</requires>
+	<extension point="xbmc.python.module" library="lib" />
+	<extension point="xbmc.addon.metadata">
+		<summary lang="en_GB">A Python library for automating interaction with websites.</summary>
+		<forum></forum>
+		<website>https://mechanicalsoup.readthedocs.io/</website>
+		<license>MIT</license>
+		<platform>all</platform>
+		<source>https://github.com/MechanicalSoup/MechanicalSoup</source>
+        <assets>
+            <icon>icon.png</icon>
+        </assets>
+	</extension>
+</addon>
+<addon id="script.module.pyautogui"
+	name="PyAutoGUI"
+	version="0.9.51+matrix.1"
+	provider-name="Al Sweigart">
+	<requires>
+		<import addon="xbmc.python" version="3.0.0"/>
+	</requires>
+	<extension point="xbmc.python.module" library="lib" />
+	<extension point="xbmc.addon.metadata">
+		<summary lang="en_GB">PyAutoGUI is a cross-platform GUI automation Python module for human beings. Used to programmatically control the mouse and keyboard.</summary>
+		<forum></forum>
+		<website>https://pyautogui.readthedocs.io/</website>
+		<license>see LICENSE.txt</license>
+		<platform>all</platform>
+		<source>https://github.com/asweigart/pyautogui</source>
+        <assets>
+            <icon>icon.png</icon>
+        </assets>
+	</extension>
+</addon>
+</addons>

@@ -1,0 +1,103 @@
+# Addon Name: Browser Launcher
+# Addon id: plugin.program.browser.launcher
+msgid ""
+msgstr ""
+"Project-Id-Version: XBMC-Addons\n"
+"Report-Msgid-Bugs-To: alanwww1@xbmc.org\n"
+"POT-Creation-Date: 2016-07-07 19:46+0000\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Language: he_IL\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+msgctxt "#30001"
+msgid "Add Website"
+msgstr "הוסף אתר"
+
+msgctxt "#30002"
+msgid "Remove Website"
+msgstr "הסר אתר"
+
+msgctxt "#30003"
+msgid "Title"
+msgstr "כותרת"
+
+msgctxt "#30004"
+msgid "URL"
+msgstr "כתובת אתר"
+
+msgctxt "#30005"
+msgid "Browser not found"
+msgstr "הדפדפן לא נמצא"
+
+msgctxt "#30006"
+msgid "Edit Website Settings"
+msgstr "ערוך הגדרות אתר"
+
+msgctxt "#30007"
+msgid "Thumbnail"
+msgstr "תמונות ממוזערות"
+
+msgctxt "#30008"
+msgid "General"
+msgstr ""
+
+msgctxt "#30009"
+msgid "Stop XBMC playback?"
+msgstr "לעצור את הניגון של קודי?"
+
+msgctxt "#30010"
+msgid "Use custom Browser/script path"
+msgstr "שימוש בדפדפן מותאם דפדפן או נתיב סקריפט"
+
+msgctxt "#30011"
+msgid "Browser/script path"
+msgstr ""
+
+msgctxt "#30012"
+msgid "Use own user profile (Chrome, Firefox, Opera)"
+msgstr "תשתמש בפרופיל המשתמש (כרום, פיירפוקס, אופרה)"
+
+msgctxt "#30013"
+msgid "Webbrowser"
+msgstr "דפדפן רשת"
+
+msgctxt "#30016"
+msgid "Use kiosk mode?"
+msgstr "שימוש במצב קיוסק?"
+
+msgctxt "#30017"
+msgid "Custom Browser"
+msgstr "דפדפן מותאם אישית"
+
+msgctxt "#30018"
+msgid "Process Priority"
+msgstr "עדיפות תהליך"
+
+msgctxt "#30020"
+msgid "Low"
+msgstr "נמוך"
+
+msgctxt "#30021"
+msgid "Below Normal"
+msgstr "מתחת לרגיל"
+
+msgctxt "#30022"
+msgid "Normal"
+msgstr "רגיל"
+
+msgctxt "#30023"
+msgid "Above Normal"
+msgstr "מעל הרגיל"
+
+msgctxt "#30024"
+msgid "High"
+msgstr "גבוה"
+
+msgctxt "#30025"
+msgid "Realtime"
+msgstr "זמן אמת" 

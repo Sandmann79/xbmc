@@ -27,8 +27,15 @@
         <setting id="pref_host" type="labelenum" label="30019" visible="eq(-17,3)" values="Auto|Akamai|Cloudfront|Level3|Limelight" default="Auto"/>
         <setting id="is_settings" type="action" label="30013" visible="eq(-18,3)" action="RunPlugin(plugin://plugin.video.amazon-test/?mode=openSettings&url=is)" option="close"/>
         <setting id="age_settings" type="action" label="30018" visible="eq(-19,3)" action="RunPlugin(plugin://plugin.video.amazon-test/?mode=ageSettings)" option="close"/>
-        <setting id="drm_check" type="bool" label="30020" visible="eq(-20,3)" default="true"/>
-        <setting id="fallback_method" type="enum" label="Fallback" values="None|Browser|Script/Batch|Android" default="0" visible="eq(-21,3)" enable="eq(-1,true)" subsetting="true"/>
+        <setting id="enable_uhd" type="bool" label="UltraHD (Android + Widevine L1)" visible="eq(-20,3)" enable="System.Platform.Android" default="false"/>
+        <setting id="enable_hdr10" type="bool" label="HDR10+ (Android + Widevine L1)" visible="eq(-21,3)" enable="System.Platform.Android" default="false"/>
+        <setting id="enable_dovi" type="bool" label="Dolby Vision (Android + Widevine L1)" visible="eq(-22,3)" enable="System.Platform.Android" default="false"/>
+        <setting id="proxy_mpdalter" type="bool" label="30248" default="true" visible="eq(-23,3)" />
+        <setting id="skip_scene" type="enum" label="30081" lvalues="30082|30083|30084|30085|30086" default="1" visible="eq(-24,3)"/>
+        <setting id="send_vp" type="slider" label="30066" range="0,2,90" default="4" option="percent" visible="eq(-25,3)"/>
+        <!-- Browser/Script -->
+        <setting id="remotectrl" type="bool" label="30074" default="false" visible="lt(-26,2)"/>
+        <setting id="remote_vol" type="bool" label="30075" default="false" subsetting="true" enable="eq(-1,true)" visible="lt(-27,2)"/>
     </category>
     <!-- Language -->
     <category label="30021">
@@ -38,6 +45,10 @@
         <!-- Subtitles -->
         <setting label="30034" type="lsep"/>
         <setting id="sub_stretch" type="bool" label="30028" default="false"/>
+        <setting id="sub_stretch_factor" type="enum" values="FILM/NTSC (24/23.976)|NTSC/FILM (23.976/24)|PAL/NTSC (25/23.976)|NTSC/PAL (23.976/25)|PAL/FILM (25/24)|FILM/PAL (24/25)" label="30027" default="0" enable="eq(-1,true)" subsetting="true"/>
+        <!-- PrimeVideo -->
+        <setting label="30250" type="lsep"/>
+        <setting id="pv_language" type="action" label="30025" action="RunPlugin(plugin://plugin.video.amazon-test/pv/languageselect/)" option="close"/>
     </category>
     <!-- Connection -->
     <category label="30038">
@@ -46,6 +57,8 @@
         <!-- - -->
         <setting label="30001" type="lsep"/>
         <setting id="region" type="enum" label="Region" values="Auto|Germany|United Kingdom|USA|Japan|ROE Europe|ROW Europe|ROW Far East|ROW North America" default="0" />
+        <setting id="profiles" type="bool" label="30024" default="true"/>
+        <setting id="show_pass" type="bool" label="30026" default="true"/>
         <setting id="multiuser" type="bool" label="30009" default="false"/>
         <setting id="rememberme" type="bool" label="30022" default="true"/>
         <!-- Multiuser -->
@@ -54,7 +67,7 @@
         <setting type="action" label="30008" action="RunPlugin(plugin://plugin.video.amazon-test/?mode=LogIn)" option="close" visible="eq(-4,false)"/>
         <setting id="login_acc" type="text" label="30014" enable="false" default="" subsetting="true" visible="eq(-5,false)"/>
         <!-- /Multiuser -->
-        <setting id="save_login" type="bool" label="30006" default="false"/>
+        <setting id="save_login" type="bool" label="30006" default="false" visible="false"/>
         <!-- Multiuser -->
         <setting label="30007" type="action" action="RunPlugin(plugin://plugin.video.amazon-test/?mode=remLoginData)" option="close" visible="eq(-7,false)"/>
         <setting label="30010" type="action" action="RunPlugin(plugin://plugin.video.amazon-test/?mode=remLoginData)" option="close" visible="eq(-8,true)"/>
@@ -73,11 +86,12 @@
     </category>
     <!-- Export -->
     <category label="30060">
-        <setting id="enablelibraryfolder" type="bool" label="30061" default="false" />
-        <setting id="customlibraryfolder" type="folder" label="30062" enable="eq(-1,true)" default="special://profile/addon_data/plugin.video.amazon-test" source="auto" option="writeable" subsetting="true" />
-        <setting id="cr_nfo" type="bool" label="30063" default="true" />
-        <setting id="mediasource_movie" type="text" label="30064" default="Amazon Movies" />
-        <setting id="mediasource_tv" type="text" label="30065" default="Amazon TV" />
+        <setting id="enablelibraryfolder" type="bool" label="30061" default="false"/>
+        <setting id="customlibraryfolder" type="folder" label="30062" enable="eq(-1,true)" default="special://profile/addon_data/plugin.video.amazon-test" source="auto" option="writeable" subsetting="true"/>
+        <setting id="cr_nfo" type="bool" label="30063" default="true"/>
+        <setting id="mediasource_movie" type="text" label="30064" default="Amazon Movies"/>
+        <setting id="mediasource_tv" type="text" label="30065" default="Amazon TV"/>
+        <setting id="wl_export" type="bool" label="30080" default="false"/>
     </category>
     <!-- Miscellaneous -->
     <category label="30070">
@@ -87,12 +101,32 @@
         <setting id="useshowfanart" type="bool" label="30055" default="true"/>
         <!-- - -->
         <setting label="30070" type="lsep"/>
-        <setting id="paycont" type="bool" label="30073" default="false"/>
-        <setting id="disptvshow" type="bool" label="30071" default="false"/>
         <setting id="wl_order" type="enum" label="30076" lvalues="30077|30079|30078" default="0"/>
-        <setting id="wl_export" type="bool" label="30080" default="false"/>
-        <setting id="remotectrl" type="bool" label="30074" default="false"/>
-        <setting id="remote_vol" type="bool" label="30075" default="false" subsetting="true" enable="eq(-1,true)"/>
         <setting id="logging" type="bool" label="30072" default="false"/>
+        <setting id="json_dump" type="bool" label="30196" default="false"/>
+        <setting id="json_dump_raw" type="bool" label="30199" default="false" enable="eq(-1,true)" subsetting="true"/>
+        <setting id="json_dump_collisions" type="bool" label="30197" default="false" enable="eq(-2,true)" subsetting="true"/>
+    </category>
+    <!-- TLD -->
+    <category label="Amazon.TLD">
+        <setting id="use_webapi" type="bool" label="30093" default="false"/>
+        <setting id="show_recents" type="bool" label="30036" default="true" visible="eq(-1,false)"/>
+        <setting id="paycont" type="bool" label="30073" default="false" visible="eq(-2,false)" />
+        <setting id="disptvshow" type="bool" label="30071" default="false" visible="eq(-3,false)" />
+        <setting label="Artwork" type="lsep" visible="eq(-4,false)"/>
+        <setting id="tld_episode_thumbnails" type="bool" label="30249" default="false" visible="eq(-5,false)"/>
+        <setting type="action" label="30094" action="" visible="eq(-6,true)" />
+    </category>
+    <!-- PrimeVideo -->
+    <category label="30250">
+        <setting id="pv_episode_thumbnails" type="bool" label="30249" default="true"/>
+        <setting id="catalog_cache_expiry" type="enum" lvalues="30258|30259|30260|30261|30262|30263|30264|30265" label="30257" default="2"/>
+        <setting id="pv_clearcache" type="action" label="30087" action="RunPlugin(plugin://plugin.video.amazon-test/pv/clearcache/)" option="close"/>
+        <setting label="30243" type="lsep"/>
+        <setting id="paginate_everything" type="bool" label="30244" default="false"/>
+        <setting id="paginate_watchlist" type="bool" label="30245" default="false" enable="eq(-1,false)"/>
+        <setting id="paginate_collections" type="bool" label="30246" default="false" enable="eq(-2,false)"/>
+        <setting id="paginate_search" type="bool" label="30247" default="true" enable="eq(-3,false)"/>
+        <setting id="reset_home" type="action" label="30095" action="RunPlugin(plugin://plugin.video.amazon-test/pv/sethome/)" option="close"/>
     </category>
 </settings>

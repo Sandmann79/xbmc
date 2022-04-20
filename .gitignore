@@ -1,0 +1,7 @@
+**/*.pyo
+**/*.pyc
+.vscode/settings.json
+.vscode/ipch/**/mmap_address.bin
+tools/gettext
+**/resources/language/*/strings.mo
+**/Thumbs.db

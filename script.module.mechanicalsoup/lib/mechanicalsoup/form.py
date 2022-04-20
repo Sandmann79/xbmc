@@ -37,8 +37,8 @@ class Form(object):
         if form.name != 'form':
             warnings.warn(
                 "Constructed a Form from a '{}' instead of a 'form' element. "
-                "This may be an error in a future version of MechanicalSoup.",
-                PendingDeprecationWarning)
+                "This may be an error in a future version of MechanicalSoup."
+                .format(form.name), FutureWarning)
 
         self.form = form
         self._submit_chosen = False
@@ -263,7 +263,7 @@ class Form(object):
 
         .. code-block:: python
 
-            form.set("tagname") = path_to_local_file
+            form.set("tagname", path_to_local_file)
 
         """
         for func in ("checkbox", "radio", "input", "textarea", "select"):
@@ -282,12 +282,10 @@ class Form(object):
 
         The arguments set the attributes of the new element.
         """
-        old_input = self.form.find_all('input', {'name': name})
-        for old in old_input:
-            old.decompose()
-        old_textarea = self.form.find_all('textarea', {'name': name})
-        for old in old_textarea:
-            old.decompose()
+        # Remove existing input-like elements with the same name
+        for tag in ('input', 'textarea', 'select'):
+            for old in self.form.find_all(tag, {'name': name}):
+                old.decompose()
         # We don't have access to the original soup object (just the
         # Tag), so we instantiate a new BeautifulSoup() to call
         # new_tag(). We're only building the soup object, not parsing

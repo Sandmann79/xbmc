@@ -28,13 +28,14 @@ class PrimeVideo(Singleton):
         self._s = settingsInstance
         self.recentsdb = OSPJoin(g.DATA_PATH, 'recent.db')
         self._initialiseDB()
+        self.prime = ''
         self.filter = {}
         self.def_dtid = 'A43PXU4ZN2AL1'
         self.defparam = 'deviceTypeID={}' \
                         '&firmware=fmw%3A26-app%3A3.0.265.20347' \
                         '&priorityLevel=2' \
                         '&format=json' \
-                        '&featureScheme=mobile-android-features-v9' \
+                        '&featureScheme=mobile-android-features-v11-hdr-com' \
                         '&deviceID={}' \
                         '&version=default' \
                         '&screenWidth=sw800dp' \
@@ -52,50 +53,78 @@ class PrimeVideo(Singleton):
             act, profiles = self.getProfiles()
             if act is not False:
                 addDir(profiles[act][0], 'switchProfile', '', thumb=profiles[act][3])
-        '''
-        addDir('Watchlist', 'getListMenu', self._g.watchlist, cm=cm_wl)
-        self.getPage(root=True)
 
-        if self._s.show_recents:
-            addDir(getString(30136), 'Recent', '')
+        addDir('Watchlist', 'getListMenu', self._g.watchlist, cm=cm_wl)
+        '''
+        addDir('Watchlist', 'getPage', 'watchlist', cm=cm_wl)
+        self.getPage(root=True)
+        addDir(getString(30100), 'getPage', 'library', cm=cm_lb)
+        addDir('Finden', 'getPage', 'find')
         addDir(getString(30108), 'Search', '')
-        addDir(getString(30100), 'getListMenu', self._g.library, cm=cm_lb)
+
         xbmcplugin.endOfDirectory(self._g.pluginhandle, updateListing=False, cacheToDisc=False)
+
+    def getFilter(self, resp, root):
+        filters = findKey('filters', resp)
+        if len(filters) > 0 and 'refineCollection' in filters[0]:
+            filters = filters[0]['refineCollection']
+
+        for item in filters:
+            if 'text' in item and item['text'] is not None:
+                d = findKey('parameters', item)
+                d['swiftId'] = item['id']
+                if root:
+                    t = json.loads(b64decode(d['serviceToken']))
+                    id = [k for k in t['filter'].keys()][0]
+                    if id == 'PRIME': self.prime = d['serviceToken']
+                self.filter[item['text']] = d
 
     def getPage(self, page='landing', params='pageType=home&pageId=home', root=False):
         url_path = '/cdp/mobile/getDataByTransform/v1/'
-        url_dict = {'landing': {'js': 'dv-android/landing/v2/landing.js', 'q': '&removeFilters=false'},
+        url_dict = {'landing': {'js': 'dv-android/landing/v2/landing.js', 'q': '&removeFilters=false'},  # &supportsLiveBadging=true&isLiveEventsV2OverrideEnabled=true&supportsPaymentStatus=false&supportsExternalLinkAction=true
                     'home': {'js': 'dv-android/landing/v2/landingCollections.js', 'q': ''},
                     'browse': {'js': 'dv-android/browse/v1/browseInitial.js', 'q': ''},
-                    'browsenext': {'js': 'dv-android/browse/v1/browseNext.js', 'q': ''},
-                    'detail': {'js': 'dv-android/detail/v2/user/v2.2.js', 'q': '&capabilities='},
-                    'details': {'js': 'android/atf/v3.jstl', 'q': '&capabilities='}}
-        url = self._g.ATVUrl + url_path + url_dict[page]['js']
-        params += url_dict[page]['q']
-        resp = getURL('%s?%s&%s' % (url, self.defparam, params), useCookie=True)['resource']
+                    'detail': {'js': 'dv-android/detail/v2/user/v2.3.js', 'q': '&capabilities='},
+                    'details': {'js': 'android/atf/v3.jstl', 'q': '&capabilities='},
+                    'watchlist': {'js': 'dv-android/watchlist/watchlistInitial/v2.js', 'q': ''},
+                    'library': {'js': 'dv-android/library/libraryInitial/v1.js', 'q': ''},
+                    'find': {'js': 'dv-android/find/v1.js', 'q': '&pageId=Find&pageType=home'},
+                    'search': {'js': 'dv-android/search/searchInitial/v2.js', 'q': ''},
+                    }
+
+        url = ''
+        if page == 'cache':
+            resp = self.loadCache(params)
+        else:
+            url = self._g.ATVUrl + url_path + url_dict[page]['js']
+            params += url_dict[page]['q']
+            query_dict = parse_qs(params)
+            url = url.replace('Initial', 'Next') if 'Initial' in url and int(query_dict.get('startIndex', ['0'])[0]) > 0 else url
+            resp = getURL('%s?%s&%s' % (url, self.defparam, params), useCookie=True)['resource']
         LogJSON(resp)
 
         if resp:
+            self.getFilter(resp, root)
             if root:
-                for item in findKey('filters', resp):
-                    d = findKey('parameters', item)
-                    d['text'] = item['text']
-                    d['swiftId'] = item['id']
-                    t = json.loads(b64decode(d['serviceToken']))
-                    id = [k for k in t['filter'].keys()][0]
-                    Log(id)
-                    self.filter[id] = d
-
+                self._createDB(self._cache_tbl)
                 for item in resp['navigations']:
                     q = findKey('parameters', item)
-                    q['serviceToken'] = self.filter['PRIME']['serviceToken']
-                    addDir(item['text'].capitalize(), 'getPage', 'landing', opt=urlencode(q))
+                    q['serviceToken'] = self.prime
+                    addDir(item['text'].title(), 'getPage', 'landing', opt=urlencode(q))
+                return
+
+            if page in ['watchlist', 'library'] and 'Initial' in url and 'serviceToken' not in query_dict:
+                for k, v in self.filter.items():
+                    addDir(k, 'getPage', page, opt=urlencode(v))
+                xbmcplugin.endOfDirectory(g.pluginhandle)
                 return
 
             if page == 'details':
                 if 'episodes' in resp:
                     for item in resp['episodes']:
                         il = self.getInfos(item, False)
+                        il['tvshowtitle'] = resp['show']['title']
+                        il['totalseasons'] = len(resp['seasons'])
                         if il.get('episode', 1) > 0:
                             addVideo(il['title'], il['asins'], il)
                 else:
@@ -114,114 +143,85 @@ class PrimeVideo(Singleton):
                     self.getPage('home', urlencode(q))
                     return
 
+            ct = 'videos'
             col = findKey('collections', resp)
             if col:
+                pgmodel = resp.get('paginationModel')
+                pgtype = 'home'
                 for item in col:
                     col_act = item.get('collectionAction')
+                    col_lst = item.get('collectionItemList')
+                    col_typ = item.get('collectionType')
                     if col_act:
-                        q = findKey('parameters', col_act)
-                        q_flt = {k: v for k, v in q.items() if v is not None}
-                        addDir(item['headerText'], 'getPage', col_act['type'], opt=urlencode(q_flt))
+                        q = self.filterDict(findKey('parameters', col_act))
+                        addDir(item['headerText'], 'getPage', col_act['type'], opt=urlencode(q))
+                    elif col_lst and 'heroCarousel' not in col_typ:
+                        self.writeCache(item)
+                        addDir(item['headerText'], 'getPage', 'cache', opt=quote_plus(item['collectionId']))
+                self._cacheDb.commit()
             else:
                 titles = resp['titles'][0] if len(resp.get('titles', {})) > 0 else resp
                 pgmodel = titles.get('paginationModel')
-                items = titles.get('collectionItemList', [])
+                pgtype = page
+                col = titles.get('collectionItemList', [])
 
-                for item in items:
-                    il = self.getInfos(item['model'], False)
-                    ct = il['contentType']
-                    if ct == 'movie' or ct == 'episode':
-                        addVideo(il['title'], il['asins'], il)
+                for item in col:
+                    model = item['model']
+                    if item['type'] == 'textLink':
+                        l = model['linkAction']
+                        q = findKey('parameters', l)
+                        q = self.filterDict(findKey('parameters', l)) if q else {}
+                        addDir(model['text'], 'getPage', l['type'], opt=urlencode(q))
                     else:
-                        addDir(il['title'], 'getPage', 'details', infoLabels=il, opt='itemId='+il['asins'])
+                        il = self.getInfos(model, False)
+                        ct = il['contentType']
+                        if ct in ['movie', 'episode', 'live', 'videos']:
+                            addVideo(il['title'], il['asins'], il)
+                        else:
+                            addDir(il['title'], 'getPage', 'details', infoLabels=il, opt='itemId=' + il['asins'])
 
-                if pgmodel:
-                    nextp = pgmodel['parameters']
-                    nextp['pageSize'] = 40
-                    pagenr = int(nextp['startIndex'] / len(items) + 1)
-                    addDir(' --= %s =--' % (getString(30111) % pagenr), 'getPage', 'browsenext', opt=urlencode(nextp), thumb=self._s.NextIcon)
+            if pgmodel:
+                nextp = findKey('parameters', pgmodel)
+                if 'home' in pgtype:
+                    nextp['startIndex'] = pgmodel['startIndex']
+                    nextp['swiftId'] = pgmodel['id']
+                nextp['pageSize'] = len(col)
+                pagenr = int(nextp['startIndex'] / len(col) + 1)
+                addDir(' --= %s =--' % (getString(30111) % pagenr), 'getPage', pgtype, opt=urlencode(nextp), thumb=self._s.NextIcon)
 
-            xbmcplugin.endOfDirectory(g.pluginhandle)
+            setContentAndView(ct)
         return
+
+    def writeCache(self, content):
+        c = self._cacheDb.cursor()
+        c.execute('insert or ignore into {} values (?,?)'.format(self._cache_tbl), [quote_plus(content['collectionId']), json.dumps(content)])
+        c.close()
+
+    def loadCache(self, col_id):
+        c = self._cacheDb.cursor()
+        result = c.execute('select content from {} where id = (?)'.format(self._cache_tbl), (col_id,)).fetchone()
+        if len(result) > 0:
+            return json.loads(result[0])
+        return {}
 
     def Search(self, searchString=None):
         if searchString is None:
             searchString = self._g.dialog.input(getString(24121)).encode('utf-8')
         if searchString:
-            url = 'searchString=%s%s' % (quote_plus(searchString), self._s.OfferGroup)
-            self.listContent('Search', url, 1, 'search')
+            self.getPage('search', 'phrase={}'.format(searchString))
         else:
             xbmc.executebuiltin('RunPlugin(%s)' % g.pluginid)
 
-    def getRecents(self):
-        all_rec = {}
-        if xbmcvfs.exists(self.recentsdb):
-            with open(self.recentsdb, 'rb') as fp:
-                try:
-                    all_rec = pickle.load(fp)
-                except:
-                    pass
-
-        cur_user = loadUser('name') + getConfig('profileID')
-        user_rec = all_rec.get(cur_user, [])
-        return all_rec, user_rec
-
-    def Recent(self, export=0):
-        all_rec, rec = self.getRecents()
-        asins = ','.join(rec)
-        url = 'asinlist=' + asins
-        self.listContent('Browse', url, 1, 'recent', export)
-
-    def updateRecents(self, asin, rem=0):
-        if not self._s.show_recents:
-            return
-
-        all_rec, rec = self.getRecents()
-        if rem == 0:
-            content = getATVData('GetASINDetails', 'ASINList=' + asin)['titles']
-            if len(content) < 1:
-                return
-            ct, Info = g.pv.getInfos(content[0], False)
-            asin = Info.get('SeasonAsin', Info.get('SeriesAsin', asin))
-        if asin in rec:
-            rec.remove(asin)
-        if rem == 0:
-            rec.insert(0, asin)
-        if len(rec) > 200:
-            rec = rec[0:200]
-
-        with open(self.recentsdb, 'wb') as fp:
-            cur_user = loadUser('name') + getConfig('profileID')
-            if cur_user in all_rec.keys():
-                all_rec[cur_user] = rec
-            else:
-                all_rec.update({cur_user: rec})
-            pickle.dump(all_rec, fp)
-        if rem == 1:
-            xbmc.executebuiltin('Container.Update("%s", replace)' % xbmc.getInfoLabel('Container.FolderPath'))
-
     def _createDB(self, table):
-        c = self._menuDb.cursor()
-        if table == self._menu_tbl:
-            c.execute('drop table if exists %s' % self._menu_tbl)
+        c = self._cacheDb.cursor()
+        if table == self._cache_tbl:
+            c.execute('drop table if exists %s' % self._cache_tbl)
             c.execute('''CREATE TABLE %s(
-                        node TEXT,
-                        title TEXT,
-                        category TEXT,
-                        content TEXT,
                         id TEXT,
-                        infolabel TEXT
-                        );''' % self._menu_tbl)
-            self._menuDb.commit()
-        elif table == self._chan_tbl:
-            c.execute('drop table if exists %s' % self._chan_tbl)
-            c.execute('''CREATE TABLE %s(
-                        uid TEXT,
-                        data JSON,
-                        time TIMESTAMP,
-                        ref TEXT
-                        );''' % self._chan_tbl)
-            self._menuDb.commit()
+                        content TEXT,
+                        PRIMARY KEY(id)
+                        );''' % self._cache_tbl)
+            self._cacheDb.commit()
         elif table == self._art_tbl:
             c = self._db.cursor()
             c.execute('''CREATE TABLE IF NOT EXISTS %s(
@@ -245,13 +245,12 @@ class PrimeVideo(Singleton):
 
     def _initialiseDB(self):
         from sqlite3 import dbapi2 as sqlite
-        self._menu_tbl = 'menu'
-        self._chan_tbl = 'channels'
+        self._cache_tbl = 'cache'
         self._art_tbl = 'art'
         self._dbFile = os.path.join(self._g.DATA_PATH, 'art.db')
         self._db = sqlite.connect(self._dbFile)
-        self._menuFile = os.path.join(self._g.DATA_PATH, 'menu-%s.db' % self._g.MarketID)
-        self._menuDb = sqlite.connect(self._menuFile)
+        self._cacheFile = os.path.join(self._g.DATA_PATH, 'cache-%s.db' % self._g.MarketID)
+        self._cacheDb = sqlite.connect(self._cacheFile)
         self._createDB(self._art_tbl)
 
     @staticmethod
@@ -445,86 +444,12 @@ class PrimeVideo(Singleton):
             fanart = self._g.na
         return fanart
 
-    def formatSeason(self, infoLabels, parent):
-        name = ''
-        season = infoLabels['season']
-        if parent:
-            if infoLabels['title'].lower().strip() != infoLabels['tvshowtitle'].lower().strip():
-                return infoLabels['DisplayTitle']
-            name = infoLabels['title'] + ' - '
-        if season != 0 and season < 100:
-            name += getString(30167) + ' ' + str(season)
-        elif season > 1900:
-            name += getString(30168) + str(season)
-        elif season > 99:
-            name += getString(30167) + ' ' + str(season).replace('0', '.')
-        else:
-            name += getString(30169)
-        if not infoLabels['isPrime']:
-            name = '[COLOR %s]%s[/COLOR]' % (self._g.PayCol, name)
-        return name
-
-    def getListMenu(self, listing, export):
-        if export:
-            self.listContent(listing, 'MOVIE', 1, listing, export)
-            self.listContent(listing, 'TV', 1, listing, export)
-            if export == 2:
-                writeConfig('last_wl_export', time.time())
-                xbmc.executebuiltin('UpdateLibrary(video)')
-        else:
-            addDir(getString(30104), 'listContent', 'MOVIE', catalog=listing, export=export)
-            addDir(getString(30107), 'listContent', 'TV', catalog=listing, export=export)
-            xbmcplugin.endOfDirectory(self._g.pluginhandle, updateListing=False)
-
-    def _scrapeAsins(self, aurl, cj):
-        asins = []
-        url = self._g.BaseUrl + aurl
-        json = getURL(url, useCookie=cj)
-        if not json:
-            return False, False
-        WriteLog(str(json), 'watchlist')
-        cont = findKey('content', json)
-        info = {'approximateSize': cont.get('totalItems', 0),
-                'endIndex': cont.get('nextPageStartIndex', 0)}
-
-        for item in cont.get('items', []):
-            asins.append(item['titleID'])
-        return info, ','.join(asins)
-
-    def getList(self, listing, export, cont, page=1):
-        info = {}
-        if listing in [self._g.watchlist, self._g.library]:
-            cj = MechanizeLogin()
-            if not cj:
-                return [], ''
-            args = {listing: {'sort': self._s.wl_order,
-                              'libraryType': 'Items',
-                              'primeOnly': False,
-                              'startIndex': (page - 1) * 60,
-                              'contentType': cont},
-                    'shared': {'isPurchaseRow': 0}}
-
-            url = '/gp/video/api/myStuff{}?viewType={}&args={}'.format(listing.capitalize(), listing, json.dumps(args, separators=(',', ':')))
-            info, asins = self._scrapeAsins(url, cj)
-            if info is False:
-                Log('Cookie invalid', Log.ERROR)
-                g.dialog.notification(g.__plugin__, getString(30266), xbmcgui.NOTIFICATION_ERROR)
-                return [], ''
-        else:
-            asins = listing
-
-        url = 'asinlist=%s&StartIndex=0&Detailed=T' % asins
-        listing += '_show' if (self._s.dispShowOnly and not (export and asins == listing)) or cont == '_show' else ''
-        titles = getATVData('Browse', url)
-        titles.update(info)
-        return titles, listing
-
     @staticmethod
     def getAsins(content, crIL=True):
         infoLabels = {'plot': None, 'mpaa': None, 'cast': [], 'year': None, 'premiered': None, 'rating': None, 'votes': None, 'isAdult': 0,
                       'director': None, 'genre': None, 'studio': None, 'thumb': None, 'fanart': None, 'isHD': False,
                       'audiochannels': 1, 'TrailerAvailable': False,
-                      'asins': content.get('id', content.get('titleId', '')),
+                      'asins': content.get('id', content.get('titleId', content.get('channelId', ''))),
                       'isPrime': content.get('showPrimeEmblem', False)}
 
         if 'badges' in content:
@@ -534,33 +459,27 @@ class PrimeVideo(Singleton):
             infoLabels['audiochannels'] = 6 if b['dolby51'] else 2
         if 'playbackActions' in content and len(content['playbackActions']) > 0:
             pa = content['playbackActions'][0]
-            infoLabels['isHD'] = pa['userPlaybackMetadata']['videoQuality'] is not 'SD'
+            infoLabels['isHD'] = pa['userPlaybackMetadata']['videoQuality'] != 'SD'
 
         del content
         return infoLabels if crIL else infoLabels['asins']
 
-    def getInfos(self, title, export):
-        def getFullImage(url):
-            if url:
-                thumbnailFilename = url.split('/')[-1]
-                thumbnailBase = url.replace(thumbnailFilename, '')
-                url = thumbnailBase + thumbnailFilename.split('.')[0] + '.jpg'
-            return url
-        import datetime
-        item = {k: v for k, v in title.items() if v is not None}
+    def getInfos(self, item, export):
+        from datetime import datetime
+        item = self.filterDict(item)
+        infoLabels = self.getAsins(item)
+        if 'channelId' in item:
+            return self.getChanInfo(item, infoLabels, export)
         imgurls = item.get('titleImageUrls', {})
         reldate = item.get('publicReleaseDate', item.get('releaseDate', 0))
         reldate = reldate * -1 if reldate < 0 else reldate
-        infoLabels = self.getAsins(item)
         infoLabels['contentType'] = infoLabels['mediatype'] = ct = item['contentType'].lower()
-        infoLabels['DisplayTitle'] = infoLabels['title'] = self.cleanTitle(item['title'])
+        infoLabels['title'] = self.cleanTitle(item['title'])
         infoLabels['plot'] = item['synopsis']
-        infoLabels['isAdult'] = False
-        infoLabels['traileravailable'] = True
-        infoLabels['fanart'] = getFullImage(imgurls.get('WIDE', imgurls.get('WIDE_PRIME', item.get('detailPageHeroImageUrl'))))
-        infoLabels['thumb'] = getFullImage(imgurls.get('LEGACY', imgurls.get('LEGACY_PRIME', item.get('titleImageUrl'))))
+        infoLabels['fanart'] = self.cleanIMGurl(imgurls.get('WIDE', imgurls.get('WIDE_PRIME', item.get('detailPageHeroImageUrl'))))
+        infoLabels['thumb'] = self.cleanIMGurl(imgurls.get('LEGACY', imgurls.get('LEGACY_PRIME', item.get('titleImageUrl'))))
         infoLabels['votes'] = item.get('amazonRatingsCount', 0)
-        infoLabels['premiered'] = datetime.datetime.fromtimestamp(reldate / 1000).strftime('%Y-%m-%d')
+        infoLabels['premiered'] = datetime.fromtimestamp(reldate / 1000).strftime('%Y-%m-%d')
         infoLabels['genre'] = item.get('genres')
         infoLabels['studio'] = item.get('studios')
         if item.get('runtimeMillis'):
@@ -577,7 +496,47 @@ class PrimeVideo(Singleton):
                 infoLabels['mpaa'] = getString(30171)
             else:
                 infoLabels['mpaa'] = '%s %s' % (AgeRestrictions().GetAgeRating(), item['regulatoryRating'])
+        if 'live' in ct:
+            infoLabels['contentType'] = infoLabels['mediatype'] = 'videos'
         return infoLabels
+
+    def getChanInfo(self, item, infoLabels, export):
+        infoLabels['contentType'] = 'live'
+        infoLabels['DisplayTitle'] = infoLabels['title'] = self.cleanTitle(item['channelTitle'])
+        infoLabels['thumb'] = self.cleanIMGurl(item.get('channelImageUrl'))
+        infoLabels['plot'] = ''
+        shedule = item.get('schedule')
+        upnext = False
+        if shedule:
+            from datetime import datetime
+            ts = time.time()
+            for sh in shedule:
+                us = sh.get('startTime') / 1000
+                ue = sh.get('endTime') / 1000
+                if (us <= ts <= ue) or upnext:
+                    tm = self.filterDict(sh['titleModel'])
+                    infoLabels['plot'] += '[B]{:%H:%M} - {:%H:%M}  {}[/B]\n'.format(datetime.fromtimestamp(us), datetime.fromtimestamp(ue), tm.get('title', ''))
+                    if not upnext:
+                        imgurls = tm.get('titleImageUrls', {})
+                        reldate = tm.get('publicReleaseDate', tm.get('releaseDate', 0))
+                        reldate = reldate * -1 if reldate < 0 else reldate
+                        infoLabels['premiered'] = datetime.fromtimestamp(reldate / 1000).strftime('%Y-%m-%d')
+                        infoLabels['fanart'] = self.cleanIMGurl(item.get('channelImageUrl'))
+                        infoLabels['thumb'] = self.cleanIMGurl(imgurls.get('LEGACY', imgurls.get('LEGACY_PRIME', item.get('titleImageUrl'))))
+                        infoLabels['plot'] += '{}\n\n'.format(tm.get('synopsis', ''))
+                        if item.get('runtimeMillis'):
+                            infoLabels['duration'] = tm['runtimeMillis'] / 1000
+                    else:
+                        break
+                    upnext = True
+
+        return infoLabels
+
+    @staticmethod
+    def filterDict(d):
+        # remove None value keys from dict
+        d_filt = {k: v for k, v in d.items() if v is not None}
+        return d_filt
 
     @staticmethod
     def cleanIMGurl(img):
@@ -608,32 +567,17 @@ class PrimeVideo(Singleton):
         exit()
 
     def Route(self, mode, args):
-        if mode == 'listCategories':
-            self.listCategories(args.get('url', ''), args.get('opt', ''))
-        elif mode == 'listContent':
-            url = py2_decode(args.get('url', ''))
-            self.listContent(args.get('cat'), url, int(args.get('page', '1')), args.get('opt', ''), int(args.get('export', '0')))
-        elif mode == 'getList':
-            self.getList(args.get('url', ''), int(args.get('export', '0')), args.get('opt'))
-        elif mode == 'getListMenu':
-            self.getListMenu(args.get('url', ''), int(args.get('export', '0')))
-        elif mode == 'WatchList':
-            self.WatchList(args.get('url', ''), int(args.get('opt', '0')))
-        elif mode == 'Search':
+        if mode == 'Search':
             searchString = args.get('searchstring')
             self.Search(searchString)
         elif mode in ['checkMissing', 'Recent', 'switchProfile']:
             exec ('g.pv.{}()'.format(mode))
-        elif mode == 'Channel':
-            self.Channel(url=args.get('url'), uid=args.get('opt'))
-        elif mode == 'updateRecents':
-            self.updateRecents(args.get('asin', ''), int(args.get('rem', '0')))
         elif mode == 'languageselect':
             g.dialog.notification(g.__plugin__, getString(30269))
         elif mode == 'ageSettings':
             AgeRestrictions().Settings()
         elif mode == 'getPage':
-            self.getPage(args.get('url'), args.get('opt'))
+            self.getPage(args.get('url'), args.get('opt', ''))
 
 
 

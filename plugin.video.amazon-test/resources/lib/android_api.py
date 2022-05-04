@@ -76,8 +76,18 @@ class PrimeVideo(Singleton):
                 if root:
                     t = json.loads(b64decode(d['serviceToken']))
                     id = [k for k in t['filter'].keys()][0]
-                    if id == 'PRIME': self.prime = d['serviceToken']
+                    if id == 'PRIME':
+                        self.prime = d['serviceToken']
                 self.filter[item['text']] = d
+
+    def addCtxMenu(self, il, wl):
+        cm = []
+        ct = il['contentType']
+        if il['contentType'] in ['movie', 'episode', 'season', 'live']:
+            wlmode = 1 if wl else 0
+            cm.append((getString(wlmode + 30180) % getString(self._g.langID[ct]), 'RunPlugin(%s?mode=editWatchList&url=%s&opt=%s)'
+                       % (self._g.pluginid, il['asins'], wlmode)))
+        return cm
 
     def getPage(self, page='landing', params='pageType=home&pageId=home', root=False):
         url_path = '/cdp/mobile/getDataByTransform/v1/'
@@ -122,14 +132,16 @@ class PrimeVideo(Singleton):
             if page == 'details':
                 if 'episodes' in resp:
                     for item in resp['episodes']:
-                        il = self.getInfos(item, False)
+                        il = self.getInfos(item)
                         il['tvshowtitle'] = resp['show']['title']
                         il['totalseasons'] = len(resp['seasons'])
+                        cm = self.addCtxMenu(il, page in 'watchlist')
                         if il.get('episode', 1) > 0:
-                            addVideo(il['title'], il['asins'], il)
+                            addVideo(il['title'], il['asins'], il, cm=cm)
                 else:
-                    il = self.getInfos(resp, False)
-                    addVideo(il['title'], il['asins'], il)
+                    il = self.getInfos(resp)
+                    cm = self.addCtxMenu(il, page in 'watchlist')
+                    addVideo(il['title'], il['asins'], il, cm=cm)
                 setContentAndView(il['contentType'])
                 return
 
@@ -143,7 +155,7 @@ class PrimeVideo(Singleton):
                     self.getPage('home', urlencode(q))
                     return
 
-            ct = 'videos'
+            ct = 'files'
             col = findKey('collections', resp)
             if col:
                 pgmodel = resp.get('paginationModel')
@@ -173,12 +185,13 @@ class PrimeVideo(Singleton):
                         q = self.filterDict(findKey('parameters', l)) if q else {}
                         addDir(model['text'], 'getPage', l['type'], opt=urlencode(q))
                     else:
-                        il = self.getInfos(model, False)
+                        il = self.getInfos(model)
                         ct = il['contentType']
+                        cm = self.addCtxMenu(il, page in 'watchlist')
                         if ct in ['movie', 'episode', 'live', 'videos']:
-                            addVideo(il['title'], il['asins'], il)
+                            addVideo(il['title'], il['asins'], il, cm=cm)
                         else:
-                            addDir(il['title'], 'getPage', 'details', infoLabels=il, opt='itemId=' + il['asins'])
+                            addDir(il['title'], 'getPage', 'details', infoLabels=il, opt='itemId=' + il['asins'], cm=cm)
 
             if pgmodel:
                 nextp = findKey('parameters', pgmodel)
@@ -211,6 +224,20 @@ class PrimeVideo(Singleton):
             self.getPage('search', 'phrase={}'.format(searchString))
         else:
             xbmc.executebuiltin('RunPlugin(%s)' % g.pluginid)
+
+    def editWatchList(self, asin, remove):
+        act = 'RemoveTitleFromList' if remove > 0 else 'AddTitleToList'
+        params = 'titleId={}'.format(asin)
+        url = '{}/cdp/discovery/{}'.format(self._g.ATVUrl, act)
+        resp = getURL('%s?%s&%s' % (url, self.defparam, params), useCookie=True)['message']
+        msg = resp['body']['message']
+        Log(msg)
+        if resp.get('statusCode', '') == 'SUCCESS':
+            if remove:
+                cPath = xbmc.getInfoLabel('Container.FolderPath')
+                xbmc.executebuiltin('Container.Update("{}", replace)'.format(cPath))
+        else:
+            g.dialog.notification(g.__plugin__, msg, xbmcgui.NOTIFICATION_ERROR)
 
     def _createDB(self, table):
         c = self._cacheDb.cursor()
@@ -464,12 +491,12 @@ class PrimeVideo(Singleton):
         del content
         return infoLabels if crIL else infoLabels['asins']
 
-    def getInfos(self, item, export):
+    def getInfos(self, item):
         from datetime import datetime
         item = self.filterDict(item)
         infoLabels = self.getAsins(item)
         if 'channelId' in item:
-            return self.getChanInfo(item, infoLabels, export)
+            return self.getChanInfo(item, infoLabels)
         imgurls = item.get('titleImageUrls', {})
         reldate = item.get('publicReleaseDate', item.get('releaseDate', 0))
         reldate = reldate * -1 if reldate < 0 else reldate
@@ -500,7 +527,7 @@ class PrimeVideo(Singleton):
             infoLabels['contentType'] = infoLabels['mediatype'] = 'videos'
         return infoLabels
 
-    def getChanInfo(self, item, infoLabels, export):
+    def getChanInfo(self, item, infoLabels):
         infoLabels['contentType'] = 'live'
         infoLabels['DisplayTitle'] = infoLabels['title'] = self.cleanTitle(item['channelTitle'])
         infoLabels['thumb'] = self.cleanIMGurl(item.get('channelImageUrl'))
@@ -578,7 +605,8 @@ class PrimeVideo(Singleton):
             AgeRestrictions().Settings()
         elif mode == 'getPage':
             self.getPage(args.get('url'), args.get('opt', ''))
-
+        elif mode == 'editWatchList':
+            self.editWatchList(args.get('url', ''), int(args.get('opt', '0')))
 
 
 

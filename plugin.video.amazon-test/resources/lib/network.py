@@ -668,8 +668,20 @@ def LogIn(retToken=False):
                 response, soup = _parseHTML(br)
                 WriteLog(response.replace(py2_decode(email), '**@**'), 'login-fixup')
 
-            if 'openid.oa2.authorization_code' in url:
-                user = registerDevice(url, user, verifier, clientid)
+            # Some PrimeVideo endpoints still return you to the store, directly
+            if url.endswith('?ref_=av_auth_return_redir') or ('action=sign-out' in response) or ('openid.oa2.authorization_code' in url):
+                if 'openid.oa2.authorization_code' in url:
+                    user = registerDevice(url, user, verifier, clientid)
+                else:  # Raw HTML
+                    try:
+                        name = re.search(r'action=sign-out[^"]*"[^>]*>[^?]+\s+([^?]+?)\s*\?', response).group(1)
+                    except AttributeError:
+                        name = getString(30209)
+                    from requests.utils import dict_from_cookiejar as dfcj
+                    user = {
+                        "name": name,
+                        "cookie": dfcj(cj)
+                    }
 
                 if s.multiuser:
                     user['name'] = g.dialog.input(getString(30135), user['name'])

@@ -5,8 +5,6 @@ from inspect import currentframe, getframeinfo
 from os.path import join as OSPJoin, basename as opb
 from kodi_six import xbmc, xbmcvfs
 from kodi_six.utils import py2_encode
-import xbmc
-import xbmcvfs
 from .common import Globals, Settings
 
 g = Globals()

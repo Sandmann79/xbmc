@@ -8,9 +8,6 @@ from locale import getdefaultlocale
 from kodi_six import xbmcaddon, xbmcgui
 from kodi_six.utils import py2_decode
 from sys import argv
-import hashlib
-import hmac
-import uuid
 import json
 from .singleton import Singleton
 from .l10n import *
@@ -48,8 +45,11 @@ class Globals(Singleton):
     PayCol = 'FFE95E01'
     tmdb = 'b34490c056f0dd9e3ec9af2167a731f4'  # b64decode('YjM0NDkwYzA1NmYwZGQ5ZTNlYzlhZjIxNjdhNzMxZjQ=')
     tvdb = '1D62F2F90030C444'  # b64decode('MUQ2MkYyRjkwMDMwQzQ0NA==')
-    langID = {'movie': 30165, 'series': 30166, 'season': 30167, 'episode': 30173}
+    langID = {'movie': 30165, 'series': 30166, 'season': 30167, 'episode': 30173, 'tvshow': 30166, 'video': 30173, 'event': 30174}
     KodiVersion = int(xbmc.getInfoLabel('System.BuildVersion').split('.')[0])
+    dtid_android = 'A43PXU4ZN2AL1'
+    dtid_web = 'AOAGZA014O5RE'
+    headers_android = {'Accept-Charset': 'utf-8', 'User-Agent': 'Dalvik/2.1.0 (Linux; U; Android 11; SHIELD Android TV RQ1A.210105.003)', 'X-Requested-With': 'com.amazon.avod.thirdpartyclient'}
 
     """ Allow the usage of dot notation for data inside the _globals dictionary, without explicit function call """
     def __getattr__(self, name): return self._globals[name]
@@ -82,7 +82,6 @@ class Globals(Singleton):
         # and generate/retrieve the device ID
         getConfig.configPath = self._globals['CONFIG_PATH']
         writeConfig.configPath = self._globals['CONFIG_PATH']
-        self._globals['deviceID'] = self.genID()
 
         self._globals['__plugin__'] = self._globals['addon'].getAddonInfo('name')
         self._globals['__authors__'] = self._globals['addon'].getAddonInfo('author')
@@ -112,36 +111,19 @@ class Globals(Singleton):
             (getString(30132, self._globals['addon']), 'RunPlugin({}?mode=renameUser)'.format(self.pluginid))
         ]
 
-    @staticmethod
-    def genID(renew=False):
-        guid = getConfig("GenDeviceID") if not renew else False
-        if not guid or len(guid) != 56:
-            from random import randint
-            r = randint(1, int('9' * 100))
-            try:
-                r = unicode(r)
-            except NameError:
-                r = bytes(str(r), 'utf-8')
-            guid = hmac.new(r, uuid.uuid4().bytes, hashlib.sha224).hexdigest()
-            writeConfig("GenDeviceID", guid)
-        return guid
-
-    def InitialiseProvider(self, mid, burl, atv, pv):
+    def InitialiseProvider(self, mid, burl, atv, pv, did):
         self._globals['MarketID'] = mid
         self._globals['BaseUrl'] = burl
         self._globals['ATVUrl'] = atv
         self._globals['UsePrimeVideo'] = pv
+        self._globals['deviceID'] = did
 
-        if self._globals['UsePrimeVideo']:
-            """ Initialise PrimeVideo """
-            from .primevideo import PrimeVideo
-            if 'pv' not in self._globals:
-                self._globals['pv'] = PrimeVideo(self, Settings())
+        if self._globals['addon'].getSetting('use_webapi') == 'false' and not self._globals['UsePrimeVideo']:
+            from .atv_api import PrimeVideo
         else:
-            """ Initialise AmazonTLD """
-            from .amazontld import AmazonTLD
-            if 'amz' not in self._globals:
-                self._globals['amz'] = AmazonTLD(self, Settings())
+            from .web_api import PrimeVideo
+        if 'pv' not in self._globals:
+            self._globals['pv'] = PrimeVideo(self, Settings())
 
 
 class Settings(Singleton):
@@ -182,7 +164,7 @@ class Settings(Singleton):
         elif 'ms_tv' == name: ms_tv = self._gs('mediasource_tv'); return ms_tv if ms_tv else 'Amazon TV'
         elif 'multiuser' == name: return self._gs('multiuser') == 'true'
         elif 'DefaultFanart' == name: return OSPJoin(self._g.PLUGIN_PATH, 'fanart.png')
-        elif 'ThumbIcon' == name: return OSPJoin(self._g.PLUGIN_PATH, 'resources', 'art', 'thumb.png')
+        elif 'ThumbIcon' == name: return OSPJoin(self._g.PLUGIN_PATH, 'icon.png')
         elif 'NextIcon' == name: return OSPJoin(self._g.PLUGIN_PATH, 'resources', 'art', 'next.png')
         elif 'HomeIcon' == name: return OSPJoin(self._g.PLUGIN_PATH, 'resources', 'art', 'home.png')
         elif 'PrimeVideoEntitlement' == name: return OSPJoin(self._g.PLUGIN_PATH, 'resources', 'art', 'prime.png')
@@ -211,7 +193,8 @@ class Settings(Singleton):
             return [3600, 21600, 43200, 86400, 259200, 604800, 1296000, 2592000][int(self._gs('catalog_cache_expiry'))]
         elif 'profiles' == name: return self._gs('profiles') == 'true'
         elif 'show_pass' == name: return self._gs('show_pass') == 'true'
-        elif 'use_h265' == name: return self._gs('use_h265') == 'true'
+        elif 'useWebApi' == name: return self._gs('use_webapi') == 'true'
+        elif 'uhd' == name: return self._gs('enable_uhd') == 'true'
         elif 'show_recents' == name: return self._gs('show_recents') == 'true'
 
 
@@ -270,3 +253,30 @@ def return_item(dictionary, *keys):
         except:
             return dictionary
     return _p
+
+
+def return_value(dictionary, *keys):
+    """ Returns an value nested in the dictionary, or the dictionary itself """
+    _p = dictionary
+    for key in keys:
+        try:
+            _p = _p[key]
+        except:
+            return _p
+    return _p
+
+
+def findKey(key, obj):
+    if key in obj.keys():
+        return obj[key]
+    for v in obj.values():
+        if isinstance(v, dict):
+            res = findKey(key, v)
+            if res: return res
+        elif isinstance(v, list):
+            for d in v:
+                if isinstance(d, dict):
+                    res = findKey(key, d)
+                    if res:
+                        return res
+    return []

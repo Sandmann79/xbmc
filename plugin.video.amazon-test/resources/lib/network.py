@@ -1,28 +1,36 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
-from base64 import b64encode, b64decode
+
+import os
+from base64 import urlsafe_b64encode, b16encode
 from kodi_six.utils import py2_decode
 from kodi_six import xbmcgui
-import pickle
 import json
 import mechanicalsoup
 import pyxbmct
 import re
 import requests
-import ssl
-import sys
 
 from timeit import default_timer as timer
-from urllib3.poolmanager import PoolManager
-from requests.adapters import HTTPAdapter
 from random import randint
 from bs4 import BeautifulSoup
+from hashlib import sha256
+from copy import deepcopy
+
 from .l10n import *
 from .logging import *
 from .configs import *
 from .common import Globals, Settings, sleep
 from .metrics import addNetTime
+
+try:
+    from urlparse import urlparse, parse_qs
+    from urllib import urlencode
+except ImportError:
+    from urllib.parse import urlparse, parse_qs, urlencode
+
+domain_regex = r'[^\.]+\.([^/]+)(?:/|$)'
 
 
 def _parseHTML(br):
@@ -81,22 +89,27 @@ def mobileUA(content):
 
 
 def getTerritory(user):
-    area = [{'atvurl': '', 'baseurl': '', 'mid': '', 'pv': False},
-            {'atvurl': 'https://atv-ps-eu.amazon.de', 'baseurl': 'https://www.amazon.de', 'mid': 'A1PA6795UKMFR9', 'pv': False},
-            {'atvurl': 'https://atv-ps-eu.amazon.co.uk', 'baseurl': 'https://www.amazon.co.uk', 'mid': 'A1F83G8C2ARO7P', 'pv': False},
-            {'atvurl': 'https://atv-ps.amazon.com', 'baseurl': 'https://www.amazon.com', 'mid': 'ATVPDKIKX0DER', 'pv': False},
-            {'atvurl': 'https://atv-ps-fe.amazon.co.jp', 'baseurl': 'https://www.amazon.co.jp', 'mid': 'A1VC38T7YXB528', 'pv': False},
-            {'atvurl': 'https://atv-ps-eu.primevideo.com', 'baseurl': 'https://www.primevideo.com', 'mid': 'A3K6Y4MI8GDYMT', 'pv': True},
-            {'atvurl': 'https://atv-ps-eu.primevideo.com', 'baseurl': 'https://www.primevideo.com', 'mid': 'A2MFUE2XK8ZSSY', 'pv': True},
-            {'atvurl': 'https://atv-ps-fe.primevideo.com', 'baseurl': 'https://www.primevideo.com', 'mid': 'A15PK738MTQHSO', 'pv': True},
-            {'atvurl': 'https://atv-ps.primevideo.com', 'baseurl': 'https://www.primevideo.com', 'mid': 'ART4WZ8MWBX2Y', 'pv': True}][Settings().region]
+    if len(user.get('deviceid', '')) != 32:
+        from uuid import uuid4
+        user['deviceid'] = uuid4().hex
+
+    areas = [{'atvurl': '', 'baseurl': '', 'mid': '', 'pv': False, 'country': ''},
+             {'atvurl': 'https://atv-ps-eu.amazon.de', 'baseurl': 'https://www.amazon.de', 'mid': 'A1PA6795UKMFR9', 'pv': False, 'country': 'de'},
+             {'atvurl': 'https://atv-ps-eu.amazon.co.uk', 'baseurl': 'https://www.amazon.co.uk', 'mid': 'A1F83G8C2ARO7P', 'pv': False, 'country': 'uk'},
+             {'atvurl': 'https://atv-ps.amazon.com', 'baseurl': 'https://www.amazon.com', 'mid': 'ATVPDKIKX0DER', 'pv': False, 'country': 'us'},
+             {'atvurl': 'https://atv-ps-fe.amazon.co.jp', 'baseurl': 'https://www.amazon.co.jp', 'mid': 'A1VC38T7YXB528', 'pv': False, 'country': 'jp'},
+             {'atvurl': 'https://atv-ps-eu.primevideo.com', 'baseurl': 'https://www.primevideo.com', 'mid': 'A3K6Y4MI8GDYMT', 'pv': True, 'country': 'us'},
+             {'atvurl': 'https://atv-ps-eu.primevideo.com', 'baseurl': 'https://www.primevideo.com', 'mid': 'A2MFUE2XK8ZSSY', 'pv': True, 'country': 'us'},
+             {'atvurl': 'https://atv-ps-fe.primevideo.com', 'baseurl': 'https://www.primevideo.com', 'mid': 'A15PK738MTQHSO', 'pv': True, 'country': 'us'},
+             {'atvurl': 'https://atv-ps.primevideo.com', 'baseurl': 'https://www.primevideo.com', 'mid': 'ART4WZ8MWBX2Y', 'pv': True, 'country': 'us'}]
+    area = areas[Settings().region]
 
     if area['mid']:
         user.update(area)
     else:
         Log('Retrieve territoral config')
         data = getURL('https://atv-ps.amazon.com/cdp/usage/v2/GetAppStartupConfig?deviceTypeID=A28RQHJKHM2A2W&deviceID=%s&firmware=1&version=1&format=json'
-                      % g.deviceID)
+                      % user['deviceid'])
         if not hasattr(data, 'keys'):
             return user, False
         if 'customerConfig' in data.keys():
@@ -107,6 +120,7 @@ def getTerritory(user):
             user['baseurl'] = data['territoryConfig']['primeSignupBaseUrl']
             user['mid'] = data['territoryConfig']['avMarketplace']
             user['pv'] = 'primevideo' in host
+            user['country'] = [a['country'] for a in areas if user['mid'] in a['mid']][0]
     return user, True
 
 
@@ -130,11 +144,15 @@ def getURL(url, useCookie=False, silent=False, headers=None, rjson=True, attempt
         session = requests.Session()
 
     retval = {} if rjson else ''
+    headers = {} if not headers else deepcopy(headers)
     if useCookie:
         cj = MechanizeLogin() if isinstance(useCookie, bool) else useCookie
         if isinstance(cj, bool):
             return retval
-        session.cookies.update(cj)
+        elif isinstance(cj, dict):
+            headers.update(cj)
+        else:
+            session.cookies.update(cj)
 
     from .common import Globals, Settings
     g = Globals()
@@ -143,19 +161,18 @@ def getURL(url, useCookie=False, silent=False, headers=None, rjson=True, attempt
         dispurl = re.sub('(?i)%s|%s|&token=\\w+|&customerId=\\w+' % (g.tvdb, g.tmdb), '', url).strip()
         Log('%sURL: %s' % ('check' if check else 'post' if postdata is not None else 'get', dispurl))
 
-    headers = {} if not headers else headers
     if 'User-Agent' not in headers:
         headers['User-Agent'] = getConfig('UserAgent')
+    """
+    # This **breaks** redirections. Host header OVERRIDES the host in the URL:
+    # if the URL is web.eu, but the Host is web.com, request will fetch web.com
     if 'Host' not in headers:
         headers['Host'] = host
+    """
     if 'Accept-Language' not in headers:
         headers['Accept-Language'] = g.userAcceptLanguages
     if '/api/' in url:
         headers['X-Requested-With'] = 'XMLHttpRequest'
-        binary = True
-
-    if 'amazonvideo.com' in host:
-        session.mount('https://', MyTLS1Adapter())
 
     class TryAgain(Exception):
         pass  # Try again on temporary errors
@@ -183,7 +200,7 @@ def getURL(url, useCookie=False, silent=False, headers=None, rjson=True, attempt
             raise TryAgain('{0} error'.format(r.status_code))
         if 400 <= r.status_code:
             raise NoRetries('{0} error'.format(r.status_code))
-        if useCookie:
+        if useCookie and not isinstance(useCookie, dict):
             from .users import saveUserCookies
             saveUserCookies(session.cookies)
     except (TryAgain,
@@ -229,7 +246,7 @@ def getURL(url, useCookie=False, silent=False, headers=None, rjson=True, attempt
     return res
 
 
-def getURLData(mode, asin, retformat='json', devicetypeid='AOAGZA014O5RE', version=1, firmware='1', opt='', extra=False,
+def getURLData(mode, asin, retformat='json', devicetypeid=g.dtid_web, version=2, firmware='1', opt='', extra=False,
                useCookie=False, retURL=False, vMT='Feature', dRes='PlaybackUrls,SubtitleUrls,ForcedNarratives',
                proxyEndpoint=None, silent=False):
     try:
@@ -238,6 +255,7 @@ def getURLData(mode, asin, retformat='json', devicetypeid='AOAGZA014O5RE', versi
         from urllib import quote_plus
 
     g = Globals()
+    playback_req = 'PlaybackUrls' in dRes or 'Widevine2License' in dRes
     url = g.ATVUrl + '/cdp/' + mode
     url += '?asin=' + asin
     url += '&deviceTypeID=' + devicetypeid
@@ -247,19 +265,20 @@ def getURLData(mode, asin, retformat='json', devicetypeid='AOAGZA014O5RE', versi
     url += '&format=' + retformat
     url += '&version=' + str(version)
     url += '&gascEnabled=' + str(g.UsePrimeVideo).lower()
-    if 'SubtitleUrls' in dRes.split(','):
-        url += "&subtitleFormat=TTMLv2"
-    if ('catalog/GetPlaybackResources' == mode) and (g.platform & g.OS_ANDROID):
-        url += '&operatingSystemName=Windows'
+    url += "&subtitleFormat=TTMLv2" if 'SubtitleUrls' in dRes else ''
+    url += '&operatingSystemName=Windows' if playback_req and (g.platform & g.OS_ANDROID) and devicetypeid == g.dtid_web else ''  # cookie auth on android
     if extra:
         url += '&resourceUsage=ImmediateConsumption&consumptionType=Streaming&deviceDrmOverride=CENC' \
                '&deviceStreamingTechnologyOverride=DASH&deviceProtocolOverride=Https' \
                '&deviceBitrateAdaptationsOverride=CVBR%2CCBR&audioTrackId=all'
-        url += '&deviceVideoCodecOverride=H265' if s.use_h265 else ''
         url += '&languageFeature=MLFv2'  # Audio Description tracks
         url += '&videoMaterialType=' + vMT
         url += '&desiredResources=' + dRes
-        url += '&supportedDRMKeyScheme=DUAL_KEY' if (not g.platform & g.OS_ANDROID) and ('PlaybackUrls' in dRes) else ''
+        url += '&supportedDRMKeyScheme=DUAL_KEY' if playback_req else ''
+        if devicetypeid == g.dtid_android:
+            url += '&deviceVideoCodecOverride=H264' + (',H265' if s.uhd else '')
+            url += '&deviceHdrFormatsOverride=' + supported_hdr()
+            url += '&deviceVideoQualityOverride=' + ('UHD' if s.uhd else 'HD')
 
     url += opt
     if retURL:
@@ -276,6 +295,18 @@ def getURLData(mode, asin, retformat='json', devicetypeid='AOAGZA014O5RE', versi
         else:
             return True, data
     return False, 'HTTP Error'
+
+
+def supported_hdr():
+    g = Globals()
+    hdr = []
+    if g.addon.getSetting('enable_dovi') == 'true':
+        hdr.append('DolbyVision')
+    if g.addon.getSetting('enable_hdr10') == 'true':
+        hdr.append('Hdr10')
+    if len(hdr) == 0:
+        hdr.append('None')
+    return ','.join(hdr)
 
 
 def getATVData(pg_mode, query='', version=2, useCookie=False, site_id=None):
@@ -329,11 +360,6 @@ def getATVData(pg_mode, query='', version=2, useCookie=False, site_id=None):
 
 
 def _sortedResult(result, query):
-    try:
-        from urllib.parse import parse_qs
-    except:
-        from urlparse import parse_qs
-
     asinlist = parse_qs(query.upper(), keep_blank_values=True)['ASINLIST'][0].split(',')
     sorteditems = ['empty'] * len(asinlist)
 
@@ -349,11 +375,16 @@ def _sortedResult(result, query):
     return result
 
 
-def MechanizeLogin():
+def MechanizeLogin(preferToken=False):
+    if preferToken and g.platform & g.OS_ANDROID:
+        token = getToken()
+        if token:
+            return token
+
+    # if Token not requested or not avaiable use cookie
     from .users import loadUser
     cj = requests.cookies.RequestsCookieJar()
     cookie = loadUser('cookie')
-
     if cookie:
         try:
             cj.update(requests.utils.cookiejar_from_dict(cookie))
@@ -361,10 +392,10 @@ def MechanizeLogin():
         except:
             pass
 
-    return LogIn()
+    return LogIn(preferToken)
 
 
-def LogIn():
+def LogIn(retToken=False):
     def _insertLF(string, begin=70):
         spc = string.find(' ', begin)
         return string[:spc] + '\n' + string[spc + 1:] if spc > 0 else string
@@ -411,7 +442,6 @@ def LogIn():
             else:
                 return None
         elif ('ap_captcha_img_label' in uni_soup) or ('auth-captcha-image-container' in uni_soup):
-            # form.find_by_type('input', 'text', {'id': 'ap-credential-autofill-hint'}):
             wnd = _Captcha((getString(30008).split('…')[0]), soup, email)
             wnd.doModal()
             if wnd.email and wnd.cap and wnd.pwd:
@@ -478,11 +508,6 @@ def LogIn():
                 return None
             del wnd
         elif 'pollingForm' in uni_soup:
-            try:
-                from urlparse import urlparse, parse_qs
-            except ImportError:
-                from urllib.parse import urlparse, parse_qs
-
             msg = soup.find('span', attrs={'class': 'transaction-approval-word-break'}).get_text(strip=True)
             msg += '\n'
             rows = soup.find('div', attrs={'id': re.compile('.*channelDetails.*')})
@@ -577,11 +602,35 @@ def LogIn():
             br = mechanicalsoup.StatefulBrowser(soup_config={'features': 'html.parser'})
             br.set_cookiejar(cj)
             br.session.verify = s.verifySsl
+            br.set_verbose(2)
+            clientid = b16encode(user['deviceid'].encode() + b'#' + g.dtid_android.encode()).decode().lower()
+            verifier = urlsafe_b64encode(os.urandom(32)).rstrip(b"=")
+            challenge = urlsafe_b64encode(sha256(verifier).digest()).rstrip(b"=")
+            br.session.headers.update(g.headers_android)
+            params = {
+                "openid.oa2.response_type": "code",
+                "openid.oa2.code_challenge_method": "S256",
+                "openid.oa2.code_challenge": challenge.decode(),
+                "openid.return_to": '{}/ap/maplanding'.format(user['baseurl']),
+                "openid.assoc_handle": "amzn_piv_android_v2_" + user['country'],
+                "openid.identity": "http://specs.openid.net/auth/2.0/identifier_select",
+                "pageId": "amzn_device_common_dark",
+                "accountStatusPolicy": "P1",
+                "openid.claimed_id": "http://specs.openid.net/auth/2.0/identifier_select",
+                "openid.mode": "checkid_setup",
+                "openid.ns.oa2": "http://www.amazon.com/ap/ext/oauth/2",
+                "openid.oa2.client_id": "device:{}".format(clientid),
+                "openid.ns.pape": "http://specs.openid.net/extensions/pape/1.0",
+                "openid.oa2.scope": "device_auth_access",
+                "forceMobileLayout": "true",
+                "openid.ns": "http://specs.openid.net/auth/2.0",
+                "openid.pape.max_auth_age": "0"
+            }
+
             caperr = -5
             while caperr:
                 Log('Connect to SignIn Page %s attempts left' % -caperr)
-                br.session.headers.update({'User-Agent': getConfig('UserAgent')})
-                br.open(user['baseurl'] + ('/gp/flex/sign-out.html' if not user['pv'] else '/auth-redirect/'))
+                br.open(user['baseurl'] + ('/ap/signin?' if not user['pv'] else '/auth-redirect/?') + urlencode(params))
                 try:
                     form = br.select_form('form[name="signIn"]')
                 except mechanicalsoup.LinkNotFoundError:
@@ -596,17 +645,10 @@ def LogIn():
                 return False
 
             form.set_input({'email': email, 'password': password})
-            if 'true' == g.addon.getSetting('rememberme') and form.find_by_type('input', 'checkbox', {'name': 'rememberMe'}):
-                form.set_checkbox({'rememberMe': True})
-
-            br.session.headers.update({'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-                                       'Accept-Encoding': 'gzip, deflate',
-                                       'Accept-Language': g.userAcceptLanguages,
-                                       'Cache-Control': 'max-age=0',
-                                       'Connection': 'keep-alive',
-                                       'Content-Type': 'application/x-www-form-urlencoded',
-                                       'Origin': '/'.join(br.get_url().split('/')[0:3]),
-                                       'Upgrade-Insecure-Requests': '1'})
+            if 'true' == g.addon.getSetting('rememberme'):
+                try:
+                    form.set_checkbox({'rememberMe': True})
+                except: pass
             br.submit_selected()
             response, soup = _parseHTML(br)
             WriteLog(response.replace(py2_decode(email), '**@**'), 'login')
@@ -622,6 +664,7 @@ def LogIn():
                 response, soup = _parseHTML(br)
                 WriteLog(response.replace(py2_decode(email), '**@**'), 'login-mfa')
 
+            url = br.get_url()
             if 'accountFixup' in response:
                 Log('Login AccountFixup')
                 skip_link = br.find_link(id='ap-account-fixup-phone-skip-link')
@@ -629,28 +672,33 @@ def LogIn():
                 response, soup = _parseHTML(br)
                 WriteLog(response.replace(py2_decode(email), '**@**'), 'login-fixup')
 
-            if 'action=sign-out' in response:
-                try:
-                    usr = re.search(r'action=sign-out[^"]*"[^>]*>[^?]+\s+([^?]+?)\s*\?', response).group(1)
-                except AttributeError:
-                    usr = getString(30209)
+            # Some PrimeVideo endpoints still return you to the store, directly
+            if url.endswith('?ref_=av_auth_return_redir') or ('action=sign-out' in response) or ('openid.oa2.authorization_code' in url):
+                if 'openid.oa2.authorization_code' in url:
+                    user = registerDevice(url, user, verifier, clientid)
+                else:  # Raw HTML
+                    try:
+                        name = re.search(r'action=sign-out[^"]*"[^>]*>[^?]+\s+([^?]+?)\s*\?', response).group(1)
+                    except AttributeError:
+                        name = getString(30209)
+                    from requests.utils import dict_from_cookiejar as dfcj
+                    user = {
+                        "name": name,
+                        "cookie": dfcj(cj)
+                    }
 
                 if s.multiuser:
-                    usr = g.dialog.input(getString(30135), usr)
-                    if not usr:
+                    user['name'] = g.dialog.input(getString(30135), user['name'])
+                    if not user['name']:
                         return False
 
-                user['name'] = usr
-                user['cookie'] = requests.utils.dict_from_cookiejar(cj)
-
                 remLoginData(False)
-                g.addon.setSetting('login_acc', usr)
+                g.addon.setSetting('login_acc', user['name'])
                 if not s.multiuser:
-                    g.dialog.ok(getString(30215), '{0} {1}'.format(getString(30014), usr))
+                    g.dialog.ok(getString(30215), '{0} {1}'.format(getString(30014), user['name']))
 
                 addUser(user)
-                g.genID()
-                return cj
+                return getToken(user) if retToken else cj
             elif 'message_error' in response:
                 writeConfig('login_pass', '')
                 msg = soup.find('div', attrs={'id': 'message_error'})
@@ -674,6 +722,93 @@ def LogIn():
     return False
 
 
+def registerDevice(url, user, verifier, clientid):
+    parsed_url = parse_qs(urlparse(url).query)
+    auth_code = parsed_url["openid.oa2.authorization_code"][0]
+    domain = re.compile(domain_regex).search(user['baseurl']).group(1)
+
+    data = {
+        'auth_data': {
+            'client_id': clientid,
+            'authorization_code': auth_code,
+            'code_verifier': verifier.decode(),
+            'code_algorithm': 'SHA-256',
+            'client_domain': 'DeviceLegacy',
+        },
+        'registration_data': deviceData(user),
+        'requested_token_type': [
+            'bearer',
+            'website_cookies',
+        ],
+        'requested_extensions': [
+            'device_info',
+            'customer_info',
+        ],
+        'cookies': {
+            'domain': '.' + domain,
+            'website_cookies': [],
+        },
+    }
+
+    resp = getURL('https://api.{}/auth/register'.format(domain), headers=g.headers_android, postdata=json.dumps(data))
+    WriteLog(str(resp), 'login-register')
+
+    if 'error' in resp['response']:
+        g.dialog.notification(g.__plugin__, resp['response']['error']['message'], xbmcgui.NOTIFICATION_INFO)
+        return False
+
+    data = resp['response']['success']
+    bearer = data['tokens']['bearer']
+    customer = data['extensions']['customer_info']
+    user['name'] = customer.get('given_name', customer.get('name', getString(30209)))
+    user['token'] = {'access': bearer['access_token'], 'refresh': bearer['refresh_token'], 'expires': int(time.time()) + int(bearer['expires_in'])}
+    user['cookie'] = {c['Name']: c['Value'] for c in data['tokens']['website_cookies']}
+    return user
+
+
+def deviceData(user):
+    return {
+        'domain': 'DeviceLegacy',
+        'device_type': g.dtid_android,
+        'device_serial': user['deviceid'],
+        'app_name': 'com.amazon.avod.thirdpartyclient',
+        'app_version': '296016847',
+        'device_model': 'mdarcy/nvidia/SHIELD Android TV',
+        'os_version': 'NVIDIA/mdarcy/mdarcy:11/RQ1A.210105.003/7094531_2971.7725:user/release-keys'
+    }
+
+
+def getToken(user=None):
+    from .users import loadUser, addUser
+    if user is None:
+        user = loadUser()
+    token = user.get('token')
+    if token is not None:
+        if int(time.time()) > token['expires']:
+            user['token'] = refreshToken(user)
+            addUser(user)
+        return {'Authorization': 'Bearer ' + user['token']['access']}
+    return False
+
+
+def refreshToken(user):
+    domain = re.compile(domain_regex).search(user['baseurl']).group(1)
+    token = user['token']
+    data = deviceData(user)
+    data['requested_token_type'] = 'access_token'
+    data['source_token_type'] = 'refresh_token'
+    data['source_token'] = token['refresh']
+    response = getURL('https://api.{}/auth/token'.format(domain), headers=g.headers_android, postdata=data)
+    if 'access_token' in response:
+        token['access'] = response['access_token']
+        token['expires'] = int(time.time() + int(response['expires_in']))
+        Log('Token renewed')
+        return token
+    else:
+        Log('Token not renewed, registering device again', xbmc.LOGERROR)
+    return False
+
+
 def remLoginData(info=True):
     for fn in xbmcvfs.listdir(g.DATA_PATH)[1]:
         if py2_decode(fn).startswith('cookie'):
@@ -681,6 +816,7 @@ def remLoginData(info=True):
     writeConfig('accounts', '')
     writeConfig('login_name', '')
     writeConfig('login_pass', '')
+    writeConfig('GenDeviceID', '')
 
     if info:
         writeConfig('accounts.lst', '')
@@ -706,10 +842,7 @@ def GrabJSON(url, postData=None):
     """ Extract JSON objects from HTMLs while keeping the API ones intact """
     try:
         from htmlentitydefs import name2codepoint
-        from urlparse import urlparse, parse_qs
-        from urllib import urlencode
     except:
-        from urllib.parse import urlparse, parse_qs, urlencode
         from html.entities import name2codepoint
 
     s = Settings()
@@ -811,16 +944,16 @@ def GrabJSON(url, postData=None):
     def do(url, postData):
         """ Wrapper to facilitate logging """
 
-        if url.startswith('/search/'):
+        if url.startswith('/search/') or url.startswith('/gp/video/search/'):
             np = urlparse(url)
             qs = parse_qs(np.query)
             if 'from' in list(qs):  # list() instead of .keys() to avoid py3 iteration errors
                 qs['startIndex'] = qs['from']
                 del qs['from']
-            np = np._replace(path='/gp/video/api' + np.path, query=urlencode([(k, v) for k, l in qs.items() for v in l]))
+            np = np._replace(path='/gp/video/api' + np.path.replace('/gp/video', ''), query=urlencode([(k, v) for k, l in qs.items() for v in l]))
             url = np.geturl()
 
-        r = getURL(FQify(url), silent=True, useCookie=True, rjson=False, postdata=postData, binary=(not g.UsePrimeVideo))
+        r = getURL(FQify(url), silent=True, useCookie=True, rjson=False, postdata=postData)
         if not r:
             return None
         try:
@@ -885,6 +1018,7 @@ class _Captcha(pyxbmct.AddonDialogWindow):
             self.head = soup.find('span', attrs={'class': 'a-list-item'}).get_text(strip=True)
             title = soup.find('div', attrs={'id': 'auth-guess-missing-alert'}).div.div
             self.picurl = soup.find('div', attrs={'id': 'auth-captcha-image-container'}).img.get('src')
+        self._s = Settings()
         self.setGeometry(500, 550, 9, 2)
         self.email = email
         self.pwd = ''
@@ -917,6 +1051,7 @@ class _Captcha(pyxbmct.AddonDialogWindow):
         self.connect(pyxbmct.ACTION_NAV_BACK, self.close)
         self.username.setText(self.email)
         self.username.setEnabled(False)
+        self.password.setType(0 if self._s.show_pass else 6, '')
         self.tb_head.setText(self.head)
         self.fl_title.addLabel(self.title)
         self.image.setImage(self.picurl, False)
@@ -1020,15 +1155,3 @@ class _ProgressDialog(pyxbmct.AddonDialogWindow):
 
     def cancel(self):
         self.iscanceled = True
-
-
-class MyTLS1Adapter(HTTPAdapter):
-    def init_poolmanager(self, connections, maxsize, block=False, *args, **kwargs):
-        Log('TLSv1 Adapter', Log.DEBUG)
-        if ssl.OPENSSL_VERSION_INFO[:4] >= (1, 1, 1, 6):  # openssl 1.1.1f
-            context = ssl.create_default_context()
-            if sys.version_info >= (3, 7):
-                context.minimum_version = ssl.TLSVersion.TLSv1
-            context.set_ciphers('DEFAULT@SECLEVEL=1')
-            kwargs['ssl_context'] = context
-        self.poolmanager = PoolManager(num_pools=connections, maxsize=maxsize, block=block, ssl_version=ssl.PROTOCOL_TLSv1, *args, **kwargs)

@@ -170,6 +170,10 @@ msgctxt "#30035"
 msgid "Enable Views"
 msgstr "Aktywuj widoki"
 
+msgctxt "#30036"
+msgid "Show Recently watched menu entry"
+msgstr ""
+
 msgctxt "#30037"
 msgid "Disable SSL Certificate Verification"
 msgstr "Wyłącz weryfikację certyfikatu SSL"
@@ -280,6 +284,10 @@ msgctxt "#30065"
 msgid "Mediasource TV Title"
 msgstr "Tytuł serialu z źródła"
 
+msgctxt "#30066"
+msgid "Send video progress to Amazon at least at percent played (0 to disable)"
+msgstr ""
+
 msgctxt "#30070"
 msgid "Miscellaneous"
 msgstr "Różne"
@@ -375,6 +383,18 @@ msgstr "Dane wideo"
 msgctxt "#30092"
 msgid "Both"
 msgstr "Oba"
+
+msgctxt "#30093"
+msgid "Use Web API (beta)"
+msgstr ""
+
+msgctxt "#30094"
+msgid "Refer to PrimeVideo settings for more options"
+msgstr ""
+
+msgctxt "#30095"
+msgid "Reset addon home page to default"
+msgstr ""
 
 msgctxt "#30100"
 msgid "Library"
@@ -507,6 +527,10 @@ msgstr "nieoceniony"
 msgctxt "#30173"
 msgid "Episode"
 msgstr "Epizod"
+
+msgctxt "#30174"
+msgid "Event"
+msgstr ""
 
 msgctxt "#30180"
 msgid "Add %s to Watchlist"
@@ -706,8 +730,8 @@ msgid "Loading page {0}…"
 msgstr "Ładowanie strony {0}…"
 
 msgctxt "#30253"
-msgid "{0} seasons"
-msgstr "{0} sezony"
+msgid "{0} seasons available"
+msgstr ""
 
 msgctxt "#30254"
 msgid "userinput.exe not found"
@@ -760,3 +784,30 @@ msgstr "30 dni"
 msgctxt "#30266"
 msgid "Login credentials invalid, please login again."
 msgstr "Dane logowania są nieprawidłowe, zaloguj się ponownie."
+
+msgctxt "#30267"
+msgid "Next page…"
+msgstr ""
+
+msgctxt "#30268"
+msgid "Refresh"
+msgstr ""
+
+msgctxt "#30269"
+msgid "Not available, enable WebAPI to use this future"
+msgstr ""
+
+msgctxt "#30270"
+msgid "No additional languages available"
+msgstr ""
+
+msgctxt "#30271"
+msgid "Set as default addon home page"
+msgstr ""
+
+msgctxt "#30272"
+msgid ""
+"You are using an Android device that is not yet registered with Amazon, so at most HD playback is possible.\n"
+"In order to register this device and thus use the UHD playback, they must log in again in the addon with their Amazon credentials.\n"
+"This message will be displayed once."
+msgstr ""

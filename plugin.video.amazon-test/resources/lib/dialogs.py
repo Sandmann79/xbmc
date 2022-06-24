@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-import pyxbmct
+# -*- coding: utf-8 -*-
 import pyxbmct
 from .l10n import getString
 

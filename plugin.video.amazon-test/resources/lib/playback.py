@@ -4,6 +4,7 @@ from __future__ import unicode_literals
 from kodi_six import xbmcplugin
 from kodi_six.utils import py2_decode
 import os
+import pickle
 import shlex
 import subprocess
 import threading
@@ -313,41 +314,39 @@ def PlayVideo(name, asin, adultstr, streamtype, forcefb=0):
             Log('No Inputstream Addon found or activated')
             return False
 
-        cookie = MechanizeLogin()
+        cookie, opt_lic, headers, dtid = _getPlaybackVars()
         if not cookie:
             g.dialog.notification(getString(30203), getString(30200), xbmcgui.NOTIFICATION_ERROR)
             Log('Login error at playback')
-            return False
+        if (g.platform & g.OS_ANDROID) and not isinstance(cookie, dict) and getConfig('uhdinfo') == '':
+            g.dialog.ok(g.__plugin__, getString(30272))
+            writeConfig('uhdinfo', '1')
 
-        mpd, subs, timecodes = _ParseStreams(*getURLData('catalog/GetPlaybackResources', asin, extra=True, vMT=vMT, dRes=dRes, useCookie=cookie,
-                                                         proxyEndpoint='gpr', opt=opt), retmpd=True, bypassproxy=s.bypassProxy or (streamtype > 1))
+        bypassproxy = s.bypassProxy or (streamtype > 1)
+        mpd, subs, timecodes = _ParseStreams(*getURLData('catalog/GetPlaybackResources', asin, extra=True, vMT=vMT, dRes=dRes, useCookie=cookie, devicetypeid=dtid,
+                                                         proxyEndpoint=(None if bypassproxy else 'gpr'), opt=opt), retmpd=True, bypassproxy=bypassproxy)
 
         if not mpd:
             g.dialog.notification(getString(30203), subs, xbmcgui.NOTIFICATION_ERROR)
             return False
 
+        licURL = getURLData('catalog/GetPlaybackResources', asin, devicetypeid=dtid, opt=opt_lic, extra=True, vMT=vMT, dRes='Widevine2License', retURL=True)
         skip = timecodes.get('skipElements')
         Log('Skip Items: %s' % skip, Log.DEBUG)
-
-        cj_str = ';'.join(['%s=%s' % (k, v) for k, v in cookie.items()])
-        opt = '|Content-Type=application%2Fx-www-form-urlencoded&Cookie=' + quote_plus(cj_str)
-        opt += '|widevine2Challenge=B{SSM}&includeHdcpTestKeyInLicense=true'
-        opt += '|JBlicense;hdcpEnforcementResolutionPixels'
-        licURL = getURLData('catalog/GetPlaybackResources', asin, opt=opt, extra=True, vMT=vMT, dRes='Widevine2License', retURL=True)
 
         from xbmcaddon import Addon as KodiAddon
         is_version = KodiAddon(g.is_addon).getAddonInfo('version') if g.is_addon else '0'
 
-        if (not s.audioDescriptions) and (streamtype != 2):
+        if (not s.audioDescriptions) and (streamtype != 2) and (dtid == g.dtid_web):
             mpd = re.sub(r'(~|%7E)', '', mpd)
 
         Log(mpd, Log.DEBUG)
 
         if g.KodiVersion < 18 and extern:
             content = getATVData('GetASINDetails', 'ASINList=' + asin)['titles'][0]
-            ct, Info = g.amz.getInfos(content, False)
+            ct, Info = g.pv.getInfos(content, False)
             title = Info['DisplayTitle']
-            thumb = Info.get('Poster', Info['Thumb'])
+            thumb = Info.get('poster', Info['thumb'])
             mpaa_check = str(Info.get('MPAA', mpaa_str)) in mpaa_str or isAdult
         else:
             mpaa_check = _getListItem('MPAA') in mpaa_str + mpaa_str.replace(' ', '') or isAdult
@@ -379,7 +378,7 @@ def PlayVideo(name, asin, adultstr, streamtype, forcefb=0):
         listitem.setSubtitles(subs)
         listitem.setProperty('%s.license_type' % g.is_addon, 'com.widevine.alpha')
         listitem.setProperty('%s.license_key' % g.is_addon, licURL)
-        listitem.setProperty('%s.stream_headers' % g.is_addon, 'user-agent=' + getConfig('UserAgent'))
+        listitem.setProperty('%s.stream_headers' % g.is_addon, urlencode(headers))
         listitem.setProperty('inputstreamaddon' if g.KodiVersion < 19 else 'inputstream', g.is_addon)
         listitem.setMimeType('application/dash+xml')
         listitem.setContentLookup(False)
@@ -414,9 +413,28 @@ def PlayVideo(name, asin, adultstr, streamtype, forcefb=0):
         del player, skip_button
         return True
 
+    def _getPlaybackVars():
+        cookie = MechanizeLogin(preferToken=True)
+        cj_str = deepcopy(cookie)
+        dtid = g.dtid_web
+
+        if cookie:
+            if isinstance(cookie, dict):
+                dtid = g.dtid_android
+                headers = g.headers_android
+            else:
+                cj_str = {'Cookie': ';'.join(['%s=%s' % (k, v) for k, v in cookie.items()])}
+                headers = {'User-Agent': getConfig('UserAgent')}
+            cj_str.update({'Content-Type': 'application/x-www-form-urlencoded'})
+            cj_str.update(headers)
+            opt = '|' + urlencode(cj_str)
+            opt += '|widevine2Challenge=B{SSM}&includeHdcpTestKeyInLicense=true'
+            opt += '|JBlicense;hdcpEnforcementResolutionPixels'
+            return cookie, opt, headers, dtid
+        return False
+
     isAdult = adultstr == '1'
     amazonUrl = g.BaseUrl + "/dp/" + (name if g.UsePrimeVideo else asin)
-    uhdFB = forcefb < 0 and s.uhdAndroid
     videoUrl = "%s/?autoplay=%s" % (amazonUrl, ('trailer' if streamtype == 1 else '1'))
     extern = not xbmc.getInfoLabel('Container.PluginName').startswith('plugin.video.amazon')
     suc = False
@@ -424,7 +442,7 @@ def PlayVideo(name, asin, adultstr, streamtype, forcefb=0):
     if extern:
         Log('External Call', Log.DEBUG)
 
-    if (s.playMethod == 2 or uhdFB) and g.platform & g.OS_ANDROID:
+    if s.playMethod == 2 and g.platform & g.OS_ANDROID:
         _AndroidPlayback(asin, streamtype)
     elif s.playMethod == 3:
         suc = _IStreamPlayback(asin, name, streamtype, isAdult, extern)
@@ -475,7 +493,7 @@ class _window(xbmcgui.WindowDialog):
             return int(li_dur) * 60
         else:
             content = getATVData('GetASINDetails', 'ASINList=' + asin)['titles'][0]
-            ct, Info = g.amz.getInfos(content, False)
+            ct, Info = g.pv.getInfos(content, False)
             return int(Info.get('Duration', 0))
 
     def close(self):
@@ -647,9 +665,9 @@ class _AmazonPlayer(xbmc.Player):
             self.event = 'PLAY'
             if suc and 'statusCallbackIntervalSeconds' in str(msg):
                 self.interval = msg['message']['body']['statusCallbackIntervalSeconds']
-        if not self.rec_added and self.video_lastpos > 180 and not g.UsePrimeVideo:
+        if not self.rec_added and self.video_lastpos > 180 and not g.UsePrimeVideo and not s.useWebApi:
             self.rec_added = True
-            g.amz.updateRecents(self.asin)
+            g.pv.updateRecents(self.asin)
 
     def finished(self, forced=False):
         if self.running and (self.video_lastpos > 0 or forced):

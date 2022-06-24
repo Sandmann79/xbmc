@@ -381,6 +381,18 @@ msgctxt "#30092"
 msgid "Both"
 msgstr ""
 
+msgctxt "#30093"
+msgid "Use Web API (beta)"
+msgstr ""
+
+msgctxt "#30094"
+msgid "Refer to PrimeVideo settings for more options"
+msgstr ""
+
+msgctxt "#30095"
+msgid "Reset addon home page to default"
+msgstr ""
+
 msgctxt "#30100"
 msgid "Library"
 msgstr "Bibliothèque"
@@ -511,6 +523,10 @@ msgstr "Non évalué"
 
 msgctxt "#30173"
 msgid "Episode"
+msgstr ""
+
+msgctxt "#30174"
+msgid "Event"
 msgstr ""
 
 msgctxt "#30180"
@@ -708,8 +724,9 @@ msgctxt "#30252"
 msgid "Loading page {0}…"
 msgstr "Chargement de la page {0}…"
 
+#, fuzzy
 msgctxt "#30253"
-msgid "{0} seasons"
+msgid "{0} seasons available"
 msgstr "{0} saisons"
 
 msgctxt "#30254"
@@ -764,10 +781,29 @@ msgctxt "#30266"
 msgid "Login credentials invalid, please login again."
 msgstr ""
 
-#~ msgctxt "#30218"
-#~ msgid ""
-#~ "Due changes at Amazon's DRM encryption, it's not possible to use Inputstream for this video.\n"
-#~ "Please configure the fallback option in Settings, to use another Playback method."
-#~ msgstr ""
-#~ "En raison de modifications apportées au chiffrement DRM d'Amazon, il n'est pas possible d'utiliser Inputstream pour cette vidéo.\n"
-#~ "Veuillez configurer l'option de secours dans les paramètres pour utiliser une autre méthode de lecture."
+msgctxt "#30267"
+msgid "Next page…"
+msgstr ""
+
+msgctxt "#30268"
+msgid "Refresh"
+msgstr ""
+
+msgctxt "#30269"
+msgid "Not available, enable WebAPI to use this future"
+msgstr ""
+
+msgctxt "#30270"
+msgid "No additional languages available"
+msgstr ""
+
+msgctxt "#30271"
+msgid "Set as default addon home page"
+msgstr ""
+
+msgctxt "#30272"
+msgid ""
+"You are using an Android device that is not yet registered with Amazon, so at most HD playback is possible.\n"
+"In order to register this device and thus use the UHD playback, they must log in again in the addon with their Amazon credentials.\n"
+"This message will be displayed once."
+msgstr ""

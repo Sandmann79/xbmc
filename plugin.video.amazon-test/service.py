@@ -16,7 +16,6 @@ class BackgroundService:
     def __init__(self):
         from resources.lib.common import Settings
         from resources.lib.proxy import ProxyTCPD
-        from resources.lib.configs import writeConfig
         self._s = Settings()
         self.lastExport = float(getConfig('last_wl_export', '0'))
         self.proxy = ProxyTCPD(self._s)
@@ -61,7 +60,7 @@ class BackgroundService:
         if cur_time >= (self.freqExport + self.lastExport):
             Log('Service: Exporting the Watchlist')
             self.lastExport = cur_time
-            xbmc.executebuiltin('RunPlugin(plugin://plugin.video.amazon-test/?mode=getListMenu&url=watchlist&export=2)')
+            xbmc.executebuiltin('RunPlugin(plugin://plugin.video.amazon-test/?mode=exportWatchlist)')
 
 
 if __name__ == '__main__':

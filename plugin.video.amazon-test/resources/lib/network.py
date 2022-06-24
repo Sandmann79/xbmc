@@ -163,8 +163,12 @@ def getURL(url, useCookie=False, silent=False, headers=None, rjson=True, attempt
 
     if 'User-Agent' not in headers:
         headers['User-Agent'] = getConfig('UserAgent')
+    """
+    # This **breaks** redirections. Host header OVERRIDES the host in the URL:
+    # if the URL is web.eu, but the Host is web.com, request will fetch web.com
     if 'Host' not in headers:
         headers['Host'] = host
+    """
     if 'Accept-Language' not in headers:
         headers['Accept-Language'] = g.userAcceptLanguages
     if '/api/' in url:

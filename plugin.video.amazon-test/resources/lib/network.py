@@ -11,6 +11,7 @@ import mechanicalsoup
 import pyxbmct
 import re
 import requests
+from requests.utils import dict_from_cookiejar as dfcj
 
 from timeit import default_timer as timer
 from random import randint
@@ -26,9 +27,9 @@ from .metrics import addNetTime
 
 try:
     from urlparse import urlparse, parse_qs
-    from urllib import urlencode
+    from urllib import urlencode, quote_plus
 except ImportError:
-    from urllib.parse import urlparse, parse_qs, urlencode
+    from urllib.parse import urlparse, parse_qs, urlencode, quote_plus
 
 domain_regex = r'[^\.]+\.([^/]+)(?:/|$)'
 
@@ -124,10 +125,41 @@ def getTerritory(user):
     return user, True
 
 
-def getURL(url, useCookie=False, silent=False, headers=None, rjson=True, attempt=1, check=False, postdata=None, binary=False, allow_redirects=True):
+def buildUrl(url, previous=None):
+    u = urlparse(url)
+    p = urlparse(previous or '')
+    built = {
+        'scheme': u.scheme or p.scheme,
+        'netloc': u.netloc or p.netloc,
+        'path': u.path,
+        'query': u.query,
+        'fragment': u.fragment,
+    }
+    return '{}://{}{}{}{}'.format(
+        built['scheme'],
+        built['netloc'],
+        built['path'],
+        '?{}'.format(built['query']) if built['query'] else '',
+        '#{}'.format(built['fragment']) if built['fragment'] else '',
+    )
+
+
+def getSessionCookieJar(url):
+    host = getURL.hostParser.search(url)  # Try to extract the host from the URL
+    if None is not host:
+        host = host.group(1)
+        if host in getURL.sessions:
+            return getURL.sessions[host].cookies
+    return None
+
+
+def getURL(url, useCookie=False, silent=False, headers=None, rjson=True, attempt=1, check=False, postdata=None, binary=False, allow_redirects=True, redirect_cb=None):
     if not hasattr(getURL, 'sessions'):
         getURL.sessions = {}  # Keep-Alive sessions
         getURL.hostParser = re.compile(r'://([^/]+)(?:/|$)')
+
+    if (redirect_cb):
+        allow_redirects = False
 
     # Static variable to store last response code. 0 means generic error (like SSL/connection errors),
     # while every other response code is a specific HTTP status code
@@ -183,7 +215,17 @@ def getURL(url, useCookie=False, silent=False, headers=None, rjson=True, attempt
     try:
         starttime = timer()
         method = 'POST' if postdata is not None else 'GET'
-        r = session.request(method, url, data=postdata, headers=headers, verify=s.verifySsl, stream=True, allow_redirects=allow_redirects)
+        m = method
+        d = postdata
+        r = session.request(m, url, data=d, headers=headers, verify=s.verifySsl, stream=True, allow_redirects=allow_redirects)
+        while (redirect_cb and (r.status_code in [301, 302, 307, 308])):
+            next = redirect_cb(r.headers['Location'])
+            if not next:
+                break
+            url = buildUrl(next, url)
+            m = m if r.status_code >= 307 else 'GET'
+            d = d if r.status_code >= 307 else None
+            r = session.request(m, url, data=d, headers=headers, verify=s.verifySsl, stream=True, allow_redirects=False)
         getURL.lastResponseCode = r.status_code  # Set last response code
         response = 'OK' if 400 > r.status_code >= 200 else ''
         if not check:
@@ -249,10 +291,6 @@ def getURL(url, useCookie=False, silent=False, headers=None, rjson=True, attempt
 def getURLData(mode, asin, retformat='json', devicetypeid=g.dtid_web, version=2, firmware='1', opt='', extra=False,
                useCookie=False, retURL=False, vMT='Feature', dRes='PlaybackUrls,SubtitleUrls,ForcedNarratives',
                proxyEndpoint=None, silent=False):
-    try:
-        from urllib.parse import quote_plus
-    except ImportError:
-        from urllib import quote_plus
 
     g = Globals()
     playback_req = 'PlaybackUrls' in dRes or 'Widevine2License' in dRes
@@ -598,9 +636,7 @@ def LogIn(retToken=False):
             password = _setLoginPW(s.show_pass)
 
         if password:
-            cj = requests.cookies.RequestsCookieJar()
             br = mechanicalsoup.StatefulBrowser(soup_config={'features': 'html.parser'})
-            br.set_cookiejar(cj)
             br.session.verify = s.verifySsl
             br.set_verbose(2)
             clientid = b16encode(user['deviceid'].encode() + b'#' + g.dtid_android.encode()).decode().lower()
@@ -629,8 +665,39 @@ def LogIn(retToken=False):
 
             caperr = -5
             while caperr:
+                def manualRedirects(url):
+                    if 'openid.oa2.authorization_code' in url:
+                        raise Exception('PANIQ')
+                    if '/ap/signin' not in url:
+                        return url
+                    purl = urlparse(url)
+                    query = parse_qs(purl.query)
+                    for k, v in params.items():
+                        if k not in query:
+                            query[k] = [v]
+                        elif query[k][0] == v:
+                            pass
+                        elif k in ['openid.return_to', 'openid.assoc_handle']:
+                            # Prefer the values returned by the official endpoint
+                            pass
+                        else:
+                            Log('Login data conflict on {}: {} => {}'.format(k, query[k], v))
+                    redirectedUrl[0] = '{}://{}{}?{}{}'.format(
+                        purl.scheme,
+                        purl.netloc,
+                        purl.path,
+                        '&'.join(['{}={}'.format(k, quote_plus(v[0])) for k, v in query.items()]),
+                        '#{}'.format(purl.fragment) if purl.fragment else ''
+                    )
+                    return redirectedUrl[0]
                 Log('Connect to SignIn Page %s attempts left' % -caperr)
-                br.open(user['baseurl'] + ('/ap/signin?' if not user['pv'] else '/auth-redirect/?') + urlencode(params))
+                # br.open(user['baseurl'] + ('/ap/signin?' if not user['pv'] else '/auth-redirect/?') + urlencode(params))
+                loginUrl = user['baseurl'] + ('/ap/signin' if not user['pv'] else '/auth-redirect/')
+                redirectedUrl = [loginUrl]  # Mutable to update it within `manualRedirects`
+                pageData = getURL('{}?{}'.format(loginUrl, urlencode(params)), rjson=False, redirect_cb=manualRedirects)
+                cj = getSessionCookieJar(loginUrl)
+                br.set_cookiejar(cj)
+                br.open_fake_page(pageData, redirectedUrl[0])
                 try:
                     form = br.select_form('form[name="signIn"]')
                 except mechanicalsoup.LinkNotFoundError:
@@ -681,7 +748,6 @@ def LogIn(retToken=False):
                         name = re.search(r'action=sign-out[^"]*"[^>]*>[^?]+\s+([^?]+?)\s*\?', response).group(1)
                     except AttributeError:
                         name = getString(30209)
-                    from requests.utils import dict_from_cookiejar as dfcj
                     user = {
                         "name": name,
                         "cookie": dfcj(cj)

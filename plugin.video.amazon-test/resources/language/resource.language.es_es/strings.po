@@ -23,7 +23,7 @@ msgstr "Transmisión de Amazon Prime Video"
 
 msgctxt "Addon Description"
 msgid "Movies and Television Shows for Prime Members"
-msgstr "Películas y series para clientes Prime"
+msgstr "Películas y series para clientes de Amazon Prime Video"
 
 msgctxt "Addon Disclaimer"
 msgid "Some parts of this addon may not be legal in your country of residence – please check with your local laws before installing."
@@ -107,7 +107,7 @@ msgstr "Servidor preferido"
 
 msgctxt "#30020"
 msgid "Use H.265 Videocodec"
-msgstr ""
+msgstr "Usar codec de video H.265"
 
 msgctxt "#30021"
 msgid "Language"
@@ -131,7 +131,7 @@ msgstr "Cambiar el idioma del texto"
 
 msgctxt "#30026"
 msgid "Show password"
-msgstr ""
+msgstr "Mostrar contraseña"
 
 msgctxt "#30027"
 msgid "Stretch factor"
@@ -284,7 +284,7 @@ msgstr "Título de la fuente de series"
 
 msgctxt "#30066"
 msgid "Send video progress to Amazon at least at percent played (0 to disable)"
-msgstr ""
+msgstr "Enviar progreso de vídeo a Amazon en almenos al porcentaje reproducido (0 para desactivar)"
 
 msgctxt "#30070"
 msgid "Miscellaneous"
@@ -384,15 +384,15 @@ msgstr "Ambos"
 
 msgctxt "#30093"
 msgid "Use Web API (beta)"
-msgstr ""
+msgstr "Usar Web API (beta)"
 
 msgctxt "#30094"
 msgid "Refer to PrimeVideo settings for more options"
-msgstr ""
+msgstr "Consulte la configuración de PrimeVideo para más opciones"
 
 msgctxt "#30095"
 msgid "Reset addon home page to default"
-msgstr ""
+msgstr "Restablecer página de inicio del add-on a por defecto"
 
 msgctxt "#30100"
 msgid "Library"
@@ -600,7 +600,7 @@ msgstr "Navegador o script no encontrado. Por favor, comprueba los ajustes."
 
 msgctxt "#30199"
 msgid "Raw"
-msgstr ""
+msgstr "En crudo"
 
 msgctxt "#30200"
 msgid "Login Error"
@@ -780,23 +780,23 @@ msgstr "Las credenciales de inicio de sesión no son válidas, vuelva a iniciar 
 
 msgctxt "#30267"
 msgid "Next page…"
-msgstr ""
+msgstr "Siguiente página..."
 
 msgctxt "#30268"
 msgid "Refresh"
-msgstr ""
+msgstr "Actualizar"
 
 msgctxt "#30269"
 msgid "Not available, enable WebAPI to use this future"
-msgstr ""
+msgstr "No disponible, activa WebAPI para usar esta función"
 
 msgctxt "#30270"
 msgid "No additional languages available"
-msgstr ""
+msgstr "No hay idiomas adicionales disponibles"
 
 msgctxt "#30271"
 msgid "Set as default addon home page"
-msgstr ""
+msgstr "Establecer cómo inicio de por defecto del add-on"
 
 msgctxt "#30272"
 msgid ""
@@ -804,3 +804,6 @@ msgid ""
 "In order to register this device and thus use the UHD playback, they must log in again in the addon with their Amazon credentials.\n"
 "This message will be displayed once."
 msgstr ""
+"Estás usando un dispositivo Android que no está registrado con Amazon, por lo que, como máximo, es posible la reproducción en HD.\n"
+"Para poder registrar este dispositivo y así utilizar la reproducción en Ultra HD, necesitas iniciar sesión de nuevo en el add-on con tus credenciales de Amazon.\n"
+"Este mensaje se mostrará una vez."

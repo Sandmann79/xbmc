@@ -780,7 +780,7 @@ msgstr "Las credenciales de inicio de sesión no son válidas, vuelva a iniciar 
 
 msgctxt "#30267"
 msgid "Next page…"
-msgstr "Siguiente página..."
+msgstr "Siguiente página…"
 
 msgctxt "#30268"
 msgid "Refresh"

@@ -945,14 +945,17 @@ def GrabJSON(url, postData=None):
         """ Wrapper to facilitate logging """
 
         if re.match(r'/(?:gp/video/)?search(?:Default)?/', url):
-            np = urlparse(url)
-            qs = parse_qs(np.query)
+            up = urlparse(url)
+            qs = parse_qs(up.query)
             if 'from' in list(qs):  # list() instead of .keys() to avoid py3 iteration errors
                 qs['startIndex'] = qs['from']
                 del qs['from']
-            np = np._replace(path='/gp/video/api' + np.path.replace('/gp/video', ''), query=urlencode([(k, v) for k, l in qs.items() for v in l]))
-            url = np.geturl()
-
+            if (url.startswith('/gp/video')):
+                newPath = '/gp/video/api' + up.path.replace('/gp/video', '')
+            else:
+                newPath = '/api' + up.path.replace('/search/', '/searchDefault/')
+            up = up._replace(path=newPath, query=urlencode([(k, v) for k, l in qs.items() for v in l]))
+            url = up.geturl()
         r = getURL(FQify(url), silent=True, useCookie=True, rjson=False, postdata=postData)
         if not r:
             return None

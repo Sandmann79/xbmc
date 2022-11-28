@@ -321,8 +321,8 @@ def PlayVideo(name, asin, adultstr, streamtype, forcefb=0):
         # If not, then the second iteration will fall back to cookie authentification
         # and try again. This is neccessary for content like Amazon Freevee, which is not
         # available though token based authentification.
-        for t in [True, False]:
-            cookie, opt_lic, headers, dtid = _getPlaybackVars(preferToken=t)
+        for preferTokenToCookie in [True, False]:
+            cookie, opt_lic, headers, dtid = _getPlaybackVars(preferToken=preferTokenToCookie)
             if not cookie:
                 g.dialog.notification(getString(30203), getString(30200), xbmcgui.NOTIFICATION_ERROR)
                 Log('Login error at playback')
@@ -331,7 +331,7 @@ def PlayVideo(name, asin, adultstr, streamtype, forcefb=0):
                 writeConfig('uhdinfo', '1')
 
             success, data = getURLData('catalog/GetPlaybackResources', asin, extra=True, vMT=vMT, dRes=dRes, useCookie=cookie, devicetypeid=dtid,
-                                        proxyEndpoint=(None if bypassproxy else 'gpr'), opt=opt)
+                                       proxyEndpoint=(None if bypassproxy else 'gpr'), opt=opt)
 
             if success:
                 break

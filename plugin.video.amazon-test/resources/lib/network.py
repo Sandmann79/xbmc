@@ -944,7 +944,7 @@ def GrabJSON(url, postData=None):
     def do(url, postData):
         """ Wrapper to facilitate logging """
 
-        if url.startswith('/search/') or url.startswith('/gp/video/search/'):
+        if re.match(r'/(?:gp/video/)?search(?:Default)?/', url):
             np = urlparse(url)
             qs = parse_qs(np.query)
             if 'from' in list(qs):  # list() instead of .keys() to avoid py3 iteration errors

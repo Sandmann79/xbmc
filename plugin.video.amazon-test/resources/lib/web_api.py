@@ -275,7 +275,7 @@ class PrimeVideo(Singleton):
                     }
 
     def Route(self, verb, path):
-        if 'search' == verb: g.pv.Search()
+        if 'search' == verb: g.pv.Search(path.get('searchstring'))
         elif 'browse' == verb: g.pv.Browse(path)
         elif 'refresh' == verb: g.pv.Refresh(path)
         elif 'profiles' == verb: g.pv.Profile(path)

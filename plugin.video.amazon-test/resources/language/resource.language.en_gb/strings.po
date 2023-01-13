@@ -381,7 +381,7 @@ msgid "Both"
 msgstr ""
 
 msgctxt "#30093"
-msgid "Use Web API (beta, requires restart)"
+msgid "Use Web API (requires restart)"
 msgstr ""
 
 msgctxt "#30094"

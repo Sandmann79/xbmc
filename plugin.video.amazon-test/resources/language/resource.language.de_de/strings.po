@@ -806,3 +806,7 @@ msgstr ""
 "Sie verwenden ein Android Gerät, welches noch nicht bei Amazon registriert ist, somit ist höchstens HD Wiedergabe möglich.\n"
 "Um dieses Gerät zu registrieren und damit die UHD Wiedergabe freizuschalten müssen sie sich im Addon mit ihren Amazon Zugangsdaten erneut anmelden.\n"
 "Diese Nachricht wird einmalig angezeigt."
+
+msgctxt "#30273"
+msgid "Data Source"
+msgstr "Datenquelle"

@@ -43,6 +43,7 @@ class Globals(Singleton):
     library = 'library'
     DBVersion = 1.4
     PayCol = 'FFE95E01'
+    PrimeCol = 'FF00A8E0'
     tmdb = 'b34490c056f0dd9e3ec9af2167a731f4'  # b64decode('YjM0NDkwYzA1NmYwZGQ5ZTNlYzlhZjIxNjdhNzMxZjQ=')
     tvdb = '1D62F2F90030C444'  # b64decode('MUQ2MkYyRjkwMDMwQzQ0NA==')
     langID = {'movie': 30165, 'series': 30166, 'season': 30167, 'episode': 30173, 'tvshow': 30166, 'video': 30173, 'event': 30174}
@@ -117,15 +118,16 @@ class Globals(Singleton):
         self._globals['ATVUrl'] = atv
         self._globals['UsePrimeVideo'] = pv
         self._globals['deviceID'] = did
+        ds = int('0' + self._globals['addon'].getSetting('data_source'))
 
-        if self._globals['addon'].getSetting('use_webapi') == 'false' and not self._globals['UsePrimeVideo']:
-            from .atv_api import PrimeVideo
-        else:
+        if ds == 0:
             from .web_api import PrimeVideo
+        elif ds == 1:
+            from .android_api import PrimeVideo
+        elif ds == 2:
+            from .atv_api import PrimeVideo
         if 'pv' not in self._globals:
             self._globals['pv'] = PrimeVideo(self, Settings())
-        from .android_api import PrimeVideo
-        self._globals['pv'] = PrimeVideo(self, Settings())
 
 
 class Settings(Singleton):
@@ -195,7 +197,7 @@ class Settings(Singleton):
             return [3600, 21600, 43200, 86400, 259200, 604800, 1296000, 2592000][int(self._gs('catalog_cache_expiry'))]
         elif 'profiles' == name: return self._gs('profiles') == 'true'
         elif 'show_pass' == name: return self._gs('show_pass') == 'true'
-        elif 'useWebApi' == name: return self._gs('use_webapi') == 'true'
+        elif 'data_source' == name: return int('0' + self._gs('data_source'))
         elif 'uhd' == name: return self._gs('enable_uhd') == 'true'
         elif 'show_recents' == name: return self._gs('show_recents') == 'true'
 

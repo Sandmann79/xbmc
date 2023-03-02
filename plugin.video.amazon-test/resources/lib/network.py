@@ -163,8 +163,12 @@ def getURL(url, useCookie=False, silent=False, headers=None, rjson=True, attempt
 
     if 'User-Agent' not in headers:
         headers['User-Agent'] = getConfig('UserAgent')
+    """
+    # This **breaks** redirections. Host header OVERRIDES the host in the URL:
+    # if the URL is web.eu, but the Host is web.com, request will fetch web.com
     if 'Host' not in headers:
         headers['Host'] = host
+    """
     if 'Accept-Language' not in headers:
         headers['Accept-Language'] = g.userAcceptLanguages
     if '/api/' in url:
@@ -372,17 +376,12 @@ def _sortedResult(result, query):
 
 
 def MechanizeLogin(preferToken=False):
-    aapi = True
-    if preferToken and not g.platform & g.OS_ANDROID:
-        useToken = False
-    if aapi and not preferToken:
-        useToken = True
-
-    if useToken:
+    if preferToken:  # and g.platform & g.OS_ANDROID
         token = getToken()
         if token:
             return token
 
+    # if Token not requested or not avaiable use cookie
     from .users import loadUser
     cj = requests.cookies.RequestsCookieJar()
     cookie = loadUser('cookie')
@@ -393,7 +392,7 @@ def MechanizeLogin(preferToken=False):
         except:
             pass
 
-    return LogIn(useToken)
+    return LogIn(preferToken)
 
 
 def LogIn(retToken=False):
@@ -673,8 +672,20 @@ def LogIn(retToken=False):
                 response, soup = _parseHTML(br)
                 WriteLog(response.replace(py2_decode(email), '**@**'), 'login-fixup')
 
-            if 'openid.oa2.authorization_code' in url:
-                user = registerDevice(url, user, verifier, clientid)
+            # Some PrimeVideo endpoints still return you to the store, directly
+            if url.endswith('?ref_=av_auth_return_redir') or ('action=sign-out' in response) or ('openid.oa2.authorization_code' in url):
+                if 'openid.oa2.authorization_code' in url:
+                    user = registerDevice(url, user, verifier, clientid)
+                else:  # Raw HTML
+                    try:
+                        name = re.search(r'action=sign-out[^"]*"[^>]*>[^?]+\s+([^?]+?)\s*\?', response).group(1)
+                    except AttributeError:
+                        name = getString(30209)
+                    from requests.utils import dict_from_cookiejar as dfcj
+                    user = {
+                        "name": name,
+                        "cookie": dfcj(cj)
+                    }
 
                 if s.multiuser:
                     user['name'] = g.dialog.input(getString(30135), user['name'])
@@ -932,16 +943,18 @@ def GrabJSON(url, postData=None):
 
     def do(url, postData):
         """ Wrapper to facilitate logging """
-
-        if url.startswith('/search/') or url.startswith('/gp/video/search/'):
-            np = urlparse(url)
-            qs = parse_qs(np.query)
+        if re.match(r'/(?:gp/video/)?search(?:Default)?/', url):
+            up = urlparse(url)
+            qs = parse_qs(up.query)
             if 'from' in list(qs):  # list() instead of .keys() to avoid py3 iteration errors
                 qs['startIndex'] = qs['from']
                 del qs['from']
-            np = np._replace(path='/gp/video/api' + np.path.replace('/gp/video', ''), query=urlencode([(k, v) for k, l in qs.items() for v in l]))
-            url = np.geturl()
-
+            if (url.startswith('/gp/video')):
+                newPath = '/gp/video/api' + up.path.replace('/gp/video', '')
+            else:
+                newPath = '/api' + up.path.replace('/search/', '/searchDefault/')
+            up = up._replace(path=newPath, query=urlencode([(k, v) for k, l in qs.items() for v in l]))
+            url = up.geturl()
         r = getURL(FQify(url), silent=True, useCookie=True, rjson=False, postdata=postData)
         if not r:
             return None

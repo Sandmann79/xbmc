@@ -804,3 +804,7 @@ msgid ""
 "In order to register this device and thus use the UHD playback, they must log in again in the addon with their Amazon credentials.\n"
 "This message will be displayed once."
 msgstr ""
+
+msgctxt "#30273"
+msgid "Data Source"
+msgstr ""

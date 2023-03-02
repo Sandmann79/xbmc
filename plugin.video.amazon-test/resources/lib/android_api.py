@@ -32,10 +32,10 @@ class PrimeVideo(Singleton):
         self.filter = {}
         self.def_dtid = 'A43PXU4ZN2AL1'
         self.defparam = 'deviceTypeID={}' \
-                        '&firmware=fmw%3A26-app%3A3.0.265.20347' \
-                        '&priorityLevel=2' \
+                        '&firmware=fmw%3A22-app%3A3.0.340.20045' \
+                        '&priorityLevel=1' \
                         '&format=json' \
-                        '&featureScheme=mobile-android-features-v11-hdr-com' \
+                        '&featureScheme=mobile-android-features-v11' \
                         '&deviceID={}' \
                         '&version=default' \
                         '&screenWidth=sw800dp' \
@@ -53,8 +53,6 @@ class PrimeVideo(Singleton):
             act, profiles = self.getProfiles()
             if act is not False:
                 addDir(profiles[act][0], 'switchProfile', '', thumb=profiles[act][3])
-
-        addDir('Watchlist', 'getListMenu', self._g.watchlist, cm=cm_wl)
         '''
         addDir('Watchlist', 'getPage', 'watchlist', cm=cm_wl)
         self.getPage(root=True)
@@ -73,33 +71,31 @@ class PrimeVideo(Singleton):
             if 'text' in item and item['text'] is not None:
                 d = findKey('parameters', item)
                 d['swiftId'] = item['id']
-                if root:
-                    t = json.loads(b64decode(d['serviceToken']))
-                    id = [k for k in t['filter'].keys()][0]
-                    if id == 'PRIME':
-                        self.prime = d['serviceToken']
                 self.filter[item['text']] = d
 
     def addCtxMenu(self, il, wl):
         cm = []
         ct = il['contentType']
-        if il['contentType'] in ['movie', 'episode', 'season', 'live']:
+        if ct in ['movie', 'episode', 'season', 'live']:
             wlmode = 1 if wl else 0
             cm.append((getString(wlmode + 30180) % getString(self._g.langID[ct]), 'RunPlugin(%s?mode=editWatchList&url=%s&opt=%s)'
                        % (self._g.pluginid, il['asins'], wlmode)))
+        if ct in 'season':
+            u = urlencode({'mode': 'getPage', 'url': 'details', 'page': '-1', 'opt': 'itemId=' + il['asins']})
+            cm.append((getString(30182), 'Container.Update(%s?%s)' % (self._g.pluginid, u)))
         return cm
 
-    def getPage(self, page='landing', params='pageType=home&pageId=home', root=False):
+    def getPage(self, page='landing', params='pageType=home&pageId=home', pagenr=1, root=False):
         url_path = '/cdp/mobile/getDataByTransform/v1/'
-        url_dict = {'landing': {'js': 'dv-android/landing/v2/landing.js', 'q': '&removeFilters=false'},  # &supportsLiveBadging=true&isLiveEventsV2OverrideEnabled=true&supportsPaymentStatus=false&supportsExternalLinkAction=true
-                    'home': {'js': 'dv-android/landing/v2/landingCollections.js', 'q': ''},
-                    'browse': {'js': 'dv-android/browse/v1/browseInitial.js', 'q': ''},
-                    'detail': {'js': 'dv-android/detail/v2/user/v2.3.js', 'q': '&capabilities='},
+        url_dict = {'landing': {'js': 'dv-android/landing/v3/landing.js', 'q': '&removeFilters=false'},  # &supportsLiveBadging=true&isLiveEventsV2OverrideEnabled=true&supportsPaymentStatus=false&supportsExternalLinkAction=true
+                    'home': {'js': 'dv-android/landing/v3/landingCollections.js', 'q': ''},
+                    'browse': {'js': 'dv-android/browse/v2/browseInitial.js', 'q': ''},
+                    'detail': {'js': 'dv-android/detail/v2/user/v2.5.js', 'q': '&capabilities='},
                     'details': {'js': 'android/atf/v3.jstl', 'q': '&capabilities='},
-                    'watchlist': {'js': 'dv-android/watchlist/watchlistInitial/v2.js', 'q': ''},
-                    'library': {'js': 'dv-android/library/libraryInitial/v1.js', 'q': ''},
+                    'watchlist': {'js': 'dv-android/watchlist/watchlistInitial/v3.js', 'q': ''},
+                    'library': {'js': 'dv-android/library/libraryInitial/v2.js', 'q': ''},
                     'find': {'js': 'dv-android/find/v1.js', 'q': '&pageId=Find&pageType=home'},
-                    'search': {'js': 'dv-android/search/searchInitial/v2.js', 'q': ''},
+                    'search': {'js': 'dv-android/search/searchInitial/v3.js', 'q': ''},
                     }
 
         url = ''
@@ -110,7 +106,7 @@ class PrimeVideo(Singleton):
             params += url_dict[page]['q']
             query_dict = parse_qs(params)
             url = url.replace('Initial', 'Next') if 'Initial' in url and int(query_dict.get('startIndex', ['0'])[0]) > 0 else url
-            resp = getURL('%s?%s&%s' % (url, self.defparam, params), useCookie=True)['resource']
+            resp = getURL('%s?%s&%s' % (url, self.defparam, params), useCookie=MechanizeLogin(True))['resource']
         LogJSON(resp)
 
         if resp:
@@ -118,8 +114,7 @@ class PrimeVideo(Singleton):
             if root:
                 self._createDB(self._cache_tbl)
                 for item in resp['navigations']:
-                    q = findKey('parameters', item)
-                    q['serviceToken'] = self.prime
+                    q = self.filterDict(findKey('parameters', item))
                     addDir(item['text'].title(), 'getPage', 'landing', opt=urlencode(q))
                 return
 
@@ -130,18 +125,23 @@ class PrimeVideo(Singleton):
                 return
 
             if page == 'details':
-                if 'episodes' in resp:
+                if pagenr == -1 and 'seasons' in resp:
+                    for item in resp['seasons']:
+                        il = self.getAsins(item)
+                        il['title'] = item['displayText']
+                        il['contentType'] = 'season'
+                        addDir(self.formatTitle(il), 'getPage', 'details', opt='itemId=' + il['asins'])
+                elif 'episodes' in resp:
                     for item in resp['episodes']:
                         il = self.getInfos(item)
                         il['tvshowtitle'] = resp['show']['title']
                         il['totalseasons'] = len(resp['seasons'])
                         cm = self.addCtxMenu(il, page in 'watchlist')
-                        if il.get('episode', 1) > 0:
-                            addVideo(il['title'], il['asins'], il, cm=cm)
+                        addVideo(self.formatTitle(il), il['asins'], il, cm=cm)
                 else:
                     il = self.getInfos(resp)
                     cm = self.addCtxMenu(il, page in 'watchlist')
-                    addVideo(il['title'], il['asins'], il, cm=cm)
+                    addVideo(self.formatTitle(il), il['asins'], il, cm=cm)
                 setContentAndView(il['contentType'])
                 return
 
@@ -161,15 +161,28 @@ class PrimeVideo(Singleton):
                 pgmodel = resp.get('paginationModel')
                 pgtype = 'home'
                 for item in col:
+                    title = self.cleanTitle(item['headerText'])
+                    prdata = item.get('presentationData', {})
+                    facetxt = prdata.get('facetText')
                     col_act = item.get('collectionAction')
                     col_lst = item.get('collectionItemList')
                     col_typ = item.get('collectionType')
+                    if facetxt is not None:
+                        isprime = prdata.get('offerClassification', '') == 'PRIME'
+                        isincl = item.get('containerMetadata', {}).get('entitlementCues', {}).get('entitledCarousel', 'Entitled') == 'Entitled'
+                        if isprime:
+                            facetxt = '[COLOR {}]{}[/COLOR]'.format(self._g.PrimeCol, facetxt)
+                        if isincl is False:
+                            facetxt = '[COLOR {}]{}[/COLOR]'.format(self._g.PayCol, facetxt)
+                        title = '{} - {}'.format(facetxt, title)
+
+                    # faceimg = item.get('presentationData', {}).get('facetImages', {}).get('UNFOCUSED', {}).get('url')
                     if col_act:
                         q = self.filterDict(findKey('parameters', col_act))
-                        addDir(item['headerText'], 'getPage', col_act['type'], opt=urlencode(q))
+                        addDir(title, 'getPage', col_act['type'], opt=urlencode(q))
                     elif col_lst and 'heroCarousel' not in col_typ:
                         self.writeCache(item)
-                        addDir(item['headerText'], 'getPage', 'cache', opt=quote_plus(item['collectionId']))
+                        addDir(title, 'getPage', 'cache', opt=quote_plus(item['collectionId']))
                 self._cacheDb.commit()
             else:
                 titles = resp['titles'][0] if len(resp.get('titles', {})) > 0 else resp
@@ -179,17 +192,20 @@ class PrimeVideo(Singleton):
 
                 for item in col:
                     model = item['model']
-                    if item['type'] == 'textLink':
-                        l = model['linkAction']
-                        q = findKey('parameters', l)
-                        q = self.filterDict(findKey('parameters', l)) if q else {}
-                        addDir(model['text'], 'getPage', l['type'], opt=urlencode(q))
+                    Log(item['type'])
+                    if item['type'] in ['textLink', 'imageTextLink', 'imageLink']:
+                        la = model['linkAction']
+                        q = findKey('parameters', la)
+                        q = self.filterDict(q) if q else {}
+                        text = model.get('text', model.get('accessibilityDescription'))
+                        thumb = model.get('imageUrl', None)
+                        addDir(text, 'getPage', la['type'], opt=urlencode(q), thumb=thumb)
                     else:
                         il = self.getInfos(model)
-                        ct = il['contentType']
                         cm = self.addCtxMenu(il, page in 'watchlist')
+                        ct = il['contentType']
                         if ct in ['movie', 'episode', 'live', 'videos']:
-                            addVideo(il['title'], il['asins'], il, cm=cm)
+                            addVideo(self.formatTitle(il), il['asins'], il, cm=cm)
                         else:
                             addDir(il['title'], 'getPage', 'details', infoLabels=il, opt='itemId=' + il['asins'], cm=cm)
 
@@ -197,13 +213,25 @@ class PrimeVideo(Singleton):
                 nextp = findKey('parameters', pgmodel)
                 if 'home' in pgtype:
                     nextp['startIndex'] = pgmodel['startIndex']
+                    nextp['pageSize'] = 20
                     nextp['swiftId'] = pgmodel['id']
-                nextp['pageSize'] = len(col)
-                pagenr = int(nextp['startIndex'] / len(col) + 1)
-                addDir(' --= %s =--' % (getString(30111) % pagenr), 'getPage', pgtype, opt=urlencode(nextp), thumb=self._s.NextIcon)
+                    pagenr += 1
+                else:
+                    nextp['pageSize'] = len(col)
+                    pagenr = int(nextp['startIndex'] / len(col) + 1)
+                addDir(' --= %s =--' % (getString(30111) % pagenr), 'getPage', pgtype, opt=urlencode(nextp), page=pagenr, thumb=self._s.NextIcon)
 
             setContentAndView(ct)
         return
+
+    def formatTitle(self, il):
+        name = il['title']
+        if il['contentType'] in 'episode':
+            if il['episode'] > 0:
+                name = '{}. {}'.format(il['episode'], name)
+        if not il['isPrime']:
+            name = '[COLOR %s]%s[/COLOR]' % (self._g.PayCol, name)
+        return name
 
     def writeCache(self, content):
         c = self._cacheDb.cursor()
@@ -229,7 +257,7 @@ class PrimeVideo(Singleton):
         act = 'RemoveTitleFromList' if remove > 0 else 'AddTitleToList'
         params = 'titleId={}'.format(asin)
         url = '{}/cdp/discovery/{}'.format(self._g.ATVUrl, act)
-        resp = getURL('%s?%s&%s' % (url, self.defparam, params), useCookie=True)['message']
+        resp = getURL('%s?%s&%s' % (url, self.defparam, params), useCookie=MechanizeLogin(True))['message']
         msg = resp['body']['message']
         Log(msg)
         if resp.get('statusCode', '') == 'SUCCESS':
@@ -473,17 +501,19 @@ class PrimeVideo(Singleton):
 
     @staticmethod
     def getAsins(content, crIL=True):
-        infoLabels = {'plot': None, 'mpaa': None, 'cast': [], 'year': None, 'premiered': None, 'rating': None, 'votes': None, 'isAdult': 0,
-                      'director': None, 'genre': None, 'studio': None, 'thumb': None, 'fanart': None, 'isHD': False,
+        infoLabels = {'plot': None, 'mpaa': None, 'cast': [], 'year': None, 'premiered': None, 'rating': None, 'votes': None,
+                      'isAdult': 1 if content.get('isAdultContent', False) else 0,
+                      'director': None, 'genre': None, 'studio': None, 'thumb': None, 'fanart': None, 'isHD': False, 'isUHD': False,
                       'audiochannels': 1, 'TrailerAvailable': False,
                       'asins': content.get('id', content.get('titleId', content.get('channelId', ''))),
                       'isPrime': content.get('showPrimeEmblem', False)}
 
         if 'badges' in content:
             b = content['badges']
-            infoLabels['isAdult'] = 1 if b['adult'] else 0
-            infoLabels['isPrime'] = b['prime']
-            infoLabels['audiochannels'] = 6 if b['dolby51'] else 2
+            infoLabels['isAdult'] = 1 if b.get('adult', True) else 0
+            infoLabels['isPrime'] = b.get('prime', True)
+            infoLabels['audiochannels'] = 6 if b.get('dolby51', False) else 2
+            infoLabels['isUHD'] = b.get('uhd', False)
         if 'playbackActions' in content and len(content['playbackActions']) > 0:
             pa = content['playbackActions'][0]
             infoLabels['isHD'] = pa['userPlaybackMetadata']['videoQuality'] != 'SD'
@@ -497,14 +527,13 @@ class PrimeVideo(Singleton):
         infoLabels = self.getAsins(item)
         if 'channelId' in item:
             return self.getChanInfo(item, infoLabels)
-        imgurls = item.get('titleImageUrls', {})
+        infoLabels = self.getMedia(item, infoLabels)
         reldate = item.get('publicReleaseDate', item.get('releaseDate', 0))
         reldate = reldate * -1 if reldate < 0 else reldate
         infoLabels['contentType'] = infoLabels['mediatype'] = ct = item['contentType'].lower()
         infoLabels['title'] = self.cleanTitle(item['title'])
         infoLabels['plot'] = item['synopsis']
-        infoLabels['fanart'] = self.cleanIMGurl(imgurls.get('WIDE', imgurls.get('WIDE_PRIME', item.get('detailPageHeroImageUrl'))))
-        infoLabels['thumb'] = self.cleanIMGurl(imgurls.get('LEGACY', imgurls.get('LEGACY_PRIME', item.get('titleImageUrl'))))
+        infoLabels['isAdult'] = 1 if item.get('isAdultContent', False) else 0
         infoLabels['votes'] = item.get('amazonRatingsCount', 0)
         infoLabels['premiered'] = datetime.fromtimestamp(reldate / 1000).strftime('%Y-%m-%d')
         infoLabels['genre'] = item.get('genres')
@@ -525,6 +554,23 @@ class PrimeVideo(Singleton):
                 infoLabels['mpaa'] = '%s %s' % (AgeRestrictions().GetAgeRating(), item['regulatoryRating'])
         if 'live' in ct:
             infoLabels['contentType'] = infoLabels['mediatype'] = 'videos'
+            infoLabels['isPrime'] = True
+        return infoLabels
+
+    def getMedia(self, item, infoLabels):
+        media = {'fanart': {'': ['detailPageHeroImageUrl'],
+                            'titleImageUrls': ['WIDE', 'WIDE_PRIME', 'COVER', '']},
+                 'thumb': {'': ['titleImageUrl'],
+                           'titleImageUrls': ['LEGACY', 'LEGACY_PRIME', 'BOX_ART', '']},
+                 'poster': {'titleImageUrls': ['POSTER']}
+                 }
+        for il, i in media.items():
+            for k, v in i.items():
+                dic = item if k == '' else item.get(k, {})
+                for m in v:
+                    if m in dic:
+                        infoLabels[il] = self.cleanIMGurl(dic[m])
+                        break
         return infoLabels
 
     def getChanInfo(self, item, infoLabels):
@@ -571,6 +617,10 @@ class PrimeVideo(Singleton):
         return re.sub(r'\._.*_\.', r'.', img) if img else None
 
     def getProfiles(self):
+        user = loadUser()
+        domain = re.compile(domain_regex).search(user['baseurl']).group(1)
+        resp = getURL('https://api.{}/user/profiles?access_token={}'.format(domain, user['token']['access']), headers=g.headers_android)
+        LogJSON(resp)
         j = GrabJSON(self._g.BaseUrl + '/gp/video/profiles')
         if not j:
             return False, False
@@ -604,12 +654,6 @@ class PrimeVideo(Singleton):
         elif mode == 'ageSettings':
             AgeRestrictions().Settings()
         elif mode == 'getPage':
-            self.getPage(args.get('url'), args.get('opt', ''))
+            self.getPage(args.get('url'), args.get('opt', ''), int(args.get('page', '1')))
         elif mode == 'editWatchList':
             self.editWatchList(args.get('url', ''), int(args.get('opt', '0')))
-
-
-
-
-
-

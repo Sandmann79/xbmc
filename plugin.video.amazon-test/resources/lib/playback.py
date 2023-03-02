@@ -314,18 +314,30 @@ def PlayVideo(name, asin, adultstr, streamtype, forcefb=0):
             Log('No Inputstream Addon found or activated')
             return False
 
-        cookie, opt_lic, headers, dtid = _getPlaybackVars()
-        if not cookie:
-            g.dialog.notification(getString(30203), getString(30200), xbmcgui.NOTIFICATION_ERROR)
-            Log('Login error at playback')
-        if (g.platform & g.OS_ANDROID) and not isinstance(cookie, dict) and getConfig('uhdinfo') == '':
-            g.dialog.ok(g.__plugin__, getString(30272))
-            writeConfig('uhdinfo', '1')
-
         bypassproxy = s.bypassProxy or (streamtype > 1)
-        mpd, subs, timecodes = _ParseStreams(*getURLData('catalog/GetPlaybackResources', asin, extra=True, vMT=vMT, dRes=dRes, useCookie=cookie, devicetypeid=dtid,
-                                                         proxyEndpoint=(None if bypassproxy else 'gpr'), opt=opt), retmpd=True, bypassproxy=bypassproxy)
 
+        # The following code can run two times. In the first iteration, token auth
+        # will be prefered. If the request is successful, the loop will be aborted.
+        # If not, then the second iteration will fall back to cookie authentification
+        # and try again. This is neccessary for content like Amazon Freevee, which is not
+        # available though token based authentification.
+        
+        for preferTokenToCookie in ([True, False] if g.platform & g.OS_ANDROID else [False]):
+            cookie, opt_lic, headers, dtid = _getPlaybackVars(preferToken=preferTokenToCookie)
+            if not cookie:
+                g.dialog.notification(getString(30203), getString(30200), xbmcgui.NOTIFICATION_ERROR)
+                Log('Login error at playback')
+            if (g.platform & g.OS_ANDROID) and not isinstance(cookie, dict) and getConfig('uhdinfo') == '':
+                g.dialog.ok(g.__plugin__, getString(30272))
+                writeConfig('uhdinfo', '1')
+
+            success, data = getURLData('catalog/GetPlaybackResources', asin, extra=True, vMT=vMT, dRes=dRes, useCookie=cookie, devicetypeid=dtid,
+                                       proxyEndpoint=(None if bypassproxy else 'gpr'), opt=opt)
+
+            if success:
+                break
+
+        mpd, subs, timecodes = _ParseStreams(success, data, retmpd=True, bypassproxy=bypassproxy)
         if not mpd:
             g.dialog.notification(getString(30203), subs, xbmcgui.NOTIFICATION_ERROR)
             return False
@@ -413,8 +425,8 @@ def PlayVideo(name, asin, adultstr, streamtype, forcefb=0):
         del player, skip_button
         return True
 
-    def _getPlaybackVars():
-        cookie = MechanizeLogin(preferToken=True)
+    def _getPlaybackVars(preferToken=True):
+        cookie = MechanizeLogin(preferToken=preferToken)
         cj_str = deepcopy(cookie)
         dtid = g.dtid_web
 
@@ -665,7 +677,7 @@ class _AmazonPlayer(xbmc.Player):
             self.event = 'PLAY'
             if suc and 'statusCallbackIntervalSeconds' in str(msg):
                 self.interval = msg['message']['body']['statusCallbackIntervalSeconds']
-        if not self.rec_added and self.video_lastpos > 180 and not g.UsePrimeVideo and not s.useWebApi:
+        if not self.rec_added and self.video_lastpos > 180 and s.data_source == 2:
             self.rec_added = True
             g.pv.updateRecents(self.asin)
 

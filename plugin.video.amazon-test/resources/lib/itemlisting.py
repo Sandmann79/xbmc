@@ -52,8 +52,7 @@ def setContentAndView(content, updateListing=False):
 def addDir(name, mode='', url='', infoLabels=None, opt='', catalog='Browse', cm=None, page=1, export=False, thumb=None):
     g = Globals()
     s = Settings()
-    useatv = not g.UsePrimeVideo and not s.useWebApi
-    useatv = True
+    useatv = s.data_source == 1
     folder = mode not in ['switchUser', 'text'] if useatv else mode == 'True'
     sep = '?' if useatv else ''
     u = urlencode({'mode': mode, 'url': py2_encode(url), 'page': page, 'opt': opt, 'cat': catalog}) if useatv else url

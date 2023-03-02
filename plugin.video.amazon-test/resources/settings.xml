@@ -72,6 +72,25 @@
         <setting label="30007" type="action" action="RunPlugin(plugin://plugin.video.amazon-test/?mode=remLoginData)" option="close" visible="eq(-7,false)"/>
         <setting label="30010" type="action" action="RunPlugin(plugin://plugin.video.amazon-test/?mode=remLoginData)" option="close" visible="eq(-8,true)"/>
     </category>
+    <!-- Datasource -->
+    <category label="30273">
+        <setting id="data_source" type="enum" label="30273" values="Web|Android" default="0"/>
+        <setting id="pv_episode_thumbnails" type="bool" label="30249" visible="eq(-1,0)" default="true"/>
+        <setting id="catalog_cache_expiry" type="enum" lvalues="30258|30259|30260|30261|30262|30263|30264|30265" label="30257" default="2" visible="eq(-2,0)" />
+        <setting id="pv_clearcache" type="action" label="30087" action="RunPlugin(plugin://plugin.video.amazon-test/pv/clearcache/)" option="close" visible="eq(-3,0)" />
+        <setting label="30243" type="lsep" visible="eq(-4,0)" />
+        <setting id="paginate_everything" type="bool" label="30244" default="false" visible="eq(-5,0)" />
+        <setting id="paginate_watchlist" type="bool" label="30245" default="false" enable="eq(-1,false)" visible="eq(-6,0)" />
+        <setting id="paginate_collections" type="bool" label="30246" default="false" enable="eq(-2,false)" visible="eq(-7,0)" />
+        <setting id="paginate_search" type="bool" label="30247" default="true" enable="eq(-3,false)" visible="eq(-8,0)" />
+        <setting id="reset_home" type="action" label="30095" action="RunPlugin(plugin://plugin.video.amazon-test/pv/sethome/)" option="close" visible="eq(-9,0)" />
+        <setting id="show_recents" type="bool" label="30036" default="true" visible="eq(-10,2)"/>
+        <setting id="paycont" type="bool" label="30073" default="false" visible="eq(-11,2)" />
+        <setting id="disptvshow" type="bool" label="30071" default="false" visible="eq(-12,2)" />
+        <setting label="Artwork" type="lsep" visible="eq(-13,2)"/>
+        <setting id="tld_episode_thumbnails" type="bool" label="30249" default="false" visible="eq(-14,2)"/>
+        <setting type="action" label="30094" action="" visible="eq(-15,2)" />
+    </category>
     <!-- Views -->
     <category label="30015">
         <setting id="viewenable" type ="bool" label="30035" default="false"/>
@@ -106,27 +125,5 @@
         <setting id="json_dump" type="bool" label="30196" default="false"/>
         <setting id="json_dump_raw" type="bool" label="30199" default="false" enable="eq(-1,true)" subsetting="true"/>
         <setting id="json_dump_collisions" type="bool" label="30197" default="false" enable="eq(-2,true)" subsetting="true"/>
-    </category>
-    <!-- TLD -->
-    <category label="Amazon.TLD">
-        <setting id="use_webapi" type="bool" label="30093" default="false"/>
-        <setting id="show_recents" type="bool" label="30036" default="true" visible="eq(-1,false)"/>
-        <setting id="paycont" type="bool" label="30073" default="false" visible="eq(-2,false)" />
-        <setting id="disptvshow" type="bool" label="30071" default="false" visible="eq(-3,false)" />
-        <setting label="Artwork" type="lsep" visible="eq(-4,false)"/>
-        <setting id="tld_episode_thumbnails" type="bool" label="30249" default="false" visible="eq(-5,false)"/>
-        <setting type="action" label="30094" action="" visible="eq(-6,true)" />
-    </category>
-    <!-- PrimeVideo -->
-    <category label="30250">
-        <setting id="pv_episode_thumbnails" type="bool" label="30249" default="true"/>
-        <setting id="catalog_cache_expiry" type="enum" lvalues="30258|30259|30260|30261|30262|30263|30264|30265" label="30257" default="2"/>
-        <setting id="pv_clearcache" type="action" label="30087" action="RunPlugin(plugin://plugin.video.amazon-test/pv/clearcache/)" option="close"/>
-        <setting label="30243" type="lsep"/>
-        <setting id="paginate_everything" type="bool" label="30244" default="false"/>
-        <setting id="paginate_watchlist" type="bool" label="30245" default="false" enable="eq(-1,false)"/>
-        <setting id="paginate_collections" type="bool" label="30246" default="false" enable="eq(-2,false)"/>
-        <setting id="paginate_search" type="bool" label="30247" default="true" enable="eq(-3,false)"/>
-        <setting id="reset_home" type="action" label="30095" action="RunPlugin(plugin://plugin.video.amazon-test/pv/sethome/)" option="close"/>
     </category>
 </settings>

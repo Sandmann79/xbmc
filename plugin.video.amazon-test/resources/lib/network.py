@@ -950,7 +950,7 @@ def GrabJSON(url, postData=None):
                 qs['startIndex'] = qs['from']
                 del qs['from']
             if (url.startswith('/gp/video')):
-                newPath = '/gp/video/api' + up.path.replace('/gp/video', '')
+                newPath = '/gp/video' + up.path.replace('/gp/video', '')
             else:
                 newPath = '/api' + up.path.replace('/search/', '/searchDefault/')
             up = up._replace(path=newPath, query=urlencode([(k, v) for k, l in qs.items() for v in l]))

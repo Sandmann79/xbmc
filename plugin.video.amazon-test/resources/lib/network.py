@@ -949,7 +949,7 @@ def GrabJSON(url, postData=None):
             if 'from' in list(qs):  # list() instead of .keys() to avoid py3 iteration errors
                 qs['startIndex'] = qs['from']
                 del qs['from']
-            if (url.startswith('/gp/video')):
+            if url.startswith('/gp/video'):
                 newPath = '/gp/video' + up.path.replace('/gp/video', '')
             else:
                 newPath = '/api' + up.path.replace('/search/', '/searchDefault/')

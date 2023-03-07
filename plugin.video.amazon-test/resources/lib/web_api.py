@@ -20,9 +20,9 @@ except ImportError:
     import pickle
 
 try:
-    from urllib.parse import quote_plus, unquote_plus, urlparse
+    from urllib.parse import quote_plus, unquote_plus
 except ImportError:
-    from urllib import quote_plus, unquote_plus, urlparse
+    from urllib import quote_plus, unquote_plus
 
 
 class PrimeVideo(Singleton):
@@ -546,7 +546,7 @@ class PrimeVideo(Singleton):
             self.Refresh(path, busy=False)
         elif export > 3:
             Log('Export of watchlist started')
-            self.Browse(path + '/ALL', export=3)
+            self.Browse(path + '/all', export=3)
             if export == 5:
                 writeConfig('last_wl_export', time.time())
                 xbmc.executebuiltin('UpdateLibrary(video)')
@@ -1376,8 +1376,7 @@ class PrimeVideo(Singleton):
             # Categories
             elif 'collections' in cnt or 'containers' in cnt:
                 var = 'collection' if 'collections' in cnt else 'container'
-                filtered_col = [x for x in cnt[var + 's'] if (x[var + 'Type'].lower() not in ['chartscarousel', 'standardhero', 'textcontainer'])
-                                or x['text'].lower() == 'hero carousel']
+                filtered_col = [x for x in cnt[var + 's'] if x[var + 'Type'].lower() not in ['chartscarousel', 'standardhero', 'textcontainer', 'superhero', 'tentpolehero']]
                 if len(filtered_col) > 1:
                     for collection in filtered_col:
                         if 'text' in collection:
@@ -1408,9 +1407,10 @@ class PrimeVideo(Singleton):
                     cnt = filtered_col[0]
             # MyStuff
             wl_lib = 'legacy-' + breadcrumb[2] if ['root', 'Watchlist'] == breadcrumb[:2] and len(breadcrumb) > 2 else ''
+            vo = ''
             if ['root', 'Watchlist'] == breadcrumb and 'subNodes' in cnt:
                 for f in cnt['subNodes']:
-                    id = f['id'].replace('pv-nav-my-stuff-', '')
+                    id = f['id'].replace('pv-nav-my-stuff-', '').lower()
                     if 'all' not in id:
                         o[id] = {'title': f['label'], 'lazyLoadURL': f['url'], 'pos': len(o)}
             elif ['root', 'Watchlist'] == breadcrumb:
@@ -1425,14 +1425,13 @@ class PrimeVideo(Singleton):
                     wl = return_item(cnt, 'viewOutput', 'features', wl_lib)
                 else:
                     wl = {'filters': [x['values'] for x in return_item(cnt, 'content', 'baseOutput', 'filters', 'items') if 'OFFER_FILTER' in x['id']][0]}
-                try:
-                    for f in wl['filters']:
-                        url = f.get('apiUrl', f.get('href'))
-                        url = requestURL.rsplit('/', 1)[0]+'/'+f['id'] if url is None else url
-                        o[f['id']] = {'title': f['text'], 'lazyLoadURL': url, 'pos': len(o)}
-                        if 'applied' in f and f['applied']:
-                            o[f['id']]['lazyLoadData'] = cnt
-                except KeyError: pass  # Empty list
+                for f in wl.get('filters', []):
+                    id = f['id'].lower()
+                    url = f.get('apiUrl', f.get('href'))
+                    url = requestURL.rsplit('/', 1)[0] + '/' + id if url is None else url
+                    o[id] = {'title': f['text'], 'lazyLoadURL': url, 'pos': len(o)}
+                    if f.get('applied') or f.get('isCurrentlyApplied'):
+                        o[id]['lazyLoadData'] = cnt
             else:
                 vo = cnt['results'] if 'results' in cnt else return_item(cnt, 'viewOutput', 'features', wl_lib, 'content')
                 vo = return_item(vo, 'content', 'baseOutput', 'containers')
@@ -1443,7 +1442,7 @@ class PrimeVideo(Singleton):
                         tile = return_value(item, 'image', 'alternateText')
                         tile_cov = item.get('image', {})
                         if isinstance(tile, dict) and item.get('widgetType', '').lower() == 'imagetextlink':
-                            tile = item.get('title')
+                            tile = item.get('title', item.get('displayTitle'))
                             tile_cov = item.get('images', {})
                         else:
                             tile = None
@@ -1481,7 +1480,7 @@ class PrimeVideo(Singleton):
                     bUpdatedVideoData |= ParseSinglePage(breadcrumb[-1], o, bCacheRefresh, data=cnt, url=requestURL)
                 # Pagination
                 if ('pagination' in cnt) or (key_exists(cnt, 'viewOutput', 'features', wl_lib, 'content', 'seeMoreHref'))\
-                        or ('hasMoreItems' in cnt) or ('paginationTargetId' in cnt):
+                        or ('hasMoreItems' in cnt) or ('paginationTargetId' in vo):
                     nextPage = None
                     try:
                         # Dynamic AJAX pagination
@@ -1491,8 +1490,8 @@ class PrimeVideo(Singleton):
                     except:
                         # Classic numbered pagination
                         if 'pagination' in cnt:
-                            if 'apiUrl' in cnt['pagination']:
-                                nextPage = cnt['pagination']['apiUrl']
+                            if 'url' in cnt['pagination']:
+                                nextPage = cnt['pagination']['url']  # + '&isCrow=0&isElcano=0&isCleanSlateActive=1&isLivePageActive=0&isDiscoverActive=1'
                             elif 'paginator' in cnt['pagination']:
                                 nextPage = next((x['href'] for x in cnt['pagination']['paginator'] if
                                                  (('type' in x) and ('NextPage' == x['type'])) or
@@ -1501,7 +1500,7 @@ class PrimeVideo(Singleton):
                         elif cnt.get('hasMoreItems', False) and 'startIndex=' in requestURL:
                             idx = int(re.search(r'startIndex=(\d*)', requestURL).group(1))
                             nextPage = requestURL.replace('startIndex={}'.format(idx), 'startIndex={}'.format(idx+20))
-                        elif 'paginationTargetId' in cnt:
+                        elif 'paginationTargetId' in vo:
                             q = ['{}={}'.format(k.replace('paginationServiceToken', 'serviceToken').replace('paginationStartIndex', 'startIndex'), ','.join(v) if isinstance(v, list) else quote_plus(str(v)))
                                  for k, v in vo.items() if k in ['collectionType', 'paginationServiceToken', 'paginationTargetId', 'tags', 'paginationStartIndex']]
                             q.append('pageSize=20&pageType=browse&pageId=default')

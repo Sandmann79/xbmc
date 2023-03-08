@@ -376,7 +376,7 @@ def _sortedResult(result, query):
 
 
 def MechanizeLogin(preferToken=False):
-    if preferToken and g.platform & g.OS_ANDROID:
+    if preferToken:  # and g.platform & g.OS_ANDROID
         token = getToken()
         if token:
             return token
@@ -943,15 +943,14 @@ def GrabJSON(url, postData=None):
 
     def do(url, postData):
         """ Wrapper to facilitate logging """
-
         if re.match(r'/(?:gp/video/)?search(?:Default)?/', url):
             up = urlparse(url)
             qs = parse_qs(up.query)
             if 'from' in list(qs):  # list() instead of .keys() to avoid py3 iteration errors
                 qs['startIndex'] = qs['from']
                 del qs['from']
-            if (url.startswith('/gp/video')):
-                newPath = '/gp/video/api' + up.path.replace('/gp/video', '')
+            if url.startswith('/gp/video'):
+                newPath = '/gp/video' + up.path.replace('/gp/video', '')
             else:
                 newPath = '/api' + up.path.replace('/search/', '/searchDefault/')
             up = up._replace(path=newPath, query=urlencode([(k, v) for k, l in qs.items() for v in l]))

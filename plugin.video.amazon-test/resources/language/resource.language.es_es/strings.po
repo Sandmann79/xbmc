@@ -807,3 +807,7 @@ msgstr ""
 "Estás usando un dispositivo Android que no está registrado con Amazon, por lo que, como máximo, es posible la reproducción en HD.\n"
 "Para poder registrar este dispositivo y así utilizar la reproducción en Ultra HD, necesitas iniciar sesión de nuevo en el add-on con tus credenciales de Amazon.\n"
 "Este mensaje se mostrará una vez."
+
+msgctxt "#30273"
+msgid "Data Source"
+msgstr ""

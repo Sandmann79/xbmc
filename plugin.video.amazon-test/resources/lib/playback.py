@@ -321,7 +321,8 @@ def PlayVideo(name, asin, adultstr, streamtype, forcefb=0):
         # If not, then the second iteration will fall back to cookie authentification
         # and try again. This is neccessary for content like Amazon Freevee, which is not
         # available though token based authentification.
-        for preferTokenToCookie in [True, False]:
+        
+        for preferTokenToCookie in ([True, False] if g.platform & g.OS_ANDROID else [False]):
             cookie, opt_lic, headers, dtid = _getPlaybackVars(preferToken=preferTokenToCookie)
             if not cookie:
                 g.dialog.notification(getString(30203), getString(30200), xbmcgui.NOTIFICATION_ERROR)
@@ -676,7 +677,7 @@ class _AmazonPlayer(xbmc.Player):
             self.event = 'PLAY'
             if suc and 'statusCallbackIntervalSeconds' in str(msg):
                 self.interval = msg['message']['body']['statusCallbackIntervalSeconds']
-        if not self.rec_added and self.video_lastpos > 180 and not g.UsePrimeVideo and not s.useWebApi:
+        if not self.rec_added and self.video_lastpos > 180 and s.data_source == 2:
             self.rec_added = True
             g.pv.updateRecents(self.asin)
 

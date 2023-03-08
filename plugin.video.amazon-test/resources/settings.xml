@@ -74,7 +74,7 @@
     </category>
     <!-- Datasource -->
     <category label="30273">
-        <setting id="data_source" type="enum" label="30273" values="Web|Android" default="0"/>
+        <setting id="data_source" type="enum" label="30273" values="Website" default="0"/>
         <setting id="pv_episode_thumbnails" type="bool" label="30249" visible="eq(-1,0)" default="true"/>
         <setting id="catalog_cache_expiry" type="enum" lvalues="30258|30259|30260|30261|30262|30263|30264|30265" label="30257" default="2" visible="eq(-2,0)" />
         <setting id="pv_clearcache" type="action" label="30087" action="RunPlugin(plugin://plugin.video.amazon-test/pv/clearcache/)" option="close" visible="eq(-3,0)" />

@@ -197,7 +197,7 @@ class Settings(Singleton):
             return [3600, 21600, 43200, 86400, 259200, 604800, 1296000, 2592000][int(self._gs('catalog_cache_expiry'))]
         elif 'profiles' == name: return self._gs('profiles') == 'true'
         elif 'show_pass' == name: return self._gs('show_pass') == 'true'
-        elif 'data_source' == name: return int('0' + self._gs('data_source'))
+        elif 'data_source' == name: return 0  # int('0' + self._gs('data_source'))
         elif 'uhd' == name: return self._gs('enable_uhd') == 'true'
         elif 'show_recents' == name: return self._gs('show_recents') == 'true'
 

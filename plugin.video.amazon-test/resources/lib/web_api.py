@@ -1497,6 +1497,13 @@ class PrimeVideo(Singleton):
                                                  (('type' in x) and ('NextPage' == x['type'])) or
                                                  (('*className*' in x) and ('atv.wps.PaginatorNext' == x['*className*'])) or
                                                  (('__type' in x) and ('PaginatorNext' in x['__type']))), None)
+                            elif 'queryParameters' in cnt['pagination']:
+                                q = cnt['pagination']['queryParameters']
+                                q = {k.replace('content', 'page').replace('targetId', 'paginationTargetId') if k in ['contentId', 'contentType', 'targetId']
+                                     else k: v for k, v in q.items()}
+                                if 'collectionType' not in q:
+                                    q['collectionType'] = 'Container'
+                                nextPage = '/gp/video/api/paginateCollection?' + urlencode(q)
                         elif cnt.get('hasMoreItems', False) and 'startIndex=' in requestURL:
                             idx = int(re.search(r'startIndex=(\d*)', requestURL).group(1))
                             nextPage = requestURL.replace('startIndex={}'.format(idx), 'startIndex={}'.format(idx+20))

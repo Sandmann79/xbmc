@@ -34,7 +34,7 @@ msgid "Amazon Account"
 msgstr "Konto Amazon"
 
 msgctxt "#30002"
-msgid "Email Adress"
+msgid "Email Address"
 msgstr "Email"
 
 msgctxt "#30003"
@@ -385,7 +385,7 @@ msgid "Both"
 msgstr "Oba"
 
 msgctxt "#30093"
-msgid "Use Web API (beta)"
+msgid "Use Web API (requires restart)"
 msgstr ""
 
 msgctxt "#30094"

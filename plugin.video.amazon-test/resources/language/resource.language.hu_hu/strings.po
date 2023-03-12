@@ -1,4 +1,4 @@
-#XBMC Media Center language file
+# XBMC Media Center language file
 # Addon Name: Amazon VOD
 # Addon id: plugin.video.amazon-test
 # Addon version: 0.2.6
@@ -11,10 +11,10 @@ msgstr ""
 "PO-Revision-Date: 2022-03-17 HO:MI+ZONE\n"
 "Last-Translator: frodo19\n"
 "Language-Team: Hungarian\n"
+"Language: hu\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Language: hu\n"
 "Plural-Forms: nplurals=2; plural=(n != 1)\n"
 
 msgctxt "Addon Summary"
@@ -34,7 +34,7 @@ msgid "Amazon Account"
 msgstr "Amazon fiók"
 
 msgctxt "#30002"
-msgid "Email Adress"
+msgid "Email Address"
 msgstr "Email cím"
 
 msgctxt "#30003"
@@ -361,8 +361,12 @@ msgid "Clear cache"
 msgstr "Cache törlése"
 
 msgctxt "#30088"
-msgid "Clear cached catalog or video data?\nVideo data includes series/season metadata."
-msgstr "Törli a gyorsítótárazott katalógus- vagy videóadatokat?\nVideóadatok sorozatok/évadok metaadataival együtt"
+msgid ""
+"Clear cached catalog or video data?\n"
+"Video data includes series/season metadata."
+msgstr ""
+"Törli a gyorsítótárazott katalógus- vagy videóadatokat?\n"
+"Videóadatok sorozatok/évadok metaadataival együtt"
 
 msgctxt "#30089"
 msgid "No"
@@ -379,6 +383,18 @@ msgstr "Videó adat"
 msgctxt "#30092"
 msgid "Both"
 msgstr "Mindkettő"
+
+msgctxt "#30093"
+msgid "Use Web API (requires restart)"
+msgstr ""
+
+msgctxt "#30094"
+msgid "Refer to PrimeVideo settings for more options"
+msgstr ""
+
+msgctxt "#30095"
+msgid "Reset addon home page to default"
+msgstr ""
 
 # empty strings from id 30093 to 30099
 msgctxt "#30100"
@@ -523,6 +539,10 @@ msgstr "Nem értékelt"
 msgctxt "#30173"
 msgid "Episode"
 msgstr "Epizód"
+
+msgctxt "#30174"
+msgid "Event"
+msgstr ""
 
 # empty strings from id 30174 to 30179
 msgctxt "#30180"
@@ -719,8 +739,9 @@ msgctxt "#30252"
 msgid "Loading page {0}…"
 msgstr "Oldal betöltése {0}"
 
+#, fuzzy
 msgctxt "#30253"
-msgid "{0} seasons"
+msgid "{0} seasons available"
 msgstr "{0} évadok"
 
 msgctxt "#30254"
@@ -774,3 +795,34 @@ msgstr "30 nap"
 msgctxt "#30266"
 msgid "Login credentials invalid, please login again."
 msgstr "A bejelentkezési adatok érvénytelenek, kérjük, jelentkezzen be újra."
+
+msgctxt "#30267"
+msgid "Next page…"
+msgstr ""
+
+msgctxt "#30268"
+msgid "Refresh"
+msgstr ""
+
+msgctxt "#30269"
+msgid "Not available, enable WebAPI to use this future"
+msgstr ""
+
+msgctxt "#30270"
+msgid "No additional languages available"
+msgstr ""
+
+msgctxt "#30271"
+msgid "Set as default addon home page"
+msgstr ""
+
+msgctxt "#30272"
+msgid ""
+"You are using an Android device that is not yet registered with Amazon, so at most HD playback is possible.\n"
+"In order to register this device and thus use the UHD playback, they must log in again in the addon with their Amazon credentials.\n"
+"This message will be displayed once."
+msgstr ""
+
+msgctxt "#30273"
+msgid "Data Source"
+msgstr ""

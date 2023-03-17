@@ -80,5 +80,7 @@ def EntryPoint():
             g.pv.Browse('root/Watchlist/watchlist', export=5)
     elif mode in ['LogIn', 'remLoginData', 'removeUser', 'renameUser', 'switchUser']:
         exec('{}()'.format(mode))
+    elif mode in ['createzip']:
+        CreateZIP()
     else:
         g.pv.Route(mode, args)

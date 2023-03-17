@@ -26,9 +26,9 @@ from .metrics import addNetTime
 
 try:
     from urlparse import urlparse, parse_qs
-    from urllib import urlencode
+    from urllib import urlencode, quote_plus
 except ImportError:
-    from urllib.parse import urlparse, parse_qs, urlencode
+    from urllib.parse import urlparse, parse_qs, urlencode, quote_plus
 
 domain_regex = r'[^\.]+\.([^/]+)(?:/|$)'
 
@@ -243,16 +243,14 @@ def getURL(url, useCookie=False, silent=False, headers=None, rjson=True, attempt
     duration -= starttime
     addNetTime(duration)
     Log('Download Time: %s' % duration, Log.DEBUG)
+    if s.logHTTP:
+        WriteLog(BeautifulSoup(r.content, 'html.parser').prettify(), 'html', True, comment='<-- {} -->'.format(url))
     return res
 
 
 def getURLData(mode, asin, retformat='json', devicetypeid=g.dtid_web, version=2, firmware='1', opt='', extra=False,
                useCookie=False, retURL=False, vMT='Feature', dRes='PlaybackUrls,SubtitleUrls,ForcedNarratives',
                proxyEndpoint=None, silent=False):
-    try:
-        from urllib.parse import quote_plus
-    except ImportError:
-        from urllib import quote_plus
 
     g = Globals()
     playback_req = 'PlaybackUrls' in dRes or 'Widevine2License' in dRes

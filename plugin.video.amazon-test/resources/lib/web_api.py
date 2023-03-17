@@ -450,8 +450,16 @@ class PrimeVideo(Singleton):
         try:
             navigation = deepcopy(home['nav']['navigationNodes'])
             watchlist = next((x for x in navigation if 'pv-nav-my-stuff' in x['id']), None)
-            self._catalog['root']['Watchlist'] = {'title': self._BeautifyText(watchlist['label']), 'lazyLoadData': watchlist['subMenu'][0]}
+            self._catalog['root']['Watchlist'] = {'title': self._BeautifyText(watchlist['label'])}
+            if watchlist['subMenu'][0].get('subNodes') is None:
+                ms = watchlist['url'].rsplit('/', 1)
+                data = {'subNodes': [{'id': 'watchlist', 'label': getString(30245), 'url': '/watchlist/'.join(ms)},
+                                     {'id': 'library', 'label': getString(30100), 'url': '/library/'.join(ms)}]}
+            else:
+                data = watchlist['subMenu'][0]
+            self._catalog['root']['Watchlist']['lazyLoadData'] = data
         except: pass
+
         if 'Watchlist' not in self._catalog['root']:
             Log('Watchlist link not found', Log.ERROR)
 
@@ -943,7 +951,7 @@ class PrimeVideo(Singleton):
             bUpdatedVideoData = False
             if bCacheRefresh or (urn not in self._videodata['urn2gti']):
                 # Find the show the season belongs to
-                url += ('&' if '?' in url else '?') + 'episodeListSize=9999'
+                url += ('' if 'episodeListSize' in url else ('&' if '?' in url else '?') + 'episodeListSize=9999')
                 bUpdatedVideoData |= ParseSinglePage(oid, season, bCacheRefresh, url=url)
                 seasonGTI = self._videodata['urn2gti'][urn]
                 try:
@@ -1320,7 +1328,7 @@ class PrimeVideo(Singleton):
 
             # Too many instances to track, append the episode finder to about every query and cross fingers
             if requestURL is not None:
-                requestURL += ('&' if '?' in requestURL else '?') + 'episodeListSize=9999'
+                requestURL += ('' if 'episodeListSize' in requestURL else ('&' if '?' in requestURL else '?') + 'episodeListSize=9999')
 
             # Load content
             bCouldNotParse = False
@@ -1406,19 +1414,23 @@ class PrimeVideo(Singleton):
                 elif len(filtered_col) == 1:
                     cnt = filtered_col[0]
             # MyStuff
-            wl_lib = 'legacy-' + breadcrumb[2] if ['root', 'Watchlist'] == breadcrumb[:2] and len(breadcrumb) > 2 else ''
+            wl_lib = 'legacy-' + breadcrumb[2] if ['root', 'Watchlist'] == breadcrumb[:2] and len(breadcrumb) > 2 and not breadcrumb[2].startswith('ms_') else ''
             vo = ''
-            if ['root', 'Watchlist'] == breadcrumb and 'subNodes' in cnt:
-                for f in cnt['subNodes']:
-                    id = f['id'].replace('pv-nav-my-stuff-', '').lower()
-                    if 'all' not in id:
-                        o[id] = {'title': f['label'], 'lazyLoadURL': f['url'], 'pos': len(o)}
-            elif ['root', 'Watchlist'] == breadcrumb:
-                wl = return_item(cnt, 'viewOutput', 'features', 'view-filter')
-                for f in wl['filters']:
-                    o[f['viewType']] = {'title': f['text'], 'lazyLoadURL': f['apiUrl' if 'apiUrl' in f else 'href'], 'pos': len(o)}
-                    if f.get('active', False):
-                        o[f['viewType']]['lazyLoadData'] = cnt
+            if ['root', 'Watchlist'] == breadcrumb:
+                if 'subNodes' in cnt:
+                    for f in cnt['subNodes']:
+                        id = f['id'].replace('pv-nav-my-stuff-', '').lower()
+                        if 'all' not in id:
+                            o[id] = {'title': f['label'], 'lazyLoadURL': f['url'], 'pos': len(o)}
+                elif 'viewOutput' in cnt:
+                    wl = return_item(cnt, 'viewOutput', 'features', 'view-filter')
+                    for f in wl['filters']:
+                        o[f['viewType']] = {'title': f['text'], 'lazyLoadURL': f['apiUrl' if 'apiUrl' in f else 'href'], 'pos': len(o)}
+                        if f.get('active', False):
+                            o[f['viewType']]['lazyLoadData'] = cnt
+                else:
+                    for f in cnt['content']['baseOutput']['containers']:
+                        o['ms_{}'.format(len(o))] = {'title': f['text'], 'lazyLoadURL': f['seeMoreLink']['url'], 'pos': len(o)}
             # MyStuff categories
             elif len(wl_lib) > 0 and len(breadcrumb) == 3:
                 if 'viewOutput' in cnt:
@@ -1428,7 +1440,7 @@ class PrimeVideo(Singleton):
                 for f in wl.get('filters', []):
                     id = f['id'].lower()
                     url = f.get('apiUrl', f.get('href'))
-                    url = requestURL.rsplit('/', 1)[0] + '/' + id if url is None else url
+                    url = ('/' + id + '/').join(requestURL.rsplit('/', 1)) if url is None else url
                     o[id] = {'title': f['text'], 'lazyLoadURL': url, 'pos': len(o)}
                     if f.get('applied') or f.get('isCurrentlyApplied'):
                         o[id]['lazyLoadData'] = cnt
@@ -1531,20 +1543,12 @@ class PrimeVideo(Singleton):
                         # Always auto load category lists for pv, on tld load only 10 pages at most, then paginate if appropriate
                         elif (2 < len(breadcrumb) and (p['all'] or p['collections'])) if self._g.UsePrimeVideo else pageNumber >= preloadPages:
                             bAutoPaginate = False
-                            if not self._g.UsePrimeVideo:
-                                try:
-                                    del(cnt['pagination']['page'])
-                                except KeyError: pass
 
                         if bAutoPaginate:
                             requestURLs.append(nextPage)
                         else:
                             # Insert pagination folder
-                            try:
-                                npt = getString(30242).format(cnt['pagination']['page'])
-                            except:
-                                npt = getString(30267)
-                            o['nextPage'] = {'title': npt, 'lazyLoadURL': nextPage, 'metadata': {'artmeta': {'thumb': self._s.NextIcon}}}
+                            o['nextPage'] = {'title': getString(30267), 'lazyLoadURL': nextPage, 'metadata': {'artmeta': {'thumb': self._s.NextIcon}}}
 
             # Notify new page
             if 0 < len(requestURLs):

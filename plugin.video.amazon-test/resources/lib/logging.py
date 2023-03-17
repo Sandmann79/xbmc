@@ -35,16 +35,23 @@ def LogCaller():
     xbmc.log(msg, Log.INFO)
 
 
-def WriteLog(data, fn=''):
-    if not s.verbLog:
+def WriteLog(data, fn='avod', force=False, comment=None):
+    if not s.verbLog and not force:
         return
 
-    fn = '-' + fn if fn else ''
-    fn = 'avod{}.log'.format(fn)
-    path = OSPJoin(g.HOME_PATH, fn)
+    cnt = 0
+    while True:
+        file = '{}{}.log'.format(fn, (cnt*-1 if cnt > 0 else ''))
+        path = OSPJoin(g.LOG_PATH, file)
+        if not xbmcvfs.exists(path):
+            break
+        cnt += 1
     logfile = xbmcvfs.File(path, 'w')
+    if comment:
+        logfile.write(py2_encode(comment))
     logfile.write(py2_encode(data))
     logfile.close()
+    Log('Saved Log with filename “{}”'.format(file), Log.DEBUG)
 
 
 def LogJSON(o, comment=None, optionalName=None):
@@ -63,8 +70,26 @@ def LogJSON(o, comment=None, optionalName=None):
         LogJSON.counter,
         '_' + optionalName if optionalName else ''
     )
-    with co(OSPJoin(g.DATA_PATH, fn), 'w+', 'utf-8') as f:
+    with co(OSPJoin(g.LOG_PATH, fn), 'w+', 'utf-8') as f:
         if comment:
             f.write('/* %s */\n' % comment)
         dump(o, f, sort_keys=True, indent=4)
         Log('Saved JSON data with filename “{}”'.format(fn), Log.DEBUG)
+
+
+def CreateZIP():
+    import os
+    from zipfile import ZipFile
+    from datetime import datetime
+    from .common import py2_decode, translatePath
+
+    kodilog = OSPJoin(py2_decode(translatePath('special://logpath')), 'kodi.log')
+    arcfile = OSPJoin(g.DATA_PATH, 'logfiles_{}.zip'.format(datetime.now().strftime('%Y%m%d-%H%M%S')))
+    arc = ZipFile(arcfile, 'w')
+
+    for fn in os.listdir(g.LOG_PATH):
+        arc.write(OSPJoin(g.LOG_PATH, fn), arcname=(OSPJoin('log', fn)))
+    arc.write(kodilog, arcname='kodi.log')
+    arc.close()
+    g.dialog.notification(g.__plugin__, 'Archive created at {}'.format(arcfile))
+    Log('Archive created at {}'.format(arcfile), Log.DEBUG)

@@ -810,3 +810,11 @@ msgstr ""
 msgctxt "#30273"
 msgid "Data Source"
 msgstr "Datenquelle"
+
+msgctxt "#30274"
+msgid "Log HTTP response content"
+msgstr "HTTP-Antwortinhalt loggen"
+
+msgctxt "#30275"
+msgid "Create Logfiles archive"
+msgstr "Logdateien-Archiv erstellen"

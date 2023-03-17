@@ -76,6 +76,7 @@ class Globals(Singleton):
 
         self._globals['DATA_PATH'] = py2_decode(translatePath(self.addon.getAddonInfo('profile')))
         self._globals['CONFIG_PATH'] = OSPJoin(self._globals['DATA_PATH'], 'config')
+        self._globals['LOG_PATH'] = OSPJoin(self._globals['DATA_PATH'], 'log')
         self._globals['HOME_PATH'] = py2_decode(translatePath('special://home'))
         self._globals['PLUGIN_PATH'] = py2_decode(self._globals['addon'].getAddonInfo('path'))
 
@@ -83,6 +84,9 @@ class Globals(Singleton):
         # and generate/retrieve the device ID
         getConfig.configPath = self._globals['CONFIG_PATH']
         writeConfig.configPath = self._globals['CONFIG_PATH']
+
+        if not xbmcvfs.exists(self._globals['LOG_PATH']):
+            xbmcvfs.mkdirs(self._globals['LOG_PATH'])
 
         self._globals['__plugin__'] = self._globals['addon'].getAddonInfo('name')
         self._globals['__authors__'] = self._globals['addon'].getAddonInfo('author')
@@ -162,6 +166,7 @@ class Settings(Singleton):
         elif 'dumpJSON' == name: return self._gs('json_dump') == 'true'
         elif 'dumpJSONCollisions' == name: return self._gs('json_dump_collisions') == 'true'
         elif 'refineJSON' == name: return self._gs('json_dump_raw') == 'false'
+        elif 'logHTTP' == name: return self._gs('log_http') == 'true'
         elif 'useIntRC' == name: return self._gs('remotectrl') == 'true'
         elif 'RMC_vol' == name: return self._gs('remote_vol') == 'true'
         elif 'ms_mov' == name: ms_mov = self._gs('mediasource_movie'); return ms_mov if ms_mov else 'Amazon Movies'

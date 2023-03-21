@@ -82,5 +82,7 @@ def EntryPoint():
         exec('{}()'.format(mode))
     elif mode in ['createzip']:
         CreateZIP()
+    elif mode in ['rmlogs']:
+        RemoveLogs()
     else:
         g.pv.Route(mode, args)

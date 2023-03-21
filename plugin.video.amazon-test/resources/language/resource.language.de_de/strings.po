@@ -818,3 +818,7 @@ msgstr "HTTP-Antwortinhalt loggen"
 msgctxt "#30275"
 msgid "Create Logfiles archive"
 msgstr "Logdateien-Archiv erstellen"
+
+msgctxt "#30276"
+msgid "Clear Logfiles"
+msgstr "Logdateien löschen"

@@ -78,18 +78,23 @@ def LogJSON(o, comment=None, optionalName=None):
 
 
 def CreateZIP():
-    import os
-    from zipfile import ZipFile
+    from zipfile import ZipFile, ZIP_DEFLATED
     from datetime import datetime
     from .common import py2_decode, translatePath
 
     kodilog = OSPJoin(py2_decode(translatePath('special://logpath')), 'kodi.log')
     arcfile = OSPJoin(g.DATA_PATH, 'logfiles_{}.zip'.format(datetime.now().strftime('%Y%m%d-%H%M%S')))
-    arc = ZipFile(arcfile, 'w')
+    arc = ZipFile(arcfile, 'w', ZIP_DEFLATED)
 
-    for fn in os.listdir(g.LOG_PATH):
+    for fn in xbmcvfs.listdir(g.LOG_PATH)[1]:
         arc.write(OSPJoin(g.LOG_PATH, fn), arcname=(OSPJoin('log', fn)))
     arc.write(kodilog, arcname='kodi.log')
     arc.close()
     g.dialog.notification(g.__plugin__, 'Archive created at {}'.format(arcfile))
     Log('Archive created at {}'.format(arcfile), Log.DEBUG)
+
+
+def RemoveLogs():
+    for fn in xbmcvfs.listdir(g.LOG_PATH)[1]:
+        xbmcvfs.delete(OSPJoin(g.LOG_PATH, fn))
+    Log('Logfiles removed', Log.DEBUG)

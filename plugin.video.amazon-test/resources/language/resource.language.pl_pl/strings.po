@@ -823,3 +823,7 @@ msgstr ""
 msgctxt "#30275"
 msgid "Create Logfiles archive"
 msgstr ""
+
+msgctxt "#30276"
+msgid "Clear Logfiles"
+msgstr ""

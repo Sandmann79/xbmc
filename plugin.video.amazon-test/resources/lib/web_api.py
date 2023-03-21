@@ -1502,7 +1502,7 @@ class PrimeVideo(Singleton):
                     except:
                         # Classic numbered pagination
                         if 'pagination' in cnt:
-                            if 'url' in cnt['pagination']:
+                            if 'url' in cnt['pagination'] and cnt['pagination']['url'] != '':
                                 nextPage = cnt['pagination']['url']  # + '&isCrow=0&isElcano=0&isCleanSlateActive=1&isLivePageActive=0&isDiscoverActive=1'
                             elif 'paginator' in cnt['pagination']:
                                 nextPage = next((x['href'] for x in cnt['pagination']['paginator'] if

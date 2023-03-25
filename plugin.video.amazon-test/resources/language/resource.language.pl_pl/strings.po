@@ -172,7 +172,7 @@ msgstr "Aktywuj widoki"
 
 msgctxt "#30036"
 msgid "Show Recently watched menu entry"
-msgstr ""
+msgstr "Pokaż ostatnio oglądaną pozycję menu"
 
 msgctxt "#30037"
 msgid "Disable SSL Certificate Verification"
@@ -286,7 +286,7 @@ msgstr "Tytuł serialu z źródła"
 
 msgctxt "#30066"
 msgid "Send video progress to Amazon at least at percent played (0 to disable)"
-msgstr ""
+msgstr "Wysyłaj postęp oddtworzenia wideo do Amazon, gdy procent odtworzenia wyniesie conajmniej w procentach (0, aby wyłączyć)"
 
 msgctxt "#30070"
 msgid "Miscellaneous"
@@ -386,15 +386,15 @@ msgstr "Oba"
 
 msgctxt "#30093"
 msgid "Use Web API (requires restart)"
-msgstr ""
+msgstr "Użyj Web API (wymagany restart)"
 
 msgctxt "#30094"
 msgid "Refer to PrimeVideo settings for more options"
-msgstr ""
+msgstr "Więcej opcji znajdziesz w ustawieniach PrimeVideo"
 
 msgctxt "#30095"
 msgid "Reset addon home page to default"
-msgstr ""
+msgstr "Zresetuj stronę główną dodatku do ustawień domyślnych"
 
 msgctxt "#30100"
 msgid "Library"
@@ -530,7 +530,7 @@ msgstr "Epizod"
 
 msgctxt "#30174"
 msgid "Event"
-msgstr ""
+msgstr "Wydarzenie"
 
 msgctxt "#30180"
 msgid "Add %s to Watchlist"
@@ -731,7 +731,7 @@ msgstr "Ładowanie strony {0}…"
 
 msgctxt "#30253"
 msgid "{0} seasons available"
-msgstr ""
+msgstr "{0} sezon dostępny"
 
 msgctxt "#30254"
 msgid "userinput.exe not found"
@@ -787,23 +787,23 @@ msgstr "Dane logowania są nieprawidłowe, zaloguj się ponownie."
 
 msgctxt "#30267"
 msgid "Next page…"
-msgstr ""
+msgstr "Następna strona..."
 
 msgctxt "#30268"
 msgid "Refresh"
-msgstr ""
+msgstr "Odśwież"
 
 msgctxt "#30269"
 msgid "Not available, enable WebAPI to use this future"
-msgstr ""
+msgstr "Niedostępne, włącz WebAPI, aby korzystać z tego w przyszłości"
 
 msgctxt "#30270"
 msgid "No additional languages available"
-msgstr ""
+msgstr "Brak dostępnych dodatkowych języków"
 
 msgctxt "#30271"
 msgid "Set as default addon home page"
-msgstr ""
+msgstr "Ustaw jako domyślną stronę główną dodatku"
 
 msgctxt "#30272"
 msgid ""
@@ -811,19 +811,22 @@ msgid ""
 "In order to register this device and thus use the UHD playback, they must log in again in the addon with their Amazon credentials.\n"
 "This message will be displayed once."
 msgstr ""
+"Używasz urządzenia z Androidem, które nie jest jeszcze zarejestrowane w Amazon, więc możliwe jest co najwyżej odtwarzanie HD.\n"
+"Aby zarejestrować to urządzenie i tym samym korzystać z odtwarzania UHD, musisz ponownie zalogować się w dodatku przy użyciu swoich danych uwierzytelniających Amazon.\n"
+"Ta wiadomość zostanie wyświetlona raz."
 
 msgctxt "#30273"
 msgid "Data Source"
-msgstr ""
+msgstr "Źródło danych"
 
 msgctxt "#30274"
 msgid "Log HTTP response content"
-msgstr ""
+msgstr "Rejestruj treść odpowiedzi HTTP"
 
 msgctxt "#30275"
 msgid "Create Logfiles archive"
-msgstr ""
+msgstr "Utwórz archiwum plików dziennika"
 
 msgctxt "#30276"
 msgid "Clear Logfiles"
-msgstr ""
+msgstr "Wyczyść pliki dziennika"

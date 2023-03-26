@@ -263,7 +263,7 @@ class PrimeVideo(Singleton):
             if 'activeProfile' in pr:
                 profiles.append(pr['activeProfile'])
             if 'otherProfiles' in pr:
-                profiles.append(pr['otherProfiles'][0])
+                profiles += pr['otherProfiles']
             if isinstance(pr, list):
                 profiles = pr
             self._catalog['profiles'] = {}

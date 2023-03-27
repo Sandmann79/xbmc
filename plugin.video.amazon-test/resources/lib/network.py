@@ -94,14 +94,14 @@ def getTerritory(user):
         user['deviceid'] = uuid4().hex
 
     areas = [{'atvurl': '', 'baseurl': '', 'mid': '', 'pv': False, 'country': ''},
-             {'atvurl': 'https://atv-ps-eu.amazon.de', 'baseurl': 'https://www.amazon.de', 'mid': 'A1PA6795UKMFR9', 'pv': False, 'locale': 'de'},
-             {'atvurl': 'https://atv-ps-eu.amazon.co.uk', 'baseurl': 'https://www.amazon.co.uk', 'mid': 'A1F83G8C2ARO7P', 'pv': False, 'locale': 'uk'},
-             {'atvurl': 'https://atv-ps.amazon.com', 'baseurl': 'https://www.amazon.com', 'mid': 'ATVPDKIKX0DER', 'pv': False, 'locale': 'us'},
-             {'atvurl': 'https://atv-ps-fe.amazon.co.jp', 'baseurl': 'https://www.amazon.co.jp', 'mid': 'A1VC38T7YXB528', 'pv': False, 'locale': 'jp'},
-             {'atvurl': 'https://atv-ps-eu.primevideo.com', 'baseurl': 'https://www.primevideo.com', 'mid': 'A3K6Y4MI8GDYMT', 'pv': True, 'locale': 'us'},
-             {'atvurl': 'https://atv-ps-eu.primevideo.com', 'baseurl': 'https://www.primevideo.com', 'mid': 'A2MFUE2XK8ZSSY', 'pv': True, 'locale': 'us'},
-             {'atvurl': 'https://atv-ps-fe.primevideo.com', 'baseurl': 'https://www.primevideo.com', 'mid': 'A15PK738MTQHSO', 'pv': True, 'locale': 'us'},
-             {'atvurl': 'https://atv-ps.primevideo.com', 'baseurl': 'https://www.primevideo.com', 'mid': 'ART4WZ8MWBX2Y', 'pv': True, 'locale': 'us'}]
+             {'atvurl': 'https://atv-ps-eu.amazon.de', 'baseurl': 'https://www.amazon.de', 'mid': 'A1PA6795UKMFR9', 'pv': False, 'locale': 'de', 'sidomain': 'amazon.de'},
+             {'atvurl': 'https://atv-ps-eu.amazon.co.uk', 'baseurl': 'https://www.amazon.co.uk', 'mid': 'A1F83G8C2ARO7P', 'pv': False, 'locale': 'uk', 'sidomain': 'amazon.co.uk'},
+             {'atvurl': 'https://atv-ps.amazon.com', 'baseurl': 'https://www.amazon.com', 'mid': 'ATVPDKIKX0DER', 'pv': False, 'locale': 'us', 'sidomain': 'amazon.com'},
+             {'atvurl': 'https://atv-ps-fe.amazon.co.jp', 'baseurl': 'https://www.amazon.co.jp', 'mid': 'A1VC38T7YXB528', 'pv': False, 'locale': 'jp', 'sidomain': 'amazon.co.jp'},
+             {'atvurl': 'https://atv-ps-eu.primevideo.com', 'baseurl': 'https://www.primevideo.com', 'mid': 'A3K6Y4MI8GDYMT', 'pv': True, 'locale': 'us', 'sidomain': 'amazon.com'},
+             {'atvurl': 'https://atv-ps-eu.primevideo.com', 'baseurl': 'https://www.primevideo.com', 'mid': 'A2MFUE2XK8ZSSY', 'pv': True, 'locale': 'us', 'sidomain': 'amazon.com'},
+             {'atvurl': 'https://atv-ps-fe.primevideo.com', 'baseurl': 'https://www.primevideo.com', 'mid': 'A15PK738MTQHSO', 'pv': True, 'locale': 'us', 'sidomain': 'amazon.com'},
+             {'atvurl': 'https://atv-ps.primevideo.com', 'baseurl': 'https://www.primevideo.com', 'mid': 'ART4WZ8MWBX2Y', 'pv': True, 'locale': 'us', 'sidomain': 'amazon.com'}]
     area = areas[Settings().region]
 
     if area['mid']:
@@ -120,8 +120,7 @@ def getTerritory(user):
             user['baseurl'] = data['territoryConfig']['primeSignupBaseUrl']
             user['mid'] = data['territoryConfig']['avMarketplace']
             user['pv'] = 'primevideo' in host
-            user['locale'] = [l['locale'] for l in areas if l['mid'] == user['mid']][0]
-            #user['language'] = data['customerConfig']['locale']['uxLocale']
+            user.update({k: v for l in areas for k, v in l.items() if l['mid'] == user['mid'] and k in 'locale,sidomain'})
     return user, True
 
 
@@ -601,7 +600,6 @@ def LogIn(retToken=False):
             cj = requests.cookies.RequestsCookieJar()
             br = mechanicalsoup.StatefulBrowser(soup_config={'features': 'html.parser'})
             br.set_cookiejar(cj)
-            Log(br.get_cookiejar())
             br.session.verify = s.verifySsl
             br.set_verbose(2)
             clientid = b16encode(user['deviceid'].encode() + b'#' + g.dtid_android.encode()).decode().lower()
@@ -622,7 +620,7 @@ def LogIn(retToken=False):
             }
 
             Log('Connect to SignIn Page')
-            br.open('http://www.amazon.com' if user['pv'] else user['baseurl'])
+            br.open('https://www.' + user['sidomain'])
             WriteLog(str(br.get_current_page()), 'bu')
             br.follow_link(attrs={'class': 'nav-show-sign-in'})
             up = urlparse(br.get_url())
@@ -644,10 +642,9 @@ def LogIn(retToken=False):
                                        'host': up.netloc
                                        })
             br.open(up.geturl())
-            Log(up.geturl())
+            Log(up.geturl(), Log.DEBUG)
             form = br.select_form('form[name="signIn"]')
             WriteLog(str(br.get_current_page()), 'login-si')
-            xbmc.sleep(randint(750, 1500))
             form.set_input({'email': email, 'password': password})
             if 'true' == g.addon.getSetting('rememberme'):
                 try:
@@ -729,7 +726,7 @@ def LogIn(retToken=False):
 def registerDevice(url, user, verifier, clientid):
     parsed_url = parse_qs(urlparse(url).query)
     auth_code = parsed_url["openid.oa2.authorization_code"][0]
-    domain = re.compile(domain_regex).search(user['baseurl']).group(1)
+    domain = user['sidomain']
 
     data = {
         'auth_data': {
@@ -796,7 +793,7 @@ def getToken(user=None):
 
 
 def refreshToken(user):
-    domain = re.compile(domain_regex).search(user['baseurl']).group(1)
+    domain = user['sidomain']
     token = user['token']
     data = deviceData(user)
     data['requested_token_type'] = 'access_token'

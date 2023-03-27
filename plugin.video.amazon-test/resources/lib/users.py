@@ -9,7 +9,7 @@ from .common import Globals, Settings
 from .l10n import *
 
 g = Globals()
-def_keys = {'name': '', 'atvurl': '', 'baseurl': '', 'pv': False, 'mid': '', 'cookie': '', 'token': '', 'deviceid': ''}
+def_keys = {'name': '', 'atvurl': '', 'baseurl': '', 'pv': False, 'mid': '', 'cookie': '', 'token': '', 'deviceid': '', 'sidomain': ''}
 
 
 def loadUsers():

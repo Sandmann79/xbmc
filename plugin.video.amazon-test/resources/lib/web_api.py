@@ -1449,41 +1449,41 @@ class PrimeVideo(Singleton):
                 vo = return_item(vo, 'content', 'baseOutput', 'containers')
                 if isinstance(vo, list):
                     vo = vo[0]
-                if ('entities' in vo) or ('items' in vo) or (('content' in vo) and ('items' in vo['content'])):
-                    for item in vo.get('entities', vo.get('items', vo.get('content', {'items': []})['items'])):
-                        tile = return_value(item, 'image', 'alternateText')
-                        tile_cov = item.get('image', {})
-                        if isinstance(tile, dict) and item.get('widgetType', '').lower() == 'imagetextlink':
-                            tile = item.get('title', item.get('displayTitle'))
-                            tile_cov = item.get('images', {})
+                items = vo.get('entities', []) + vo.get('items', []) + vo.get('content', {}).get('items', [])
+                for item in items:
+                    tile = return_value(item, 'image', 'alternateText')
+                    tile_cov = item.get('image', {})
+                    if isinstance(tile, dict) and item.get('widgetType', '').lower() == 'imagetextlink':
+                        tile = item.get('title', item.get('displayTitle'))
+                        tile_cov = item.get('images', {})
+                    else:
+                        tile = None
+                    if 'heading' in item or 'title' in item or tile:
+                        oldk = list(o)
+                        try:
+                            iu = item['href'] if 'href' in item else item['link' if 'link' in item else 'title']['url']
+                        except:
+                            iu = None
+                        try:
+                            wl = 'watchlistAction' if 'watchlistAction' in item else 'watchlistButton'
+                            t = item[wl]['endpoint']['query']['titleType'].lower()
+                        except:
+                            t = ''
+                        if 'station' in item:
+                            AddLiveTV(o, item)
+                        elif tile and iu:
+                            id = 'tile_{}'.format(len(o))
+                            o[id] = {'title': tile, 'lazyLoadURL': iu, 'metadata': {'artmeta': {'thumb': findKey('url', tile_cov)}}}
+                        elif ('liveInfo' in item) or ('event' == t):
+                            AddLiveEvent(o, item, iu)
+                        elif 'season' != t and 'season' not in item:
+                            bUpdatedVideoData |= ParseSinglePage(breadcrumb[-1], o, bCacheRefresh, url=iu)
                         else:
-                            tile = None
-                        if 'heading' in item or 'title' in item or tile:
-                            oldk = list(o)
-                            try:
-                                iu = item['href'] if 'href' in item else item['link' if 'link' in item else 'title']['url']
-                            except:
-                                iu = None
-                            try:
-                                wl = 'watchlistAction' if 'watchlistAction' in item else 'watchlistButton'
-                                t = item[wl]['endpoint']['query']['titleType'].lower()
-                            except:
-                                t = ''
-                            if 'station' in item:
-                                AddLiveTV(o, item)
-                            elif tile and iu:
-                                id = 'tile_{}'.format(len(o))
-                                o[id] = {'title': tile, 'lazyLoadURL': iu, 'metadata': {'artmeta': {'thumb': findKey('url', tile_cov)}}}
-                            elif ('liveInfo' in item) or ('event' == t):
-                                AddLiveEvent(o, item, iu)
-                            elif 'season' != t and 'season' not in item:
-                                bUpdatedVideoData |= ParseSinglePage(breadcrumb[-1], o, bCacheRefresh, url=iu)
-                            else:
-                                bUpdatedVideoData |= AddSeason(breadcrumb[-1], o, bCacheRefresh, iu)
+                            bUpdatedVideoData |= AddSeason(breadcrumb[-1], o, bCacheRefresh, iu)
 
-                            newitem = list(set(list(o)) - set(oldk))
-                            if newitem:
-                                o[newitem[0]]['pos'] = len(o)
+                        newitem = list(set(list(o)) - set(oldk))
+                        if newitem:
+                            o[newitem[0]]['pos'] = len(o)
 
                 # Single page
                 bSinglePage = False

@@ -387,10 +387,9 @@ class PrimeVideo(Singleton):
             br = StatefulBrowser(soup_config={'features': 'html.parser'})
             br.set_cookiejar(cj)
             br.session.headers.update({'User-Agent': getConfig('UserAgent')})
-            br.open(g.BaseUrl + '/gp/customer-preferences/select-language')
-            form = br.select_form('form[method="post"]')
+            br.open(g.BaseUrl + '/customer-preferences/edit')
             langs = [(elem.label.input.get('value'), elem.get_text(strip=True), elem.label.input.get('checked') is not None)
-                     for elem in br.get_current_page().find_all('div', attrs={'data-a-input-name': 'LOP'})]
+                     for elem in br.get_current_page().find_all('div', attrs={'data-a-input-name': 'lop'})]
             presel = [i for i, x in enumerate(langs) if x[2] is True]
 
         if len(langs) < 1:
@@ -405,8 +404,8 @@ class PrimeVideo(Singleton):
             if self._g.UsePrimeVideo:
                 cj.set('lc-main-av', langs[sel][0], path='/')
             else:
-                form.set_radio({'LOP': langs[sel][0]})
-                br.submit_selected()
+                ck = [k for k, v in cj.items() if 'sess-at-' in k][0].replace('sess-at-', 'lc-')
+                cj.set(ck, langs[sel][0], path='/')
             saveUserCookies(cj)
             self.DeleteCache()
 

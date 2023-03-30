@@ -8,6 +8,10 @@ import xbmcplugin
 import xbmcgui
 import xbmcaddon
 try:
+    from xbmcvfs import translatePath
+except ImportError:
+    from xbmc import translatePath
+try:
     from urllib.parse import unquote_plus, quote_plus
 except ImportError:
     from urllib import unquote_plus, quote_plus
@@ -20,12 +24,12 @@ addonPath = addon.getAddonInfo('path')
 translation = addon.getLocalizedString
 useOwnProfile = addon.getSetting("useOwnProfile") == "true"
 useCustomPath = addon.getSetting("useCustomPath") == "true"
-customPath = xbmc.translatePath(addon.getSetting("customPath"))
+customPath = translatePath(addon.getSetting("customPath"))
 winBrowser = int(addon.getSetting("winBrowser"))
 #prio_values = ['LOW', 'BELOWNORMAL', 'NORMAL', 'ABOVENORMAL', 'HIGH', 'REALTIME' ]
 prio_values = [ 0x00000040, 0x00004000, 0x00000020, 0x00008000, 0x00000080, 0x00000100 ]
 priority = prio_values[int(addon.getSetting("priority"))]
-userDataFolder = xbmc.translatePath("special://profile/addon_data/"+addonID)
+userDataFolder = translatePath("special://profile/addon_data/"+addonID)
 profileFolder = os.path.join(userDataFolder, 'profile')
 siteFolder = os.path.join(userDataFolder, 'sites')
 avBrowsers = ['Standard', 'Internet Explorer', 'Kylo', 'Chrome', 'Firefox', 'Opera']

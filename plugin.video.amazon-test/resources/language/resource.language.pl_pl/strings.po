@@ -286,7 +286,7 @@ msgstr "Tytuł serialu z źródła"
 
 msgctxt "#30066"
 msgid "Send video progress to Amazon at least at percent played (0 to disable)"
-msgstr "Wysyłaj postęp oddtworzenia wideo do Amazon, gdy procent odtworzenia wyniesie conajmniej w procentach (0, aby wyłączyć)"
+msgstr "Wysyłaj postęp odtworzenia wideo do Amazon, gdy procent odtworzenia wyniesie conajmniej w procentach (0, aby wyłączyć)"
 
 msgctxt "#30070"
 msgid "Miscellaneous"
@@ -691,7 +691,7 @@ msgstr "Stronnicowanie"
 
 msgctxt "#30244"
 msgid "Everything"
-msgstr "Wszystki"
+msgstr "Wszystko"
 
 #, fuzzy
 msgctxt "#30245"

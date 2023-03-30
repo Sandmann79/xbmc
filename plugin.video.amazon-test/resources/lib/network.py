@@ -104,7 +104,9 @@ def getTerritory(user):
              {'atvurl': 'https://atv-ps.primevideo.com', 'baseurl': 'https://www.primevideo.com', 'mid': 'ART4WZ8MWBX2Y', 'pv': True, 'locale': 'us', 'sidomain': 'amazon.com'}]
     area = areas[Settings().region]
 
-    if area['mid']:
+    if len(user.get('mid', '')) > 0:
+        user.update({k: v for l in areas for k, v in l.items() if l['mid'] == user['mid'] and k not in user})
+    elif area['mid']:
         user.update(area)
     else:
         Log('Retrieve territoral config')

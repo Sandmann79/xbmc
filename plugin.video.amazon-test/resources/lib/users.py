@@ -25,7 +25,7 @@ def loadUser(key='', empty=False, cachedUsers=None):
     user = None if empty else [i for i in users if cur_user == i['name']]
     if user:
         user = user[0]
-        if key and key not in user.keys():
+        if len([k for k in def_keys.keys() if k not in user]) > 0:
             from .network import getTerritory
             user = getTerritory(user)
             if False is user[1]:

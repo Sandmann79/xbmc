@@ -327,9 +327,11 @@ def PlayVideo(name, asin, adultstr, streamtype, forcefb=0):
             if not cookie:
                 g.dialog.notification(getString(30203), getString(30200), xbmcgui.NOTIFICATION_ERROR)
                 Log('Login error at playback')
+            '''
             if (g.platform & g.OS_ANDROID) and not isinstance(cookie, dict) and getConfig('uhdinfo') == '':
                 g.dialog.ok(g.__plugin__, getString(30272))
                 writeConfig('uhdinfo', '1')
+            '''
 
             success, data = getURLData('catalog/GetPlaybackResources', asin, extra=True, vMT=vMT, dRes=dRes, useCookie=cookie, devicetypeid=dtid,
                                        proxyEndpoint=(None if bypassproxy else 'gpr'), opt=opt)

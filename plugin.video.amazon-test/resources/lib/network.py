@@ -604,47 +604,63 @@ def LogIn(retToken=False):
             br.set_cookiejar(cj)
             br.session.verify = s.verifySsl
             br.set_verbose(2)
-            clientid = b16encode(user['deviceid'].encode() + b'#' + g.dtid_android.encode()).decode().lower()
-            verifier = urlsafe_b64encode(os.urandom(32)).rstrip(b"=")
-            challenge = urlsafe_b64encode(sha256(verifier).digest()).rstrip(b"=")
-            br.session.headers.update(g.headers_android)
-            params = {
-                "openid.oa2.response_type": "code",
-                "openid.oa2.code_challenge_method": "S256",
-                "openid.oa2.code_challenge": challenge.decode(),
-                "pageId": "amzn_dv_ios_blue",
-                "openid.ns.oa2": "http://www.amazon.com/ap/ext/oauth/2",
-                "openid.oa2.client_id": "device:{}".format(clientid),
-                "openid.ns.pape": "http://specs.openid.net/extensions/pape/1.0",
-                "openid.oa2.scope": "device_auth_access",
-                "language": getdefaultlocale()[0],
-                "disableLoginPrepopulate": 0
-            }
-
             Log('Connect to SignIn Page')
-            br.open('https://www.' + user['sidomain'])
-            WriteLog(str(br.get_current_page()), 'bu')
-            br.follow_link(attrs={'class': 'nav-show-sign-in'})
-            up = urlparse(br.get_url())
-            query = {k: v[0] for k, v in parse_qs(up.query).items()}
-            up_rt = urlparse(query['openid.return_to'])
-            up_rt = up_rt._replace(netloc=up.netloc, path='/ap/maplanding', query='')
-            query['openid.assoc_handle'] = 'amzn_piv_android_v2_' + user['locale']
-            query['openid.return_to'] = up_rt.geturl()
-            query.update(params)
-            up = up._replace(query=urlencode(query))
-            br.session.headers.update({'upgrade-insecure-requests': '1',
-                                       'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9',
-                                       'x-requested-with': 'com.amazon.avod.thirdpartyclient',
-                                       'sec-fetch-site': 'none',
-                                       'sec-fetch-mode': 'navigate',
-                                       'sec-fetch-user': '?1',
-                                       'sec-fetch-dest': 'document',
-                                       'accept-language': g.userAcceptLanguages,
-                                       'host': up.netloc
-                                       })
-            br.open(up.geturl())
-            Log(up.geturl(), Log.DEBUG)
+            if s.data_source == 0:
+                br.session.headers.update({'User-Agent': getConfig('UserAgent')})
+                br.open(user['baseurl'] + ('/gp/flex/sign-out.html' if not user['pv'] else '/auth-redirect/?signin=1'))
+                Log(br.get_url(), Log.DEBUG)
+                br.session.headers.update({
+                        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+                        'Accept-Encoding': 'gzip, deflate',
+                        'Accept-Language': g.userAcceptLanguages,
+                        'Cache-Control': 'max-age=0',
+                        'Connection': 'keep-alive',
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'Origin': '/'.join(br.get_url().split('/')[0:3]),
+                        'Upgrade-Insecure-Requests': '1'
+                })
+            else:
+                clientid = b16encode(user['deviceid'].encode() + b'#' + g.dtid_android.encode()).decode().lower()
+                verifier = urlsafe_b64encode(os.urandom(32)).rstrip(b"=")
+                challenge = urlsafe_b64encode(sha256(verifier).digest()).rstrip(b"=")
+                br.session.headers.update(g.headers_android)
+                br.open('https://www.' + user['sidomain'])
+                WriteLog(str(br.get_current_page()), 'bu')
+                br.follow_link(attrs={'class': 'nav-show-sign-in'})
+                up = urlparse(br.get_url())
+                query = {k: v[0] for k, v in parse_qs(up.query).items()}
+                up_rt = urlparse(query['openid.return_to'])
+                up_rt = up_rt._replace(netloc=up.netloc, path='/ap/maplanding', query='')
+                query['openid.assoc_handle'] = 'amzn_piv_android_v2_' + user['locale']
+                query['openid.return_to'] = up_rt.geturl()
+                query.update({
+                    "openid.oa2.response_type": "code",
+                    "openid.oa2.code_challenge_method": "S256",
+                    "openid.oa2.code_challenge": challenge.decode(),
+                    "pageId": "amzn_dv_ios_blue",
+                    "openid.ns.oa2": "http://www.amazon.com/ap/ext/oauth/2",
+                    "openid.oa2.client_id": "device:{}".format(clientid),
+                    "openid.ns.pape": "http://specs.openid.net/extensions/pape/1.0",
+                    "openid.oa2.scope": "device_auth_access",
+                    "language": getdefaultlocale()[0],
+                    "disableLoginPrepopulate": 0
+                })
+                up = up._replace(query=urlencode(query))
+                br.session.headers.update(
+                    {'upgrade-insecure-requests': '1',
+                     'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9',
+                     'x-requested-with': 'com.amazon.avod.thirdpartyclient',
+                     'sec-fetch-site': 'none',
+                     'sec-fetch-mode': 'navigate',
+                     'sec-fetch-user': '?1',
+                     'sec-fetch-dest': 'document',
+                     'accept-language': g.userAcceptLanguages,
+                     'host': up.netloc
+                     }
+                )
+                br.open(up.geturl())
+                Log(up.geturl(), Log.DEBUG)
+
             form = br.select_form('form[name="signIn"]')
             WriteLog(str(br.get_current_page()), 'login-si')
             form.set_input({'email': email, 'password': password})

@@ -697,9 +697,11 @@ def LogIn(retToken=False):
                     user = registerDevice(url, user, verifier, clientid)
                 else:  # Raw HTML
                     try:
-                        name = re.search(r'action=sign-out[^"]*"[^>]*>[^?]+\s+([^?]+?)\s*\?', response).group(1)
+                        name = re.search(r'config\.customerName[\x27,]+([^\x27]+)', response).group(1)
                     except AttributeError:
-                        name = getString(30209)
+                        name = soup.find('span', attrs={'data-automation-id': 'nav-active-profile-name'})
+                        name = getString(30209) if name is None else name.get_text(strip=True)
+
                     from requests.utils import dict_from_cookiejar as dfcj
                     user = {
                         "name": name,

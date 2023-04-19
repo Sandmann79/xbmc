@@ -61,14 +61,12 @@
         <setting id="show_pass" type="bool" label="30026" default="true"/>
         <setting id="multiuser" type="bool" label="30009" default="false"/>
         <setting id="rememberme" type="bool" label="30022" default="true"/>
+        <setting id="register_device" type="bool" label="30277" default="false" />
         <!-- Multiuser -->
-        <setting type="action" label="30130" action="RunPlugin(plugin://plugin.video.amazon-test/?mode=LogIn)" visible="eq(-2,true)" option="close" />
-        <setting type="action" label="30131" action="RunPlugin(plugin://plugin.video.amazon-test/?mode=removeUser)" visible="eq(-3,true)" option="close"/>
-        <setting type="action" label="30008" action="RunPlugin(plugin://plugin.video.amazon-test/?mode=LogIn)" option="close" visible="eq(-4,false)"/>
-        <setting id="login_acc" type="text" label="30014" enable="false" default="" subsetting="true" visible="eq(-5,false)"/>
-        <!-- /Multiuser -->
-        <setting id="save_login" type="bool" label="30006" default="false" visible="false"/>
-        <!-- Multiuser -->
+        <setting type="action" label="30130" action="RunPlugin(plugin://plugin.video.amazon-test/?mode=LogIn)" visible="eq(-3,true)" option="close" />
+        <setting type="action" label="30131" action="RunPlugin(plugin://plugin.video.amazon-test/?mode=removeUser)" visible="eq(-4,true)" option="close"/>
+        <setting type="action" label="30008" action="RunPlugin(plugin://plugin.video.amazon-test/?mode=LogIn)" option="close" visible="eq(-5,false)"/>
+        <setting id="login_acc" type="text" label="30014" enable="false" default="" subsetting="true" visible="eq(-6,false)"/>
         <setting label="30007" type="action" action="RunPlugin(plugin://plugin.video.amazon-test/?mode=remLoginData)" option="close" visible="eq(-7,false)"/>
         <setting label="30010" type="action" action="RunPlugin(plugin://plugin.video.amazon-test/?mode=remLoginData)" option="close" visible="eq(-8,true)"/>
     </category>

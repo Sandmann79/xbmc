@@ -275,8 +275,8 @@ def getURLData(mode, asin, retformat='json', devicetypeid=g.dtid_web, version=2,
         url += '&videoMaterialType=' + vMT
         url += '&desiredResources=' + dRes
         url += '&supportedDRMKeyScheme=DUAL_KEY' if playback_req else ''
-        if devicetypeid == g.dtid_android:
-            url += '&deviceVideoCodecOverride=H264' + (',H265' if s.uhd else '')
+        if g.platform & g.OS_ANDROID:
+            url += '&deviceVideoCodecOverride=H264,H265'
             url += '&deviceHdrFormatsOverride=' + supported_hdr()
             url += '&deviceVideoQualityOverride=' + ('UHD' if s.uhd else 'HD')
 
@@ -376,7 +376,7 @@ def _sortedResult(result, query):
 
 
 def MechanizeLogin(preferToken=False):
-    if preferToken:  # and g.platform & g.OS_ANDROID
+    if preferToken:
         token = getToken()
         if token:
             return token
@@ -605,7 +605,7 @@ def LogIn(retToken=False):
             br.session.verify = s.verifySsl
             br.set_verbose(2)
             Log('Connect to SignIn Page')
-            if s.data_source == 0:
+            if s.register_device is False:
                 br.session.headers.update({'User-Agent': getConfig('UserAgent')})
                 br.open(user['baseurl'] + ('/gp/flex/sign-out.html' if not user['pv'] else '/auth-redirect/?signin=1'))
                 Log(br.get_url(), Log.DEBUG)
@@ -783,7 +783,7 @@ def registerDevice(url, user, verifier, clientid):
     customer = data['extensions']['customer_info']
     user['name'] = customer.get('given_name', customer.get('name', getString(30209)))
     user['token'] = {'access': bearer['access_token'], 'refresh': bearer['refresh_token'], 'expires': int(time.time()) + int(bearer['expires_in'])}
-    user['cookie'] = {c['Name']: c['Value'] for c in data['tokens']['website_cookies']}
+    user['cookie'] = {c['Name'] + '-av' if c['Name'].endswith('-main') and user['pv'] else c['Name']: c['Value'] for c in data['tokens']['website_cookies']}
     return user
 
 
@@ -804,7 +804,7 @@ def getToken(user=None):
     if user is None:
         user = loadUser()
     token = user.get('token')
-    if token is not None:
+    if isinstance(token, dict):
         if int(time.time()) > token['expires']:
             user['token'] = refreshToken(user)
             addUser(user)

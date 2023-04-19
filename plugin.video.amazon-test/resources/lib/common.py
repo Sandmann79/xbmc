@@ -205,7 +205,7 @@ class Settings(Singleton):
         elif 'data_source' == name: return 0  # int('0' + self._gs('data_source'))
         elif 'uhd' == name: return self._gs('enable_uhd') == 'true'
         elif 'show_recents' == name: return self._gs('show_recents') == 'true'
-
+        elif 'register_device' == name: return self._gs('register_device') == 'true'
 
 def jsonRPC(method, props='', param=None):
     """ Wrapper for Kodi's executeJSONRPC API """

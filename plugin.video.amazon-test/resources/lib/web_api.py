@@ -485,12 +485,7 @@ class PrimeVideo(Singleton):
                 if mml:
                     self._catalog['root'][id]['lazyLoadData'] = home
         else:
-            self._g.dialog.notification(
-                'PrimeVideo error',
-                'You might be unable to access the service: check the website {} for more information'
-                ''.format(self._g.BaseUrl) if 'cerberus' in home else ''
-                'Unable to find the navigation menu', xbmcgui.NOTIFICATION_ERROR
-            )
+            self._g.dialog.ok(getString(30278), getString(30279).format(self._g.BaseUrl, getString(30280) if self._s.register_device else ''))
             Log('Unable to parse the navigation menu for {}'.format(self._g.BaseUrl), Log.ERROR)
             return False
 

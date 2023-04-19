@@ -822,3 +822,19 @@ msgstr "Logdateien-Archiv erstellen"
 msgctxt "#30276"
 msgid "Clear Logfiles"
 msgstr "Logdateien löschen"
+
+msgctxt "#30277"
+msgid "Register device for 4K playback"
+msgstr "Gerät für 4K Wiedergabe registrieren"
+
+msgctxt "#30278"
+msgid "PrimeVideo error"
+msgstr "PrimeVideo Fehler"
+
+msgctxt "#30279"
+msgid "Unable to find the navigation menu for {}.{}"
+msgstr "Das Navigations Menü für {} konnte nicht gefunden werden.{}"
+
+msgctxt "#30280"
+msgid "\nThis error often occurs with primevideo users when the register device for 4K setting is enabled.\nPlease disable this setting and log in again."
+msgstr "\nDieser Fehler tritt haüfig bei PrimeVideo Benutzern auf, wenn die Einstellung Gerät für 4K registrieren aktiviert ist.\nBitte diese Einstellung deaktivieren und erneut anmelden."

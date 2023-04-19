@@ -838,3 +838,23 @@ msgstr ""
 msgctxt "#30276"
 msgid "Clear Logfiles"
 msgstr ""
+
+msgctxt "#30277"
+msgid "Register device for 4K playback"
+msgstr ""
+
+#, fuzzy
+msgctxt "#30278"
+msgid "PrimeVideo error"
+msgstr "Prime Video"
+
+msgctxt "#30279"
+msgid "Unable to find the navigation menu for {}.{}"
+msgstr ""
+
+msgctxt "#30280"
+msgid ""
+"\n"
+"This error often occurs with primevideo users when the register device for 4K setting is enabled.\n"
+"Please disable this setting and log in again."
+msgstr ""

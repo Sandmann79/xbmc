@@ -1382,7 +1382,7 @@ class PrimeVideo(Singleton):
                 cnt = ''
             # Categories
             elif 'collections' in cnt or 'containers' in cnt:
-                var = 'collection' if 'collections' in cnt else 'container'
+                var = 'collection' if len(cnt.get('collections', [])) > 0 else 'container'
                 filtered_col = [x for x in cnt[var + 's'] if x[var + 'Type'].lower() not in ['chartscarousel', 'standardhero', 'textcontainer', 'superhero', 'tentpolehero']]
                 if len(filtered_col) > 1:
                     for collection in filtered_col:
@@ -1435,7 +1435,7 @@ class PrimeVideo(Singleton):
                 if 'viewOutput' in cnt:
                     wl = return_item(cnt, 'viewOutput', 'features', wl_lib)
                 else:
-                    wl = {'filters': [x['values'] for x in return_item(cnt, 'content', 'baseOutput', 'filters', 'items') if 'OFFER_FILTER' in x['id']][0]}
+                    wl = {'filters': x['values'] for x in return_item(cnt, 'content', 'baseOutput', 'filters', 'items') if isinstance(x, dict) and 'OFFER_FILTER' in x['id']}
                 for f in wl.get('filters', []):
                     id = f['id'].lower()
                     url = f.get('apiUrl', f.get('href'))

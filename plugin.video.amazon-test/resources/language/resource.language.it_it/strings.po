@@ -827,10 +827,9 @@ msgctxt "#30277"
 msgid "Register device for 4K playback"
 msgstr ""
 
-#, fuzzy
 msgctxt "#30278"
 msgid "PrimeVideo error"
-msgstr "PrimeVideo"
+msgstr ""
 
 msgctxt "#30279"
 msgid "Unable to find the navigation menu for {}.{}"

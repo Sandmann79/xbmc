@@ -654,8 +654,8 @@ msgid "Captcha Request, please change IP or try again later"
 msgstr "Captcha-Abfrage, bitte IP-Adresse ändern oder später erneut versuchen"
 
 msgctxt "#30213"
-msgid "Unknown Error, please enable advanced debugging in settings and check avod-login.log/avod-login-si.log/avod-login-mfa.log"
-msgstr "Unbekannter Fehler, bitte ausführliches Logging in den Einstellungen aktivieren und avod-login.log/avod-login-si.log/avod-login-mfa.log prüfen"
+msgid "Unknown Error, please enable advanced debugging in settings, sign in again and check the login-*.log files from the {} folder."
+msgstr "Unbekannter Fehler, bitte ausführliches Loggen in den Einstellungen aktivieren, erneut anmelden und die login-*.log Dateien aus dem {} Ordner prüfen."
 
 msgctxt "#30214"
 msgid "Wrong Code"
@@ -838,3 +838,7 @@ msgstr "Das Navigations Menü für {} konnte nicht gefunden werden.{}"
 msgctxt "#30280"
 msgid "\nThis error often occurs with primevideo users when the register device for 4K setting is enabled.\nPlease disable this setting and log in again."
 msgstr "\nDieser Fehler tritt haüfig bei PrimeVideo Benutzern auf, wenn die Einstellung Gerät für 4K registrieren aktiviert ist.\nBitte diese Einstellung deaktivieren und erneut anmelden."
+
+msgctxt "#30281"
+msgid "Archive created at {}"
+msgstr "Archiv erstellt unter {}"

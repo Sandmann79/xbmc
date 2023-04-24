@@ -472,7 +472,7 @@ def LogIn(retToken=False):
             else:
                 return None
         elif 'auth-select-device-form' in uni_soup:
-            Log('Select device form')
+            Log('Select device form', Log.DEBUG)
             sd_form = soup.find('form', attrs={'id': 'auth-select-device-form'})
             sd_hint = sd_form.parent.p.get_text(strip=True)
             choices = []
@@ -790,8 +790,7 @@ def LogIn(retToken=False):
                 Log('Login Error: {}'.format(msg_cont))
                 g.dialog.ok(msg_title, msg_cont)
             else:
-                g.dialog.ok(getString(30200), getString(30213))
-
+                g.dialog.ok(getString(30200), getString(30213).format(g.LOG_PATH))
     return False
 
 

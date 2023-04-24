@@ -667,7 +667,7 @@ msgid "Captcha Request, please change IP or try again later"
 msgstr ""
 
 msgctxt "#30213"
-msgid "Unknown Error, please enable advanced debugging in settings and check avod-login.log/avod-login-si.log/avod-login-mfa.log"
+msgid "Unknown Error, please enable advanced debugging in settings, sign in again and check the login-*.log files from the {} folder."
 msgstr ""
 
 msgctxt "#30214"
@@ -849,3 +849,9 @@ msgstr ""
 msgctxt "#30280"
 msgid "\nThis error often occurs with primevideo users when the register device for 4K setting is enabled.\nPlease disable this setting and log in again."
 msgstr ""
+
+msgctxt "#30281"
+msgid "Archive created at {}"
+msgstr ""
+
+

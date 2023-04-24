@@ -848,7 +848,6 @@ msgid ""
 "\n"
 "This error often occurs with primevideo users when the register device for 4K setting is enabled.\n"
 "Please disable this setting and log in again."
-msgstr ""
 "\n"
 "Ten błąd często występuje u użytkowników primevideo, gdy włączone jest ustawienie zarejestruj urządzenie dla 4K.\n"
 "Proszę wyłączyć to ustawienie i zalogować się ponownie".

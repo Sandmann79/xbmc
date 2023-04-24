@@ -658,8 +658,8 @@ msgid "Captcha Request, please change IP or try again later"
 msgstr "Wymagana Captcha, zmień adres IP lub spróbuj ponownie później"
 
 msgctxt "#30213"
-msgid "Unknown Error, please enable advanced debugging in settings and check avod-login.log/avod-login-si.log/avod-login-mfa.log"
-msgstr "Nieznany błąd, włącz zaawansowane debugowanie w ustawieniach i sprawdź avod-login.log/avod-login-si.log/avod-login-mfa.log"
+msgid "Unknown Error, please enable advanced debugging in settings, sign in again and check the login-*.log files from the {} folder."
+msgstr "Nieznany błąd, włącz zaawansowane debugowanie w ustawieniach, zaloguj się ponownie i sprawdź pliki login-*.log z {} folderu."
 
 msgctxt "#30214"
 msgid "Wrong Code"
@@ -852,3 +852,7 @@ msgstr ""
 "\n"
 "Ten błąd często występuje u użytkowników primevideo, gdy włączone jest ustawienie zarejestruj urządzenie dla 4K.\n"
 "Proszę wyłączyć to ustawienie i zalogować się ponownie".
+
+msgctxt "#30281"
+msgid "Archive created at {}"
+msgstr "Archiwum utworzone w {}"

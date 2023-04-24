@@ -306,7 +306,7 @@ msgstr "Wyświetl płatną zawartość"
 
 msgctxt "#30074"
 msgid "Remote Control support"
-msgstr "Obsługa zdlanego sterowania"
+msgstr "Obsługa zdalnego sterowania"
 
 msgctxt "#30075"
 msgid "UP/DOWN controls Kodi Volume"
@@ -470,7 +470,7 @@ msgstr "Dodaj użytkownika…"
 
 msgctxt "#30131"
 msgid "Delete User…"
-msgstr "Usuń użytkwonika…"
+msgstr "Usuń użytkownika…"
 
 msgctxt "#30132"
 msgid "Rename User"
@@ -478,7 +478,7 @@ msgstr "Przemianuj użytkownika"
 
 msgctxt "#30133"
 msgid "Choose User"
-msgstr "Wybierz użytkownia"
+msgstr "Wybierz użytkownika"
 
 msgctxt "#30134"
 msgid "Current User: {0}"
@@ -659,7 +659,7 @@ msgstr "Wymagana Captcha, zmień adres IP lub spróbuj ponownie później"
 
 msgctxt "#30213"
 msgid "Unknown Error, please enable advanced debugging in settings, sign in again and check the login-*.log files from the {} folder."
-msgstr ""
+msgstr "Nieznany błąd, włącz zaawansowane debugowanie w ustawieniach, zaloguj się ponownie i sprawdź pliki login-*.log z {} folderu."
 
 msgctxt "#30214"
 msgid "Wrong Code"
@@ -833,23 +833,25 @@ msgstr "Wyczyść pliki dziennika"
 
 msgctxt "#30277"
 msgid "Register device for 4K playback"
-msgstr ""
+msgstr "Zarejestruj urządzenie do odtwarzania 4K"
 
 msgctxt "#30278"
 msgid "PrimeVideo error"
-msgstr ""
+msgstr "Błąd PrimeVideo"
 
 msgctxt "#30279"
 msgid "Unable to find the navigation menu for {}.{}"
-msgstr ""
+msgstr "Nie można znaleźć menu nawigacyjnego dla {}.{}"
 
 msgctxt "#30280"
 msgid ""
 "\n"
 "This error often occurs with primevideo users when the register device for 4K setting is enabled.\n"
 "Please disable this setting and log in again."
-msgstr ""
+"\n"
+"Ten błąd często występuje u użytkowników primevideo, gdy włączone jest ustawienie zarejestruj urządzenie dla 4K.\n"
+"Proszę wyłączyć to ustawienie i zalogować się ponownie".
 
 msgctxt "#30281"
 msgid "Archive created at {}"
-msgstr ""
+msgstr "Archiwum utworzone w {}"

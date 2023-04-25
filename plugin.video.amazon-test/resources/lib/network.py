@@ -412,10 +412,11 @@ def LogIn(retToken=False):
             Log('OTP code', Log.DEBUG)
             msg = soup.find('form', attrs={'id': 'auth-mfa-form'})
             msgtxt = msg.p.get_text(strip=True)
-            kb = xbmc.Keyboard('', msgtxt)
-            kb.doModal()
-            if kb.isConfirmed() and kb.getText():
-                br['otpCode'] = kb.getText()
+            msgtxt += '\n\n' + soup.find('div', attrs={'class': 'a-alert-content'}).get_text(strip=True) if 'a-alert-content' in uni_soup else ''
+            wnd = _InputBox(msgtxt)
+            wnd.doModal()
+            if len(wnd.inp) > 0:
+                br['otpCode'] = wnd.inp
             else:
                 return None
         elif 'ap_dcq_form' in uni_soup:
@@ -489,7 +490,7 @@ def LogIn(retToken=False):
             br.select_form('form[id="verification-code-form"]')
             msg = [m.get_text() for m in soup.find_all('span', attrs={'class': 'transaction-approval-word-break'})]
             [msg.append(m.get_text()) for m in soup.find_all('div', attrs={'id': 'invalid-otp-code-message'}) if 'invalid-otp-code-message' in uni_soup]
-            wnd = _InputBox(msg[0], '\n\n'.join(msg[1:]))
+            wnd = _InputBox('\n\n'.join(msg[1:]), task=msg[0])
             wnd.doModal()
             if len(wnd.inp) > 0:
                 br['otpCode'] = wnd.inp
@@ -499,9 +500,10 @@ def LogIn(retToken=False):
             Log('fcwim / otp email', Log.DEBUG)
             msg = soup.find('div', attrs={'class': 'a-row a-spacing-micro cvf-widget-input-code-label'})
             if msg:
-                ret = g.dialog.input(msg.get_text(strip=True))
-                if ret:
-                    br['code'] = ret
+                wnd = _InputBox(msg.get_text(strip=True))
+                wnd.doModal()
+                if len(wnd.inp) > 0:
+                    br['code'] = wnd.inp
                 else:
                     return None
             if soup.find('img', attrs={'alt': 'captcha'}):
@@ -1102,9 +1104,8 @@ class _Captcha(pyxbmct.AddonDialogWindow):
         self.cap = ''
         if '.gif' in self.picurl:
             cap = getURL(self.picurl, rjson=False, binary=True)
-            fn = OSPJoin(g.DATA_PATH, 'cap.gif')
-            open(fn, 'wb').write(cap)
-            self.picurl = fn
+            self.picurl = OSPJoin(g.DATA_PATH, 'cap-{}.gif'.format(int(time.time() * 1000)))
+            open(self.picurl, 'wb').write(cap)
         self.title = title.get_text(strip=True)
         self.image = pyxbmct.Image('', aspectRatio=2)
         self.tb_head = pyxbmct.TextBox()
@@ -1128,9 +1129,9 @@ class _Captcha(pyxbmct.AddonDialogWindow):
         self.placeControl(self.captcha, 7, 0, columnspan=2, pad_y=8)
         self.placeControl(self.btn_submit, 8, 0)
         self.placeControl(self.btn_cancel, 8, 1)
-        self.connect(self.btn_cancel, self.close)
+        self.connect(self.btn_cancel, self.cancel)
         self.connect(self.btn_submit, self.submit)
-        self.connect(pyxbmct.ACTION_NAV_BACK, self.close)
+        self.connect(pyxbmct.ACTION_NAV_BACK, self.cancel)
         self.username.setText(self.email)
         self.username.setEnabled(False)
         self.password.setType(0 if self._s.show_pass else 6, '')
@@ -1155,9 +1156,16 @@ class _Captcha(pyxbmct.AddonDialogWindow):
         self.btn_cancel.controlLeft(self.btn_submit)
         self.setFocus(self.password)
 
-    def submit(self):
+    def rmcap(self):
         if xbmcvfs.exists(self.picurl):
             xbmcvfs.delete(self.picurl)
+
+    def cancel(self):
+        self.rmcap()
+        self.close()
+
+    def submit(self):
+        self.rmcap()
         self.pwd = self.password.getText()
         self.cap = self.captcha.getText()
         self.email = self.username.getText()
@@ -1223,12 +1231,15 @@ class _Challenge(pyxbmct.AddonDialogWindow):
 
 
 class _InputBox(pyxbmct.AddonDialogWindow):
-    def __init__(self, task, msg):
+    def __init__(self, msg, task='', head=None):
+        if head is None:
+            head = Globals().__plugin__
+        super(_InputBox, self).__init__(head)
+        self.tskv = 1 if len(task) > 0 else 0
+        self.setGeometry(450, 400, 6 + self.tskv, 2)
+        self.inp = ''
         self.msg = msg
         self.task = task
-        super(_InputBox, self).__init__(self.task)
-        self.setGeometry(500, 400, 7, 2)
-        self.inp = ''
         self.tb_msg = pyxbmct.TextBox()
         self.fl_task = pyxbmct.FadeLabel(_alignment=pyxbmct.ALIGN_CENTER)
         self.ed_cap = pyxbmct.Edit('', _alignment=pyxbmct.ALIGN_LEFT | pyxbmct.ALIGN_CENTER_Y)
@@ -1239,10 +1250,11 @@ class _InputBox(pyxbmct.AddonDialogWindow):
 
     def set_controls(self):
         self.placeControl(self.tb_msg, 0, 0, 3, 2)
-        self.placeControl(self.fl_task, 4, 0, 1, 2)
-        self.placeControl(self.ed_cap, 5, 0, 1, 2)
-        self.placeControl(self.btn_submit, 6, 0)
-        self.placeControl(self.btn_cancel, 6, 1)
+        if self.tskv:
+            self.placeControl(self.fl_task, 4, 0, 1, 2)
+        self.placeControl(self.ed_cap, 4 + self.tskv, 0, 1, 2)
+        self.placeControl(self.btn_submit, 5 + self.tskv, 0)
+        self.placeControl(self.btn_cancel, 5 + self.tskv, 1)
         self.connect(self.btn_cancel, self.close)
         self.connect(self.btn_submit, self.submit)
         self.connect(pyxbmct.ACTION_NAV_BACK, self.close)
@@ -1265,6 +1277,7 @@ class _InputBox(pyxbmct.AddonDialogWindow):
     def submit(self):
         self.inp = self.ed_cap.getText()
         self.close()
+
 
 class _ProgressDialog(pyxbmct.AddonDialogWindow):
     def __init__(self, msg):

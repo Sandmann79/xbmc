@@ -77,7 +77,7 @@ def LogJSON(o, comment=None, optionalName=None):
         Log('Saved JSON data with filename “{}”'.format(fn), Log.DEBUG)
 
 
-def CreateZIP():
+def createZIP():
     from zipfile import ZipFile, ZIP_DEFLATED
     from datetime import datetime
     from .common import py2_decode, translatePath, getString
@@ -94,7 +94,7 @@ def CreateZIP():
     Log('Archive created at {}'.format(arcfile), Log.DEBUG)
 
 
-def RemoveLogs():
+def removeLogs():
     for fn in xbmcvfs.listdir(g.LOG_PATH)[1]:
         xbmcvfs.delete(OSPJoin(g.LOG_PATH, fn))
     Log('Logfiles removed', Log.DEBUG)

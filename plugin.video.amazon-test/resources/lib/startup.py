@@ -78,11 +78,9 @@ def EntryPoint():
             g.pv.getListMenu('watchlist', export=2)
         else:
             g.pv.Browse('root/Watchlist/watchlist', export=5)
-    elif mode in ['LogIn', 'remLoginData', 'removeUser', 'renameUser', 'switchUser']:
+    elif mode == 'Search':
+        g.pv.Search(args.get('searchstring'))
+    elif mode in ['LogIn', 'remLoginData', 'removeUser', 'renameUser', 'switchUser', 'createZIP', 'removeLogs']:
         exec('{}()'.format(mode))
-    elif mode in ['createzip']:
-        CreateZIP()
-    elif mode in ['rmlogs']:
-        RemoveLogs()
     else:
         g.pv.Route(mode, args)

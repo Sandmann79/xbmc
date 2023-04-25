@@ -124,7 +124,7 @@
         <setting id="json_dump_raw" type="bool" label="30199" default="false" enable="eq(-1,true)" subsetting="true"/>
         <setting id="json_dump_collisions" type="bool" label="30197" default="false" enable="eq(-2,true)" subsetting="true"/>
         <setting id="log_http" type="bool" label="30274" default="false"/>
-        <setting id="create_zip" label="30275" type="action" action="RunPlugin(plugin://plugin.video.amazon-test/?mode=createzip)"/>
-        <setting id="rm_logs" label="30276" type="action" action="RunPlugin(plugin://plugin.video.amazon-test/?mode=rmlogs)"/>
+        <setting id="create_zip" label="30275" type="action" action="RunPlugin(plugin://plugin.video.amazon-test/?mode=createZIP)"/>
+        <setting id="rm_logs" label="30276" type="action" action="RunPlugin(plugin://plugin.video.amazon-test/?mode=removeLogs)"/>
     </category>
 </settings>

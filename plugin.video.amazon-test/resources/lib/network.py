@@ -857,7 +857,10 @@ def getToken(user=None):
     token = user.get('token')
     if isinstance(token, dict):
         if int(time.time()) > token['expires']:
-            user['token'] = refreshToken(user)
+            newtoken = refreshToken(user)
+            if not newtoken:
+                return False
+            user['token'] = newtoken
             addUser(user)
         return {'Authorization': 'Bearer ' + user['token']['access']}
     return False
@@ -877,7 +880,7 @@ def refreshToken(user):
         Log('Token renewed')
         return token
     else:
-        Log('Token not renewed, registering device again', xbmc.LOGERROR)
+        Log('Token not renewed', xbmc.LOGERROR)
     return False
 
 

@@ -682,7 +682,11 @@ class PrimeVideo(Singleton):
                     except:
                         folderType = 2  # Default to category
                     if folderType in [5, 3, 2, 0]:
-                        gtis = ','.join(entry['children']) if 'children' in entry else self._videodata['urn2gti'][entry['metadata']['compactGTI']]
+                        if 'children' in entry:
+                            gtis = ','.join(entry['children'])
+                        else:
+                            gt = entry['metadata']['compactGTI']
+                            gtis = self._videodata['urn2gti'].get(gt, gt)
                         in_wl = 1 if path.split('/')[:3] == ['root', 'Watchlist', 'watchlist'] else 0
                         ctxitems.append((getString(30180 + in_wl) % getString(self._g.langID[m['videometa']['mediatype']]),
                                          'RunPlugin({}pv/wltoogle/{}/{}/{})'.format(self._g.pluginid, path, quote_plus(gtis), in_wl)))

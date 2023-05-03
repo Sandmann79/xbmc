@@ -322,7 +322,7 @@ def PlayVideo(name, asin, adultstr, streamtype, forcefb=0):
         # and try again. This is neccessary for content like Amazon Freevee, which is not
         # available though token based authentification.
         
-        for preferTokenToCookie in ([True, False]):
+        for preferTokenToCookie in ([True, False] if g.platform & g.OS_ANDROID else [False]):
             cookie, opt_lic, headers, dtid = _getPlaybackVars(preferToken=preferTokenToCookie)
             if not cookie:
                 g.dialog.notification(getString(30203), getString(30200), xbmcgui.NOTIFICATION_ERROR)

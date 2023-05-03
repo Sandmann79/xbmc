@@ -275,7 +275,7 @@ def getURLData(mode, asin, retformat='json', devicetypeid=g.dtid_web, version=2,
         url += '&videoMaterialType=' + vMT
         url += '&desiredResources=' + dRes
         url += '&supportedDRMKeyScheme=DUAL_KEY' if playback_req else ''
-        if g.platform & g.OS_ANDROID:
+        if g.platform & g.OS_ANDROID and s.register_device:
             url += '&deviceVideoCodecOverride=H264,H265'
             url += '&deviceHdrFormatsOverride=' + supported_hdr()
             url += '&deviceVideoQualityOverride=' + ('UHD' if s.uhd else 'HD')
@@ -608,7 +608,7 @@ def LogIn(retToken=False):
                 br.refresh()
                 WriteLog(str(br.get_current_page()), 'login-{}'.format(log))
         else:
-            g.dialog.ok(getString(30200), getString(30213))
+            g.dialog.ok(getString(30200), getString(30213).format(g.LOG_PATH))
             return False
         return True
 

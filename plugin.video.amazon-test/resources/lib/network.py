@@ -275,8 +275,8 @@ def getURLData(mode, asin, retformat='json', devicetypeid=g.dtid_web, version=2,
         url += '&videoMaterialType=' + vMT
         url += '&desiredResources=' + dRes
         url += '&supportedDRMKeyScheme=DUAL_KEY' if playback_req else ''
-        if g.platform & g.OS_ANDROID and s.register_device:
-            url += '&deviceVideoCodecOverride=H264,H265'
+        if g.platform & g.OS_ANDROID:
+            url += '&deviceVideoCodecOverride=H264' + (',H265' if s.use_h265 else '')
             url += '&deviceHdrFormatsOverride=' + supported_hdr()
             url += '&deviceVideoQualityOverride=' + ('UHD' if s.uhd else 'HD')
 

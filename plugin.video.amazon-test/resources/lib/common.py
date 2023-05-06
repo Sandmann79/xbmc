@@ -190,7 +190,7 @@ class Settings(Singleton):
         elif 'removePosters' == name: return self._gs('pv_episode_thumbnails') == 'true'
         elif 'useEpiThumbs' == name: return self._gs('tld_episode_thumbnails') == 'true'
         elif 'bypassProxy' == name: return self._gs('proxy_mpdalter') == 'false'
-        elif 'uhdAndroid' == name: return self._gs('uhd_android') == 'true'
+        elif 'use_h265' == name: return self._gs('use_h265') == 'true'
         elif 'skip_scene' == name: return int('0' + self._gs('skip_scene'))
         elif 'pagination' == name: return {
             'all': self._gs('paginate_everything') == 'true',
@@ -206,6 +206,7 @@ class Settings(Singleton):
         elif 'uhd' == name: return self._gs('enable_uhd') == 'true'
         elif 'show_recents' == name: return self._gs('show_recents') == 'true'
         elif 'register_device' == name: return self._gs('register_device') == 'true'
+
 
 def jsonRPC(method, props='', param=None):
     """ Wrapper for Kodi's executeJSONRPC API """

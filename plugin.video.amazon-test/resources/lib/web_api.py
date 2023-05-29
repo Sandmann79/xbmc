@@ -1453,7 +1453,7 @@ class PrimeVideo(Singleton):
                     tile = return_value(item, 'image', 'alternateText')
                     tile_cov = item.get('image', {})
                     if isinstance(tile, dict) and item.get('widgetType', '').lower() == 'imagetextlink':
-                        tile = item.get('title', item.get('displayTitle'))
+                        tile = item.get('title', item.get('displayTitle', item.get('alternateText')))
                         tile_cov = item.get('images', {})
                     else:
                         tile = None

@@ -899,6 +899,7 @@ class PrimeVideo(Singleton):
         def AddLiveTV(o, item):
             """ Add a direct playable live TV channel to the list """
             if 'channelId' in item:
+                thumb = None
                 chid = item['channelId']
                 if chid in o:
                     return
@@ -906,14 +907,18 @@ class PrimeVideo(Singleton):
                 if 'station' in item:
                     title = item['station']['name']
                     o[chid]['metadata']['schedule'] = item['station'].get('schedule', {})
+                    thumb = item['station'].get('logo')
                 elif 'playbackAction' in item:
                     title = item['playbackAction']['label']
+                elif 'facetText' in item:
+                    title = item['facetText']
                 else:
                     title = item['title']
-
+                if 'image' in item:
+                    thumb = item['image'].get('url')
                 o[chid]['title'] = title
                 o[chid]['metadata']['videometa']['plot'] = title + ('\n\n' + item['synopsis'] if 'synopsis' in item else '')
-                o[chid]['metadata']['artmeta']['poster'] = o[chid]['metadata']['artmeta']['thumb'] = MaxSize(item['image']['url'])
+                o[chid]['metadata']['artmeta']['poster'] = o[chid]['metadata']['artmeta']['thumb'] = MaxSize(thumb)
                 o[chid]['metadata']['compactGTI'] = ExtractURN(item['playbackAction']['fallbackUrl']) if 'playbackAction' in item else chid
 
         def AddLiveEvent(o, item, url):
@@ -941,6 +946,8 @@ class PrimeVideo(Singleton):
                 o[urn]['metadata']['artmeta']['thumb'] = MaxSize(item['image']['url'])
             elif key_exists(item, 'packshot', 'image', 'src'):
                 o[urn]['metadata']['artmeta']['thumb'] = MaxSize(item['packshot']['image']['src'])
+            elif 'images' in item:
+                o[urn]['metadata']['artmeta']['thumb'] = MaxSize(findKey('url', item['images']))
 
         def AddSeason(oid, o, bCacheRefresh, url):
             """ Given a season, adds TV Shows to the catalog """
@@ -1387,10 +1394,21 @@ class PrimeVideo(Singleton):
                 if len(filtered_col) > 1:
                     for collection in filtered_col:
                         if 'text' in collection:
+                            facet = True
                             txt = collection['text']
-                            if ('Channels' in breadcrumb[-1] or findKey("channelId", collection)) \
-                                    and 'facet' in collection and collection['facet'].get('alternateText'):
-                                txt = '{} - {}'.format(collection['facet']['alternateText'], txt)
+                            facetxt = collection.get('facet', {}).get('alternateText')
+                            facetxt = collection.get('facetText') if facetxt is None else facetxt
+                            entcues = collection.get('entitlementCues', {})
+                            isprime = collection.get('offerClassification', '') == 'PRIME' or entcues.get('offerType') in ['SVOD', 'TVOD']
+                            isincl = entcues.get('entitledCarousel', 'Entitled') == 'Entitled'
+                            if facetxt is None:
+                                facet = False
+                                facetxt = txt
+                            if isprime:
+                                facetxt = '[COLOR {}]{}[/COLOR]'.format(self._g.PrimeCol, facetxt)
+                            if isincl is False:
+                                facetxt = '[COLOR {}]{}[/COLOR]'.format(self._g.PayCol, facetxt)
+                            txt = '{}{}{}'.format(facetxt, ' ' if isprime or isincl is False else ': ', txt) if facet else txt  # facetxt doesn't mark correctly / to colorful
                             id = txt
                             o[id] = {'title': self._BeautifyText(txt), 'pos': len(o)}
                             if 'seeMoreLink' in collection:
@@ -1452,11 +1470,12 @@ class PrimeVideo(Singleton):
                 for item in items:
                     tile = return_value(item, 'image', 'alternateText')
                     tile_cov = item.get('image', {})
-                    if isinstance(tile, dict) and item.get('widgetType', '').lower() == 'imagetextlink':
-                        tile = item.get('title', item.get('displayTitle', item.get('alternateText')))
-                        tile_cov = item.get('images', {})
-                    else:
-                        tile = None
+                    if isinstance(tile, dict):
+                        if item.get('widgetType', '').lower() == 'imagetextlink':
+                            tile = item.get('title', item.get('displayTitle', item.get('alternateText')))
+                            tile_cov = item.get('images', {})
+                        else:
+                            tile = None
                     if 'heading' in item or 'title' in item or tile:
                         oldk = list(o)
                         try:

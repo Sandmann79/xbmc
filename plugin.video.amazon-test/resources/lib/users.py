@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
+
 from kodi_six import xbmcgui
 from kodi_six.utils import py2_decode
 import json
@@ -9,7 +10,7 @@ from .common import Globals, Settings
 from .l10n import *
 
 g = Globals()
-def_keys = {'name': '', 'atvurl': '', 'baseurl': '', 'pv': False, 'mid': '', 'cookie': '', 'token': '', 'deviceid': '', 'sidomain': ''}
+def_keys = {'name': '', 'atvurl': '', 'baseurl': '', 'pv': False, 'mid': '', 'cookie': '', 'token': '', 'deviceid': '', 'sidomain': '', 'lang': ''}
 
 
 def loadUsers():
@@ -52,8 +53,7 @@ def saveUserCookies(cookieJar, cachedUsers=None):
     if not user:
         return
     user = user[0]
-    from requests.utils import dict_from_cookiejar as dfcj
-    user['cookie'] = dfcj(cookieJar)
+    user['cookie'] = cookieJar.get_dict()
     saveUsers(users)
 
 
@@ -113,3 +113,10 @@ def renameUser():
                 xbmc.executebuiltin('Container.Refresh')
             users[sel]['name'] = usr
             saveUsers(users)
+
+
+def updateUser(key, value):
+    if key in def_keys:
+        user = loadUser()
+        user.update({key: value})
+        addUser(user)

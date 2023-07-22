@@ -290,16 +290,16 @@ msgid "Miscellaneous"
 msgstr "Verschiedenes"
 
 msgctxt "#30071"
-msgid "Display TV-Show instead of Seasons in Watchlist"
-msgstr "Serie anstelle von Staffeln in der Watchlist anzeigen"
+msgid "Show season overview immediately after selection"
+msgstr "Staffel Übersicht sofort nach Auswahl zeigen"
 
 msgctxt "#30072"
 msgid "Verbose Logging"
 msgstr "Ausführliches Loggen"
 
 msgctxt "#30073"
-msgid "Display Paid Content"
-msgstr "Bezahlinhalte anzeigen"
+msgid "Color Paid/Prime Content"
+msgstr "Bezahl- und Primeinhalte kolorieren"
 
 msgctxt "#30074"
 msgid "Remote Control support"
@@ -383,7 +383,7 @@ msgstr "Beides"
 
 msgctxt "#30093"
 msgid "Use Web API (requires restart)"
-msgstr "Web-API verwenden (Beta)"
+msgstr "Web-API verwenden (benötigt Neustart)"
 
 msgctxt "#30094"
 msgid "Refer to PrimeVideo settings for more options"

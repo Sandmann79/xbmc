@@ -292,15 +292,16 @@ msgid "Miscellaneous"
 msgstr "Divers"
 
 msgctxt "#30071"
-msgid "Display TV-Show instead of Seasons in Watchlist"
-msgstr "Afficher la série télévisée au lieu des saisons dans la liste de surveillance"
+msgid "Show season overview immediately after selection"
+msgstr ""
 
 msgctxt "#30072"
 msgid "Verbose Logging"
 msgstr "Journalisation détaillée"
 
+#, fuzzy
 msgctxt "#30073"
-msgid "Display Paid Content"
+msgid "Color Paid/Prime Content"
 msgstr "Afficher le contenu payant"
 
 msgctxt "#30074"
@@ -846,3 +847,7 @@ msgstr ""
 msgctxt "#30281"
 msgid "Archive created at {}"
 msgstr ""
+
+#~ msgctxt "#30071"
+#~ msgid "Display TV-Show instead of Seasons in Watchlist"
+#~ msgstr "Afficher la série télévisée au lieu des saisons dans la liste de surveillance"

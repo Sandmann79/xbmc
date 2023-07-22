@@ -73,7 +73,7 @@
     </category>
     <!-- Datasource -->
     <category label="30273">
-        <setting id="data_source" type="enum" label="30273" values="Website" default="0"/>
+        <setting id="data_source" type="enum" label="30273" values="Website|Android" default="0"/>
         <setting id="pv_episode_thumbnails" type="bool" label="30249" visible="eq(-1,0)" default="true"/>
         <setting id="catalog_cache_expiry" type="enum" lvalues="30258|30259|30260|30261|30262|30263|30264|30265" label="30257" default="2" visible="eq(-2,0)" />
         <setting id="pv_clearcache" type="action" label="30087" action="RunPlugin(plugin://plugin.video.amazon-test/pv/clearcache/)" option="close" visible="eq(-3,0)" />
@@ -84,8 +84,8 @@
         <setting id="paginate_search" type="bool" label="30247" default="true" enable="eq(-3,false)" visible="eq(-8,0)" />
         <setting id="reset_home" type="action" label="30095" action="RunPlugin(plugin://plugin.video.amazon-test/pv/sethome/)" option="close" visible="eq(-9,0)" />
         <setting id="show_recents" type="bool" label="30036" default="true" visible="eq(-10,2)"/>
-        <setting id="paycont" type="bool" label="30073" default="false" visible="eq(-11,2)" />
-        <setting id="disptvshow" type="bool" label="30071" default="false" visible="eq(-12,2)" />
+        <setting id="paycont" type="bool" label="30073" default="false" visible="eq(-11,1)" />
+        <setting id="disptvshow" type="bool" label="30071" default="false" visible="eq(-12,1)" />
         <setting label="Artwork" type="lsep" visible="eq(-13,2)"/>
         <setting id="tld_episode_thumbnails" type="bool" label="30249" default="false" visible="eq(-14,2)"/>
         <setting type="action" label="30094" action="" visible="eq(-15,2)" />

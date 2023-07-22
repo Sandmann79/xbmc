@@ -130,7 +130,7 @@ def addVideo(name, asin, infoLabels, cm=None, export=False):
 
 def getInfolabels(Infos):
     rem_keys = ('ishd', 'isprime', 'asins', 'audiochannels', 'banner', 'displaytitle', 'fanart', 'poster', 'seasonasin',
-                'thumb', 'traileravailable', 'contenttype', 'isadult', 'totalseasons', 'seriesasin', 'episodename')
+                'thumb', 'traileravailable', 'contenttype', 'isadult', 'totalseasons', 'seriesasin', 'episodename', 'isuhd')
     if not Infos:
         return
     return {k: v for k, v in Infos.items() if k.lower() not in rem_keys}

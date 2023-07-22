@@ -293,7 +293,7 @@ msgid "Miscellaneous"
 msgstr ""
 
 msgctxt "#30071"
-msgid "Display TV-Show instead of Seasons in Watchlist"
+msgid "Show season overview immediately after selection"
 msgstr ""
 
 msgctxt "#30072"
@@ -301,7 +301,7 @@ msgid "Verbose Logging"
 msgstr ""
 
 msgctxt "#30073"
-msgid "Display Paid Content"
+msgid "Color Paid/Prime Content"
 msgstr ""
 
 msgctxt "#30074"

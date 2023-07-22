@@ -46,7 +46,7 @@ class Globals(Singleton):
     PrimeCol = 'FF00A8E0'
     tmdb = 'b34490c056f0dd9e3ec9af2167a731f4'  # b64decode('YjM0NDkwYzA1NmYwZGQ5ZTNlYzlhZjIxNjdhNzMxZjQ=')
     tvdb = '1D62F2F90030C444'  # b64decode('MUQ2MkYyRjkwMDMwQzQ0NA==')
-    langID = {'movie': 30165, 'series': 30166, 'season': 30167, 'episode': 30173, 'tvshow': 30166, 'video': 30173, 'event': 30174}
+    langID = {'movie': 30165, 'series': 30166, 'season': 30167, 'episode': 30173, 'tvshow': 30166, 'video': 30173, 'event': 30174, 'live': 30174}
     KodiVersion = int(xbmc.getInfoLabel('System.BuildVersion').split('.')[0])
     dtid_android = 'A43PXU4ZN2AL1'
     dtid_web = 'AOAGZA014O5RE'
@@ -122,7 +122,7 @@ class Globals(Singleton):
         self._globals['ATVUrl'] = atv
         self._globals['UsePrimeVideo'] = pv
         self._globals['deviceID'] = did
-        ds = 0  # int('0' + self._globals['addon'].getSetting('data_source'))
+        ds = int('0' + self._globals['addon'].getSetting('data_source'))
 
         if ds == 0:
             from .web_api import PrimeVideo
@@ -202,7 +202,7 @@ class Settings(Singleton):
             return [3600, 21600, 43200, 86400, 259200, 604800, 1296000, 2592000][int(self._gs('catalog_cache_expiry'))]
         elif 'profiles' == name: return self._gs('profiles') == 'true'
         elif 'show_pass' == name: return self._gs('show_pass') == 'true'
-        elif 'data_source' == name: return 0  # int('0' + self._gs('data_source'))
+        elif 'data_source' == name: return int('0' + self._gs('data_source'))
         elif 'uhd' == name: return self._gs('enable_uhd') == 'true'
         elif 'show_recents' == name: return self._gs('show_recents') == 'true'
         elif 'register_device' == name: return self._gs('register_device') == 'true'
@@ -277,6 +277,8 @@ def return_value(dictionary, *keys):
 
 
 def findKey(key, obj):
+    if not isinstance(obj, dict):
+        return {}
     if key in obj.keys():
         return obj[key]
     for v in obj.values():

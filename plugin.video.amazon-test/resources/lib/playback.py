@@ -85,6 +85,7 @@ def PlayVideo(name, asin, adultstr, streamtype, forcefb=0):
 
         HostSet = g.addon.getSetting("pref_host")
         subUrls = []
+        hosts = []
 
         if not suc:
             return False, data, None
@@ -393,7 +394,7 @@ def PlayVideo(name, asin, adultstr, streamtype, forcefb=0):
         listitem.setSubtitles(subs)
         listitem.setProperty('%s.license_type' % g.is_addon, 'com.widevine.alpha')
         listitem.setProperty('%s.license_key' % g.is_addon, licURL)
-        listitem.setProperty('%s.stream_headers' % g.is_addon, urlencode(headers))
+        listitem.setProperty('%s.manifest_headers' % g.is_addon, urlencode(headers))
         listitem.setProperty('inputstreamaddon' if g.KodiVersion < 19 else 'inputstream', g.is_addon)
         listitem.setMimeType('application/dash+xml')
         listitem.setContentLookup(False)

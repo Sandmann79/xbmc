@@ -10,7 +10,7 @@ import re
 
 from .common import key_exists, return_item, return_value, sleep, findKey
 from .singleton import Singleton
-from .network import getURL, getURLData, MechanizeLogin, FQify, GrabJSON
+from .network import getURL, getURLData, MechanizeLogin, FQify, GrabJSON, LocaleSelector
 from .logging import Log, LogJSON
 from .itemlisting import setContentAndView, addVideo, addDir
 from .users import *
@@ -121,33 +121,7 @@ class PrimeVideo(Singleton):
                       'months': {'january': 1, 'february': 2, 'march': 3, 'april': 4, 'may': 5, 'june': 6, 'july': 7, 'august': 8, 'september': 9,
                                  'october': 10, 'november': 11, 'december': 12}}
         }
-        self._languages = [
-            ('id_ID', 'Bahasa Indonesia'),
-            ('da_DK', 'Dansk'),
-            ('de_DE', 'Deutsch'),
-            ('en_US', 'English'),
-            ('en_GB', 'English'),
-            ('es_ES', 'Español'),
-            ('fr_FR', 'Français'),
-            ('it_IT', 'Italiano'),
-            ('nl_NL', 'Nederlands'),
-            ('nb_NO', 'Norsk'),
-            ('pl_PL', 'Polski'),
-            ('pt_BR', 'Português (Brasil)'),
-            ('pt_PT', 'Português (Portugal)'),
-            ('fi_FI', 'Suomi'),
-            ('sv_SE', 'Svenska'),
-            ('tr_TR', 'Türkçe'),
-            ('ru_RU', 'Русский'),
-            ('hi_IN', 'हिन्दी'),
-            ('ta_IN', 'தமிழ்'),
-            ('te_IN', 'తెలుగు'),
-            ('th_TH', 'ไทย'),
-            ('zh_CN', '简体中文'),
-            ('zh_TW', '繁體中文'),
-            ('ko_KR', '한국어'),
-            ('ja_JP', '日本語')
-        ]
+
         self._TextCleanPatterns = [[r'\s+-\s*([^&])', r' – \1'],  # Convert dash from small to medium where needed
                                    [r'\s*-\s+([^&])', r' – \1'],  # Convert dash from small to medium where needed
                                    [r'^\s+', ''],  # Remove leading spaces
@@ -376,39 +350,15 @@ class PrimeVideo(Singleton):
 
     def LanguageSelect(self):
         cj = MechanizeLogin()
-        if not cj:
-            return
+        loc, lang = LocaleSelector()
+        Log('Changing text language to [{}] {}'.format(loc, lang), Log.DEBUG)
         if self._g.UsePrimeVideo:
-            l = cj.get('lc-main-av', path='/')
-            langs = self._languages
-            presel = [i for i, x in enumerate(langs) if x[0] == l]
+            cj.set('lc-main-av', loc, path='/')
         else:
-            # TLDs doesn't store locale in cookie by default
-            from mechanicalsoup import StatefulBrowser
-            br = StatefulBrowser(soup_config={'features': 'html.parser'})
-            br.set_cookiejar(cj)
-            br.session.headers.update({'User-Agent': getConfig('UserAgent')})
-            br.open(g.BaseUrl + '/customer-preferences/edit')
-            langs = [(elem.label.input.get('value'), elem.get_text(strip=True), elem.label.input.get('checked') is not None)
-                     for elem in br.get_current_page().find_all('div', attrs={'data-a-input-name': 'lop'})]
-            presel = [i for i, x in enumerate(langs) if x[2] is True]
-
-        if len(langs) < 1:
-            self._g.dialog.notification(g.__plugin__, getString(30270))
-            return
-
-        sel = self._g.dialog.select(getString(30115), [x[1] for x in langs], preselect=presel[0] if presel else -1)
-        if sel < 0:
-            self._g.addon.openSettings()
-        else:
-            Log('Changing text language to [{}] {}'.format(langs[sel][0], langs[sel][1]), Log.DEBUG)
-            if self._g.UsePrimeVideo:
-                cj.set('lc-main-av', langs[sel][0], path='/')
-            else:
-                ck = [k for k, v in cj.items() if 'sess-at-' in k][0].replace('sess-at-', 'lc-')
-                cj.set(ck, langs[sel][0], path='/')
-            saveUserCookies(cj)
-            self.DeleteCache()
+            ck = [k for k, v in cj.items() if 'sess-at-' in k][0].replace('sess-at-', 'lc-')
+            cj.set(ck, loc, path='/')
+        saveUserCookies(cj)
+        self.DeleteCache()
 
     @staticmethod
     def SetHome(path):
@@ -1520,8 +1470,10 @@ class PrimeVideo(Singleton):
                     except:
                         # Classic numbered pagination
                         if 'pagination' in cnt:
+                            #if 'apiUrl' in cnt['pagination'] and cnt['pagination']['apiUrl'] != '':
+                            #    nextPage = cnt['pagination']['apiUrl']
                             if 'url' in cnt['pagination'] and cnt['pagination']['url'] != '':
-                                nextPage = cnt['pagination']['url']  # + '&isCrow=0&isElcano=0&isCleanSlateActive=1&isLivePageActive=0&isDiscoverActive=1'
+                                nextPage = cnt['pagination']['url'] # + '&isCrow=0&isElcano=0&isCleanSlateActive=1&isLivePageActive=0&isDiscoverActive=1'
                             elif 'paginator' in cnt['pagination']:
                                 nextPage = next((x['href'] for x in cnt['pagination']['paginator'] if
                                                  (('type' in x) and ('NextPage' == x['type'])) or

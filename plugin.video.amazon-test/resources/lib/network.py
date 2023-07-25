@@ -189,7 +189,8 @@ def getURL(url, useCookie=False, silent=False, headers=None, rjson=True, attempt
         pass  # Fail on permanent errors
 
     try:
-        starttime = timer()
+        session.headers.update(headers)
+        getURL.headers = session.headers
         method = 'POST' if postdata is not None else 'GET'
         starttime = timer()
         r = session.request(method, url, data=postdata, verify=s.verifySsl, stream=True, allow_redirects=allow_redirects)
@@ -515,7 +516,8 @@ def MFACheck(br, email, soup):
                 return None
         if soup.find('img', attrs={'alt': 'captcha'}):
             wnd = _Challenge(soup)
-            wnd.doModal()
+            if not wnd.solve_captcha():
+                wnd.doModal()
             if wnd.cap:
                 submit = soup.find('input', value='verifyCaptcha')
                 form.choose_submit(submit)
@@ -526,7 +528,8 @@ def MFACheck(br, email, soup):
     elif 'validateCaptcha' in uni_soup:
         Log('validateCaptcha', Log.DEBUG)
         wnd = _Challenge(soup)
-        wnd.doModal()
+        if not wnd.solve_captcha():
+            wnd.doModal()
         if wnd.cap:
             # MechanicalSoup is using the field names, not IDs
             # id is captchacharacters, which causes exception to be raised
@@ -1090,11 +1093,12 @@ def GrabJSON(url, postData=None):
         return o if o else None
 
     def Captcha(r):
+        u = FQify(url)
         cj = MechanizeLogin()
         br = mechanicalsoup.StatefulBrowser(soup_config={'features': 'html.parser'})
         br.session.headers = getURL.headers
         br.set_cookiejar(cj)
-        br.open_fake_page(r, FQify(url))
+        br.open_fake_page(r, u)
         r, soup = _parseHTML(br)
         if any(sp in r for sp in mfa_keywords):
             br = MFACheck(br, '', soup)
@@ -1102,10 +1106,14 @@ def GrabJSON(url, postData=None):
                 return False
             if not br.get_current_form() is None:
                 br.submit_selected()
+            from .users import saveUserCookies
+            saveUserCookies(cj)
+            '''
+            r = getURL(u, useCookie=True, rjson=False, postdata=postData)
+            br.open_fake_page(r, u)
+            '''
             r, soup = _parseHTML(br)
             WriteLog(r, 'captcha-webapi')
-        from .users import saveUserCookies
-        saveUserCookies(cj)
         return [r] if r.startswith('{') else re.findall(r'\s*(?:<script[^>]+type="(?:text/template|application/json)"[^>]*>|state:)\s*({[^\n]+})\s*(?:,|</script>)\s*', r)
 
     if hasattr(GrabJSON, 'runs') and GrabJSON.runs:
@@ -1289,16 +1297,17 @@ class _Challenge(pyxbmct.AddonDialogWindow):
             self.hint = msg.find('p', class_='a-last').get_text(strip=True)
             form = msg.find('form').find('div', class_='a-box-inner')
             self.task = form.h4.get_text(strip=True)
-            self.img_url = pyxbmct.Image(form.find('img')['src'], aspectRatio=2)
+            self.img_url = form.find('img')['src']
         else:
             self.hint = '\n'.join([box.find('span', class_=cl).get_text() for cl in ['a-size-large', 'a-size-base a-color-secondary']
                                    if box.find('span', class_=cl)])
             self.task = box.find('label', class_='a-form-label').get_text(strip=True)
-            self.img_url = pyxbmct.Image(img['src'], aspectRatio=2)
+            self.img_url = img['src']
 
         super(_Challenge, self).__init__(self.head)
         self.setGeometry(500, 450, 8, 2)
         self.cap = ''
+        self.img = pyxbmct.Image(self.img_url, aspectRatio=2)
         self.tb_hint = pyxbmct.TextBox()
         self.fl_task = pyxbmct.FadeLabel(_alignment=pyxbmct.ALIGN_CENTER)
         self.ed_cap = pyxbmct.Edit('', _alignment=pyxbmct.ALIGN_LEFT | pyxbmct.ALIGN_CENTER_Y)
@@ -1307,9 +1316,24 @@ class _Challenge(pyxbmct.AddonDialogWindow):
         self.set_controls()
         self.set_navigation()
 
+    def solve_captcha(self):
+        try:
+            from amazoncaptcha import AmazonCaptcha
+        except ModuleNotFoundError:
+            Log('Module amazoncaptcha not installed', Log.DEBUG)
+            return False
+        captcha = AmazonCaptcha.fromlink(self.img_url)
+        res = captcha.solve()
+        if res != 'Not solved':
+            Log('Recognized captcha: %s  IMG url: %s' % (res, self.img_url))
+            self.cap = res
+            self.close()
+            return True
+        return False
+
     def set_controls(self):
         self.placeControl(self.tb_hint, 0, 0, 2, 2)
-        self.placeControl(self.img_url, 2, 0, 3, 2)
+        self.placeControl(self.img, 2, 0, 3, 2)
         self.placeControl(self.fl_task, 5, 0, 1, 2)
         self.placeControl(self.ed_cap, 6, 0, 1, 2)
         self.placeControl(self.btn_submit, 7, 0)

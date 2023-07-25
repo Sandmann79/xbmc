@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<addon id="script.module.amazoncaptcha"
+       name="amazoncaptcha"
+       version="0.5.11"
+       provider-name="Anatolii Maliarov">
+  <requires>
+    <import addon="xbmc.python" version="3.0.0"/>
+    <import addon="script.module.pil" version="1.1.7"/>
+  </requires>
+  <extension point="xbmc.python.module" library="lib" />
+  <extension point="xbmc.addon.metadata">
+    <summary lang="en_GB">Pillow-based solver for Amazon's text captcha</summary>
+    <description lang="en_GB">Pillow-based solver for Amazon's text captcha</description>
+    <license>MIT License</license>
+    <platform>all</platform>
+    <website>https://github.com/a-maliarov/amazoncaptcha</website>
+    <source>https://github.com/a-maliarov/amazoncaptcha</source>
+  </extension>
+</addon>

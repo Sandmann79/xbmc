@@ -1319,7 +1319,7 @@ class _Challenge(pyxbmct.AddonDialogWindow):
     def solve_captcha(self):
         try:
             from amazoncaptcha import AmazonCaptcha
-        except ModuleNotFoundError:
+        except ImportError:
             Log('Module amazoncaptcha not installed', Log.DEBUG)
             return False
         captcha = AmazonCaptcha.fromlink(self.img_url)

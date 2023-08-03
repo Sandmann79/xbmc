@@ -86,9 +86,11 @@
         <setting id="show_recents" type="bool" label="30036" default="true" visible="eq(-10,2)"/>
         <setting id="paycont" type="bool" label="30073" default="false" visible="eq(-11,1)" />
         <setting id="disptvshow" type="bool" label="30071" default="false" visible="eq(-12,1)" />
-        <setting label="Artwork" type="lsep" visible="eq(-13,2)"/>
-        <setting id="tld_episode_thumbnails" type="bool" label="30249" default="false" visible="eq(-14,2)"/>
-        <setting type="action" label="30094" action="" visible="eq(-15,2)" />
+        <setting id="preload_seasons" type="bool" label="30096" default="true" visible="eq(-13,1)" enable="eq(-1,true)"/>
+        <setting id="preload_all_seasons" type="bool" label="30097" default="false" visible="eq(-14,1)" enable="eq(-1,true)" subsetting="true"/>
+        <setting label="Artwork" type="lsep" visible="eq(-15,2)"/>
+        <setting id="tld_episode_thumbnails" type="bool" label="30249" default="false" visible="eq(-16,2)"/>
+        <setting type="action" label="30094" action="" visible="eq(-17,2)" />
     </category>
     <!-- Views -->
     <category label="30015">

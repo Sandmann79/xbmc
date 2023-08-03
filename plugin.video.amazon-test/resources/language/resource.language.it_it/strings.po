@@ -396,6 +396,14 @@ msgctxt "#30095"
 msgid "Reset addon home page to default"
 msgstr ""
 
+msgctxt "#30096"
+msgid "Load season/series infos in the background"
+msgstr ""
+
+msgctxt "#30097"
+msgid "Download the info for all seasons"
+msgstr ""
+
 msgctxt "#30100"
 msgid "Library"
 msgstr "Libreria"

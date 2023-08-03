@@ -1108,10 +1108,8 @@ def GrabJSON(url, postData=None):
                 br.submit_selected()
             from .users import saveUserCookies
             saveUserCookies(cj)
-            '''
             r = getURL(u, useCookie=True, rjson=False, postdata=postData)
             br.open_fake_page(r, u)
-            '''
             r, soup = _parseHTML(br)
             WriteLog(r, 'captcha-webapi')
         return [r] if r.startswith('{') else re.findall(r'\s*(?:<script[^>]+type="(?:text/template|application/json)"[^>]*>|state:)\s*({[^\n]+})\s*(?:,|</script>)\s*', r)

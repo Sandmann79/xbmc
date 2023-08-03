@@ -157,8 +157,8 @@ class Settings(Singleton):
         elif 'playMethod' == name: return int(self._gs('playmethod'))
         elif 'browser' == name: return int(self._gs('browser'))
         elif 'MaxResults' == name: return int(self._gs('items_perpage'))
-        elif 'tvdb_art' == name: return self._gs('tvdb_art')
-        elif 'tmdb_art' == name: return self._gs('tmdb_art')
+        elif 'tvdb_art' == name: return int('0' + self._gs('tvdb_art'))
+        elif 'tmdb_art' == name: return int('0' + self._gs('tmdb_art'))
         elif 'showfanart' == name: return self._gs('useshowfanart') == 'true'
         elif 'dispShowOnly' == name: return self._gs('disptvshow') == 'true'
         elif 'payCont' == name: return self._gs('paycont') == 'true'
@@ -206,6 +206,8 @@ class Settings(Singleton):
         elif 'uhd' == name: return self._gs('enable_uhd') == 'true'
         elif 'show_recents' == name: return self._gs('show_recents') == 'true'
         elif 'register_device' == name: return self._gs('register_device') == 'true'
+        elif 'preload_seasons' == name: return self._gs('preload_seasons') == 'true'
+        elif 'preload_all_seasons' == name: return self._gs('preload_all_seasons') == 'true'
 
 
 def jsonRPC(method, props='', param=None):

@@ -129,7 +129,7 @@ def addVideo(name, asin, infoLabels, cm=None, export=False):
 
 
 def getInfolabels(Infos):
-    rem_keys = ('ishd', 'isprime', 'asins', 'audiochannels', 'banner', 'displaytitle', 'fanart', 'poster', 'seasonasin',
+    rem_keys = ('ishd', 'isprime', 'asins', 'audiochannels', 'banner', 'displaytitle', 'fanart', 'poster', 'seasonasin', 'setting'
                 'thumb', 'traileravailable', 'contenttype', 'isadult', 'totalseasons', 'seriesasin', 'episodename', 'isuhd')
     if not Infos:
         return

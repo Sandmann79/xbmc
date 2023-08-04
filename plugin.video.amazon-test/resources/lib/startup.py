@@ -76,7 +76,7 @@ def EntryPoint():
     elif mode == 'exportWatchlist':
         if hasattr(g.pv, 'getListMenu'):
             g.pv.getListMenu('watchlist', export=2)
-        else:
+        elif hasattr(g.pv, 'Browse'):
             g.pv.Browse('root/Watchlist/watchlist', export=5)
     elif mode == 'Search':
         g.pv.Search(args.get('searchstring'))

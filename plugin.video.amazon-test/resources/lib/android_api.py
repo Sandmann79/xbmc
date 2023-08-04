@@ -336,7 +336,6 @@ class PrimeVideo(Singleton):
         series = True if contentType == 'season' and self._s.dispShowOnly else False
         season = int(infoLabels.get('season', -2))
         extra = ' and season = %s' % season if season > -2 else ''
-
         for asin in asins.split(','):
             j = None
             result = c.execute('select info from art where asin like (?)' + extra, ('%' + asin + '%',)).fetchone()
@@ -350,7 +349,8 @@ class PrimeVideo(Singleton):
                     infoLabels['fanart'] = j['fanart']
                 if 'banner' in j:
                     infoLabels['banner'] = j['banner']
-            if (season > -1 and result) or series and 'seriesasin' in infoLabels:
+                j = {k: v for k, v in j.items() if k not in ['poster', 'fanart', 'banner', 'settings', 'title']}
+            if (season > -1 and result and contentType == 'season') or series and 'seriesasin' in infoLabels:
                 result = c.execute('select info from art where asin like (?) and season = -1', ('%' + infoLabels['seriesasin'] + '%',)).fetchone()
                 if result:
                     j = {k: v for k, v in json.loads(result[0]).items() if v != self._g.na or v is None}
@@ -358,8 +358,9 @@ class PrimeVideo(Singleton):
                         infoLabels['poster'] = j['poster']
                     if 'fanart' in j and (not series or self._s.showfanart):
                         infoLabels['fanart'] = j['fanart']
+                    if series:
+                        j = {k: v for k, v in j.items() if k not in ['poster', 'fanart', 'banner', 'settings', 'title']}
             if j is not None:
-                j = {k: v for k, v in j.items() if k not in ['poster', 'fanart', 'banner', 'settings', 'title']}
                 infoLabels.update(j)
                 return infoLabels
 

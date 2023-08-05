@@ -333,8 +333,9 @@ class PrimeVideo(Singleton):
         c = self._db.cursor()
         asins = infoLabels['asins']
         infoLabels['banner'] = None
-        series = True if contentType == 'season' and self._s.dispShowOnly else False
         season = int(infoLabels.get('season', -2))
+        series = contentType == 'season' and self._s.dispShowOnly
+        series_art = season > -1 and self._s.showfanart and self._s.tmdb_art != 0
         extra = ' and season = %s' % season if season > -2 else ''
         for asin in asins.split(','):
             j = None
@@ -349,19 +350,18 @@ class PrimeVideo(Singleton):
                     infoLabels['fanart'] = j['fanart']
                 if 'banner' in j:
                     infoLabels['banner'] = j['banner']
-                j = {k: v for k, v in j.items() if k not in ['poster', 'fanart', 'banner', 'settings', 'title']}
-            if (season > -1 and result and contentType == 'season') or series and 'seriesasin' in infoLabels:
+                infoLabels.update({k: v for k, v in j.items() if k not in ['poster', 'fanart', 'banner', 'settings', 'title']})
+            if (series_art and result) or series and 'seriesasin' in infoLabels:
                 result = c.execute('select info from art where asin like (?) and season = -1', ('%' + infoLabels['seriesasin'] + '%',)).fetchone()
                 if result:
                     j = {k: v for k, v in json.loads(result[0]).items() if v != self._g.na or v is None}
                     if 'poster' in j and contentType == 'episode':
                         infoLabels['poster'] = j['poster']
-                    if 'fanart' in j and (not series or self._s.showfanart):
+                    if 'fanart' in j and series_art:
                         infoLabels['fanart'] = j['fanart']
                     if series:
-                        j = {k: v for k, v in j.items() if k not in ['poster', 'fanart', 'banner', 'settings', 'title']}
+                        infoLabels.update({k: v for k, v in j.items() if k not in ['poster', 'fanart', 'banner', 'settings', 'title']})
             if j is not None:
-                infoLabels.update(j)
                 return infoLabels
 
         if contentType in ['movie', 'seasonslist', 'season']:
@@ -532,7 +532,7 @@ class PrimeVideo(Singleton):
             for k, v in i.items():
                 dic = item if k == '' else item.get(k, {})
                 for m in v:
-                    if m in dic:
+                    if m in dic and dic[m] is not None and dic[m].strip() != '':
                         infoLabels[il] = self.cleanIMGurl(dic[m])
                         break
         return infoLabels

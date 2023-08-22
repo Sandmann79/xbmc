@@ -3,21 +3,30 @@
 from __future__ import unicode_literals
 import os.path
 import pickle
-
+import re
+import time
+import json
 from datetime import date
+from os.path import join as OSPJoin
+
+from kodi_six import xbmc, xbmcgui, xbmcplugin, xbmcvfs
+from kodi_six.utils import py2_decode
+
+from .common import findKey
+from .logging import Log, WriteLog
+from .ages import AgeRestrictions
+from .singleton import Singleton
+from .network import getATVData, getURL, MechanizeLogin, GrabJSON
+from .itemlisting import addDir, addVideo, setContentAndView
+from .users import loadUser
+from .export import SetupLibrary
+from .l10n import getString
+from .configs import getConfig, writeConfig
 
 try:
     from urllib.parse import quote_plus
 except ImportError:
     from urllib import quote_plus
-
-from .ages import AgeRestrictions
-from .singleton import Singleton
-from .network import *
-from .itemlisting import *
-from .users import *
-from .common import findKey
-from .export import SetupLibrary
 
 
 class PrimeVideo(Singleton):
@@ -26,7 +35,7 @@ class PrimeVideo(Singleton):
     def __init__(self, globalsInstance, settingsInstance):
         self._g = globalsInstance
         self._s = settingsInstance
-        self.recentsdb = OSPJoin(g.DATA_PATH, 'recent.db')
+        self.recentsdb = OSPJoin(self._g.DATA_PATH, 'recent.db')
         self._initialiseDB()
         self.loadCategories()
 
@@ -57,7 +66,7 @@ class PrimeVideo(Singleton):
             url = 'searchString=%s%s' % (quote_plus(searchString), self._s.OfferGroup)
             self.listContent('Search', url, 1, 'search')
         else:
-            xbmc.executebuiltin('RunPlugin(%s)' % g.pluginid)
+            xbmc.executebuiltin('RunPlugin(%s)' % self._g.pluginid)
 
     def getRecents(self):
         all_rec = {}
@@ -87,7 +96,7 @@ class PrimeVideo(Singleton):
             content = getATVData('GetASINDetails', 'ASINList=' + asin)['titles']
             if len(content) < 1:
                 return
-            ct, Info = g.pv.getInfos(content[0], False)
+            ct, Info = self._g.pv.getInfos(content[0], False)
             asin = Info.get('SeasonAsin', Info.get('SeriesAsin', asin))
         if asin in rec:
             rec.remove(asin)
@@ -249,7 +258,7 @@ class PrimeVideo(Singleton):
                 url = content
                 mode = 'listCategories'
                 if menu_id in all_vid.keys() and node == 0:
-                    st = 'all' if self._s.payCont else 'prime'
+                    st = 'all' if self._s.paycont else 'prime'
                     url = self.getNode(content, 'content', ' and id = "{}"'.format(st))
                     url = url[0][0] if url else content
                     opt = menu_id
@@ -273,7 +282,7 @@ class PrimeVideo(Singleton):
     def listContent(self, catalog, url, page, parent, export=0):
         oldurl = url
         titlelist = []
-        ResPage = self._s.MaxResults
+        ResPage = self._s.items_perpage
         contentType = ''
 
         if export:
@@ -287,7 +296,7 @@ class PrimeVideo(Singleton):
             url = '%s&NumberOfResults=%s&StartIndex=%s&Detailed=T' % (url, ResPage, (page - 1) * ResPage)
             titles = getATVData(catalog, url)
         if page != 1 and not export:
-            addDir(' --= %s =--' % getString(30112), thumb=self._s.HomeIcon)
+            addDir(' --= %s =--' % getString(30112), thumb=self._g.HomeIcon)
 
         if not titles or not len(titles.get('titles', [])):
             if 'search' in parent:
@@ -299,7 +308,7 @@ class PrimeVideo(Singleton):
         endIndex = titles['endIndex']
         numItems = len(titles['titles'])
         if 'approximateSize' not in titles.keys():
-            if numItems > self._s.MaxResults:
+            if numItems > self._s.items_perpage:
                 endIndex = 0
         else:
             if endIndex == 0:
@@ -322,7 +331,7 @@ class PrimeVideo(Singleton):
                             url = 'SeasonASIN=%s&ContentType=TVEpisode&IncludeBlackList=T' % item['titleId']
 
             contentType, infoLabels = self.getInfos(item, export)
-            if export and catalog == "Browse" and not infoLabels['isPrime'] and not self._s.payCont and self._g.library not in parent:
+            if export and catalog == "Browse" and not infoLabels['isPrime'] and not self._s.paycont and self._g.library not in parent:
                 continue
             name = infoLabels['DisplayTitle']
             asin = item['titleId']
@@ -366,7 +375,7 @@ class PrimeVideo(Singleton):
                 self.listContent(catalog, oldurl, page + 1, parent, export)
             else:
                 addDir(' --= %s =--' % (getString(30111) % int(page + 1)), 'listContent', oldurl, page=page + 1,
-                       catalog=catalog, opt=parent, thumb=self._s.NextIcon)
+                       catalog=catalog, opt=parent, thumb=self._g.NextIcon)
         if not export:
             self._db.commit()
             xbmc.executebuiltin('RunPlugin(%s?mode=checkMissing)' % self._g.pluginid)
@@ -409,7 +418,7 @@ class PrimeVideo(Singleton):
                                                                                                 'opt=rem_%s' % self._g.watchlist)
                     xbmc.executebuiltin('Container.Update("%s", replace)' % cPath)
                 elif self._s.wl_export:
-                    self.listContent('GetASINDetails', 'asinList%3D' + asin, 1, '_show' if self._s.dispShowOnly else '', 1)
+                    self.listContent('GetASINDetails', 'asinList%3D' + asin, 1, '_show' if self._s.disptvshow else '', 1)
                     xbmc.executebuiltin('UpdateLibrary(video)')
             else:
                 Log('Error while {}ing {}'.format(action.lower(), asin), Log.ERROR)
@@ -450,10 +459,10 @@ class PrimeVideo(Singleton):
                     if result:
                         if result[0] and result[0] != self._g.na and contentType == 'episode':
                             infoLabels['poster'] = result[0]
-                        if result[1] and result[1] != self._g.na and self._s.showfanart:
+                        if result[1] and result[1] != self._g.na and self._s.useshowfanart:
                             infoLabels['fanart'] = result[1]
                 return infoLabels
-            elif season > -1 and self._s.showfanart:
+            elif season > -1 and self._s.useshowfanart:
                 result = c.execute('select poster,fanart from art where asin like (?) and season = -1',
                                    ('%' + asin + '%',)).fetchone()
                 if result:
@@ -579,13 +588,13 @@ class PrimeVideo(Singleton):
             info, asins = self._scrapeAsins(url, cj)
             if info is False:
                 Log('Cookie invalid', Log.ERROR)
-                g.dialog.notification(g.__plugin__, getString(30266), xbmcgui.NOTIFICATION_ERROR)
+                self._g.dialog.notification(self._g.__plugin__, getString(30266), xbmcgui.NOTIFICATION_ERROR)
                 return [], ''
         else:
             asins = listing
 
         url = 'asinlist=%s&StartIndex=0&Detailed=T' % asins
-        listing += '_show' if (self._s.dispShowOnly and not (export and asins == listing)) or cont == '_show' else ''
+        listing += '_show' if (self._s.disptvshow and not (export and asins == listing)) or cont == '_show' else ''
         titles = getATVData('Browse', url)
         titles.update(info)
         return titles, listing
@@ -716,9 +725,9 @@ class PrimeVideo(Singleton):
 
         if not export:
             if not infoLabels['thumb']:
-                infoLabels['thumb'] = self._s.DefaultFanart
+                infoLabels['thumb'] = self._g.DefaultFanart
             if not infoLabels['fanart']:
-                infoLabels['fanart'] = self._s.DefaultFanart
+                infoLabels['fanart'] = self._gDefaultFanart
             if not infoLabels['isPrime'] and not contentType == 'series':
                 infoLabels['DisplayTitle'] = '[COLOR %s]%s[/COLOR]' % (self._g.PayCol, infoLabels['DisplayTitle'])
         return contentType, infoLabels
@@ -787,7 +796,7 @@ class PrimeVideo(Singleton):
             if item.get('itemType', '').lower() == 'label':
                 il['plot'] = il['title']
                 il['title'] = '-= %s =-' % item['link']['label']
-                il['thumb'] = self._s.NextIcon
+                il['thumb'] = self._g.NextIcon
             if not il['duration'] and runtime:
                 t = re.findall(r'\d+', runtime)
                 t = ['0'] * (2 - len(t)) + t
@@ -926,7 +935,7 @@ class PrimeVideo(Singleton):
         if more:
             nextpage = more.get('apiUrl', more['url'])
             if remref(nextpage) not in urls:
-                addDir('-= %s =-' % more['label'], 'Channel', nextpage, thumb=self._s.NextIcon)
+                addDir('-= %s =-' % more['label'], 'Channel', nextpage, thumb=self._g.NextIcon)
 
         Log('Parsing Channels Page: %ss' % (time.time()-s), Log.DEBUG)
         '''
@@ -976,13 +985,13 @@ class PrimeVideo(Singleton):
             searchString = args.get('searchstring')
             self.Search(searchString)
         elif mode in ['checkMissing', 'Recent', 'switchProfile']:
-            exec ('g.pv.{}()'.format(mode))
+            exec ('self._g.pv.{}()'.format(mode))
         elif mode == 'Channel':
             self.Channel(url=args.get('url'), uid=args.get('opt'))
         elif mode == 'updateRecents':
             self.updateRecents(args.get('asin', ''), int(args.get('rem', '0')))
         elif mode == 'languageselect':
-            g.dialog.notification(g.__plugin__, getString(30269))
+            self._g.dialog.notification(self._g.__plugin__, getString(30269))
         elif mode == 'ageSettings':
             AgeRestrictions().Settings()
 

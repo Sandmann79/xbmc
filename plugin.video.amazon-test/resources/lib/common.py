@@ -4,19 +4,25 @@
     Provides: Globals, Settings, sleep, jsonRPC
 '''
 from __future__ import unicode_literals
-from locale import getdefaultlocale
-from kodi_six import xbmcaddon, xbmcgui
-from kodi_six.utils import py2_decode
-from sys import argv
+
 import json
+from locale import getdefaultlocale
+from sys import argv
+from os.path import join as OSPJoin
+
+from kodi_six import xbmc, xbmcgui, xbmcvfs
+from kodi_six.utils import py2_decode
+from xbmcaddon import Addon
+
 from .singleton import Singleton
-from .l10n import *
-from .configs import *
+from .l10n import getString
+from .configs import getConfig, writeConfig
 
 try:
     from xbmcvfs import translatePath
 except ImportError:
     from xbmc import translatePath
+
 
 # Usage:
 #   gs = Globals()/Settings()
@@ -50,12 +56,10 @@ class Globals(Singleton):
     KodiVersion = int(xbmc.getInfoLabel('System.BuildVersion').split('.')[0])
     dtid_android = 'A43PXU4ZN2AL1'
     dtid_web = 'AOAGZA014O5RE'
-    headers_android = {'Accept-Charset': 'utf-8', 'User-Agent': 'Dalvik/2.1.0 (Linux; U; Android 11; SHIELD Android TV RQ1A.210105.003)', 'X-Requested-With': 'com.amazon.avod.thirdpartyclient'}
+    headers_android = {'Accept-Charset': 'utf-8', 'User-Agent': 'Dalvik/2.1.0 (Linux; U; Android 11; SHIELD Android TV RQ1A.210105.003)',
+                       'X-Requested-With': 'com.amazon.avod.thirdpartyclient'}
 
     """ Allow the usage of dot notation for data inside the _globals dictionary, without explicit function call """
-    def __getattr__(self, name): return self._globals[name]
-    # def __setattr__(self, name, value): self._globals[name] = value
-    # def __delattr__(self, name): self._globals.pop(name, None)
 
     def __init__(self):
         try:
@@ -65,20 +69,26 @@ class Globals(Singleton):
 
         # argv[0] can contain the entire path, so we limit ourselves to the base url
         pid = urlparse(argv[0])
-        self.pluginid = '{}://{}/'.format(pid.scheme, pid.netloc)
-        self.pluginhandle = int(argv[1]) if (1 < len(argv)) and self.pluginid else -1
+        self._globals['pluginid'] = '{}://{}/'.format(pid.scheme, pid.netloc)
+        self._globals['pluginhandle'] = int(argv[1]) if (1 < len(argv)) and argv[0] else -1
 
         self._globals['monitor'] = xbmc.Monitor()
-        self._globals['addon'] = xbmcaddon.Addon()
+        self._globals['addon'] = Addon()
         self._globals['dialog'] = xbmcgui.Dialog()
         # self._globals['dialogprogress'] = xbmcgui.DialogProgress()
         self._globals['hasExtRC'] = xbmc.getCondVisibility('System.HasAddon(script.chromium_remotecontrol)')
 
-        self._globals['DATA_PATH'] = py2_decode(translatePath(self.addon.getAddonInfo('profile')))
+        self._globals['DATA_PATH'] = py2_decode(translatePath(self._globals['addon'].getAddonInfo('profile')))
         self._globals['CONFIG_PATH'] = OSPJoin(self._globals['DATA_PATH'], 'config')
         self._globals['LOG_PATH'] = OSPJoin(self._globals['DATA_PATH'], 'log')
         self._globals['HOME_PATH'] = py2_decode(translatePath('special://home'))
         self._globals['PLUGIN_PATH'] = py2_decode(self._globals['addon'].getAddonInfo('path'))
+
+        self._globals['DefaultFanart'] = OSPJoin(self._globals['PLUGIN_PATH'], 'fanart.png')
+        self._globals['ThumbIcon'] = OSPJoin(self._globals['PLUGIN_PATH'], 'icon.png')
+        self._globals['NextIcon'] = OSPJoin(self._globals['PLUGIN_PATH'], 'resources', 'art', 'next.png')
+        self._globals['HomeIcon'] = OSPJoin(self._globals['PLUGIN_PATH'], 'resources', 'art', 'home.png')
+        self._globals['PrimeVideoEntitlement'] = OSPJoin(self._globals['PLUGIN_PATH'], 'resources', 'art', 'prime.png')
 
         # With main PATHs configured, we initialise the get/write path attributes
         # and generate/retrieve the device ID
@@ -108,13 +118,20 @@ class Globals(Singleton):
         # Save the language code for HTTP requests and set the locale for l10n
         loc = getdefaultlocale()[0]
         userAcceptLanguages = 'en-gb{}, en;q=0.5'
-        self._globals['userAcceptLanguages'] = userAcceptLanguages.format('') if not loc else '{}, {}'.format(loc.lower().replace('_', '-'), userAcceptLanguages.format(';q=0.75'))
+        self._globals['userAcceptLanguages'] = userAcceptLanguages.format('') if not loc else '{}, {}'.format(loc.lower().replace('_', '-'),
+                                                                                                              userAcceptLanguages.format(';q=0.75'))
 
         self._globals['CONTEXTMENU_MULTIUSER'] = [
             (getString(30130, self._globals['addon']).split('…')[0], 'RunPlugin({}?mode=LogIn)'.format(self.pluginid)),
             (getString(30131, self._globals['addon']).split('…')[0], 'RunPlugin({}?mode=removeUser)'.format(self.pluginid)),
             (getString(30132, self._globals['addon']), 'RunPlugin({}?mode=renameUser)'.format(self.pluginid))
         ]
+
+    def __getattr__(self, name):
+        return self._globals[name]
+
+    def __setattr__(self, name, value):
+        self._globals[name] = value
 
     def InitialiseProvider(self, mid, burl, atv, pv, did):
         self._globals['MarketID'] = mid
@@ -136,10 +153,17 @@ class Globals(Singleton):
 
 class Settings(Singleton):
     """ A singleton instance of various settings that could be needed to reload during runtime """
-
-    def __init__(self):
-        self._g = Globals()
-        self._gs = self._g.addon.getSetting
+    _g = Globals()
+    _gs = _g.addon.getSetting
+    _integer = 'int("0" + self._gs("%s"))'
+    _bool_true = 'self._gs("%s") == "true"'
+    _bool_false = 'self._gs("%s") == "false"'
+    _ret_types = {_integer: ['playmethod', 'browser', 'items_perpage', 'tvdb_art', 'tmdb_art', 'region', 'skip_scene', 'data_source', 'send_vp'],
+                  _bool_true:
+                      ['useshowfanart', 'disptvshow', 'paycont', 'logging', 'json_dump', 'json_dump_collisions', 'sub_stretch', 'log_http', 'remotectrl',
+                       'remote_vol', 'multiuser', 'wl_export', 'audio_description', 'pv_episode_thumbnails', 'tld_episode_thumbnails', 'use_h265',
+                       'profiles', 'show_pass', 'enable_uhd', 'show_recents', 'register_device', 'preload_seasons', 'preload_all_seasons'],
+                  _bool_false: ['json_dump_raw', 'ssl_verif', 'proxy_mpdalter']}
 
     def __getattr__(self, name):
         if name in ['MOVIE_PATH', 'TV_SHOWS_PATH']:
@@ -154,60 +178,39 @@ class Settings(Singleton):
             l = xbmc.convertLanguage(l['value'], xbmc.ISO_639_1)
             l = l if l else xbmc.getLanguage(xbmc.ISO_639_1, False)
             return l if l else 'en'
-        elif 'playMethod' == name: return int(self._gs('playmethod'))
-        elif 'browser' == name: return int(self._gs('browser'))
-        elif 'MaxResults' == name: return int(self._gs('items_perpage'))
-        elif 'tvdb_art' == name: return int('0' + self._gs('tvdb_art'))
-        elif 'tmdb_art' == name: return int('0' + self._gs('tmdb_art'))
-        elif 'showfanart' == name: return self._gs('useshowfanart') == 'true'
-        elif 'dispShowOnly' == name: return self._gs('disptvshow') == 'true'
-        elif 'payCont' == name: return self._gs('paycont') == 'true'
-        elif 'verbLog' == name: return self._gs('logging') == 'true'
-        elif 'dumpJSON' == name: return self._gs('json_dump') == 'true'
-        elif 'dumpJSONCollisions' == name: return self._gs('json_dump_collisions') == 'true'
-        elif 'refineJSON' == name: return self._gs('json_dump_raw') == 'false'
-        elif 'logHTTP' == name: return self._gs('log_http') == 'true'
-        elif 'useIntRC' == name: return self._gs('remotectrl') == 'true'
-        elif 'RMC_vol' == name: return self._gs('remote_vol') == 'true'
-        elif 'ms_mov' == name: ms_mov = self._gs('mediasource_movie'); return ms_mov if ms_mov else 'Amazon Movies'
-        elif 'ms_tv' == name: ms_tv = self._gs('mediasource_tv'); return ms_tv if ms_tv else 'Amazon TV'
-        elif 'multiuser' == name: return self._gs('multiuser') == 'true'
-        elif 'DefaultFanart' == name: return OSPJoin(self._g.PLUGIN_PATH, 'fanart.png')
-        elif 'ThumbIcon' == name: return OSPJoin(self._g.PLUGIN_PATH, 'icon.png')
-        elif 'NextIcon' == name: return OSPJoin(self._g.PLUGIN_PATH, 'resources', 'art', 'next.png')
-        elif 'HomeIcon' == name: return OSPJoin(self._g.PLUGIN_PATH, 'resources', 'art', 'home.png')
-        elif 'PrimeVideoEntitlement' == name: return OSPJoin(self._g.PLUGIN_PATH, 'resources', 'art', 'prime.png')
-        elif 'wl_order' == name: return ['DATE_ADDED_DESC', 'TITLE_DESC', 'TITLE_ASC'][int('0' + self._gs('wl_order'))]
-        elif 'verifySsl' == name: return self._gs('ssl_verif') == 'false'
-        elif 'OfferGroup' == name: return '' if self.payCont else '&OfferGroups=B0043YVHMY'
-        elif 'wl_export' == name: return self._gs('wl_export') == 'true'
-        elif 'region' == name: return int(self._gs('region'))
-        elif 'proxyaddress' == name: return getConfig('proxyaddress')
-        elif 'subtitleStretch' == name: return self._gs('sub_stretch') == 'true'
+        elif 'ms_mov' == name:
+            ms_mov = self._gs('mediasource_movie')
+            return ms_mov if ms_mov else 'Amazon Movies'
+        elif 'ms_tv' == name:
+            ms_tv = self._gs('mediasource_tv')
+            return ms_tv if ms_tv else 'Amazon TV'
+        elif 'wl_order' == name:
+            return ['DATE_ADDED_DESC', 'TITLE_DESC', 'TITLE_ASC'][int('0' + self._gs('wl_order'))]
+        elif 'OfferGroup' == name:
+            return '' if self.paycont else '&OfferGroups=B0043YVHMY'
         elif 'subtitleStretchFactor' == name:
             return [24 / 23.976, 23.976 / 24, 25 / 23.976, 23.976 / 25, 25.0 / 24.0, 24.0 / 25.0][int(self._gs('sub_stretch_factor'))]
-        elif 'audioDescriptions' == name: return self._gs('audio_description') == 'true'
-        elif 'removePosters' == name: return self._gs('pv_episode_thumbnails') == 'true'
-        elif 'useEpiThumbs' == name: return self._gs('tld_episode_thumbnails') == 'true'
-        elif 'bypassProxy' == name: return self._gs('proxy_mpdalter') == 'false'
-        elif 'use_h265' == name: return self._gs('use_h265') == 'true'
-        elif 'skip_scene' == name: return int('0' + self._gs('skip_scene'))
-        elif 'pagination' == name: return {
-            'all': self._gs('paginate_everything') == 'true',
-            'watchlist': self._gs('paginate_watchlist') == 'true',
-            'collections': self._gs('paginate_collections') == 'true',
-            'search': self._gs('paginate_search') == 'true'
-        }
+        elif 'pagination' == name:
+            return {'all': self._gs('paginate_everything') == 'true',
+                    'watchlist': self._gs('paginate_watchlist') == 'true',
+                    'collections': self._gs('paginate_collections') == 'true',
+                    'search': self._gs('paginate_search') == 'true'}
         elif 'catalogCacheExpiry' == name:
             return [3600, 21600, 43200, 86400, 259200, 604800, 1296000, 2592000][int(self._gs('catalog_cache_expiry'))]
-        elif 'profiles' == name: return self._gs('profiles') == 'true'
-        elif 'show_pass' == name: return self._gs('show_pass') == 'true'
-        elif 'data_source' == name: return int('0' + self._gs('data_source'))
-        elif 'uhd' == name: return self._gs('enable_uhd') == 'true'
-        elif 'show_recents' == name: return self._gs('show_recents') == 'true'
-        elif 'register_device' == name: return self._gs('register_device') == 'true'
-        elif 'preload_seasons' == name: return self._gs('preload_seasons') == 'true'
-        elif 'preload_all_seasons' == name: return self._gs('preload_all_seasons') == 'true'
+        elif 'proxyaddress' == name:
+            return getConfig('proxyaddress')
+
+        value = None
+        for cmd in self._ret_types:
+            if self._ret_types[cmd].count(name) > 0:
+                value = eval(cmd % name)
+
+        value = self._gs(name) if value is None else value
+        return value
+
+    def __setattr__(self, name, value):
+        if not name.startswith('_'):
+            self._g.addon.setSetting(name, value)
 
 
 def jsonRPC(method, props='', param=None):

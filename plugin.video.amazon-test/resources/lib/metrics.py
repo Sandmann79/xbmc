@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 from functools import wraps
 from timeit import default_timer as timer
+
 from .logging import Log
 
 networkTime = 0

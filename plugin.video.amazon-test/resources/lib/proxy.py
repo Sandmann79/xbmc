@@ -5,10 +5,10 @@
 # Created: 12/01/2019
 
 from __future__ import unicode_literals
-from kodi_six.utils import py2_decode
-import base64
-from resources.lib.logging import Log
 from contextlib import contextmanager
+from kodi_six.utils import py2_decode
+from resources.lib.logging import Log
+
 try:
     from BaseHTTPServer import BaseHTTPRequestHandler  # Python2 HTTP Server
     from SocketServer import ThreadingTCPServer
@@ -107,7 +107,7 @@ class ProxyHTTPD(BaseHTTPRequestHandler):
 
         if 'Host' in headers: del headers['Host']  # Forcibly strip the host (py3 compliance)
         Log('[PS] Forwarding the {} request towards {}'.format(method.upper(), endpoint), Log.DEBUG)
-        r = session.request(method, endpoint, data=data, headers=headers, cookies=cookie, stream=stream, verify=self.server._s.verifySsl)
+        r = session.request(method, endpoint, data=data, headers=headers, cookies=cookie, stream=stream, verify=self.server._s.ssl_verif)
         return (r.status_code, r.headers, r if stream else r.content.decode('utf-8'))
 
     def _gzip(self, data=None, stream=False):
@@ -383,7 +383,7 @@ class ProxyHTTPD(BaseHTTPRequestHandler):
             content = re.sub(r'(?:\s*<(?:tt:)?br\s*/>\s*)+', '\n', content)  # Replace <br/> with actual new lines
 
             # Subtitle timing stretch
-            if self.server._s.subtitleStretch:
+            if self.server._s.sub_stretch:
                 def _stretch(f):
                     millis = int(f.group('h')) * 3600000 + int(f.group('m')) * 60000 + int(f.group('s')) * 1000 + int(f.group('ms'))
                     h, m = divmod(millis * _stretch.factor, 3600000)

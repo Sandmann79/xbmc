@@ -4,18 +4,22 @@ from __future__ import unicode_literals
 
 import base64
 import json
+import re
+import time
 from collections import OrderedDict
 from copy import deepcopy
-from kodi_six import xbmcplugin
-import re
 
-from .common import key_exists, return_item, return_value, sleep, findKey
+from kodi_six import xbmc, xbmcplugin, xbmcgui
+
 from .singleton import Singleton
+from .common import key_exists, return_item, return_value, sleep, findKey
 from .network import getURL, getURLData, MechanizeLogin, FQify, GrabJSON, LocaleSelector
 from .logging import Log, LogJSON
 from .itemlisting import setContentAndView, addVideo, addDir
-from .users import *
+from .users import loadUsers, loadUser, saveUserCookies, switchUser
+from .configs import getConfig, writeConfig
 from .export import SetupLibrary
+from .l10n import getString
 
 try:
     import cPickle as pickle
@@ -151,7 +155,7 @@ class PrimeVideo(Singleton):
                 pickle.dump(self._catalog, fp, -1)
         if bFlushVideoData:
             with open(self._videodataCache, 'w+') as fp:
-                bPretty = self._s.verbLog
+                bPretty = self._s.logging
                 json.dump(self._videodata, fp, indent=2 if bPretty else None, separators=None if bPretty else (',', ':'), sort_keys=True)
 
     def _LoadCache(self):
@@ -255,15 +259,15 @@ class PrimeVideo(Singleton):
                 }
 
     def Route(self, verb, path):
-        if 'search' == verb: g.pv.Search()
-        elif 'browse' == verb: g.pv.Browse(path)
-        elif 'refresh' == verb: g.pv.Refresh(path)
-        elif 'profiles' == verb: g.pv.Profile(path)
-        elif 'languageselect' == verb: g.pv.LanguageSelect()
-        elif 'clearcache' == verb: g.pv.DeleteCache()
-        elif 'wltoogle' == verb: g.pv.Watchlist(path)
-        elif 'ageSettings' == verb: g.dialog.ok(g.__plugin__, 'Age Restrictions are currently unavailable for WebApi users')
-        elif 'sethome' == verb: g.pv.SetHome(path)
+        if 'search' == verb: self._g.pv.Search()
+        elif 'browse' == verb: self._g.pv.Browse(path)
+        elif 'refresh' == verb: self._g.pv.Refresh(path)
+        elif 'profiles' == verb: self._g.pv.Profile(path)
+        elif 'languageselect' == verb: self._g.pv.LanguageSelect()
+        elif 'clearcache' == verb: self._g.pv.DeleteCache()
+        elif 'wltoogle' == verb: self._g.pv.Watchlist(path)
+        elif 'ageSettings' == verb: self._g.dialog.ok(self._g.__plugin__, 'Age Restrictions are currently unavailable for WebApi users')
+        elif 'sethome' == verb: self._g.pv.SetHome(path)
 
     def Watchlist(self, path):
         path = path.split(self._separator)
@@ -617,7 +621,7 @@ class PrimeVideo(Singleton):
                 m = entry['metadata']
                 if 'artmeta' in m:
                     try:
-                        if self._s.removePosters and ('episode' == m['videometa']['mediatype']):
+                        if self._s.pv_episode_thumbnails and ('episode' == m['videometa']['mediatype']):
                             del m['artmeta']['poster']
                     except: pass
                     infoLabel.update(m['artmeta'])
@@ -1527,7 +1531,7 @@ class PrimeVideo(Singleton):
                             requestURLs.append(nextPage)
                         else:
                             # Insert pagination folder
-                            o['nextPage'] = {'title': getString(30267), 'lazyLoadURL': nextPage, 'metadata': {'artmeta': {'thumb': self._s.NextIcon}}}
+                            o['nextPage'] = {'title': getString(30267), 'lazyLoadURL': nextPage, 'metadata': {'artmeta': {'thumb': self._g.NextIcon}}}
 
             # Notify new page
             if 0 < len(requestURLs):

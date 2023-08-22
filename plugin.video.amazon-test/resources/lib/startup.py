@@ -2,25 +2,28 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 import os.path
-import sys
+from sys import argv
 
-from .network import *
-from .users import *
-from .logging import *
-from .configs import *
-from .common import Globals, Settings
+from kodi_six import xbmc, xbmcvfs
 from kodi_six.utils import py2_decode
+
+from .common import Globals, Settings
+from .network import getUA
+from .users import loadUser, loadUsers, switchUser
+from .configs import getConfig
+from .logging import Log
+from .l10n import getString
 
 
 def EntryPoint():
     """ Main entry point of the Amazon VOD addon """
 
     # Initialise globals and settings before doing anything else
-    g = Globals()
-    s = Settings()
+    _g = Globals()
+    _s = Settings()
 
-    if not xbmcvfs.exists(os.path.join(g.DATA_PATH, 'settings.xml')):
-        g.addon.openSettings()
+    if not xbmcvfs.exists(os.path.join(_g.DATA_PATH, 'settings.xml')):
+        _g.addon.openSettings()
 
     from socket import setdefaulttimeout
     setdefaulttimeout(30)
@@ -33,8 +36,9 @@ def EntryPoint():
         from urllib.parse import urlparse, parse_qsl
     except ImportError:
         from urlparse import urlparse, parse_qsl
-    args = dict(parse_qsl(urlparse(sys.argv[2]).query))
-    path = urlparse(sys.argv[0]).path
+
+    args = dict(parse_qsl(urlparse(argv[2]).query))
+    path = urlparse(argv[0]).path
 
     Log('Requested {}'.format(path if 1 < len(path) else args), Log.DEBUG)
     mode = args.get('mode', None)
@@ -49,38 +53,41 @@ def EntryPoint():
 
         # Set marketplace, base and atv urls, prime video usage and
         # initialise either AmazonTLD or PrimeVideo
-        g.InitialiseProvider(loadUser('mid', cachedUsers=users), loadUser('baseurl', cachedUsers=users),
-                             loadUser('atvurl', cachedUsers=users), loadUser('pv', cachedUsers=users), loadUser('deviceid', cachedUsers=users))
+        _g.InitialiseProvider(loadUser('mid', cachedUsers=users), loadUser('baseurl', cachedUsers=users),
+                              loadUser('atvurl', cachedUsers=users), loadUser('pv', cachedUsers=users), loadUser('deviceid', cachedUsers=users))
     elif mode != 'LogIn':
-        g.dialog.notification(getString(30200), getString(30216))
-        xbmc.executebuiltin('Addon.OpenSettings(%s)' % g.addon.getAddonInfo('id'))
+        _g.dialog.notification(getString(30200), getString(30216))
+        xbmc.executebuiltin('Addon.OpenSettings(%s)' % _g.addon.getAddonInfo('id'))
         return
 
     if path.startswith('/pv/'):
         path = py2_decode(path[4:])
         verb, path = path.split('/', 1)
-        g.pv.Route(verb, path)
+        _g.pv.Route(verb, path)
     elif None is mode:
-        Log('Version: %s' % g.__version__)
+        Log('Version: %s' % _g.__version__)
         Log('Unicode filename support: %s' % os.path.supports_unicode_filenames)
-        Log('Locale: %s / Language: %s' % (g.userAcceptLanguages.split(',')[0], s.Language))
-        g.pv.BrowseRoot()
+        Log('Locale: %s / Language: %s' % (_g.userAcceptLanguages.split(',')[0], _s.Language))
+        _g.pv.BrowseRoot()
     elif mode == 'PlayVideo':
         from .playback import PlayVideo
         PlayVideo(args.get('name', ''), args.get('asin'), args.get('adult', '0'), int(args.get('trailer', '0')), int(args.get('selbitrate', '0')))
     elif mode == 'openSettings':
         aid = args.get('url')
-        aid = g.is_addon if aid == 'is' else aid
+        aid = _g.is_addon if aid == 'is' else aid
         import xbmcaddon
         xbmcaddon.Addon(aid).openSettings()
     elif mode == 'exportWatchlist':
-        if hasattr(g.pv, 'getListMenu'):
-            g.pv.getListMenu('watchlist', export=2)
-        elif hasattr(g.pv, 'Browse'):
-            g.pv.Browse('root/Watchlist/watchlist', export=5)
+        if hasattr(_g.pv, 'getListMenu'):
+            _g.pv.getListMenu('watchlist', export=2)
+        elif hasattr(_g.pv, 'Browse'):
+            _g.pv.Browse('root/Watchlist/watchlist', export=5)
     elif mode == 'Search':
-        g.pv.Search(args.get('searchstring'))
+        _g.pv.Search(args.get('searchstring'))
     elif mode in ['LogIn', 'remLoginData', 'removeUser', 'renameUser', 'switchUser', 'createZIP', 'removeLogs']:
+        from .network import LogIn, remLoginData
+        from .users import removeUser, renameUser
+        from .logging import createZIP, removeLogs
         exec('{}()'.format(mode))
     else:
-        g.pv.Route(mode, args)
+        _g.pv.Route(mode, args)

@@ -3,11 +3,14 @@
 from __future__ import unicode_literals
 import os.path
 import re
+
 from kodi_six import xbmc, xbmcvfs
 from kodi_six.utils import py2_decode
+
 from .common import Globals, Settings
 from .logging import Log
 from .l10n import getString
+
 _s = Settings()
 _g = Globals()
 
@@ -38,7 +41,7 @@ def Export(infoLabels, url):
             filename = '%s - S%02dE%02d - %s' % (infoLabels['tvshowtitle'], infoLabels['season'],
                                                  infoLabels['episode'], infoLabels['title'])
 
-    if _g.addon.getSetting('cr_nfo') == 'true':
+    if _s.cr_nfo == 'true':
         CreateInfoFile(filename, ExportPath, nfoType, infoLabels, language)
 
     SaveFile(filename + '.strm', url, ExportPath)

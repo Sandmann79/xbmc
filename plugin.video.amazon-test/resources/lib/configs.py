@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
-from kodi_six import xbmcvfs
 import time
 from os.path import join as OSPJoin
+
+from kodi_six import xbmcvfs
 
 
 def getConfig(cfile, defvalue=''):

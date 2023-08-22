@@ -1,12 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
-
 from bs4 import BeautifulSoup
 
+from .common import Globals, Settings
 from .logging import Log
 from .network import getURL
-from .common import Globals, Settings
 
 try:
     from urllib.parse import quote_plus

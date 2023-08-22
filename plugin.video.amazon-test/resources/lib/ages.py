@@ -1,11 +1,12 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
-from kodi_six import xbmcgui
 import pyxbmct
-from .configs import *
-from .l10n import *
+from kodi_six import xbmcgui
+
 from .common import Globals
+from .configs import getConfig, writeConfig
+from .l10n import getString
 
 
 class AgeRestrictions:

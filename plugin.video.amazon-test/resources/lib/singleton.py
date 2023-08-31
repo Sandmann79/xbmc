@@ -4,7 +4,6 @@
 # A singleton instancing metaclass compatible with both Python 2 & 3.
 # The __init__ of each class is only called once.
 
-
 class _Singleton(type):
     """ A metaclass that creates a Singleton base class when called. """
     _instances = {}

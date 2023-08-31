@@ -12,11 +12,11 @@ from os.path import join as OSPJoin
 from kodi_six import xbmc, xbmcgui, xbmcplugin, xbmcvfs
 from kodi_six.utils import py2_decode
 
-from .common import findKey
+from .common import findKey, MechanizeLogin
 from .logging import Log, WriteLog
 from .ages import AgeRestrictions
 from .singleton import Singleton
-from .network import getATVData, getURL, MechanizeLogin, GrabJSON
+from .network import getATVData, getURL, GrabJSON
 from .itemlisting import addDir, addVideo, setContentAndView
 from .users import loadUser
 from .export import SetupLibrary

@@ -57,7 +57,7 @@ class Globals(Singleton):
     dtid_android = 'A43PXU4ZN2AL1'
     dtid_web = 'AOAGZA014O5RE'
     headers_android = {'Accept-Charset': 'utf-8', 'User-Agent': 'Dalvik/2.1.0 (Linux; U; Android 11; SHIELD Android TV RQ1A.210105.003)',
-                       'X-Requested-With': 'com.amazon.avod.thirdpartyclient'}
+                       'X-Requested-With': 'com.amazon.avod.thirdpartyclient', 'x-gasc-enabled': 'true'}
 
     """ Allow the usage of dot notation for data inside the _globals dictionary, without explicit function call """
 
@@ -120,6 +120,42 @@ class Globals(Singleton):
         userAcceptLanguages = 'en-gb{}, en;q=0.5'
         self._globals['userAcceptLanguages'] = userAcceptLanguages.format('') if not loc else '{}, {}'.format(loc.lower().replace('_', '-'),
                                                                                                               userAcceptLanguages.format(';q=0.75'))
+        self._globals['mfa_keywords'] = ['auth-mfa-form', 'ap_dcq_form', 'ap_captcha_img_label', 'claimspicker', 'fwcim-form', 'auth-captcha-image-container',
+                                         'validateCaptcha', 'pollingForm', 'auth-select-device-form', 'verifyOtp']
+
+        self._globals['supported_langs'] = [
+            ('id_ID', 'Bahasa Indonesia'),
+            ('ms_MY', 'Bahasa Melayu'),
+            ('da_DK', 'Dansk'),
+            ('de_DE', 'Deutsch'),
+            ('en_US', 'English'),
+            ('es_ES', 'Español'),
+            ('fr_FR', 'Français'),
+            ('it_IT', 'Italiano'),
+            ('hu_HU', 'Magyar'),
+            ('nl_NL', 'Nederlands'),
+            ('nb_NO', 'Norsk'),
+            ('pl_PL', 'Polski'),
+            ('pt_BR', 'Português (Brasil)'),
+            ('pt_PT', 'Português (Portugal)'),
+            ('ro_RO', 'Română'),
+            ('fi_FI', 'Suomi'),
+            ('sv_SE', 'Svenska'),
+            ('tr_TR', 'Türkçe'),
+            ('fil_PH', 'Wikang Filipino'),
+            ('cs_CZ', 'Čeština'),
+            ('el_GR', 'Ελληνικά'),
+            ('ru_RU', 'Русский'),
+            ('he_IL', 'עברית'),
+            ('ar_AE', 'العربية'),
+            ('hi_IN', 'हिन्दी'),
+            ('ta_IN', 'தமிழ்'),
+            ('te_IN', 'తెలుగు'),
+            ('th_TH', 'ไทย'),
+            ('ja_JP', '日本語'),
+            ('zh_CN', '简体中文'),
+            ('zh_TW', '繁體中文'),
+            ('ko_KR', '한국어')]
 
         self._globals['CONTEXTMENU_MULTIUSER'] = [
             (getString(30130, self._globals['addon']).split('…')[0], 'RunPlugin({}?mode=LogIn)'.format(self.pluginid)),
@@ -129,9 +165,6 @@ class Globals(Singleton):
 
     def __getattr__(self, name):
         return self._globals[name]
-
-    def __setattr__(self, name, value):
-        self._globals[name] = value
 
     def InitialiseProvider(self, mid, burl, atv, pv, did):
         self._globals['MarketID'] = mid
@@ -297,3 +330,32 @@ def findKey(key, obj):
                     if res:
                         return res
     return []
+
+
+def MechanizeLogin(preferToken=False):
+    from .login import getToken, LogIn
+    _s = Settings()
+    if preferToken:
+        token = getToken()
+        if token:
+            return token
+
+    # if Token not requested or not avaiable use cookie
+    from .users import loadUser
+    import requests
+    cj = requests.cookies.RequestsCookieJar()
+    cookie = loadUser('cookie')
+    if cookie and (_s.data_source == 0 or not preferToken):
+        try:
+            cj.update(cookie)
+            return cj
+        except:
+            pass
+
+    return LogIn(preferToken)
+
+
+def parseHTML(br):
+    soup = br.get_current_page()
+    response = soup.__unicode__()
+    return response, soup

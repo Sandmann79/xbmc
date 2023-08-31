@@ -15,10 +15,10 @@ from inputstreamhelper import Helper
 from kodi_six import xbmc, xbmcgui, xbmcvfs, xbmcplugin
 from kodi_six.utils import py2_decode
 
-from .common import Globals, Settings, jsonRPC, sleep
+from .common import Globals, Settings, jsonRPC, sleep, MechanizeLogin
 from .logging import Log
 from .configs import getConfig
-from .network import getURL, getURLData, MechanizeLogin, getATVData
+from .network import getURL, getURLData, getATVData
 from .itemlisting import getInfolabels
 from .l10n import getString
 

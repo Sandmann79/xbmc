@@ -82,7 +82,7 @@ class ProxyHTTPD(BaseHTTPRequestHandler):
     def _ForwardRequest(self, method, endpoint, headers, data, stream=False):
         """Forwards the request to the proper target"""
 
-        from resources.lib.network import MechanizeLogin
+        from resources.lib.common import MechanizeLogin
         import re
         import requests
 

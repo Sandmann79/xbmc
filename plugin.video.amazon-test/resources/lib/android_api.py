@@ -10,10 +10,11 @@ from copy import deepcopy
 from kodi_six import xbmcgui, xbmc, xbmcplugin
 
 from .singleton import Singleton
-from .common import findKey
+from .common import findKey, MechanizeLogin
 from .logging import LogJSON, Log
 from .ages import AgeRestrictions
-from .network import getURL, MechanizeLogin, getATVData, LocaleSelector, refreshToken
+from .network import getURL, getATVData, LocaleSelector
+from .login import refreshToken
 from .itemlisting import addDir, addVideo, setContentAndView
 from .users import loadUser, updateUser
 from .configs import writeConfig
@@ -38,7 +39,7 @@ class PrimeVideo(Singleton):
         self.prime = ''
         self.filter = {}
         self.lang = loadUser('lang')
-        self.def_dtid = 'A43PXU4ZN2AL1'
+        self.def_dtid = self._g.dtid_android
         self.defparam = 'deviceTypeID={}' \
                         '&firmware=fmw:22-app:3.0.351.3955' \
                         '&softwareVersion=351' \
@@ -99,7 +100,7 @@ class PrimeVideo(Singleton):
                     'browse': {'p': 1, 'js': 'dv-android/browse/v2/browseInitial.js', 'q': ''},
                     'detail': {'p': 1, 'js': 'dv-android/detail/v2/user/v2.5.js', 'q': '&capabilities='},
                     'details': {'p': 1, 'js': 'android/atf/v3.jstl', 'q': '&capabilities='},
-                    'watchlist': {'p': 1, 'js': 'dv-android/watchlist/watchlistInitial/v3.js', 'q': '&appendTapsData=true&titleActionScheme=bond-2&version=mobile-android-v2'},
+                    'watchlist': {'p': 1, 'js': 'dv-android/watchlist/watchlistInitial/v3.js', 'q': '&appendTapsData=true'},
                     'library': {'p': 1, 'js': 'dv-android/library/libraryInitial/v2.js', 'q': ''},
                     'find': {'p': 1, 'js': 'dv-android/find/v1.js', 'q': '&pageId=findv2&pageType=home'},
                     'search': {'p': 1, 'js': 'dv-android/search/searchInitial/v3.js', 'q': ''},

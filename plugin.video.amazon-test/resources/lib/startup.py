@@ -85,7 +85,7 @@ def EntryPoint():
     elif mode == 'Search':
         _g.pv.Search(args.get('searchstring'))
     elif mode in ['LogIn', 'remLoginData', 'removeUser', 'renameUser', 'switchUser', 'createZIP', 'removeLogs']:
-        from .network import LogIn, remLoginData
+        from .login import LogIn, remLoginData
         from .users import removeUser, renameUser
         from .logging import createZIP, removeLogs
         exec('{}()'.format(mode))

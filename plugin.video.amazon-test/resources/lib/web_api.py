@@ -12,8 +12,8 @@ from copy import deepcopy
 from kodi_six import xbmc, xbmcplugin, xbmcgui
 
 from .singleton import Singleton
-from .common import key_exists, return_item, return_value, sleep, findKey
-from .network import getURL, getURLData, MechanizeLogin, FQify, GrabJSON, LocaleSelector
+from .common import key_exists, return_item, return_value, sleep, findKey, MechanizeLogin
+from .network import getURL, getURLData, FQify, GrabJSON, LocaleSelector
 from .logging import Log, LogJSON
 from .itemlisting import setContentAndView, addVideo, addDir
 from .users import loadUsers, loadUser, saveUserCookies, switchUser

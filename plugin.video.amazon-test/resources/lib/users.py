@@ -29,7 +29,7 @@ def loadUser(key='', empty=False, cachedUsers=None):
     if user:
         user = user[0]
         if len([k for k in def_keys.keys() if k not in user]) > 0:
-            from .network import getTerritory
+            from .login import getTerritory
             user = getTerritory(user)
             if False is user[1]:
                 _g.dialog.notification(_g.__plugin__, getString(30219), xbmcgui.NOTIFICATION_ERROR)

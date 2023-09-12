@@ -195,7 +195,7 @@ class Settings(Singleton):
                   _bool_true:
                       ['useshowfanart', 'disptvshow', 'paycont', 'logging', 'json_dump', 'json_dump_collisions', 'sub_stretch', 'log_http', 'remotectrl',
                        'remote_vol', 'multiuser', 'wl_export', 'audio_description', 'pv_episode_thumbnails', 'tld_episode_thumbnails', 'use_h265',
-                       'profiles', 'show_pass', 'enable_uhd', 'show_recents', 'register_device', 'preload_seasons', 'preload_all_seasons'],
+                       'profiles', 'show_pass', 'enable_uhd', 'show_recents', 'register_device', 'preload_seasons', 'preload_all_seasons', 'wvl1_device'],
                   _bool_false: ['json_dump_raw', 'ssl_verif', 'proxy_mpdalter']}
 
     def __getattr__(self, name):
@@ -333,9 +333,9 @@ def findKey(key, obj):
 
 
 def MechanizeLogin(preferToken=False):
-    from .login import getToken, LogIn
     _s = Settings()
     if preferToken:
+        from .login import getToken
         token = getToken()
         if token:
             return token
@@ -352,6 +352,7 @@ def MechanizeLogin(preferToken=False):
         except:
             pass
 
+    from .login import LogIn
     return LogIn(preferToken)
 
 

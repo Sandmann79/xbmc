@@ -333,7 +333,6 @@ def LogIn(retToken=False):
 
         Log('Login')
         from .users import loadUser, addUser
-        from .common import getdefaultlocale
         user = getTerritory(loadUser(empty=True))
         if False is user[1]:
             return False
@@ -409,7 +408,6 @@ def LogIn(retToken=False):
                     'disableLoginPrepopulate': 0,
                     'openid.pape.max_auth_age': 0
                 })
-                Log(query)
                 up = up._replace(query=urlencode(query))
                 br.session.headers.update(
                     {'upgrade-insecure-requests': '1',
@@ -533,7 +531,7 @@ def registerDevice(url, user, verifier, clientid):
 
     headers = _g.headers_android
     headers.update({'x-amzn-identity-auth-domain': 'api.' + domain, 'x-amzn-requestid': str(uuid4()).replace('-', ''), 'Content-Type': 'application/json'})
-    resp = getURL('https://api.{}/auth/register'.format(domain), headers=_g.headers_android, postdata=json.dumps(data))
+    resp = getURL('https://api.{}/auth/register'.format(domain), headers=headers, postdata=json.dumps(data))
     WriteLog(str(resp), 'login-register')
 
     if 'error' in resp['response']:
@@ -581,6 +579,7 @@ def refreshToken(user, aid=None):
     token = user['token']
     data = deviceData(user)
     data['source_token_type'] = 'refresh_token'
+    #data['source_token'] = token['refresh']
     if aid:
         data['requested_token_type'] = 'actor_access_token'
         data['source_device_tokens'] = [{'device_type': _g.dtid_android, 'account_refresh_token': {'token': token['refresh']}}]
@@ -588,7 +587,12 @@ def refreshToken(user, aid=None):
     else:
         data['requested_token_type'] = 'access_token'
         data['source_token'] = token['refresh']
-    response = getURL('https://api.{}/auth/token'.format(domain), headers=_g.headers_android, postdata=data)
+    LogJSON(data)
+    headers = _g.headers_android
+    headers.pop('x-gasc-enabled')
+    headers.pop('X-Requested-With')
+    headers.update({'x-amzn-identity-auth-domain': 'api.' + domain, 'Accept-Language': 'en-US', 'x-amzn-requestid': str(uuid4()).replace('-', '')})
+    response = getURL('https://api.{}/auth/token'.format(domain), headers=headers, postdata=data)
     if 'access_token' in response:
         token['access'] = response['access_token']
         token['expires'] = int(time.time() + int(response['expires_in']))

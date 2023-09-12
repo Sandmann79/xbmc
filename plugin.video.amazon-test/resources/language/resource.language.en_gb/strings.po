@@ -50,7 +50,7 @@ msgid "Audio descriptions (disables 5.1/7.1)"
 msgstr ""
 
 msgctxt "#30006"
-msgid "Store Credentials instead of using the Cookie?"
+msgid "Widevine L1 certified device"
 msgstr ""
 
 msgctxt "#30007"

@@ -212,6 +212,7 @@ class PrimeVideo(Singleton):
                 pgmodel = titles.get('paginationModel')
                 pgtype = page
                 col = titles.get('collectionItemList', [])
+                asinlist = []
 
                 for item in col:
                     model = item['model']
@@ -230,7 +231,9 @@ class PrimeVideo(Singleton):
                             addVideo(self.formatTitle(il), il['asins'], il, cm=cm)
                         else:
                             pgnr = -1 if self._s.disptvshow and ct in 'season' else 1
-                            addDir(self.formatTitle(il), 'getPage', 'details', infoLabels=il, opt='itemId=' + il['asins'], cm=cm, page=pgnr)
+                            if not il['asins'] in asinlist:
+                                asinlist.append(il['asins'])
+                                addDir(self.formatTitle(il), 'getPage', 'details', infoLabels=il, opt='itemId=' + il['asins'], cm=cm, page=pgnr)
 
             if pgmodel and page != 'cache':
                 nextp = findKey('parameters', pgmodel)
@@ -605,12 +608,14 @@ class PrimeVideo(Singleton):
         return active, profiles
 
     def switchProfile(self):
+        exit()
         active, profiles = self.getProfiles()
         if active is not False:
             ret = self._g.dialog.select('Amazon', [i[0] for i in profiles])
             if ret >= 0 and ret != active:
                 if refreshToken(loadUser(), profiles[ret][1]):
                     exit()
+        exit()
 
     def languageselect(self):
         loc, lang = LocaleSelector()

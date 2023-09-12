@@ -221,7 +221,7 @@ def getURLData(mode, asin, retformat='json', devicetypeid=_g.dtid_web, version=2
     url += '&version=' + str(version)
     url += '&gascEnabled=' + str(_g.UsePrimeVideo).lower()
     url += "&subtitleFormat=TTMLv2" if 'SubtitleUrls' in dRes else ''
-    url += '&operatingSystemName=Windows' if playback_req and (_g.platform & _g.OS_ANDROID) and devicetypeid == _g.dtid_web else ''  # cookie auth on android
+    # url += '&operatingSystemName=Windows' if playback_req and (_g.platform & _g.OS_ANDROID) and devicetypeid == _g.dtid_web else ''  # cookie auth on android
     if extra:
         url += '&resourceUsage=ImmediateConsumption&consumptionType=Streaming&deviceDrmOverride=CENC' \
                '&deviceStreamingTechnologyOverride=DASH&deviceProtocolOverride=Https' \
@@ -230,7 +230,7 @@ def getURLData(mode, asin, retformat='json', devicetypeid=_g.dtid_web, version=2
         url += '&videoMaterialType=' + vMT
         url += '&desiredResources=' + dRes
         url += '&supportedDRMKeyScheme=DUAL_KEY' if playback_req else ''
-        if _g.platform & _g.OS_ANDROID:
+        if _s.wvl1_device:
             url += '&deviceVideoCodecOverride=H264' + (',H265' if _s.use_h265 else '')
             url += '&deviceHdrFormatsOverride=' + supported_hdr()
             url += '&deviceVideoQualityOverride=' + ('UHD' if _s.enable_uhd else 'HD')

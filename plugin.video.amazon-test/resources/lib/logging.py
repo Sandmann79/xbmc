@@ -20,7 +20,7 @@ def Log(msg, level=def_loglevel):
         level = def_loglevel
     fi = getframeinfo(currentframe().f_back)
     msg = '[{0}]{2} {1}'.format(_g.__plugin__, msg, '' if not _s.logging else ' {}:{}'.format(opb(fi.filename), fi.lineno))
-    xbmc.log(py2_encode('msg: %s' % msg), level)
+    xbmc.log(py2_encode(msg), level)
 
 
 Log.DEBUG = xbmc.LOGDEBUG

@@ -50,8 +50,8 @@ msgid "Audio descriptions (disables 5.1/7.1)"
 msgstr "Audiodeskrypcja (wyłącza 5.1/7.1)"
 
 msgctxt "#30006"
-msgid "Store Credentials instead of using the Cookie?"
-msgstr "Zapisać dane logowania zamiast używać plików cookie?"
+msgid "Widevine L1 certified device"
+msgstr "Urządzenie z certyfikatem Widevine L1"
 
 msgctxt "#30007"
 msgid "Remove Credentials and Cookie"

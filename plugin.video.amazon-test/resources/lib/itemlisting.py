@@ -45,9 +45,9 @@ def setContentAndView(content, updateListing=False):
         xbmcplugin.setContent(_g.pluginhandle, ctype)
     if (None is not cview) and ('true' == _s.viewenable):
         views = [50, 51, 52, 53, 54, 55, 500, 501, 502, -1]
-        viewid = views[int(_s[cview])]
+        viewid = views[int(getattr(_s, cview))]
         if viewid == -1:
-            viewid = int(_s[cview].replace('view', 'id'))
+            viewid = int(getattr(_s, cview.replace('view', 'id')))
         xbmc.executebuiltin('Container.SetViewMode({})'.format(viewid))
     xbmcplugin.endOfDirectory(_g.pluginhandle, updateListing=updateListing)
 

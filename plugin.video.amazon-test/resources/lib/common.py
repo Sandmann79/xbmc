@@ -6,7 +6,7 @@
 from __future__ import unicode_literals
 
 import json
-from locale import getdefaultlocale
+import locale
 from sys import argv
 from os.path import join as OSPJoin
 
@@ -116,7 +116,8 @@ class Globals(Singleton):
             self._globals['platform'] |= self.OS_LE
 
         # Save the language code for HTTP requests and set the locale for l10n
-        loc = getdefaultlocale()[0]
+        loc = locale.getdefaultlocale()[0]
+        locale.setlocale(locale.LC_TIME, '')
         userAcceptLanguages = 'en-gb{}, en;q=0.5'
         self._globals['userAcceptLanguages'] = userAcceptLanguages.format('') if not loc else '{}, {}'.format(loc.lower().replace('_', '-'),
                                                                                                               userAcceptLanguages.format(';q=0.75'))

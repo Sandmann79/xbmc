@@ -530,7 +530,17 @@ class PrimeVideo(Singleton):
             else:
                 infoLabels['mpaa'] = '%s %s' % (AgeRestrictions().GetAgeRating(), item['regulatoryRating'])
         if 'live' in ct:
-            infoLabels['contentType'] = infoLabels['mediatype'] = 'videos'
+            ct = 'videos'
+            liveData = findKey('data', item)
+            if liveData:
+                if liveData.get('liveState', '') == 'LIVE':
+                    ct = 'live'
+                s = liveData.get('startTime') / 1000
+                e = liveData.get('endTime') / 1000
+                infoLabels['plot'] = '[B]{:%x - %X}[/B]\n\n{}'.format(datetime.fromtimestamp(s), infoLabels['plot'])
+                infoLabels['premiered'] = datetime.fromtimestamp(s).strftime('%Y-%m-%d')
+                infoLabels['duration'] = e - s
+            infoLabels['contentType'] = infoLabels['mediatype'] = ct
             infoLabels['isPrime'] = True
         return infoLabels
 

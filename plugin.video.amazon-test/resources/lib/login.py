@@ -13,6 +13,7 @@ from random import randint
 from hashlib import sha256
 from os.path import join as OSPJoin
 from uuid import uuid4
+from binascii import hexlify
 
 import pyxbmct
 from kodi_six import xbmcgui, xbmc, xbmcvfs
@@ -366,7 +367,7 @@ def LogIn(retToken=False):
                     'Upgrade-Insecure-Requests': '1'
                 })
             else:
-                clientid = (user['deviceid'].encode() + b'#A1MPSLFC7L5AFK').hex()  # + _g.dtid_android.encode()).hex()
+                clientid = hexlify(user['deviceid'].encode() + b'#A1MPSLFC7L5AFK')  # + _g.dtid_android.encode()).hex()
                 verifier = urlsafe_b64encode(os.urandom(32)).rstrip(b"=")
                 challenge = urlsafe_b64encode(sha256(verifier).digest()).rstrip(b"=")
                 frc = b64encode(os.urandom(313)).decode("ascii")

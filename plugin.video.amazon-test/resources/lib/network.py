@@ -539,13 +539,14 @@ def GrabJSON(url, postData=None):
 
 
 def LocaleSelector():
+    from .l10n import datetimeParser
     cj = MechanizeLogin()
     if not cj:
         exit()
 
     if _g.UsePrimeVideo or _s.data_source == 1:
         from .users import loadUser
-        langs = _g.supported_langs
+        langs = [(k, v['language']) for k, v in datetimeParser.items() if 'language' in v]
         l = loadUser('lang') if _s.data_source == 1 else cj.get('lc-main-av')
         presel = [i for i, x in enumerate(langs) if x[0] == l]
         '''

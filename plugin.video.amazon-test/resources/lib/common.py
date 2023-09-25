@@ -6,7 +6,7 @@
 from __future__ import unicode_literals
 
 import json
-import locale
+from locale import getdefaultlocale
 from sys import argv
 from os.path import join as OSPJoin
 
@@ -116,47 +116,12 @@ class Globals(Singleton):
             self._globals['platform'] |= self.OS_LE
 
         # Save the language code for HTTP requests and set the locale for l10n
-        loc = locale.getdefaultlocale()[0]
-        locale.setlocale(locale.LC_TIME, '')
+        loc = getdefaultlocale()[0]
         userAcceptLanguages = 'en-gb{}, en;q=0.5'
         self._globals['userAcceptLanguages'] = userAcceptLanguages.format('') if not loc else '{}, {}'.format(loc.lower().replace('_', '-'),
                                                                                                               userAcceptLanguages.format(';q=0.75'))
         self._globals['mfa_keywords'] = ['auth-mfa-form', 'ap_dcq_form', 'ap_captcha_img_label', 'claimspicker', 'fwcim-form', 'auth-captcha-image-container',
                                          'validateCaptcha', 'pollingForm', 'auth-select-device-form', 'verifyOtp']
-
-        self._globals['supported_langs'] = [
-            ('id_ID', 'Bahasa Indonesia'),
-            ('ms_MY', 'Bahasa Melayu'),
-            ('da_DK', 'Dansk'),
-            ('de_DE', 'Deutsch'),
-            ('en_US', 'English'),
-            ('es_ES', 'Español'),
-            ('fr_FR', 'Français'),
-            ('it_IT', 'Italiano'),
-            ('hu_HU', 'Magyar'),
-            ('nl_NL', 'Nederlands'),
-            ('nb_NO', 'Norsk'),
-            ('pl_PL', 'Polski'),
-            ('pt_BR', 'Português (Brasil)'),
-            ('pt_PT', 'Português (Portugal)'),
-            ('ro_RO', 'Română'),
-            ('fi_FI', 'Suomi'),
-            ('sv_SE', 'Svenska'),
-            ('tr_TR', 'Türkçe'),
-            ('fil_PH', 'Wikang Filipino'),
-            ('cs_CZ', 'Čeština'),
-            ('el_GR', 'Ελληνικά'),
-            ('ru_RU', 'Русский'),
-            ('he_IL', 'עברית'),
-            ('ar_AE', 'العربية'),
-            ('hi_IN', 'हिन्दी'),
-            ('ta_IN', 'தமிழ்'),
-            ('te_IN', 'తెలుగు'),
-            ('th_TH', 'ไทย'),
-            ('ja_JP', '日本語'),
-            ('zh_CN', '简体中文'),
-            ('zh_TW', '繁體中文'),
-            ('ko_KR', '한국어')]
 
         self._globals['CONTEXTMENU_MULTIUSER'] = [
             (getString(30130, self._globals['addon']).split('…')[0], 'RunPlugin({}?mode=LogIn)'.format(self.pluginid)),

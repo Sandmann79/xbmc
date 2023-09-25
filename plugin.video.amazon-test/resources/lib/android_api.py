@@ -18,7 +18,7 @@ from .login import refreshToken
 from .itemlisting import addDir, addVideo, setContentAndView
 from .users import loadUser, updateUser
 from .configs import writeConfig
-from .l10n import getString
+from .l10n import getString, datetimeParser
 
 try:
     from urllib.parse import quote_plus, urlencode, parse_qs
@@ -537,7 +537,9 @@ class PrimeVideo(Singleton):
                     ct = 'live'
                 s = liveData.get('startTime') / 1000
                 e = liveData.get('endTime') / 1000
-                infoLabels['plot'] = '[B]{:%x - %X}[/B]\n\n{}'.format(datetime.fromtimestamp(s), infoLabels['plot'])
+                cur_lang = datetimeParser[loadUser('lang')]
+                formstr = '[B]{{:{}, {}}}[/B]\n\n{{}}'.format(cur_lang['date_fmt'], cur_lang['time_fmt'])
+                infoLabels['plot'] = formstr.format(datetime.fromtimestamp(s), infoLabels['plot'])
                 infoLabels['premiered'] = datetime.fromtimestamp(s).strftime('%Y-%m-%d')
                 infoLabels['duration'] = e - s
             infoLabels['contentType'] = infoLabels['mediatype'] = ct

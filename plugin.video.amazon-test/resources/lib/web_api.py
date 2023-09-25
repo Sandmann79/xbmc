@@ -19,7 +19,7 @@ from .itemlisting import setContentAndView, addVideo, addDir
 from .users import loadUsers, loadUser, saveUserCookies, switchUser
 from .configs import getConfig, writeConfig
 from .export import SetupLibrary
-from .l10n import getString
+from .l10n import getString, datetimeParser
 
 try:
     import cPickle as pickle
@@ -44,89 +44,7 @@ class PrimeVideo(Singleton):
     def __init__(self, globalsInstance, settingsInstance):
         self._g = globalsInstance
         self._s = settingsInstance
-        """ Data for date string deconstruction and reassembly
-
-            Date references:
-            https://www.primevideo.com/detail/0LCQSTWDMN9V770DG2DKXY3GVF/  09 10 11 12 01 02 03 04 05
-            https://www.primevideo.com/detail/0ND5POOAYD6A4THTH7C1TD3TYE/  06 07 08 09
-
-            Languages: https://www.primevideo.com/settings/language/
-        """
-        self._dateParserData = {
-            'generic': r'^(?P<m>[^W]+)[.,:;\s-]+(?P<d>[0-9]+),\s+(?P<y>[0-9]+)(?:\s+[0-9]+|$)',
-            'asianMonthExtractor': r'^([0-9]+)[월月]',
-            'da_DK': {'deconstruct': r'^(?P<d>[0-9]+)\.?\s+(?P<m>[^\s]+)\s+(?P<y>[0-9]+)',
-                      'months': {'januar': 1, 'februar': 2, 'marts': 3, 'april': 4, 'maj': 5, 'juni': 6, 'juli': 7, 'august': 8, 'september': 9, 'oktober': 10,
-                                 'november': 11, 'december': 12}},
-            'de_DE': {'deconstruct': r'^(?P<d>[0-9]+)\.?\s+(?P<m>[^\s]+)\s+(?P<y>[0-9]+)',
-                      'months': {'januar': 1, 'februar': 2, 'märz': 3, 'april': 4, 'mai': 5, 'juni': 6, 'juli': 7, 'august': 8, 'september': 9, 'oktober': 10,
-                                 'november': 11, 'dezember': 12, 'jan.': 1, 'feb.': 2, 'mär.': 3, 'apr.': 4, 'jun.': 6, 'jul.': 7, 'aug.': 8, 'sept.': 9, 'okt.': 10,
-                                 'nov.': 11, 'dez.': 12}},
-            'en_US': {'deconstruct': r'^(?P<m>[^\s]+)\s+(?P<d>[0-9]+),?\s+(?P<y>[0-9]+)',
-                      'months': {'january': 1, 'february': 2, 'march': 3, 'april': 4, 'may': 5, 'june': 6, 'july': 7, 'august': 8, 'september': 9, 'october': 10,
-                                 'november': 11, 'december': 12}},
-            'es_ES': {'deconstruct': r'^(?P<d>[0-9]+)\s+de\s+(?P<m>[^\s]+),?\s+de\s+(?P<y>[0-9]+)',
-                      'months': {'enero': 1, 'febrero': 2, 'marzo': 3, 'abril': 4, 'mayo': 5, 'junio': 6, 'julio': 7, 'agosto': 8, 'septiembre': 9, 'octubre': 10,
-                                 'noviembre': 11, 'diciembre': 12}},
-            'fi_FI': {'deconstruct': r'^(?P<d>[0-9]+)\.?\s+(?P<m>[^\s]+)\s+(?P<y>[0-9]+)',
-                      'months': {'tammikuuta': 1, 'helmikuuta': 2, 'maaliskuuta': 3, 'huhtikuuta': 4, 'toukokuuta': 5, 'kesäkuuta': 6, 'heinäkuuta': 7, 'elokuuta': 8,
-                                 'syyskuuta': 9, 'lokakuuta': 10, 'marraskuuta': 11, 'joulukuuta': 12}},
-            'fr_FR': {'deconstruct': r'^(?P<d>[0-9]+)\s+(?P<m>[^\s]+)\s+(?P<y>[0-9]+)',
-                      'months': {'janvier': 1, 'janv.': 1, 'février': 2, 'févr.': 2, 'mars': 3, 'avril': 4, 'avr.': 4, 'mai': 5, 'juin': 6, 'juillet': 7, 'juil.': 7,
-                                  'aout': 8, 'août': 8, 'septembre': 9, 'sept.': 9, 'octobre': 10, 'oct.': 10, 'novembre': 11, 'nov.': 11, 'décembre': 12, 'déc.': 12}},
-            'hi_IN': {'deconstruct': r'^(?P<d>[0-9]+)\s+(?P<m>[^\s]+)\s+(?P<y>[0-9]+)',
-                      'months': {'जनवरी': 1, 'फ़रवरी': 2, 'मार्च': 3, 'अप्रैल': 4, 'मई': 5, 'जून': 6, 'जुलाई': 7, 'अगस्त': 8, 'सितंबर': 9, 'अक्तूबर': 10,
-                                 'नवंबर': 11, 'दिसंबर': 12}},
-            'id_ID': {'deconstruct': r'^(?P<d>[0-9]+)\s+(?P<m>[^\s]+)\s+(?P<y>[0-9]+)',
-                      'months': {'januari': 1, 'februari': 2, 'maret': 3, 'april': 4, 'mei': 5, 'juni': 6, 'juli': 7, 'agustus': 8, 'september': 9,
-                                 'oktober': 10, 'november': 11, 'desember': 12}},
-            'it_IT': {'deconstruct': r'^(?P<d>[0-9]+)\s+(?P<m>[^\s]+)\s+(?P<y>[0-9]+)',
-                      'months': {'gennaio': 1, 'febbraio': 2, 'marzo': 3, 'aprile': 4, 'maggio': 5, 'giugno': 6, 'luglio': 7, 'agosto': 8, 'settembre': 9,
-                                 'ottobre': 10, 'novembre': 11, 'dicembre': 12}},
-            'ko_KR': {'deconstruct': r'^(?P<y>[0-9]+)년\s+(?P<m>[0-9]+)월\s+(?P<d>[0-9]+)일'},
-            'nb_NO': {'deconstruct': r'^(?P<d>[0-9]+)\.?\s+(?P<m>[^\s]+)\s+(?P<y>[0-9]+)',
-                      'months': {'januar': 1, 'februar': 2, 'mars': 3, 'april': 4, 'mai': 5, 'juni': 6, 'juli': 7, 'august': 8, 'september': 9, 'oktober': 10,
-                                 'november': 11, 'desember': 12}},
-            'nl_NL': {'deconstruct': r'^(?P<d>[0-9]+)\s+(?P<m>[^\s]+)\s+(?P<y>[0-9]+)',
-                      'months': {'januari': 1, 'februari': 2, 'maart': 3, 'april': 4, 'mei': 5, 'juni': 6, 'juli': 7, 'augustus': 8, 'september': 9,
-                                 'oktober': 10, 'november': 11, 'december': 12}},
-            'pl_PL': {'deconstruct': r'^(?P<d>[0-9]+)\s+(?P<m>[^\s]+)\s+(?P<y>[0-9]+)',
-                      'months': {'stycznia': 1, 'lutego': 2, 'marca': 3, 'kwietnia': 4, 'maja': 5, 'czerwca': 6, 'lipca': 7, 'sierpnia': 8, 'września': 9,
-                                 'października': 10, 'listopada': 11, 'grudnia': 12}},
-            'pt_BR': {'deconstruct': r'^(?P<d>[0-9]+)\s+de\s+(?P<m>[^\s]+),?\s+de\s+(?P<y>[0-9]+)',
-                      'months': {'janeiro': 1, 'fevereiro': 2, 'março': 3, 'abril': 4, 'maio': 5, 'junho': 6, 'julho': 7, 'agosto': 8, 'setembro': 9, 'outubro': 10,
-                                 'novembro': 11, 'dezembro': 12}},
-            'pt_PT': {'deconstruct': r'^(?P<d>[0-9]+)\s+de\s+(?P<m>[^\s]+),?\s+de\s+(?P<y>[0-9]+)',
-                      'months': {'janeiro': 1, 'fevereiro': 2, 'março': 3, 'abril': 4, 'maio': 5, 'junho': 6, 'julho': 7, 'agosto': 8, 'setembro': 9, 'outubro': 10,
-                                 'novembro': 11, 'dezembro': 12}},
-            'ru_RU': {'deconstruct': r'^(?P<d>[0-9]+)\s+(?P<m>[^\s]+)\s+(?P<y>[0-9]+)',
-                      'months': {'января': 1, 'февраля': 2, 'марта': 3, 'апреля': 4, 'мая': 5, 'июня': 6, 'июля': 7, 'августа': 8, 'сентября': 9,
-                                 'октября': 10, 'ноября': 11, 'декабря': 12}},
-            'sv_SE': {'deconstruct': r'^(?P<d>[0-9]+)\s+(?P<m>[^\s]+)\s+(?P<y>[0-9]+)',
-                      'months': {'januari': 1, 'februari': 2, 'mars': 3, 'april': 4, 'maj': 5, 'juni': 6, 'juli': 7, 'augusti': 8, 'september': 9, 'oktober': 10,
-                                 'november': 11, 'december': 12}},
-            'ta_IN': {'deconstruct': r'^(?P<d>[0-9]+)\s+(?P<m>[^\s]+),?\s+(?P<y>[0-9]+)',
-                      'months': {'ஜனவரி': 1, 'பிப்ரவரி': 2, 'மார்ச்': 3, 'ஏப்ரல்': 4, 'மே': 5, 'ஜூன்': 6, 'ஜூலை': 7, 'ஆகஸ்ட்': 8, 'செப்டம்பர்': 9,
-                                 'அக்டோபர்': 10, 'நவம்பர்': 11, 'டிசம்பர்': 12}},
-            'te_IN': {'deconstruct': r'^(?P<d>[0-9]+)\s+(?P<m>[^\s]+),?\s+(?P<y>[0-9]+)',
-                      'months': {'జనవరి': 1, 'ఫిబ్రవరి': 2, 'మార్చి': 3, 'ఏప్రిల్': 4, 'మే': 5, 'జూన్': 6, 'జులై': 7, 'ఆగస్టు': 8, 'సెప్టెంబర్': 9, 'అక్టోబర్': 10,
-                                 'నవంబర్': 11, 'డిసెంబర్': 12}},
-            'th_TH': {'deconstruct': r'^(?P<d>[0-9]+)\s+(?P<m>[^\s]+),?\s+(?P<y>[0-9]+)',
-                      'months': {'มกราคม': 1, 'กุมภาพันธ์': 2, 'มีนาคม': 3, 'เมษายน': 4, 'พฤษภาคม': 5, 'มิถุนายน': 6, 'กรกฎาคม': 7, 'สิงหาคม': 8, 'กันยายน': 9, 'ตุลาคม': 10,
-                                 'พฤศจิกายน': 11, 'ธันวาคม': 12}},
-            'tr_TR': {'deconstruct': r'^(?P<d>[0-9]+)\s+(?P<m>[^\s]+)\s+(?P<y>[0-9]+)',
-                      'months': {'ocak': 1, 'şubat': 2, 'mart': 3, 'nisan': 4, 'mayıs': 5, 'haziran': 6, 'temmuz': 7, 'ağustos': 8, 'eylül': 9,
-                                 'ekim': 10, 'kasım': 11, 'aralık': 12}},
-            'zh_CN': {'deconstruct': r'^(?P<y>[0-9]+)年(?P<m>[0-9]+)月(?P<d>[0-9]+)日',
-                      'months': {'一月': 1, '二月': 2, '三月': 3, '四月': 4, '五月': 5, '六月': 6, '七月': 7, '八月': 8, '九月': 9, '十月': 10, '十一月': 11, '十二月': 12}},
-            'zh_TW': {'deconstruct': r'^(?P<y>[0-9]+)年(?P<m>[0-9]+)月(?P<d>[0-9]+)日',
-                      'months': {'一月': 1, '二月': 2, '三月': 3, '四月': 4, '五月': 5, '六月': 6, '七月': 7, '八月': 8, '九月': 9, '十月': 10, '十一月': 11, '十二月': 12}},
-            'ja_JP': {'deconstruct': r'^(?P<y>[0-9]+)\/(?P<m>[0-9]+)\/(?P<d>[0-9]+)$'},
-            'en_GB': {'deconstruct': r'^(?P<d>[0-9]+)\s+(?P<m>[^\s]+)?\s+(?P<y>[0-9]+)',
-                      'months': {'january': 1, 'february': 2, 'march': 3, 'april': 4, 'may': 5, 'june': 6, 'july': 7, 'august': 8, 'september': 9,
-                                 'october': 10, 'november': 11, 'december': 12}}
-        }
-
+        self._dateParserData = datetimeParser
         self._TextCleanPatterns = [[r'\s+-\s*([^&])', r' – \1'],  # Convert dash from small to medium where needed
                                    [r'\s*-\s+([^&])', r' – \1'],  # Convert dash from small to medium where needed
                                    [r'^\s+', ''],  # Remove leading spaces
@@ -784,7 +702,7 @@ class PrimeVideo(Singleton):
         def DelocalizeDate(lang, datestr):
             """ Convert language based timestamps into YYYY-MM-DD """
 
-            if lang not in self._dateParserData:
+            if lang not in self._dateParserData or (lang in self._dateParserData and 'deconstruct' not in self._dateParserData[lang]):
                 Log('Unable to decode date "{}": language "{}" not supported'.format(datestr, lang), Log.DEBUG)
                 return datestr
 
@@ -895,7 +813,7 @@ class PrimeVideo(Singleton):
                 if 'venue' in liveInfo:
                     when = '{} @ {}'.format(when, liveInfo['venue'])
                 when += '\n\n'
-            o[urn]['metadata']['videometa']['plot'] = when + return_value(item, 'synopsis', 'text')
+            o[urn]['metadata']['videometa']['plot'] = when + item.get('synopsis', item.get('text', ''))
             if 'imageSrc' in item:
                 o[urn]['metadata']['artmeta']['thumb'] = MaxSize(item['imageSrc'])
             elif 'image' in item and 'url' in item['image']:

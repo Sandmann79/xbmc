@@ -22,7 +22,7 @@ from kodi_six.utils import py2_decode
 from .common import Globals, Settings, sleep, parseHTML
 from .network import getURL
 from .logging import Log, WriteLog, LogJSON
-from .l10n import getString
+from .l10n import getString, datetimeParser
 from .configs import getConfig, writeConfig
 
 try:
@@ -65,7 +65,7 @@ def getTerritory(user):
         user.update(area)
     else:
         Log('Retrieve territoral config')
-        loc = ','.join(x[0] for x in _g.supported_langs)
+        loc = ','.join(k for k, v in datetimeParser.items() if 'language' in v)
         data = getURL(
             'https://atv-ps.amazon.com/cdp/usage/v3/GetAppStartupConfig?deviceTypeID=A28RQHJKHM2A2W&deviceID=%s&firmware=1&version=1&supportedLocales=%s&format=json'
             % (user['deviceid'], loc))

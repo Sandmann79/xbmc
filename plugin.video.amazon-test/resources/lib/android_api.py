@@ -16,7 +16,7 @@ from .ages import AgeRestrictions
 from .network import getURL, getATVData, LocaleSelector
 from .login import refreshToken
 from .itemlisting import addDir, addVideo, setContentAndView
-from .users import loadUser, updateUser
+from .users import loadUsers, loadUser, updateUser
 from .configs import writeConfig
 from .l10n import getString, datetimeParser
 
@@ -55,17 +55,17 @@ class PrimeVideo(Singleton):
                         '&swiftPriorityLevel=critical'.format(self.def_dtid, self._g.deviceID, self.lang, self.lang)
 
     def BrowseRoot(self):
-        cm_wl = [(getString(30185) % 'Watchlist', 'RunPlugin(%s?mode=getListMenu&url=%s&export=1)' % (self._g.pluginid, self._g.watchlist))]
-        cm_lb = [(getString(30185) % getString(30100), 'RunPlugin(%s?mode=getListMenu&url=%s&export=1)' % (self._g.pluginid, self._g.library))]
-        if self._s.multiuser:
+        cm_wl = [(getString(30185) % 'Watchlist', 'RunPlugin(%s?mode=getPage&url=%s&export=1)' % (self._g.pluginid, self._g.watchlist))]
+        cm_lb = [(getString(30185) % getString(30100), 'RunPlugin(%s?mode=getPage&url=%s&export=1)' % (self._g.pluginid, self._g.library))]
+        if self._s.multiuser and 1 < len(loadUsers()):
             addDir(getString(30134).format(loadUser('name')), 'switchUser', '', cm=self._g.CONTEXTMENU_MULTIUSER)
         if self._s.profiles:
             act, profiles = self.getProfiles()
             if act is not False:
                 addDir(profiles[act][0], 'switchProfile', '', thumb=profiles[act][2])
-        addDir('Watchlist', 'getPage', 'watchlist', cm=cm_wl)
+        addDir('Watchlist', 'getPage', self._g.watchlist, cm=cm_wl)
         self.getPage(root=True)
-        addDir(getString(30100), 'getPage', 'library', cm=cm_lb)
+        addDir(getString(30100), 'getPage', self._g.library, cm=cm_lb)
         addDir('Genres', 'getPage', 'find')
         addDir(getString(30108), 'Search', '')
         xbmcplugin.endOfDirectory(self._g.pluginhandle, updateListing=False, cacheToDisc=False)
@@ -86,14 +86,19 @@ class PrimeVideo(Singleton):
         ct = il['contentType']
         if ct in ['movie', 'episode', 'season', 'live']:
             wlmode = 1 if wl else 0
-            cm.append((getString(wlmode + 30180) % getString(self._g.langID[ct]), 'RunPlugin(%s?mode=editWatchList&url=%s&opt=%s)'
-                       % (self._g.pluginid, il['asins'], wlmode)))
+            page = -1 if self._s.disptvshow and ct in 'season' else 1
+            cm.append((getString(wlmode + 30180) % getString(self._g.langID[ct]),
+                       'RunPlugin({}?mode=editWatchList&url={}&opt={})'.format(self._g.pluginid, il['asins'], wlmode)))
+            cm.append((getString(30185) % getString(self._g.langID[ct]),
+                       'RunPlugin({}?mode=getPage&&url=details&opt=itemId%3D{}&page={}&export=1)'.format(self._g.pluginid, il['asins'], page)))
+            cm.append((getString(30186), 'UpdateLibrary(video)'))
         if ct in 'season':
-            u = urlencode({'mode': 'getPage', 'url': 'details', 'page': '-1', 'opt': 'itemId=' + il['asins']})
-            cm.append((getString(30182), 'Container.Update(%s?%s)' % (self._g.pluginid, u)))
+            if not self._s.disptvshow:
+                u = urlencode({'mode': 'getPage', 'url': 'details', 'page': '-1', 'opt': 'itemId=' + il['asins']})
+                cm.insert(1, (getString(30182), 'Container.Update(%s?%s)' % (self._g.pluginid, u)))
         return cm
 
-    def getPage(self, page='home', params='&pageType=home&pageId=home', pagenr=1, root=False):
+    def getPage(self, page='home', params='&pageType=home&pageId=home', pagenr=1, root=False, export=0):
         url_path = ['', '/cdp/mobile/getDataByTransform/v1/', '/cdp/switchblade/android/getDataByJvmTransform/v1/']
         url_dict = {'home': {'p': 2, 'js': 'dv-android/landing/initial/v1.kt', 'q': ''},
                     'landing': {'p': 2, 'js': 'dv-android/landing/initial/v1.kt', 'q': '&removeFilters=false'},
@@ -135,9 +140,17 @@ class PrimeVideo(Singleton):
                 return resp
 
             if page in ['watchlist', 'library'] and 'Initial' in url and 'serviceToken' not in query_dict:
+                if export:
+                    Log('Export of watchlist started')
                 for k, v in self.filter.items():
-                    addDir(k, 'getPage', page, opt=urlencode(v))
-                xbmcplugin.endOfDirectory(self._g.pluginhandle)
+                    addDir(k, 'getPage', page, opt=urlencode(v), export=export)
+                if not export:
+                    xbmcplugin.endOfDirectory(self._g.pluginhandle)
+                else:
+                    Log('Export of watchlist finished')
+                    if export == 2:
+                        writeConfig('last_wl_export', time.time())
+                        xbmc.executebuiltin('UpdateLibrary(video)')
                 return
 
             if page == 'details':
@@ -147,18 +160,19 @@ class PrimeVideo(Singleton):
                     for item in resp['seasons']:
                         item.update({'contentType': 'seasonslist'})
                         il = self.getInfos(item, resp)
-                        addDir(self.formatTitle(il), 'getPage', 'details', il, 'itemId=' + il['asins'])
+                        addDir(self.formatTitle(il), 'getPage', 'details', il, 'itemId=' + il['asins'], export=export)
                 elif 'episodes' in resp:
                     for item in resp['episodes']:
                         il = self.getInfos(item, resp)
                         cm = self.addCtxMenu(il, page in 'watchlist')
-                        addVideo(self.formatTitle(il), il['asins'], il, cm=cm)
+                        addVideo(self.formatTitle(il), il['asins'], il, cm=cm, export=export)
                 else:
                     il = self.getInfos(resp)
                     cm = self.addCtxMenu(il, page in 'watchlist')
-                    addVideo(self.formatTitle(il), il['asins'], il, cm=cm)
-                setContentAndView(il['contentType'])
-                xbmc.executebuiltin('RunPlugin(%s?mode=processMissing)' % self._g.pluginid)
+                    addVideo(self.formatTitle(il), il['asins'], il, cm=cm, export=export)
+                if not export:
+                    setContentAndView(il['contentType'])
+                    xbmc.executebuiltin('RunPlugin(%s?mode=processMissing)' % self._g.pluginid)
                 return
 
             if page == 'landing':
@@ -228,12 +242,12 @@ class PrimeVideo(Singleton):
                         cm = self.addCtxMenu(il, page in 'watchlist')
                         ct = il['contentType']
                         if ct in ['movie', 'episode', 'live', 'videos']:
-                            addVideo(self.formatTitle(il), il['asins'], il, cm=cm)
+                            addVideo(self.formatTitle(il), il['asins'], il, cm=cm, export=export)
                         else:
                             pgnr = -1 if self._s.disptvshow and ct in 'season' else 1
                             if not il['asins'] in asinlist:
                                 asinlist.append(il['asins'])
-                                addDir(self.formatTitle(il), 'getPage', 'details', infoLabels=il, opt='itemId=' + il['asins'], cm=cm, page=pgnr)
+                                addDir(self.formatTitle(il), 'getPage', 'details', infoLabels=il, opt='itemId=' + il['asins'], cm=cm, page=pgnr, export=export)
 
             if pgmodel and page != 'cache':
                 nextp = findKey('parameters', pgmodel)
@@ -245,10 +259,11 @@ class PrimeVideo(Singleton):
                 else:
                     nextp['pageSize'] = len(col)
                     pagenr = int(nextp['startIndex'] / len(col) + 1)
-                addDir(' --= %s =--' % (getString(30111) % pagenr), 'getPage', pgtype, opt=urlencode(nextp), page=pagenr, thumb=self._g.NextIcon)
+                addDir(' --= %s =--' % (getString(30111) % pagenr), 'getPage', pgtype, opt=urlencode(nextp), page=pagenr, export=export, thumb=self._g.NextIcon)
 
-            setContentAndView(ct)
-            xbmc.executebuiltin('RunPlugin(%s?mode=processMissing)' % self._g.pluginid)
+            if not export:
+                setContentAndView(ct)
+                xbmc.executebuiltin('RunPlugin(%s?mode=processMissing)' % self._g.pluginid)
         return
 
     def formatTitle(self, il):
@@ -546,7 +561,7 @@ class PrimeVideo(Singleton):
             infoLabels['isPrime'] = True
         return infoLabels
 
-    def getMedia(self, item, infoLabels):
+    def getMedia(self, item, infoLabels=None, cust='fanart,thumb,poster'):
         media = {'fanart': {'': ['detailPageHeroImageUrl'],
                             'titleImageUrls': ['WIDE', 'WIDE_PRIME', 'COVER', '']},
                  'thumb': {'': ['titleImageUrl'],
@@ -554,12 +569,15 @@ class PrimeVideo(Singleton):
                  'poster': {'titleImageUrls': ['POSTER']}
                  }
         for il, i in media.items():
-            for k, v in i.items():
-                dic = item if k == '' else item.get(k, {})
-                for m in v:
-                    if m in dic and dic[m] is not None and dic[m].strip() != '':
-                        infoLabels[il] = self.cleanIMGurl(dic[m])
-                        break
+            if il in cust:
+                for k, v in i.items():
+                    dic = item if k == '' else item.get(k, {})
+                    for m in v:
+                        if m in dic and dic[m] is not None and dic[m].strip() != '':
+                            if infoLabels is None:
+                                return self.cleanIMGurl(dic[m])
+                            infoLabels[il] = self.cleanIMGurl(dic[m])
+                            break
         return infoLabels
 
     def getChanInfo(self, item, infoLabels):
@@ -580,12 +598,11 @@ class PrimeVideo(Singleton):
                     tm = self.filterDict(sh['titleModel'])
                     infoLabels['plot'] += '[B]{:%H:%M} - {:%H:%M}  {}[/B]\n'.format(datetime.fromtimestamp(us), datetime.fromtimestamp(ue), tm.get('title', ''))
                     if not upnext:
-                        imgurls = tm.get('titleImageUrls', {})
                         reldate = tm.get('publicReleaseDate', tm.get('releaseDate', 0))
                         reldate = reldate * -1 if reldate < 0 else reldate
                         infoLabels['premiered'] = datetime.fromtimestamp(reldate / 1000).strftime('%Y-%m-%d')
                         infoLabels['fanart'] = self.cleanIMGurl(item.get('channelImageUrl'))
-                        infoLabels['thumb'] = self.cleanIMGurl(imgurls.get('LEGACY', imgurls.get('LEGACY_PRIME', item.get('titleImageUrl', imgurls.get('WIDE')))))
+                        infoLabels['thumb'] = self.getMedia(tm, cust='fanart,thumb')
                         infoLabels['plot'] += '{}\n\n'.format(tm.get('synopsis', ''))
                         if item.get('runtimeMillis'):
                             infoLabels['duration'] = tm['runtimeMillis'] / 1000
@@ -653,6 +670,6 @@ class PrimeVideo(Singleton):
         elif mode == 'ageSettings':
             AgeRestrictions().Settings()
         elif mode == 'getPage':
-            self.getPage(args.get('url'), args.get('opt', ''), int(args.get('page', '1')))
+            self.getPage(args.get('url'), args.get('opt', ''), int(args.get('page', '1')), export=int(args.get('export', '0')))
         elif mode == 'editWatchList':
             self.editWatchList(args.get('url', ''), int(args.get('opt', '0')))

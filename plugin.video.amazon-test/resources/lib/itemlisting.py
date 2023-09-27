@@ -53,6 +53,10 @@ def setContentAndView(content, updateListing=False):
 
 
 def addDir(name, mode='', url='', infoLabels=None, opt='', catalog='Browse', cm=None, page=1, export=False, thumb=None):
+    if export and mode == 'getPage':
+        exec('_g.pv.{}("{}", "{}", {}, export={})'.format(mode, url, opt, page, export))
+        return
+
     useatv = _s.data_source == 1
     folder = mode not in ['switchUser', 'text'] if useatv else mode == 'True'
     sep = '?' if useatv else ''

@@ -79,9 +79,11 @@ def EntryPoint():
         xbmcaddon.Addon(aid).openSettings()
     elif mode == 'exportWatchlist':
         if hasattr(_g.pv, 'getListMenu'):
-            _g.pv.getListMenu('watchlist', export=2)
+            _g.pv.getListMenu(_g.watchlist, export=2)
         elif hasattr(_g.pv, 'Browse'):
             _g.pv.Browse('root/Watchlist/watchlist', export=5)
+        elif hasattr(_g.pv, 'getPage'):
+            _g.pv.getPage(_g.watchlist, export=2)
     elif mode == 'Search':
         _g.pv.Search(args.get('searchstring'))
     elif mode in ['LogIn', 'remLoginData', 'removeUser', 'renameUser', 'switchUser', 'createZIP', 'removeLogs']:

@@ -81,21 +81,21 @@ class PrimeVideo(Singleton):
                 d['swiftId'] = item['id']
                 self.filter[item['text']] = d
 
-    def addCtxMenu(self, il, wl):
+    def addCtxMenu(self, il, wl, pgmod=1):
         cm = []
         ct = il['contentType']
-        if ct in ['movie', 'episode', 'season', 'live']:
+        page = pgmod if self._s.disptvshow and ct in 'season' else 0
+        if ct in 'season' and not self._s.disptvshow and pgmod == 1:
+            u = urlencode({'mode': 'getPage', 'url': 'details', 'page': '-1', 'opt': 'itemId=' + il['asins']})
+            cm.append((getString(30182), 'Container.Update(%s?%s)' % (self._g.pluginid, u)))
+        if ct in ['movie', 'episode', 'season', 'event']:
             wlmode = 1 if wl else 0
-            page = -1 if self._s.disptvshow and ct in 'season' else 1
-            cm.append((getString(wlmode + 30180) % getString(self._g.langID[ct]),
+            cm.append((getString(wlmode + 30180) % getString(self._g.langID[ct] - page),
                        'RunPlugin({}?mode=editWatchList&url={}&opt={})'.format(self._g.pluginid, il['asins'], wlmode)))
-            cm.append((getString(30185) % getString(self._g.langID[ct]),
-                       'RunPlugin({}?mode=getPage&&url=details&opt=itemId%3D{}&page={}&export=1)'.format(self._g.pluginid, il['asins'], page)))
+        if ct in ['movie', 'season']:
+            cm.append((getString(30185) % getString(self._g.langID[ct] - page),
+                       'RunPlugin({}?mode=getPage&&url=details&opt=itemId%3D{}{}&export=1)'.format(self._g.pluginid, il['asins'], '&page=-1' if page else '')))
             cm.append((getString(30186), 'UpdateLibrary(video)'))
-        if ct in 'season':
-            if not self._s.disptvshow:
-                u = urlencode({'mode': 'getPage', 'url': 'details', 'page': '-1', 'opt': 'itemId=' + il['asins']})
-                cm.insert(1, (getString(30182), 'Container.Update(%s?%s)' % (self._g.pluginid, u)))
         return cm
 
     def getPage(self, page='home', params='&pageType=home&pageId=home', pagenr=1, root=False, export=0):
@@ -160,7 +160,8 @@ class PrimeVideo(Singleton):
                     for item in resp['seasons']:
                         item.update({'contentType': 'seasonslist'})
                         il = self.getInfos(item, resp)
-                        addDir(self.formatTitle(il), 'getPage', 'details', il, 'itemId=' + il['asins'], export=export)
+                        cm = self.addCtxMenu(il, page in 'watchlist', 0)
+                        addDir(self.formatTitle(il), 'getPage', 'details', il, 'itemId=' + il['asins'], cm=cm, export=export)
                 elif 'episodes' in resp:
                     for item in resp['episodes']:
                         il = self.getInfos(item, resp)
@@ -241,7 +242,7 @@ class PrimeVideo(Singleton):
                         il = self.getInfos(model)
                         cm = self.addCtxMenu(il, page in 'watchlist')
                         ct = il['contentType']
-                        if ct in ['movie', 'episode', 'live', 'videos']:
+                        if ct in ['movie', 'episode', 'live', 'videos', 'event']:
                             addVideo(self.formatTitle(il), il['asins'], il, cm=cm, export=export)
                         else:
                             pgnr = -1 if self._s.disptvshow and ct in 'season' else 1
@@ -545,7 +546,7 @@ class PrimeVideo(Singleton):
             else:
                 infoLabels['mpaa'] = '%s %s' % (AgeRestrictions().GetAgeRating(), item['regulatoryRating'])
         if 'live' in ct:
-            ct = 'videos'
+            ct = 'event'
             liveData = findKey('data', item)
             if liveData:
                 if liveData.get('liveState', '') == 'LIVE':

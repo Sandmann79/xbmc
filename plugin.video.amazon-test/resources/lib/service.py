@@ -24,7 +24,6 @@ class BackgroundService(xbmc.Monitor):
         writeConfig('proxyaddress', '127.0.0.1:{}'.format(self.proxy.port))
         Log('Service: Proxy bound to {}'.format(self._s.proxyaddress))
         self.proxy_thread = threading.Thread(target=self.proxy.serve_forever)
-        self.start()
 
     def onSettingsChanged(self):
         super(BackgroundService, self).__init__()

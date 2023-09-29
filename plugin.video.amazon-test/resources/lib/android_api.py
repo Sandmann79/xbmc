@@ -19,6 +19,7 @@ from .itemlisting import addDir, addVideo, setContentAndView
 from .users import loadUsers, loadUser, updateUser
 from .configs import writeConfig
 from .l10n import getString, datetimeParser
+from .export import SetupLibrary
 
 try:
     from urllib.parse import quote_plus, urlencode, parse_qs
@@ -125,6 +126,9 @@ class PrimeVideo(Singleton):
             url = url.replace('initial', 'next') if 'initial' in url and 'startIndex' in query_dict else url
             resp = getURL('%s?%s%s' % (url, self.defparam, params), useCookie=MechanizeLogin(True), headers=self._g.headers_android)
         LogJSON(resp)
+        
+        if export:
+            SetupLibrary()
 
         if resp:
             resp = resp.get('resource', resp)

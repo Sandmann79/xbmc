@@ -74,12 +74,12 @@ def addDir(name, mode='', url='', infoLabels=None, opt='', catalog='Browse', cm=
     fanart = infoLabels.get('fanart', _g.DefaultFanart)
     poster = infoLabels.get('poster', thumb)
 
-    item = xbmcgui.ListItem(name)
+    item = ListItem_InfoTag(name)
     item.setProperty('IsPlayable', 'false')
     item.setArt({'fanart': fanart, 'poster': poster, 'icon': thumb, 'thumb': thumb})
 
     if infoLabels:
-        item.setInfo(type='Video', infoLabels=getInfolabels(infoLabels))
+        item.set_Info('Video', infoLabels)
         if 'totalseasons' in infoLabels:
             item.setProperty('totalseasons', str(infoLabels['totalseasons']))
         if 'poster' in infoLabels:
@@ -99,12 +99,12 @@ def addVideo(name, asin, infoLabels, cm=None, export=False):
     fanart = infoLabels.get('fanart', _g.DefaultFanart)
     poster = infoLabels.get('poster', thumb)
 
-    item = xbmcgui.ListItem(name)
+    item = ListItem_InfoTag(name)
     item.setArt({'fanart': fanart, 'poster': poster, 'thumb': thumb})
     item.setProperty('IsPlayable', 'true')  # always true, to view watched state
 
     if 'audiochannels' in infoLabels:
-        item.addStreamInfo('audio', {'codec': 'ac3', 'channels': int(infoLabels['audiochannels'])})
+        item.add_StreamInfo('audio', {'codec': 'ac3', 'channels': int(infoLabels['audiochannels'])})
 
     if 'poster' in infoLabels.keys():
         item.setArt({'tvshow.poster': infoLabels['poster']})
@@ -115,9 +115,9 @@ def addVideo(name, asin, infoLabels, cm=None, export=False):
     url += '&trailer=%s' % streamtypes.get(infoLabels['contentType'], 0)
 
     if [k for k in ['4k', 'uhd', 'ultra hd'] if k in (infoLabels.get('tvshowtitle', '') + name).lower()]:
-        item.addStreamInfo('video', {'width': 3840, 'height': 2160})
+        item.add_StreamInfo('video', {'width': 3840, 'height': 2160})
     elif infoLabels.get('isHD'):
-        item.addStreamInfo('video', {'width': 1920, 'height': 1080})
+        item.add_StreamInfo('video', {'width': 1920, 'height': 1080})
 
     if export:
         url += '&selbitrate=' + bitrate
@@ -125,15 +125,89 @@ def addVideo(name, asin, infoLabels, cm=None, export=False):
     else:
         cm = cm if cm else []
         cm.insert(0, (getString(30101), 'Action(ToggleWatched)'))
-        item.setInfo(type='Video', infoLabels=getInfolabels(infoLabels))
+        item.set_Info('Video', infoLabels)
         item.addContextMenuItems(cm)
         url += '&selbitrate=' + bitrate
         xbmcplugin.addDirectoryItem(_g.pluginhandle, url, item, isFolder=False)
 
 
-def getInfolabels(Infos):
-    rem_keys = ('ishd', 'isprime', 'asins', 'audiochannels', 'banner', 'displaytitle', 'fanart', 'poster', 'seasonasin', 'setting'
-                'thumb', 'traileravailable', 'contenttype', 'isadult', 'totalseasons', 'seriesasin', 'episodename', 'isuhd')
-    if not Infos:
-        return
-    return {k: v for k, v in Infos.items() if k.lower() not in rem_keys}
+class ListItem_InfoTag(xbmcgui.ListItem):
+    def __init__(self, *args, **kwargs):
+        super(ListItem_InfoTag, self).__init__(*args, **kwargs)
+        self.InfoTag = None
+        self.map = {
+            'date': {'attr': 'setDateAdded', 'convert': str, 'classinfo': str},  # Unsure if this is the correct place to route this generic value
+            'genre': {'attr': 'setGenres', 'convert': list, 'classinfo': (list, tuple)},
+            'country': {'attr': 'setCountries', 'convert': list, 'classinfo': (list, tuple)},
+            'year': {'attr': 'setYear', 'convert': int, 'classinfo': int},
+            'episode': {'attr': 'setEpisode', 'convert': int, 'classinfo': int},
+            'season': {'attr': 'setSeason', 'convert': int, 'classinfo': int},
+            'sortepisode': {'attr': 'setSortEpisode', 'convert': int, 'classinfo': int},
+            'sortseason': {'attr': 'setSortSeason', 'convert': int, 'classinfo': int},
+            'episodeguide': {'attr': 'setEpisodeGuide', 'convert': str, 'classinfo': str},
+            'showlink': {'attr': 'setShowLinks', 'convert': list, 'classinfo': (list, tuple)},
+            'top250': {'attr': 'setTop250', 'convert': int, 'classinfo': int},
+            'setid': {'attr': 'setSetId', 'convert': int, 'classinfo': int},
+            'tracknumber': {'attr': 'setTrackNumber', 'convert': int, 'classinfo': int},
+            'rating': {'attr': 'setRating', 'convert': float, 'classinfo': float},
+            'userrating': {'attr': 'setUserRating', 'convert': int, 'classinfo': int},
+            'playcount': {'attr': 'setPlaycount', 'convert': int, 'classinfo': int},
+            'cast': {'attr': 'setCast', 'convert': lambda x: [xbmc.Actor(x) for x in x], 'classinfo': (list, tuple)},
+            'director': {'attr': 'setDirectors', 'convert': list, 'classinfo': (list, tuple)},
+            'mpaa': {'attr': 'setMpaa', 'convert': str, 'classinfo': str},
+            'plot': {'attr': 'setPlot', 'convert': str, 'classinfo': str},
+            'plotoutline': {'attr': 'setPlotOutline', 'convert': str, 'classinfo': str},
+            'title': {'attr': 'setTitle', 'convert': str, 'classinfo': str},
+            'originaltitle': {'attr': 'setOriginalTitle', 'convert': str, 'classinfo': str},
+            'sorttitle': {'attr': 'setSortTitle', 'convert': str, 'classinfo': str},
+            'duration': {'attr': 'setDuration', 'convert': int, 'classinfo': int},
+            'studio': {'attr': 'setStudios', 'convert': list, 'classinfo': (list, tuple)},
+            'tagline': {'attr': 'setTagLine', 'convert': str, 'classinfo': str},
+            'writer': {'attr': 'setWriters', 'convert': list, 'classinfo': (list, tuple)},
+            'tvshowtitle': {'attr': 'setTvShowTitle', 'convert': str, 'classinfo': str},
+            'premiered': {'attr': 'setPremiered', 'convert': str, 'classinfo': str},
+            'status': {'attr': 'setTvShowStatus', 'convert': str, 'classinfo': str},
+            'set': {'attr': 'setSet', 'convert': str, 'classinfo': str},
+            'setoverview': {'attr': 'setSetOverview', 'convert': str, 'classinfo': str},
+            'tag': {'attr': 'setTags', 'convert': list, 'classinfo': (list, tuple)},
+            'imdbnumber': {'attr': 'setIMDBNumber', 'convert': str, 'classinfo': str},
+            'code': {'attr': 'setProductionCode', 'convert': str, 'classinfo': str},
+            'aired': {'attr': 'setFirstAired', 'convert': str, 'classinfo': str},
+            'credits': {'attr': 'setWriters', 'convert': list, 'classinfo': (list, tuple)},
+            'lastplayed': {'attr': 'setLastPlayed', 'convert': str, 'classinfo': str},
+            'album': {'attr': 'setAlbum', 'convert': str, 'classinfo': str},
+            'artist': {'attr': 'setArtists', 'convert': list, 'classinfo': (list, tuple)},
+            'votes': {'attr': 'setVotes', 'convert': int, 'classinfo': int},
+            'path': {'attr': 'setPath', 'convert': str, 'classinfo': str},
+            'trailer': {'attr': 'setTrailer', 'convert': str, 'classinfo': str},
+            'dateadded': {'attr': 'setDateAdded', 'convert': str, 'classinfo': str},
+            'mediatype': {'attr': 'setMediaType', 'convert': str, 'classinfo': str},
+            'dbid': {'attr': 'setDbId', 'convert': int, 'classinfo': int}}
+
+    def set_Info(self, ctype, infos):
+        if _g.KodiVersion > 19:
+            if self.InfoTag is None:
+                self.InfoTag = self.getVideoInfoTag()
+            for k, v in infos.items():
+                attr = self.map[k].get('attr') if k in self.map else None
+                if attr is not None and v is not None:
+                    f = getattr(self.InfoTag, attr)
+                    f(self.map[k]['convert'](v))
+        else:
+            self.setInfo(ctype, self._cleanInfos(infos))
+
+    def add_StreamInfo(self, ctype, infos):
+        ct = ctype.capitalize()
+        if _g.KodiVersion > 19:
+            if self.InfoTag is None:
+                self.InfoTag = self.getVideoInfoTag()
+            addStrm = getattr(self.InfoTag, 'add{}Stream'.format(ct))
+            StrmDetail = getattr(xbmc, '{}StreamDetail'.format(ct))
+            addStrm(StrmDetail(**infos))
+        else:
+            self.addStreamInfo(ctype, infos)
+
+    def _cleanInfos(self, infos):
+        if not infos:
+            return
+        return {k: v for k, v in infos.items() if k.lower() in self.map}

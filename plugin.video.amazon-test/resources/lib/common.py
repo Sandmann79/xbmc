@@ -323,6 +323,8 @@ def MechanizeLogin(preferToken=False):
 
 
 def parseHTML(br):
+    from .logging import Log
+    Log(br.get_url(), Log.DEBUG)
     soup = br.get_current_page()
     response = soup.__unicode__()
     return response, soup

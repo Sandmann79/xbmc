@@ -8,12 +8,11 @@ import mechanicalsoup
 import re
 import requests
 import time
-from base64 import urlsafe_b64encode, b64encode
+from base64 import urlsafe_b64encode, b64encode, b16encode
 from random import randint
 from hashlib import sha256
 from os.path import join as OSPJoin
 from uuid import uuid4
-from binascii import hexlify
 
 import pyxbmct
 from kodi_six import xbmcgui, xbmc, xbmcvfs
@@ -367,7 +366,7 @@ def LogIn(retToken=False):
                     'Upgrade-Insecure-Requests': '1'
                 })
             else:
-                clientid = hexlify(user['deviceid'].encode() + b'#A1MPSLFC7L5AFK')  # + _g.dtid_android.encode()).hex()
+                clientid = b16encode(user['deviceid'].encode() + b'#A1MPSLFC7L5AFK').decode().lower()  # + _g.dtid_android.encode()
                 verifier = urlsafe_b64encode(os.urandom(32)).rstrip(b"=")
                 challenge = urlsafe_b64encode(sha256(verifier).digest()).rstrip(b"=")
                 frc = b64encode(os.urandom(313)).decode("ascii")
@@ -424,7 +423,6 @@ def LogIn(retToken=False):
                 )
                 br.session.cookies.update(init_cookie)
                 br.open(up.geturl())
-                Log(up.geturl(), Log.DEBUG)
 
             if not _findElem(br, form='signIn'):
                 return False
@@ -455,8 +453,8 @@ def LogIn(retToken=False):
                 response, soup = parseHTML(br)
                 WriteLog(response.replace(py2_decode(email), '**@**'), 'login-fixup')
 
-            url = br.get_url()
             # Some PrimeVideo endpoints still return you to the store, directly
+            url = br.get_url()
             if url.endswith('?ref_=av_auth_return_redir') or ('action=sign-out' in response) or ('openid.oa2.authorization_code' in url):
                 if 'openid.oa2.authorization_code' in url:
                     user = registerDevice(url, user, verifier, clientid)

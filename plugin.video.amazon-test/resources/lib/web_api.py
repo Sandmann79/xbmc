@@ -44,7 +44,7 @@ class PrimeVideo(Singleton):
     def __init__(self, globalsInstance, settingsInstance):
         self._g = globalsInstance
         self._s = settingsInstance
-        self._dateParserData = datetimeParser
+        self._dateParserData = deepcopy(datetimeParser)
         self._TextCleanPatterns = [[r'\s+-\s*([^&])', r' – \1'],  # Convert dash from small to medium where needed
                                    [r'\s*-\s+([^&])', r' – \1'],  # Convert dash from small to medium where needed
                                    [r'^\s+', ''],  # Remove leading spaces

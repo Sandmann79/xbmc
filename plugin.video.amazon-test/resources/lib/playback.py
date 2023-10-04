@@ -19,7 +19,6 @@ from .common import Globals, Settings, jsonRPC, sleep, MechanizeLogin
 from .logging import Log
 from .configs import getConfig
 from .network import getURL, getURLData, getATVData
-from .itemlisting import getInfolabels
 from .l10n import getString
 
 try:
@@ -364,20 +363,13 @@ def PlayVideo(name, asin, adultstr, streamtype, forcefb=0):
 
         Log(mpd, Log.DEBUG)
 
-        if _g.KodiVersion < 18 and extern:
-            content = getATVData('GetASINDetails', 'ASINList=' + asin)['titles'][0]
-            ct, Info = _g.pv.getInfos(content, False)
-            title = Info['DisplayTitle']
-            thumb = Info.get('poster', Info['thumb'])
-            mpaa_check = str(Info.get('MPAA', mpaa_str)) in mpaa_str or isAdult
-        else:
-            mpaa_check = _getListItem('MPAA') in mpaa_str + mpaa_str.replace(' ', '') or isAdult
-            title = _getListItem('Label')
-            thumb = _getListItem('Art(season.poster)')
+        mpaa_check = _getListItem('MPAA') in mpaa_str + mpaa_str.replace(' ', '') or isAdult
+        title = _getListItem('Label')
+        thumb = _getListItem('Art(season.poster)')
+        if not thumb:
+            thumb = _getListItem('Art(tvshow.poster)')
             if not thumb:
-                thumb = _getListItem('Art(tvshow.poster)')
-                if not thumb:
-                    thumb = _getListItem('Art(thumb)')
+                thumb = _getListItem('Art(thumb)')
 
         if streamtype == 1:
             title += ' (Trailer)'
@@ -388,9 +380,6 @@ def PlayVideo(name, asin, adultstr, streamtype, forcefb=0):
             return True
 
         listitem = xbmcgui.ListItem(label=title, path=mpd)
-
-        if _g.KodiVersion < 18 and extern:
-            listitem.setInfo('video', getInfolabels(Info))
 
         if 'adaptive' in _g.is_addon:
             listitem.setProperty('inputstream.adaptive.manifest_type', 'mpd')
@@ -630,8 +619,7 @@ class _AmazonPlayer(xbmc.Player):
             self.getResumePoint()
         if self.resume > 180 and self.extern:
             Log('Displaying Resumedialog')
-            res_string = getString(12022).replace("%s", "{}") if _g.KodiVersion < 18 else getString(12022)
-            sel = _g.dialog.contextmenu([res_string.format(time.strftime("%H:%M:%S", time.gmtime(self.resume))), getString(12021)])
+            sel = _g.dialog.contextmenu([getString(12022).format(time.strftime("%H:%M:%S", time.gmtime(self.resume))), getString(12021)])
             if sel > -1:
                 self.resume = self.resume if sel == 0 else 0
             else:
@@ -696,15 +684,6 @@ class _AmazonPlayer(xbmc.Player):
             self.updateStream()
             if self.video_lastpos > 0 and self.video_totaltime > 0:
                 self.watched = 1 if (self.video_lastpos * 100) / self.video_totaltime >= 90 else 0
-                if self.dbid and _g.KodiVersion < 18:
-                    dbtype = _getListItem('DBTYPE')
-                    params = {'%sid' % dbtype: self.dbid,
-                              'resume': {'position': 0 if self.watched else self.video_lastpos,
-                                         'total': self.video_totaltime},
-                              'playcount': self.watched}
-                    res = '' if 'OK' in jsonRPC('VideoLibrary.Set%sDetails' % dbtype, '', params) else 'NOT '
-                    Log('%sUpdated %sid(%s) with: pos(%s) total(%s) playcount(%s)' % (res, dbtype, self.dbid, self.video_lastpos,
-                                                                                      self.video_totaltime, self.watched))
                 self.saveResumePoint()
 
     def getTimes(self, msg):

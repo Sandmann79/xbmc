@@ -8,7 +8,6 @@ from .common import Globals, Settings
 from .l10n import getString
 from .export import Export
 
-
 try:
     from urllib.parse import urlencode
 except ImportError:
@@ -132,6 +131,7 @@ def addVideo(name, asin, infoLabels, cm=None, export=False):
 
 
 class ListItem_InfoTag(xbmcgui.ListItem):
+    """ adapted from https://github.com/jurialmunkey/script.module.infotagger """
     def __init__(self, *args, **kwargs):
         super(ListItem_InfoTag, self).__init__(*args, **kwargs)
         self.InfoTag = None

@@ -805,7 +805,7 @@ class PrimeVideo(Singleton):
             liveStat = liveInfo.get('status', liveInfo.get('liveStateType', '')).lower() == 'live'
             liveTime = liveInfo.get('timeBadge', liveInfo.get('dateTime'))
             o[urn] = {'title': title, 'lazyLoadURL': url,
-                      'metadata': {'artmeta': {}, 'videometa': {'mediatype': 'video'}}, 'live': liveStat, 'pos': len(o)}
+                      'metadata': {'artmeta': {}, 'videometa': {'mediatype': 'video'}}, 'live': True, 'pos': len(o)}
             o[urn]['metadata']['compactGTI'] = ExtractURN(item['playbackAction']['fallbackUrl']) if 'playbackAction' in item else urn
             when = ''
             if liveTime or liveStat:

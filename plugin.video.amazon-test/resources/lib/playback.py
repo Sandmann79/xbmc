@@ -15,10 +15,10 @@ from inputstreamhelper import Helper
 from kodi_six import xbmc, xbmcgui, xbmcvfs, xbmcplugin
 from kodi_six.utils import py2_decode
 
-from .common import Globals, Settings, jsonRPC, sleep, MechanizeLogin
+from .common import Globals, Settings, jsonRPC, sleep, MechanizeLogin, findKey
 from .logging import Log
 from .configs import getConfig
-from .network import getURL, getURLData, getATVData
+from .network import getURL, getURLData, getATVData, GrabJSON
 from .l10n import getString
 
 try:
@@ -309,6 +309,15 @@ def PlayVideo(name, asin, adultstr, streamtype, forcefb=0):
         xbmc.executebuiltin('StartAndroidActivity("%s", "%s", "", "%s")' % (pkg, act, url))
 
     def _IStreamPlayback(asin, name, streamtype, isAdult, extern):
+        if streamtype == 2:
+            u_path = '' if _g.UsePrimeVideo else '/gp/video'
+            data = GrabJSON(_g.BaseUrl + u_path + '/detail/' + asin)
+            if data:
+                state = findKey('liveState', data)
+                if state and state['id'].lower() != 'live':
+                    _g.dialog.notification(getString(30203), '{} {}'.format(getString(30174), state['text'].lower()), xbmcgui.NOTIFICATION_INFO)
+                    return False
+
         from .ages import AgeRestrictions
         vMT = ['Feature', 'Trailer', 'LiveStreaming'][streamtype]
         dRes = 'PlaybackUrls' if streamtype > 1 else 'PlaybackUrls,SubtitleUrls,ForcedNarratives,TransitionTimecodes'

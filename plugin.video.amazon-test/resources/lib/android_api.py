@@ -550,11 +550,9 @@ class PrimeVideo(Singleton):
             else:
                 infoLabels['mpaa'] = '%s %s' % (AgeRestrictions().GetAgeRating(), item['regulatoryRating'])
         if 'live' in ct:
-            ct = 'event'
+            ct = 'live'
             liveData = findKey('data', item)
             if liveData:
-                if liveData.get('liveState', '') == 'LIVE':
-                    ct = 'live'
                 s = liveData.get('startTime') / 1000
                 e = liveData.get('endTime') / 1000
                 cur_lang = datetimeParser[loadUser('lang')]

@@ -321,7 +321,7 @@ def PlayVideo(name, asin, adultstr, streamtype, forcefb=0):
         from .ages import AgeRestrictions
         vMT = ['Feature', 'Trailer', 'LiveStreaming'][streamtype]
         dRes = 'PlaybackUrls' if streamtype > 1 else 'PlaybackUrls,SubtitleUrls,ForcedNarratives,TransitionTimecodes'
-        opt = '&liveManifestType=accumulating,live&playerType=xp&playerAttributes={"frameRate":"HFR"}' if streamtype > 1 else ''
+        opt = '&liveManifestType=accumulating,live&playerType=xp&playerAttributes={"frameRate":"HFR"}&deviceFrameRateOverride=High' if streamtype > 1 else ''
         mpaa_str = AgeRestrictions().GetRestrictedAges() + getString(30171)
 
         inputstream_helper = Helper('mpd', drm='com.widevine.alpha')

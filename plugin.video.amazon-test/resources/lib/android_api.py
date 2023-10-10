@@ -39,6 +39,7 @@ class PrimeVideo(Singleton):
         self.days_since_epoch = lambda: int(time.time() / 86400)
         self.prime = ''
         self.filter = {}
+        self.def_ps = 20
         self.lang = loadUser('lang')
         self.def_dtid = self._g.dtid_android
         self.defparam = 'deviceTypeID={}' \
@@ -185,7 +186,7 @@ class PrimeVideo(Singleton):
                 if pgmodel:
                     q = findKey('parameters', pgmodel)
                     q['swiftId'] = pgmodel['id']
-                    q['pageSize'] = 20
+                    q['pageSize'] = self.def_ps
                     q['startIndex'] = 0
                     self.getPage(q['pageType'], urlencode(q))
                     return
@@ -228,9 +229,9 @@ class PrimeVideo(Singleton):
                 self._cacheDb.commit()
             else:
                 titles = resp['titles'][0] if 'titles' in resp and len(resp.get('titles', {})) > 0 else resp
+                col = titles.get('collectionItemList', [])
                 pgmodel = titles.get('paginationModel')
                 pgtype = page
-                col = titles.get('collectionItemList', [])
                 asinlist = []
 
                 for item in col:
@@ -254,16 +255,14 @@ class PrimeVideo(Singleton):
                                 asinlist.append(il['asins'])
                                 addDir(self.formatTitle(il), 'getPage', 'details', infoLabels=il, opt='itemId=' + il['asins'], cm=cm, page=pgnr, export=export)
 
-            if pgmodel and page != 'cache':
+            if pgmodel:
                 nextp = findKey('parameters', pgmodel)
                 if 'startIndex' not in nextp:
                     nextp['startIndex'] = pgmodel['startIndex']
-                    nextp['pageSize'] = 40
                     nextp['swiftId'] = pgmodel['id']
-                    pagenr += 1
-                else:
-                    nextp['pageSize'] = len(col)
-                    pagenr = int(nextp['startIndex'] / len(col) + 1)
+                nextp['pageSize'] = self.def_ps
+                pagenr += 1
+                pgtype = 'browse' if page == 'cache' else nextp.get('pageType', pgtype)
                 addDir(' --= %s =--' % (getString(30111) % pagenr), 'getPage', pgtype, opt=urlencode(nextp), page=pagenr, export=export, thumb=self._g.NextIcon)
 
             if not export:
@@ -603,7 +602,7 @@ class PrimeVideo(Singleton):
                     if not upnext:
                         reldate = tm.get('publicReleaseDate', tm.get('releaseDate', 0))
                         reldate = reldate * -1 if reldate < 0 else reldate
-                        infoLabels['premiered'] = datetime.fromtimestamp(reldate / 1000).strftime('%Y-%m-%d')
+                        infoLabels['premiered'] = datetime.fromtimestamp(reldate / 1000).strftime('%Y-%m-%d') if reldate > 0 else None
                         infoLabels['fanart'] = self.cleanIMGurl(item.get('channelImageUrl'))
                         infoLabels['thumb'] = self.getMedia(tm, cust='fanart,thumb')
                         infoLabels['plot'] += '{}\n\n'.format(tm.get('synopsis', ''))

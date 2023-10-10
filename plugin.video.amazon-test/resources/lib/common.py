@@ -160,7 +160,7 @@ class Settings(Singleton):
     _ret_types = {_integer: ['playmethod', 'browser', 'items_perpage', 'tvdb_art', 'tmdb_art', 'region', 'skip_scene', 'data_source', 'send_vp'],
                   _bool_true:
                       ['useshowfanart', 'disptvshow', 'paycont', 'logging', 'json_dump', 'json_dump_collisions', 'sub_stretch', 'log_http', 'remotectrl',
-                       'remote_vol', 'multiuser', 'wl_export', 'audio_description', 'pv_episode_thumbnails', 'tld_episode_thumbnails', 'use_h265',
+                       'remote_vol', 'multiuser', 'wl_export', 'audio_description', 'pv_episode_thumbnails', 'tld_episode_thumbnails', 'use_h265', 'enable_atmos',
                        'profiles', 'show_pass', 'enable_uhd', 'show_recents', 'register_device', 'preload_seasons', 'preload_all_seasons', 'wvl1_device'],
                   _bool_false: ['json_dump_raw', 'ssl_verif', 'proxy_mpdalter']}
 

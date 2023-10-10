@@ -303,6 +303,7 @@ class ProxyHTTPD(BaseHTTPRequestHandler):
             data = data.replace('<BaseURL>', '<BaseURL>' + baseurl)
             data = re.sub(r'(<SegmentTemplate\s+[^>]*?\s*media=")', r'\1' + baseurl, data)
             data = re.sub(r'(<SegmentTemplate\s+[^>]*?\s*initialization=")', r'\1' + baseurl, data)
+            data = re.sub(r'<Role[^>]*>', '', data)
             return data
 
         # Start the chunked reception
@@ -350,19 +351,41 @@ class ProxyHTTPD(BaseHTTPRequestHandler):
                     break
                 # Log('[PS] AdaptationSet position: ([{}:{}], [{}:{}])'.format(pos.start(1), pos.end(1), pos.start(2), pos.end(2)))
                 setTag = buffer[pos.start(1):pos.end(1)]
+
                 try:
                     trackId = re.search(r'\s+audioTrackId="([a-z]{2})(-[a-z0-9]{2,})_(dialog|descriptive)', setTag).groups()
                     lang = re.search(r'\s+lang="([a-z]{2})"', setTag).group(1)
 
                     newLocale = self._AdjustLocale(trackId[0] + trackId[1], langCount[trackId[0]])
+                    imp = ''
                     if 'descriptive' == trackId[2]:
-                        newLocale += (' ' if '-' in newLocale else '-') + '[Audio Description]'
-                    setTag = setTag.replace('lang="{}"'.format(lang), 'lang="{}"'.format(newLocale))
-                except:
+                        imp = ' impaired="true"'
+                    setTag = setTag.replace('lang="{}"'.format(lang), 'lang="{}"{}'.format(newLocale, imp))
+                except AttributeError:
                     pass
 
+                setData = buffer[pos.start(2):pos.end(2)]
+                repres = re.findall(r'<Representation[^>]*>.*?</Representation>', setData, flags=re.DOTALL)
+                if len(repres):
+                    best_br = 0
+                    best_tr = ''
+                    found_atmos = False
+                    while 0 < len(repres):
+                        track = repres.pop(0)
+                        atmos = re.search(r'<SupplementalProperty[^>]*value="JOC"[^>]*>', track)
+                        bitrate = int(re.search(r'\s+bandwidth="([^"]+)"', track).group(1))
+                        if atmos and not found_atmos:
+                            found_atmos = True
+                            best_br = 0
+                        if bitrate > best_br:
+                            if (atmos and found_atmos) or (not atmos and not found_atmos) or self.server._s.enable_atmos is False:
+                                best_tr = track
+                                best_br = bitrate
+                        setData = setData.replace(track, '' if 0 < len(repres) else best_tr)
+                    setTag = '{} name="{} kbps">'.format(setTag[:-1], int(best_br / 1000))
+
                 self._SendChunk(gzstream, setTag)
-                self._SendChunk(gzstream, _rebase(buffer[pos.start(2):pos.end(2)]))
+                self._SendChunk(gzstream, _rebase(setData))
                 buffer = buffer[pos.end(2):]
 
             # Send the rest and signal EOT

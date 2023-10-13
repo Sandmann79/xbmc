@@ -80,7 +80,7 @@ def CreateDirectory(dir_path):
 
 def SetupLibrary():
     CreateDirectory(_s.MOVIE_PATH)
-    CreateDirectory(_g.HOME_PATH)
+    CreateDirectory(_s.TV_SHOWS_PATH)
     SetupAmazonLibrary()
 
 

@@ -198,6 +198,8 @@ class Settings(Singleton):
             return [3600, 21600, 43200, 86400, 259200, 604800, 1296000, 2592000][int(self._gs('catalog_cache_expiry'))]
         elif 'proxyaddress' == name:
             return getConfig('proxyaddress')
+        elif 'wvl1_device' == name and getConfig('autoWV', 0) == 0:
+            return detectWidevine()
 
         value = None
         for cmd in self._ret_types:
@@ -328,3 +330,18 @@ def parseHTML(br):
     soup = br.get_current_page()
     response = soup.__unicode__()
     return response, soup
+
+
+def detectWidevine():
+    try:
+        import xbmcdrm
+        from .logging import Log
+        crypto_session = xbmcdrm.CryptoSession('edef8ba9-79d6-4ace-a3c8-27dcd51d21ed', 'AES/CBC/NoPadding', 'HmacSHA256')
+        sec_level = crypto_session.GetPropertyString('securityLevel')
+        Log('Detected Widevine security level: {}'.format(sec_level, Log.DEBUG))
+        res = sec_level.upper() == 'L1'
+    except:
+        res = False
+    Settings().wvl1_device = str(res).lower()
+    writeConfig('autoWV', '1')
+    return res

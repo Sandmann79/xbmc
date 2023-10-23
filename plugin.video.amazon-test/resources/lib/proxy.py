@@ -358,7 +358,6 @@ class ProxyHTTPD(BaseHTTPRequestHandler):
                 # Log('[PS] AdaptationSet position: ([{}:{}], [{}:{}])'.format(pos.start(1), pos.end(1), pos.start(2), pos.end(2)))
                 setTag = buffer[pos.start(1):pos.end(1)]
                 setData = buffer[pos.start(2):pos.end(2)]
-
                 trackId = re.search(r'\s+audioTrackId="([^_]+)_(dialog|descriptive)', setTag)
                 if trackId is not None:
                     trackId = trackId.groups()
@@ -366,27 +365,29 @@ class ProxyHTTPD(BaseHTTPRequestHandler):
                     imp = ' impaired="true"' if 'descriptive' == trackId[1] else ''
                     newLocale = self._AdjustLocale(trackId[0], langCount[self.split_lang(trackId[0])])
                     setTag = setTag.replace('lang="{}"'.format(lang), 'lang="{}"{}'.format(newLocale, imp))
- 
-                repres = re.findall(r'<Representation[^>]*>.*?</Representation>', setData, flags=re.DOTALL)
-                if len(repres):
-                    best_br = 0
-                    best_tr = ''
-                    found_atmos = False
-                    while 0 < len(repres):
-                        track = repres.pop(0)
-                        atmos = re.search(r'<SupplementalProperty[^>]*value="JOC"[^>]*>', track)
-                        bitrate = int(re.search(r'\s+bandwidth="([^"]+)"', track).group(1))
-                        if atmos and not found_atmos:
-                            found_atmos = True
-                            best_br = 0
-                        if bitrate > best_br:
-                            if (atmos and found_atmos) or (not atmos and not found_atmos) or self.server._s.enable_atmos is False:
-                                best_tr = track
-                                best_br = bitrate
-                        setData = setData.replace(track, '' if 0 < len(repres) else best_tr)
-                    setTag = re.sub(r' (min|max)Bandwidth="[^"]+"', '', setTag)
-                    setTag = '{} name="{} kbps">'.format(setTag[:-1], int(best_br / 1000))
-
+                    repres = re.findall(r'<Representation[^>]*>.*?</Representation>', setData, flags=re.DOTALL)
+                    if len(repres):
+                        best_found = [0, '', False]
+                        found_atmos = False
+                        while 0 < len(repres):
+                            track = repres.pop(0)
+                            atmos = re.search(r'<SupplementalProperty[^>]*value="JOC"[^>]*>', track) is not None
+                            bitrate = int(re.search(r'\s+bandwidth="([^"]+)"', track).group(1))
+                            if atmos and not found_atmos:
+                                found_atmos = True
+                                best_found[0] = 0
+                            if bitrate > best_found[0]:
+                                if atmos or (not atmos and not found_atmos) or self.server._s.enable_atmos is False:
+                                    best_found = [bitrate, track, atmos]
+                            setData = setData.replace(track, '' if 0 < len(repres) else best_found[1])
+                        setTag = re.sub(r' (min|max)Bandwidth="[^"]+"', '', setTag)
+                        atmos_apx = ' (Atmos)' if best_found[2] and self.server._s._g.KodiVersion < 21 else ''
+                        if self.server._s._g.KodiVersion > 18:
+                            setTag = '{} name="{} kbps{}">'.format(setTag[:-1], int(best_found[0] / 1000), atmos_apx)
+                        else:
+                            setTag = re.sub(r'( lang="[^"]+)"', r'\1 - {} kbps{}"'.format(int(best_found[0] / 1000), atmos_apx), setTag)
+                            
+                Log('[PS] ' + setTag, Log.DEBUG)
                 self._SendChunk(gzstream, setTag)
                 self._SendChunk(gzstream, _rebase(setData))
                 buffer = buffer[pos.end(2):]

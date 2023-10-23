@@ -343,15 +343,9 @@ def PlayVideo(name, asin, adultstr, streamtype, forcefb=0):
                 _g.dialog.notification(getString(30203), getString(30200), xbmcgui.NOTIFICATION_ERROR)
                 Log('Login error at playback')
                 return False
-            '''
-            if (_g.platform & _g.OS_ANDROID) and not isinstance(cookie, dict) and getConfig('uhdinfo') == '':
-                _g.dialog.ok(_g.__plugin__, getString(30272))
-                writeConfig('uhdinfo', '1')
-            '''
 
             success, data = getURLData('catalog/GetPlaybackResources', asin, extra=True, vMT=vMT, dRes=dRes, useCookie=cookie, devicetypeid=dtid,
                                        proxyEndpoint=(None if bypassproxy else 'gpr'), opt=opt)
-
             if success or not isinstance(cookie, dict):
                 break
 

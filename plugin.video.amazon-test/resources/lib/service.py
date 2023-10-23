@@ -21,6 +21,7 @@ class BackgroundService(xbmc.Monitor):
         self.lastExport = float(getConfig('last_wl_export', '0'))
         self.wl_export = self._s.wl_export
         self.proxy = ProxyTCPD(self._s)
+        writeConfig('loginlock', '')
         writeConfig('proxyaddress', '127.0.0.1:{}'.format(self.proxy.port))
         Log('Service: Proxy bound to {}'.format(self._s.proxyaddress))
         self.proxy_thread = threading.Thread(target=self.proxy.serve_forever)

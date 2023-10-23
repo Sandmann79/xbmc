@@ -295,7 +295,7 @@ def LogIn(retToken=False):
             except mechanicalsoup.LinkNotFoundError:
                 sleep(randint(750, 3000) / 1000)
                 caperr += 1
-                if _s.register_device is False:
+                if _s.data_source == 0 and _s.enable_uhd is False:
                     from .network import getUA
                     getUA(True)
                     br.session.headers.update({'User-Agent': getConfig('UserAgent')})
@@ -351,7 +351,7 @@ def LogIn(retToken=False):
             br.session.verify = _s.ssl_verif
             br.set_verbose(2)
             Log('Connect to SignIn Page')
-            if _s.register_device is False and _s.data_source == 0:
+            if _s.data_source == 0 and _s.enable_uhd is False:
                 br.session.headers.update({'User-Agent': getConfig('UserAgent')})
                 br.open(user['baseurl'] + ('/gp/flex/sign-out.html' if not user['pv'] else '/auth-redirect/?signin=1'))
                 Log(br.get_url(), Log.DEBUG)

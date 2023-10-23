@@ -359,7 +359,7 @@ class PrimeVideo(Singleton):
                 if mml:
                     self._catalog['root'][id]['lazyLoadData'] = home
         else:
-            self._g.dialog.ok(getString(30278), getString(30279).format(self._g.BaseUrl, getString(30280) if self._s.register_device else ''))
+            self._g.dialog.ok(getString(30278), getString(30279).format(self._g.BaseUrl, ''))
             Log('Unable to parse the navigation menu for {}'.format(self._g.BaseUrl), Log.ERROR)
             return False
 

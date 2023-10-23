@@ -64,7 +64,6 @@
         <setting id="show_pass" type="bool" label="30026" default="true"/>
         <setting id="multiuser" type="bool" label="30009" default="false"/>
         <setting id="rememberme" type="bool" label="30022" default="true"/>
-        <setting id="register_device" type="bool" label="30277" default="false" />
         <!-- Multiuser -->
         <setting type="action" label="30130" action="RunPlugin(plugin://plugin.video.amazon-test/?mode=LogIn)" visible="eq(-3,true)" option="close" />
         <setting type="action" label="30131" action="RunPlugin(plugin://plugin.video.amazon-test/?mode=removeUser)" visible="eq(-4,true)" option="close"/>

@@ -161,7 +161,7 @@ class Settings(Singleton):
                   _bool_true:
                       ['useshowfanart', 'disptvshow', 'paycont', 'logging', 'json_dump', 'json_dump_collisions', 'sub_stretch', 'log_http', 'remotectrl',
                        'remote_vol', 'multiuser', 'wl_export', 'audio_description', 'pv_episode_thumbnails', 'tld_episode_thumbnails', 'use_h265', 'enable_atmos',
-                       'profiles', 'show_pass', 'enable_uhd', 'show_recents', 'register_device', 'preload_seasons', 'preload_all_seasons', 'wvl1_device'],
+                       'profiles', 'show_pass', 'enable_uhd', 'show_recents', 'preload_seasons', 'preload_all_seasons', 'wvl1_device'],
                   _bool_false: ['json_dump_raw', 'ssl_verif', 'proxy_mpdalter']}
 
     def __getattr__(self, name):
@@ -320,8 +320,15 @@ def MechanizeLogin(preferToken=False):
         except:
             pass
 
+    if _s.data_source == 1 and preferToken and cookie:
+        _g = Globals()
+        _g.dialog.ok(_g.__plugin__, getString(30272))
+
     from .login import LogIn
-    return LogIn(preferToken)
+    res = LogIn(preferToken)
+    if res is False:
+        exit()
+    return res
 
 
 def parseHTML(br):

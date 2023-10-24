@@ -24,6 +24,7 @@ def EntryPoint():
 
     if not xbmcvfs.exists(os.path.join(_g.DATA_PATH, 'settings.xml')):
         _g.addon.openSettings()
+        exit()
 
     from socket import setdefaulttimeout
     setdefaulttimeout(30)
@@ -58,7 +59,7 @@ def EntryPoint():
     elif mode != 'LogIn':
         _g.dialog.notification(getString(30200), getString(30216))
         xbmc.executebuiltin('Addon.OpenSettings(%s)' % _g.addon.getAddonInfo('id'))
-        return
+        exit()
 
     if path.startswith('/pv/'):
         path = py2_decode(path[4:])

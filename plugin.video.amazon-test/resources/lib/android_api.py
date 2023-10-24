@@ -639,6 +639,7 @@ class PrimeVideo(Singleton):
         return active, profiles
 
     def switchProfile(self):
+        self._g.dialog.notification(self._g.__plugin__, 'Feature not implemented yet', xbmcgui.NOTIFICATION_INFO)
         exit()
         active, profiles = self.getProfiles()
         if active is not False:

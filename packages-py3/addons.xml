@@ -23,7 +23,7 @@
 </addon>
 <addon id="plugin.video.amazon-test"
        name="Amazon VOD"
-       version="0.9.8+matrix.1"
+       version="0.9.9+matrix.1"
        provider-name="Sandmann79, Varstahl">
   <requires>
     <import addon="xbmc.python" version="3.0.0"/>
@@ -34,6 +34,7 @@
     <import addon="script.module.requests" version="2.22.0+matrix.1"/>
     <import addon="script.module.kodi-six" version="0.1.3.1"/>
     <import addon="script.module.pyautogui" version="0.9.49+matrix.1"/>
+    <import addon="script.module.amazoncaptcha" version="0.5.11+matrix.1"/>
   </requires>
   <extension point="xbmc.python.pluginsource"
              library="default.py">

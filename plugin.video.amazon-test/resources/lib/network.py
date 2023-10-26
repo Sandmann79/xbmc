@@ -461,16 +461,14 @@ def GrabJSON(url, postData=None):
         r = getURL(FQify(url), silent=True, useCookie=True, rjson=False, postdata=postData)
         if not r:
             return None
-        try:
-            r = r.strip()
-            if '{' == r[0:1]:
-                o = json.loads(Unescape(r))
-                if _s.json_dump_raw:
-                    Prune(o)
-                return o
-        except:
-            pass
-        matches = [r] if r.startswith('{') else re.findall(r'\s*(?:<script[^>]+type="(?:text/template|application/json)"[^>]*>|state:)\s*({[^\n]+})\s*(?:,|</script>)\s*', r)
+        r = r.strip()
+        if r.startswith('{'):
+            o = json.loads(Unescape(r))
+            if _s.json_dump_raw:
+                Prune(o)
+            return o
+
+        matches = BeautifulSoup(r, 'html.parser').find_all('script', {'type': re.compile('(?:text/template|application/json)'), 'id': ''})
         if not matches:
             matches = Captcha(r)
             if not matches:
@@ -480,7 +478,7 @@ def GrabJSON(url, postData=None):
         # Create a single object containing all the data from the multiple JSON objects in the page
         o = {}
         for m in matches:
-            m = json.loads(Unescape(m))
+            m = json.loads(Unescape(m.string.strip()))
 
             if ('widgets' in m) and ('Storefront' in m['widgets']):
                 m = m['widgets']['Storefront']
@@ -527,7 +525,7 @@ def GrabJSON(url, postData=None):
             br.open_fake_page(r, u)
             r, soup = parseHTML(br)
             WriteLog(r, 'captcha-webapi')
-        return [r] if r.startswith('{') else re.findall(r'\s*(?:<script[^>]+type="(?:text/template|application/json)"[^>]*>|state:)\s*({[^\n]+})\s*(?:,|</script>)\s*', r)
+        return BeautifulSoup(r, 'html.parser').find_all('script', {'type': re.compile('(?:text/template|application/json)'), 'id': ''})
 
     if hasattr(GrabJSON, 'runs') and GrabJSON.runs:
         while GrabJSON.runs:

@@ -467,7 +467,7 @@ class PrimeVideo(Singleton):
                 asins = self.getAsins(content[0], False)
                 del content
 
-        if 'season' in contentType and il['season'] == 1:
+        if contentType == 'season' and season_number == 1:
             s_il = deepcopy(il)
             s_il['title'] = il['tvshowtitle']
             cur.execute('insert or ignore into art values (?,?,?,?)', (il['seriesasin'], -1, json.dumps(s_il), self.days_since_epoch()))

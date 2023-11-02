@@ -10,7 +10,7 @@ from copy import deepcopy
 from kodi_six import xbmcgui, xbmc, xbmcplugin
 
 from .singleton import Singleton
-from .common import findKey, MechanizeLogin
+from .common import findKey, MechanizeLogin, get_key
 from .logging import LogJSON, Log
 from .ages import AgeRestrictions
 from .network import getURL, getATVData, LocaleSelector
@@ -212,7 +212,7 @@ class PrimeVideo(Singleton):
                     col_typ = item.get('collectionType')
                     if facetxt is not None:
                         isprime = prdata.get('offerClassification', '') == 'PRIME'
-                        isincl = item.get('containerMetadata', {}).get('entitlementCues', {}).get('entitledCarousel', 'Entitled') == 'Entitled'
+                        isincl = get_key('Entitled', item, 'containerMetadata', 'entitlementCues', 'entitledCarousel') == 'Entitled'
                         if self._s.paycont:
                             if isprime:
                                 facetxt = '[COLOR {}]{}[/COLOR]'.format(self._g.PrimeCol, facetxt)
@@ -528,9 +528,10 @@ class PrimeVideo(Singleton):
         infoLabels['plot'] = item['synopsis']
         infoLabels['isAdult'] = 1 if item.get('isAdultContent', False) else 0
         infoLabels['votes'] = item.get('amazonRatingsCount', 0)
-        infoLabels['premiered'] = datetime.fromtimestamp(reldate / 1000).strftime('%Y-%m-%d')
         infoLabels['genre'] = item.get('genres')
         infoLabels['studio'] = item.get('studios')
+        if reldate > 0:
+            infoLabels['premiered'] = datetime.fromtimestamp(reldate / 1000).strftime('%Y-%m-%d')
         if item.get('runtimeMillis'):
             infoLabels['duration'] = item['runtimeMillis'] / 1000
         if item.get('runtimeSeconds'):

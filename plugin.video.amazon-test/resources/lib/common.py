@@ -300,6 +300,15 @@ def findKey(key, obj):
     return []
 
 
+def get_key(def_value, obj, *keys):
+    """ Returns a value nested in the dictionary, or the def_value if the key is None or not existent """
+    for key in keys:
+        if (key not in obj) or (key in obj and obj[key] is None):
+            return def_value
+        obj = obj[key]
+    return obj
+
+
 def MechanizeLogin(preferToken=False):
     _s = Settings()
     if preferToken:

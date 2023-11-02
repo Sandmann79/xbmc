@@ -93,7 +93,7 @@ def addVideo(name, asin, infoLabels, cm=None, export=False):
     u = {'asin': asin, 'mode': 'PlayVideo', 'name': py2_encode(name), 'adult': infoLabels.get('isAdult', 0)}
     url = '{}?{}'.format(_g.pluginid, urlencode(u))
     bitrate = '0'
-    streamtypes = {'live': 2}
+    streamtypes = {'live': 2, 'event': 2}
     thumb = infoLabels.get('thumb', _g.DefaultFanart)
     fanart = infoLabels.get('fanart', _g.DefaultFanart)
     poster = infoLabels.get('poster', thumb)

@@ -314,9 +314,12 @@ def PlayVideo(name, asin, adultstr, streamtype, forcefb=0):
             data = GrabJSON(_g.BaseUrl + u_path + '/detail/' + asin)
             if data:
                 state = findKey('liveState', data)
-                if state and state['id'].lower() != 'live':
+                if state and state['id'] != 'live':
                     _g.dialog.notification(getString(30203), '{} {}'.format(getString(30174), state['text'].lower()), xbmcgui.NOTIFICATION_INFO)
                     return False
+                tt = findKey('titleType', data)
+                if not state and tt.lower() == 'event':
+                    streamtype = 0
 
         from .ages import AgeRestrictions
         vMT = ['Feature', 'Trailer', 'LiveStreaming'][streamtype]

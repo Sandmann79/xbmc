@@ -385,8 +385,8 @@ class ProxyHTTPD(BaseHTTPRequestHandler):
                         if self.server._s._g.KodiVersion > 18:
                             setTag = '{} name="{} kbps{}">'.format(setTag[:-1], int(best_found[0] / 1000), atmos_apx)
                         else:
-                            setTag = re.sub(r'( lang="[^"]+)"', r'\1 - {} kbps{}"'.format(int(best_found[0] / 1000), atmos_apx), setTag)
-                            
+                            setTag = re.sub(r'( lang="[^"]+)"', r'\1 {} [{} kbps]{}"'.format('' if '-' in newLocale else '-', int(best_found[0] / 1000), atmos_apx), setTag)
+
                 Log('[PS] ' + setTag, Log.DEBUG)
                 self._SendChunk(gzstream, setTag)
                 self._SendChunk(gzstream, _rebase(setData))

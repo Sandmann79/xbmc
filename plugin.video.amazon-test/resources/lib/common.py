@@ -50,8 +50,8 @@ class Globals(Singleton):
     DBVersion = 1.4
     PayCol = 'FFE95E01'
     PrimeCol = 'FF00A8E0'
-    tmdb = 'b34490c056f0dd9e3ec9af2167a731f4'  # b64decode('YjM0NDkwYzA1NmYwZGQ5ZTNlYzlhZjIxNjdhNzMxZjQ=')
-    tvdb = '1D62F2F90030C444'  # b64decode('MUQ2MkYyRjkwMDMwQzQ0NA==')
+    tmdb = 'b34490c056f0dd9e3ec9af2167a731f4'
+    tvdb = '9a4d848a-c7c8-4a25-96cc-594e672ef7fb'
     langID = {'movie': 30165, 'series': 30166, 'season': 30167, 'episode': 30173, 'tvshow': 30166, 'video': 30173, 'event': 30174, 'live': 30174}
     KodiVersion = int(xbmc.getInfoLabel('System.BuildVersion').split('.')[0])
     dtid_android = 'A43PXU4ZN2AL1'
@@ -307,6 +307,16 @@ def get_key(def_value, obj, *keys):
             return def_value
         obj = obj[key]
     return obj
+
+
+def get_user_lang(cj=None, iso6392=False):
+    from .users import loadUser
+    from .l10n import datetimeParser as dtp
+    _s = Settings()
+    if cj is None:
+        cj = MechanizeLogin()
+    l = loadUser('lang') if _s.data_source == 1 else cj.get('lc-main-av')
+    return dtp.get(l, dtp['en_US'])['iso6392'] if iso6392 else l
 
 
 def MechanizeLogin(preferToken=False):

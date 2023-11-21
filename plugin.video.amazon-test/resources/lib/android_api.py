@@ -352,10 +352,12 @@ class PrimeVideo(Singleton):
         self._createDB(self._art_tbl)
 
     @staticmethod
-    def cleanTitle(title):
+    def cleanTitle(title, search=False):
         if title.isupper():
             title = title.title().replace('[Ov]', '[OV]').replace('Bc', 'BC')
         title = title.replace('\u2013', '-').replace('\u00A0', ' ').replace('[dt./OV]', '').replace('_DUPLICATE_', '')
+        if search:
+            title = title.lower().replace('?', '').replace('omu', '').split('(')[0].split('[')[0]
         return title.strip()
 
     def getArtandInfo(self, infoLabels, contentType, item):
@@ -367,7 +369,7 @@ class PrimeVideo(Singleton):
         infoLabels['banner'] = None
         season = int(infoLabels.get('season', -2))
         series = contentType == 'season' and self._s.disptvshow
-        series_art = season > -1 and self._s.useshowfanart and self._s.tmdb_art != 0
+        series_art = season > -1 and self._s.useshowfanart and self._s.tvdb_art != 0
         extra = ' and season = %s' % season if season > -2 else ''
         for asin in asins.split(','):
             j = None
@@ -387,7 +389,7 @@ class PrimeVideo(Singleton):
                 result = c.execute('select info from art where asin like (?) and season = -1', ('%' + infoLabels['seriesasin'] + '%',)).fetchone()
                 if result:
                     j = {k: v for k, v in json.loads(result[0]).items() if v != self._g.na or v is None}
-                    if 'poster' in j and contentType == 'episode':
+                    if 'poster' in j and series:
                         infoLabels['poster'] = j['poster']
                     if 'fanart' in j and series_art:
                         infoLabels['fanart'] = j['fanart']
@@ -432,7 +434,7 @@ class PrimeVideo(Singleton):
         item = None
         aw = Artwork()
         il = json.loads(il)
-        title = title.lower().replace('?', '').replace('omu', '').split('(')[0].split('[')[0].strip()
+        title = self.cleanTitle(title, True)
         cur = self._db.cursor()
 
         if not asins:
@@ -450,27 +452,25 @@ class PrimeVideo(Singleton):
                         if result is None:
                             cur.execute('insert or ignore into miss values (?,?,?,?,?)', (s_id, il['tvshowtitle'], None, 'season', '{}'))
                 self._db.commit()
-        il['setting'] = 0
-        season_number = il.get('season')
+        il['setting'] = self._s.tmdb_art if contentType == 'movie' else self._s.tvdb_art
+        season_number = il.get('season', 0)
+        artwork = {}
 
-        if contentType == 'movie' and self._s.tmdb_art > 9:
-            il['setting'] = self._s.tmdb_art
-            il['fanart'] = aw.getTMDBImages(title, year=year)
-        if (contentType == 'season' or contentType == 'series') and self._s.tmdb_art > 9:
-            il['setting'] = self._s.tmdb_art
-            seasons, il['poster'], il['fanart'] = aw.getTVDBImages(title)
-            if not il['fanart']:
-                il['fanart'] = aw.getTMDBImages(title, content='tv')
-            season_number = -1
-            content = getATVData('GetASINDetails', 'ASINList=' + asins)['titles']
-            if content:
-                asins = self.getAsins(content[0], False)
-                del content
+        if contentType == 'movie' and (self._s.tmdb_art == 1 and il.get('fanart') is None) or self._s.tmdb_art > 1:
+            il.update(aw.getTMDBImages(title, year=year)[0])
+        if 'season' in contentType and (self._s.tvdb_art == 1 and il.get('fanart') is None) or self._s.tvdb_art > 1:
+            #artwork = aw.getTMDBImages(self.cleanTitle(il.get('tvshowtitle', title), True), 'tv', year, season_number)
+            year = None if season_number > 1 else year
+            artwork = aw.getTVDBImages(self.cleanTitle(il.get('tvshowtitle', title), True), year)
+            il.update(artwork.get(season_number, {}))
 
-        if contentType == 'season' and season_number == 1:
-            s_il = deepcopy(il)
-            s_il['title'] = il['tvshowtitle']
-            cur.execute('insert or ignore into art values (?,?,?,?)', (il['seriesasin'], -1, json.dumps(s_il), self.days_since_epoch()))
+        if 'season' in contentType:
+            seriesasin = il.get('seriesasin')
+            if len(cur.execute('select asin from art where asin like (?)', ('%' + seriesasin + '%',)).fetchall()) == 0:
+                s_il = deepcopy(il)
+                s_il['title'] = il['tvshowtitle']
+                s_il.update(artwork.get(-1, {}))
+                cur.execute('insert or ignore into art values (?,?,?,?)', (seriesasin, -1, json.dumps(s_il), self.days_since_epoch()))
         cur.execute('insert or ignore into art values (?,?,?,?)', (asins, season_number, json.dumps(il), self.days_since_epoch()))
         self._db.commit()
         cur.close()
@@ -480,7 +480,7 @@ class PrimeVideo(Singleton):
         infoLabels = {'plot': None, 'mpaa': None, 'cast': [], 'year': None, 'premiered': None, 'rating': None, 'votes': None,
                       'isAdult': 1 if content.get('isAdultContent', False) else 0,
                       'director': None, 'genre': None, 'studio': None, 'thumb': None, 'fanart': None, 'isHD': False, 'isUHD': False,
-                      'audiochannels': 1, 'TrailerAvailable': False,
+                      'audiochannels': 2, 'TrailerAvailable': False,
                       'asins': content.get('id', content.get('titleId', content.get('channelId', ''))),
                       'isPrime': content.get('showPrimeEmblem', False)}
 
@@ -508,8 +508,14 @@ class PrimeVideo(Singleton):
             return self.getChanInfo(item, infoLabels)
         infoLabels['title'] = self.cleanTitle(item['title'])
         infoLabels['contentType'] = infoLabels['mediatype'] = ct = item['contentType'].lower()
+        infoLabels['plot'] = item.get('synopsis', '')
+        reldate = item.get('publicReleaseDate', item.get('releaseDate', 0))
+        reldate = reldate * -1 if reldate < 0 else reldate
+        if reldate > 0:
+            infoLabels['premiered'] = datetime.fromtimestamp(reldate / 1000).strftime('%Y-%m-%d')
+            infoLabels['year'] = datetime.fromtimestamp(reldate / 1000).strftime('%Y')
         if items != '':
-            infoLabels['tvshowtitle'] = items['show']['title']
+            infoLabels['tvshowtitle'] = self.cleanTitle(items['show']['title'])
             infoLabels['seriesasin'] = items['show']['titleId']
             infoLabels['totalseasons'] = len(items['seasons'])
             infoLabels['season'] = item.get('seasonNumber')
@@ -523,15 +529,10 @@ class PrimeVideo(Singleton):
         if 'seasonslist' in ct:
             infoLabels['contentType'] = infoLabels['mediatype'] = 'season'
             return infoLabels
-        reldate = item.get('publicReleaseDate', item.get('releaseDate', 0))
-        reldate = reldate * -1 if reldate < 0 else reldate
-        infoLabels['plot'] = item['synopsis']
         infoLabels['isAdult'] = 1 if item.get('isAdultContent', False) else 0
         infoLabels['votes'] = item.get('amazonRatingsCount', 0)
         infoLabels['genre'] = item.get('genres')
         infoLabels['studio'] = item.get('studios')
-        if reldate > 0:
-            infoLabels['premiered'] = datetime.fromtimestamp(reldate / 1000).strftime('%Y-%m-%d')
         if item.get('runtimeMillis'):
             infoLabels['duration'] = item['runtimeMillis'] / 1000
         if item.get('runtimeSeconds'):

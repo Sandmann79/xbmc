@@ -12,9 +12,9 @@ from kodi_six import xbmc
 
     Languages: https://www.primevideo.com/settings/language/
 """
+
 datetimeParser = {
-    'generic':
-    '^(?P<m>[^W]+)[.,:;\\s-]+(?P<d>[0-9]+),\\s+(?P<y>[0-9]+)(?:\\s+[0-9]+|$)',
+    'generic': '^(?P<m>[^W]+)[.,:;\\s-]+(?P<d>[0-9]+),\\s+(?P<y>[0-9]+)(?:\\s+[0-9]+|$)',
     'asianMonthExtractor': '^([0-9]+)[월月]',
     'da_DK': {
         'language': 'Dansk',
@@ -34,7 +34,8 @@ datetimeParser = {
             'december': 12
         },
         'date_fmt': '%d.%m.%y',
-        'time_fmt': '%H.%M'
+        'time_fmt': '%H.%M',
+        'iso6392': 'dan'
     },
     'de_DE': {
         'language': 'Deutsch',
@@ -65,7 +66,8 @@ datetimeParser = {
             'dez.': 12
         },
         'date_fmt': '%d.%m.%y',
-        'time_fmt': '%H:%M'
+        'time_fmt': '%H:%M',
+        'iso6392': 'deu'
     },
     'en_US': {
         'language': 'English',
@@ -85,12 +87,12 @@ datetimeParser = {
             'december': 12
         },
         'date_fmt': '%m/%d/%y',
-        'time_fmt': '%I:%M %p'
+        'time_fmt': '%I:%M %p',
+        'iso6392': 'eng'
     },
     'es_ES': {
         'language': 'Español',
-        'deconstruct':
-        '^(?P<d>[0-9]+)\\s+de\\s+(?P<m>[^\\s]+),?\\s+de\\s+(?P<y>[0-9]+)',
+        'deconstruct': '^(?P<d>[0-9]+)\\s+de\\s+(?P<m>[^\\s]+),?\\s+de\\s+(?P<y>[0-9]+)',
         'months': {
             'enero': 1,
             'febrero': 2,
@@ -106,7 +108,8 @@ datetimeParser = {
             'diciembre': 12
         },
         'date_fmt': '%d/%m/%y',
-        'time_fmt': '%H:%M'
+        'time_fmt': '%H:%M',
+        'iso6392': 'spa'
     },
     'fi_FI': {
         'language': 'Suomi',
@@ -126,7 +129,8 @@ datetimeParser = {
             'joulukuuta': 12
         },
         'date_fmt': '%d.%m.%y',
-        'time_fmt': '%H.%M'
+        'time_fmt': '%H.%M',
+        'iso6392': 'fin'
     },
     'fr_FR': {
         'language': 'Français',
@@ -155,7 +159,8 @@ datetimeParser = {
             'déc.': 12
         },
         'date_fmt': '%d/%m/%y',
-        'time_fmt': '%H:%M'
+        'time_fmt': '%H:%M',
+        'iso6392': 'fra'
     },
     'hi_IN': {
         'language': 'हिन्दी',
@@ -175,7 +180,8 @@ datetimeParser = {
             'दिसंबर': 12
         },
         'date_fmt': '%d/%m/%y',
-        'time_fmt': '%I:%M %p'
+        'time_fmt': '%I:%M %p',
+        'iso6392': 'hin'
     },
     'id_ID': {
         'language': 'Bahasa Indonesia',
@@ -195,7 +201,8 @@ datetimeParser = {
             'desember': 12
         },
         'date_fmt': '%d/%m/%y',
-        'time_fmt': '%H.%M'
+        'time_fmt': '%H.%M',
+        'iso6392': 'ind'
     },
     'it_IT': {
         'language': 'Italiano',
@@ -215,13 +222,15 @@ datetimeParser = {
             'dicembre': 12
         },
         'date_fmt': '%d/%m/%y',
-        'time_fmt': '%H:%M'
+        'time_fmt': '%H:%M',
+        'iso6392': 'ita'
     },
     'ko_KR': {
         'language': '한국어',
         'deconstruct': '^(?P<y>[0-9]+)년\\s+(?P<m>[0-9]+)월\\s+(?P<d>[0-9]+)일',
         'date_fmt': '%y. %m. %d.',
-        'time_fmt': '%p %I:%M'
+        'time_fmt': '%p %I:%M',
+        'iso6392': 'kor'
     },
     'nb_NO': {
         'language': 'Norsk',
@@ -241,7 +250,8 @@ datetimeParser = {
             'desember': 12
         },
         'date_fmt': '%d.%m.%y',
-        'time_fmt': '%H:%M'
+        'time_fmt': '%H:%M',
+        'iso6392': 'nor'
     },
     'nl_NL': {
         'language': 'Nederlands',
@@ -261,7 +271,8 @@ datetimeParser = {
             'december': 12
         },
         'date_fmt': '%d-%m-%y',
-        'time_fmt': '%H:%M'
+        'time_fmt': '%H:%M',
+        'iso6392': 'nld'
     },
     'pl_PL': {
         'language': 'Polski',
@@ -281,12 +292,12 @@ datetimeParser = {
             'grudnia': 12
         },
         'date_fmt': '%d.%m.%y',
-        'time_fmt': '%H:%M'
+        'time_fmt': '%H:%M',
+        'iso6392': 'pol'
     },
     'pt_BR': {
         'language': 'Português (Brasil)',
-        'deconstruct':
-        '^(?P<d>[0-9]+)\\s+de\\s+(?P<m>[^\\s]+),?\\s+de\\s+(?P<y>[0-9]+)',
+        'deconstruct': '^(?P<d>[0-9]+)\\s+de\\s+(?P<m>[^\\s]+),?\\s+de\\s+(?P<y>[0-9]+)',
         'months': {
             'janeiro': 1,
             'fevereiro': 2,
@@ -302,12 +313,12 @@ datetimeParser = {
             'dezembro': 12
         },
         'date_fmt': '%d/%m/%y',
-        'time_fmt': '%H:%M'
+        'time_fmt': '%H:%M',
+        'iso6392': 'pt'  # only tvdb
     },
     'pt_PT': {
         'language': 'Português (Portugal)',
-        'deconstruct':
-        '^(?P<d>[0-9]+)\\s+de\\s+(?P<m>[^\\s]+),?\\s+de\\s+(?P<y>[0-9]+)',
+        'deconstruct': '^(?P<d>[0-9]+)\\s+de\\s+(?P<m>[^\\s]+),?\\s+de\\s+(?P<y>[0-9]+)',
         'months': {
             'janeiro': 1,
             'fevereiro': 2,
@@ -323,7 +334,8 @@ datetimeParser = {
             'dezembro': 12
         },
         'date_fmt': '%d/%m/%y',
-        'time_fmt': '%H:%M'
+        'time_fmt': '%H:%M',
+        'iso6392': 'por'
     },
     'ru_RU': {
         'language': 'Русский',
@@ -343,7 +355,8 @@ datetimeParser = {
             'декабря': 12
         },
         'date_fmt': '%d.%m.%y',
-        'time_fmt': '%H:%M'
+        'time_fmt': '%H:%M',
+        'iso6392': 'rus'
     },
     'sv_SE': {
         'language': 'Svenska',
@@ -363,7 +376,8 @@ datetimeParser = {
             'december': 12
         },
         'date_fmt': '%y-%m-%d',
-        'time_fmt': '%H:%M'
+        'time_fmt': '%H:%M',
+        'iso6392': 'swe'
     },
     'ta_IN': {
         'language': 'தமிழ்',
@@ -383,7 +397,8 @@ datetimeParser = {
             'டிசம்பர்': 12
         },
         'date_fmt': '%d/%m/%y',
-        'time_fmt': '%p %I:%M'
+        'time_fmt': '%p %I:%M',
+        'iso6392': 'tam'
     },
     'te_IN': {
         'language': 'తెలుగు',
@@ -403,7 +418,8 @@ datetimeParser = {
             'డిసెంబర్': 12
         },
         'date_fmt': '%d-%m-%y',
-        'time_fmt': '%I:%M %p'
+        'time_fmt': '%I:%M %p',
+        'iso6392': 'tel'
     },
     'th_TH': {
         'language': 'ไทย',
@@ -423,7 +439,8 @@ datetimeParser = {
             'ธันวาคม': 12
         },
         'date_fmt': '%d/%m/%y',
-        'time_fmt': '%H:%M'
+        'time_fmt': '%H:%M',
+        'iso6392': 'tha'
     },
     'tr_TR': {
         'language': 'Türkçe',
@@ -443,7 +460,8 @@ datetimeParser = {
             'aralık': 12
         },
         'date_fmt': '%d.%m.%y',
-        'time_fmt': '%H:%M'
+        'time_fmt': '%H:%M',
+        'iso6392': 'tur'
     },
     'vi_VN': {
         'deconstruct': '^(?P<d>[0-9]+)\\s+(?P<m>[^\\s]+)\\s+(?P<y>[0-9]+)',
@@ -460,12 +478,12 @@ datetimeParser = {
             'tháng mười': 10,
             'tháng mười một': 11,
             'tháng mười hai': 12
-        }
+        },
+        'iso6392': 'vie'
     },
     'zh_CN': {
         'language': '中文(简体)',
-        'deconstruct':
-        '^(?P<y>[0-9]+)[年,\\s]+(?P<m>[0-9]+)[月,\\s]+(?P<d>[0-9]+)[日,\\s]*',
+        'deconstruct': '^(?P<y>[0-9]+)[年,\\s]+(?P<m>[0-9]+)[月,\\s]+(?P<d>[0-9]+)[日,\\s]*',
         'months': {
             '一月': 1,
             '二月': 2,
@@ -481,12 +499,12 @@ datetimeParser = {
             '十二月': 12
         },
         'date_fmt': '%y/%m/%d',
-        'time_fmt': '%H:%M'
+        'time_fmt': '%H:%M',
+        'iso6392': 'zho'
     },
     'zh_TW': {
         'language': '中文(繁體)',
-        'deconstruct':
-        '^(?P<y>[0-9]+)[年,\\s]+(?P<m>[0-9]+)[月,\\s]+(?P<d>[0-9]+)[日,\\s]*',
+        'deconstruct': '^(?P<y>[0-9]+)[年,\\s]+(?P<m>[0-9]+)[月,\\s]+(?P<d>[0-9]+)[日,\\s]*',
         'months': {
             '一月': 1,
             '二月': 2,
@@ -502,52 +520,62 @@ datetimeParser = {
             '十二月': 12
         },
         'date_fmt': '%y/%m/%d',
-        'time_fmt': '%H:%M'
+        'time_fmt': '%H:%M',
+        'iso6392': 'zhtw'  # only tvdb
     },
     'ms_MY': {
         'language': 'Bahasa Melayu',
         'date_fmt': '%d/%m/%y',
-        'time_fmt': '%I:%M %p'
+        'time_fmt': '%I:%M %p',
+        'iso6392': 'msa'
     },
     'hu_HU': {
         'language': 'Magyar',
         'date_fmt': '%y. %m. %d.',
-        'time_fmt': '%H:%M'
+        'time_fmt': '%H:%M',
+        'iso6392': 'hun'
     },
     'ro_RO': {
         'language': 'Română',
         'date_fmt': '%d.%m.%y',
-        'time_fmt': '%H:%M'
+        'time_fmt': '%H:%M',
+        'iso6392': 'ron'
     },
     'fil_PH': {
         'language': 'Wikang Filipino',
         'date_fmt': '%m/%d/%y',
-        'time_fmt': '%I:%M %p'
+        'time_fmt': '%I:%M %p',
+        'iso6392': 'fil'
     },
     'cs_CZ': {
         'language': 'Čeština',
         'date_fmt': '%d.%m.%y',
-        'time_fmt': '%H:%M'
+        'time_fmt': '%H:%M',
+        'iso6392': 'ces'
     },
     'el_GR': {
         'language': 'Ελληνικά',
         'date_fmt': '%d/%m/%y',
-        'time_fmt': '%I:%M %p'
+        'time_fmt': '%I:%M %p',
+        'iso6392': 'gre'
     },
     'he_IL': {
         'language': 'עברית',
         'date_fmt': '%d.%m.%y',
-        'time_fmt': '%H:%M'
+        'time_fmt': '%H:%M',
+        'iso6392': 'heb'
     },
     'ar_AE': {
         'language': 'العربية',
         'date_fmt': '%d /%m /%y',
-        'time_fmt': '%I:%M %p'
+        'time_fmt': '%I:%M %p',
+        'iso6392': 'ara'
     },
     'ja_JP': {
         'language': '日本語',
         'date_fmt': '%y/%m/%d',
-        'time_fmt': '%H:%M'
+        'time_fmt': '%H:%M',
+        'iso6392': 'jpn'
     }
 }
 
@@ -562,4 +590,3 @@ def getString(string_id, addonInstance=None):
         src = addonInstance
     locString = src.getLocalizedString(string_id)
     return locString
-

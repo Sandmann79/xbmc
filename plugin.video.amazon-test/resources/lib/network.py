@@ -117,9 +117,12 @@ def getURL(url, useCookie=False, silent=False, headers=None, rjson=True, attempt
                    'Accept-Encoding': 'gzip, deflate, br',
                    'Upgrade-Insecure-Requests': '1',
                    'Connection': 'keep-alive'}
-    for k, v in def_headers.items():
-        if k not in headers:
-            headers[k] = v
+
+    if 'amazon' in url or 'primevideo' in url:
+        for k, v in def_headers.items():
+            if k not in headers:
+                headers[k] = v
+
     """
     # This **breaks** redirections. Host header OVERRIDES the host in the URL:
     # if the URL is web.eu, but the Host is web.com, request will fetch web.com
@@ -538,6 +541,7 @@ def GrabJSON(url, postData=None):
 
 def LocaleSelector():
     from .l10n import datetimeParser
+    from .common import get_user_lang
     cj = MechanizeLogin()
     if not cj:
         exit()
@@ -545,7 +549,7 @@ def LocaleSelector():
     if _g.UsePrimeVideo or _s.data_source == 1:
         from .users import loadUser
         langs = [(k, v['language']) for k, v in datetimeParser.items() if 'language' in v]
-        l = loadUser('lang') if _s.data_source == 1 else cj.get('lc-main-av')
+        l = get_user_lang(cj)
         presel = [i for i, x in enumerate(langs) if x[0] == l]
         '''
         resp = GrabJSON(_g.BaseUrl + '/api/getLanguageSettingsPage?subPage=language&widgetArgs=%7B%7D')

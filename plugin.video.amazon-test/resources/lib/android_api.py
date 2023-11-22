@@ -338,6 +338,12 @@ class PrimeVideo(Singleton):
                         info TEXT,
                         PRIMARY KEY(asins, title)
                         );''')
+            c.execute('''CREATE TABLE IF NOT EXISTS seasons(
+                        seriesasin TEXT,
+                        season INTEGER,
+                        art TEXT,
+                        PRIMARY KEY(seriesasin, season)
+                        );''')
             self._db.commit()
         c.close()
 
@@ -366,7 +372,6 @@ class PrimeVideo(Singleton):
             return infoLabels
         c = self._db.cursor()
         asins = infoLabels['asins']
-        infoLabels['banner'] = None
         season = int(infoLabels.get('season', -2))
         series = contentType == 'season' and self._s.disptvshow
         series_art = season > -1 and self._s.useshowfanart and self._s.tvdb_art != 0
@@ -389,12 +394,10 @@ class PrimeVideo(Singleton):
                 result = c.execute('select info from art where asin like (?) and season = -1', ('%' + infoLabels['seriesasin'] + '%',)).fetchone()
                 if result:
                     j = {k: v for k, v in json.loads(result[0]).items() if v != self._g.na or v is None}
-                    if 'poster' in j and series:
-                        infoLabels['poster'] = j['poster']
                     if 'fanart' in j and series_art:
                         infoLabels['fanart'] = j['fanart']
                     if series:
-                        infoLabels.update({k: v for k, v in j.items() if k not in ['poster', 'fanart', 'banner', 'settings', 'title']})
+                        infoLabels.update({k: v for k, v in j.items() if k not in ['settings', 'title']})
             if j is not None:
                 return infoLabels
 
@@ -453,24 +456,33 @@ class PrimeVideo(Singleton):
                             cur.execute('insert or ignore into miss values (?,?,?,?,?)', (s_id, il['tvshowtitle'], None, 'season', '{}'))
                 self._db.commit()
         il['setting'] = self._s.tmdb_art if contentType == 'movie' else self._s.tvdb_art
-        season_number = il.get('season', 0)
+        season_number = il.get('season', -1)
+        seriesasin = il.get('seriesasin')
         artwork = {}
 
-        if contentType == 'movie' and (self._s.tmdb_art == 1 and il.get('fanart') is None) or self._s.tmdb_art > 1:
+        if contentType == 'movie' and ((self._s.tmdb_art == 1 and il.get('fanart') is None) or self._s.tmdb_art > 1):
             il.update(aw.getTMDBImages(title, year=year)[0])
-        if 'season' in contentType and (self._s.tvdb_art == 1 and il.get('fanart') is None) or self._s.tvdb_art > 1:
-            #artwork = aw.getTMDBImages(self.cleanTitle(il.get('tvshowtitle', title), True), 'tv', year, season_number)
-            year = None if season_number > 1 else year
-            artwork = aw.getTVDBImages(self.cleanTitle(il.get('tvshowtitle', title), True), year)
+        if 'season' in contentType and ((self._s.tvdb_art == 1 and il.get('fanart') is None) or self._s.tvdb_art > 1):
+            if seriesasin and season_number > -1:
+                result = cur.execute('select art from seasons where seriesasin like (?) and season=(?)', ('%' + seriesasin + '%', season_number)).fetchone()
+                if result:
+                    artwork = {season_number: json.loads(result[0])}
+                    cur.execute('delete from seasons where seriesasin like (?) and season=(?)', ('%' + seriesasin + '%', season_number))
+            if not artwork:
+                year = None if season_number > 1 else year
+                artwork = aw.getTVDBImages(self.cleanTitle(il.get('tvshowtitle', title), True), year)
             il.update(artwork.get(season_number, {}))
 
         if 'season' in contentType:
-            seriesasin = il.get('seriesasin')
             if len(cur.execute('select asin from art where asin like (?)', ('%' + seriesasin + '%',)).fetchall()) == 0:
                 s_il = deepcopy(il)
                 s_il['title'] = il['tvshowtitle']
                 s_il.update(artwork.get(-1, {}))
                 cur.execute('insert or ignore into art values (?,?,?,?)', (seriesasin, -1, json.dumps(s_il), self.days_since_epoch()))
+                if artwork:
+                    for s, data in artwork.items():
+                        if s > 0 and s != season_number:
+                            cur.execute('insert or ignore into seasons values (?,?,?)', (seriesasin, s, json.dumps(data)))
         cur.execute('insert or ignore into art values (?,?,?,?)', (asins, season_number, json.dumps(il), self.days_since_epoch()))
         self._db.commit()
         cur.close()

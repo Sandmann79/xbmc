@@ -24,7 +24,7 @@ class Artwork:
         import time
         headers = {'Accept': 'application/json', 'Content-Type': 'application/json'}
         art_ids = {1: 'banner', 2: 'poster', 3: 'fanart', 6: 'banner', 7: 'poster', 8: 'fanart'}
-        artwork = {-1: {}}
+        artwork = data = {}
         season_ids = {-1: {}}
 
         def _gen_token():
@@ -74,7 +74,7 @@ class Artwork:
         if not result:
             return artwork
 
-        languages = [get_user_lang(iso6392=True), 'eng', data['primary_language']]
+        languages = [get_user_lang(iso6392=True), 'eng', data.get('primary_language')]
 
         for season in result['seasons']:
             season_ids[season['id']] = season['number']
@@ -97,11 +97,10 @@ class Artwork:
         for s, v in artwork.items():
             for a in v:
                 artwork[s][a] = artwork[s][a]['image']
-
-        if not -1 in artwork:
-            artwork[-1] = {}
-
-        artwork[-1]['plot'] = data['overviews'][[l for l in languages if l in data['overviews']][0]]
+        if 'overviews' in data:
+            if not -1 in artwork:
+                artwork[-1] = {}
+            artwork[-1]['plot'] = data['overviews'][[l for l in languages if l in data['overviews']][0]]
         return artwork
 
     def getTMDBImages(self, title, content='movie', year=None, season=0):

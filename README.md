@@ -15,3 +15,4 @@ You can find an answer the most frequently asked questions in the [Wiki/FAQ](htt
 ## Python modules
 * [MechanicalSoup](script.module.mechanicalsoup): automated website interaction.
 * [PyAutoGUI](script.module.pyautogui): mouse & keyboard controlling.
+* [AmznCaptcha](script.module.amazoncaptcha): solver for Amazon's text captcha.

@@ -3,7 +3,7 @@
 from __future__ import unicode_literals
 import threading
 
-from kodi_six import xbmc
+from kodi_six import xbmc, xbmcgui
 
 from .logging import Log
 from .configs import getConfig, writeConfig
@@ -53,8 +53,8 @@ class BackgroundService(xbmc.Monitor):
         self.stop()
 
     def stop(self):
-        self.proxy.server_close()
         self.proxy.shutdown()
+        self.proxy.server_close()
         self.proxy_thread.join()
         Log('Service: Proxy server stopped')
 
@@ -69,14 +69,26 @@ class BackgroundService(xbmc.Monitor):
 class SettingsMonitor(xbmc.Monitor):
     def __init__(self):
         super(SettingsMonitor, self).__init__()
+        self.mon_prop = 'amazon_settingsmonitor_state'
+        self.window = xbmcgui.Window(10000)
+        self._abort = False
 
     def onSettingsChanged(self):
         super(SettingsMonitor, self).__init__()
+        Log('Service: Settings changed', Log.DEBUG)
         xbmc.sleep(500)
-        Log('Service: Settings changed')
+        self._abort = True
 
     def start(self):
-        while not self.abortRequested():
-            if self.waitForAbort(600):
+        if self.window.getProperty(self.mon_prop) == '1':
+            return
+
+        self.window.setProperty(self.mon_prop, '1')
+        Log('Service: Settings Monitor started ', Log.DEBUG)
+        while not self.abortRequested() and not self._abort:
+            if self.waitForAbort(2):
                 break
 
+        self.window.setProperty(self.mon_prop, '')
+        Log('Service: Settings Monitor stopped ', Log.DEBUG)
+        exit()

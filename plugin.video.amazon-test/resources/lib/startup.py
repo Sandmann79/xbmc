@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 import os.path
-from sys import argv
 
 from kodi_six import xbmc, xbmcvfs
 from kodi_six.utils import py2_decode
@@ -15,7 +14,7 @@ from .logging import Log
 from .l10n import getString
 
 
-def EntryPoint():
+def EntryPoint(argv):
     """ Main entry point of the Amazon VOD addon """
 
     # Initialise globals and settings before doing anything else

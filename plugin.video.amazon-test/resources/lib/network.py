@@ -49,25 +49,31 @@ def _Error(data):
 def getUA(blacklist=False):
     Log('Switching UserAgent')
     UAlist = json.loads(getConfig('UAlist', json.dumps([])))
-    UAblist = json.loads(getConfig('UABlacklist', json.dumps([])))
+    UAcur = ''
 
     if blacklist:
         UAcur = getConfig('UserAgent')
-        if UAcur not in UAblist:
-            UAblist.append(UAcur)
-            writeConfig('UABlacklist', json.dumps(UAblist))
-            Log('UA: %s blacklisted' % UAcur)
+        UAlist = [i for i in UAlist if i not in UAcur]
+        writeConfig('UAlist', json.dumps(UAlist))
+        Log('UA: %s blacklisted' % UAcur)
 
-    UAwlist = [i for i in UAlist if i not in UAblist]
-    if not UAlist or len(UAwlist) < 5:
+    if not UAlist:
         Log('Loading list of common UserAgents')
-        # [{'pt': int perthousand, 'ua': 'useragent string', 'bw': 'detected browser': 'os': 'detected O/S'}, …]
-        rj = getURL('http://www.skydubh.com/pub/useragents.json', rjson=True)
-        UAwlist = [ua['ua'] for ua in rj]
-    UAnew = UAwlist[randint(0, len(UAwlist) - 1)] if UAwlist else \
-        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/59.0.3071.115 Safari/537.36'
-    writeConfig('UserAgent', UAnew)
-    Log('Using UserAgent: ' + UAnew)
+        # [{'pct': int percent, 'ua': 'useragent string'}, …]
+        html = getURL('https://www.useragents.me', rjson=False)
+        soup = BeautifulSoup(html, 'html.parser')
+        desk = soup.find('div', attrs={'id': 'most-common-desktop-useragents-json-csv'})
+        for div in desk.find_all('div'):
+            if div.h3.string == 'JSON':
+                ua = json.loads(div.textarea.string)
+                break
+        sorted_ua = sorted(ua, key=lambda x:x.get('pct', 0), reverse=True)
+        UAlist = [ua['ua'] for ua in sorted_ua if 'windows' in ua['ua'].lower() and ua['ua'] not in UAcur]
+        if not UAlist:
+            UAlist = ['Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36']
+        writeConfig('UAlist', json.dumps(UAlist))
+    writeConfig('UserAgent', UAlist[0])
+    Log('Using UserAgent: ' + UAlist[0])
     return
 
 
@@ -181,7 +187,8 @@ def getURL(url, useCookie=False, silent=False, headers=None, rjson=True, attempt
                          'Additionally, follow this guide to update the required modules: https://goo.gl/ksbbU2')
             exit()
         if (not check) and (3 > attempt) and (('TryAgain' in eType) or ('Timeout' in eType)):
-            getUA()
+            if _g.headers_android['User-Agent'] not in headers['User-Agent']:
+                getUA(True)
             wait = 10 * attempt if '429' in str(e) else 0
             attempt += 1
             Log('Attempt #{0}{1}'.format(attempt, '' if 0 == wait else ' (Too many requests, pause %s seconds…)' % wait))

@@ -171,16 +171,9 @@ def getURL(url, useCookie=False, silent=False, headers=None, rjson=True, attempt
             requests.exceptions.ConnectionError,
             requests.exceptions.SSLError,
             requests.exceptions.HTTPError,
-            requests.packages.urllib3.exceptions.SNIMissingWarning,
             requests.packages.urllib3.exceptions.InsecurePlatformWarning) as e:
         eType = e.__class__.__name__
         Log('Error reason: %s (%s)' % (str(e), eType), Log.ERROR)
-        if 'SNIMissingWarning' in eType:
-            Log('Using a Python/OpenSSL version which doesn\'t support SNI for TLS connections.', Log.ERROR)
-            _g.dialog.ok('No SNI for TLS', 'Your current Python/OpenSSL environment does not support SNI over TLS connections.',
-                         'You can find a Linux guide on how to update Python and its modules for Kodi here: https://goo.gl/CKtygz',
-                         'Additionally, follow this guide to update the required modules: https://goo.gl/ksbbU2')
-            exit()
         if 'InsecurePlatformWarning' in eType:
             Log('Using an outdated SSL module.', Log.ERROR)
             _g.dialog.ok('SSL module outdated', 'The SSL module for Python is outdated.',

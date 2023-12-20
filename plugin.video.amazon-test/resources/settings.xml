@@ -75,23 +75,24 @@
     <!-- Datasource -->
     <category label="30273">
         <setting id="data_source" type="enum" label="30273" values="Website|Android" default="0"/>
-        <setting id="pv_episode_thumbnails" type="bool" label="30249" visible="eq(-1,0)" default="true"/>
-        <setting id="catalog_cache_expiry" type="enum" lvalues="30258|30259|30260|30261|30262|30263|30264|30265" label="30257" default="2" visible="eq(-2,0)" />
-        <setting id="pv_clearcache" type="action" label="30087" action="RunPlugin(plugin://plugin.video.amazon-test/pv/clearcache/)" option="close" visible="eq(-3,0)" />
-        <setting label="30243" type="lsep" visible="eq(-4,0)" />
-        <setting id="paginate_everything" type="bool" label="30244" default="false" visible="eq(-5,0)" />
-        <setting id="paginate_watchlist" type="bool" label="30245" default="false" enable="eq(-1,false)" visible="eq(-6,0)" />
-        <setting id="paginate_collections" type="bool" label="30246" default="false" enable="eq(-2,false)" visible="eq(-7,0)" />
-        <setting id="paginate_search" type="bool" label="30247" default="true" enable="eq(-3,false)" visible="eq(-8,0)" />
-        <setting id="reset_home" type="action" label="30095" action="RunPlugin(plugin://plugin.video.amazon-test/pv/sethome/)" option="close" visible="eq(-9,0)" />
-        <setting id="show_recents" type="bool" label="30036" default="true" visible="eq(-10,2)"/>
-        <setting id="paycont" type="bool" label="30073" default="false" visible="eq(-11,1)" />
-        <setting id="disptvshow" type="bool" label="30071" default="false" visible="eq(-12,1)" />
-        <setting id="preload_seasons" type="bool" label="30096" default="true" visible="eq(-13,1)" enable="eq(-1,true)"/>
-        <setting id="preload_all_seasons" type="bool" label="30097" default="false" visible="eq(-14,1)" enable="eq(-1,true)" subsetting="true"/>
-        <setting label="Artwork" type="lsep" visible="eq(-15,2)"/>
-        <setting id="tld_episode_thumbnails" type="bool" label="30249" default="false" visible="eq(-16,2)"/>
-        <setting type="action" label="30094" action="" visible="eq(-17,2)" />
+        <setting id="catalog_cache_expiry" type="enum" lvalues="30258|30259|30260|30261|30262|30263|30264|30265" label="30257" default="2" visible="eq(-1,0)" />
+        <setting id="pv_clearcache" type="action" label="30087" action="RunPlugin(plugin://plugin.video.amazon-test/pv/clearcache/)" option="close" visible="eq(-2,0)" />
+        <setting label="30243" type="lsep" visible="eq(-3,0)" />
+        <setting id="paginate_everything" type="bool" label="30244" default="false" visible="eq(-4,0)" />
+        <setting id="paginate_watchlist" type="bool" label="30245" default="false" enable="eq(-1,false)" visible="eq(-5,0)" />
+        <setting id="paginate_collections" type="bool" label="30246" default="false" enable="eq(-2,false)" visible="eq(-6,0)" />
+        <setting id="paginate_search" type="bool" label="30247" default="true" enable="eq(-3,false)" visible="eq(-7,0)" />
+        <setting id="reset_home" type="action" label="30095" action="RunPlugin(plugin://plugin.video.amazon-test/pv/sethome/)" option="close" visible="eq(-8,0)" />
+        <setting id="paycont" type="bool" label="30073" default="false" visible="eq(-9,1)" />
+        <setting id="disptvshow" type="bool" label="30071" default="false" visible="eq(-10,1)" />
+        <setting id="preload_seasons" type="bool" label="30096" default="true" visible="eq(-11,1)" enable="eq(-1,true)"/>
+        <setting id="preload_all_seasons" type="bool" label="30097" default="false" visible="eq(-12,1)" enable="eq(-1,true)" subsetting="true"/>
+        <setting label="Artwork" type="lsep" visible="eq(-13,2)"/>
+        <setting id="pv_episode_thumbnails" type="bool" label="30249" visible="eq(-14,0)" default="true"/>
+        <setting id="tmdb_art" type="enum" lvalues="30050|30051|30052" label="30016" default="1" visible="eq(-15,1)"/>
+        <setting id="tvdb_art" type="enum" lvalues="30050|30053|30054|30056" label="30017" default="1" visible="eq(-16,1)"/>
+        <setting id="useshowfanart" type="bool" label="30055" default="true" visible="eq(-17,1)"/>
+
     </category>
     <!-- Views -->
     <category label="30015">
@@ -116,14 +117,10 @@
     </category>
     <!-- Miscellaneous -->
     <category label="30070">
-        <setting label="Fanart" type="lsep"/>
-        <setting id="tmdb_art" type="enum" lvalues="30050|30051|30052" label="30016" default="1"/>
-        <setting id="tvdb_art" type="enum" lvalues="30050|30053|30054|30056" label="30017" default="1"/>
-        <setting id="useshowfanart" type="bool" label="30055" default="true"/>
-        <!-- - -->
         <setting label="30070" type="lsep"/>
         <setting id="search_history" type="bool" label="30098" default="true"/>
         <setting id="wl_order" type="enum" label="30076" lvalues="30077|30079|30078" default="0"/>
+        <setting label="Log" type="lsep"/>
         <setting id="logging" type="bool" label="30072" default="false"/>
         <setting id="json_dump" type="bool" label="30196" default="false"/>
         <setting id="json_dump_raw" type="bool" label="30199" default="false" enable="eq(-1,true)" subsetting="true"/>

@@ -588,7 +588,8 @@ class PrimeVideo(Singleton):
                             infoLabel['plot'] = '{:%H:%M} - {:%H:%M}  {}\n\n{}'.format(dt.fromtimestamp(us), dt.fromtimestamp(ue),
                                                                                        shm.get('title', ''), shm.get('synopsis', ''))
             else:
-                ctxitems.append((getString(30271), 'RunPlugin({}pv/sethome/{})'.format(self._g.pluginid, quote_plus(itemPathURI))))
+                if itemPathURI:
+                    ctxitems.append((getString(30271), 'RunPlugin({}pv/sethome/{})'.format(self._g.pluginid, quote_plus(itemPathURI))))
                 if itemPathURI.split(self._separator)[-3:] == ['root', 'Watchlist', 'watchlist']:
                     ctxitems.append((getString(30185) % 'Watchlist', 'RunPlugin({}pv/browse/{}/export={})'.format(self._g.pluginid, itemPathURI, 4)))
                     ctxitems.append((getString(30186), 'UpdateLibrary(video)'))

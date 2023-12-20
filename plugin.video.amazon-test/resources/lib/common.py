@@ -161,7 +161,7 @@ class Settings(Singleton):
                   _bool_true:
                       ['useshowfanart', 'disptvshow', 'paycont', 'logging', 'json_dump', 'json_dump_collisions', 'sub_stretch', 'log_http', 'remotectrl',
                        'remote_vol', 'multiuser', 'wl_export', 'audio_description', 'pv_episode_thumbnails', 'tld_episode_thumbnails', 'use_h265', 'enable_atmos',
-                       'profiles', 'show_pass', 'enable_uhd', 'show_recents', 'preload_seasons', 'preload_all_seasons', 'wvl1_device'],
+                       'profiles', 'show_pass', 'enable_uhd', 'show_recents', 'preload_seasons', 'preload_all_seasons', 'wvl1_device', 'search_history'],
                   _bool_false: ['json_dump_raw', 'ssl_verif', 'proxy_mpdalter']}
 
     def __getattr__(self, name):

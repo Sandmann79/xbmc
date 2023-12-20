@@ -400,7 +400,12 @@ msgctxt "#30097"
 msgid "Download the info for all seasons"
 msgstr ""
 
-# empty strings from id 30098 to 30099
+msgctxt "#30098"
+msgid "Use new search with history"
+msgstr ""
+
+# empty string id 30099
+
 msgctxt "#30100"
 msgid "Library"
 msgstr ""
@@ -821,7 +826,7 @@ msgstr ""
 
 msgctxt "#30272"
 msgid ""
-"To use the Android data source and play 4K content on supported Android devices, this device must be registered with Amazon.\n
+"To use the Android data source and play 4K content on supported Android devices, this device must be registered with Amazon.\n"
 "To do this, the login with the Amazon credentials must be performed again in the addon."
 msgstr ""
 
@@ -861,4 +866,14 @@ msgctxt "#30281"
 msgid "Archive created at {}"
 msgstr ""
 
+msgctxt "#30282"
+msgid "Search History"
+msgstr ""
 
+msgctxt "#30283"
+msgid "Remove Item"
+msgstr ""
+
+msgctxt "#30284"
+msgid "Clear List"
+msgstr ""

@@ -122,6 +122,7 @@
         <setting id="useshowfanart" type="bool" label="30055" default="true"/>
         <!-- - -->
         <setting label="30070" type="lsep"/>
+        <setting id="search_history" type="bool" label="30098" default="true"/>
         <setting id="wl_order" type="enum" label="30076" lvalues="30077|30079|30078" default="0"/>
         <setting id="logging" type="bool" label="30072" default="false"/>
         <setting id="json_dump" type="bool" label="30196" default="false"/>

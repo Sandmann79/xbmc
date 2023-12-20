@@ -13,13 +13,14 @@ from .configs import getConfig
 from .logging import Log
 from .l10n import getString
 
+_g = Globals()
+_s = Settings()
+
 
 def EntryPoint(argv):
     """ Main entry point of the Amazon VOD addon """
 
     # Initialise globals and settings before doing anything else
-    _g = Globals()
-    _s = Settings()
 
     if not xbmcvfs.exists(os.path.join(_g.DATA_PATH, 'settings.xml')):
         _g.addon.openSettings()
@@ -85,7 +86,7 @@ def EntryPoint(argv):
         elif hasattr(_g.pv, 'getPage'):
             _g.pv.getPage(_g.watchlist, export=2)
     elif mode == 'Search':
-        _g.pv.Search(args.get('searchstring'))
+        Search(args.get('searchstring'))
     elif mode in ['LogIn', 'remLoginData', 'removeUser', 'renameUser', 'switchUser', 'createZIP', 'removeLogs']:
         from .login import LogIn, remLoginData
         from .users import removeUser, renameUser
@@ -93,3 +94,12 @@ def EntryPoint(argv):
         exec('{}()'.format(mode))
     else:
         _g.pv.Route(mode, args)
+
+def Search(searchString):
+    if searchString is None:
+        from .dialogs import SearchDialog
+        searchString = SearchDialog().value if _s.search_history else _g.dialog.input(getString(24121)).strip(' \t\n\r')
+    if 0 == len(searchString):
+        exit()
+    Log('Searching "{}"…'.format(searchString), Log.INFO)
+    _g.pv.Search(searchString)

@@ -50,8 +50,8 @@ msgid "Audio descriptions (disables 5.1/7.1)"
 msgstr "Hang kommentárok (5.1/7.1 letiltása)"
 
 msgctxt "#30006"
-msgid "Store Credentials instead of using the Cookie?"
-msgstr "Hitelesítési adatokat tárol a Cookie használata helyett?"
+msgid "Widevine L1 certified device"
+msgstr ""
 
 msgctxt "#30007"
 msgid "Remove Credentials and Cookie"
@@ -403,6 +403,10 @@ msgstr ""
 
 msgctxt "#30097"
 msgid "Download the info for all seasons"
+msgstr ""
+
+msgctxt "#30098"
+msgid "Use new search with history"
 msgstr ""
 
 # empty strings from id 30093 to 30099
@@ -827,9 +831,8 @@ msgstr ""
 
 msgctxt "#30272"
 msgid ""
-"You are using an Android device that is not yet registered with Amazon, so at most HD playback is possible.\n"
-"In order to register this device and thus use the UHD playback, they must log in again in the addon with their Amazon credentials.\n"
-"This message will be displayed once."
+"To use the Android data source and play 4K content on supported Android devices, this device must be registered with Amazon.\n"
+"To do this, the login with the Amazon credentials must be performed again in the addon."
 msgstr ""
 
 msgctxt "#30273"
@@ -870,6 +873,22 @@ msgstr ""
 msgctxt "#30281"
 msgid "Archive created at {}"
 msgstr ""
+
+msgctxt "#30282"
+msgid "Search History"
+msgstr ""
+
+msgctxt "#30283"
+msgid "Remove Item"
+msgstr ""
+
+msgctxt "#30284"
+msgid "Clear List"
+msgstr ""
+
+#~ msgctxt "#30006"
+#~ msgid "Store Credentials instead of using the Cookie?"
+#~ msgstr "Hitelesítési adatokat tárol a Cookie használata helyett?"
 
 #~ msgctxt "#30071"
 #~ msgid "Display TV-Show instead of Seasons in Watchlist"

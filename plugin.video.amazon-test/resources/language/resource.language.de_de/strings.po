@@ -401,6 +401,10 @@ msgctxt "#30097"
 msgid "Download the info for all seasons"
 msgstr "Infos zu allen Staffeln laden"
 
+msgctxt "#30098"
+msgid "Use new search with history"
+msgstr "Neue Suche mit Suchverlauf verwenden"
+
 msgctxt "#30100"
 msgid "Library"
 msgstr "Bibliothek"
@@ -807,7 +811,7 @@ msgstr "Als Addon Startseite festlegen"
 
 msgctxt "#30272"
 msgid ""
-"To use the Android data source and play 4K content on supported Android devices, this device must be registered with Amazon.\n
+"To use the Android data source and play 4K content on supported Android devices, this device must be registered with Amazon.\n"
 "To do this, the login with the Amazon credentials must be performed again in the addon."
 msgstr ""
 "Zur Verwendung der Android Datenquelle und für die Wiedergabe von 4K Inhalten auf unterstützten Android Geräten muss dieses Gerät bei Amazon registriert werden.\n"
@@ -848,3 +852,15 @@ msgstr "\nDieser Fehler tritt haüfig bei PrimeVideo Benutzern auf, wenn die Ein
 msgctxt "#30281"
 msgid "Archive created at {}"
 msgstr "Archiv erstellt unter {}"
+
+msgctxt "#30282"
+msgid "Search History"
+msgstr "Suchverlauf"
+
+msgctxt "#30283"
+msgid "Remove Item"
+msgstr "Eintrag entfernen"
+
+msgctxt "#30284"
+msgid "Clear List"
+msgstr "Liste leeren"

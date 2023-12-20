@@ -178,7 +178,9 @@ class PrimeVideo(Singleton):
                 }
 
     def Route(self, verb, path):
-        if 'search' == verb: self._g.pv.Search()
+        if 'search' == verb:
+            self._g.pv.DeleteCache(1)
+            self._g.pv.BrowseRoot()
         elif 'browse' == verb: self._g.pv.Browse(path)
         elif 'refresh' == verb: self._g.pv.Refresh(path)
         elif 'profiles' == verb: self._g.pv.Profile(path)
@@ -381,7 +383,7 @@ class PrimeVideo(Singleton):
                 query = query if not query else query + '&'
                 self._catalog['root']['Search'] = {
                     'title': self._BeautifyText(title),
-                    'verb': 'pv/search/',
+                    'verb': '?mode=Search',
                     'endpoint': '{}?{}phrase={{}}'.format(sfa['partialURL'], query)
                 }
             except:
@@ -389,7 +391,7 @@ class PrimeVideo(Singleton):
         else:
             self._catalog['root']['Search'] = {
                 'title': getString(30108),
-                'verb': 'pv/search/',
+                'verb': '?mode=Search',
                 'endpoint': '/gp/video/search?phrase={}'
             }
 
@@ -623,14 +625,8 @@ class PrimeVideo(Singleton):
             writeConfig('exporting', '')
             Log('Export finished')
 
-    def Search(self, searchString=None):
+    def Search(self, searchString):
         """ Provide search functionality for PrimeVideo """
-        if searchString is None:
-            searchString = self._g.dialog.input(getString(24121)).strip(' \t\n\r')
-        if 0 == len(searchString):
-            xbmcplugin.endOfDirectory(self._g.pluginhandle, succeeded=False)
-            return
-        Log('Searching "{}"…'.format(searchString), Log.INFO)
         self._catalog['search'] = OrderedDict([('lazyLoadURL', self._catalog['root']['Search']['endpoint'].format(searchString))])
         self.Browse('search', True)
 

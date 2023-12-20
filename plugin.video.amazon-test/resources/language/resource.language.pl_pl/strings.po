@@ -293,15 +293,16 @@ msgid "Miscellaneous"
 msgstr "Różne"
 
 msgctxt "#30071"
-msgid "Display TV-Show instead of Seasons in Watchlist"
-msgstr "Pokazuj serial zamiast sezonów w obserwowanych"
+msgid "Show season overview immediately after selection"
+msgstr ""
 
 msgctxt "#30072"
 msgid "Verbose Logging"
 msgstr "Pełne rejestrowanie"
 
+#, fuzzy
 msgctxt "#30073"
-msgid "Display Paid Content"
+msgid "Color Paid/Prime Content"
 msgstr "Wyświetl płatną zawartość"
 
 msgctxt "#30074"
@@ -361,8 +362,12 @@ msgid "Clear cache"
 msgstr "Wyczyść cache"
 
 msgctxt "#30088"
-msgid "Clear cached catalog or video data?\nVideo data includes series/season metadata."
-msgstr "Wyczyścić katalog lub dane wideo z pamięci podręcznej?\nDane wideo obejmują metadane serialu/sezonów."
+msgid ""
+"Clear cached catalog or video data?\n"
+"Video data includes series/season metadata."
+msgstr ""
+"Wyczyścić katalog lub dane wideo z pamięci podręcznej?\n"
+"Dane wideo obejmują metadane serialu/sezonów."
 
 msgctxt "#30089"
 msgid "No"
@@ -391,6 +396,18 @@ msgstr "Więcej opcji znajdziesz w ustawieniach PrimeVideo"
 msgctxt "#30095"
 msgid "Reset addon home page to default"
 msgstr "Zresetuj stronę główną dodatku do ustawień domyślnych"
+
+msgctxt "#30096"
+msgid "Load season/series infos in the background"
+msgstr ""
+
+msgctxt "#30097"
+msgid "Download the info for all seasons"
+msgstr ""
+
+msgctxt "#30098"
+msgid "Use new search with history"
+msgstr ""
 
 msgctxt "#30100"
 msgid "Library"
@@ -803,13 +820,9 @@ msgstr "Ustaw jako domyślną stronę główną dodatku"
 
 msgctxt "#30272"
 msgid ""
-"You are using an Android device that is not yet registered with Amazon, so at most HD playback is possible.\n"
-"In order to register this device and thus use the UHD playback, they must log in again in the addon with their Amazon credentials.\n"
-"This message will be displayed once."
+"To use the Android data source and play 4K content on supported Android devices, this device must be registered with Amazon.\n"
+"To do this, the login with the Amazon credentials must be performed again in the addon."
 msgstr ""
-"Używasz urządzenia z Androidem, które nie jest jeszcze zarejestrowane w Amazon, więc możliwe jest co najwyżej odtwarzanie HD.\n"
-"Aby zarejestrować to urządzenie i tym samym korzystać z odtwarzania UHD, musisz ponownie zalogować się w dodatku przy użyciu swoich danych uwierzytelniających Amazon.\n"
-"Ta wiadomość zostanie wyświetlona raz."
 
 msgctxt "#30273"
 msgid "Data Source"
@@ -847,8 +860,35 @@ msgid ""
 msgstr ""
 "\n"
 "Ten błąd często występuje u użytkowników primevideo, gdy włączone jest ustawienie zarejestruj urządzenie dla 4K.\n"
-"Proszę wyłączyć to ustawienie i zalogować się ponownie".
+"Proszę wyłączyć to ustawienie i zalogować się ponownie."
 
 msgctxt "#30281"
 msgid "Archive created at {}"
 msgstr "Archiwum utworzone w {}"
+
+msgctxt "#30282"
+msgid "Search History"
+msgstr ""
+
+msgctxt "#30283"
+msgid "Remove Item"
+msgstr ""
+
+#, fuzzy
+msgctxt "#30284"
+msgid "Clear List"
+msgstr "Wyczyść pliki dziennika"
+
+#~ msgctxt "#30071"
+#~ msgid "Display TV-Show instead of Seasons in Watchlist"
+#~ msgstr "Pokazuj serial zamiast sezonów w obserwowanych"
+
+#~ msgctxt "#30272"
+#~ msgid ""
+#~ "You are using an Android device that is not yet registered with Amazon, so at most HD playback is possible.\n"
+#~ "In order to register this device and thus use the UHD playback, they must log in again in the addon with their Amazon credentials.\n"
+#~ "This message will be displayed once."
+#~ msgstr ""
+#~ "Używasz urządzenia z Androidem, które nie jest jeszcze zarejestrowane w Amazon, więc możliwe jest co najwyżej odtwarzanie HD.\n"
+#~ "Aby zarejestrować to urządzenie i tym samym korzystać z odtwarzania UHD, musisz ponownie zalogować się w dodatku przy użyciu swoich danych uwierzytelniających Amazon.\n"
+#~ "Ta wiadomość zostanie wyświetlona raz."

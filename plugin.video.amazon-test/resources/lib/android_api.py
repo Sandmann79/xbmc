@@ -13,7 +13,7 @@ from .singleton import Singleton
 from .common import findKey, MechanizeLogin, get_key
 from .logging import LogJSON, Log
 from .ages import AgeRestrictions
-from .network import getURL, getATVData, LocaleSelector
+from .network import getURL, LocaleSelector
 from .login import refreshToken
 from .itemlisting import addDir, addVideo, setContentAndView
 from .users import loadUsers, loadUser, updateUser
@@ -47,7 +47,7 @@ class PrimeVideo(Singleton):
                         '&softwareVersion=351' \
                         '&priorityLevel=2' \
                         '&format=json' \
-                        '&featureScheme=mobile-android-features-v11' \
+                        '&featureScheme=mobile-android-features-v11-hdr' \
                         '&deviceID={}' \
                         '&version=1' \
                         '&screenWidth=sw800dp' \
@@ -291,11 +291,8 @@ class PrimeVideo(Singleton):
             return json.loads(result[0])
         return {}
 
-    def Search(self, searchString=None):
-        if searchString is None:
-            searchString = self._g.dialog.input(getString(24121))
-        if searchString:
-            self.getPage('search', 'phrase={}'.format(quote_plus(searchString)))
+    def Search(self, searchString):
+        self.getPage('search', 'phrase={}'.format(quote_plus(searchString)))
 
     def editWatchList(self, asin, remove):
         act = 'RemoveTitleFromList' if remove > 0 else 'AddTitleToList'

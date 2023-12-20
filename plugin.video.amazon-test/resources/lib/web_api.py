@@ -63,6 +63,7 @@ class PrimeVideo(Singleton):
         for i, s in enumerate(self._TextCleanPatterns):
             self._TextCleanPatterns[i][0] = re.compile(s[0])
 
+        self._home_path = getConfig('home', 'root')
         self._LoadCache()
 
     def _Flush(self, bFlushCacheData=True, bFlushVideoData=False):
@@ -294,8 +295,8 @@ class PrimeVideo(Singleton):
         if 0 == len(self._catalog):
             ''' Build the root catalog '''
             if not self.BuildRoot():
-                return
-        self.Browse(getConfig('home', 'root'))
+                exit()
+        self.Browse(self._home_path)
 
     def BuildRoot(self, home=None):
         """ Parse the top menu on primevideo.com and build the root catalog """
@@ -438,7 +439,7 @@ class PrimeVideo(Singleton):
                 writeConfig('exporting', '')
 
         # Add multiuser menu if needed
-        if self._s.multiuser and ('root' == path) and (1 < len(loadUsers())):
+        if self._s.multiuser and (self._home_path == path) and (1 < len(loadUsers())):
             addDir(getString(30134).format(loadUser('name')), '', 'pv/browse/root{}SwitchUser'.format(self._separator), cm=self._g.CONTEXTMENU_MULTIUSER)
         if ('root' + self._separator + 'SwitchUser') == path:
             if switchUser():
@@ -447,7 +448,7 @@ class PrimeVideo(Singleton):
             return
 
         # Add Profiles
-        if self._s.profiles and ('root' == path) and ('profiles' in self._catalog):
+        if self._s.profiles and (self._home_path == path) and ('profiles' in self._catalog):
             activeProfile = self._catalog['profiles'][self._catalog['profiles']['active']]
             addDir(activeProfile['title'], 'True', 'pv/profiles/list', activeProfile['metadata']['artmeta'])
 
@@ -455,6 +456,12 @@ class PrimeVideo(Singleton):
             node, breadcrumb = self._TraverseCatalog(path)
             if None is node:
                 return
+
+            if (self._home_path == path) and path != 'root':
+                for n in ['Watchlist', 'Search']:
+                    cat = deepcopy(self._catalog['root'][n])
+                    cat['pos'] = 0
+                    node.update({n: cat})
 
             # Populate children list with empty references
             nodeName = breadcrumb[-1]
@@ -479,7 +486,7 @@ class PrimeVideo(Singleton):
             else:
                 entry = node[key]
             title = entry.get('title', nodeName)
-            itemPathURI = '{}{}{}'.format(path, self._separator, quote_plus(key.encode('utf-8')))
+            itemPathURI = '{}{}{}'.format(path if key not in 'Watchlist' else 'root', self._separator, quote_plus(key.encode('utf-8')))
             ctxitems = []
 
             # Squash single season tv shows

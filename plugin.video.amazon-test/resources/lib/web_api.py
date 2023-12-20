@@ -1373,7 +1373,7 @@ class PrimeVideo(Singleton):
                             o[id] = {'title': tile, 'lazyLoadURL': iu, 'metadata': {'artmeta': {'thumb': findKey('url', tile_cov)}}}
                         elif ('liveInfo' in item) or ('event' == t):
                             AddLiveEvent(o, item, iu)
-                        elif 'season' != t and 'season' not in item:
+                        elif t not in ['season', 'show'] and 'season' not in item and 'show' not in item:
                             bUpdatedVideoData |= ParseSinglePage(breadcrumb[-1], o, bCacheRefresh, url=iu)
                         else:
                             bUpdatedVideoData |= AddSeason(breadcrumb[-1], o, bCacheRefresh, iu)

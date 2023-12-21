@@ -5,7 +5,7 @@ from __future__ import unicode_literals
 import json
 
 from .common import Globals, Settings, get_user_lang
-from .logging import Log, LogJSON
+from .logging import Log
 from .network import getURL
 from .configs import getConfig, writeConfig
 
@@ -26,13 +26,12 @@ class Artwork:
         art_ids = {1: 'banner', 2: 'poster', 3: 'fanart', 6: 'banner', 7: 'poster', 8: 'fanart'}
         artwork = data = {}
         season_ids = {-1: {}}
-
         def _gen_token():
             data = getURL('https://api4.thetvdb.com/v4/login', headers=headers, postdata=json.dumps({'apikey': self._g.tvdb}))
             if data['status'] == 'success':
                 Log('TVDB Token updated successful')
                 token = data['data']
-                token['time'] = time.time() * 86400 * 30  # 30 days in the future
+                token['time'] = time.time() + (86400 * 30)  # 30 days in the future
                 writeConfig('tvdb_token', json.dumps(token))
                 return token
             Log('TVDB Token update failed')

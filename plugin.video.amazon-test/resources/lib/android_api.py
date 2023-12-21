@@ -437,12 +437,12 @@ class PrimeVideo(Singleton):
         Log('Starting Fanart Update')
         c = self._db.cursor()
         data = ''
-        while data is not None:
+        while data is not None and not self._g.monitor.abortRequested():
             data = c.execute('select * from miss limit 1').fetchone()
             if data is not None:
-                self.retrieveArtWork(*data)
                 c.execute('delete from miss where asins = ?', (data[0],))
                 self._db.commit()
+                self.retrieveArtWork(*data)
         c.close()
         Log('Finished Fanart Update')
 

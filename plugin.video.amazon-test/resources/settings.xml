@@ -90,7 +90,7 @@
         <setting label="Artwork" type="lsep" visible="eq(-13,2)"/>
         <setting id="pv_episode_thumbnails" type="bool" label="30249" visible="eq(-14,0)" default="true"/>
         <setting id="tmdb_art" type="enum" lvalues="30050|30051|30052" label="30016" default="1" visible="eq(-15,1)"/>
-        <setting id="tvdb_art" type="enum" lvalues="30050|30053|30054|30056" label="30017" default="1" visible="eq(-16,1)"/>
+        <setting id="tvdb_art" type="enum" lvalues="30050|30053|30054" label="30017" default="1" visible="eq(-16,1)"/>
         <setting id="useshowfanart" type="bool" label="30055" default="true" visible="eq(-17,1)"/>
 
     </category>

@@ -402,7 +402,7 @@ class PrimeVideo(Singleton):
                     infoLabels['fanart'] = j['fanart']
                 if 'banner' in j:
                     infoLabels['banner'] = j['banner']
-                infoLabels.update({k: v for k, v in j.items() if k not in ['poster', 'fanart', 'banner', 'settings', 'title']})
+                infoLabels.update({k: v for k, v in j.items() if k not in ['poster', 'fanart', 'banner', 'settings', 'title', 'isPrime']})
             if (series_art and result) or series and 'seriesasin' in infoLabels:
                 result = c.execute('select info from art where asin like (?) and season = -1', ('%' + infoLabels['seriesasin'] + '%',)).fetchone()
                 if result:
@@ -410,7 +410,7 @@ class PrimeVideo(Singleton):
                     if 'fanart' in j and series_art:
                         infoLabels['fanart'] = j['fanart']
                     if series:
-                        infoLabels.update({k: v for k, v in j.items() if k not in ['settings', 'title']})
+                        infoLabels.update({k: v for k, v in j.items() if k not in ['settings', 'title', 'isPrime']})
             if j is not None:
                 return infoLabels
 
@@ -510,8 +510,8 @@ class PrimeVideo(Singleton):
                       'asins': content.get('id', content.get('titleId', content.get('channelId', ''))),
                       'isPrime': content.get('showPrimeEmblem', False)}
 
-        if infoLabels['isPrime'] is False and 'messagePresentation' in content:
-            infoLabels['isPrime'] = not len(content['messagePresentation'].get('glanceMessageSlot', []))
+        if infoLabels['isPrime'] is False and 'cardDecoration' in content:
+            infoLabels['isPrime'] = get_key('', content, 'cardDecoration', 'playbackLinkAction', 'videoMaterialType') == 'Feature'
         if 'badges' in content:
             b = content['badges']
             infoLabels['isAdult'] = 1 if b.get('adult', True) else 0

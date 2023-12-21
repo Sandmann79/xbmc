@@ -6,6 +6,8 @@ import re
 import time
 import json
 from copy import deepcopy
+from sqlite3 import dbapi2 as sqlite
+from threading import Thread
 
 from kodi_six import xbmcgui, xbmc, xbmcplugin
 
@@ -50,11 +52,12 @@ class PrimeVideo(Singleton):
                         '&featureScheme=mobile-android-features-v11-hdr' \
                         '&deviceID={}' \
                         '&version=1' \
-                        '&screenWidth=sw800dp' \
+                        '&screenWidth=sw1600dp' \
                         '&osLocale={}&uxLocale={}' \
                         '&supportsPKMZ=false' \
                         '&isLiveEventsV2OverrideEnabled=true' \
                         '&swiftPriorityLevel=critical'.format(self.def_dtid, self._g.deviceID, self.lang, self.lang)
+        self._art_thread = Thread(target=self.processMissing)
 
     def BrowseRoot(self):
         cm_wl = [(getString(30185) % 'Watchlist', 'RunPlugin(%s?mode=getPage&url=%s&export=1)' % (self._g.pluginid, self._g.watchlist))]
@@ -70,7 +73,7 @@ class PrimeVideo(Singleton):
         addDir(getString(30100), 'getPage', self._g.library, cm=cm_lb)
         addDir('Genres', 'getPage', 'find')
         addDir(getString(30108), 'Search', '')
-        xbmcplugin.endOfDirectory(self._g.pluginhandle, updateListing=False, cacheToDisc=False)
+        xbmcplugin.endOfDirectory(self._g.pluginhandle, updateListing=False)
 
     def getFilter(self, resp, root):
         filters = findKey('filters', resp)
@@ -178,7 +181,8 @@ class PrimeVideo(Singleton):
                     addVideo(self.formatTitle(il), il['asins'], il, cm=cm, export=export)
                 if not export:
                     setContentAndView(il['contentType'])
-                    xbmc.executebuiltin('RunPlugin(%s?mode=processMissing)' % self._g.pluginid)
+                    self.checkMissing()
+                    #xbmc.executebuiltin('RunPlugin(%s?mode=processMissing)' % self._g.pluginid)
                 return
 
             if page == 'landing':
@@ -205,13 +209,13 @@ class PrimeVideo(Singleton):
                     if item.get('headerText') is None:
                         continue
                     title = self.cleanTitle(item['headerText'])
-                    prdata = item.get('presentationData', {})
+                    prdata = item.get('presentationData', item.get('facetedCarouselData', {}))
                     facetxt = prdata.get('facetText')
                     col_act = item.get('collectionAction')
                     col_lst = item.get('collectionItemList')
                     col_typ = item.get('collectionType')
                     if facetxt is not None:
-                        isprime = prdata.get('offerClassification', '') == 'PRIME'
+                        isprime = prdata.get('offerClassification', prdata.get('facetType')) == 'PRIME'
                         isincl = get_key('Entitled', item, 'containerMetadata', 'entitlementCues', 'entitledCarousel') == 'Entitled'
                         if self._s.paycont:
                             if isprime:
@@ -267,7 +271,7 @@ class PrimeVideo(Singleton):
 
             if not export:
                 setContentAndView(ct)
-                xbmc.executebuiltin('RunPlugin(%s?mode=processMissing)' % self._g.pluginid)
+                self.checkMissing()
         return
 
     def formatTitle(self, il):
@@ -344,14 +348,26 @@ class PrimeVideo(Singleton):
             self._db.commit()
         c.close()
 
+    @staticmethod
+    def get_sqlite3_thread_safety():
+        # Source: https://ricardoanderegg.com/posts/python-sqlite-thread-safety
+        # Mape value from SQLite's THREADSAFE to Python's DBAPI 2.0
+        # threadsafety attribute.
+        sqlite_threadsafe2python_dbapi = {0: 0, 2: 1, 1: 3}
+        conn = sqlite.connect(":memory:")
+        threadsafety = conn.execute("select * from pragma_compile_options where compile_options like 'THREADSAFE=%'").fetchone()[0]
+        conn.close()
+        threadsafety_value = int(threadsafety.split("=")[1])
+        return sqlite_threadsafe2python_dbapi[threadsafety_value]
+
     def _initialiseDB(self):
-        from sqlite3 import dbapi2 as sqlite
+        check_same_thread = False if self.get_sqlite3_thread_safety() == 3 else True
         self._cache_tbl = 'cache'
         self._art_tbl = 'art'
         self._dbFile = os.path.join(self._g.DATA_PATH, 'art-%s.db' % self._g.MarketID)
-        self._db = sqlite.connect(self._dbFile)
+        self._db = sqlite.connect(self._dbFile, check_same_thread=check_same_thread)
         self._cacheFile = os.path.join(self._g.DATA_PATH, 'cache-%s.db' % self._g.MarketID)
-        self._cacheDb = sqlite.connect(self._cacheFile)
+        self._cacheDb = sqlite.connect(self._cacheFile, check_same_thread=check_same_thread)
         self._createDB(self._art_tbl)
 
     @staticmethod
@@ -411,10 +427,14 @@ class PrimeVideo(Singleton):
         self._db.commit()
         return infoLabels
 
+    def checkMissing(self):
+        # xbmc.executebuiltin('RunPlugin(%s?mode=processMissing)' % self._g.pluginid)
+        if not self._art_thread.is_alive():
+            self._art_thread = Thread(target=self.processMissing)
+            self._art_thread.start()
+
     def processMissing(self):
         Log('Starting Fanart Update')
-        infos_updated = False
-        container_path = xbmc.getInfoLabel('Container.FolderPath')
         c = self._db.cursor()
         data = ''
         while data is not None:
@@ -423,10 +443,7 @@ class PrimeVideo(Singleton):
                 self.retrieveArtWork(*data)
                 c.execute('delete from miss where asins = ?', (data[0],))
                 self._db.commit()
-                infos_updated = True
         c.close()
-        #if container_path == xbmc.getInfoLabel('Container.FolderPath') and infos_updated:
-        #    xbmc.executebuiltin('Container.Refresh')
         Log('Finished Fanart Update')
 
     def retrieveArtWork(self, asins, title, year, contentType, il):

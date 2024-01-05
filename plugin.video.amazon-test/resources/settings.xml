@@ -87,11 +87,12 @@
         <setting id="disptvshow" type="bool" label="30071" default="false" visible="eq(-10,1)" />
         <setting id="preload_seasons" type="bool" label="30096" default="true" visible="eq(-11,1)" enable="eq(-1,true)"/>
         <setting id="preload_all_seasons" type="bool" label="30097" default="false" visible="eq(-12,1)" enable="eq(-1,true)" subsetting="true"/>
-        <setting label="Artwork" type="lsep" visible="eq(-13,2)"/>
-        <setting id="pv_episode_thumbnails" type="bool" label="30249" visible="eq(-14,0)" default="true"/>
-        <setting id="tmdb_art" type="enum" lvalues="30050|30051|30052" label="30016" default="1" visible="eq(-15,1)"/>
-        <setting id="tvdb_art" type="enum" lvalues="30050|30053|30054" label="30017" default="1" visible="eq(-16,1)"/>
-        <setting id="useshowfanart" type="bool" label="30055" default="true" visible="eq(-17,1)"/>
+        <setting id="hide_trailers" type="bool" label="30099" default="false" visible="eq(-13,1)"/>
+        <setting label="Artwork" type="lsep" />
+        <setting id="pv_episode_thumbnails" type="bool" label="30249" visible="eq(-15,0)" default="true"/>
+        <setting id="tmdb_art" type="enum" lvalues="30050|30051|30052" label="30016" default="1" visible="eq(-16,1)"/>
+        <setting id="tvdb_art" type="enum" lvalues="30050|30053|30054" label="30017" default="1" visible="eq(-17,1)"/>
+        <setting id="useshowfanart" type="bool" label="30055" default="true" visible="eq(-18,1)"/>
 
     </category>
     <!-- Views -->

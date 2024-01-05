@@ -409,6 +409,10 @@ msgctxt "#30098"
 msgid "Use new search with history"
 msgstr ""
 
+msgctxt "#30099"
+msgid "Hide trailers and extras in episode list"
+msgstr ""
+
 msgctxt "#30100"
 msgid "Library"
 msgstr "Biblioteka"

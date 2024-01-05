@@ -176,7 +176,8 @@ class PrimeVideo(Singleton):
                     for item in resp['episodes']:
                         il = self.getInfos(item, resp)
                         cm = self.addCtxMenu(il, page in 'watchlist')
-                        addVideo(self.formatTitle(il), il['asins'], il, cm=cm, export=export)
+                        if (self._s.hide_trailers and il.get('episode', 0) > 0) or (not self._s.hide_trailers):
+                            addVideo(self.formatTitle(il), il['asins'], il, cm=cm, export=export)
                 else:
                     il = self.getInfos(resp)
                     cm = self.addCtxMenu(il, page in 'watchlist')

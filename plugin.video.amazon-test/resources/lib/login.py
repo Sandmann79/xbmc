@@ -586,7 +586,6 @@ def refreshToken(user, aid=None):
     else:
         data['requested_token_type'] = 'access_token'
         data['source_token'] = token['refresh']
-    LogJSON(data)
     headers = _g.headers_android
     headers.pop('x-gasc-enabled')
     headers.pop('X-Requested-With')

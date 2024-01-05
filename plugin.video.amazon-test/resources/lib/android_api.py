@@ -40,7 +40,6 @@ class PrimeVideo(Singleton):
         self._createDB(self._art_tbl)
         self.days_since_epoch = lambda: int(time.time() / 86400)
         self.prime = ''
-        self.filter = {}
         self.def_ps = 20
         self.lang = loadUser('lang')
         self.def_dtid = self._g.dtid_android
@@ -75,7 +74,9 @@ class PrimeVideo(Singleton):
         addDir(getString(30108), 'Search', '')
         xbmcplugin.endOfDirectory(self._g.pluginhandle, updateListing=False)
 
-    def getFilter(self, resp, root):
+    @staticmethod
+    def getFilter(resp):
+        flt = {}
         filters = findKey('filters', resp)
         if len(filters) > 0 and 'refineCollection' in filters[0]:
             filters = filters[0]['refineCollection']
@@ -84,7 +85,8 @@ class PrimeVideo(Singleton):
             if 'text' in item and item['text'] is not None:
                 d = findKey('parameters', item)
                 d['swiftId'] = item['id']
-                self.filter[item['text']] = d
+                flt[item['text']] = d
+        return flt
 
     def addCtxMenu(self, il, wl, pgmod=1):
         cm = []
@@ -136,7 +138,7 @@ class PrimeVideo(Singleton):
 
         if resp:
             resp = resp.get('resource', resp)
-            self.getFilter(resp, root)
+            flt = self.getFilter(resp)
             if root:
                 self._createDB(self._cache_tbl)
                 for item in resp['navigations']:
@@ -150,7 +152,7 @@ class PrimeVideo(Singleton):
             if page in ['watchlist', 'library'] and 'Initial' in url and 'serviceToken' not in query_dict:
                 if export:
                     Log('Export of watchlist started')
-                for k, v in self.filter.items():
+                for k, v in flt.items():
                     addDir(k, 'getPage', page, opt=urlencode(v), export=export)
                 if not export:
                     xbmcplugin.endOfDirectory(self._g.pluginhandle)

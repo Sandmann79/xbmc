@@ -399,19 +399,19 @@ msgstr "Zresetuj stronę główną dodatku do ustawień domyślnych"
 
 msgctxt "#30096"
 msgid "Load season/series infos in the background"
-msgstr ""
+msgstr "Pobierz informacje o sezonie/serialu w tle"
 
 msgctxt "#30097"
 msgid "Download the info for all seasons"
-msgstr ""
+msgstr "Pobierz informacje dla wszystkich sezonów"
 
 msgctxt "#30098"
 msgid "Use new search with history"
-msgstr ""
+msgstr "Użyj nowego wyszukiwania z historią"
 
 msgctxt "#30099"
 msgid "Hide trailers and extras in episode list"
-msgstr ""
+msgstr "Ukryj zwiastuny i dodatki na liście odcinków"
 
 msgctxt "#30100"
 msgid "Library"
@@ -827,6 +827,8 @@ msgid ""
 "To use the Android data source and play 4K content on supported Android devices, this device must be registered with Amazon.\n"
 "To do this, the login with the Amazon credentials must be performed again in the addon."
 msgstr ""
+"Aby korzystać ze źródła danych Androida i odtwarzać treści 4K na obsługiwanych urządzeniach z Androidem, to urządzenie musi być zarejestrowane w Amazon.\n"
+"Aby to zrobić, należy ponownie zalogować się w dodatku za pomocą danych uwierzytelniających Amazon."
 
 msgctxt "#30273"
 msgid "Data Source"
@@ -872,11 +874,11 @@ msgstr "Archiwum utworzone w {}"
 
 msgctxt "#30282"
 msgid "Search History"
-msgstr ""
+msgstr "Historia wyszukiwania"
 
 msgctxt "#30283"
 msgid "Remove Item"
-msgstr ""
+msgstr "Usuń pozycję"
 
 #, fuzzy
 msgctxt "#30284"

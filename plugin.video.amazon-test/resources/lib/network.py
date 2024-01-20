@@ -482,11 +482,19 @@ def GrabJSON(url, postData=None):
         o = {}
         for m in matches:
             m = json.loads(Unescape(m.string.strip()))
-
+            LogJSON(m, 'alles')
             if ('widgets' in m) and ('Storefront' in m['widgets']):
                 m = m['widgets']['Storefront']
             elif 'props' in m:
                 m = m['props']
+                if 'body' in m and len(m['body']) > 0:
+                    body = m['body'][0]
+                    if 'siteWide' in m and 'bodyStart' in m['siteWide'] and len(m['siteWide']['bodyStart']) > 0:
+                        m = m['siteWide']['bodyStart'][0]['props']
+                    if 'props' in body:
+                        body = body['props']
+                        for p in ['atf', 'btf', 'landingPage', 'browse']:
+                            Merge(m, body.get(p, {}))
 
                 if _s.json_dump_raw:
                     # Prune useless/sensitive info

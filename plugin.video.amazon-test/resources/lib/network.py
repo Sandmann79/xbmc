@@ -453,11 +453,7 @@ def GrabJSON(url, postData=None):
             if 'from' in list(qs):  # list() instead of .keys() to avoid py3 iteration errors
                 qs['startIndex'] = qs['from']
                 del qs['from']
-            if url.startswith('/gp/video'):
-                newPath = '/gp/video' + up.path.replace('/gp/video', '')
-            else:
-                newPath = '/api' + up.path.replace('/search/', '/searchDefault/')
-            up = up._replace(path=newPath, query=urlencode([(k, v) for k, l in qs.items() for v in l]))
+            up = up._replace(query=urlencode([(k, v) for k, l in qs.items() for v in l]))
             url = up.geturl()
         if '/api/storefront' in url:
             postData = ""
@@ -482,7 +478,7 @@ def GrabJSON(url, postData=None):
         o = {}
         for m in matches:
             m = json.loads(Unescape(m.string.strip()))
-            LogJSON(m, 'alles')
+
             if ('widgets' in m) and ('Storefront' in m['widgets']):
                 m = m['widgets']['Storefront']
             elif 'props' in m:
@@ -493,7 +489,7 @@ def GrabJSON(url, postData=None):
                         m = m['siteWide']['bodyStart'][0]['props']
                     if 'props' in body:
                         body = body['props']
-                        for p in ['atf', 'btf', 'landingPage', 'browse']:
+                        for p in ['atf', 'btf', 'landingPage', 'browse', 'search', 'categories']:
                             Merge(m, body.get(p, {}))
 
                 if _s.json_dump_raw:

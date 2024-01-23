@@ -587,8 +587,8 @@ def refreshToken(user, aid=None):
         data['requested_token_type'] = 'access_token'
         data['source_token'] = token['refresh']
     headers = _g.headers_android
-    headers.pop('x-gasc-enabled')
-    headers.pop('X-Requested-With')
+    headers.pop('x-gasc-enabled', '')
+    headers.pop('X-Requested-With', '')
     headers.update({'x-amzn-identity-auth-domain': 'api.' + domain, 'Accept-Language': 'en-US', 'x-amzn-requestid': str(uuid4()).replace('-', '')})
     response = getURL('https://api.{}/auth/token'.format(domain), headers=headers, postdata=data)
     if 'access_token' in response:

@@ -313,12 +313,14 @@ def PlayVideo(name, asin, adultstr, streamtype, forcefb=0):
             u_path = '' if _g.UsePrimeVideo else '/gp/video'
             data = GrabJSON(_g.BaseUrl + u_path + '/detail/' + asin)
             if data:
-                state = findKey('liveState', data)
-                if state and state['id'] != 'live':
-                    _g.dialog.notification(getString(30203), '{} {}'.format(getString(30174), state['text'].lower()), xbmcgui.NOTIFICATION_INFO)
+                action = findKey('playbackActions', data)
+                live = findKey('liveState', data).get('isLive', False)
+                msg = findKey('dvMessage', data).get('string', '').replace('{lineBreak}', '\n')
+                if not action and msg:
+                    _g.dialog.notification(getString(30203), msg, xbmcgui.NOTIFICATION_INFO)
                     return False
                 tt = findKey('titleType', data)
-                if not state and tt.lower() == 'event':
+                if not live and tt.lower() == 'event':
                     streamtype = 0
 
         from .ages import AgeRestrictions

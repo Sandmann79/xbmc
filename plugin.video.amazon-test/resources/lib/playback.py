@@ -314,11 +314,11 @@ def PlayVideo(name, asin, adultstr, streamtype, forcefb=0):
             data = GrabJSON(_g.BaseUrl + u_path + '/detail/' + asin)
             if data:
                 action = findKey('playbackActions', data)
-                live = findKey('liveState', data).get('isLive', False)
                 msg = findKey('dvMessage', data).get('string', '').replace('{lineBreak}', '\n')
                 if not action and msg:
                     _g.dialog.notification(getString(30203), msg, xbmcgui.NOTIFICATION_INFO)
                     return False
+                live = findKey('liveState', data).get('isLive', False)
                 tt = findKey('titleType', data)
                 if not live and tt.lower() == 'event':
                     streamtype = 0
@@ -641,7 +641,7 @@ class _AmazonPlayer(xbmc.Player):
         with co(self.resumedb, 'rb') as fp:
             try:
                 items = pickle.load(fp)
-            except (KeyError, pickle.UnpicklingError):
+            except (KeyError, pickle.UnpicklingError, EOFError):
                 items = {}
             self.resume = items.get(self.asin, {}).get('resume', 0)
             fp.close()

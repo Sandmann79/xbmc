@@ -385,7 +385,7 @@ def GrabJSON(url, postData=None):
                         text = chr(char)
             return text
 
-        text = re.sub('&#?\\w+;', fixup, text)
+        text = re.sub('&#?\\w+;', fixup, text) #.replace(u'\uC2A0', ' ')
         try:
             text = text.encode('latin-1').decode('utf-8')
         except (UnicodeEncodeError, UnicodeDecodeError):
@@ -489,7 +489,7 @@ def GrabJSON(url, postData=None):
                         m = m['siteWide']['bodyStart'][0]['props']
                     if 'props' in body:
                         body = body['props']
-                        for p in ['atf', 'btf', 'landingPage', 'browse', 'search', 'categories']:
+                        for p in ['atf', 'btf', 'landingPage', 'browse', 'search', 'categories', 'genre']:
                             Merge(m, body.get(p, {}))
 
                 if _s.json_dump_raw:

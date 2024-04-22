@@ -1013,7 +1013,7 @@ class PrimeVideo(Singleton):
                 # "collections": {"amzn1.dv.gti.[…]": [{"titleIds": ["amzn1.dv.gti.[…]", "amzn1.dv.gti.[…]"]}]}
                 for gti, lc in state['collections'].items():
                     for le in lc:
-                        for e in le['titleIds']:
+                        for e in le.get('titleIds', le.get('cardTitleIds', [])):
                             GTIs.append(e)
                             # Save parent/children relationships
                             parents[e] = gti

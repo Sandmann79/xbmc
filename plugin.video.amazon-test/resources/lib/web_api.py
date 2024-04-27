@@ -920,12 +920,24 @@ class PrimeVideo(Singleton):
             parents = {}  # Map of parents
             bUpdated = False  # Video data updated
 
-            # Find out if it's a live event. Custom parsing rules apply
+            # seasons are now only in state['seasons'] so add them to state['self']
+            if 'seasons' in state:
+                for k, v in state['seasons'].items():
+                    for d in v:
+                        gti = d['seasonId']
+                        if gti not in state['self']:
+                            lnk = d['seasonLink']
+                            cgti = ExtractURN(lnk)
+                            state['self'][gti] = d
+                            state['self'][gti].update({'compactGTI': cgti, 'asins': [cgti], 'link': lnk, 'titleType': 'season', 'gti': gti, })
+                del state['seasons']
+
             if oid not in state['self']:
                 res = [x for x in state['self'] if oid in (state['self'][x]['compactGTI'] if self._g.UsePrimeVideo else state['self'][x]['asins'])]
                 if len(res) > 1:
                     oid = res[0]
 
+            # Find out if it's a live event. Custom parsing rules apply
             if ('self' in state) and (oid in state['self']) and ('event' == state['self'][oid]['titleType'].lower()):
                 # List of video streams
                 items = [oid]
@@ -1007,6 +1019,11 @@ class PrimeVideo(Singleton):
                     if siblings != self._videodata[gti]['siblings']:
                         self._videodata[gti]['siblings'] = siblings
                         bUpdated = True
+                    if 'sequenceNumber' in s:
+                        try:
+                            self._videodata[gti]['title'] = data['strings']['AVOD_DP_season_selector'].format(seasonNumber=s['sequenceNumber'])
+                        except:
+                            self._videodata[gti]['title'] = '{} {}'.format(getString(30167), s['sequenceNumber'])
 
             # Episodes lists
             if 'collections' in state:

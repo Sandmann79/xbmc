@@ -1444,7 +1444,8 @@ class PrimeVideo(Singleton):
                         elif 'paginationTargetId' in vo:
                             q = ['{}={}'.format(k.replace('paginationServiceToken', 'serviceToken').replace('paginationStartIndex', 'startIndex'), ','.join(v) if isinstance(v, list) else quote_plus(str(v)))
                                  for k, v in vo.items() if k in ['collectionType', 'paginationServiceToken', 'paginationTargetId', 'tags', 'paginationStartIndex']]
-                            q.append('pageSize=20&pageType=browse&pageId=default')
+                            q.append('pageSize=20&pageType=browse&pageId=default&variant=desktopWindows&actionScheme=default&payloadScheme=default \
+                                      &decorationScheme=web-search-decoration-tournaments-v2&featureScheme=web-search-v4&dynamicFeatures=HorizontalPagination&widgetScheme=web-explorecs-v11')
                             if 'collectionType' not in q:
                                 q.append('collectionType=Container')
                             nextPage = '/gp/video/api/paginateCollection?' + '&'.join(q)

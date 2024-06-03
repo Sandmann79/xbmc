@@ -346,7 +346,7 @@ class PrimeVideo(Singleton):
                 link = navigation.pop(0)
                 mml = 'links' in link
                 # Skip watchlist
-                if link['id'] in ['pv-nav-mystuff', 'pv-nav-my-stuff']:
+                if link['id'] in ['pv-nav-mystuff', 'pv-nav-my-stuff', 'pv-nav-ad-free']:
                     continue
                 if self._g.UsePrimeVideo and mml:
                     navigation = link['links'] + navigation
@@ -587,6 +587,9 @@ class PrimeVideo(Singleton):
                             shm = sh['metadata']
                             infoLabel['plot'] = '{:%H:%M} - {:%H:%M}  {}\n\n{}'.format(dt.fromtimestamp(us), dt.fromtimestamp(ue),
                                                                                        shm.get('title', ''), shm.get('synopsis', ''))
+                            if infoLabel['thumb'] is None and 'image' in shm:
+                                infoLabel['thumb'] = shm['image'].get('url')
+
             else:
                 if itemPathURI:
                     ctxitems.append((getString(30271), 'RunPlugin({}pv/sethome/{})'.format(self._g.pluginid, quote_plus(itemPathURI))))
@@ -694,8 +697,7 @@ class PrimeVideo(Singleton):
 
         def MaxSize(imgUrl):
             """ Strip the dynamic resize triggers from the URL (and other effects, such as blur) """
-
-            return re.sub(r'\._.*_\.', '.', imgUrl)
+            return re.sub(r'\._.*_\.', '.', imgUrl) if imgUrl is not None else None
 
         def ExtractURN(url):
             """ Extract the unique resource name identifier """
@@ -1316,7 +1318,10 @@ class PrimeVideo(Singleton):
                                                                              'journeyIngressContext']]
                                 q.append('pageId=live' if 'EpgGroup' in collection.get('containerType', '') else 'pageId=home')
                                 q.append('startIndex=0&pageSize=20&pageType=home')
-                                q.append('isCleanSlateActive=1&isDiscoverActive=1&isLivePageActive=1&variant=desktopWindows&payloadScheme=default&actionScheme=default')
+                                q.append('isCleanSlateActive=1&isDiscoverActive=1&isLivePageActive=1&variant=desktopWindows&payloadScheme=default&actionScheme=default'
+                                         '&decorationScheme=web-decoration-asin-v4&featureScheme=web-features-v6&widgetScheme=web-explorecs-v11&dynamicFeatures=integration'
+                                         '&dynamicFeatures=CLIENT_DECORATION_ENABLE_DAAPI&dynamicFeatures=ENABLE_DRAPER_CONTENT&dynamicFeatures=HorizontalPagination'
+                                         '&dynamicFeatures=CleanSlate&dynamicFeatures=EpgContainerPagination&dynamicFeatures=ENABLE_GPCI&dynamicFeatures=SupportsImageTextLinkTextInStandardHero')
                                 if 'collectionType' not in q:
                                     q.append('collectionType=Container')
                                 if var == 'collection':
@@ -1420,9 +1425,7 @@ class PrimeVideo(Singleton):
                     except:
                         # Classic numbered pagination
                         if 'pagination' in cnt:
-                            if 'url' in cnt['pagination'] and cnt['pagination']['url'] != '':
-                                nextPage = cnt['pagination']['url']  # + '&isCrow=0&isElcano=0&isCleanSlateActive=1&isLivePageActive=0&isDiscoverActive=1'
-                            elif 'paginator' in cnt['pagination']:
+                            if 'paginator' in cnt['pagination']:
                                 nextPage = next((x['href'] for x in cnt['pagination']['paginator'] if
                                                  (('type' in x) and ('NextPage' == x['type'])) or
                                                  (('*className*' in x) and ('atv.wps.PaginatorNext' == x['*className*'])) or
@@ -1444,8 +1447,8 @@ class PrimeVideo(Singleton):
                         elif 'paginationTargetId' in vo:
                             q = ['{}={}'.format(k.replace('paginationServiceToken', 'serviceToken').replace('paginationStartIndex', 'startIndex'), ','.join(v) if isinstance(v, list) else quote_plus(str(v)))
                                  for k, v in vo.items() if k in ['collectionType', 'paginationServiceToken', 'paginationTargetId', 'tags', 'paginationStartIndex']]
-                            q.append('pageSize=20&pageType=browse&pageId=default&variant=desktopWindows&actionScheme=default&payloadScheme=default \
-                                      &decorationScheme=web-search-decoration-tournaments-v2&featureScheme=web-search-v4&dynamicFeatures=HorizontalPagination&widgetScheme=web-explorecs-v11')
+                            q.append('pageSize=20&pageType=browse&pageId=default&variant=desktopWindows&actionScheme=default&payloadScheme=default'
+                                     '&decorationScheme=web-search-decoration-tournaments-v2&featureScheme=web-search-v4&dynamicFeatures=HorizontalPagination&widgetScheme=web-explorecs-v11')
                             if 'collectionType' not in q:
                                 q.append('collectionType=Container')
                             nextPage = '/gp/video/api/paginateCollection?' + '&'.join(q)

@@ -87,8 +87,8 @@ def PlayVideo(name, asin, adultstr, streamtype, forcefb=0):
         fr = round(eval(fps_string + '.0'), 3)
         return str(fr).replace('.0', '')
 
-    def _ParseStreams(suc, data, retmpd=False, bypassproxy=False):
-        HostSet = _s.pref_host
+    def _ParseStreams(suc, data, retmpd=False, bypassproxy=False, webid=False):
+        HostSet = 'Cloudfront' if _s.pref_host == 'Auto' and webid else _s.pref_host
         subUrls = []
         hosts = []
 
@@ -134,7 +134,12 @@ def PlayVideo(name, asin, adultstr, streamtype, forcefb=0):
                     Log('Host not reachable: ' + cdn['cdn'])
                     continue
 
-                returl = urlset['url'] if bypassproxy else 'http://{}/mpd/{}'.format(_s.proxyaddress, quote_plus(urlset['url']))
+                returl = urlset['url']
+                if (not _s.audio_description) and (streamtype != 2) and webid:
+                    if urlset['cdn'] == 'Cloudfront':
+                        returl = re.sub(r'(\/3\$[^\/]*)', r'\1+', returl)
+                if bypassproxy:
+                    returl = 'http://{}/mpd/{}'.format(_s.proxyaddress, quote_plus(returl))
                 return (returl, subUrls, timecodes) if retmpd else (True, _extrFr(data), None)
 
         return False, getString(30217), None
@@ -354,7 +359,7 @@ def PlayVideo(name, asin, adultstr, streamtype, forcefb=0):
             if success or not isinstance(cookie, dict):
                 break
 
-        mpd, subs, timecodes = _ParseStreams(success, data, retmpd=True, bypassproxy=bypassproxy)
+        mpd, subs, timecodes = _ParseStreams(success, data, retmpd=True, bypassproxy=bypassproxy, webid=dtid==_g.dtid_web)
         if not mpd:
             _g.dialog.notification(getString(30203), subs, xbmcgui.NOTIFICATION_ERROR)
             return False
@@ -365,9 +370,6 @@ def PlayVideo(name, asin, adultstr, streamtype, forcefb=0):
 
         from xbmcaddon import Addon as KodiAddon
         is_version = KodiAddon(_g.is_addon).getAddonInfo('version') if _g.is_addon else '0'
-
-        if (not _s.audio_description) and (streamtype != 2) and (dtid == _g.dtid_web):
-            mpd = re.sub(r'(~|%7E)', '', mpd)
 
         Log(mpd, Log.DEBUG)
 

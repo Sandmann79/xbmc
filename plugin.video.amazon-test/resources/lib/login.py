@@ -351,10 +351,10 @@ def LogIn(retToken=False):
             br.session.verify = _s.ssl_verif
             br.set_verbose(2)
             Log('Connect to SignIn Page')
-            if _s.data_source == 0 and _s.enable_uhd is False:
+            if False:
                 br.session.headers.update({'User-Agent': getConfig('UserAgent')})
                 br.open(user['baseurl'] + ('/gp/flex/sign-out.html' if not user['pv'] else '/auth-redirect/?signin=1'))
-                Log(br.get_url(), Log.DEBUG)
+                Log(br.session.headers)
                 br.session.headers.update({
                     'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
                     'Accept-Encoding': 'gzip, deflate',

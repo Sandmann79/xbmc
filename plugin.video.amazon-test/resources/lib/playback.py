@@ -88,7 +88,7 @@ def PlayVideo(name, asin, adultstr, streamtype, forcefb=0):
         return str(fr).replace('.0', '')
 
     def _ParseStreams(suc, data, retmpd=False, bypassproxy=False, webid=False):
-        HostSet = 'Cloudfront' if _s.pref_host == 'Auto' and webid else _s.pref_host
+        HostSet = 'Cloudfront' if _s.pref_host == 'Auto' and (not _s.audio_description) and (streamtype != 2) and webid else _s.pref_host
         subUrls = []
         hosts = []
 
@@ -138,7 +138,7 @@ def PlayVideo(name, asin, adultstr, streamtype, forcefb=0):
                 if (not _s.audio_description) and (streamtype != 2) and webid:
                     if urlset['cdn'] == 'Cloudfront':
                         returl = re.sub(r'(\/3\$[^\/]*)', r'\1+', returl)
-                if bypassproxy:
+                if not bypassproxy:
                     returl = 'http://{}/mpd/{}'.format(_s.proxyaddress, quote_plus(returl))
                 return (returl, subUrls, timecodes) if retmpd else (True, _extrFr(data), None)
 

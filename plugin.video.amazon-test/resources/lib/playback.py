@@ -5,6 +5,7 @@ import os
 import re
 import pickle
 import shlex
+import string
 import subprocess
 import threading
 import time
@@ -137,7 +138,10 @@ def PlayVideo(name, asin, adultstr, streamtype, forcefb=0):
                 returl = urlset['url']
                 if (not _s.audio_description) and (streamtype != 2) and webid:
                     if urlset['cdn'] == 'Cloudfront':
-                        returl = re.sub(r'(\/3\$[^\/]*)', r'\1+', returl)
+                        import random, string
+                        let = string.ascii_letters + string.digits
+                        rnd = [random.choice(let) for _ in range(random.randint(2,10))]
+                        returl = re.sub(r'(\/3\$[^\/]*)', r'\1' + ''.join(rnd), returl)
                 if not bypassproxy:
                     returl = 'http://{}/mpd/{}'.format(_s.proxyaddress, quote_plus(returl))
                 return (returl, subUrls, timecodes) if retmpd else (True, _extrFr(data), None)

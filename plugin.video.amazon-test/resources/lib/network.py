@@ -486,7 +486,9 @@ def GrabJSON(url, postData=None):
                 if 'body' in m and len(m['body']) > 0:
                     body = m['body'][0]
                     if 'siteWide' in m and 'bodyStart' in m['siteWide'] and len(m['siteWide']['bodyStart']) > 0:
-                        m = m['siteWide']['bodyStart'][0]['props']
+                        for bs in m['siteWide']['bodyStart']:
+                            if 'name' in bs and bs['name'] == 'navigation-bar' and 'props' in bs:
+                                m = bs['props']                        
                     if 'props' in body:
                         body = body['props']
                         for p in ['atf', 'btf', 'landingPage', 'browse', 'search', 'categories', 'genre']:

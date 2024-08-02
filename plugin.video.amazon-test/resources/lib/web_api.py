@@ -503,8 +503,10 @@ class PrimeVideo(Singleton):
             # Find out if item's a video leaf
             infoLabel = {'title': title}
 
-            try: bIsVideo = entry['metadata']['videometa']['mediatype'] in ['episode', 'movie', 'video']
-            except: bIsVideo = False
+            try:
+                bIsVideo = entry['metadata']['videometa']['mediatype'] in ['episode', 'movie', 'video', 'live', 'event']
+            except:
+                bIsVideo = False
 
             # Can we refresh the cache on this/these item(s)?
             bCanRefresh = ('ref' in entry) or ('lazyLoadURL' in entry)
@@ -512,7 +514,7 @@ class PrimeVideo(Singleton):
                 bCanRefresh |= (0 < len([k for k in entry['children'] if (k in self._videodata) and ('ref' in self._videodata[k])]))
 
             if bIsVideo:
-                infoLabel['contentType'] = 'live' if entry.get('live', False) else entry['metadata']['videometa']['mediatype']
+                infoLabel['contentType'] = entry['metadata']['videometa']['mediatype']
             elif 'verb' in entry:
                 url = entry['verb']
                 itemPathURI = ''
@@ -560,7 +562,7 @@ class PrimeVideo(Singleton):
                         if 'runtime' in m:
                             infoLabel['duration'] = m['runtime']
                     try:
-                        folderType = {'video': 0, 'movie': 5, 'episode': 4, 'tvshow': 2, 'season': 3}[m['videometa']['mediatype']]
+                        folderType = {'video': 0, 'movie': 5, 'episode': 4, 'tvshow': 2, 'season': 3, 'live': 0, 'event': 0}[m['videometa']['mediatype']]
                     except:
                         folderType = 2  # Default to category
                     if folderType in [5, 3, 2, 0]:
@@ -571,8 +573,9 @@ class PrimeVideo(Singleton):
                             gtis = self._videodata['urn2gti'].get(gt, gt)
                         in_wl = 1 if path.split('/')[:3] == ['root', 'Watchlist', 'watchlist'] else 0
                         if gtis is not None:
-                            ctxitems.append((getString(30180 + in_wl) % getString(self._g.langID[m['videometa']['mediatype']]),
-                                             'RunPlugin({}pv/wltoogle/{}/{}/{})'.format(self._g.pluginid, path, quote_plus(gtis), in_wl)))
+                            if m['videometa']['mediatype'] != 'live':
+                                ctxitems.append((getString(30180 + in_wl) % getString(self._g.langID[m['videometa']['mediatype']]),
+                                                 'RunPlugin({}pv/wltoogle/{}/{}/{})'.format(self._g.pluginid, path, quote_plus(gtis), in_wl)))
                             ctxitems.append((getString(30185) % getString(self._g.langID[m['videometa']['mediatype']]),
                                              'RunPlugin({}pv/browse/{}/export={})'.format(self._g.pluginid, itemPathURI, ft_exp[folderType] + 10)))
                             ctxitems.append((getString(30186), 'UpdateLibrary(video)'))
@@ -783,7 +786,7 @@ class PrimeVideo(Singleton):
                 chid = item['station'].get('id')
             if chid is not None and chid not in o:
                 thumb = None
-                o[chid] = {'metadata': {'artmeta': {}, 'videometa': {'mediatype': 'video'}}, 'live': True, 'pos': len(o)}
+                o[chid] = {'metadata': {'artmeta': {}, 'videometa': {'mediatype': 'live'}}, 'pos': len(o)}
                 if 'station' in item:
                     title = item['station']['name']
                     o[chid]['metadata']['schedule'] = item['station'].get('schedule', {})
@@ -811,7 +814,7 @@ class PrimeVideo(Singleton):
             liveStat = liveInfo.get('status', liveInfo.get('liveStateType', '')).lower() == 'live'
             liveTime = liveInfo.get('timeBadge', liveInfo.get('dateTime'))
             o[urn] = {'title': title, 'lazyLoadURL': url,
-                      'metadata': {'artmeta': {}, 'videometa': {'mediatype': 'video'}}, 'live': True, 'pos': len(o)}
+                      'metadata': {'artmeta': {}, 'videometa': {'mediatype': 'event'}}, 'pos': len(o)}
             o[urn]['metadata']['compactGTI'] = ExtractURN(item['playbackAction']['fallbackUrl']) if 'playbackAction' in item else urn
             when = ''
             if liveTime or liveStat:
@@ -977,7 +980,7 @@ class PrimeVideo(Singleton):
                             mats = state['action']['atf'][oid]['playbackActions']['main']['children']
                             mats = [a['videoMaterialType'].lower() for a in mats if vid == a['playbackID']]
                             if 'live' in mats:
-                                o[vid]['live'] = True
+                                o[vid]['metadata']['videometa']['mediatype'] = 'live'
                         except: pass
 
                     # Date and synopsis as a unified synopsis

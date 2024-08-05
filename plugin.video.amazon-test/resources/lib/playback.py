@@ -396,6 +396,8 @@ def PlayVideo(name, asin, adultstr, streamtype, forcefb=0):
         Log('Using %s Version: %s' % (_g.is_addon, is_version))
 
         listitem = xbmcgui.ListItem(label=title, path=mpd)
+        if (_g.KodiVersion < 21) and ('adaptive' in _g.is_addon):
+            listitem.setProperty('inputstream.adaptive.manifest_type', 'mpd')
         listitem.setArt({'thumb': thumb})
         listitem.setSubtitles(subs)
         listitem.setProperty('%s.license_type' % _g.is_addon, 'com.widevine.alpha')

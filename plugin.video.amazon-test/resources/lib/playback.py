@@ -319,6 +319,7 @@ def PlayVideo(name, asin, adultstr, streamtype, forcefb=0):
 
     def _IStreamPlayback(asin, name, streamtype, isAdult, extern):
         if streamtype == 3:
+            streamtype = 2
             u_path = '' if _g.UsePrimeVideo else '/gp/video'
             data = GrabJSON(_g.BaseUrl + u_path + '/detail/' + asin)
             if data:

@@ -3,6 +3,7 @@
 import sys
 import re
 import os
+import platform
 import subprocess
 import xbmcplugin
 import xbmcgui
@@ -32,7 +33,6 @@ priority = prio_values[int(addon.getSetting("priority"))]
 userDataFolder = translatePath("special://profile/addon_data/"+addonID)
 profileFolder = os.path.join(userDataFolder, 'profile')
 siteFolder = os.path.join(userDataFolder, 'sites')
-avBrowsers = ['Standard', 'Internet Explorer', 'Kylo', 'Chrome', 'Firefox', 'Opera']
 Dialog = xbmcgui.Dialog()
 
 if not os.path.isdir(userDataFolder):
@@ -45,19 +45,35 @@ if not os.path.isdir(siteFolder):
 youtubeUrl = "http://www.youtube.com/leanback"
 vimeoUrl = "http://www.vimeo.com/couchmode"
 
-bPath = ['C:\\Program Files\\Internet Explorer\\iexplore.exe',
-         'C:\\Program Files\\Hillcrest Labs\\Kylo\\Kylo.exe',
-         'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
-         'C:\\Program Files\\Mozilla Firefox\\firefox.exe',
-         'C:\\Program Files\\Opera\opera.exe']
-bKiosk = ['-k ', '', '--kiosk ', '', '-fullscreen ']
-bProfile = ['', '', '--user-data-dir=', '-profile ', '-pd ']
-bAgent = ['', '', '--user-agent=', '', '']
-bExtra = ['',
-          '', 
-          '--start-maximized --disable-translate --disable-new-tab-first-run --no-default-browser-check --no-first-run ',
-          '',
-          '']
+operatingsystem = platform.system()
+
+if operatingsystem == "Linux":
+	avBrowsers = ['Standard','Chrome', 'Firefox']
+	bPath = ['/usr/bin/chromium-browser',
+		 '/usr/bin/firefox']
+	bKiosk = ['--kiosk ', 
+		  '--kiosk ']
+	bProfile = ['--user-data-dir=', 
+		    '-profile ']
+	bAgent = ['--user-agent=', '']
+	bExtra = ['--start-maximized --disable-translate --disable-new-tab-first-run --no-default-browser-check --no-first-run ',
+		  '']
+elif operatingsystem == "Windows":
+	avBrowsers = ['Standard', 'Internet Explorer', 'Kylo', 'Chrome', 'Firefox', 'Opera']
+	bPath = ['C:\\Program Files\\Internet Explorer\\iexplore.exe',
+		 'C:\\Program Files\\Hillcrest Labs\\Kylo\\Kylo.exe',
+		 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
+		 'C:\\Program Files\\Mozilla Firefox\\firefox.exe',
+		 'C:\\Program Files\\Opera\opera.exe']
+	bKiosk = ['-k ', '', '--kiosk ', '', '-fullscreen ']
+	bProfile = ['', '', '--user-data-dir=', '-profile ', '-pd ']
+	bAgent = ['', '', '--user-agent=', '', '']
+	bExtra = ['',
+		  '', 
+		  '--start-maximized --disable-translate --disable-new-tab-first-run --no-default-browser-check --no-first-run ',
+		  '',
+		  '']
+
 
 def index():
     files = os.listdir(siteFolder)

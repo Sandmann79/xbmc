@@ -7,6 +7,7 @@ import subprocess
 import xbmcplugin
 import xbmcgui
 import xbmcaddon
+import xbmc
 try:
     from xbmcvfs import translatePath
 except ImportError:
@@ -32,7 +33,7 @@ priority = prio_values[int(addon.getSetting("priority"))]
 userDataFolder = translatePath("special://profile/addon_data/"+addonID)
 profileFolder = os.path.join(userDataFolder, 'profile')
 siteFolder = os.path.join(userDataFolder, 'sites')
-avBrowsers = ['Standard', 'Internet Explorer', 'Kylo', 'Chrome', 'Firefox', 'Opera']
+avBrowsers = ['Standard', 'Internet Explorer', 'Kylo', 'Chrome', 'Firefox', 'Opera', 'Lynket(Android Only)']
 Dialog = xbmcgui.Dialog()
 
 if not os.path.isdir(userDataFolder):
@@ -49,7 +50,8 @@ bPath = ['C:\\Program Files\\Internet Explorer\\iexplore.exe',
          'C:\\Program Files\\Hillcrest Labs\\Kylo\\Kylo.exe',
          'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
          'C:\\Program Files\\Mozilla Firefox\\firefox.exe',
-         'C:\\Program Files\\Opera\opera.exe']
+         'C:\\Program Files\\Opera\opera.exe',
+         'arun.com.chromer']
 bKiosk = ['-k ', '', '--kiosk ', '', '-fullscreen ']
 bProfile = ['', '', '--user-data-dir=', '-profile ', '-pd ']
 bAgent = ['', '', '--user-agent=', '', '']
@@ -153,23 +155,32 @@ def showSite(url, stopPlayback, kiosk, userAgent, custBrowser):
     selBrowser = winBrowser
     if custBrowser: selBrowser = int(custBrowser)
     path = bPath[selBrowser]
-    fullUrl = False
-    path86 = path.replace("\\Program Files\\", "\\Program Files (x86)\\")
-    if useCustomPath and os.path.exists(customPath) and not custBrowser:
-        fullUrl = getFullPath(customPath, url, kiosk, userAgent, selBrowser)
-    elif os.path.exists(path):
-        fullUrl = getFullPath(path, url, kiosk, userAgent, selBrowser)
-    elif os.path.exists(path86):
-        fullUrl = getFullPath(path86, url, kiosk, userAgent, selBrowser)
-    if fullUrl:
-        print(fullUrl)
-        if xbmc.getCondVisibility('system.platform.windows'):
-            subprocess.Popen(fullUrl, creationflags=priority)
-        else:
-            subprocess.Popen(fullUrl, shell=True)
+
+    if xbmc.getCondVisibility('System.Platform.Android'):
+        app = path
+        intent = "android.intent.action.VIEW"
+        dataType = ""
+        cmd = 'StartAndroidActivity("%s", "%s", "%s", "%s")' % (app, intent, dataType, url)
+        xbmc.executebuiltin(cmd)
     else:
-        xbmc.executebuiltin('XBMC.Notification(Info:,'+str(translation(30005))+'!,5000)')
-        addon.openSettings()
+        fullUrl = False
+        path86 = path.replace("\\Program Files\\", "\\Program Files (x86)\\")
+        if useCustomPath and os.path.exists(customPath) and not custBrowser:
+            fullUrl = getFullPath(customPath, url, kiosk, userAgent, selBrowser)
+        elif os.path.exists(path):
+            fullUrl = getFullPath(path, url, kiosk, userAgent, selBrowser)
+        elif os.path.exists(path86):
+            fullUrl = getFullPath(path86, url, kiosk, userAgent, selBrowser)
+        if fullUrl:
+            print(fullUrl)
+            if xbmc.getCondVisibility('system.platform.windows'):
+                subprocess.Popen(fullUrl, creationflags=priority)
+            else:
+                subprocess.Popen(fullUrl, shell=True)
+        else:
+            xbmc.executebuiltin('XBMC.Notification(Info:,'+str(translation(30005))+'!,5000)')
+            addon.openSettings()
+
 
 def removeSite(title):
     os.remove(os.path.join(siteFolder, getFileName(title)+".link"))

@@ -85,6 +85,9 @@ def EntryPoint(argv):
             _g.pv.Browse('root/Watchlist/watchlist', export=5)
         elif hasattr(_g.pv, 'getPage'):
             _g.pv.getPage(_g.watchlist, export=2)
+    elif mode == 'langSettings':
+        from .configs import langSettings
+        langSettings(args.get('url'))
     elif mode == 'Search':
         Search(args.get('searchstring'))
     elif mode in ['LogIn', 'remLoginData', 'removeUser', 'renameUser', 'switchUser', 'createZIP', 'removeLogs']:

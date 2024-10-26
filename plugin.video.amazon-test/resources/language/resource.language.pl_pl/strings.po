@@ -885,6 +885,16 @@ msgctxt "#30284"
 msgid "Clear List"
 msgstr "Wyczyść pliki dziennika"
 
+#, fuzzy
+#msgctxt "#30285"
+#msgid "Audio Languages"
+#msgstr "Język"
+
+#, fuzzy
+#msgctxt "#30286"
+#msgid "Subtitle Languages"
+#msgstr "Dostępne języki:"
+
 #~ msgctxt "#30071"
 #~ msgid "Display TV-Show instead of Seasons in Watchlist"
 #~ msgstr "Pokazuj serial zamiast sezonów w obserwowanych"

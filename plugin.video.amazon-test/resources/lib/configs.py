@@ -18,7 +18,6 @@ def getConfig(cfile, defvalue=''):
 
     return value if value else defvalue
 
-
 def writeConfig(cfile, value):
     cfgfile = OSPJoin(writeConfig.configPath, cfile)
     cfglockfile = OSPJoin(writeConfig.configPath, cfile + '.lock')
@@ -45,3 +44,21 @@ def writeConfig(cfile, value):
             l.close()
             if time.time() - modified > 0.1:
                 xbmcvfs.delete(cfglockfile)
+
+def langSettings(config_id):
+    from .common import Globals
+    _g = Globals()
+    supported_langs = ['all', 'ar', 'bg', 'ca', 'cmn', 'cs', 'da', 'de', 'en', 'es', 'et', 'fi', 'fr', 'he', 'hi', 'hr', 'hu', 'is', 'it', 'ja',
+                       'ko', 'lt', 'lv', 'nb', 'nl', 'pl', 'pt', 'ro', 'ru', 'sk', 'sl', 'sr', 'sv', 'ta', 'te', 'th', 'tr', 'uk', 'vi', 'yue']
+    langs = getConfig(config_id, supported_langs[0])
+    presel = [supported_langs.index(x) for x in langs.split(',') if x in supported_langs]
+    sel = _g.dialog.multiselect('Languages', supported_langs, preselect=presel)
+
+    if not sel is None:
+        if len(sel) == 0:
+            sel = supported_langs[0]
+        elif 0 in sel and len(sel) > 1:
+            sel.remove(0)
+        langs = ','.join([supported_langs[x] for x in sel])
+        writeConfig(config_id, langs)
+        _g.addon.setSetting(config_id, langs)

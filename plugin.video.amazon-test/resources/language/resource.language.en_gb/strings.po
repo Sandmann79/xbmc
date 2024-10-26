@@ -879,3 +879,12 @@ msgstr ""
 msgctxt "#30284"
 msgid "Clear List"
 msgstr ""
+
+msgctxt "#30285"
+msgid "Audio Languages"
+msgstr ""
+
+msgctxt "#30286"
+msgid "Subtitle Languages"
+msgstr ""
+

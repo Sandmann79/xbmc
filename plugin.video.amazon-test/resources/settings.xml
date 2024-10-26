@@ -42,11 +42,14 @@
     </category>
     <!-- Language -->
     <category label="30021">
+        <setting id="proxy_mpdalter" type="bool" label="30248" default="true" visible="false"/>
         <!-- Audio -->
         <setting label="30033" type="lsep"/>
+        <setting id="audio_langs" type="action" label="30285" action="RunPlugin(plugin://plugin.video.amazon-test/?mode=langSettings&url=audio_langs)" enable="eq(-2,true)" />
         <setting id="audio_description" type="bool" label="30005" default="false"/>
         <!-- Subtitles -->
         <setting label="30034" type="lsep"/>
+        <setting id="sub_langs" type="action" label="30286" action="RunPlugin(plugin://plugin.video.amazon-test/?mode=langSettings&url=sub_langs)" enable="eq(-5,true)" />
         <setting id="sub_stretch" type="bool" label="30028" default="false"/>
         <setting id="sub_stretch_factor" type="enum" values="FILM/NTSC (24/23.976)|NTSC/FILM (23.976/24)|PAL/NTSC (25/23.976)|NTSC/PAL (23.976/25)|PAL/FILM (25/24)|FILM/PAL (24/25)" label="30027" default="0" enable="eq(-1,true)" subsetting="true"/>
         <!-- Menu -->

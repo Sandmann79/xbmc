@@ -874,6 +874,16 @@ msgctxt "#30284"
 msgid "Clear List"
 msgstr ""
 
+#, fuzzy
+#msgctxt "#30285"
+#msgid "Audio Languages"
+#msgstr "Lingua"
+
+#, fuzzy
+#msgctxt "#30286"
+#msgid "Subtitle Languages"
+#msgstr "Lingue disponibili:"
+
 #~ msgctxt "#30006"
 #~ msgid "Store Credentials instead of using the Cookie?"
 #~ msgstr "Memorizzare le credenziali invece di utilizzare il cookie?"

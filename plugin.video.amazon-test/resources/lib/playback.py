@@ -1,11 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
+
+import base64
 import os
 import re
 import pickle
 import shlex
-import string
+import json
 import subprocess
 import threading
 import time
@@ -141,7 +143,9 @@ def PlayVideo(name, asin, adultstr, streamtype, forcefb=0):
                         import random, string
                         let = string.ascii_letters + string.digits
                         rnd = [random.choice(let) for _ in range(random.randint(2,10))]
-                        returl = re.sub(r'(\/3\$[^\/]*)', r'\1' + ''.join(rnd), returl)
+                        try:
+                            returl = re.sub(r'(\/3\$[^\/]*)', r'\1' + ''.join(rnd), returl)
+                        except: pass
                 if not bypassproxy:
                     returl = 'http://{}/mpd/{}'.format(_s.proxyaddress, quote_plus(returl))
                 return (returl, subUrls, timecodes) if retmpd else (True, _extrFr(data), None)
@@ -353,7 +357,7 @@ def PlayVideo(name, asin, adultstr, streamtype, forcefb=0):
         # available though token based authentification.
         
         for preferTokenToCookie in ([True, False] if _s.wvl1_device else [False]):
-            cookie, opt_lic, headers, dtid = _getPlaybackVars(preferToken=preferTokenToCookie)
+            cookie, opt_lic, headers, dtid, lic_headers = _getPlaybackVars(preferToken=preferTokenToCookie)
             if not cookie:
                 _g.dialog.notification(getString(30203), getString(30200), xbmcgui.NOTIFICATION_ERROR)
                 Log('Login error at playback')
@@ -401,12 +405,30 @@ def PlayVideo(name, asin, adultstr, streamtype, forcefb=0):
             listitem.setProperty('inputstream.adaptive.manifest_type', 'mpd')
         listitem.setArt({'thumb': thumb})
         listitem.setSubtitles(subs)
-        listitem.setProperty('%s.license_type' % _g.is_addon, 'com.widevine.alpha')
-        listitem.setProperty('%s.license_key' % _g.is_addon, licURL)
-        listitem.setProperty('%s.manifest_headers' % _g.is_addon, urlencode(headers))
         listitem.setProperty('inputstreamaddon' if _g.KodiVersion < 19 else 'inputstream', _g.is_addon)
         listitem.setMimeType('application/dash+xml')
+        listitem.setProperty('%s.manifest_headers' % _g.is_addon, urlencode(headers))
         listitem.setContentLookup(False)
+
+        if list(map(int, is_version.split('.'))) < [22, 1, 5]:
+            listitem.setProperty('%s.license_type' % _g.is_addon, 'com.widevine.alpha')
+            listitem.setProperty('%s.license_key' % _g.is_addon, licURL + opt_lic)
+        else:
+            req_data = json.dumps({'widevine2Challenge': '{CHA-B64U}', 'includeHdcpTestKeyInLicense': True})
+            drm_cfg = {'com.widevine.alpha':
+                           {'license':
+                                {'server_url': licURL,
+                                 'req_headers': urlencode(lic_headers),
+                                 'req_data': base64.b64encode(req_data.encode('utf-8')).decode(),
+                                 'wrapper': "base64",
+                                 'unwrapper': 'json,base64',
+                                 'unwrapper_params': {'path_data': 'license', 'path_data_traverse': True,
+                                                      'path_hdcp': 'hdcpEnforcementResolutionPixels', 'path_hdcp_traverse': True}
+                                 }
+                            }
+                       }
+            listitem.setProperty('inputstream.adaptive.drm', json.dumps(drm_cfg))
+
         player = _AmazonPlayer()
         player.asin = asin
         player.cookie = cookie
@@ -450,12 +472,12 @@ def PlayVideo(name, asin, adultstr, streamtype, forcefb=0):
             else:
                 cj_str = {'Cookie': ';'.join(['%s=%s' % (k, v) for k, v in cookie.items()])}
                 headers = {'User-Agent': getConfig('UserAgent')}
-            cj_str.update({'Content-Type': 'application/x-www-form-urlencoded'})
+            cj_str.update({'Content-Type': 'application/octet-stream'})
             cj_str.update(headers)
             opt = '|' + urlencode(cj_str)
             opt += '|widevine2Challenge=B{SSM}&includeHdcpTestKeyInLicense=true'
             opt += '|JBlicense;hdcpEnforcementResolutionPixels'
-            return cookie, opt, headers, dtid
+            return cookie, opt, headers, dtid, cj_str
         return False
 
     isAdult = adultstr == '1'

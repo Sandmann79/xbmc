@@ -238,9 +238,9 @@ def getURLData(mode, asin, retformat='json', devicetypeid=_g.dtid_web, version=2
             url += '&deviceHdrFormatsOverride=' + supported_hdr()
             url += '&deviceVideoQualityOverride=' + ('UHD' if _s.enable_uhd else 'HD')
 
-    url += opt
     if retURL:
         return url
+    url += opt
     data = getURL(url if not proxyEndpoint else 'http://{}/{}/{}'.format(getConfig('proxyaddress'), proxyEndpoint, quote_plus(url)),
                   useCookie=useCookie, postdata='', silent=silent)
     if data:

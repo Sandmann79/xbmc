@@ -90,6 +90,24 @@ datetimeParser = {
         'time_fmt': '%I:%M %p',
         'iso6392': 'eng'
     },
+    'en_GB': {
+        'deconstruct': '^(?P<d>[0-9]+)\\.?\\s+(?P<m>[^\\s]+)\\s+(?P<y>[0-9]+)',
+        'months': {
+            'january': 1,
+            'february': 2,
+            'march': 3,
+            'april': 4,
+            'may': 5,
+            'june': 6,
+            'july': 7,
+            'august': 8,
+            'september': 9,
+            'october': 10,
+            'november': 11,
+            'december': 12
+        },
+        'iso6392': 'eng'
+    },
     'es_ES': {
         'language': 'Español',
         'deconstruct': '^(?P<d>[0-9]+)\\s+de\\s+(?P<m>[^\\s]+),?\\s+de\\s+(?P<y>[0-9]+)',

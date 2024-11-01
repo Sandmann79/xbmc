@@ -472,7 +472,7 @@ class PrimeVideo(Singleton):
                     if c not in node:
                         node[c] = {}
 
-            nodeKeys = sorted([k for k in node if k not in ['ref', 'verb', 'title', 'metadata', 'parent', 'siblings', 'children', 'pos']],
+            nodeKeys = sorted([k for k in node if k not in ['ref', 'verb', 'title', 'metadata', 'parent', 'siblings', 'children', 'pos', 'trailer']],
                               key=lambda x: (node[x].get('pos', 999) if isinstance(node[x], dict) else 999))
             # Move nextpage entry to end of list
             if 'nextPage' in nodeKeys:
@@ -483,10 +483,7 @@ class PrimeVideo(Singleton):
         folderType = 0 if 'root' == path else 1
         folderTypeList = []
         for key in nodeKeys:
-            if key in self._videodata:
-                entry = deepcopy(self._videodata[key])
-            else:
-                entry = node[key]
+            entry = deepcopy(self._videodata[key]) if key in self._videodata else node[key]
             title = entry.get('title', nodeName)
             itemPathURI = '{}{}{}'.format(path if key not in 'Watchlist' else 'root', self._separator, quote_plus(key.encode('utf-8')))
             ctxitems = []
@@ -710,7 +707,6 @@ class PrimeVideo(Singleton):
 
         def DelocalizeDate(lang, datestr):
             """ Convert language based timestamps into YYYY-MM-DD """
-
             if lang not in self._dateParserData or (lang in self._dateParserData and 'deconstruct' not in self._dateParserData[lang]):
                 Log('Unable to decode date "{}": language "{}" not supported'.format(datestr, lang), Log.DEBUG)
                 return datestr
@@ -1031,17 +1027,21 @@ class PrimeVideo(Singleton):
                             self._videodata[gti]['title'] = '{} {}'.format(getString(30167), s['sequenceNumber'])
 
             # Episodes lists
-            if 'collections' in state:
-                # "collections": {"amzn1.dv.gti.[…]": [{"titleIds": ["amzn1.dv.gti.[…]", "amzn1.dv.gti.[…]"]}]}
-                for gti, lc in state['collections'].items():
-                    for le in lc:
-                        for e in le.get('titleIds', le.get('cardTitleIds', [])):
-                            GTIs.append(e)
-                            # Save parent/children relationships
-                            parents[e] = gti
-                            if gti in self._videodata and e not in self._videodata[gti]['children']:
-                                self._videodata[gti]['children'].append(e)
-                                bUpdated = True
+            episodes = state.get('collections', {})
+            if 'episodeList' in state:
+                episodes = {state['pageTitleId']: [state['episodeList']]}
+            # "collections": {"amzn1.dv.gti.[…]": [{"titleIds": ["amzn1.dv.gti.[…]", "amzn1.dv.gti.[…]"]}]}
+            # "collections": {"amzn1.dv.gti.[…]": [{"cardTitleIds": ["amzn1.dv.gti.[…]", "amzn1.dv.gti.[…]"]}]}
+            # "episodeList": {"cardTitleIds": ["amzn1.dv.gti.[…]", "amzn1.dv.gti.[…]"]}
+            for gti, lc in episodes.items():
+                for le in lc:
+                    for e in le.get('titleIds', le.get('cardTitleIds', [])):
+                        GTIs.append(e)
+                        # Save parent/children relationships
+                        parents[e] = gti
+                        if gti in self._videodata and e not in self._videodata[gti]['children']:
+                            self._videodata[gti]['children'].append(e)
+                            bUpdated = True
 
             # Video info
             if 'detail' not in state:
@@ -1093,6 +1093,16 @@ class PrimeVideo(Singleton):
                     bUpdated = True
 
                 item = details[gti]  # Shortcut
+                titleType = item.get('titleType', '').lower()
+
+                # add missing episodes infos from season or self.gti
+                if titleType == 'episode' and 'episodeNumber' not in item:
+                    seasonDetails = details[state['pageTitleId']]
+                    if gti in state['self']:
+                        item['episodeNumber'] = state['self'][gti].get('sequenceNumber', 0)
+                    for titleinfo in ['amazonRating', 'contributors', 'genres', 'ratingBadge', 'studios', 'seasonNumber']:
+                        if titleinfo not in item and titleinfo in seasonDetails:
+                            item[titleinfo] = seasonDetails[titleinfo]
 
                 # Title
                 if bCacheRefresh or ('title' not in vd):
@@ -1113,8 +1123,8 @@ class PrimeVideo(Singleton):
                         bUpdated = True
 
                 # Mediatype
-                if (bCacheRefresh or ('mediatype' not in vd['metadata']['videometa'])) and ('titleType' in item) and item['titleType']:
-                    vd['metadata']['videometa']['mediatype'] = item['titleType'].lower()
+                if bCacheRefresh or ('mediatype' not in vd['metadata']['videometa']):
+                    vd['metadata']['videometa']['mediatype'] = titleType
                     bUpdated = True
 
                 # Synopsis, media type, year, duration

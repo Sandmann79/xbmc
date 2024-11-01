@@ -485,12 +485,8 @@ class PrimeVideo(Singleton):
         for key in nodeKeys:
             if key in self._videodata:
                 entry = deepcopy(self._videodata[key])
-                if not isinstance(entry, dict):
-                    self.Refresh(path, bRefreshVideodata=True)
-                    entry = deepcopy(self._videodata[key])
             else:
                 entry = node[key]
-
             title = entry.get('title', nodeName)
             itemPathURI = '{}{}{}'.format(path if key not in 'Watchlist' else 'root', self._separator, quote_plus(key.encode('utf-8')))
             ctxitems = []
@@ -714,6 +710,7 @@ class PrimeVideo(Singleton):
 
         def DelocalizeDate(lang, datestr):
             """ Convert language based timestamps into YYYY-MM-DD """
+
             if lang not in self._dateParserData or (lang in self._dateParserData and 'deconstruct' not in self._dateParserData[lang]):
                 Log('Unable to decode date "{}": language "{}" not supported'.format(datestr, lang), Log.DEBUG)
                 return datestr

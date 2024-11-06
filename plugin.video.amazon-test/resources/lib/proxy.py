@@ -324,16 +324,14 @@ class ProxyHTTPD(BaseHTTPRequestHandler):
         status_code, headers, r = self._ForwardRequest('get', endpoint, headers, data, True)
 
         with self._PrepareChunkedResponse(status_code, headers) as gzstream:
+            Log('[PS] Loading MPD and rebasing as {}'.format(baseurl), Log.DEBUG)
             if r.encoding is None:
                 r.encoding = 'utf-8'
-            buffer = ''
+            buffer = r.content.decode(r.encoding)
             bPeriod = False
-            Log('[PS] Loading MPD and rebasing as {}'.format(baseurl), Log.DEBUG)
-            for chunk in r.iter_content(chunk_size=1048576, decode_unicode=True):
-                buffer += py2_decode(chunk)
-
-                # Flush everything up to audio AdaptationSets as fast as possible
-                pos = re.search(r'(<AdaptationSet[^>]*contentType="video"[^>]*>.*?</AdaptationSet>\s*)' if bPeriod else r'(<Period[^>]*>\s*)', buffer, flags=re.DOTALL)
+            pos = True
+            while pos is not None:
+                pos = re.search(r'(<AdaptationSet[^>]*contentType="video"[^>]*>.*?</AdaptationSet>)' if bPeriod else r'(<Period[^>]*>)', buffer, flags=re.DOTALL)
                 if pos:
                     if 0 < pos.start(1):
                         self._SendChunk(gzstream, buffer[0:pos.start(1)])
@@ -372,7 +370,7 @@ class ProxyHTTPD(BaseHTTPRequestHandler):
                 # Log('[PS] AdaptationSet position: ([{}:{}], [{}:{}])'.format(pos.start(1), pos.end(1), pos.start(2), pos.end(2)))
                 setTag = buffer[pos.start(1):pos.end(1)]
                 setData = buffer[pos.start(2):pos.end(2)]
-                trackId = re.search(r'\s+audioTrackId="([^_]+)_(dialog|descriptive)', setTag)
+                trackId = re.search(r'\s+audioTrackId="([^_]+)_([a-zA-Z0-9]+)', setTag)
                 if trackId is not None:
                     trackId = trackId.groups()
                     lang = re.search(r'\s+lang="([^"]+)"', setTag).group(1)
@@ -396,11 +394,15 @@ class ProxyHTTPD(BaseHTTPRequestHandler):
                                         best_found = [bitrate, track, atmos]
                                 setData = setData.replace(track, '' if 0 < len(repres) else best_found[1])
                             setTag = re.sub(r' (min|max)Bandwidth="[^"]+"', '', setTag)
-                            atmos_apx = ' (Atmos)' if best_found[2] and self.server._s._g.KodiVersion < 21 else ''
+                            apx = ''
+                            if best_found[2] and self.server._s._g.KodiVersion < 21:
+                                apx = ' (Atmos)'
+                            elif 'boosted' in trackId[1]:
+                                apx = ' (Dialog Boost: {})'.format(trackId[1].replace('boosteddialog', '').capitalize())
                             if self.server._s._g.KodiVersion > 18:
-                                setTag = '{} name="{} kbps{}">'.format(setTag[:-1], int(best_found[0] / 1000), atmos_apx)
+                                setTag = '{} name="{} kbps{}">'.format(setTag[:-1], int(best_found[0] / 1000), apx)
                             else:
-                                setTag = re.sub(r'( lang="[^"]+)"', r'\1 {} [{} kbps]{}"'.format('' if '-' in newLocale else '-', int(best_found[0] / 1000), atmos_apx), setTag)
+                                setTag = re.sub(r'( lang="[^"]+)"', r'\1 {} [{} kbps]{}"'.format('' if '-' in newLocale else '-', int(best_found[0] / 1000), apx), setTag)
 
                         Log('[PS] ' + setTag, Log.DEBUG)
                         self._SendChunk(gzstream, setTag)

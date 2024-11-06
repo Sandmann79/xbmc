@@ -555,6 +555,7 @@ class PrimeVideo(Singleton):
                     # https://codedocs.xyz/xbmc/xbmc/group__python__xbmcgui__listitem.html#ga0b71166869bda87ad744942888fb5f14
                     infoLabel.update(m['videometa'])
                     if bIsVideo:
+                        infoLabel['TrailerAvailable'] = entry.get('trailer', False)
                         folder = False
                         if 'runtime' in m:
                             infoLabel['duration'] = m['runtime']
@@ -600,6 +601,8 @@ class PrimeVideo(Singleton):
             folderTypeList.append(folderType)
             # If it's a video leaf without an actual video, something went wrong with Amazon servers, just hide it
             if ('nextPage' == key) or (not folder) or (4 > folderType):
+                if 4 == folderType and 1 > infoLabel.get('episode', 0):
+                    continue
                 if export and 4 == folderType and bIsVideo:
                     if 'episode' not in infoLabel or 'season' not in infoLabel or 'tvshowtitle' not in infoLabel or 'trailer' in infoLabel['title']:
                         break

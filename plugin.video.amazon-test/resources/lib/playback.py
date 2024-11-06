@@ -92,6 +92,7 @@ def PlayVideo(name, asin, adultstr, streamtype, forcefb=0):
 
     def _ParseStreams(suc, data, retmpd=False, bypassproxy=False, webid=False):
         HostSet = 'Cloudfront' if _s.pref_host == 'Auto' and (not _s.audio_description) and (streamtype != 2) and webid else _s.pref_host
+        bypassproxy = bypassproxy if streamtype != 1 else True
         subUrls = []
         hosts = []
 

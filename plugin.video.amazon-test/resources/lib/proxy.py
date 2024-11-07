@@ -370,10 +370,13 @@ class ProxyHTTPD(BaseHTTPRequestHandler):
                 # Log('[PS] AdaptationSet position: ([{}:{}], [{}:{}])'.format(pos.start(1), pos.end(1), pos.start(2), pos.end(2)))
                 setTag = buffer[pos.start(1):pos.end(1)]
                 setData = buffer[pos.start(2):pos.end(2)]
+                lang = re.search(r'\s+lang="([^"]+)"', setTag).group(1)
                 trackId = re.search(r'\s+audioTrackId="([^_]+)_([a-zA-Z0-9]+)', setTag)
                 if trackId is not None:
                     trackId = trackId.groups()
-                    lang = re.search(r'\s+lang="([^"]+)"', setTag).group(1)
+                elif lang is not None:
+                    trackId = [lang, '']
+                if trackId is not None:
                     if lang in chosen_langs or chosen_langs == 'all':
                         imp = ' impaired="true"' if 'descriptive' == trackId[1] else ''
                         newLocale = self._AdjustLocale(trackId[0], langCount[self.split_lang(trackId[0])])

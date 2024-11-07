@@ -411,7 +411,7 @@ def PlayVideo(name, asin, adultstr, streamtype, forcefb=0):
         listitem.setProperty('%s.manifest_headers' % _g.is_addon, urlencode(headers))
         listitem.setContentLookup(False)
 
-        if list(map(int, is_version.split('.'))) < [22, 1, 5]:
+        if list(map(int, is_version.split('.'))) < [99, 1, 5]:
             listitem.setProperty('%s.license_type' % _g.is_addon, 'com.widevine.alpha')
             listitem.setProperty('%s.license_key' % _g.is_addon, licURL + opt_lic)
         else:

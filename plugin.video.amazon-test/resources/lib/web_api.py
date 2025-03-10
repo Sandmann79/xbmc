@@ -27,9 +27,10 @@ except ImportError:
     import pickle
 
 try:
-    from urllib.parse import quote_plus, unquote_plus
+    from urllib.parse import quote_plus, unquote_plus, parse_qs, urlparse
 except ImportError:
     from urllib import quote_plus, unquote_plus
+    from urlparse import parse_qs, urlparse
 
 
 class PrimeVideo(Singleton):
@@ -1450,7 +1451,14 @@ class PrimeVideo(Singleton):
                                 q = cnt['pagination']['queryParameters']
                                 q = {k.replace('content', 'page') if k in ['contentId', 'contentType'] else k: v for k, v in q.items()}
                                 q.update({'isCleanSlateActive': '1', 'isDiscoverActive': '1', 'isLivePageActive': '1', 'variant': 'desktopWindows', 'payloadScheme': 'default'})
-                                t = json.loads(base64.b64decode(q['serviceToken']))
+                                try:
+                                    t = json.loads(base64.b64decode(q['serviceToken']))
+                                except:
+                                    t = ''
+                                    if cnt['pagination'].get('url') is not None:
+                                        u_parse = urlparse(cnt['pagination']['url'])
+                                        u_query = parse_qs(u_parse.query)
+                                        t = json.loads(base64.b64decode(u_query['serviceToken'][0]))
                                 if 'type' in t and 'vpage' in t['type']:
                                     nextPage = '/gp/video/api/getLandingPage?' + urlencode(q, doseq=True)
                                 else:

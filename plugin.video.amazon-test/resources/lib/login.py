@@ -196,7 +196,7 @@ def MFACheck(br, email, soup):
                 br['code'] = wnd.inp
             else:
                 return None
-        if soup.find('img', attrs={'alt': 'captcha'}):
+        elif soup.find('img', attrs={'alt': 'captcha'}):
             wnd = _Challenge(soup)
             if not wnd.solve_captcha():
                 wnd.doModal()
@@ -207,6 +207,15 @@ def MFACheck(br, email, soup):
             else:
                 return None
             del wnd
+        elif soup.find('div', attrs={'id': 'auth-error-message-box'}):
+            br.select_form('form[id="ap_login_form"]')
+            br['email'] = email
+            return br
+        elif soup.find('iframe', attrs={'id': 'cvf-aamation-challenge-iframe'}):
+            _g.dialog.ok(getString(30200), getString(30287))
+            return None
+        else:
+            return None
     elif 'validateCaptcha' in uni_soup:
         Log('validateCaptcha', Log.DEBUG)
         wnd = _Challenge(soup)

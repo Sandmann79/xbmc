@@ -886,15 +886,28 @@ msgid "Clear List"
 msgstr "Wyczyść pliki dziennika"
 
 #, fuzzy
-#msgctxt "#30285"
-#msgid "Audio Languages"
-#msgstr "Język"
+msgctxt "#30285"
+msgid "Audio Languages"
+msgstr "Język"
 
 #, fuzzy
-#msgctxt "#30286"
-#msgid "Subtitle Languages"
-#msgstr "Dostępne języki:"
+msgctxt "#30286"
+msgid "Subtitle Languages"
+msgstr "Dostępne języki:"
 
+msgctxt "#30287"
+msgid ""
+"Unable to log in because an unsupported captcha is displayed.\n"
+"Either log in again or activate multi-factor authentication in the Amazon account."
+msgstr ""
+
+# msgctxt "#30285"
+# msgid "Audio Languages"
+# msgstr "Język"
+# msgctxt "#30286"
+# msgid "Subtitle Languages"
+# msgstr "Dostępne języki:"
+#, fuzzy
 #~ msgctxt "#30071"
 #~ msgid "Display TV-Show instead of Seasons in Watchlist"
 #~ msgstr "Pokazuj serial zamiast sezonów w obserwowanych"

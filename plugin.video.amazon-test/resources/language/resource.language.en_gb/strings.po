@@ -888,3 +888,6 @@ msgctxt "#30286"
 msgid "Subtitle Languages"
 msgstr ""
 
+msgctxt "#30287"
+msgid "Unable to log in because an unsupported captcha is displayed.\nEither log in again or activate multi-factor authentication in the Amazon account."
+msgstr ""

@@ -876,15 +876,28 @@ msgid "Clear List"
 msgstr ""
 
 #, fuzzy
-#msgctxt "#30285"
-#msgid "Audio Languages"
-#msgstr "Langue"
+msgctxt "#30285"
+msgid "Audio Languages"
+msgstr "Langue"
 
 #, fuzzy
-#msgctxt "#30286"
-#msgid "Subtitle Languages"
-#msgstr "Langues disponibles:"
+msgctxt "#30286"
+msgid "Subtitle Languages"
+msgstr "Langues disponibles:"
 
+msgctxt "#30287"
+msgid ""
+"Unable to log in because an unsupported captcha is displayed.\n"
+"Either log in again or activate multi-factor authentication in the Amazon account."
+msgstr ""
+
+# msgctxt "#30285"
+# msgid "Audio Languages"
+# msgstr "Langue"
+# msgctxt "#30286"
+# msgid "Subtitle Languages"
+# msgstr "Langues disponibles:"
+#, fuzzy
 #~ msgctxt "#30006"
 #~ msgid "Store Credentials instead of using the Cookie?"
 #~ msgstr "Stocker les informations d'identification au lieu d'utiliser le cookie?"

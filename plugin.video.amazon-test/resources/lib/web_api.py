@@ -307,7 +307,6 @@ class PrimeVideo(Singleton):
         # Specify `None` instead of just not empty to avoid multiple queries to the same endpoint
         if home is None:
             home = GrabJSON(self._g.BaseUrl + ('' if self._g.UsePrimeVideo else '/gp/video/storefront'))
-            LogJSON(home)
             if not home:
                 return False
             self._UpdateProfiles(home)
@@ -916,11 +915,23 @@ class PrimeVideo(Singleton):
                     Log('Unable to fetch the url: {}'.format(url), Log.ERROR)
                     return False
 
+            # convert widgets field to state
+            if 'widgets' in data and 'episodeList' in data['widgets']:
+                season_id = urn = data['widgets']['pageContext']['pageTitleId']
+                data['state'] = {'episodeList': {'actions': data['widgets']['episodeList']['actions'], 'cardTitleIds': []},
+                                 'pageTitleId': season_id,
+                                 'detail': {season_id: {'titleType': 'season'}}, 'self': {season_id: {'titleType': 'season'}}}
+                for episodes in data['widgets']['episodeList']['episodes']:
+                    data['state']['episodeList']['cardTitleIds'].append(episodes['titleID'])
+                    for state_key in ['detail', 'self']:
+                        data['state'][state_key].update({episodes['titleID']: episodes[state_key]})
+
             # Video/season/movie data are in the `state` field of the response
             if 'state' not in data:
                 return False
 
             state = data['state']  # Video info
+            title_id = state['pageTitleId']
             GTIs = []  # List of inserted GTIs
             parents = {}  # Map of parents
             bUpdated = False  # Video data updated
@@ -937,7 +948,7 @@ class PrimeVideo(Singleton):
                             state['self'][gti].update({'compactGTI': cgti, 'asins': [cgti], 'link': lnk, 'titleType': 'season', 'gti': gti, })
                 del state['seasons']
 
-            if oid not in state['self']:
+            if ('self' in state) and (oid not in state['self']):
                 res = [x for x in state['self'] if oid in (state['self'][x].get('compactGTI', '') if self._g.UsePrimeVideo else state['self'][x].get('asins', ''))]
                 if len(res) > 1:
                     oid = res[0]
@@ -972,7 +983,7 @@ class PrimeVideo(Singleton):
                         if vid in o:
                             continue
 
-                    o[vid] = {'title': i['title'], 'metadata': {'compactGTI': i.get('compactGti', i.get('catalogId', vid)),
+                    o[vid] = {'title': i['title'], 'metadata': {'compactGTI': i.get('compactGTI', i.get('catalogId', vid)),
                                                                 'artmeta': {}, 'videometa': {'mediatype': 'video'}}}
 
                     if 'liveState' in i:
@@ -1003,13 +1014,13 @@ class PrimeVideo(Singleton):
 
             # Seasons (episodes are now listed in self too)
             # Only add seasons if we are not inside a season already
-            if ('self' in state) and (oid not in state['self']):
+            if ('self' in state) and (oid not in state['self']) and ('widgets' not in data):
                 # "self": {"amzn1.dv.gti.[…]": {"gti": "amzn1.dv.gti.[…]", "link": "/detail/[…]"}}
                 for gti in [k for k in state['self'] if 'season' == state['self'][k]['titleType'].lower()]:
                     s = state['self'][gti]
                     gti = s['gti'] if self._g.UsePrimeVideo else gti
                     if gti not in self._videodata:
-                        o[gti] = {('ref' if state['pageTitleId'] == gti else 'lazyLoadURL'): s['link']}
+                        o[gti] = {('ref' if title_id == gti else 'lazyLoadURL'): s['link']}
                         self._videodata[gti] = {'ref': s['link'], 'children': [], 'siblings': []}
                         bUpdated = True
                     else:
@@ -1033,7 +1044,12 @@ class PrimeVideo(Singleton):
             # Episodes lists
             episodes = state.get('collections', {})
             if 'episodeList' in state:
-                episodes = {state['pageTitleId']: [state['episodeList']]}
+                episodes = {title_id: [state['episodeList']]}
+                if ('self' in state and title_id in state['self']) and ('actions' in state['episodeList'] and 'pagination' in state['episodeList']['actions']):
+                    for next_epi in state['episodeList']['actions']['pagination']:
+                        if next_epi['tokenType'].lower() == 'nextpage':
+                            next_url = '/gp/video/api/getDetailWidgets?titleID={}&isTvodOnRow=&widgets=%5B%7B%22widgetType%22%3A%22EpisodeList%22%2C%22widgetToken%22%3A%22{}%22%7D%5D'.format(title_id, next_epi['token'])
+                            requestURLs.append(next_url)
             # "collections": {"amzn1.dv.gti.[…]": [{"titleIds": ["amzn1.dv.gti.[…]", "amzn1.dv.gti.[…]"]}]}
             # "collections": {"amzn1.dv.gti.[…]": [{"cardTitleIds": ["amzn1.dv.gti.[…]", "amzn1.dv.gti.[…]"]}]}
             # "episodeList": {"cardTitleIds": ["amzn1.dv.gti.[…]", "amzn1.dv.gti.[…]"]}
@@ -1052,7 +1068,7 @@ class PrimeVideo(Singleton):
                 return bUpdated
 
             if urn not in self._videodata['urn2gti']:
-                self._videodata['urn2gti'][urn] = state['pageTitleId']
+                self._videodata['urn2gti'][urn] = title_id
 
             # Both of these versions have been spotted in the wild
             # { "detail": { "headerDetail": {…}, "amzn1.dv.gti.[…]": {…} }
@@ -1073,6 +1089,8 @@ class PrimeVideo(Singleton):
                 # not inside a season/show: (oid not in details)
                 #     not already appended: (gti not in GTIs)
                 # part of the page details: ('self' in state) & (gti in state['self'])
+                if details[gti]['titleType'].lower() == 'season' and 'widgets' in data:
+                    continue
                 if (oid not in details) and (gti not in GTIs) and ('self' in state) and (gti in state['self']):
                     GTIs.append(gti)
                     o[gti] = {}
@@ -1101,7 +1119,7 @@ class PrimeVideo(Singleton):
 
                 # add missing episodes infos from season or self.gti
                 if titleType == 'episode' and 'episodeNumber' not in item:
-                    seasonDetails = details[state['pageTitleId']]
+                    seasonDetails = details[title_id]
                     if gti in state['self']:
                         item['episodeNumber'] = state['self'][gti].get('sequenceNumber', 0)
                     for titleinfo in ['amazonRating', 'contributors', 'genres', 'ratingBadge', 'studios', 'seasonNumber']:
@@ -1427,7 +1445,7 @@ class PrimeVideo(Singleton):
 
                 # Single page
                 bSinglePage = False
-                if 'state' in cnt:
+                if 'state' in cnt or 'widgets' in cnt:
                     bSinglePage = True
                     bUpdatedVideoData |= ParseSinglePage(breadcrumb[-1], o, bCacheRefresh, data=cnt, url=requestURL)
                 # Pagination

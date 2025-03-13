@@ -1348,11 +1348,11 @@ class PrimeVideo(Singleton):
                             if 'seeMoreLink' in collection:
                                 o[id]['lazyLoadURL'] = collection['seeMoreLink']['url']
                             elif 'paginationTargetId' in collection:
-                                q = ['{}={}'.format(k.replace('paginationServiceToken', 'serviceToken'), ','.join(v) if isinstance(v, list) else quote_plus(v))
-                                     for k, v in collection.items() if k in ['collectionType', 'paginationServiceToken', 'paginationTargetId', 'tags',
-                                                                             'journeyIngressContext']]
+                                q = ['{}={}'.format(k.replace('paginationServiceToken', 'serviceToken').replace('paginationStartIndex', 'startIndex'),
+                                                    ','.join(v) if isinstance(v, list) else quote_plus(str(v)))
+                                     for k, v in collection.items() if k in ['collectionType', 'paginationServiceToken', 'paginationTargetId', 'tags', 'paginationStartIndex']]
                                 q.append('pageId=live' if 'EpgGroup' in collection.get('containerType', '') else 'pageId=home')
-                                q.append('startIndex=0&pageSize=20&pageType=home')
+                                q.append('pageSize=20&pageType=home')
                                 q.append('isCleanSlateActive=1&isDiscoverActive=1&isLivePageActive=1&variant=desktopWindows&payloadScheme=default&actionScheme=default'
                                          '&decorationScheme=web-decoration-asin-v4&featureScheme=web-features-v6&widgetScheme=web-explorecs-v11&dynamicFeatures=integration'
                                          '&dynamicFeatures=CLIENT_DECORATION_ENABLE_DAAPI&dynamicFeatures=ENABLE_DRAPER_CONTENT&dynamicFeatures=HorizontalPagination'
@@ -1361,7 +1361,8 @@ class PrimeVideo(Singleton):
                                     q.append('collectionType=Container')
                                 if var == 'collection':
                                     q.append('facetType=' + collection['facet']['facetType'])
-                                o[id]['lazyLoadURL'] = '/gp/video/api/paginateCollection?' + '&'.join(q)
+                                o[id]['lazyLoadData'] = collection
+                                o[id]['lazyLoadData']['paginationTargetUrl'] = '/gp/video/api/paginateCollection?' + '&'.join(q)
                             else:
                                 o[id]['lazyLoadData'] = collection
                         elif 'items' in collection:
@@ -1486,6 +1487,8 @@ class PrimeVideo(Singleton):
                         elif cnt.get('hasMoreItems', False) and 'startIndex=' in requestURL:
                             idx = int(re.search(r'startIndex=(\d*)', requestURL).group(1))
                             nextPage = requestURL.replace('startIndex={}'.format(idx), 'startIndex={}'.format(idx+20))
+                        elif 'paginationTargetUrl' in vo:
+                            nextPage = vo['paginationTargetUrl']
                         elif 'paginationTargetId' in vo:
                             q = ['{}={}'.format(k.replace('paginationServiceToken', 'serviceToken').replace('paginationStartIndex', 'startIndex'), ','.join(v) if isinstance(v, list) else quote_plus(str(v)))
                                  for k, v in vo.items() if k in ['collectionType', 'paginationServiceToken', 'paginationTargetId', 'tags', 'paginationStartIndex']]

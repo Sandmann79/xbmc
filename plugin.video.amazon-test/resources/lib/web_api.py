@@ -1020,7 +1020,6 @@ class PrimeVideo(Singleton):
                     s = state['self'][gti]
                     gti = s['gti'] if self._g.UsePrimeVideo else gti
                     if gti not in self._videodata:
-                        o[gti] = {('ref' if title_id == gti else 'lazyLoadURL'): s['link']}
                         self._videodata[gti] = {'ref': s['link'], 'children': [], 'siblings': []}
                         bUpdated = True
                     else:

@@ -880,3 +880,7 @@ msgstr "Untertitelsprachen"
 msgctxt "#30287"
 msgid "Unable to log in because an unsupported captcha is displayed.\nEither log in again or activate multi-factor authentication in the Amazon account."
 msgstr "Einloggen nicht möglich, da ein nicht unterstütztes Captcha angezeigt wird.\nEntweder erneut einloggen oder Multi-Faktor-Authentifizierung im Amazon Konto aktivieren."
+
+msgctxt "#30288"
+msgid "Export not aired episodes"
+msgstr "Nicht ausgestrahlte Episoden exportieren"

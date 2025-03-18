@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-import pyxbmct
 from __future__ import unicode_literals
+
+import datetime
 import os.path
 import re
 
@@ -18,10 +20,14 @@ _g = Globals()
 def Export(infoLabels, url):
     isEpisode = infoLabels['contentType'] != 'movie'
     isEvent = 'tvshowtitle' not in infoLabels and isEpisode
+    isAired = datetime.date.today() >= datetime.date.fromisoformat(infoLabels.get('premiered', '1970-01-01'))
     language = xbmc.convertLanguage(_s.Language, xbmc.ISO_639_2)
     ExportPath = _s.MOVIE_PATH
     nfoType = 'movie'
     title = infoLabels['title']
+
+    if not isAired and not _s.export_not_aired:
+        return
 
     if isEpisode:
         ExportPath = _s.TV_SHOWS_PATH

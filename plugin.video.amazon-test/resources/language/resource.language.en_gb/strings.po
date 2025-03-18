@@ -891,3 +891,7 @@ msgstr ""
 msgctxt "#30287"
 msgid "Unable to log in because an unsupported captcha is displayed.\nEither log in again or activate multi-factor authentication in the Amazon account."
 msgstr ""
+
+msgctxt "#30288"
+msgid "Export not aired episodes"
+msgstr ""

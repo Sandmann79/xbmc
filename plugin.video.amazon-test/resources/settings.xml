@@ -118,6 +118,7 @@
         <setting id="mediasource_movie" type="text" label="30064" default="Amazon Movies"/>
         <setting id="mediasource_tv" type="text" label="30065" default="Amazon TV"/>
         <setting id="wl_export" type="bool" label="30080" default="false"/>
+        <setting id="export_not_aired" type="bool" label="30288" default="true"/>
     </category>
     <!-- Miscellaneous -->
     <category label="30070">

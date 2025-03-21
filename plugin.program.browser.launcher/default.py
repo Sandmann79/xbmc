@@ -49,7 +49,7 @@ bPath = ['C:\\Program Files\\Internet Explorer\\iexplore.exe',
          'C:\\Program Files\\Hillcrest Labs\\Kylo\\Kylo.exe',
          'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
          'C:\\Program Files\\Mozilla Firefox\\firefox.exe',
-         'C:\\Program Files\\Opera\opera.exe']
+         'C:\\Program Files\\Opera\\opera.exe']
 bKiosk = ['-k ', '', '--kiosk ', '', '-fullscreen ']
 bProfile = ['', '', '--user-data-dir=', '-profile ', '-pd ']
 bAgent = ['', '', '--user-agent=', '', '']

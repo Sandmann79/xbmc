@@ -311,6 +311,24 @@ def get_key(def_value, obj, *keys):
     return obj
 
 
+def decode_token(token):
+    if token.startswith('v0_'):
+        token = token[3:]
+    if token.startswith('ey'):
+        return base64.b64decode(token)
+
+    padding_needed = (4 - len(token) % 4) % 4
+    token_padded = token + ("=" * padding_needed)
+
+    try:
+        decoded_bytes = base64.urlsafe_b64decode(token_padded)
+        decoded_text = decoded_bytes.decode('utf-8', errors='replace')
+        readable = ''.join(c if 32 <= ord(c) <= 126 else '.' for c in decoded_text)
+        return readable
+    except:
+        return ''
+
+
 def get_user_lang(cj=None, iso6392=False):
     from .users import loadUser
     from .l10n import datetimeParser as dtp

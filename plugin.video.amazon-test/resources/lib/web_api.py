@@ -12,7 +12,7 @@ from copy import deepcopy
 from kodi_six import xbmc, xbmcplugin, xbmcgui
 
 from .singleton import Singleton
-from .common import key_exists, return_item, return_value, sleep, findKey, MechanizeLogin
+from .common import key_exists, return_item, return_value, sleep, findKey, MechanizeLogin, decode_token
 from .network import getURL, getURLData, FQify, GrabJSON, LocaleSelector
 from .logging import Log, LogJSON
 from .itemlisting import setContentAndView, addVideo, addDir
@@ -1452,50 +1452,43 @@ class PrimeVideo(Singleton):
                 if ('pagination' in cnt) or (key_exists(cnt, 'viewOutput', 'features', wl_lib, 'content', 'seeMoreHref'))\
                         or ('hasMoreItems' in cnt) or ('paginationTargetId' in vo):
                     nextPage = None
-                    try:
+                    if 'viewOutput' in cnt:
                         # Dynamic AJAX pagination
                         seeMore = cnt['viewOutput']['features'][wl_lib]['content']
                         if seeMore['nextPageStartIndex'] < seeMore['totalItems']:
                             nextPage = seeMore['seeMoreHref']
-                    except:
-                        # Classic numbered pagination
-                        if 'pagination' in cnt:
-                            if 'paginator' in cnt['pagination']:
-                                nextPage = next((x['href'] for x in cnt['pagination']['paginator'] if
-                                                 (('type' in x) and ('NextPage' == x['type'])) or
-                                                 (('*className*' in x) and ('atv.wps.PaginatorNext' == x['*className*'])) or
-                                                 (('__type' in x) and ('PaginatorNext' in x['__type']))), None)
-                            elif 'queryParameters' in cnt['pagination']:
-                                q = cnt['pagination']['queryParameters']
-                                q = {k.replace('content', 'page') if k in ['contentId', 'contentType'] else k: v for k, v in q.items()}
-                                q.update({'isCleanSlateActive': '1', 'isDiscoverActive': '1', 'isLivePageActive': '1', 'variant': 'desktopWindows', 'payloadScheme': 'default'})
-                                try:
-                                    t = json.loads(base64.b64decode(q['serviceToken']))
-                                except:
-                                    t = ''
-                                    if cnt['pagination'].get('url') is not None:
-                                        u_parse = urlparse(cnt['pagination']['url'])
-                                        u_query = parse_qs(u_parse.query)
-                                        t = json.loads(base64.b64decode(u_query['serviceToken'][0]))
-                                if 'type' in t and 'vpage' in t['type']:
-                                    nextPage = '/gp/video/api/getLandingPage?' + urlencode(q, doseq=True)
-                                else:
-                                    q = {k.replace('targetId', 'paginationTargetId') if k in 'targetId' else k: v for k, v in q.items()}
-                                    q.update({'collectionType': 'Container'} if 'collectionType' not in q else {})
-                                    nextPage = '/gp/video/api/paginateCollection?' + urlencode(q, doseq=True)
-                        elif cnt.get('hasMoreItems', False) and 'startIndex=' in requestURL:
-                            idx = int(re.search(r'startIndex=(\d*)', requestURL).group(1))
-                            nextPage = requestURL.replace('startIndex={}'.format(idx), 'startIndex={}'.format(idx+20))
-                        elif 'paginationTargetUrl' in vo:
-                            nextPage = vo['paginationTargetUrl']
-                        elif 'paginationTargetId' in vo:
-                            q = ['{}={}'.format(k.replace('paginationServiceToken', 'serviceToken').replace('paginationStartIndex', 'startIndex'), ','.join(v) if isinstance(v, list) else quote_plus(str(v)))
-                                 for k, v in vo.items() if k in ['collectionType', 'paginationServiceToken', 'paginationTargetId', 'tags', 'paginationStartIndex']]
-                            q.append('pageSize=20&pageType=browse&pageId=default&variant=desktopWindows&actionScheme=default&payloadScheme=default'
-                                     '&decorationScheme=web-search-decoration-tournaments-v2&featureScheme=web-search-v4&dynamicFeatures=HorizontalPagination&widgetScheme=web-explorecs-v11')
-                            if 'collectionType' not in q:
-                                q.append('collectionType=Container')
-                            nextPage = '/gp/video/api/paginateCollection?' + '&'.join(q)
+                    elif 'pagination' in cnt:
+                        if 'paginator' in cnt['pagination']:
+                            nextPage = next((x['href'] for x in cnt['pagination']['paginator'] if
+                                             (('type' in x) and ('NextPage' == x['type'])) or
+                                             (('*className*' in x) and ('atv.wps.PaginatorNext' == x['*className*'])) or
+                                             (('__type' in x) and ('PaginatorNext' in x['__type']))), None)
+                        elif 'queryParameters' in cnt['pagination']:
+                            q = cnt['pagination']['queryParameters']
+                            q = {k.replace('content', 'page') if k in ['contentId', 'contentType'] else k: v for k, v in q.items()}
+                            q.update({'isCleanSlateActive': '1', 'isDiscoverActive': '1', 'isLivePageActive': '1', 'variant': 'desktopWindows',
+                                      'payloadScheme': 'default'})
+
+                            if 'vpage' in decode_token(q['serviceToken']):
+                                nextPage = '/gp/video/api/getLandingPage?' + urlencode(q, doseq=True)
+                            else:
+                                q = {k.replace('targetId', 'paginationTargetId') if k in 'targetId' else k: v for k, v in q.items()}
+                                q.update({'collectionType': 'Container'} if 'collectionType' not in q else {})
+                                nextPage = '/gp/video/api/paginateCollection?' + urlencode(q, doseq=True)
+                    elif cnt.get('hasMoreItems', False) and 'startIndex=' in requestURL:
+                        idx = int(re.search(r'startIndex=(\d*)', requestURL).group(1))
+                        nextPage = requestURL.replace('startIndex={}'.format(idx), 'startIndex={}'.format(idx + 20))
+                    elif 'paginationTargetUrl' in vo:
+                        nextPage = vo['paginationTargetUrl']
+                    elif 'paginationTargetId' in vo:
+                        q = ['{}={}'.format(k.replace('paginationServiceToken', 'serviceToken').replace('paginationStartIndex', 'startIndex'),
+                                            ','.join(v) if isinstance(v, list) else quote_plus(str(v)))
+                             for k, v in vo.items() if k in ['collectionType', 'paginationServiceToken', 'paginationTargetId', 'tags', 'paginationStartIndex']]
+                        q.append('pageSize=20&pageType=browse&pageId=default&variant=desktopWindows&actionScheme=default&payloadScheme=default'
+                                 '&decorationScheme=web-search-decoration-tournaments-v2&featureScheme=web-search-v4&dynamicFeatures=HorizontalPagination&widgetScheme=web-explorecs-v11')
+                        if 'collectionType' not in q:
+                            q.append('collectionType=Container')
+                        nextPage = '/gp/video/api/paginateCollection?' + '&'.join(q)
 
                     if nextPage:
                         # Determine if we can auto page

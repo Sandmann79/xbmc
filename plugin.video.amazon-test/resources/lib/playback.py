@@ -143,10 +143,11 @@ def PlayVideo(name, asin, adultstr, streamtype, forcefb=0):
                     if urlset['cdn'] == 'Cloudfront':
                         import random, string
                         let = string.ascii_letters + string.digits
-                        rnd = [random.choice(let) for _ in range(random.randint(2,10))]
+                        rnd = [random.choice(let) for _ in range(random.randint(2, 10))]
                         try:
                             returl = re.sub(r'(\/3\$[^\/]*)', r'\1' + ''.join(rnd), returl)
-                        except: pass
+                        except:
+                            pass
                 if not bypassproxy:
                     returl = 'http://{}/mpd/{}'.format(_s.proxyaddress, quote_plus(returl))
                 return (returl, subUrls, timecodes) if retmpd else (True, _extrFr(data), None)
@@ -356,7 +357,7 @@ def PlayVideo(name, asin, adultstr, streamtype, forcefb=0):
         # If not, then the second iteration will fall back to cookie authentification
         # and try again. This is neccessary for content like Amazon Freevee, which is not
         # available though token based authentification.
-        
+
         for preferTokenToCookie in ([True, False] if _s.wvl1_device else [False]):
             cookie, req_param, headers, dtid, req_headers = _getPlaybackVars(preferToken=preferTokenToCookie)
             if not cookie:
@@ -369,7 +370,7 @@ def PlayVideo(name, asin, adultstr, streamtype, forcefb=0):
             if success or not isinstance(cookie, dict):
                 break
 
-        mpd, subs, timecodes = _ParseStreams(success, data, retmpd=True, bypassproxy=bypassproxy, webid=dtid==_g.dtid_web)
+        mpd, subs, timecodes = _ParseStreams(success, data, retmpd=True, bypassproxy=bypassproxy, webid=dtid == _g.dtid_web)
         if not mpd:
             _g.dialog.notification(getString(30203), subs, xbmcgui.NOTIFICATION_ERROR)
             return False
@@ -416,7 +417,8 @@ def PlayVideo(name, asin, adultstr, streamtype, forcefb=0):
             listitem.setProperty('%s.license_key' % _g.is_addon, licURL + req_param)
         else:
             drm_cfg = {'com.widevine.alpha':
-                           {'license':
+                           {'force_single_session': True,
+                            'license':
                                 {'server_url': licURL,
                                  'req_headers': urlencode(req_headers),
                                  'req_data': base64.b64encode(b'widevine2Challenge={CHA-B64U}').decode('utf-8'),
@@ -425,6 +427,7 @@ def PlayVideo(name, asin, adultstr, streamtype, forcefb=0):
                                  }
                             }
                        }
+
             listitem.setProperty('inputstream.adaptive.drm', json.dumps(drm_cfg))
 
         player = _AmazonPlayer()
@@ -734,7 +737,8 @@ class _SkipButton(xbmcgui.WindowDialog):
         super(_SkipButton, self).__init__()
         x = self.getWidth() - 550
         y = self.getHeight() - 70
-        self.skip_button = xbmcgui.ControlButton(x, y, width=500, height=30, label='', textColor='0xFFFFFFFF', focusedColor='0xFFFFA500', disabledColor='0xFFFFA500',
+        self.skip_button = xbmcgui.ControlButton(x, y, width=500, height=30, label='', textColor='0xFFFFFFFF', focusedColor='0xFFFFA500',
+                                                 disabledColor='0xFFFFA500',
                                                  shadowColor='0xFF000000', focusTexture='', noFocusTexture='', alignment=1, font='font14')
         self.act_btn = ''
         self.btn_list = ('SHOW', 'INTRO', 'RECAP', 'INTRO_RECAP')

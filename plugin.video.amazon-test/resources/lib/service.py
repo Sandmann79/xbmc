@@ -53,8 +53,8 @@ class BackgroundService(xbmc.Monitor):
         self.stop()
 
     def stop(self):
-        self.proxy.shutdown()
         self.proxy.server_close()
+        self.proxy.shutdown()
         self.proxy_thread.join()
         Log('Service: Proxy server stopped')
 

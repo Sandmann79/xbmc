@@ -23,7 +23,7 @@
 </addon>
 <addon id="plugin.video.amazon-test"
        name="Amazon VOD"
-       version="1.1.5+matrix.1"
+       version="1.1.6+matrix.1"
        provider-name="Sandmann79, Varstahl">
   <requires>
     <import addon="xbmc.python" version="3.0.0"/>

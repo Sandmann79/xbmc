@@ -27,10 +27,10 @@
         <setting id="pref_host" type="labelenum" label="30019" visible="eq(-17,3)" values="Auto|Akamai|Cloudfront|Level3|Limelight" default="Auto"/>
         <setting id="is_settings" type="action" label="30013" visible="eq(-18,3)" action="RunPlugin(plugin://plugin.video.amazon-test/?mode=openSettings&url=is)" option="close"/>
         <setting id="age_settings" type="action" label="30018" visible="eq(-19,3)" action="RunPlugin(plugin://plugin.video.amazon-test/?mode=ageSettings)" option="close"/>
-        <setting id="wvl1_device" type="bool" label="30006" visible="eq(-20,3)" enable="System.Platform.Android" default="false"/>
-        <setting id="enable_uhd" type="bool" label="UltraHD / 4K" visible="eq(-21,3) + eq(-1,true)" default="false" subsetting="true"/>
-        <setting id="enable_hdr10" type="bool" label="HDR10+" visible="eq(-22,3) + eq(-2,true)" default="false" subsetting="true"/>
-        <setting id="enable_dovi" type="bool" label="Dolby Vision" visible="eq(-23,3) + eq(-3,true)" default="false" subsetting="true"/>
+        <setting id="wvl1_device" type="bool" label="30006" visible="eq(-20,3)" enable="System.Platform.Android|System.Platform.webOS" default="false"/>
+        <setting id="enable_uhd" type="bool" label="UltraHD / 4K" visible="eq(-21,3) + eq(-1,true)" enable="System.Platform.Android|System.Platform.webOS" default="false" subsetting="true"/>
+        <setting id="enable_hdr10" type="bool" label="HDR10+" visible="eq(-22,3) + eq(-2,true)" enable="System.Platform.Android|System.Platform.webOS" default="false" subsetting="true"/>
+        <setting id="enable_dovi" type="bool" label="Dolby Vision" visible="eq(-23,3) + eq(-3,true)" enable="System.Platform.Android|System.Platform.webOS" default="false" subsetting="true"/>
         <setting id="enable_atmos" type="bool" label="Dolby Atmos" visible="eq(-24,3) + eq(-4,true)" enable="eq(2,true)" default="false" subsetting="true"/>
         <setting id="use_h265" type="bool" label="30020" visible="eq(-25,3) + eq(-5,true)" default="false" subsetting="true"/>
         <setting id="proxy_mpdalter" type="bool" label="30248" default="true" visible="eq(-26,3)"/>

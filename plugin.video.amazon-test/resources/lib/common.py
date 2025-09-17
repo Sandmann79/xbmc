@@ -43,6 +43,7 @@ class Globals(Singleton):
     OS_OSX = 4
     OS_ANDROID = 8
     OS_LE = 16
+    OS_WEBOS = 32
 
     is_addon = 'inputstream.adaptive'
     na = 'not available'
@@ -113,6 +114,8 @@ class Globals(Singleton):
             self._globals['platform'] |= self.OS_OSX
         if xbmc.getCondVisibility('system.platform.android'):
             self._globals['platform'] |= self.OS_ANDROID
+        if xbmc.getCondVisibility('system.platform.webos'):
+            self._globals['platform'] |= self.OS_WEBOS
         if (xbmcvfs.exists('/etc/os-release')) and ('libreelec' in xbmcvfs.File('/etc/os-release').read()):
             self._globals['platform'] |= self.OS_LE
 

@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-from __future__ import unicode_literals
 
 import base64
 import os
@@ -13,10 +12,10 @@ import threading
 import time
 from copy import deepcopy
 from os.path import join as OSPJoin
+from urllib.parse import quote_plus, urlencode
 
+import xbmc, xbmcgui, xbmcvfs, xbmcplugin
 from inputstreamhelper import Helper
-from kodi_six import xbmc, xbmcgui, xbmcvfs, xbmcplugin
-from kodi_six.utils import py2_decode
 
 from .common import Globals, Settings, jsonRPC, sleep, MechanizeLogin, findKey
 from .logging import Log
@@ -24,10 +23,6 @@ from .configs import getConfig
 from .network import getURL, getURLData, getATVData, GrabJSON
 from .l10n import getString
 
-try:
-    from urllib.parse import quote_plus, urlencode
-except ImportError:
-    from urllib import quote_plus, urlencode
 
 _g = Globals()
 _s = Settings()
@@ -43,7 +38,7 @@ def _playDummyVid():
 
 
 def _getListItem(li):
-    return py2_decode(xbmc.getInfoLabel('ListItem.%s' % li))
+    return xbmc.getInfoLabel('ListItem.%s' % li)
 
 
 def _Input(mousex=0, mousey=0, click=0, keys=None, delay='0.2'):
@@ -407,7 +402,7 @@ def PlayVideo(name, asin, adultstr, streamtype, forcefb=0):
             listitem.setProperty('inputstream.adaptive.manifest_type', 'mpd')
         listitem.setArt({'thumb': thumb})
         listitem.setSubtitles(subs)
-        listitem.setProperty('inputstreamaddon' if _g.KodiVersion < 19 else 'inputstream', _g.is_addon)
+        listitem.setProperty('inputstream', _g.is_addon)
         listitem.setMimeType('application/dash+xml')
         listitem.setProperty('%s.manifest_headers' % _g.is_addon, urlencode(headers))
         listitem.setContentLookup(False)
@@ -482,7 +477,7 @@ def PlayVideo(name, asin, adultstr, streamtype, forcefb=0):
         return False
 
     isAdult = adultstr == '1'
-    amazonUrl = _g.BaseUrl + "/dp/" + (py2_decode(name) if _g.UsePrimeVideo else asin)
+    amazonUrl = _g.BaseUrl + "/dp/" + (name if _g.UsePrimeVideo else asin)
     videoUrl = "%s/?autoplay=%s" % (amazonUrl, ('trailer' if streamtype == 1 else '1'))
     extern = not xbmc.getInfoLabel('Container.PluginName').startswith('plugin.video.amazon')
     suc = False

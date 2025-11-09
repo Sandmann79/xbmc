@@ -1,10 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-from __future__ import unicode_literals
 import json
 
-from kodi_six import xbmc, xbmcgui
-from kodi_six.utils import py2_decode
+import xbmc, xbmcgui
 
 from .common import Globals, Settings
 from .configs import getConfig, writeConfig
@@ -23,7 +21,7 @@ def loadUsers():
 
 
 def loadUser(key='', empty=False, cachedUsers=None):
-    cur_user = py2_decode(_s.login_acc)
+    cur_user = _s.login_acc
     users = cachedUsers if cachedUsers else loadUsers()
     user = None if empty else [i for i in users if cur_user == i['name']]
     if user:
@@ -49,7 +47,7 @@ def saveUsers(users):
 def saveUserCookies(cookieJar, cachedUsers=None):
     if not cookieJar:
         return
-    cur_user = py2_decode(_s.login_acc)
+    cur_user = _s.login_acc
     users = cachedUsers if cachedUsers else loadUsers()
     user = [i for i in users if cur_user == i['name']]
     if not user:

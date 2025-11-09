@@ -1,13 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-import pyxbmct
-from __future__ import unicode_literals
 
 import datetime
 import os.path
 import re
 
-from kodi_six import xbmc, xbmcvfs
-from kodi_six.utils import py2_decode
+import xbmc, xbmcvfs
 
 from .common import Globals, Settings
 from .logging import Log
@@ -74,7 +72,7 @@ def SaveFile(filename, data, isdir=None, mode='w'):
             xbmcvfs.mkdirs(_cleanName(isdir.strip(), isfile=False))
     filename = _cleanName(filename, isfile=False)
     with closing(xbmcvfs.File(filename, mode)) as outfile:
-        outfile.write(bytearray(py2_decode(data).encode('utf-8')))
+        outfile.write(bytearray(data.encode('utf-8')))
 
 
 def CreateDirectory(dir_path):
@@ -155,7 +153,7 @@ def SetupAmazonLibrary():
     import xml.etree.ElementTree as et
     from contextlib import closing
     from .common import translatePath
-    source_path = py2_decode(translatePath('special://profile/sources.xml'))
+    source_path = translatePath('special://profile/sources.xml')
     source_added = False
     source_dict = {_s.ms_mov: _s.MOVIE_PATH, _s.ms_tv: _s.TV_SHOWS_PATH}
 

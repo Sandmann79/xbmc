@@ -24,6 +24,7 @@ for /f %%f in ('dir %~dp0 /b /a:d') do if exist %~dp0%%f\addon.xml (
         call :get_version %~dp0%%f\addon.xml
         set arc_dir=%arc_dir_py2%
         if "%%f"=="%repo_py3%" (set arc_dir=%arc_dir_py3%)
+        if "%%f"=="plugin.video.amazon-test" (set arc_dir=%arc_dir_py3%)
         if not exist !arc_dir!\%%f\%%f-!version!.zip (
             if exist !arc_dir!\%%f rd /q /s !arc_dir!\%%f >nul 2>&1
             md !arc_dir!\%%f

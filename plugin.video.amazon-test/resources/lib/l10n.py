@@ -1,8 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-from __future__ import unicode_literals
 
-from kodi_six import xbmc
+import xbmc
 
 """ Data for date string deconstruction and reassembly
 

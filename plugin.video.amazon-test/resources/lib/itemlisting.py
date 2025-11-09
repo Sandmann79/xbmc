@@ -1,17 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-from __future__ import unicode_literals
-from kodi_six import xbmc, xbmcplugin, xbmcgui
-from kodi_six.utils import py2_encode
+import xbmc, xbmcplugin, xbmcgui
+from urllib.parse import urlencode
 
 from .common import Globals, Settings
 from .l10n import getString
 from .export import Export
-
-try:
-    from urllib.parse import urlencode
-except ImportError:
-    from urllib import urlencode
 
 _g = Globals()
 _s = Settings()
@@ -59,7 +53,7 @@ def addDir(name, mode='', url='', infoLabels=None, opt='', catalog='Browse', cm=
     useatv = _s.data_source == 1
     folder = mode not in ['switchUser', 'text'] if useatv else mode == 'True'
     sep = '?' if useatv else ''
-    u = urlencode({'mode': mode, 'url': py2_encode(url), 'page': page, 'opt': opt, 'cat': catalog}) if useatv else url
+    u = urlencode({'mode': mode, 'url': url, 'page': page, 'opt': opt, 'cat': catalog}) if useatv else url
     url = '{}{}{}'.format(_g.pluginid, sep, u) if mode != 'text' else _g.pluginid
 
     if not infoLabels:
@@ -90,7 +84,7 @@ def addDir(name, mode='', url='', infoLabels=None, opt='', catalog='Browse', cm=
 
 
 def addVideo(name, asin, infoLabels, cm=None, export=False):
-    u = {'asin': asin, 'mode': 'PlayVideo', 'name': py2_encode(name), 'adult': infoLabels.get('isAdult', 0)}
+    u = {'asin': asin, 'mode': 'PlayVideo', 'name': name, 'adult': infoLabels.get('isAdult', 0)}
     url = '{}?{}'.format(_g.pluginid, urlencode(u))
     bitrate = '0'
     streamtypes = {'live': 2, 'event': 3}

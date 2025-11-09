@@ -3,7 +3,6 @@
 '''
     Provides: Globals, Settings, sleep, jsonRPC
 '''
-from __future__ import unicode_literals
 
 import base64
 import json
@@ -11,8 +10,7 @@ from locale import getdefaultlocale
 from sys import argv
 from os.path import join as OSPJoin
 
-from kodi_six import xbmc, xbmcgui, xbmcvfs
-from kodi_six.utils import py2_decode
+import xbmc, xbmcgui, xbmcvfs
 from xbmcaddon import Addon
 
 from .singleton import Singleton
@@ -64,10 +62,7 @@ class Globals(Singleton):
     """ Allow the usage of dot notation for data inside the _globals dictionary, without explicit function call """
 
     def __init__(self):
-        try:
-            from urllib.parse import urlparse
-        except ImportError:
-            from urlparse import urlparse
+        from urllib.parse import urlparse
 
         # argv[0] can contain the entire path, so we limit ourselves to the base url
         pid = urlparse(argv[0])
@@ -80,11 +75,11 @@ class Globals(Singleton):
         # self._globals['dialogprogress'] = xbmcgui.DialogProgress()
         self._globals['hasExtRC'] = xbmc.getCondVisibility('System.HasAddon(script.chromium_remotecontrol)')
 
-        self._globals['DATA_PATH'] = py2_decode(translatePath(self._globals['addon'].getAddonInfo('profile')))
+        self._globals['DATA_PATH'] = translatePath(self._globals['addon'].getAddonInfo('profile'))
         self._globals['CONFIG_PATH'] = OSPJoin(self._globals['DATA_PATH'], 'config')
         self._globals['LOG_PATH'] = OSPJoin(self._globals['DATA_PATH'], 'log')
-        self._globals['HOME_PATH'] = py2_decode(translatePath('special://home'))
-        self._globals['PLUGIN_PATH'] = py2_decode(self._globals['addon'].getAddonInfo('path'))
+        self._globals['HOME_PATH'] = translatePath('special://home')
+        self._globals['PLUGIN_PATH'] = self._globals['addon'].getAddonInfo('path')
 
         self._globals['DefaultFanart'] = OSPJoin(self._globals['PLUGIN_PATH'], 'fanart.png')
         self._globals['ThumbIcon'] = OSPJoin(self._globals['PLUGIN_PATH'], 'icon.png')
@@ -173,7 +168,7 @@ class Settings(Singleton):
         if name in ['MOVIE_PATH', 'TV_SHOWS_PATH']:
             export = self._g.DATA_PATH
             if self._gs('enablelibraryfolder') == 'true':
-                export = py2_decode(translatePath(self._gs('customlibraryfolder')))
+                export = translatePath(self._gs('customlibraryfolder'))
             export = OSPJoin(export, 'Movies' if 'MOVIE_PATH' == name else 'TV')
             return export + '\\' if '\\' in export else export + '/'
         elif 'Language' == name:

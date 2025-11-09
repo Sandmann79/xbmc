@@ -1,18 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-from __future__ import unicode_literals
 
 import json
+from urllib.parse import quote_plus
 
 from .common import Globals, Settings, get_user_lang
 from .logging import Log
 from .network import getURL
 from .configs import getConfig, writeConfig
-
-try:
-    from urllib.parse import quote_plus
-except ImportError:
-    from urllib import quote_plus
 
 
 class Artwork:

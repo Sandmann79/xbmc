@@ -3,19 +3,12 @@
 # Author: Varstahl
 # Module: CryptoProxy
 # Created: 12/01/2019
-
-from __future__ import unicode_literals
 from contextlib import contextmanager
-from kodi_six.utils import py2_decode
+from http.server import BaseHTTPRequestHandler  # Python3 HTTP Server
+from socketserver import ThreadingTCPServer
+
 from resources.lib.logging import Log
 from .configs import getConfig
-
-try:
-    from BaseHTTPServer import BaseHTTPRequestHandler  # Python2 HTTP Server
-    from SocketServer import ThreadingTCPServer
-except ImportError:
-    from http.server import BaseHTTPRequestHandler  # Python3 HTTP Server
-    from socketserver import ThreadingTCPServer
 
 
 class ProxyHTTPD(BaseHTTPRequestHandler):
@@ -66,13 +59,9 @@ class ProxyHTTPD(BaseHTTPRequestHandler):
 
     def _ParseBaseRequest(self, method):
         """Return path, headers and post data commonly required by all methods"""
+        from urllib.parse import urlparse, parse_qsl
 
-        try:
-            from urllib.parse import unquote, urlparse, parse_qsl
-        except ImportError:
-            from urlparse import unquote, urlparse, parse_qsl
-
-        path = py2_decode(urlparse(self.path).path[1:])  # Get URI without the trailing slash
+        path = urlparse(self.path).path[1:]  # Get URI without the trailing slash
         path = path.split('/')  # license/<asin>/<ATV endpoint>
         Log('[PS] Requested {} path {}'.format(method, path), Log.DEBUG)
 
@@ -80,7 +69,7 @@ class ProxyHTTPD(BaseHTTPRequestHandler):
         headers = {k: self.headers[k] for k in self.headers if k not in ['host', 'content-length']}
         data_length = self.headers.get('content-length')
         data = {k: v for k, v in parse_qsl(self.rfile.read(int(data_length)))} if data_length else None
-        return (path, headers, data)
+        return path, headers, data
 
     def _ForwardRequest(self, method, endpoint, headers, data, stream=False):
         """Forwards the request to the proper target"""
@@ -111,7 +100,7 @@ class ProxyHTTPD(BaseHTTPRequestHandler):
         if 'Host' in headers: del headers['Host']  # Forcibly strip the host (py3 compliance)
         Log('[PS] Forwarding the {} request towards {}'.format(method.upper(), endpoint), Log.DEBUG)
         r = session.request(method, endpoint, data=data, headers=headers, cookies=cookie, stream=stream, verify=self.server._s.ssl_verif)
-        return (r.status_code, r.headers, r if stream else r.content.decode('utf-8'))
+        return r.status_code, r.headers, r if stream else r.content.decode('utf-8')
 
     def _gzip(self, data=None, stream=False):
         """Compress the output data"""
@@ -198,11 +187,7 @@ class ProxyHTTPD(BaseHTTPRequestHandler):
 
     def do_POST(self):
         """Respond to POST requests"""
-
-        try:
-            from urllib.parse import unquote
-        except ImportError:
-            from urlparse import unquote
+        from urllib.parse import unquote
 
         path, headers, data = self._ParseBaseRequest('POST')
         if None is path: return
@@ -215,11 +200,7 @@ class ProxyHTTPD(BaseHTTPRequestHandler):
 
     def do_GET(self):
         """Respond to GET requests"""
-
-        try:
-            from urllib.parse import unquote
-        except ImportError:
-            from urlparse import unquote
+        from urllib.parse import unquote
 
         path, headers, data = self._ParseBaseRequest('GET')
         if None is path: return
@@ -239,11 +220,8 @@ class ProxyHTTPD(BaseHTTPRequestHandler):
     def _AlterGPR(self, endpoint, headers, data):
         """ GPR data alteration for better language parsing and subtitles streaming instead of pre-caching """
 
-        try:
-            from urllib.parse import quote_plus
-        except ImportError:
-            from urllib import quote_plus
         import json
+        from urllib.parse import quote_plus
         from xbmc import convertLanguage, ENGLISH_NAME
 
         status_code, headers, content = self._ForwardRequest('get', endpoint, headers, data)
@@ -291,7 +269,7 @@ class ProxyHTTPD(BaseHTTPRequestHandler):
                             fn,
                             variants
                         )
-                        cl = py2_decode(convertLanguage(ic, ENGLISH_NAME))
+                        cl = convertLanguage(ic, ENGLISH_NAME)
                         newsubs.append((content[sub_type][i], cl, fn, variants, escapedurl))
                 del content[sub_type]  # Reduce the data transfer by removing the lists we merged
 
@@ -303,11 +281,8 @@ class ProxyHTTPD(BaseHTTPRequestHandler):
 
     def _AlterMPD(self, endpoint, headers, data):
         """ MPD alteration for better language parsing """
-        try:
-            from urllib.parse import urlparse
-        except ImportError:
-            from urlparse import urlparse
         import re
+        from urllib.parse import urlparse
 
         # Extrapolate the base CDN url to avoid proxying data we don't need to
         url_parts = urlparse(endpoint)
@@ -401,10 +376,7 @@ class ProxyHTTPD(BaseHTTPRequestHandler):
                                 apx = ' (Atmos)'
                             elif 'boosted' in trackId[1]:
                                 apx = ' (Dialog Boost: {})'.format(trackId[1].replace('boosteddialog', '').capitalize())
-                            if self.server._s._g.KodiVersion > 18:
-                                setTag = '{} name="{} kbps{}">'.format(setTag[:-1], int(best_found[0] / 1000), apx)
-                            else:
-                                setTag = re.sub(r'( lang="[^"]+)"', r'\1 {} [{} kbps]{}"'.format('' if '-' in newLocale else '-', int(best_found[0] / 1000), apx), setTag)
+                            setTag = '{} name="{} kbps{}">'.format(setTag[:-1], int(best_found[0] / 1000), apx)
 
                         Log('[PS] ' + setTag, Log.DEBUG)
                         self._SendChunk(gzstream, setTag)

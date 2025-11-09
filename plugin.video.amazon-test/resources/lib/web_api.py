@@ -1,36 +1,25 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-from __future__ import unicode_literals
 
-import base64
 import json
+import pickle
 import re
 import time
 from collections import OrderedDict
 from copy import deepcopy
+from urllib.parse import quote_plus, unquote_plus
 
-from kodi_six import xbmc, xbmcplugin, xbmcgui
+import xbmc, xbmcplugin, xbmcgui
 
 from .singleton import Singleton
 from .common import key_exists, return_item, return_value, sleep, findKey, MechanizeLogin, decode_token
 from .network import getURL, getURLData, FQify, GrabJSON, LocaleSelector
-from .logging import Log, LogJSON
+from .logging import Log
 from .itemlisting import setContentAndView, addVideo, addDir
 from .users import loadUsers, loadUser, saveUserCookies, switchUser
 from .configs import getConfig, writeConfig
 from .export import SetupLibrary
 from .l10n import getString, datetimeParser
-
-try:
-    import cPickle as pickle
-except ImportError:
-    import pickle
-
-try:
-    from urllib.parse import quote_plus, unquote_plus, parse_qs, urlparse
-except ImportError:
-    from urllib import quote_plus, unquote_plus
-    from urlparse import parse_qs, urlparse
 
 
 class PrimeVideo(Singleton):
@@ -80,7 +69,6 @@ class PrimeVideo(Singleton):
 
     def _LoadCache(self):
         """ Load cached catalog and video data """
-
         from os.path import join as OSPJoin
         from xbmcvfs import exists, delete
 
@@ -345,8 +333,8 @@ class PrimeVideo(Singleton):
             while navigation:
                 link = navigation.pop(0)
                 mml = 'links' in link
-                # Skip watchlist
-                if link['id'] in ['pv-nav-mystuff', 'pv-nav-my-stuff', 'pv-nav-ad-free']:
+                # Skip watchlist and useless stuff
+                if link['id'] in ['pv-nav-mystuff', 'pv-nav-my-stuff', 'pv-nav-ad-free','pv-nav-account-and-profiles', 'pv-nav-join-prime']:
                     continue
                 if self._g.UsePrimeVideo and mml:
                     navigation = link['links'] + navigation
@@ -462,7 +450,6 @@ class PrimeVideo(Singleton):
             if (self._home_path == path) and path != 'root':
                 for n in ['Watchlist', 'Search']:
                     cat = deepcopy(self._catalog['root'][n])
-                    cat['pos'] = 0
                     node.update({n: cat})
 
             # Populate children list with empty references
@@ -472,8 +459,7 @@ class PrimeVideo(Singleton):
                     if c not in node:
                         node[c] = {}
 
-            nodeKeys = sorted([k for k in node if k not in ['ref', 'verb', 'title', 'metadata', 'parent', 'siblings', 'children', 'pos', 'trailer']],
-                              key=lambda x: (node[x].get('pos', 999) if isinstance(node[x], dict) else 999))
+            nodeKeys = [k for k in node if k not in ['ref', 'verb', 'title', 'metadata', 'parent', 'siblings', 'children', 'trailer']]
             # Move nextpage entry to end of list
             if 'nextPage' in nodeKeys:
                 nodeKeys.pop(nodeKeys.index('nextPage'))
@@ -785,7 +771,7 @@ class PrimeVideo(Singleton):
                 chid = item['station'].get('id')
             if chid is not None and chid not in o:
                 thumb = None
-                o[chid] = {'metadata': {'artmeta': {}, 'videometa': {'mediatype': 'live'}}, 'pos': len(o)}
+                o[chid] = {'metadata': {'artmeta': {}, 'videometa': {'mediatype': 'live'}}}
                 if 'station' in item:
                     title = item['station']['name']
                     o[chid]['metadata']['schedule'] = item['station'].get('schedule', {})
@@ -813,7 +799,7 @@ class PrimeVideo(Singleton):
             liveStat = liveInfo.get('status', liveInfo.get('liveStateType', '')).lower() == 'live'
             liveTime = liveInfo.get('timeBadge', liveInfo.get('dateTime'))
             o[urn] = {'title': title, 'lazyLoadURL': url,
-                      'metadata': {'artmeta': {}, 'videometa': {'mediatype': 'event'}}, 'pos': len(o)}
+                      'metadata': {'artmeta': {}, 'videometa': {'mediatype': 'event'}}}
             o[urn]['metadata']['compactGTI'] = ExtractURN(item['playbackAction']['fallbackUrl']) if 'playbackAction' in item else urn
             when = ''
             if liveTime or liveStat:
@@ -1232,11 +1218,7 @@ class PrimeVideo(Singleton):
             return
         requestURLs = [obj['lazyLoadURL'] if 'lazyLoadURL' in obj else None]
 
-        try:
-            from urllib.parse import urlencode
-        except:
-            from urllib import urlencode
-
+        from urllib.parse import urlencode
         # Find the locale set in the cookies
         amzLang = None
         cj = MechanizeLogin()
@@ -1313,10 +1295,10 @@ class PrimeVideo(Singleton):
                             catid = lk['id']
                             if mmpos[0] == 1 and 'genres' in catid:
                                 o[lk['id']] = \
-                                    {'title': self._BeautifyText(lk['text']), 'lazyLoadURL': lk['href'], 'lazyLoadData': cnt, 'pos': len(o)}
+                                    {'title': self._BeautifyText(lk['text']), 'lazyLoadURL': lk['href'], 'lazyLoadData': cnt}
                             continue
                         if (mmpos[0] == 2 and catid in breadcrumb[-1]) or (mmpos[0] == 1 and 'categories' in catid):
-                            o[lk['id']] = {'title': self._BeautifyText(lk['text']), 'lazyLoadURL': lk['href'], 'pos': len(o)}
+                            o[lk['id']] = {'title': self._BeautifyText(lk['text']), 'lazyLoadURL': lk['href']}
                 cnt = ''
             # Categories
             elif 'collections' in cnt or 'containers' in cnt:
@@ -1339,11 +1321,11 @@ class PrimeVideo(Singleton):
                                 facetxt = txt
                             if isprime:
                                 facetxt = '[COLOR {}]{}[/COLOR]'.format(self._g.PrimeCol, facetxt)
-                            if isincl is False:
+                            if not isincl:
                                 facetxt = '[COLOR {}]{}[/COLOR]'.format(self._g.PayCol, facetxt)
                             txt = '{}{}{}'.format(facetxt, ' ' if isprime or isincl is False else ': ', txt) if facet else txt  # facetxt doesn't mark correctly / to colorful
                             id = txt
-                            o[id] = {'title': self._BeautifyText(txt), 'pos': len(o)}
+                            o[id] = {'title': self._BeautifyText(txt)}
                             if 'seeMoreLink' in collection:
                                 o[id]['lazyLoadURL'] = collection['seeMoreLink']['url']
                             elif 'paginationTargetId' in collection:
@@ -1378,16 +1360,16 @@ class PrimeVideo(Singleton):
                     for f in cnt['subNodes']:
                         id = f['id'].replace('pv-nav-my-stuff-', '').lower()
                         if 'all' not in id:
-                            o[id] = {'title': f['label'], 'lazyLoadURL': f['url'], 'pos': len(o)}
+                            o[id] = {'title': f['label'], 'lazyLoadURL': f['url']}
                 elif 'viewOutput' in cnt:
                     wl = return_item(cnt, 'viewOutput', 'features', 'view-filter')
                     for f in wl['filters']:
-                        o[f['viewType']] = {'title': f['text'], 'lazyLoadURL': f['apiUrl' if 'apiUrl' in f else 'href'], 'pos': len(o)}
+                        o[f['viewType']] = {'title': f['text'], 'lazyLoadURL': f['apiUrl' if 'apiUrl' in f else 'href']}
                         if f.get('active', False):
                             o[f['viewType']]['lazyLoadData'] = cnt
                 else:
                     for f in cnt['content']['baseOutput']['containers']:
-                        o['ms_{}'.format(len(o))] = {'title': f['text'], 'lazyLoadURL': f['seeMoreLink']['url'], 'pos': len(o)}
+                        o['ms_{}'.format(len(o))] = {'title': f['text'], 'lazyLoadURL': f['seeMoreLink']['url']}
             # MyStuff categories
             elif len(wl_lib) > 0 and len(breadcrumb) == 3:
                 if 'viewOutput' in cnt:
@@ -1398,7 +1380,7 @@ class PrimeVideo(Singleton):
                     id = f['id'].lower()
                     url = f.get('apiUrl', f.get('href'))
                     url = ('/' + id + '/').join(requestURL.rsplit('/', 1)) if url is None else url
-                    o[id] = {'title': f['text'], 'lazyLoadURL': url, 'pos': len(o)}
+                    o[id] = {'title': f['text'], 'lazyLoadURL': url}
                     if f.get('applied') or f.get('isCurrentlyApplied'):
                         o[id]['lazyLoadData'] = cnt
             else:
@@ -1417,7 +1399,6 @@ class PrimeVideo(Singleton):
                         else:
                             tile = None
                     if 'heading' in item or 'title' in item or tile:
-                        oldk = list(o)
                         try:
                             iu = item['href'] if 'href' in item else item['link' if 'link' in item else 'title']['url']
                         except:
@@ -1439,9 +1420,6 @@ class PrimeVideo(Singleton):
                         else:
                             bUpdatedVideoData |= AddSeason(breadcrumb[-1], o, bCacheRefresh, iu)
 
-                        newitem = list(set(list(o)) - set(oldk))
-                        if newitem:
-                            o[newitem[0]]['pos'] = len(o)
 
                 # Single page
                 bSinglePage = False

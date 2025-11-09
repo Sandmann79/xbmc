@@ -1,32 +1,27 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
-from __future__ import unicode_literals
 from inspect import currentframe, getframeinfo
 from os.path import join as OSPJoin, basename as opb
 
-from kodi_six import xbmc, xbmcvfs
-from kodi_six.utils import py2_encode
+import xbmc, xbmcvfs
 
 from .common import Globals, Settings
 
 _g = Globals()
 _s = Settings()
 
-def_loglevel = 2 if _g.KodiVersion < 19 else 1
 
-
-def Log(msg, level=def_loglevel):
+def Log(msg, level=xbmc.LOGINFO):
     if level == xbmc.LOGDEBUG and _s.logging:
-        level = def_loglevel
+        level = xbmc.LOGINFO
     fi = getframeinfo(currentframe().f_back)
     msg = '[{0}]{2} {1}'.format(_g.__plugin__, msg, '' if not _s.logging else ' {}:{}'.format(opb(fi.filename), fi.lineno))
-    xbmc.log(py2_encode(msg), level)
+    xbmc.log(msg, level)
 
 
 Log.DEBUG = xbmc.LOGDEBUG
 Log.ERROR = xbmc.LOGERROR
 Log.FATAL = xbmc.LOGFATAL
-Log.INFO = def_loglevel
+Log.INFO = xbmc.LOGINFO
 Log.WARNING = xbmc.LOGWARNING
 
 
@@ -51,8 +46,8 @@ def WriteLog(data, fn='avod', force=False, comment=None):
         cnt += 1
     logfile = xbmcvfs.File(path, 'w')
     if comment:
-        logfile.write(py2_encode(comment))
-    logfile.write(py2_encode(data))
+        logfile.write(comment)
+    logfile.write(data)
     logfile.close()
     Log('Saved Log with filename “{}”'.format(file), Log.DEBUG)
 
@@ -83,9 +78,9 @@ def LogJSON(o, comment=None, optionalName=None):
 def createZIP():
     from zipfile import ZipFile, ZIP_DEFLATED
     from datetime import datetime
-    from .common import py2_decode, translatePath, getString
+    from .common import translatePath, getString
 
-    kodilog = OSPJoin(py2_decode(translatePath('special://logpath')), 'kodi.log')
+    kodilog = OSPJoin(translatePath('special://logpath'), 'kodi.log')
     arcfile = OSPJoin(_g.DATA_PATH, 'logfiles_{}.zip'.format(datetime.now().strftime('%Y%m%d-%H%M%S')))
     arccmp = {'compresslevel': 5} if _g.KodiVersion >= 19 else {}
     arc = ZipFile(arcfile, 'w', ZIP_DEFLATED, **arccmp)

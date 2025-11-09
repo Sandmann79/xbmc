@@ -3,6 +3,7 @@
 import json
 
 import pyxbmct
+
 from .l10n import getString
 from .configs import getConfig, writeConfig
 from .common import Globals

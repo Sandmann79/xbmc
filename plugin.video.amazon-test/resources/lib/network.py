@@ -1,17 +1,18 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-from __future__ import unicode_literals
 
 import json
 import mechanicalsoup
 import re
 import requests
 from timeit import default_timer as timer
-from random import randint
 from bs4 import BeautifulSoup
 from copy import deepcopy
+from urllib.parse  import urlencode, quote_plus, urlparse, parse_qs
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 
-from kodi_six import xbmcgui
+import xbmcgui
 
 from .common import Globals, Settings, sleep, MechanizeLogin
 from .logging import Log, WriteLog, LogJSON
@@ -19,12 +20,7 @@ from .l10n import getString
 from .configs import getConfig, writeConfig
 from .metrics import addNetTime
 
-try:
-    from urlparse import urlparse, parse_qs, urlunparse
-    from urllib import urlencode, quote_plus
-except ImportError:
-    from urllib.parse import urlparse, parse_qs, urlencode, quote_plus, urlunparse
-
+_session = None
 _g = Globals()
 _s = Settings()
 
@@ -83,28 +79,33 @@ def mobileUA(content):
     res = res.get('class', '') if res else ''
     return True if 'a-mobile' in res or 'a-tablet' in res else False
 
+def _get_session():
+    global _session
 
-def getURL(url, useCookie=False, silent=False, headers=None, rjson=True, attempt=1, check=False, postdata=None, binary=False, allow_redirects=True):
-    if not hasattr(getURL, 'sessions'):
-        getURL.sessions = {}  # Keep-Alive sessions
-        getURL.hostParser = re.compile(r'://([^/]+)(?:/|$)')
+    if _session is not None:
+        return _session
 
-    # Static variable to store last response code. 0 means generic error (like SSL/connection errors),
-    # while every other response code is a specific HTTP status code
+    session = requests.Session()
+    retries = Retry(
+        total=6,
+        backoff_factor=0.5,
+        status_forcelist=[500, 502, 503, 504, 408, 429],
+        raise_on_status=False
+    )
+    adapter = HTTPAdapter(pool_connections=20, pool_maxsize=20, max_retries=retries)
+    session.mount("https://", adapter)
+    session.mount("http://", adapter)
+
+    _session = session
+    return session
+
+def getURL(url, useCookie=False, silent=False, headers=None, rjson=True, check=False, postdata=None, binary=False, allow_redirects=True):
     getURL.lastResponseCode = 0
-
-    # Create sessions for keep-alives and connection pooling
-    host = getURL.hostParser.search(url)  # Try to extract the host from the URL
-    if None is not host:
-        host = host.group(1)
-        if host not in getURL.sessions:
-            getURL.sessions[host] = requests.Session()
-        session = getURL.sessions[host]
-    else:
-        session = requests.Session()
-
     retval = {} if rjson else ''
+    method = 'POST' if postdata is not None else 'GET'
     headers = {} if not headers else deepcopy(headers)
+    session = _get_session()
+
     if useCookie:
         cj = MechanizeLogin() if isinstance(useCookie, bool) else useCookie
         if isinstance(cj, bool):
@@ -116,7 +117,7 @@ def getURL(url, useCookie=False, silent=False, headers=None, rjson=True, attempt
 
     if (not silent) or _s.logging:
         dispurl = re.sub('(?i)%s|%s|&token=\\w+|&customerId=\\w+' % (_g.tvdb, _g.tmdb), '', url).strip()
-        Log('%sURL: %s' % ('check' if check else 'post' if postdata is not None else 'get', dispurl))
+        Log('%sURL: %s' % ('check' if check else method.lower(), dispurl))
 
     def_headers = {'User-Agent': getConfig('UserAgent'),
                    'Accept-Language': _g.userAcceptLanguages,
@@ -138,46 +139,30 @@ def getURL(url, useCookie=False, silent=False, headers=None, rjson=True, attempt
     if '/api/' in url:
         headers['X-Requested-With'] = 'XMLHttpRequest'
 
-    class TryAgain(Exception):
-        pass  # Try again on temporary errors
-
-    class NoRetries(Exception):
-        pass  # Fail on permanent errors
-
     try:
         session.headers.update(headers)
         getURL.headers = session.headers
-        method = 'POST' if postdata is not None else 'GET'
         starttime = timer()
         r = session.request(method, url, data=postdata, verify=_s.ssl_verif, stream=True, allow_redirects=allow_redirects)
         getURL.lastResponseCode = r.status_code  # Set last response code
         response = 'OK' if 400 > r.status_code >= 200 else ''
         if not check:
-            response = r.content if binary else r.text
+            response = r.content if binary else r.json() if rjson else r.text
             if _s.log_http:
-                WriteLog(BeautifulSoup(response, 'html.parser').prettify(), 'html', True, comment='<-- {} -->'.format(url))
-        else:
-            rjson = False
+                WriteLog(BeautifulSoup(r.text, 'html.parser').prettify(), 'html', True, comment='<-- {} -->'.format(url))
         if useCookie and 'auth-cookie-warning-message' in response:
             Log('Cookie invalid', Log.ERROR)
             _g.dialog.notification(_g.__plugin__, getString(30266), xbmcgui.NOTIFICATION_ERROR)
             return retval
-        # 408 Timeout, 429 Too many requests and 5xx errors are temporary
-        # Consider everything else definitive fail (like 404s and 403s)
-        if (408 == r.status_code) or (429 == r.status_code) or (500 <= r.status_code):
-            raise TryAgain('{0} error'.format(r.status_code))
-        if 400 <= r.status_code:
-            raise NoRetries('{0} error'.format(r.status_code))
         if useCookie and not isinstance(useCookie, dict):
             from .users import saveUserCookies
             saveUserCookies(session.cookies)
-    except (TryAgain,
-            NoRetries,
-            requests.exceptions.Timeout,
+    except (requests.exceptions.Timeout,
             requests.exceptions.ConnectionError,
             requests.exceptions.SSLError,
             requests.exceptions.HTTPError,
-            requests.packages.urllib3.exceptions.InsecurePlatformWarning) as e:
+            requests.packages.urllib3.exceptions.InsecurePlatformWarning,
+            ValueError) as e:
         eType = e.__class__.__name__
         Log('Error reason: %s (%s)' % (str(e), eType), Log.ERROR)
         if 'InsecurePlatformWarning' in eType:
@@ -186,22 +171,8 @@ def getURL(url, useCookie=False, silent=False, headers=None, rjson=True, attempt
                          'You can find a Linux guide on how to update Python and its modules for Kodi here: https://goo.gl/CKtygz',
                          'Additionally, follow this guide to update the required modules: https://goo.gl/ksbbU2')
             exit()
-        if (not check) and (3 > attempt) and (('TryAgain' in eType) or ('Timeout' in eType)):
-            if _g.headers_android['User-Agent'] not in headers['User-Agent']:
-                getUA(True)
-            wait = 10 * attempt if '429' in str(e) else 0
-            attempt += 1
-            Log('Attempt #{0}{1}'.format(attempt, '' if 0 == wait else ' (Too many requests, pause %s seconds…)' % wait))
-            if 0 < wait:
-                sleep(wait)
-            return getURL(url, useCookie, silent, headers, rjson, attempt, check, postdata, binary)
         return retval
     res = response
-    if rjson:
-        try:
-            res = json.loads(response)
-        except ValueError:
-            res = retval
     duration = timer()
     duration -= starttime
     addNetTime(duration)
@@ -345,10 +316,7 @@ def FQify(URL):
 
 def GrabJSON(url, postData=None):
     """ Extract JSON objects from HTMLs while keeping the API ones intact """
-    try:
-        from htmlentitydefs import name2codepoint
-    except:
-        from html.entities import name2codepoint
+    from html.entities import name2codepoint
 
     def Unescape(text):
         """ Unescape various html/xml entities in dictionary values, courtesy of Fredrik Lundh """
@@ -366,10 +334,7 @@ def GrabJSON(url, postData=None):
                     if 34 == char:
                         text = u'\\"'
                     else:
-                        try:
-                            text = unichr(char)
-                        except NameError:
-                            text = chr(char)
+                        text = chr(char)
                 except ValueError:
                     pass
             else:
@@ -378,11 +343,7 @@ def GrabJSON(url, postData=None):
                 if 'quot' == char:
                     text = u'\\"'
                 elif char in name2codepoint:
-                    char = name2codepoint[char]
-                    try:
-                        text = unichr(char)
-                    except NameError:
-                        text = chr(char)
+                    text = chr(name2codepoint[char])
             return text
 
         text = re.sub('&#?\\w+;', fixup, text)

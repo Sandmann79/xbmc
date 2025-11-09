@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-from __future__ import unicode_literals
 
 import os
 import json
@@ -13,10 +12,10 @@ from random import randint
 from hashlib import sha256
 from os.path import join as OSPJoin
 from uuid import uuid4
+from urllib.parse import urlencode, urlparse, parse_qs
 
 import pyxbmct
-from kodi_six import xbmcgui, xbmc, xbmcvfs
-from kodi_six.utils import py2_decode
+import xbmcgui, xbmc, xbmcvfs
 
 from .common import Globals, Settings, sleep, parseHTML
 from .network import getURL
@@ -24,11 +23,6 @@ from .logging import Log, WriteLog, LogJSON
 from .l10n import getString, datetimeParser
 from .configs import getConfig, writeConfig
 
-try:
-    from urlparse import urlparse, parse_qs, urlunparse
-    from urllib import urlencode, quote_plus
-except ImportError:
-    from urllib.parse import urlparse, parse_qs, urlencode, quote_plus, urlunparse
 
 _g = Globals()
 _s = Settings()
@@ -256,7 +250,7 @@ def MFACheck(br, email, soup):
                 br.submit_selected()
                 response, soup = parseHTML(br)
                 form_id = form_poll
-                WriteLog(response.replace(py2_decode(email), '**@**'), 'login-pollingform')
+                WriteLog(response.replace(email, '**@**'), 'login-pollingform')
                 stat = soup.find('input', attrs={'name': 'transactionApprovalStatus'})['value']
                 if stat in ['TransactionCompleted', 'TransactionCompletionTimeout']:
                     parsed_url = urlparse(url)
@@ -444,7 +438,7 @@ def LogIn(retToken=False):
                     pass
             br.submit_selected()
             response, soup = parseHTML(br)
-            WriteLog(response.replace(py2_decode(email), '**@**'), 'login')
+            WriteLog(response.replace(email, '**@**'), 'login')
 
             while any(sp in response for sp in _g.mfa_keywords):
                 br = MFACheck(br, email, soup)
@@ -453,14 +447,14 @@ def LogIn(retToken=False):
                 if not br.get_current_form() is None:
                     br.submit_selected()
                 response, soup = parseHTML(br)
-                WriteLog(response.replace(py2_decode(email), '**@**'), 'login-mfa')
+                WriteLog(response.replace(email, '**@**'), 'login-mfa')
 
             if 'accountFixup' in response:
                 Log('Login AccountFixup')
                 skip_link = br.find_link(id='ap-account-fixup-phone-skip-link')
                 br.follow_link(skip_link)
                 response, soup = parseHTML(br)
-                WriteLog(response.replace(py2_decode(email), '**@**'), 'login-fixup')
+                WriteLog(response.replace(email, '**@**'), 'login-fixup')
 
             # Some PrimeVideo endpoints still return you to the store, directly
             url = br.get_url()
@@ -613,7 +607,7 @@ def refreshToken(user, aid=None):
 
 def remLoginData(info=True):
     for fn in xbmcvfs.listdir(_g.DATA_PATH)[1]:
-        if py2_decode(fn).startswith('cookie'):
+        if fn.startswith('cookie'):
             xbmcvfs.delete(OSPJoin(_g.DATA_PATH, fn))
     writeConfig('accounts', '')
     writeConfig('login_name', '')

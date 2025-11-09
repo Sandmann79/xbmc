@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-from __future__ import unicode_literals
 import os.path
 import pickle
 import re
@@ -8,9 +7,9 @@ import time
 import json
 from datetime import date
 from os.path import join as OSPJoin
+from urllib.parse import quote_plus
 
-from kodi_six import xbmc, xbmcgui, xbmcplugin, xbmcvfs
-from kodi_six.utils import py2_decode
+import xbmc, xbmcgui, xbmcplugin, xbmcvfs
 
 from .common import findKey, MechanizeLogin
 from .logging import Log, WriteLog
@@ -22,11 +21,6 @@ from .users import loadUser
 from .export import SetupLibrary
 from .l10n import getString
 from .configs import getConfig, writeConfig
-
-try:
-    from urllib.parse import quote_plus
-except ImportError:
-    from urllib import quote_plus
 
 
 class PrimeVideo(Singleton):
@@ -973,7 +967,7 @@ class PrimeVideo(Singleton):
         if mode == 'listCategories':
             self.listCategories(args.get('url', ''), args.get('opt', ''))
         elif mode == 'listContent':
-            url = py2_decode(args.get('url', ''))
+            url = args.get('url', '')
             self.listContent(args.get('cat'), url, int(args.get('page', '1')), args.get('opt', ''), int(args.get('export', '0')))
         elif mode == 'getList':
             self.getList(args.get('url', ''), int(args.get('export', '0')), args.get('opt'))
@@ -994,7 +988,6 @@ class PrimeVideo(Singleton):
             self._g.dialog.notification(self._g.__plugin__, getString(30269))
         elif mode == 'ageSettings':
             AgeRestrictions().Settings()
-
 
 
 

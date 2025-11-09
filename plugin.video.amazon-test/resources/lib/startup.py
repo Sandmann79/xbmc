@@ -1,10 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-from __future__ import unicode_literals
 import os.path
 
-from kodi_six import xbmc, xbmcvfs
-from kodi_six.utils import py2_decode
+import xbmc, xbmcvfs
 
 from .common import Globals, Settings
 from .network import getUA
@@ -32,11 +30,7 @@ def EntryPoint(argv):
     # import requests, warnings
     # warnings.simplefilter('error', requests.packages.urllib3.exceptions.SNIMissingWarning)
     # warnings.simplefilter('error', requests.packages.urllib3.exceptions.InsecurePlatformWarning)
-
-    try:
-        from urllib.parse import urlparse, parse_qsl
-    except ImportError:
-        from urlparse import urlparse, parse_qsl
+    from urllib.parse import urlparse, parse_qsl
 
     args = dict(parse_qsl(urlparse(argv[2]).query))
     path = urlparse(argv[0]).path
@@ -62,7 +56,7 @@ def EntryPoint(argv):
         exit()
 
     if path.startswith('/pv/'):
-        path = py2_decode(path[4:])
+        path = path[4:]
         verb, path = path.split('/', 1)
         _g.pv.Route(verb, path)
     elif None is mode:

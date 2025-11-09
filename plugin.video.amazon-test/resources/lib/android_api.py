@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-from __future__ import unicode_literals
 import os.path
 import re
 import time
@@ -8,8 +7,9 @@ import json
 from copy import deepcopy
 from sqlite3 import dbapi2 as sqlite
 from threading import Thread
+from urllib.parse import quote_plus, urlencode, parse_qs
 
-from kodi_six import xbmcgui, xbmc, xbmcplugin
+import xbmcgui, xbmc, xbmcplugin
 
 from .singleton import Singleton
 from .common import findKey, MechanizeLogin, get_key
@@ -22,12 +22,6 @@ from .users import loadUsers, loadUser, updateUser
 from .configs import writeConfig
 from .l10n import getString, datetimeParser
 from .export import SetupLibrary
-
-try:
-    from urllib.parse import quote_plus, urlencode, parse_qs
-except ImportError:
-    from urllib import quote_plus, urlencode
-    from urlparse import parse_qs
 
 
 class PrimeVideo(Singleton):

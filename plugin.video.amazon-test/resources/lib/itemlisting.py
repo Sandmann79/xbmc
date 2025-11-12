@@ -9,21 +9,15 @@ from .common import Globals, Settings
 from .l10n import getString
 from .export import Export
 
-# ---------------------------------------------------------------------------
-# singletons
-# ---------------------------------------------------------------------------
-_globals = Globals()
-_settings = Settings()
-
+# names the rest of the addon expects
+_g = Globals()
+_s = Settings()
 
 # ---------------------------------------------------------------------------
 # content / view
 # ---------------------------------------------------------------------------
-def setContentAndView(content_type, updateListing=False):
-    """
-    Map a logical content type ("movie", "series", ...) to Kodi content + view.
-    """
-    content_map = {
+def setContentAndView(content, updateListing=False):
+    mapping = {
         'movie':   ('movies',  'movieview'),
         'series':  ('tvshows', 'showview'),
         'season':  ('seasons', 'seasonview'),
@@ -31,318 +25,266 @@ def setContentAndView(content_type, updateListing=False):
         'videos':  ('videos',  None),
         'files':   ('files',   None),
     }
+    ctype, cview = mapping.get(content, (None, None))
 
-    kodi_content, view_key = content_map.get(content_type, (None, None))
+    if ctype:
+        xbmcplugin.setContent(_g.pluginhandle, ctype)
 
-    if kodi_content:
-        xbmcplugin.setContent(_globals.pluginhandle, kodi_content)
-
-    if view_key and _settings.viewenable == 'true':
-        view_ids = [50, 51, 52, 53, 54, 55, 500, 501, 502, -1]
-        idx = int(getattr(_settings, view_key))
-        view_id = view_ids[idx]
+    if cview and _s.viewenable == 'true':
+        views = [50, 51, 52, 53, 54, 55, 500, 501, 502, -1]
+        view_idx = int(getattr(_s, cview))
+        view_id = views[view_idx]
         if view_id == -1:
-            view_id = int(getattr(_settings, view_key.replace('view', 'id')))
-        xbmc.executebuiltin(f'Container.SetViewMode({view_id})')
+            view_id = int(getattr(_s, cview.replace('view', 'id')))
+        xbmc.executebuiltin('Container.SetViewMode({})'.format(view_id))
 
-    xbmcplugin.endOfDirectory(_globals.pluginhandle, updateListing=updateListing)
-
-
-# ---------------------------------------------------------------------------
-# helper: build plugin URL
-# ---------------------------------------------------------------------------
-def _build_plugin_url(mode, url, page, opt, catalog):
-    """
-    Build navigation URL depending on data source mode.
-    Returns: (final_url: str, using_atv: bool)
-    """
-    using_atv = (_settings.data_source == 1)
-    if not using_atv:
-        return (url if mode != 'text' else _globals.pluginid), False
-
-    query = urlencode({
-        'mode': mode,
-        'url': url,
-        'page': page,
-        'opt': opt,
-        'cat': catalog,
-    })
-    final_url = f'{_globals.pluginid}?{query}' if mode != 'text' else _globals.pluginid
-    return final_url, True
+    xbmcplugin.endOfDirectory(_g.pluginhandle, updateListing=updateListing)
 
 
 # ---------------------------------------------------------------------------
-# helper: short label summary so it actually shows in list view
+# helpers: track enrichment
 # ---------------------------------------------------------------------------
-def _build_track_summary(info_labels):
+def _build_track_summary(info):
     """
-    Build a short one-line description of audio/subtitle tracks for label2.
-    Example: "Audio: en 5.1, de 2.0 | Subs: en SDH"
+    Short, list-friendly line.
     """
-    if not info_labels:
+    if not info:
         return ''
-    audio_tracks = info_labels.get('audio_tracks') or []
-    subtitle_tracks = info_labels.get('subtitle_tracks') or []
+    audio = info.get('audio_tracks') or []
+    subs = info.get('subtitle_tracks') or []
 
     parts = []
 
-    if audio_tracks:
-        rendered = []
-        for track in audio_tracks[:2]:  # keep it short
-            lang = track.get('lang') or 'und'
-            ch = track.get('channels')
-            if ch:
-                rendered.append(f'{lang} {ch}')
-            else:
-                rendered.append(lang)
-        parts.append('Audio: ' + ', '.join(rendered))
+    if audio:
+        a_parts = []
+        for tr in audio[:2]:
+            lang = tr.get('lang') or 'und'
+            ch = tr.get('channels')
+            a_parts.append('{} {}'.format(lang, ch) if ch else lang)
+        parts.append('Audio: ' + ', '.join(a_parts))
 
-    if subtitle_tracks:
-        rendered = []
-        for track in subtitle_tracks[:2]:
-            lang = track.get('lang') or 'und'
-            feats = track.get('features') or []
-            if feats:
-                rendered.append(f'{lang} {" ".join(feats)}')
-            else:
-                rendered.append(lang)
-        parts.append('Subs: ' + ', '.join(rendered))
+    if subs:
+        s_parts = []
+        for tr in subs[:2]:
+            lang = tr.get('lang') or 'und'
+            feats = tr.get('features') or []
+            s_parts.append('{} {}'.format(lang, ' '.join(feats)) if feats else lang)
+        parts.append('Subs: ' + ', '.join(s_parts))
 
     return ' | '.join(parts)
 
 
-# ---------------------------------------------------------------------------
-# helper: make track info visible in basic skins
-# ---------------------------------------------------------------------------
-def _enrich_plot_with_tracks(info_labels):
+def _append_tracks_to_plot(info):
     """
-    Append human-readable audio/subtitle info to plot/plotoutline.
+    Make tracks visible in info dialog.
     """
-    if not info_labels:
-        return info_labels
-
-    audio_tracks = info_labels.get('audio_tracks') or []
-    subtitle_tracks = info_labels.get('subtitle_tracks') or []
-    if not audio_tracks and not subtitle_tracks:
-        return info_labels
+    if not info:
+        return info
+    audio = info.get('audio_tracks') or []
+    subs = info.get('subtitle_tracks') or []
+    if not audio and not subs:
+        return info
 
     lines = []
-
-    if audio_tracks:
+    if audio:
         lines.append('Audio tracks:')
-        for track in audio_tracks:
-            lang = track.get('lang') or 'und'
+        for tr in audio:
+            lang = tr.get('lang') or 'und'
             line = lang
-            channels = track.get('channels')
-            features = track.get('features') or []
-            if channels:
-                line += f' ({channels})'
-            if features:
-                line += ' - ' + ', '.join(features)
+            ch = tr.get('channels')
+            feats = tr.get('features') or []
+            if ch:
+                line += ' ({})'.format(ch)
+            if feats:
+                line += ' - {}'.format(', '.join(feats))
             lines.append('  ' + line)
-
-    if subtitle_tracks:
+    if subs:
         lines.append('Subtitles:')
-        for track in subtitle_tracks:
-            lang = track.get('lang') or 'und'
+        for tr in subs:
+            lang = tr.get('lang') or 'und'
             line = lang
-            stype = track.get('type')
-            features = track.get('features') or []
+            stype = tr.get('type')
+            feats = tr.get('features') or []
             if stype:
-                line += f' ({stype})'
-            if features:
-                line += ' - ' + ', '.join(features)
+                line += ' ({})'.format(stype)
+            if feats:
+                line += ' - {}'.format(', '.join(feats))
             lines.append('  ' + line)
 
-    extra_text = '\n'.join(lines)
-    current_plot = info_labels.get('plot') or ''
-    info_labels['plot'] = f'{current_plot}\n\n{extra_text}'.strip()
-
-    if not info_labels.get('plotoutline'):
-        info_labels['plotoutline'] = info_labels['plot']
-
-    return info_labels
+    extra = '\n'.join(lines)
+    base = info.get('plot') or ''
+    info['plot'] = (base + '\n\n' + extra).strip()
+    if not info.get('plotoutline'):
+        info['plotoutline'] = info['plot']
+    return info
 
 
-# ---------------------------------------------------------------------------
-# helper: set ListItem properties for rich media
-# ---------------------------------------------------------------------------
-def _apply_extra_media_props(listitem, info_labels):
-    if not info_labels:
+def _set_track_properties(listitem, info):
+    """
+    Expose track info via ListItem properties for skins.
+    """
+    if not info:
         return
+    audio = info.get('audio_tracks') or []
+    subs = info.get('subtitle_tracks') or []
+    flags = info.get('audioflags') or []
 
-    audio_tracks = info_labels.get('audio_tracks') or []
-    subtitle_tracks = info_labels.get('subtitle_tracks') or []
-    audio_flags = info_labels.get('audioflags') or []
-
-    if audio_tracks:
+    if audio:
         rendered = []
-        for track in audio_tracks:
-            lang = track.get('lang') or 'und'
-            features = track.get('features') or []
-            channels = track.get('channels')
-            if features:
-                rendered.append(f'{lang} - {", ".join(features)}')
-            elif channels:
-                rendered.append(f'{lang} - {channels}')
+        for tr in audio:
+            lang = tr.get('lang') or 'und'
+            feats = tr.get('features') or []
+            ch = tr.get('channels')
+            if feats:
+                rendered.append('{} - {}'.format(lang, ', '.join(feats)))
+            elif ch:
+                rendered.append('{} - {}'.format(lang, ch))
             else:
                 rendered.append(lang)
         listitem.setProperty('AudioTracks', '\n'.join(rendered))
 
-    if subtitle_tracks:
+    if subs:
         rendered = []
-        for track in subtitle_tracks:
-            lang = track.get('lang') or 'und'
-            features = track.get('features') or []
-            stype = track.get('type')
-            if features:
-                rendered.append(f'{lang} - {", ".join(features)}')
+        for tr in subs:
+            lang = tr.get('lang') or 'und'
+            feats = tr.get('features') or []
+            stype = tr.get('type')
+            if feats:
+                rendered.append('{} - {}'.format(lang, ', '.join(feats)))
             elif stype:
-                rendered.append(f'{lang} - {stype}')
+                rendered.append('{} - {}'.format(lang, stype))
             else:
                 rendered.append(lang)
         listitem.setProperty('SubtitleTracks', '\n'.join(rendered))
 
-    if audio_flags:
-        listitem.setProperty('AudioFlags', ', '.join(audio_flags))
+    if flags:
+        listitem.setProperty('AudioFlags', ', '.join(flags))
 
 
 # ---------------------------------------------------------------------------
-# directory item
+# helpers: common listitem setup
 # ---------------------------------------------------------------------------
-def addDir(
-    name,
-    mode='',
-    url='',
-    info_labels=None,
-    opt='',
-    catalog='Browse',
-    cm=None,
-    page=1,
-    export=False,
-    thumb=None
-):
-    info_labels = info_labels or {}
+def _apply_art(listitem, info, thumb_fallback):
+    thumb = info.get('thumb', thumb_fallback)
+    fanart = info.get('fanart', _g.DefaultFanart)
+    poster = info.get('poster', thumb)
+    listitem.setArt({'fanart': fanart, 'poster': poster, 'icon': thumb, 'thumb': thumb})
+    if 'poster' in info:
+        listitem.setArt({'tvshow.poster': info['poster']})
 
+
+# ---------------------------------------------------------------------------
+# public: directory item
+# ---------------------------------------------------------------------------
+def addDir(name, mode='', url='', infoLabels=None, opt='', catalog='Browse', cm=None,
+           page=1, export=False, thumb=None):
+    """
+    Directory item — kept compatible with the original addon.
+    """
+    infoLabels = infoLabels or {}
+
+    # original plugin's export paging
     if export and mode == 'getPage':
-        exec('_globals.pv.{}("{}", "{}", {}, export={})'.format(mode, url, opt, page, export))
+        exec('_g.pv.{}("{}", "{}", {}, export={})'.format(mode, url, opt, page, export))
         return
 
-    plugin_url, using_atv = _build_plugin_url(mode, url, page, opt, catalog)
+    useatv = (_s.data_source == 1)
+    folder = mode not in ['switchUser', 'text'] if useatv else mode == 'True'
+    sep = '?' if useatv else ''
+    u = urlencode({'mode': mode, 'url': url, 'page': page, 'opt': opt, 'cat': catalog}) if useatv else url
+    final_url = '{}{}{}'.format(_g.pluginid, sep, u) if mode != 'text' else _g.pluginid
+
+    if mode == '' and useatv:
+        final_url = _g.pluginid
 
     if export:
-        Export(info_labels, plugin_url)
+        Export(infoLabels, final_url)
         return
 
-    thumb = info_labels.get('thumb', thumb)
-    fanart = info_labels.get('fanart', _globals.DefaultFanart)
-    poster = info_labels.get('poster', thumb)
+    item = ListItem_InfoTag(name)
+    item.setProperty('IsPlayable', 'false')
 
-    listitem = ListItem_InfoTag(name)
-    listitem.setProperty('IsPlayable', 'false')
-    listitem.setArt({
-        'fanart': fanart,
-        'poster': poster,
-        'icon': thumb,
-        'thumb': thumb
-    })
+    # art
+    _apply_art(item, infoLabels, thumb)
 
-    # NEW: force a visible line in list view
-    track_summary = _build_track_summary(info_labels)
-    if track_summary:
-        listitem.setLabel2(track_summary)
+    # second line
+    summary = _build_track_summary(infoLabels)
+    if summary:
+        item.setLabel2(summary)
 
-    if info_labels:
-        info_labels = _enrich_plot_with_tracks(info_labels)
-        listitem.set_Info('Video', info_labels)
-
-        total_seasons = info_labels.get('totalseasons')
-        if total_seasons is not None:
-            listitem.setProperty('totalseasons', str(total_seasons))
-
-        if poster:
-            listitem.setArt({'tvshow.poster': poster})
-
-        _apply_extra_media_props(listitem, info_labels)
+    if infoLabels:
+        infoLabels = _append_tracks_to_plot(infoLabels)
+        item.set_Info('Video', infoLabels)
+        if 'totalseasons' in infoLabels:
+            item.setProperty('totalseasons', str(infoLabels['totalseasons']))
+        _set_track_properties(item, infoLabels)
 
     if cm:
-        listitem.addContextMenuItems(cm)
+        item.addContextMenuItems(cm)
 
-    is_folder = (mode not in ('switchUser', 'text')) if using_atv else (mode == 'True')
-    xbmcplugin.addDirectoryItem(_globals.pluginhandle, plugin_url, listitem, isFolder=is_folder)
+    xbmcplugin.addDirectoryItem(_g.pluginhandle, final_url, item, isFolder=folder)
 
 
 # ---------------------------------------------------------------------------
-# video item
+# public: playable item
 # ---------------------------------------------------------------------------
-def addVideo(name, asin, info_labels, cm=None, export=False):
-    info_labels = info_labels or {}
+def addVideo(name, asin, infoLabels, cm=None, export=False):
+    infoLabels = infoLabels or {}
 
-    base_params = {
-        'asin': asin,
-        'mode': 'PlayVideo',
-        'name': name,
-        'adult': info_labels.get('isAdult', 0),
-    }
-    url = f'{_globals.pluginid}?{urlencode(base_params)}'
-
+    params = {'asin': asin, 'mode': 'PlayVideo', 'name': name, 'adult': infoLabels.get('isAdult', 0)}
+    url = '{}?{}'.format(_g.pluginid, urlencode(params))
     bitrate = '0'
-    stream_types = {'live': 2, 'event': 3}
+    streamtypes = {'live': 2, 'event': 3}
 
-    thumb = info_labels.get('thumb', _globals.DefaultFanart)
-    fanart = info_labels.get('fanart', _globals.DefaultFanart)
-    poster = info_labels.get('poster', thumb)
+    item = ListItem_InfoTag(name)
+    item.setProperty('IsPlayable', 'true')
+    _apply_art(item, infoLabels, _g.DefaultFanart)
 
-    listitem = ListItem_InfoTag(name)
-    listitem.setArt({'fanart': fanart, 'poster': poster, 'thumb': thumb})
-    listitem.setProperty('IsPlayable', 'true')
+    # visible line
+    summary = _build_track_summary(infoLabels)
+    if summary:
+        item.setLabel2(summary)
 
-    # NEW: force a visible line in list view
-    track_summary = _build_track_summary(info_labels)
-    if track_summary:
-        listitem.setLabel2(track_summary)
+    # audio hint
+    if 'audiochannels' in infoLabels:
+        item.add_StreamInfo('audio', {'codec': 'ac3', 'channels': int(infoLabels['audiochannels'])})
 
-    audio_channels = info_labels.get('audiochannels')
-    if audio_channels:
-        listitem.add_StreamInfo('audio', {'codec': 'ac3', 'channels': int(audio_channels)})
+    # trailer
+    if infoLabels.get('TrailerAvailable'):
+        infoLabels['trailer'] = url + '&trailer=1&selbitrate=0'
+    url += '&trailer={}'.format(streamtypes.get(infoLabels.get('contentType'), 0))
 
-    if poster:
-        listitem.setArt({'tvshow.poster': poster})
+    # resolution hint
+    title_mix = (infoLabels.get('tvshowtitle', '') + name).lower()
+    if any(k in title_mix for k in ('4k', 'uhd', 'ultra hd')):
+        item.add_StreamInfo('video', {'width': 3840, 'height': 2160})
+    elif infoLabels.get('isHD'):
+        item.add_StreamInfo('video', {'width': 1920, 'height': 1080})
 
-    if info_labels.get('TrailerAvailable'):
-        info_labels['trailer'] = url + '&trailer=1&selbitrate=0'
-
-    content_type = info_labels.get('contentType')
-    url += f'&trailer={stream_types.get(content_type, 0)}'
-
-    name_mix = (info_labels.get('tvshowtitle', '') + name).lower()
-    if any(tag in name_mix for tag in ('4k', 'uhd', 'ultra hd')):
-        listitem.add_StreamInfo('video', {'width': 3840, 'height': 2160})
-    elif info_labels.get('isHD'):
-        listitem.add_StreamInfo('video', {'width': 1920, 'height': 1080})
-
-    selected_audio_id = info_labels.get('selected_audio_id')
-    selected_subtitle_id = info_labels.get('selected_subtitle_id')
-    if selected_audio_id:
-        url += f'&selaudio={selected_audio_id}'
-    if selected_subtitle_id:
-        url += f'&selsub={selected_subtitle_id}'
+    # pass selected tracks to player
+    selaudio = infoLabels.get('selected_audio_id')
+    selsub = infoLabels.get('selected_subtitle_id')
+    if selaudio:
+        url += '&selaudio={}'.format(selaudio)
+    if selsub:
+        url += '&selsub={}'.format(selsub)
 
     if export:
         url += '&selbitrate=' + bitrate
-        Export(info_labels, url)
+        Export(infoLabels, url)
         return
 
-    context_menu = cm[:] if cm else []
-    context_menu.insert(0, (getString(30101), 'Action(ToggleWatched)'))
+    # normal item
+    cm = cm if cm else []
+    cm.insert(0, (getString(30101), 'Action(ToggleWatched)'))
 
-    info_labels = _enrich_plot_with_tracks(info_labels)
-    listitem.set_Info('Video', info_labels)
-    _apply_extra_media_props(listitem, info_labels)
-    listitem.addContextMenuItems(context_menu)
+    infoLabels = _append_tracks_to_plot(infoLabels)
+    item.set_Info('Video', infoLabels)
+    _set_track_properties(item, infoLabels)
+    item.addContextMenuItems(cm)
 
     url += '&selbitrate=' + bitrate
-    xbmcplugin.addDirectoryItem(_globals.pluginhandle, url, listitem, isFolder=False)
+    xbmcplugin.addDirectoryItem(_g.pluginhandle, url, item, isFolder=False)
 
 
 # ---------------------------------------------------------------------------
@@ -351,7 +293,7 @@ def addVideo(name, asin, info_labels, cm=None, export=False):
 class ListItem_InfoTag(xbmcgui.ListItem):
     """
     Map our info_labels dict onto Kodi's InfoTagVideo API (Kodi 19+),
-    with fallback to classic setInfo for older Kodis.
+    with fallback to classic setInfo for older Kodi versions.
     """
     def __init__(self, *args, **kwargs):
         super(ListItem_InfoTag, self).__init__(*args, **kwargs)
@@ -410,26 +352,30 @@ class ListItem_InfoTag(xbmcgui.ListItem):
         }
 
     def set_Info(self, ctype, infos):
-        if _globals.KodiVersion > 19:
+        # Kodi 19+ path
+        if _g.KodiVersion > 19:
             if self.info_tag is None:
                 self.info_tag = self.getVideoInfoTag()
             for key, value in infos.items():
                 if value is None:
                     continue
-                mapped = self.map.get(key)
-                if not mapped:
+                mapper = self.map.get(key)
+                if not mapper:
                     continue
-                setattr_fn = getattr(self.info_tag, mapped['attr'])
-                setattr_fn(mapped['convert'](value))
+                # ← this was the line that was broken before
+                setter = getattr(self.info_tag, mapper['attr'])
+                setter(mapper['convert'](value))
         else:
+            # older Kodi
             self.setInfo(ctype, self._clean_infos(infos))
 
     def add_StreamInfo(self, ctype, infos):
-        if _globals.KodiVersion > 19:
+        ct = ctype.capitalize()
+        if _g.KodiVersion > 19:
             if self.info_tag is None:
                 self.info_tag = self.getVideoInfoTag()
-            add_stream = getattr(self.info_tag, f'add{ctype.capitalize()}Stream')
-            stream_detail = getattr(xbmc, f'{ctype.capitalize()}StreamDetail')
+            add_stream = getattr(self.info_tag, 'add{}Stream'.format(ct))
+            stream_detail = getattr(xbmc, '{}StreamDetail'.format(ct))
             add_stream(stream_detail(**infos))
         else:
             self.addStreamInfo(ctype, infos)

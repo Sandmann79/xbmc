@@ -161,7 +161,6 @@ class PrimeVideo(Singleton):
         user_rec = all_rec.get(cur_user, [])
         return all_rec, user_rec
 
-
     def Recent(self, export=0):
         _, rec = self.getRecents()
         asins = ','.join(rec)
@@ -622,7 +621,6 @@ class PrimeVideo(Singleton):
             data = getURL(url, postdata=query, useCookie=cookie, check=True)
             if data:
                 Log(action + ' ' + asin)
-
                 if remove:
                     cPath = (
                         xbmc.getInfoLabel('Container.FolderPath')
@@ -909,74 +907,179 @@ class PrimeVideo(Singleton):
         return asins
 
     def getInfos(self, item, export):
-        # ---------- helpers (scoped here to stay drop-in) ----------
-        def _init_base_labels(item_obj):
-            labels = self.getAsins(item_obj)
-            base_title = self.cleanTitle(item_obj['title'])
+        # ---------- helpers (scoped to keep drop-in) ----------
+        def _init_base_labels(obj):
+            labels = self.getAsins(obj)
+            base_title = self.cleanTitle(obj['title'])
             labels['DisplayTitle'] = labels['title'] = base_title
-            labels['contentType'] = item_obj['contentType'].lower()
+            labels['contentType'] = obj['contentType'].lower()
             labels['mediatype'] = 'movie'
-            labels['plot'] = item_obj.get('synopsis')
-            labels['director'] = item_obj.get('director')
-            labels['studio'] = item_obj.get('studioOrNetwork')
-            labels['cast'] = item_obj.get('starringCast', '').split(',')
+            labels['plot'] = obj.get('synopsis')
+            labels['director'] = obj.get('director')
+            labels['studio'] = obj.get('studioOrNetwork')
+            labels['cast'] = obj.get('starringCast', '').split(',')
             labels['duration'] = (
-                str(item_obj['runtime']['valueMillis'] / 1000)
-                if 'runtime' in item_obj
-                else None
+                str(obj['runtime']['valueMillis'] / 1000) if 'runtime' in obj else None
             )
-            labels['TrailerAvailable'] = item_obj.get('trailerAvailable', False)
-            labels['fanart'] = item_obj.get('heroUrl')
-            labels['isAdult'] = 1 if 'ageVerificationRequired' in str(item_obj.get('restrictions')) else 0
+            labels['TrailerAvailable'] = obj.get('trailerAvailable', False)
+            labels['fanart'] = obj.get('heroUrl')
+            labels['isAdult'] = 1 if 'ageVerificationRequired' in str(obj.get('restrictions')) else 0
             labels['genre'] = (
-                ' / '.join(item_obj.get('genres', ''))
+                ' / '.join(obj.get('genres', ''))
                 .replace('_', ' & ')
                 .replace('Musikfilm & Tanz', 'Musikfilm, Tanz')
                 .replace('ã–', 'ö')
             )
-            # for later audio decorations
-            labels['audioflags'] = []
+            labels['audioflags'] = []   # for HI/AD/etc
             return labels
 
-        def _apply_images(item_obj, labels):
-            if 'formats' in item_obj and 'images' in item_obj['formats'][0].keys():
+        def _apply_images(obj, labels):
+            if 'formats' in obj and 'images' in obj['formats'][0].keys():
                 try:
-                    labels['thumb'] = self.cleanIMGurl(item_obj['formats'][0]['images'][0]['uri'])
+                    labels['thumb'] = self.cleanIMGurl(obj['formats'][0]['images'][0]['uri'])
                 except Exception:
                     pass
 
-        def _apply_dates(item_obj, labels):
-            if 'releaseOrFirstAiringDate' in item_obj:
-                labels['premiered'] = item_obj['releaseOrFirstAiringDate']['valueFormatted'].split('T')[0]
+        def _apply_dates(obj, labels):
+            if 'releaseOrFirstAiringDate' in obj:
+                labels['premiered'] = obj['releaseOrFirstAiringDate']['valueFormatted'].split('T')[0]
                 labels['year'] = int(labels['premiered'].split('-')[0])
 
-        def _apply_mpaa(item_obj, labels):
-            if 'regulatoryRating' not in item_obj:
+        def _apply_mpaa(obj, labels):
+            rr = obj.get('regulatoryRating')
+            if rr is None:
                 return
-            rating = item_obj['regulatoryRating']
-            if rating == 'not_checked' or not rating:
+            if rr == 'not_checked' or not rr:
                 labels['mpaa'] = getString(30171)
             else:
-                labels['mpaa'] = AgeRestrictions().GetAgeRating() + rating
+                labels['mpaa'] = AgeRestrictions().GetAgeRating() + rr
 
-        def _apply_user_ratings(item_obj, labels):
-            crc = item_obj.get('customerReviewCollection')
+        def _apply_user_ratings(obj, labels):
+            crc = obj.get('customerReviewCollection')
             if crc:
                 summ = crc['customerReviewSummary']
                 labels['rating'] = float(summ['averageOverallRating']) * 2
                 labels['votes'] = str(summ['totalReviewCount'])
                 return
-            ar = item_obj.get('amazonRating')
+            ar = obj.get('amazonRating')
             if ar:
                 labels['rating'] = float(ar['rating']) * 2 if 'rating' in ar else None
                 labels['votes'] = str(ar['count']) if 'count' in ar else None
 
-        def _detect_hi(item_obj):
-            # return True if any audio container says HI
+        # --- audio/subtitle parsing ---
+
+        def _nice_lang(code_or_name):
+            # try to keep code short and readable
+            if not code_or_name:
+                return ''
+            # amazon sometimes sends "en_US", "de_DE"
+            return code_or_name.replace('_', '-')
+
+        def _parse_audio_tracks(obj):
+            """
+            Return list of strings like:
+              ["en – Audio Description", "de – 5.1", "fr – Stereo"]
+            from the various possible audio containers.
+            """
+            tracks = []
             containers = [
-                item_obj.get('audioTracks'),
-                item_obj.get('playbackAudioTracks'),
-                item_obj.get('audioLanguages'),
+                obj.get('audioTracks'),
+                obj.get('playbackAudioTracks'),
+                obj.get('audioLanguages'),
+            ]
+            for container in containers:
+                if not container:
+                    continue
+                for t in container:
+                    lang = _nice_lang(t.get('languageCode') or t.get('language') or t.get('locale'))
+                    # technical bits
+                    ch = t.get('channels') or t.get('channelLayout')
+                    # features/purpose
+                    feat = t.get('features') or t.get('flags') or []
+                    if isinstance(feat, str):
+                        feat = [feat]
+                    labels = []
+                    # try to map common flags
+                    for f in feat:
+                        lf = f.lower()
+                        if 'audio_description' in lf or 'described' in lf:
+                            labels.append('Audio Description')
+                        elif 'hearing' in lf:
+                            labels.append('HI')
+                        else:
+                            labels.append(f)
+                    # build display
+                    parts = []
+                    if lang:
+                        parts.append(lang)
+                    if ch:
+                        parts.append(str(ch))
+                    if labels:
+                        parts.append(', '.join(labels))
+                    if parts:
+                        tracks.append(' – '.join([parts[0], ' '.join(parts[1:]).strip()]) if len(parts) > 1 else parts[0])
+            # dedupe while preserving order
+            seen = set()
+            uniq = []
+            for x in tracks:
+                if x not in seen:
+                    uniq.append(x)
+                    seen.add(x)
+            return uniq
+
+        def _parse_subtitle_tracks(obj):
+            """
+            Return list of strings like:
+              ["en – SDH", "de – Forced", "es – CC"]
+            """
+            tracks = []
+            containers = [
+                obj.get('subtitles'),
+                obj.get('subtitleTracks'),
+                obj.get('captionTracks'),
+            ]
+            for container in containers:
+                if not container:
+                    continue
+                for t in container:
+                    lang = _nice_lang(t.get('languageCode') or t.get('language') or t.get('locale'))
+                    kind = t.get('type') or t.get('category') or ''
+                    flags = t.get('flags') or t.get('features') or []
+                    if isinstance(flags, str):
+                        flags = [flags]
+                    labels = []
+                    if kind:
+                        labels.append(kind)
+                    for f in flags:
+                        lf = f.lower()
+                        if 'sdh' in lf:
+                            labels.append('SDH')
+                        elif 'forced' in lf:
+                            labels.append('Forced')
+                        elif 'cc' in lf or 'closed' in lf:
+                            labels.append('CC')
+                        else:
+                            labels.append(f)
+                    parts = []
+                    if lang:
+                        parts.append(lang)
+                    if labels:
+                        parts.append(', '.join(labels))
+                    if parts:
+                        tracks.append(' – '.join(parts))
+            seen = set()
+            uniq = []
+            for x in tracks:
+                if x not in seen:
+                    uniq.append(x)
+                    seen.add(x)
+            return uniq
+
+        def _detect_hi(obj):
+            containers = [
+                obj.get('audioTracks'),
+                obj.get('playbackAudioTracks'),
+                obj.get('audioLanguages'),
             ]
             for container in containers:
                 if not container:
@@ -985,55 +1088,50 @@ class PrimeVideo(Singleton):
                     if track.get('hearingImpaired') is True:
                         return True
                     flags = track.get('flags') or track.get('features')
-                    if not flags:
-                        continue
-                    if (
-                        'hearing_impaired' in flags
-                        or 'hearing-impaired' in flags
-                        or 'HI' in flags
-                    ):
-                        return True
+                    if flags:
+                        if isinstance(flags, str):
+                            flags = [flags]
+                        for f in flags:
+                            lf = f.lower()
+                            if 'hearing_impaired' in lf or 'hearing-impaired' in lf or lf == 'hi':
+                                return True
             return False
 
         def _apply_hi_flag(labels, found):
-            if not found:
-                return
-            labels['audioflags'].append('HI')
-            labels['DisplayTitle'] += ' [HI]'
+            if found:
+                labels['audioflags'].append('HI')
+                labels['DisplayTitle'] += ' [HI]'
 
-        def _apply_series_like(item_obj, labels, ctype):
-            # series
+        def _apply_series_like(obj, labels, ctype):
             if ctype == 'series':
                 labels['mediatype'] = 'tvshow'
-                labels['tvshowtitle'] = item_obj['title']
+                labels['tvshowtitle'] = obj['title']
                 labels['totalseasons'] = (
-                    item_obj['childTitles'][0]['size'] if item_obj.get('childTitles') else None
+                    obj['childTitles'][0]['size'] if obj.get('childTitles') else None
                 )
                 return
 
-            # season
             if ctype == 'season':
                 labels['mediatype'] = 'season'
-                labels['season'] = item_obj['number']
-                if item_obj['ancestorTitles']:
-                    for content in item_obj['ancestorTitles']:
+                labels['season'] = obj['number']
+                if obj['ancestorTitles']:
+                    for content in obj['ancestorTitles']:
                         if content['contentType'] == 'SERIES':
                             labels['SeriesAsin'] = content.get('titleId')
                             labels['tvshowtitle'] = content.get('title')
                 else:
                     labels['SeriesAsin'] = labels['Asins'].split(',')[0]
-                    labels['tvshowtitle'] = item_obj['title']
-                if item_obj.get('childTitles'):
+                    labels['tvshowtitle'] = obj['title']
+                if obj.get('childTitles'):
                     labels['totalseasons'] = 1
-                    labels['episode'] = item_obj['childTitles'][0]['size']
+                    labels['episode'] = obj.get('childTitles')[0]['size']
                 return
 
-            # episode
             if ctype == 'episode':
                 labels['mediatype'] = 'episode'
-                if item_obj['ancestorTitles']:
+                if obj['ancestorTitles']:
                     seasontitle = None
-                    for content in item_obj['ancestorTitles']:
+                    for content in obj['ancestorTitles']:
                         if content['contentType'] == 'SERIES':
                             labels['SeriesAsin'] = content.get('titleId')
                             labels['tvshowtitle'] = content.get('title')
@@ -1047,15 +1145,15 @@ class PrimeVideo(Singleton):
                 else:
                     labels['SeriesAsin'] = ''
 
-                if 'number' in item_obj:
-                    labels['episode'] = item_obj['number']
-                    if item_obj['number'] > 0:
-                        labels['DisplayTitle'] = '%s - %s' % (item_obj['number'], labels['title'])
+                if 'number' in obj:
+                    labels['episode'] = obj['number']
+                    if obj['number'] > 0:
+                        labels['DisplayTitle'] = '%s - %s' % (obj['number'], labels['title'])
                     else:
                         if ':' in labels['title']:
                             labels['DisplayTitle'] = labels['title'].split(':')[1].strip()
 
-        # ---------- main flow ----------
+        # ---------- main ----------
         infoLabels = _init_base_labels(item)
         contentType = infoLabels['contentType']
 
@@ -1064,19 +1162,47 @@ class PrimeVideo(Singleton):
         _apply_mpaa(item, infoLabels)
         _apply_user_ratings(item, infoLabels)
 
+        # detect and mark HI
         hi_found = _detect_hi(item)
         _apply_hi_flag(infoLabels, hi_found)
 
+        # series/season/episode specifics
         _apply_series_like(item, infoLabels, contentType)
 
         # tvshowtitle cleanup
         if 'tvshowtitle' in infoLabels:
             infoLabels['tvshowtitle'] = self.cleanTitle(infoLabels['tvshowtitle'])
 
+        # NEW: extract tracks
+        audio_tracks = _parse_audio_tracks(item)
+        subtitle_tracks = _parse_subtitle_tracks(item)
+
+        # tuck them into infoLabels so other code can consume
+        if audio_tracks:
+            infoLabels['audio_tracks'] = audio_tracks
+        if subtitle_tracks:
+            infoLabels['subtitle_tracks'] = subtitle_tracks
+
+        # and make sure user sees it even if skin ignores custom keys
+        if (audio_tracks or subtitle_tracks) and infoLabels.get('plot'):
+            extra_lines = []
+            if audio_tracks:
+                extra_lines.append('Audio:\n  ' + '\n  '.join(audio_tracks))
+            if subtitle_tracks:
+                extra_lines.append('Subtitles:\n  ' + '\n  '.join(subtitle_tracks))
+            infoLabels['plot'] = infoLabels['plot'] + '\n\n' + '\n'.join(extra_lines)
+        elif (audio_tracks or subtitle_tracks) and not infoLabels.get('plot'):
+            txt = []
+            if audio_tracks:
+                txt.append('Audio:\n  ' + '\n  '.join(audio_tracks))
+            if subtitle_tracks:
+                txt.append('Subtitles:\n  ' + '\n  '.join(subtitle_tracks))
+            infoLabels['plot'] = '\n'.join(txt)
+
         # artwork backfill
         infoLabels = self.getArtWork(infoLabels, contentType)
 
-        # final presentation tweaks (non-export)
+        # final display tweaks
         if not export:
             if not infoLabels.get('thumb'):
                 infoLabels['thumb'] = self._g.DefaultFanart

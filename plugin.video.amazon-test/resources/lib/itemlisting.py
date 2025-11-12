@@ -34,15 +34,41 @@ def setContentAndView(content, updateListing=False):
         ctype = None
         cview = None
 
-    if None is not ctype:
+    if ctype is not None:
         xbmcplugin.setContent(_g.pluginhandle, ctype)
-    if (None is not cview) and ('true' == _s.viewenable):
+    if (cview is not None) and (_s.viewenable == 'true'):
         views = [50, 51, 52, 53, 54, 55, 500, 501, 502, -1]
         viewid = views[int(getattr(_s, cview))]
         if viewid == -1:
             viewid = int(getattr(_s, cview.replace('view', 'id')))
         xbmc.executebuiltin('Container.SetViewMode({})'.format(viewid))
     xbmcplugin.endOfDirectory(_g.pluginhandle, updateListing=updateListing)
+
+
+# --- helper: push extended track info into ListItem properties ---
+def _apply_extra_media_props(item, infoLabels):
+    if not infoLabels:
+        return
+    audio_tracks = infoLabels.get('audio_tracks')
+    subtitle_tracks = infoLabels.get('subtitle_tracks')
+    audioflags = infoLabels.get('audioflags')
+    if audio_tracks:
+        # store as newline so skins can split
+        item.setProperty('AudioTracks', '\n'.join(
+            ['{lang} - {desc}'.format(
+                lang=(a.get('lang') or 'und'),
+                desc=(', '.join(a.get('features') or []) or (str(a.get('channels')) if a.get('channels') else '')).strip()
+            ).strip(' -') for a in audio_tracks]
+        ))
+    if subtitle_tracks:
+        item.setProperty('SubtitleTracks', '\n'.join(
+            ['{lang} - {desc}'.format(
+                lang=(s.get('lang') or 'und'),
+                desc=(', '.join(s.get('features') or []) or s.get('type') or '').strip()
+            ).strip(' -') for s in subtitle_tracks]
+        ))
+    if audioflags:
+        item.setProperty('AudioFlags', ', '.join(audioflags))
 
 
 def addDir(name, mode='', url='', infoLabels=None, opt='', catalog='Browse', cm=None, page=1, export=False, thumb=None):
@@ -77,6 +103,7 @@ def addDir(name, mode='', url='', infoLabels=None, opt='', catalog='Browse', cm=
             item.setProperty('totalseasons', str(infoLabels['totalseasons']))
         if 'poster' in infoLabels:
             item.setArt({'tvshow.poster': infoLabels['poster']})
+        _apply_extra_media_props(item, infoLabels)
 
     if cm:
         item.addContextMenuItems(cm)
@@ -94,23 +121,33 @@ def addVideo(name, asin, infoLabels, cm=None, export=False):
 
     item = ListItem_InfoTag(name)
     item.setArt({'fanart': fanart, 'poster': poster, 'thumb': thumb})
-    item.setProperty('IsPlayable', 'true')  # always true, to view watched state
+    item.setProperty('IsPlayable', 'true')
 
+    # audio stream hint for Kodi
     if 'audiochannels' in infoLabels:
         item.add_StreamInfo('audio', {'codec': 'ac3', 'channels': int(infoLabels['audiochannels'])})
 
-    if 'poster' in infoLabels.keys():
+    if 'poster' in infoLabels:
         item.setArt({'tvshow.poster': infoLabels['poster']})
 
+    # trailer support
     if infoLabels.get('TrailerAvailable'):
         infoLabels['trailer'] = url + '&trailer=1&selbitrate=0'
 
+    # add video stream hints
     url += '&trailer=%s' % streamtypes.get(infoLabels['contentType'], 0)
-
-    if [k for k in ['4k', 'uhd', 'ultra hd'] if k in (infoLabels.get('tvshowtitle', '') + name).lower()]:
+    title_mix = (infoLabels.get('tvshowtitle', '') + name).lower()
+    if any(k in title_mix for k in ['4k', 'uhd', 'ultra hd']):
         item.add_StreamInfo('video', {'width': 3840, 'height': 2160})
     elif infoLabels.get('isHD'):
         item.add_StreamInfo('video', {'width': 1920, 'height': 1080})
+
+    selaudio = infoLabels.get('selected_audio_id')
+    selsub = infoLabels.get('selected_subtitle_id')
+    if selaudio:
+        url += '&selaudio={}'.format(selaudio)
+    if selsub:
+        url += '&selsub={}'.format(selsub)
 
     if export:
         url += '&selbitrate=' + bitrate
@@ -119,6 +156,7 @@ def addVideo(name, asin, infoLabels, cm=None, export=False):
         cm = cm if cm else []
         cm.insert(0, (getString(30101), 'Action(ToggleWatched)'))
         item.set_Info('Video', infoLabels)
+        _apply_extra_media_props(item, infoLabels)
         item.addContextMenuItems(cm)
         url += '&selbitrate=' + bitrate
         xbmcplugin.addDirectoryItem(_g.pluginhandle, url, item, isFolder=False)
@@ -130,7 +168,7 @@ class ListItem_InfoTag(xbmcgui.ListItem):
         super(ListItem_InfoTag, self).__init__(*args, **kwargs)
         self.InfoTag = None
         self.map = {
-            'date': {'attr': 'setDateAdded', 'convert': str, 'classinfo': str},  # Unsure if this is the correct place to route this generic value
+            'date': {'attr': 'setDateAdded', 'convert': str, 'classinfo': str},
             'genre': {'attr': 'setGenres', 'convert': list, 'classinfo': (list, tuple)},
             'country': {'attr': 'setCountries', 'convert': list, 'classinfo': (list, tuple)},
             'year': {'attr': 'setYear', 'convert': int, 'classinfo': int},
@@ -205,3 +243,4 @@ class ListItem_InfoTag(xbmcgui.ListItem):
         if not infos:
             return
         return {k: v for k, v in infos.items() if k.lower() in self.map}
+

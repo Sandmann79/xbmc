@@ -1,13 +1,5 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""
-Kodi item listing helpers for the Prime Video addon.
-
-- Creates directory items and playable items.
-- Surfaces rich audio/subtitle metadata to both InfoTag and ListItem properties.
-- Passes preselected audio/subtitle IDs to the playback handler.
-- Applies configured content type and view.
-"""
 import xbmc
 import xbmcplugin
 import xbmcgui

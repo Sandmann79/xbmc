@@ -161,6 +161,7 @@ class PrimeVideo(Singleton):
         user_rec = all_rec.get(cur_user, [])
         return all_rec, user_rec
 
+
     def Recent(self, export=0):
         _, rec = self.getRecents()
         asins = ','.join(rec)
@@ -621,6 +622,7 @@ class PrimeVideo(Singleton):
             data = getURL(url, postdata=query, useCookie=cookie, check=True)
             if data:
                 Log(action + ' ' + asin)
+
                 if remove:
                     cPath = (
                         xbmc.getInfoLabel('Container.FolderPath')
@@ -907,123 +909,185 @@ class PrimeVideo(Singleton):
         return asins
 
     def getInfos(self, item, export):
-        infoLabels = self.getAsins(item)
-        infoLabels['DisplayTitle'] = infoLabels['title'] = self.cleanTitle(item['title'])
-        infoLabels['contentType'] = contentType = item['contentType'].lower()
-
-        infoLabels['mediatype'] = 'movie'
-        infoLabels['plot'] = item.get('synopsis')
-        infoLabels['director'] = item.get('director')
-        infoLabels['studio'] = item.get('studioOrNetwork')
-        infoLabels['cast'] = item.get('starringCast', '').split(',')
-        infoLabels['duration'] = (
-            str(item['runtime']['valueMillis'] / 1000) if 'runtime' in item else None
-        )
-        infoLabels['TrailerAvailable'] = item.get('trailerAvailable', False)
-        infoLabels['fanart'] = item.get('heroUrl')
-        infoLabels['isAdult'] = 1 if 'ageVerificationRequired' in str(item.get('restrictions')) else 0
-        infoLabels['genre'] = (
-            ' / '.join(item.get('genres', ''))
-            .replace('_', ' & ')
-            .replace('Musikfilm & Tanz', 'Musikfilm, Tanz')
-            .replace('ã–', 'ö')
-        )
-
-        if 'formats' in item and 'images' in item['formats'][0].keys():
-            try:
-                infoLabels['thumb'] = self.cleanIMGurl(item['formats'][0]['images'][0]['uri'])
-            except Exception:
-                pass
-
-        if 'releaseOrFirstAiringDate' in item:
-            infoLabels['premiered'] = item['releaseOrFirstAiringDate']['valueFormatted'].split('T')[0]
-            infoLabels['year'] = int(infoLabels['premiered'].split('-')[0])
-
-        if 'regulatoryRating' in item:
-            if item['regulatoryRating'] == 'not_checked' or not item['regulatoryRating']:
-                infoLabels['mpaa'] = getString(30171)
-            else:
-                infoLabels['mpaa'] = AgeRestrictions().GetAgeRating() + item['regulatoryRating']
-
-        if 'customerReviewCollection' in item:
-            infoLabels['rating'] = (
-                float(item['customerReviewCollection']['customerReviewSummary']['averageOverallRating']) * 2
-            )
-            infoLabels['votes'] = str(
-                item['customerReviewCollection']['customerReviewSummary']['totalReviewCount']
-            )
-        elif 'amazonRating' in item:
-            infoLabels['rating'] = (
-                float(item['amazonRating']['rating']) * 2
-                if 'rating' in item['amazonRating']
+        # ---------- helpers (scoped here to stay drop-in) ----------
+        def _init_base_labels(item_obj):
+            labels = self.getAsins(item_obj)
+            base_title = self.cleanTitle(item_obj['title'])
+            labels['DisplayTitle'] = labels['title'] = base_title
+            labels['contentType'] = item_obj['contentType'].lower()
+            labels['mediatype'] = 'movie'
+            labels['plot'] = item_obj.get('synopsis')
+            labels['director'] = item_obj.get('director')
+            labels['studio'] = item_obj.get('studioOrNetwork')
+            labels['cast'] = item_obj.get('starringCast', '').split(',')
+            labels['duration'] = (
+                str(item_obj['runtime']['valueMillis'] / 1000)
+                if 'runtime' in item_obj
                 else None
             )
-            infoLabels['votes'] = (
-                str(item['amazonRating']['count']) if 'count' in item['amazonRating'] else None
+            labels['TrailerAvailable'] = item_obj.get('trailerAvailable', False)
+            labels['fanart'] = item_obj.get('heroUrl')
+            labels['isAdult'] = 1 if 'ageVerificationRequired' in str(item_obj.get('restrictions')) else 0
+            labels['genre'] = (
+                ' / '.join(item_obj.get('genres', ''))
+                .replace('_', ' & ')
+                .replace('Musikfilm & Tanz', 'Musikfilm, Tanz')
+                .replace('ã–', 'ö')
             )
+            # for later audio decorations
+            labels['audioflags'] = []
+            return labels
 
-        if contentType == 'series':
-            infoLabels['mediatype'] = 'tvshow'
-            infoLabels['tvshowtitle'] = item['title']
-            infoLabels['totalseasons'] = (
-                item['childTitles'][0]['size'] if item.get('childTitles') else None
-            )
+        def _apply_images(item_obj, labels):
+            if 'formats' in item_obj and 'images' in item_obj['formats'][0].keys():
+                try:
+                    labels['thumb'] = self.cleanIMGurl(item_obj['formats'][0]['images'][0]['uri'])
+                except Exception:
+                    pass
 
-        elif contentType == 'season':
-            infoLabels['mediatype'] = 'season'
-            infoLabels['season'] = item['number']
-            if item['ancestorTitles']:
-                for content in item['ancestorTitles']:
-                    if content['contentType'] == 'SERIES':
-                        infoLabels['SeriesAsin'] = content['titleId'] if 'titleId' in content else None
-                        infoLabels['tvshowtitle'] = content['title'] if 'title' in content else None
+        def _apply_dates(item_obj, labels):
+            if 'releaseOrFirstAiringDate' in item_obj:
+                labels['premiered'] = item_obj['releaseOrFirstAiringDate']['valueFormatted'].split('T')[0]
+                labels['year'] = int(labels['premiered'].split('-')[0])
+
+        def _apply_mpaa(item_obj, labels):
+            if 'regulatoryRating' not in item_obj:
+                return
+            rating = item_obj['regulatoryRating']
+            if rating == 'not_checked' or not rating:
+                labels['mpaa'] = getString(30171)
             else:
-                infoLabels['SeriesAsin'] = infoLabels['Asins'].split(',')[0]
-                infoLabels['tvshowtitle'] = item['title']
-            if item.get('childTitles'):
-                infoLabels['totalseasons'] = 1
-                infoLabels['episode'] = item['childTitles'][0]['size']
+                labels['mpaa'] = AgeRestrictions().GetAgeRating() + rating
 
-        elif contentType == 'episode':
-            infoLabels['mediatype'] = 'episode'
-            if item['ancestorTitles']:
-                for content in item['ancestorTitles']:
-                    if content['contentType'] == 'SERIES':
-                        infoLabels['SeriesAsin'] = content['titleId'] if 'titleId' in content else None
-                        infoLabels['tvshowtitle'] = content['title'] if 'title' in content else None
-                    elif content['contentType'] == 'SEASON':
-                        infoLabels['season'] = content['number'] if 'number' in content else None
-                        infoLabels['SeasonAsin'] = content['titleId'] if 'titleId' in content else None
-                        seasontitle = content['title'] if 'title' in content else None
-                if 'SeriesAsin' not in infoLabels.keys() and 'SeasonAsin' in infoLabels.keys():
-                    infoLabels['SeriesAsin'] = infoLabels['SeasonAsin']
-                    infoLabels['tvshowtitle'] = seasontitle
-            else:
-                infoLabels['SeriesAsin'] = ''
+        def _apply_user_ratings(item_obj, labels):
+            crc = item_obj.get('customerReviewCollection')
+            if crc:
+                summ = crc['customerReviewSummary']
+                labels['rating'] = float(summ['averageOverallRating']) * 2
+                labels['votes'] = str(summ['totalReviewCount'])
+                return
+            ar = item_obj.get('amazonRating')
+            if ar:
+                labels['rating'] = float(ar['rating']) * 2 if 'rating' in ar else None
+                labels['votes'] = str(ar['count']) if 'count' in ar else None
 
-            if 'number' in item.keys():
-                infoLabels['episode'] = item['number']
-                if item['number'] > 0:
-                    infoLabels['DisplayTitle'] = '%s - %s' % (item['number'], infoLabels['title'])
+        def _detect_hi(item_obj):
+            # return True if any audio container says HI
+            containers = [
+                item_obj.get('audioTracks'),
+                item_obj.get('playbackAudioTracks'),
+                item_obj.get('audioLanguages'),
+            ]
+            for container in containers:
+                if not container:
+                    continue
+                for track in container:
+                    if track.get('hearingImpaired') is True:
+                        return True
+                    flags = track.get('flags') or track.get('features')
+                    if not flags:
+                        continue
+                    if (
+                        'hearing_impaired' in flags
+                        or 'hearing-impaired' in flags
+                        or 'HI' in flags
+                    ):
+                        return True
+            return False
+
+        def _apply_hi_flag(labels, found):
+            if not found:
+                return
+            labels['audioflags'].append('HI')
+            labels['DisplayTitle'] += ' [HI]'
+
+        def _apply_series_like(item_obj, labels, ctype):
+            # series
+            if ctype == 'series':
+                labels['mediatype'] = 'tvshow'
+                labels['tvshowtitle'] = item_obj['title']
+                labels['totalseasons'] = (
+                    item_obj['childTitles'][0]['size'] if item_obj.get('childTitles') else None
+                )
+                return
+
+            # season
+            if ctype == 'season':
+                labels['mediatype'] = 'season'
+                labels['season'] = item_obj['number']
+                if item_obj['ancestorTitles']:
+                    for content in item_obj['ancestorTitles']:
+                        if content['contentType'] == 'SERIES':
+                            labels['SeriesAsin'] = content.get('titleId')
+                            labels['tvshowtitle'] = content.get('title')
                 else:
-                    if ':' in infoLabels['title']:
-                        infoLabels['DisplayTitle'] = infoLabels['title'].split(':')[1].strip()
+                    labels['SeriesAsin'] = labels['Asins'].split(',')[0]
+                    labels['tvshowtitle'] = item_obj['title']
+                if item_obj.get('childTitles'):
+                    labels['totalseasons'] = 1
+                    labels['episode'] = item_obj['childTitles'][0]['size']
+                return
 
+            # episode
+            if ctype == 'episode':
+                labels['mediatype'] = 'episode'
+                if item_obj['ancestorTitles']:
+                    seasontitle = None
+                    for content in item_obj['ancestorTitles']:
+                        if content['contentType'] == 'SERIES':
+                            labels['SeriesAsin'] = content.get('titleId')
+                            labels['tvshowtitle'] = content.get('title')
+                        elif content['contentType'] == 'SEASON':
+                            labels['season'] = content.get('number')
+                            labels['SeasonAsin'] = content.get('titleId')
+                            seasontitle = content.get('title')
+                    if 'SeriesAsin' not in labels and 'SeasonAsin' in labels:
+                        labels['SeriesAsin'] = labels['SeasonAsin']
+                        labels['tvshowtitle'] = seasontitle
+                else:
+                    labels['SeriesAsin'] = ''
+
+                if 'number' in item_obj:
+                    labels['episode'] = item_obj['number']
+                    if item_obj['number'] > 0:
+                        labels['DisplayTitle'] = '%s - %s' % (item_obj['number'], labels['title'])
+                    else:
+                        if ':' in labels['title']:
+                            labels['DisplayTitle'] = labels['title'].split(':')[1].strip()
+
+        # ---------- main flow ----------
+        infoLabels = _init_base_labels(item)
+        contentType = infoLabels['contentType']
+
+        _apply_images(item, infoLabels)
+        _apply_dates(item, infoLabels)
+        _apply_mpaa(item, infoLabels)
+        _apply_user_ratings(item, infoLabels)
+
+        hi_found = _detect_hi(item)
+        _apply_hi_flag(infoLabels, hi_found)
+
+        _apply_series_like(item, infoLabels, contentType)
+
+        # tvshowtitle cleanup
         if 'tvshowtitle' in infoLabels:
             infoLabels['tvshowtitle'] = self.cleanTitle(infoLabels['tvshowtitle'])
 
+        # artwork backfill
         infoLabels = self.getArtWork(infoLabels, contentType)
 
+        # final presentation tweaks (non-export)
         if not export:
-            if not infoLabels['thumb']:
+            if not infoLabels.get('thumb'):
                 infoLabels['thumb'] = self._g.DefaultFanart
-            if not infoLabels['fanart']:
+            if not infoLabels.get('fanart'):
                 infoLabels['fanart'] = self._g.DefaultFanart
             if not infoLabels['isPrime'] and contentType != 'series':
                 infoLabels['DisplayTitle'] = '[COLOR %s]%s[/COLOR]' % (
                     self._g.PayCol,
                     infoLabels['DisplayTitle'],
                 )
+
         return contentType, infoLabels
 
     @staticmethod

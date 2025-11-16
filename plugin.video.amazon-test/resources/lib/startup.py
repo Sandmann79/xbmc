@@ -35,7 +35,7 @@ def EntryPoint(argv):
     args = dict(parse_qsl(urlparse(argv[2]).query))
     path = urlparse(argv[0]).path
 
-    Log('Requested {}'.format(path if 1 < len(path) else args), Log.DEBUG)
+    Log(f'Requested {path if 1 < len(path) else args}', Log.DEBUG)
     mode = args.get('mode', None)
 
     if not getConfig('UserAgent'):
@@ -52,7 +52,7 @@ def EntryPoint(argv):
                               loadUser('atvurl', cachedUsers=users), loadUser('pv', cachedUsers=users), loadUser('deviceid', cachedUsers=users))
     elif mode != 'LogIn':
         _g.dialog.notification(getString(30200), getString(30216))
-        xbmc.executebuiltin('Addon.OpenSettings(%s)' % _g.addon.getAddonInfo('id'))
+        xbmc.executebuiltin(f"Addon.OpenSettings({_g.addon.getAddonInfo('id')})")
         exit()
 
     if path.startswith('/pv/'):
@@ -60,9 +60,9 @@ def EntryPoint(argv):
         verb, path = path.split('/', 1)
         _g.pv.Route(verb, path)
     elif None is mode:
-        Log('Version: %s' % _g.__version__)
-        Log('Unicode filename support: %s' % os.path.supports_unicode_filenames)
-        Log('Locale: %s / Language: %s' % (_g.userAcceptLanguages.split(',')[0], _s.Language))
+        Log(f'Version: {_g.__version__}')
+        Log(f'Unicode filename support: {os.path.supports_unicode_filenames}')
+        Log(f"Locale: {_g.userAcceptLanguages.split(',')[0]} / Language: {_s.Language}")
         _g.pv.BrowseRoot()
     elif mode == 'PlayVideo':
         from .playback import PlayVideo
@@ -88,7 +88,7 @@ def EntryPoint(argv):
         from .login import LogIn, remLoginData
         from .users import removeUser, renameUser
         from .logging import createZIP, removeLogs
-        exec('{}()'.format(mode))
+        exec(f'{mode}()')
     else:
         _g.pv.Route(mode, args)
 
@@ -98,5 +98,5 @@ def Search(searchString):
         searchString = SearchDialog().value if _s.search_history else _g.dialog.input(getString(24121)).strip(' \t\n\r')
     if 0 == len(searchString):
         exit()
-    Log('Searching "{}"…'.format(searchString), Log.INFO)
+    Log(f'Searching "{searchString}"…', Log.INFO)
     _g.pv.Search(searchString)

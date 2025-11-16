@@ -63,7 +63,7 @@ class ProxyHTTPD(BaseHTTPRequestHandler):
 
         path = urlparse(self.path).path[1:]  # Get URI without the trailing slash
         path = path.split('/')  # license/<asin>/<ATV endpoint>
-        Log('[PS] Requested {} path {}'.format(method, path), Log.DEBUG)
+        Log(f'[PS] Requested {method} path {path}', Log.DEBUG)
 
         # Retrieve headers and data
         headers = {k: self.headers[k] for k in self.headers if k not in ['host', 'content-length']}
@@ -98,7 +98,7 @@ class ProxyHTTPD(BaseHTTPRequestHandler):
             cookie = None
 
         if 'Host' in headers: del headers['Host']  # Forcibly strip the host (py3 compliance)
-        Log('[PS] Forwarding the {} request towards {}'.format(method.upper(), endpoint), Log.DEBUG)
+        Log(f'[PS] Forwarding the {method.upper()} request towards {endpoint}', Log.DEBUG)
         r = session.request(method, endpoint, data=data, headers=headers, cookies=cookie, stream=stream, verify=self.server._s.ssl_verif)
         return r.status_code, r.headers, r if stream else r.content.decode('utf-8')
 
@@ -299,7 +299,7 @@ class ProxyHTTPD(BaseHTTPRequestHandler):
         status_code, headers, r = self._ForwardRequest('get', endpoint, headers, data, True)
 
         with self._PrepareChunkedResponse(status_code, headers) as gzstream:
-            Log('[PS] Loading MPD and rebasing as {}'.format(baseurl), Log.DEBUG)
+            Log(f'[PS] Loading MPD and rebasing as {baseurl}', Log.DEBUG)
             if r.encoding is None:
                 r.encoding = 'utf-8'
             buffer = r.content.decode(r.encoding)
@@ -354,7 +354,7 @@ class ProxyHTTPD(BaseHTTPRequestHandler):
                     if lang in chosen_langs or chosen_langs == 'all':
                         imp = ' impaired="true"' if 'descriptive' == trackId[1] else ''
                         newLocale = self._AdjustLocale(trackId[0], langCount[self.split_lang(trackId[0])])
-                        setTag = setTag.replace('lang="{}"'.format(lang), 'lang="{}"{}'.format(newLocale, imp))
+                        setTag = setTag.replace(f'lang="{lang}"', f'lang="{newLocale}"{imp}')
                         repres = re.findall(r'<Representation[^>]*>.*?</Representation>', setData, flags=re.DOTALL)
                         if len(repres):
                             best_found = [0, '', False]
@@ -375,8 +375,8 @@ class ProxyHTTPD(BaseHTTPRequestHandler):
                             if best_found[2] and self.server._s._g.KodiVersion < 21:
                                 apx = ' (Atmos)'
                             elif 'boosted' in trackId[1]:
-                                apx = ' (Dialog Boost: {})'.format(trackId[1].replace('boosteddialog', '').capitalize())
-                            setTag = '{} name="{} kbps{}">'.format(setTag[:-1], int(best_found[0] / 1000), apx)
+                                apx = f" (Dialog Boost: {trackId[1].replace('boosteddialog', '').capitalize()})"
+                            setTag = f'{setTag[:-1]} name="{int(best_found[0] / 1000)} kbps{apx}">'
 
                         Log('[PS] ' + setTag, Log.DEBUG)
                         self._SendChunk(gzstream, setTag)
@@ -408,7 +408,7 @@ class ProxyHTTPD(BaseHTTPRequestHandler):
                     m, s = divmod(m, 60000)
                     s, ms = divmod(s, 1000)
                     # Truncate to the decimal of a ms (for lazyness)
-                    return '%02d:%02d:%02d,%03d' % (h, m, s, int(ms))
+                    return '{h:02}:{m:02}:{s:02},{ms:03}'
                 _stretch.factor = self.server._s.subtitleStretchFactor
                 content = re.sub(r'(?P<h>\d+):(?P<m>\d+):(?P<s>\d+),(?P<ms>\d+)', _stretch, content)
 
@@ -427,14 +427,14 @@ class ProxyHTTPD(BaseHTTPRequestHandler):
                 # Embed RTL and change the punctuation where needed
                 if filename.startswith("ar"):
                     from unicodedata import lookup
-                    text = re.sub(r'^(?!{}|{})'.format(lookup('RIGHT-TO-LEFT MARK'), lookup('RIGHT-TO-LEFT EMBEDDING')),
+                    text = re.sub(rf"^(?!{lookup('RIGHT-TO-LEFT MARK')}|{lookup('RIGHT-TO-LEFT EMBEDDING')})",
                                   lookup('RIGHT-TO-LEFT EMBEDDING'), text, flags=re.MULTILINE)
                     text = text.replace('?', '؟').replace(',', '،')
 
                 for ec in [('&amp;', '&'), ('&quot;', '"'), ('&lt;', '<'), ('&gt;', '>'), ('&apos;', "'")]:
                     text = text.replace(ec[0], ec[1])
                 num += 1
-                srt += '%s\n%s --> %s\n%s\n\n' % (num, tt[0], tt[1], text)
+                srt += f'{num}\n{tt[0]} --> {tt[1]}\n{text}\n\n'
             content = srt
 
         self._SendResponse(status_code, headers, content)  # Kodi doesn't quite like gzip'd subtitles

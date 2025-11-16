@@ -50,7 +50,7 @@ class _AgeSettings(pyxbmct.AddonDialogWindow):
         super(_AgeSettings, self).__init__(title)
         self.age_list = [age[0] for age in AgeRestrictions().Ages]
         if len(self.age_list) == 1:
-            self._g.dialog.ok(self._g.__plugin__, 'Age Restrictions are currently unavailable in your region (ID {}).'.format(self._g.MarketID))
+            self._g.dialog.ok(self._g.__plugin__, f'Age Restrictions are currently unavailable in your region (ID {self._g.MarketID}).')
             exit()
         self.pin_req = int(getConfig('pin_req', '0'))
         self.pin = pyxbmct.Edit('', _alignment=pyxbmct.ALIGN_CENTER)

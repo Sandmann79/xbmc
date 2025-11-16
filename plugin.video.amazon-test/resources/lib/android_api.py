@@ -53,8 +53,8 @@ class PrimeVideo(Singleton):
         self._art_thread = Thread(target=self.processMissing)
 
     def BrowseRoot(self):
-        cm_wl = [(getString(30185) % 'Watchlist', 'RunPlugin(%s?mode=getPage&url=%s&export=1)' % (self._g.pluginid, self._g.watchlist))]
-        cm_lb = [(getString(30185) % getString(30100), 'RunPlugin(%s?mode=getPage&url=%s&export=1)' % (self._g.pluginid, self._g.library))]
+        cm_wl = [(getString(30185) % 'Watchlist', f'RunPlugin({self._g.pluginid}?mode=getPage&url={self._g.watchlist}&export=1)')]
+        cm_lb = [(getString(30185) % getString(30100), f'RunPlugin({self._g.pluginid}?mode=getPage&url={self._g.library}&export=1)')]
         if self._s.multiuser and 1 < len(loadUsers()):
             addDir(getString(30134).format(loadUser('name')), 'switchUser', '', cm=self._g.CONTEXTMENU_MULTIUSER)
         if self._s.profiles:
@@ -88,14 +88,14 @@ class PrimeVideo(Singleton):
         page = pgmod if self._s.disptvshow and ct in 'season' else 0
         if ct in 'season' and not self._s.disptvshow and pgmod == 1:
             u = urlencode({'mode': 'getPage', 'url': 'details', 'page': '-1', 'opt': 'itemId=' + il['asins']})
-            cm.append((getString(30182), 'Container.Update(%s?%s)' % (self._g.pluginid, u)))
+            cm.append((getString(30182), f'Container.Update({self._g.pluginid}?{u})'))
         if ct in ['movie', 'episode', 'season', 'event']:
             wlmode = 1 if wl else 0
             cm.append((getString(wlmode + 30180) % getString(self._g.langID[ct] - page),
-                       'RunPlugin({}?mode=editWatchList&url={}&opt={})'.format(self._g.pluginid, il['asins'], wlmode)))
+                       f"RunPlugin({self._g.pluginid}?mode=editWatchList&url={il['asins']}&opt={wlmode})"))
         if ct in ['movie', 'season']:
             cm.append((getString(30185) % getString(self._g.langID[ct] - page),
-                       'RunPlugin({}?mode=getPage&&url=details&opt=itemId%3D{}{}&export=1)'.format(self._g.pluginid, il['asins'], '&page=-1' if page else '')))
+                       f"RunPlugin({self._g.pluginid}?mode=getPage&&url=details&opt=itemId%3D{il['asins']}{'&page=-1' if page else ''}&export=1)"))
             cm.append((getString(30186), 'UpdateLibrary(video)'))
         return cm
 
@@ -124,7 +124,7 @@ class PrimeVideo(Singleton):
             query_dict = parse_qs(params)
             url = url.replace('Initial', 'Next') if 'Initial' in url and int(query_dict.get('startIndex', ['0'])[0]) > 0 else url
             url = url.replace('initial', 'next') if 'initial' in url and 'startIndex' in query_dict else url
-            resp = getURL('%s?%s%s' % (url, self.defparam, params), useCookie=MechanizeLogin(True), headers=self._g.headers_android)
+            resp = getURL(f'{url}?{self.defparam}{params}', useCookie=MechanizeLogin(True), headers=self._g.headers_android)
         LogJSON(resp)
         
         if export:
@@ -216,10 +216,10 @@ class PrimeVideo(Singleton):
                         isincl = get_key('Entitled', item, 'containerMetadata', 'entitlementCues', 'entitledCarousel') == 'Entitled'
                         if self._s.paycont:
                             if isprime:
-                                facetxt = '[COLOR {}]{}[/COLOR]'.format(self._g.PrimeCol, facetxt)
+                                facetxt = f'[COLOR {self._g.PrimeCol}]{facetxt}[/COLOR]'
                             if isincl is False:
-                                facetxt = '[COLOR {}]{}[/COLOR]'.format(self._g.PayCol, facetxt)
-                        title = '{} - {}'.format(facetxt, title)
+                                facetxt = f'[COLOR {self._g.PayCol}]{facetxt}[/COLOR]'
+                        title = f'{facetxt} - {title}'
                     # faceimg = item.get('presentationData', {}).get('facetImages', {}).get('UNFOCUSED', {}).get('url')
                     if col_act:
                         q = self.filterDict(findKey('parameters', col_act))
@@ -264,7 +264,7 @@ class PrimeVideo(Singleton):
                 nextp['pageSize'] = self.def_ps
                 pagenr += 1
                 pgtype = 'browse' if page == 'cache' else nextp.get('pageType', pgtype)
-                addDir(' --= %s =--' % (getString(30111) % pagenr), 'getPage', pgtype, opt=urlencode(nextp), page=pagenr, export=export, thumb=self._g.NextIcon)
+                addDir(f' --= {getString(30111) % pagenr} =--', 'getPage', pgtype, opt=urlencode(nextp), page=pagenr, export=export, thumb=self._g.NextIcon)
 
             if not export:
                 setContentAndView(ct)
@@ -275,59 +275,59 @@ class PrimeVideo(Singleton):
         name = il['title']
         if il['contentType'] in 'episode':
             if il['episode'] > 0:
-                name = '{}. {}'.format(il['episode'], name)
+                name = f"{il['episode']}. {name}"
         if not il['isPrime'] and self._s.paycont:
-            name = '[COLOR %s]%s[/COLOR]' % (self._g.PayCol, name)
+            name = f'[COLOR {self._g.PayCol}]{name}[/COLOR]'
         return name
 
     def writeCache(self, content):
         c = self._cacheDb.cursor()
-        c.execute('insert or ignore into {} values (?,?)'.format(self._cache_tbl), [quote_plus(content['collectionId']), json.dumps(content)])
+        c.execute(f'insert or ignore into {self._cache_tbl} values (?,?)', [quote_plus(content['collectionId']), json.dumps(content)])
         c.close()
 
     def loadCache(self, col_id):
         c = self._cacheDb.cursor()
-        result = c.execute('select content from {} where id = (?)'.format(self._cache_tbl), (col_id,)).fetchone()
+        result = c.execute(f'select content from {self._cache_tbl} where id = (?)', (col_id,)).fetchone()
         if result and len(result) > 0:
             return json.loads(result[0])
         return {}
 
     def Search(self, searchString):
-        self.getPage('search', 'phrase={}'.format(quote_plus(searchString)))
+        self.getPage('search', f'phrase={quote_plus(searchString)}')
 
     def editWatchList(self, asin, remove):
         act = 'RemoveTitleFromList' if remove > 0 else 'AddTitleToList'
-        params = 'titleId={}'.format(asin)
-        url = '{}/cdp/discovery/{}'.format(self._g.ATVUrl, act)
-        resp = getURL('%s?%s&%s' % (url, self.defparam, params), useCookie=MechanizeLogin(True))['message']
+        params = f'titleId={asin}'
+        url = f'{self._g.ATVUrl}/cdp/discovery/{act}'
+        resp = getURL(f'{url}?{self.defparam}&{params}', useCookie=MechanizeLogin(True))['message']
         msg = resp['body']['message']
         Log(msg)
         if resp.get('statusCode', '') == 'SUCCESS':
             if remove:
                 cPath = xbmc.getInfoLabel('Container.FolderPath')
-                xbmc.executebuiltin('Container.Update("{}", replace)'.format(cPath))
+                xbmc.executebuiltin(f'Container.Update("{cPath}", replace)')
         else:
             self._g.dialog.notification(self._g.__plugin__, msg, xbmcgui.NOTIFICATION_ERROR)
 
     def _createDB(self, table):
         c = self._cacheDb.cursor()
         if table == self._cache_tbl:
-            c.execute('drop table if exists %s' % self._cache_tbl)
-            c.execute('''CREATE TABLE %s(
+            c.execute(f'drop table if exists {self._cache_tbl}')
+            c.execute(f'''CREATE TABLE {self._cache_tbl}(
                         id TEXT,
                         content TEXT,
                         PRIMARY KEY(id)
-                        );''' % self._cache_tbl)
+                        );''')
             self._cacheDb.commit()
         elif table == self._art_tbl:
             c = self._db.cursor()
-            c.execute('''CREATE TABLE IF NOT EXISTS %s(
+            c.execute(f'''CREATE TABLE IF NOT EXISTS {self._art_tbl}(
                         asin TEXT UNIQUE,
                         season INTEGER,
                         info TEXT,
                         date INTEGER,
                         PRIMARY KEY(asin, season)
-                        );''' % self._art_tbl)
+                        );''')
             c.execute('''CREATE TABLE IF NOT EXISTS miss(
                         asins TEXT UNIQUE,
                         title TEXT,
@@ -361,9 +361,9 @@ class PrimeVideo(Singleton):
         check_same_thread = False if self.get_sqlite3_thread_safety() == 3 else True
         self._cache_tbl = 'cache'
         self._art_tbl = 'art'
-        self._dbFile = os.path.join(self._g.DATA_PATH, 'art-%s.db' % self._g.MarketID)
+        self._dbFile = os.path.join(self._g.DATA_PATH, f'art-{self._g.MarketID}.db')
         self._db = sqlite.connect(self._dbFile, check_same_thread=check_same_thread)
-        self._cacheFile = os.path.join(self._g.DATA_PATH, 'cache-%s.db' % self._g.MarketID)
+        self._cacheFile = os.path.join(self._g.DATA_PATH, f'cache-{self._g.MarketID}.db')
         self._cacheDb = sqlite.connect(self._cacheFile, check_same_thread=check_same_thread)
         self._createDB(self._art_tbl)
 
@@ -385,7 +385,7 @@ class PrimeVideo(Singleton):
         season = int(infoLabels.get('season', -2))
         series = contentType == 'season' and self._s.disptvshow
         series_art = season > -1 and self._s.useshowfanart and self._s.tvdb_art != 0
-        extra = ' and season = %s' % season if season > -2 else ''
+        extra = f' and season = {season}' if season > -2 else ''
         for asin in asins.split(','):
             j = None
             result = c.execute('select info from art where asin like (?)' + extra, ('%' + asin + '%',)).fetchone()
@@ -562,7 +562,7 @@ class PrimeVideo(Singleton):
             infoLabels['duration'] = item['runtimeSeconds']
         if 'season' in ct and 'tvshowtitle' in infoLabels and self._s.disptvshow and noart is False:
             infoLabels['title'] = infoLabels['tvshowtitle']
-            infoLabels['plot'] = '{}\n\n{}'.format(getString(30253).format(infoLabels['totalseasons']), infoLabels['plot'])
+            infoLabels['plot'] = f"{getString(30253).format(infoLabels['totalseasons'])}\n\n{infoLabels['plot']}"
         if 'episode' in ct:
             infoLabels['episode'] = item['episodeNumber']
             infoLabels['season'] = item['seasonNumber']
@@ -572,14 +572,14 @@ class PrimeVideo(Singleton):
             if item['regulatoryRating'] == 'not_checked' or not item['regulatoryRating']:
                 infoLabels['mpaa'] = getString(30171)
             else:
-                infoLabels['mpaa'] = '%s %s' % (AgeRestrictions().GetAgeRating(), item['regulatoryRating'])
+                infoLabels['mpaa'] = f"{AgeRestrictions().GetAgeRating()} {item['regulatoryRating']}"
         if 'live' in ct:
             liveData = findKey('data', item)
             if liveData:
                 s = liveData.get('startTime') / 1000
                 e = liveData.get('endTime') / 1000
                 cur_lang = datetimeParser[loadUser('lang')]
-                formstr = '[B]{{:{}, {}}}[/B]\n\n{{}}'.format(cur_lang['date_fmt'], cur_lang['time_fmt'])
+                formstr = f"[B]{{:{cur_lang['date_fmt']}, {cur_lang['time_fmt']}}}[/B]\n\n{{}}"
                 infoLabels['plot'] = formstr.format(datetime.fromtimestamp(s), infoLabels['plot'])
                 infoLabels['premiered'] = datetime.fromtimestamp(s).strftime('%Y-%m-%d')
                 infoLabels['duration'] = e - s
@@ -622,14 +622,14 @@ class PrimeVideo(Singleton):
                 ue = sh.get('endTime') / 1000
                 if (us <= ts <= ue) or upnext:
                     tm = self.filterDict(sh['titleModel'])
-                    infoLabels['plot'] += '[B]{:%H:%M} - {:%H:%M}  {}[/B]\n'.format(datetime.fromtimestamp(us), datetime.fromtimestamp(ue), tm.get('title', ''))
+                    infoLabels['plot'] += f"[B]{datetime.fromtimestamp(us):%H:%M} - {datetime.fromtimestamp(ue):%H:%M}  {tm.get('title', '')}[/B]\n"
                     if not upnext:
                         reldate = tm.get('publicReleaseDate', tm.get('releaseDate', 0))
                         reldate = reldate * -1 if reldate < 0 else reldate
                         infoLabels['premiered'] = datetime.fromtimestamp(reldate / 1000).strftime('%Y-%m-%d') if reldate > 0 else None
                         infoLabels['fanart'] = self.cleanIMGurl(item.get('channelImageUrl'))
                         infoLabels['thumb'] = self.getMedia(tm, cust='fanart,thumb')
-                        infoLabels['plot'] += '{}\n\n'.format(tm.get('synopsis', ''))
+                        infoLabels['plot'] += f"{tm.get('synopsis', '')}\n\n"
                         if item.get('runtimeMillis'):
                             infoLabels['duration'] = tm['runtimeMillis'] / 1000
                     else:
@@ -686,14 +686,14 @@ class PrimeVideo(Singleton):
                       '&preferenceType=IMPLICIT'.format(self._g.ATVUrl, self.def_dtid, self._g.deviceID, loc, loc, loc), headers=self._g.headers_android, postdata='')
         if resp.get('success', False):
             updateUser('lang', loc)
-            Log('Text language changed to [{}] {}'.format(loc, lang), Log.DEBUG)
+            Log(f'Text language changed to [{loc}] {lang}', Log.DEBUG)
 
     def Route(self, mode, args):
         if mode == 'Search':
             searchString = args.get('searchstring')
             self.Search(searchString)
         elif mode in ['processMissing', 'switchProfile', 'languageselect']:
-            exec ('self._g.pv.{}()'.format(mode))
+            exec (f'self._g.pv.{mode}()')
         elif mode == 'ageSettings':
             AgeRestrictions().Settings()
         elif mode == 'getPage':

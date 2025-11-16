@@ -14,7 +14,7 @@ def Log(msg, level=xbmc.LOGINFO):
     if level == xbmc.LOGDEBUG and _s.logging:
         level = xbmc.LOGINFO
     fi = getframeinfo(currentframe().f_back)
-    msg = '[{0}]{2} {1}'.format(_g.__plugin__, msg, '' if not _s.logging else ' {}:{}'.format(opb(fi.filename), fi.lineno))
+    msg = f"[{_g.__plugin__}]{('' if not _s.logging else f' {opb(fi.filename)}:{fi.lineno}')} {msg}"
     xbmc.log(msg, level)
 
 
@@ -29,7 +29,7 @@ def LogCaller():
     frame = currentframe().f_back
     fcaller = getframeinfo(frame.f_back)
     fcallee = getframeinfo(frame)
-    msg = '[{}] {}:{} called from: {}:{}'.format(_g.__plugin__, opb(fcallee.filename), fcallee.lineno, opb(fcaller.filename), fcaller.lineno)
+    msg = f'[{_g.__plugin__}] {opb(fcallee.filename)}:{fcallee.lineno} called from: {opb(fcaller.filename)}:{fcaller.lineno}'
     xbmc.log(msg, Log.INFO)
 
 
@@ -39,7 +39,7 @@ def WriteLog(data, fn='avod', force=False, comment=None):
 
     cnt = 0
     while True:
-        file = '{}{}.log'.format(fn, (cnt*-1 if cnt > 0 else ''))
+        file = f"{fn}{cnt * -1 if cnt > 0 else ''}.log"
         path = OSPJoin(_g.LOG_PATH, file)
         if not xbmcvfs.exists(path):
             break
@@ -49,7 +49,7 @@ def WriteLog(data, fn='avod', force=False, comment=None):
         logfile.write(comment)
     logfile.write(data)
     logfile.close()
-    Log('Saved Log with filename “{}”'.format(file), Log.DEBUG)
+    Log(f'Saved Log with filename “{file}”', Log.DEBUG)
 
 
 def LogJSON(o, comment=None, optionalName=None):
@@ -70,9 +70,9 @@ def LogJSON(o, comment=None, optionalName=None):
     )
     with co(OSPJoin(_g.LOG_PATH, fn), 'w+', 'utf-8') as f:
         if comment:
-            f.write('/* %s */\n' % comment)
+            f.write(f'/* {comment} */\n')
         dump(o, f, sort_keys=True, indent=4)
-        Log('Saved JSON data with filename “{}”'.format(fn), Log.DEBUG)
+        Log(f'Saved JSON data with filename “{fn}”', Log.DEBUG)
 
 
 def createZIP():
@@ -81,7 +81,7 @@ def createZIP():
     from .common import translatePath, getString
 
     kodilog = OSPJoin(translatePath('special://logpath'), 'kodi.log')
-    arcfile = OSPJoin(_g.DATA_PATH, 'logfiles_{}.zip'.format(datetime.now().strftime('%Y%m%d-%H%M%S')))
+    arcfile = OSPJoin(_g.DATA_PATH, f"logfiles_{datetime.now().strftime('%Y%m%d-%H%M%S')}.zip")
     arccmp = {'compresslevel': 5} if _g.KodiVersion >= 19 else {}
     arc = ZipFile(arcfile, 'w', ZIP_DEFLATED, **arccmp)
 
@@ -90,7 +90,7 @@ def createZIP():
     arc.write(kodilog, arcname='kodi.log')
     arc.close()
     _g.dialog.notification(_g.__plugin__, getString(30281).format(arcfile))
-    Log('Archive created at {}'.format(arcfile), Log.DEBUG)
+    Log(f'Archive created at {arcfile}', Log.DEBUG)
 
 
 def removeLogs():

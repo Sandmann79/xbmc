@@ -41,20 +41,20 @@ def setContentAndView(content, updateListing=False):
         viewid = views[int(getattr(_s, cview))]
         if viewid == -1:
             viewid = int(getattr(_s, cview.replace('view', 'id')))
-        xbmc.executebuiltin('Container.SetViewMode({})'.format(viewid))
+        xbmc.executebuiltin(f'Container.SetViewMode({viewid})')
     xbmcplugin.endOfDirectory(_g.pluginhandle, updateListing=updateListing)
 
 
 def addDir(name, mode='', url='', infoLabels=None, opt='', catalog='Browse', cm=None, page=1, export=False, thumb=None):
     if export and mode == 'getPage':
-        exec('_g.pv.{}("{}", "{}", {}, export={})'.format(mode, url, opt, page, export))
+        exec(f'_g.pv.{mode}("{url}", "{opt}", {page}, export={export})')
         return
 
     useatv = _s.data_source == 1
     folder = mode not in ['switchUser', 'text'] if useatv else mode == 'True'
     sep = '?' if useatv else ''
     u = urlencode({'mode': mode, 'url': url, 'page': page, 'opt': opt, 'cat': catalog}) if useatv else url
-    url = '{}{}{}'.format(_g.pluginid, sep, u) if mode != 'text' else _g.pluginid
+    url = f'{_g.pluginid}{sep}{u}' if mode != 'text' else _g.pluginid
 
     if not infoLabels:
         infoLabels = {}
@@ -85,7 +85,7 @@ def addDir(name, mode='', url='', infoLabels=None, opt='', catalog='Browse', cm=
 
 def addVideo(name, asin, infoLabels, cm=None, export=False):
     u = {'asin': asin, 'mode': 'PlayVideo', 'name': name, 'adult': infoLabels.get('isAdult', 0)}
-    url = '{}?{}'.format(_g.pluginid, urlencode(u))
+    url = f'{_g.pluginid}?{urlencode(u)}'
     bitrate = '0'
     streamtypes = {'live': 2, 'event': 3}
     thumb = infoLabels.get('thumb', _g.DefaultFanart)
@@ -105,7 +105,7 @@ def addVideo(name, asin, infoLabels, cm=None, export=False):
     if infoLabels.get('TrailerAvailable'):
         infoLabels['trailer'] = url + '&trailer=1&selbitrate=0'
 
-    url += '&trailer=%s' % streamtypes.get(infoLabels['contentType'], 0)
+    url += f"&trailer={streamtypes.get(infoLabels['contentType'], 0)}"
 
     if [k for k in ['4k', 'uhd', 'ultra hd'] if k in (infoLabels.get('tvshowtitle', '') + name).lower()]:
         item.add_StreamInfo('video', {'width': 3840, 'height': 2160})
@@ -195,8 +195,8 @@ class ListItem_InfoTag(xbmcgui.ListItem):
         if _g.KodiVersion > 19:
             if self.InfoTag is None:
                 self.InfoTag = self.getVideoInfoTag()
-            addStrm = getattr(self.InfoTag, 'add{}Stream'.format(ct))
-            StrmDetail = getattr(xbmc, '{}StreamDetail'.format(ct))
+            addStrm = getattr(self.InfoTag, f'add{ct}Stream')
+            StrmDetail = getattr(xbmc, f'{ct}StreamDetail')
             addStrm(StrmDetail(**infos))
         else:
             self.addStreamInfo(ctype, infos)

@@ -66,7 +66,7 @@ class Globals(Singleton):
 
         # argv[0] can contain the entire path, so we limit ourselves to the base url
         pid = urlparse(argv[0])
-        self._globals['pluginid'] = '{}://{}/'.format(pid.scheme, pid.netloc)
+        self._globals['pluginid'] = f'{pid.scheme}://{pid.netloc}/'
         self._globals['pluginhandle'] = int(argv[1]) if (1 < len(argv)) and argv[0] else -1
 
         self._globals['monitor'] = xbmc.Monitor()
@@ -123,9 +123,9 @@ class Globals(Singleton):
                                          'validateCaptcha', 'pollingForm', 'auth-select-device-form', 'verifyOtp']
 
         self._globals['CONTEXTMENU_MULTIUSER'] = [
-            (getString(30130, self._globals['addon']).split('…')[0], 'RunPlugin({}?mode=LogIn)'.format(self.pluginid)),
-            (getString(30131, self._globals['addon']).split('…')[0], 'RunPlugin({}?mode=removeUser)'.format(self.pluginid)),
-            (getString(30132, self._globals['addon']), 'RunPlugin({}?mode=renameUser)'.format(self.pluginid))
+            (getString(30130, self._globals['addon']).split('…')[0], f'RunPlugin({self.pluginid}?mode=LogIn)'),
+            (getString(30131, self._globals['addon']).split('…')[0], f'RunPlugin({self.pluginid}?mode=removeUser)'),
+            (getString(30132, self._globals['addon']), f'RunPlugin({self.pluginid}?mode=renameUser)')
         ]
 
     def __getattr__(self, name):

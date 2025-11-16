@@ -27,7 +27,7 @@ _s = Settings()
 
 def _Error(data):
     code = data['errorCode'].lower()
-    Log('%s (%s) ' % (data['message'], code), Log.ERROR)
+    Log(f"{data['message']} ({code}) ", Log.ERROR)
     if 'invalidrequest' in code:
         return getString(30204)
     elif 'noavailablestreams' in code:
@@ -39,7 +39,7 @@ def _Error(data):
     elif 'temporarilyunavailable' in code:
         return getString(30208)
     else:
-        return '%s (%s) ' % (data['message'], code)
+        return f"{data['message']} ({code}) "
 
 
 def getUA(blacklist=False):
@@ -51,7 +51,7 @@ def getUA(blacklist=False):
         UAcur = getConfig('UserAgent')
         UAlist = [i for i in UAlist if i not in UAcur]
         writeConfig('UAlist', json.dumps(UAlist))
-        Log('UA: %s blacklisted' % UAcur)
+        Log(f'UA: {UAcur} blacklisted')
 
     if not UAlist:
         Log('Loading list of common UserAgents')
@@ -116,8 +116,8 @@ def getURL(url, useCookie=False, silent=False, headers=None, rjson=True, check=F
             session.cookies.update(cj)
 
     if (not silent) or _s.logging:
-        dispurl = re.sub('(?i)%s|%s|&token=\\w+|&customerId=\\w+' % (_g.tvdb, _g.tmdb), '', url).strip()
-        Log('%sURL: %s' % ('check' if check else method.lower(), dispurl))
+        dispurl = re.sub(f'(?i){_g.tvdb}|{_g.tmdb}|&token=\\w+|&customerId=\\w+', '', url).strip()
+        Log(f"{'check' if check else method.lower()}URL: {dispurl}")
 
     def_headers = {'User-Agent': getConfig('UserAgent'),
                    'Accept-Language': _g.userAcceptLanguages,
@@ -149,7 +149,7 @@ def getURL(url, useCookie=False, silent=False, headers=None, rjson=True, check=F
         if not check:
             response = r.content if binary else r.json() if rjson else r.text
             if _s.log_http:
-                WriteLog(BeautifulSoup(r.text, 'html.parser').prettify(), 'html', True, comment='<-- {} -->'.format(url))
+                WriteLog(BeautifulSoup(r.text, 'html.parser').prettify(), 'html', True, comment=f'<-- {url} -->')
         if useCookie and 'auth-cookie-warning-message' in response:
             Log('Cookie invalid', Log.ERROR)
             _g.dialog.notification(_g.__plugin__, getString(30266), xbmcgui.NOTIFICATION_ERROR)
@@ -164,7 +164,7 @@ def getURL(url, useCookie=False, silent=False, headers=None, rjson=True, check=F
             requests.packages.urllib3.exceptions.InsecurePlatformWarning,
             ValueError) as e:
         eType = e.__class__.__name__
-        Log('Error reason: %s (%s)' % (str(e), eType), Log.ERROR)
+        Log(f'Error reason: {e!s} ({eType})', Log.ERROR)
         if 'InsecurePlatformWarning' in eType:
             Log('Using an outdated SSL module.', Log.ERROR)
             _g.dialog.ok('SSL module outdated', 'The SSL module for Python is outdated.',
@@ -176,7 +176,7 @@ def getURL(url, useCookie=False, silent=False, headers=None, rjson=True, check=F
     duration = timer()
     duration -= starttime
     addNetTime(duration)
-    Log('Download Time: %s' % duration, Log.DEBUG)
+    Log(f'Download Time: {duration}', Log.DEBUG)
     return res
 
 
@@ -212,7 +212,7 @@ def getURLData(mode, asin, retformat='json', devicetypeid=_g.dtid_web, version=2
     if retURL:
         return url
     url += opt
-    data = getURL(url if not proxyEndpoint else 'http://{}/{}/{}'.format(getConfig('proxyaddress'), proxyEndpoint, quote_plus(url)),
+    data = getURL(url if not proxyEndpoint else f"http://{getConfig('proxyaddress')}/{proxyEndpoint}/{quote_plus(url)}",
                   useCookie=useCookie, postdata='', silent=silent)
     if data:
         if 'error' in data.keys():
@@ -267,11 +267,10 @@ def getATVData(pg_mode, query='', version=2, useCookie=False, site_id=None):
         att = 0
         while titles == 0 and att <= ids:
             deviceTypeID = _TypeIDs[rem_pos][att]
-            parameter = '%s&deviceID=%s&format=json&version=%s&formatVersion=3&marketplaceId=%s' % (
-                deviceTypeID, _g.deviceID, version, _g.MarketID)
+            parameter = f'{deviceTypeID}&deviceID={_g.deviceID}&format=json&version={version}&formatVersion=3&marketplaceId={_g.MarketID}'
             if site_id:
                 parameter += '&id=' + site_id
-            jsondata = getURL('%s/cdp/%s?%s%s' % (_g.ATVUrl, pg_mode, parameter, query), useCookie=useCookie)
+            jsondata = getURL(f'{_g.ATVUrl}/cdp/{pg_mode}?{parameter}{query}', useCookie=useCookie)
             if not jsondata:
                 return False
             if jsondata['message']['statusCode'] != "SUCCESS":
@@ -295,7 +294,7 @@ def _sortedResult(result, query):
                 sorteditems[index] = item
                 break
     if sorteditems.count('empty') > 0:
-        Log('ASINs {} not found'.format([asinlist[n] for n, i in enumerate(sorteditems) if i == 'empty']))
+        Log(f"ASINs {[asinlist[n] for n, i in enumerate(sorteditems) if i == 'empty']} not found")
 
     result['titles'] = sorteditems
     return result

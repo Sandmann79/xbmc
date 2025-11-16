@@ -59,9 +59,8 @@ def getTerritory(user):
     else:
         Log('Retrieve territoral config')
         loc = ','.join(k for k, v in datetimeParser.items() if 'language' in v)
-        data = getURL(
-            'https://atv-ps.amazon.com/cdp/usage/v3/GetAppStartupConfig?deviceTypeID=A28RQHJKHM2A2W&deviceID=%s&firmware=1&version=1&supportedLocales=%s&format=json'
-            % (user['deviceid'], loc))
+        data = getURL(f"https://atv-ps.amazon.com/cdp/usage/v3/GetAppStartupConfig?"
+                      f"deviceTypeID=A28RQHJKHM2A2W&deviceID={user['deviceid']}&firmware=1&version=1&supportedLocales={loc}&format=json")
         if not hasattr(data, 'keys'):
             return user, False
         if 'customerConfig' in data.keys():
@@ -70,7 +69,7 @@ def getTerritory(user):
             host = terr['defaultVideoWebsite']
             reg = cust['homeRegion'].lower()
             reg = '' if 'na' in reg else '-' + reg
-            user['atvurl'] = host.replace('www.', '').replace('//', '//atv-ps%s.' % reg)
+            user['atvurl'] = host.replace('www.', '').replace('//', f'//atv-ps{reg}.')
             user['baseurl'] = terr['primeSignupBaseUrl']
             user['mid'] = terr['avMarketplace']
             user['pv'] = 'primevideo' in host
@@ -147,7 +146,7 @@ def MFACheck(br, email, soup):
         if cs_quest:
             for c in soup.findAll('div', attrs={'data-a-input-name': 'option'}):
                 choices.append((c.span.get_text(strip=True), c.input['name'], c.input['value']))
-            sel = _g.dialog.select('%s - %s' % (cs_title, cs_quest.get_text(strip=True)), [k[0] for k in choices])
+            sel = _g.dialog.select(f'{cs_title} - {cs_quest.get_text(strip=True)}', [k[0] for k in choices])
         else:
             sel = 100 if _g.dialog.ok(cs_title, cs_hint) else -1
 
@@ -246,7 +245,7 @@ def MFACheck(br, email, soup):
                 break
             if time.time() > refresh + 5:
                 url = br.get_url()
-                br.select_form('form[id="{}"]'.format(form_id))
+                br.select_form(f'form[id="{form_id}"]')
                 br.submit_selected()
                 response, soup = parseHTML(br)
                 form_id = form_poll
@@ -291,7 +290,7 @@ def LogIn(retToken=False):
         while caperr:
             try:
                 if form:
-                    br.select_form('form[name="{}"]'.format(form))
+                    br.select_form(f'form[name="{form}"]')
                 elif link:
                     br.follow_link(attrs=link)
                 break
@@ -302,9 +301,9 @@ def LogIn(retToken=False):
                     from .network import getUA
                     getUA(True)
                     br.session.headers.update({'User-Agent': getConfig('UserAgent')})
-                Log('Connect to SignIn Page %s attempts left' % -caperr)
+                Log(f'Connect to SignIn Page {-caperr} attempts left')
                 br.refresh()
-                WriteLog(str(br.get_current_page()), 'login-{}'.format(log))
+                WriteLog(str(br.get_current_page()), f'login-{log}')
         else:
             _g.dialog.ok(getString(30200), getString(30213).format(_g.LOG_PATH))
             return False
@@ -399,7 +398,7 @@ def LogIn(retToken=False):
                     'openid.oa2.code_challenge': challenge.decode(),
                     'pageId': 'amzn_dv_ios_blue',
                     'openid.ns.oa2': 'http://www.amazon.com/ap/ext/oauth/2',
-                    'openid.oa2.client_id': 'device:{}'.format(clientid),
+                    'openid.oa2.client_id': f'device:{clientid}',
                     'openid.ns.pape': 'http://specs.openid.net/extensions/pape/1.0',
                     'openid.oa2.scope': 'device_auth_access',
                     'openid.mode': 'checkid_setup',
@@ -420,7 +419,7 @@ def LogIn(retToken=False):
                      'sec-fetch-mode': 'navigate',
                      'sec-fetch-user': '?1',
                      'sec-fetch-dest': 'document',
-                     'accept-language': '{},{};q=0.9,en-US;q=0.8,en;q=0.7'.format(user['lang'].replace('_', '-'), user['lang'].split('_')[0]),
+                     'accept-language': f"{user['lang'].replace('_', '-')},{user['lang'].split('_')[0]};q=0.9,en-US;q=0.8,en;q=0.7",
                      'host': up.netloc
                      }
                 )
@@ -477,26 +476,26 @@ def LogIn(retToken=False):
                 remLoginData(False)
                 _s.login_acc = user['name']
                 if not _s.multiuser:
-                    _g.dialog.ok(getString(30215), '{0} {1}'.format(getString(30014), user['name']))
+                    _g.dialog.ok(getString(30215), f"{getString(30014)} {user['name']}")
 
                 addUser(user)
                 return getToken(user) if retToken else cj
             elif 'message_error' in response:
                 writeConfig('login_pass', '')
                 msg = soup.find('div', attrs={'id': 'message_error'})
-                Log('Login Error: %s' % msg.get_text(strip=True))
+                Log(f'Login Error: {msg.get_text(strip=True)}')
                 _g.dialog.ok(getString(30200), msg.get_text(strip=True))
             elif 'message_warning' in response:
                 msg = soup.find('div', attrs={'id': 'message_warning'})
-                Log('Login Warning: %s' % msg.get_text(strip=True))
+                Log(f'Login Warning: {msg.get_text(strip=True)}')
             elif 'auth-error-message-box' in response:
                 msg = soup.find('div', attrs={'id': 'auth-error-message-box'})
-                Log('Login MFA: %s' % msg.get_text(strip=True))
+                Log(f'Login MFA: {msg.get_text(strip=True)}')
                 _g.dialog.ok(msg.div.h4.get_text(strip=True), msg.div.div.get_text(strip=True))
             elif 'error-slot' in response:
                 msg_title = soup.find('div', attrs={'class': 'ap_error_page_title'}).get_text(strip=True)
                 msg_cont = soup.find('div', attrs={'class': 'ap_error_page_message'}).get_text(strip=True)
-                Log('Login Error: {}'.format(msg_cont))
+                Log(f'Login Error: {msg_cont}')
                 _g.dialog.ok(msg_title, msg_cont)
             else:
                 _g.dialog.ok(getString(30200), getString(30213).format(_g.LOG_PATH))
@@ -533,7 +532,7 @@ def registerDevice(url, user, verifier, clientid):
 
     headers = _g.headers_android
     headers.update({'x-amzn-identity-auth-domain': 'api.' + domain, 'x-amzn-requestid': str(uuid4()).replace('-', ''), 'Content-Type': 'application/json'})
-    resp = getURL('https://api.{}/auth/register'.format(domain), headers=headers, postdata=json.dumps(data))
+    resp = getURL(f'https://api.{domain}/auth/register', headers=headers, postdata=json.dumps(data))
     WriteLog(str(resp), 'login-register')
 
     if 'error' in resp['response']:
@@ -593,7 +592,7 @@ def refreshToken(user, aid=None):
     headers.pop('x-gasc-enabled', '')
     headers.pop('X-Requested-With', '')
     headers.update({'x-amzn-identity-auth-domain': 'api.' + domain, 'Accept-Language': 'en-US', 'x-amzn-requestid': str(uuid4()).replace('-', '')})
-    response = getURL('https://api.{}/auth/token'.format(domain), headers=headers, postdata=data)
+    response = getURL(f'https://api.{domain}/auth/token', headers=headers, postdata=data)
     if 'access_token' in response:
         token['access'] = response['access_token']
         token['expires'] = int(time.time() + int(response['expires_in']))
@@ -641,7 +640,7 @@ class _Captcha(pyxbmct.AddonDialogWindow):
         self.cap = ''
         if '.gif' in self.picurl:
             cap = getURL(self.picurl, rjson=False, binary=True)
-            self.picurl = OSPJoin(_g.DATA_PATH, 'cap-{}.gif'.format(int(time.time() * 1000)))
+            self.picurl = OSPJoin(_g.DATA_PATH, f'cap-{int(time.time() * 1000)}.gif')
             open(self.picurl, 'wb').write(cap)
         self.title = title.get_text(strip=True)
         self.image = pyxbmct.Image('', aspectRatio=2)
@@ -746,7 +745,7 @@ class _Challenge(pyxbmct.AddonDialogWindow):
         captcha = AmazonCaptcha.fromlink(self.img_url)
         res = captcha.solve()
         if res != 'Not solved':
-            Log('Recognized captcha: %s  IMG url: %s' % (res, self.img_url))
+            Log(f'Recognized captcha: {res}  IMG url: {self.img_url}')
             self.cap = res
             self.close()
             return True

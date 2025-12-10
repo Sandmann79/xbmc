@@ -135,7 +135,10 @@ def PlayVideo(name, asin, adultstr, streamtype, forcefb=0):
 
                 returl = urlset['url']
                 if (not _s.audio_description) and (streamtype != 2) and webid:
-                    if urlset['cdn'] == 'Cloudfront':
+                    if 'ww_dub' in returl and 'amazon.pv-cdn.net' in returl:
+                        returl = re.sub(r'(.*\/\/[^\.]*)([^\/]*)', r'\1.shard-2-na-reg.dash.pv-cdn.net', returl)
+                        returl = returl.replace('ww_dub/', '')
+                    if 'ww_dub' not in returl:
                         import random, string
                         let = string.ascii_letters + string.digits
                         rnd = [random.choice(let) for _ in range(random.randint(2, 10))]

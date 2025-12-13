@@ -23,7 +23,7 @@
 </addon>
 <addon id="plugin.video.amazon-test"
        name="Amazon VOD"
-       version="1.1.6"
+       version="1.1.7"
        provider-name="Sandmann79, Varstahl">
   <requires>
     <import addon="xbmc.python" version="2.24.0"/>
@@ -63,6 +63,7 @@
       <fanart>fanart.png</fanart>
       <clearlogo>clearlogo.png</clearlogo>
     </assets>
+    <broken>Support for Python 2/Kodi 18 and earlier versions discontinued</broken>
   </extension>
 </addon>
 <addon id="repository.sandmann79.plugins" name="Sandmann79s Repository" version="1.0.4" provider-name="Sandmann79">
@@ -84,19 +85,6 @@
         <disclaimer></disclaimer>
         <platform>all</platform>
     </extension>
-</addon>
-<addon id="script.module.amazon.database"
-       name="Amazon Database"
-       version="0.1.1"
-       provider-name="BlueCop">
-  <requires>
-    <import addon="xbmc.python" version="2.1.0"/>
-  </requires>
-  <extension point="xbmc.python.module" 
-             library="lib" /> 
-  <extension point="xbmc.addon.metadata">
-    <platform>all</platform>
-  </extension>
 </addon>
 <addon id="script.module.amazoncaptcha"
        name="amazoncaptcha"

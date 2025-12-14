@@ -7,7 +7,7 @@ import re
 import time
 from collections import OrderedDict
 from copy import deepcopy
-from urllib.parse import quote_plus, unquote_plus
+from urllib.parse import quote_plus, unquote_plus, quote
 
 import xbmc, xbmcplugin, xbmcgui
 
@@ -1033,7 +1033,7 @@ class PrimeVideo(Singleton):
                 if ('self' in state and title_id in state['self']) and ('actions' in state['episodeList'] and 'pagination' in state['episodeList']['actions']):
                     for next_epi in state['episodeList']['actions']['pagination']:
                         if next_epi['tokenType'].lower() == 'nextpage':
-                            next_url = f"/gp/video/api/getDetailWidgets?titleID={title_id}&isTvodOnRow=&widgets=%5B%7B%22widgetType%22%3A%22EpisodeList%22%2C%22widgetToken%22%3A%22{next_epi['token']}%22%7D%5D"
+                            next_url = f"/gp/video/api/getDetailWidgets?titleID={title_id}&isTvodOnRow=&widgets=%5B%7B%22widgetType%22%3A%22EpisodeList%22%2C%22widgetToken%22%3A%22{quote(quote(next_epi['token']))}%22%7D%5D"
                             requestURLs.append(next_url)
             # "collections": {"amzn1.dv.gti.[…]": [{"titleIds": ["amzn1.dv.gti.[…]", "amzn1.dv.gti.[…]"]}]}
             # "collections": {"amzn1.dv.gti.[…]": [{"cardTitleIds": ["amzn1.dv.gti.[…]", "amzn1.dv.gti.[…]"]}]}

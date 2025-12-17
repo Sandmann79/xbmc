@@ -135,17 +135,22 @@ def PlayVideo(name, asin, adultstr, streamtype, forcefb=0):
 
                 returl = urlset['url']
                 if (not _s.audio_description) and (streamtype != 2) and webid:
-                    if 'ww_dub' in returl and 'amazon.pv-cdn.net' in returl:
+                    mod = [i for i in returl.split('/')[:-1] if '_' in i]
+                    mod = mod[0] if len(mod) > 0 else None
+                    if 'amazon.pv-cdn.net' in returl:
                         returl = re.sub(r'(.*\/\/[^\.]*)([^\/]*)', r'\1.shard-2-na-reg.dash.pv-cdn.net', returl)
-                        returl = returl.replace('ww_dub/', '')
-                    if 'ww_dub' not in returl:
+                        returl = returl.replace( f'{mod}/', '') if mod else returl
+                    if (mod and mod not in returl) or not mod:
                         import random, string
                         let = string.ascii_letters + string.digits
                         rnd = [random.choice(let) for _ in range(random.randint(2, 10))]
                         try:
                             returl = re.sub(r'(\/3\$[^\/]*)', r'\1' + ''.join(rnd), returl)
+                            if not getURL(returl, rjson=False, check=retmpd):
+                                returl = urlset['url']
                         except:
                             pass
+
                 if not bypassproxy:
                     returl = f'http://{_s.proxyaddress}/mpd/{quote_plus(returl)}'
                 return (returl, subUrls, timecodes) if retmpd else (True, _extrFr(data), None)

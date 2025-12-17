@@ -79,15 +79,15 @@ def mobileUA(content):
     res = res.get('class', '') if res else ''
     return True if 'a-mobile' in res or 'a-tablet' in res else False
 
-def _get_session():
+def _get_session(retry=True):
     global _session
 
-    if _session is not None:
+    if _session is not None and retry:
         return _session
 
     session = requests.Session()
     retries = Retry(
-        total=6,
+        total=6 if retry else 0,
         backoff_factor=0.5,
         status_forcelist=[500, 502, 503, 504, 408, 429],
         raise_on_status=False
@@ -104,7 +104,7 @@ def getURL(url, useCookie=False, silent=False, headers=None, rjson=True, check=F
     retval = {} if rjson else ''
     method = 'POST' if postdata is not None else 'GET'
     headers = {} if not headers else deepcopy(headers)
-    session = _get_session()
+    session = _get_session(not check)
 
     if useCookie:
         cj = MechanizeLogin() if isinstance(useCookie, bool) else useCookie

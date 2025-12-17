@@ -37,7 +37,7 @@ def getTerritory(user):
              {'atvurl': 'https://atv-ps-eu.amazon.de', 'baseurl': 'https://www.amazon.de', 'mid': 'A1PA6795UKMFR9', 'pv': False, 'locale': 'de',
               'lang': 'de_DE', 'sidomain': 'amazon.de'},
              {'atvurl': 'https://atv-ps-eu.amazon.co.uk', 'baseurl': 'https://www.amazon.co.uk', 'mid': 'A1F83G8C2ARO7P', 'pv': False, 'locale': 'uk',
-              'lang': 'en_UK', 'sidomain': 'amazon.co.uk'},
+              'lang': 'en_GB', 'sidomain': 'amazon.co.uk'},
              {'atvurl': 'https://atv-ps.amazon.com', 'baseurl': 'https://www.amazon.com', 'mid': 'ATVPDKIKX0DER', 'pv': False, 'locale': 'us', 'lang': 'en_US',
               'sidomain': 'amazon.com'},
              {'atvurl': 'https://atv-ps-fe.amazon.co.jp', 'baseurl': 'https://www.amazon.co.jp', 'mid': 'A1VC38T7YXB528', 'pv': False, 'locale': 'jp',

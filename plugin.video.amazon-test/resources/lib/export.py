@@ -18,7 +18,7 @@ _g = Globals()
 def Export(infoLabels, url):
     isEpisode = infoLabels['contentType'] != 'movie'
     isEvent = 'tvshowtitle' not in infoLabels and isEpisode
-    isAired = datetime.date.today() >= datetime.date.fromisoformat(infoLabels.get('premiered', '1970-01-01'))
+    isAired = datetime.date.today() >= datetime.date.fromisoformat(infoLabels.get('premiered') or '1970-01-01')
     language = xbmc.convertLanguage(_s.Language, xbmc.ISO_639_2)
     ExportPath = _s.MOVIE_PATH
     nfoType = 'movie'

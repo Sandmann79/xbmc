@@ -90,6 +90,7 @@ datetimeParser = {
         'iso6392': 'eng'
     },
     'en_GB': {
+        'language': 'English',
         'deconstruct': '^(?P<d>[0-9]+)\\.?\\s+(?P<m>[^\\s]+)\\s+(?P<y>[0-9]+)',
         'months': {
             'january': 1,
@@ -105,6 +106,8 @@ datetimeParser = {
             'november': 11,
             'december': 12
         },
+        'date_fmt': '%d/%m/%y',
+        'time_fmt': '%H:%M',
         'iso6392': 'eng'
     },
     'es_ES': {

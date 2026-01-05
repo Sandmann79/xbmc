@@ -17,7 +17,7 @@ from urllib.parse import quote_plus, urlencode
 import xbmc, xbmcgui, xbmcvfs, xbmcplugin
 from inputstreamhelper import Helper
 
-from .common import Globals, Settings, jsonRPC, sleep, MechanizeLogin, findKey
+from .common import Globals, Settings, jsonRPC, sleep, MechanizeLogin, findKey, return_item, get_key
 from .logging import Log
 from .configs import getConfig
 from .network import getURL, getURLData, getATVData, GrabJSON
@@ -326,23 +326,39 @@ def PlayVideo(name, asin, adultstr, streamtype, forcefb=0):
 
         xbmc.executebuiltin(f'StartAndroidActivity("{pkg}", "{act}", "", "{url}")')
 
-    def _IStreamPlayback(asin, name, streamtype, isAdult, extern):
-        if streamtype == 3:
-            streamtype = 2
-            u_path = '' if _g.UsePrimeVideo else '/gp/video'
-            data = GrabJSON(_g.BaseUrl + u_path + '/detail/' + asin)
-            if data:
-                action = findKey('playbackActions', data)
-                msg = findKey('dvMessage', data).get('string', '').replace('{lineBreak}', '\n')
-                if not action and msg:
-                    _g.dialog.notification(getString(30203), msg, xbmcgui.NOTIFICATION_INFO)
-                    return False
-                live = findKey('liveState', data).get('isLive', False)
-                tt = findKey('titleType', data)
-                if not live and tt.lower() == 'event':
-                    streamtype = 0
+    def _EventState(asin):
+        streamtype = 2
+        u_path = '' if _g.UsePrimeVideo else '/gp/video'
+        data = GrabJSON(_g.BaseUrl + u_path + '/detail/' + asin)
+        if data:
+            state = data['state']
+            tid = state['pageTitleId']
+            pid = findKey('playbackID', data)
+            asin = pid if pid else asin
+            detail = return_item(state, 'detail', 'detail', tid)
+            msg = return_item(state, 'action', 'atf',  tid, 'messages')
+            ent = msg.get('entitlementType', 'entitled').lower() == 'entitled'
+            notif = get_key('', msg, 'buyBoxMessage' if ent else'focusMessage', 'dvMessage', 'string').replace('{lineBreak}', '\n')
+            state = detail['liveState'].get('id', '').lower()
+            tt = detail['titleType'].lower()
+            if not notif:
+                if state == 'ended':
+                    state = 'replay'
+                notif = detail['dateTimeBadge']
+            if state in ['upcoming', 'ended'] or not pid:
+                _g.dialog.notification(getString(30203), notif, xbmcgui.NOTIFICATION_INFO)
+                return -1, -1
+            if state != 'live' and tt == 'event':
+                streamtype = 0
+        return streamtype, asin
 
+    def _IStreamPlayback(asin, name, streamtype, isAdult, extern):
         from .ages import AgeRestrictions
+        bypassproxy = _s.proxy_mpdalter or (streamtype > 1)
+        if streamtype == 3:
+            streamtype, asin = _EventState(asin)
+            if streamtype < 0:
+                return False
         vMT = ['Feature', 'Trailer', 'LiveStreaming'][streamtype]
         dRes = 'PlaybackUrls' if streamtype > 1 else 'PlaybackUrls,SubtitleUrls,ForcedNarratives,TransitionTimecodes'
         opt = '&liveManifestType=accumulating,live&playerType=xp&playerAttributes={"frameRate":"HFR"}&deviceFrameRateOverride=High' if streamtype > 1 else ''
@@ -352,8 +368,6 @@ def PlayVideo(name, asin, adultstr, streamtype, forcefb=0):
         if not inputstream_helper.check_inputstream():
             Log('No Inputstream Addon found or activated')
             return False
-
-        bypassproxy = _s.proxy_mpdalter or (streamtype > 1)
 
         # The following code can run two times. In the first iteration, token auth
         # will be prefered. If the request is successful, the loop will be aborted.

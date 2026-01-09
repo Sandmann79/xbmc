@@ -333,24 +333,42 @@ def PlayVideo(name, asin, adultstr, streamtype, forcefb=0):
         if data:
             state = data['state']
             tid = state['pageTitleId']
-            pid = findKey('playbackID', data)
-            asin = pid if pid else asin
             detail = return_item(state, 'detail', 'detail', tid)
             msg = return_item(state, 'action', 'atf',  tid, 'messages')
             ent = msg.get('entitlementType', 'entitled').lower() == 'entitled'
             notif = get_key('', msg, 'buyBoxMessage' if ent else'focusMessage', 'dvMessage', 'string').replace('{lineBreak}', '\n')
-            state = detail['liveState'].get('id', '').lower()
+            pid, livestate = _listStreams(state, tid, detail['liveState'].get('id', '').lower())
+            if not livestate:
+                return -1, -1
+            asin = pid if pid else asin
             tt = detail['titleType'].lower()
             if not notif:
-                if state == 'ended':
-                    state = 'replay'
+                if livestate == 'ended':
+                    livestate = 'replay'
                 notif = detail['dateTimeBadge']
-            if state in ['upcoming', 'ended'] or not pid:
+            if livestate in ['upcoming', 'ended'] or not pid:
                 _g.dialog.notification(getString(30203), notif, xbmcgui.NOTIFICATION_INFO)
                 return -1, -1
-            if state != 'live' and tt == 'event':
+            if livestate != 'live' and tt == 'event':
                 streamtype = 0
         return streamtype, asin
+
+    def _listStreams(state, tid, livestate):
+        pid = findKey('playbackID', state)
+        container = get_key([], state, 'containers', tid)
+        str_list = []
+        for cont in container:
+            heading = cont['title']
+            streams = cont.get('entities', [])
+            for stream in streams:
+                live_state = get_key('replay', stream, 'liveInfo', 'status').lower()
+                widget_type = stream.get('widgetType', '').lower()
+                if live_state not in ['upcoming', 'ended'] and widget_type != 'titlecard':
+                   str_list.append([f"{heading}: {stream['displayTitle']}", stream['titleID'], live_state])
+        if len(str_list) > 0:
+            num = 0 if len(str_list) == 1 else _g.dialog.select('', [s[0] for s in str_list], preselect=0)
+            return [str_list[num][1], str_list[num][2]] if num > -1 else [pid, False]
+        return pid, livestate
 
     def _IStreamPlayback(asin, name, streamtype, isAdult, extern):
         from .ages import AgeRestrictions

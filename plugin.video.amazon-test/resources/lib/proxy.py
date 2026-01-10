@@ -29,12 +29,7 @@ class ProxyHTTPD(BaseHTTPRequestHandler):
 
     def _AdjustLocale(self, langCode, count=2, separator='-'):
         """Locale conversion helper"""
-
-        try:
-            p1, p2 = langCode.split('-')
-        except:
-            p1 = langCode
-            p2 = langCode
+        p1, p2 = langCode.split('-') if '-' in langCode else [langCode, langCode]
         if 1 == count and p1 not in ['yue', 'cmn']:
             return p1.lower()
         localeConversionTable = {
@@ -241,7 +236,7 @@ class ProxyHTTPD(BaseHTTPRequestHandler):
                 for i in range(0, len(content[sub_type])):
                     lang = self.split_lang(content[sub_type][i]['languageCode'])
                     if lang not in langCount[sub_type]:
-                        if lang in chosen_langs:
+                        if lang in chosen_langs or chosen_langs == 'all':
                             chosen_found += 1
                         langCount[sub_type][lang] = 0
                     langCount[sub_type][lang] += 1
@@ -323,13 +318,14 @@ class ProxyHTTPD(BaseHTTPRequestHandler):
             chosen_found = 0
             languages = []
             langCount = {}
-            for lang in re.findall(r'<AdaptationSet[^>]*(?:audioTrackId|lang)="([^"]+)"[^>]*>', buffer):
+            for lang in re.findall(r'<AdaptationSet[^>]*(?:audioTrackId)="([^"]+)"[^>]*>', buffer):
+                lang = lang.split('_')[0]
                 if lang not in languages:
                     languages.append(lang)
             for lang in languages:
                 lang = self.split_lang(lang)
                 if lang not in langCount:
-                    if lang in chosen_langs:
+                    if lang in chosen_langs or chosen_langs == 'all':
                         chosen_found += 1
                     langCount[lang] = 0
                 langCount[lang] += 1

@@ -557,11 +557,12 @@ class PrimeVideo(Singleton):
                             gtis = self._videodata['urn2gti'].get(gt, gt)
                         in_wl = 1 if path.split('/')[:3] == ['root', 'Watchlist', 'watchlist'] else 0
                         if gtis is not None:
+                            mt = self._g.langID.get(m['videometa']['mediatype'])
+                            if mt is None:
+                                continue
                             if m['videometa']['mediatype'] != 'live':
-                                ctxitems.append((getString(30180 + in_wl) % getString(self._g.langID[m['videometa']['mediatype']]),
-                                                 f'RunPlugin({self._g.pluginid}pv/wltoogle/{path}/{quote_plus(gtis)}/{in_wl})'))
-                            ctxitems.append((getString(30185) % getString(self._g.langID[m['videometa']['mediatype']]),
-                                             f'RunPlugin({self._g.pluginid}pv/browse/{itemPathURI}/export={ft_exp[folderType] + 10})'))
+                                ctxitems.append((getString(30180 + in_wl) % getString(mt), f'RunPlugin({self._g.pluginid}pv/wltoogle/{path}/{quote_plus(gtis)}/{in_wl})'))
+                            ctxitems.append((getString(30185) % getString(mt), f'RunPlugin({self._g.pluginid}pv/browse/{itemPathURI}/export={ft_exp[folderType] + 10})'))
                             ctxitems.append((getString(30186), 'UpdateLibrary(video)'))
 
                 if 'schedule' in m:
@@ -1074,6 +1075,8 @@ class PrimeVideo(Singleton):
                 # not inside a season/show: (oid not in details)
                 #     not already appended: (gti not in GTIs)
                 # part of the page details: ('self' in state) & (gti in state['self'])
+                if details[gti]['titleType'].lower() == 'collection':
+                    continue
                 if details[gti]['titleType'].lower() == 'season' and 'widgets' in data:
                     continue
                 if (oid not in details) and (gti not in GTIs) and ('self' in state) and (gti in state['self']):
@@ -1113,7 +1116,7 @@ class PrimeVideo(Singleton):
 
                 # Title
                 if bCacheRefresh or ('title' not in vd):
-                    if item['titleType'].lower() == 'season' and 'seasonNumber' in item:
+                    if titleType == 'season' and 'seasonNumber' in item:
                         try:
                             vd['title'] = data['strings']['AVOD_DP_season_selector'].format(seasonNumber=item['seasonNumber'])
                         except:

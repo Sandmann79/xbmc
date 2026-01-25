@@ -12,7 +12,7 @@ from urllib.parse import quote_plus, unquote_plus, quote
 import xbmc, xbmcplugin, xbmcgui
 
 from .singleton import Singleton
-from .common import key_exists, return_item, return_value, sleep, findKey, MechanizeLogin, decode_token
+from .common import key_exists, return_item, return_value, sleep, findKey, MechanizeLogin, decode_token, get_key
 from .network import getURL, getURLData, FQify, GrabJSON, LocaleSelector
 from .logging import Log
 from .itemlisting import setContentAndView, addVideo, addDir
@@ -147,6 +147,7 @@ class PrimeVideo(Singleton):
     def _UpdateProfiles(self, data):
         data = data.get('lists', data)
         pr = data.get('cerberus', data.get('profiles'))
+        perm = get_key({}, data, 'permissions', 'editAndEnterPermissions')
         if pr is not None:
             profiles = []
             if 'activeProfile' in pr:
@@ -165,6 +166,13 @@ class PrimeVideo(Singleton):
                     'verb': f"pv/profiles/switch/{p['id']}",
                     'endpoint': p['switchLink'],
                 }
+                if get_key('ALLOWED', perm, p['id'], 'enterPermission', 'action') != 'ALLOWED':
+                    challenge = perm[p['id']]['enterPermission']['challenge']
+                    self._catalog['profiles'][p['id']]['challenge'] = {
+                        'title': challenge['title'],
+                        'endpoint': challenge['continueAction']['destructuredUrl']
+                    }
+        self._Flush()
 
     def Route(self, verb, path):
         if 'search' == verb:
@@ -206,16 +214,18 @@ class PrimeVideo(Singleton):
         """ Profile actions """
         path = path.split(self._separator)
 
-        def List():
+        def List(home=None):
             """ List all inactive profiles """
             # Hit a fast endpoint to grab and update CSRF tokens
-            home = GrabJSON(self._g.BaseUrl + '/gp/video/profiles')
-            self._UpdateProfiles(home)
+            ul = home is not None
+            if home is None:
+                home = GrabJSON(self._g.BaseUrl + '/gp/video/profiles')
+                self._UpdateProfiles(home)
             for k, p in self._catalog['profiles'].items():
                 if 'active' == k or k == self._catalog['profiles']['active']:
                     continue
                 addDir(p['title'], 'True', p['verb'], p['metadata']['artmeta'])
-            xbmcplugin.endOfDirectory(self._g.pluginhandle, succeeded=True, cacheToDisc=False, updateListing=False)
+            xbmcplugin.endOfDirectory(self._g.pluginhandle, succeeded=True, cacheToDisc=False, updateListing=ul)
 
         def Switch():
             """ Switch to an inactive profile """
@@ -223,6 +233,7 @@ class PrimeVideo(Singleton):
             # so we patiently try a few times
             for _ in range(0, 5):
                 endpoint = self._catalog['profiles'][path[1]]['endpoint']
+                endpoint['query'].update(_Challenge())
                 Log(f"{self._g.BaseUrl + endpoint['partialURL']} {endpoint['query']}")
                 home = GrabJSON(self._g.BaseUrl + endpoint['partialURL'], endpoint['query'])
                 self._UpdateProfiles(home)
@@ -230,10 +241,20 @@ class PrimeVideo(Singleton):
                     break
                 sleep(3)
             if path[1] == self._catalog['profiles']['active']:
-                self.BuildRoot(home if home else {})
+                List(home)
             else:
                 self._g.dialog.notification(self._g.addon.getAddonInfo('name'), 'Profile switching unavailable at the moment, please try again', time=1000, sound=False)
-            xbmcplugin.endOfDirectory(self._g.pluginhandle, succeeded=False, cacheToDisc=False, updateListing=True)
+
+        def _Challenge():
+            challenge = self._catalog['profiles'][path[1]].get('challenge')
+            if challenge:
+                pin = self._g.dialog.numeric(0, challenge['title'])
+                query = challenge['endpoint']['query']
+                query['pin'] = pin
+                proof = GrabJSON(self._g.BaseUrl + challenge['endpoint']['partialURL'], query)
+                if 'pinProof' in proof:
+                    return {'pinProof': proof['pinProof']}
+            return {}
 
         if 'list' == path[0]: List()
         elif 'switch' == path[0]: Switch()

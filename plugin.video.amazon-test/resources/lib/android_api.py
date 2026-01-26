@@ -37,19 +37,19 @@ class PrimeVideo(Singleton):
         self.def_ps = 20
         self.lang = loadUser('lang')
         self.def_dtid = self._g.dtid_android
-        self.defparam = 'deviceTypeID={}' \
+        self.defparam = f'deviceTypeID={self.def_dtid}' \
                         '&firmware=fmw:22-app:3.0.351.3955' \
                         '&softwareVersion=351' \
                         '&priorityLevel=2' \
                         '&format=json' \
-                        '&featureScheme=mobile-android-features-v11-hdr' \
-                        '&deviceID={}' \
+                        '&featureScheme=mobile-android-features-v13-hdr' \
+                        f'&deviceID={self._g.deviceID}' \
                         '&version=1' \
                         '&screenWidth=sw1600dp' \
-                        '&osLocale={}&uxLocale={}' \
+                        f'&osLocale={self.lang}&uxLocale={self.lang}' \
                         '&supportsPKMZ=false' \
                         '&isLiveEventsV2OverrideEnabled=true' \
-                        '&swiftPriorityLevel=critical'.format(self.def_dtid, self._g.deviceID, self.lang, self.lang)
+                        '&swiftPriorityLevel=critical'
         self._art_thread = Thread(target=self.processMissing)
 
     def BrowseRoot(self):
@@ -219,7 +219,7 @@ class PrimeVideo(Singleton):
                                 facetxt = f'[COLOR {self._g.PrimeCol}]{facetxt}[/COLOR]'
                             if isincl is False:
                                 facetxt = f'[COLOR {self._g.PayCol}]{facetxt}[/COLOR]'
-                        title = f'{facetxt} - {title}'
+                        title = f'{facetxt}{- title if title else ""}'
                     # faceimg = item.get('presentationData', {}).get('facetImages', {}).get('UNFOCUSED', {}).get('url')
                     if col_act:
                         q = self.filterDict(findKey('parameters', col_act))
@@ -237,8 +237,8 @@ class PrimeVideo(Singleton):
 
                 for item in col:
                     model = item['model']
-                    if item['type'] in ['textLink', 'imageTextLink', 'imageLink']:
-                        la = model['linkAction']
+                    la = model['linkAction']
+                    if item['type'] in ['textLink', 'imageTextLink', 'imageLink'] or la['type'] in ['landing']:
                         q = findKey('parameters', la)
                         q = self.filterDict(q) if q else {}
                         text = model.get('text', model.get('accessibilityDescription'))
@@ -504,7 +504,7 @@ class PrimeVideo(Singleton):
                       'isAdult': 1 if content.get('isAdultContent', False) else 0,
                       'director': None, 'genre': None, 'studio': None, 'thumb': None, 'fanart': None, 'isHD': False, 'isUHD': False,
                       'audiochannels': 2, 'TrailerAvailable': False,
-                      'asins': content.get('id', content.get('titleId', content.get('channelId', ''))),
+                      'asins': content.get('id', content.get('titleId', content.get('channelId', content.get('stationId', '')))),
                       'isPrime': content.get('showPrimeEmblem', False)}
 
         if infoLabels['isPrime'] is False and 'cardDecoration' in content:
@@ -527,7 +527,7 @@ class PrimeVideo(Singleton):
         from datetime import datetime
         item = self.filterDict(item)
         infoLabels = self.getAsins(item)
-        if 'channelId' in item:
+        if 'channelId' in item or 'stationId' in item:
             return self.getChanInfo(item, infoLabels)
         infoLabels['title'] = self.cleanTitle(item['title'])
         infoLabels['contentType'] = infoLabels['mediatype'] = ct = item['contentType'].lower()
@@ -607,9 +607,10 @@ class PrimeVideo(Singleton):
         return infoLabels
 
     def getChanInfo(self, item, infoLabels):
+        tpe = 'channel' if 'channelId' in item else 'station'
         infoLabels['contentType'] = 'live'
-        infoLabels['DisplayTitle'] = infoLabels['title'] = self.cleanTitle(item['channelTitle'])
-        infoLabels['thumb'] = self.cleanIMGurl(item.get('channelImageUrl'))
+        infoLabels['DisplayTitle'] = infoLabels['title'] = self.cleanTitle(item[tpe + 'Title'])
+        infoLabels['thumb'] = self.cleanIMGurl(item.get(tpe + 'ImageUrl'))
         infoLabels['plot'] = ''
         infoLabels['isPrime'] = True
         shedule = item.get('schedule')
@@ -627,7 +628,7 @@ class PrimeVideo(Singleton):
                         reldate = tm.get('publicReleaseDate', tm.get('releaseDate', 0))
                         reldate = reldate * -1 if reldate < 0 else reldate
                         infoLabels['premiered'] = datetime.fromtimestamp(reldate / 1000).strftime('%Y-%m-%d') if reldate > 0 else None
-                        infoLabels['fanart'] = self.cleanIMGurl(item.get('channelImageUrl'))
+                        infoLabels['fanart'] = self.cleanIMGurl(item.get(tpe + 'ImageUrl'))
                         infoLabels['thumb'] = self.getMedia(tm, cust='fanart,thumb')
                         infoLabels['plot'] += f"{tm.get('synopsis', '')}\n\n"
                         if item.get('runtimeMillis'):

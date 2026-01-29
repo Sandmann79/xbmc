@@ -79,6 +79,7 @@ def mobileUA(content):
     res = res.get('class', '') if res else ''
     return True if 'a-mobile' in res or 'a-tablet' in res else False
 
+
 def _get_session(retry=True):
     global _session
 
@@ -98,6 +99,7 @@ def _get_session(retry=True):
 
     _session = session
     return session
+
 
 def getURL(url, useCookie=False, silent=False, headers=None, rjson=True, check=False, postdata=None, binary=False, allow_redirects=True):
     getURL.lastResponseCode = 0

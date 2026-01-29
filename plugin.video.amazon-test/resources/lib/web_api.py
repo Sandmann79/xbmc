@@ -144,7 +144,8 @@ class PrimeVideo(Singleton):
             node = node[nodeName]
         return node, pathList
 
-    def _UpdateProfiles(self, data):
+    def _UpdateProfiles(self, data=None):
+        data = GrabJSON(self._g.BaseUrl + '/gp/video/profiles') if data is None else data
         data = data.get('lists', data)
         pr = data.get('cerberus', data.get('profiles'))
         perm = get_key({}, data, 'permissions', 'editAndEnterPermissions')
@@ -160,6 +161,8 @@ class PrimeVideo(Singleton):
             for p in profiles:
                 if p.get('isSelected', False):
                     self._catalog['profiles']['active'] = p['id']
+                if p.get('isDefault', False):
+                    self._catalog['profiles']['default'] = p['id']
                 self._catalog['profiles'][p['id']] = {
                     'title': p.get('name', 'Default').encode('utf-8'),
                     'metadata': {'artmeta': {'thumb': p['avatarUrl']}},
@@ -172,7 +175,7 @@ class PrimeVideo(Singleton):
                         'title': challenge['title'],
                         'endpoint': challenge['continueAction']['destructuredUrl']
                     }
-        self._Flush()
+            self._Flush()
 
     def Route(self, verb, path):
         if 'search' == verb:
@@ -218,11 +221,9 @@ class PrimeVideo(Singleton):
             """ List all inactive profiles """
             # Hit a fast endpoint to grab and update CSRF tokens
             ul = home is not None
-            if home is None:
-                home = GrabJSON(self._g.BaseUrl + '/gp/video/profiles')
-                self._UpdateProfiles(home)
+            self._UpdateProfiles(home)
             for k, p in self._catalog['profiles'].items():
-                if 'active' == k or k == self._catalog['profiles']['active']:
+                if k in ['active', 'default'] or k == self._catalog['profiles']['active']:
                     continue
                 addDir(p['title'], 'True', p['verb'], p['metadata']['artmeta'])
             xbmcplugin.endOfDirectory(self._g.pluginhandle, succeeded=True, cacheToDisc=False, updateListing=ul)
@@ -231,24 +232,31 @@ class PrimeVideo(Singleton):
             """ Switch to an inactive profile """
             # Sometimes the switch just fails due to CSRF, possibly due to problems on Amazon's servers,
             # so we patiently try a few times
+            not_selected = path[1] != self._catalog['profiles']['active']
+            owner_profile = path[1] == self._catalog['profiles']['default']
             for _ in range(0, 5):
                 endpoint = self._catalog['profiles'][path[1]]['endpoint']
                 endpoint['query'].update(_Challenge())
-                Log(f"{self._g.BaseUrl + endpoint['partialURL']} {endpoint['query']}")
-                home = GrabJSON(self._g.BaseUrl + endpoint['partialURL'], endpoint['query'])
-                self._UpdateProfiles(home)
+                if endpoint['query'].get('pinProof', 'true') == '':
+                    return
+                # need 2 cycles if account PIN is requested
+                for _ in range(2 if owner_profile and endpoint['query'].get('pinProof') else 1):
+                    home = GrabJSON(self._g.BaseUrl + endpoint['partialURL'], endpoint['query'])
+                    self._UpdateProfiles(home)
                 if path[1] == self._catalog['profiles']['active']:
                     break
                 sleep(3)
+
             if path[1] == self._catalog['profiles']['active']:
-                List(home)
+                if not_selected:
+                    List(home)
             else:
                 self._g.dialog.notification(self._g.addon.getAddonInfo('name'), 'Profile switching unavailable at the moment, please try again', time=1000, sound=False)
 
         def _Challenge():
             challenge = self._catalog['profiles'][path[1]].get('challenge')
             if challenge:
-                pin = self._g.dialog.numeric(0, challenge['title'])
+                pin = self._g.dialog.numeric(0, challenge['title'], bHiddenInput=self._s.show_pass is False)
                 query = challenge['endpoint']['query']
                 query['pin'] = pin
                 proof = GrabJSON(self._g.BaseUrl + challenge['endpoint']['partialURL'], query)
@@ -319,6 +327,12 @@ class PrimeVideo(Singleton):
             if not home:
                 return False
             self._UpdateProfiles(home)
+
+        # Profil PIN required
+        if home.get('pageType') == 'ATVProfiles':
+            self.Profile(self._separator.join(['switch', self._catalog['profiles']['active']]))
+            return self.BuildRoot()
+
         self._catalog['root'] = OrderedDict()
 
         # Insert the watchlist

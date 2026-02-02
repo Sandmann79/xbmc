@@ -135,6 +135,9 @@ class PrimeVideo(Singleton):
             flt = self.getFilter(resp)
             if root:
                 self._createDB(self._cache_tbl)
+                q = self.extendLanding(resp)
+                if q:
+                    addDir(resp['text'].title(), 'getPage', q['pageType'], opt=urlencode(q))
                 for item in resp['navigations']:
                     q = self.filterDict(findKey('parameters', item))
                     addDir(item['text'].title(), 'getPage', 'landing', opt=urlencode(q))
@@ -179,18 +182,14 @@ class PrimeVideo(Singleton):
                 if not export:
                     setContentAndView(il['contentType'])
                     self.checkMissing()
-                    #xbmc.executebuiltin('RunPlugin(%s?mode=processMissing)' % self._g.pluginid)
                 return
 
             if page == 'landing':
-                pgmodel = resp.get('paginationModel')
-                if pgmodel:
-                    q = findKey('parameters', pgmodel)
-                    q['swiftId'] = pgmodel['id']
-                    q['pageSize'] = self.def_ps
-                    q['startIndex'] = 0
+                q = self.extendLanding(resp)
+                if q:
                     self.getPage(q['pageType'], urlencode(q))
                     return
+
             if page == 'find' and 'collections' in resp:
                 for col in resp['collections']:
                     pt = findKey('pageType', col)
@@ -219,7 +218,7 @@ class PrimeVideo(Singleton):
                                 facetxt = f'[COLOR {self._g.PrimeCol}]{facetxt}[/COLOR]'
                             if isincl is False:
                                 facetxt = f'[COLOR {self._g.PayCol}]{facetxt}[/COLOR]'
-                        title = f'{facetxt}{- title if title else ""}'
+                        title = facetxt + ' - ' + title if title else facetxt
                     # faceimg = item.get('presentationData', {}).get('facetImages', {}).get('UNFOCUSED', {}).get('url')
                     if col_act:
                         q = self.filterDict(findKey('parameters', col_act))
@@ -270,6 +269,16 @@ class PrimeVideo(Singleton):
                 setContentAndView(ct)
                 self.checkMissing()
         return
+
+    def extendLanding(self, resp):
+        pgmodel = resp.get('paginationModel')
+        if pgmodel:
+            q = findKey('parameters', pgmodel)
+            q['swiftId'] = pgmodel['id']
+            q['pageSize'] = self.def_ps
+            q['startIndex'] = 0
+            return q
+        return None
 
     def formatTitle(self, il):
         name = il['title']

@@ -318,7 +318,8 @@ class ProxyHTTPD(BaseHTTPRequestHandler):
             chosen_found = 0
             languages = []
             langCount = {}
-            for lang in re.findall(r'<AdaptationSet[^>]*(?:audioTrackId)="([^"]+)"[^>]*>', buffer):
+            term = 'audioTrackId' if 'audioTrackId' in buffer else 'lang'
+            for lang in re.findall(rf'<AdaptationSet[^>]*(?:{term})="([^"]+)"[^>]*>', buffer):
                 lang = lang.split('_')[0]
                 if lang not in languages:
                     languages.append(lang)
@@ -331,7 +332,6 @@ class ProxyHTTPD(BaseHTTPRequestHandler):
                 langCount[lang] += 1
             if chosen_found == 0:
                 chosen_langs = 'all'
-
             # Send corrected AdaptationSets, one at a time through chunked transfer
             Log('[PS] Altering <AdaptationSet>s', Log.DEBUG)
             while True:

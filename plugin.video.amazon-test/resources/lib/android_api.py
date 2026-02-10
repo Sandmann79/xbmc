@@ -126,11 +126,13 @@ class PrimeVideo(Singleton):
             url = url.replace('initial', 'next') if 'initial' in url and 'startIndex' in query_dict else url
             resp = getURL(f'{url}?{self.defparam}{params}', useCookie=MechanizeLogin(True), headers=self._g.headers_android)
         LogJSON(resp)
-        
+
         if export:
             SetupLibrary()
 
         if resp:
+            if self.checkError(resp, export):
+                return
             resp = resp.get('resource', resp)
             flt = self.getFilter(resp)
             if root:
@@ -269,6 +271,15 @@ class PrimeVideo(Singleton):
                 setContentAndView(ct)
                 self.checkMissing()
         return
+
+    def checkError(self, resp, export):
+        meta = resp.get('metadata', {})
+        if 'errorId' not in meta:
+            return False
+        if not export:
+            self._g.dialog.notification(self._g.__plugin__, getString(30127), xbmcgui.NOTIFICATION_INFO)
+            exit()
+        return True
 
     def extendLanding(self, resp):
         pgmodel = resp.get('paginationModel')
@@ -573,8 +584,8 @@ class PrimeVideo(Singleton):
             infoLabels['title'] = infoLabels['tvshowtitle']
             infoLabels['plot'] = f"{getString(30253).format(infoLabels['totalseasons'])}\n\n{infoLabels['plot']}"
         if 'episode' in ct:
-            infoLabels['episode'] = item['episodeNumber']
-            infoLabels['season'] = item['seasonNumber']
+            infoLabels['episode'] = item.get('episodeNumber', 0)
+            infoLabels['season'] = item.get('seasonNumber', 0)
         if infoLabels['votes'] > 0:
             infoLabels['rating'] = item.get('amazonAverageRating', 1) * 2
         if 'regulatoryRating' in item:

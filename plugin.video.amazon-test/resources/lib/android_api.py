@@ -528,7 +528,14 @@ class PrimeVideo(Singleton):
                       'isPrime': content.get('showPrimeEmblem', False)}
 
         if infoLabels['isPrime'] is False and 'cardDecoration' in content:
-            infoLabels['isPrime'] = get_key('', content, 'cardDecoration', 'playbackLinkAction', 'videoMaterialType') == 'Feature'
+            vmt = get_key('', content, 'cardDecoration', 'playbackLinkAction', 'videoMaterialType')
+            if vmt == '':
+                msgp = content.get('messagePresentation', content.get('messagePresentationModel', {}))
+                imgid = findKey('imageId', msgp)
+                infoLabels['isPrime'] = imgid != 'OFFER_ICON'
+            else:
+                infoLabels['isPrime'] = vmt == 'Feature'
+
         if 'badges' in content:
             b = content['badges']
             infoLabels['isAdult'] = 1 if b.get('adult', True) else 0
@@ -604,7 +611,6 @@ class PrimeVideo(Singleton):
                 infoLabels['premiered'] = datetime.fromtimestamp(s).strftime('%Y-%m-%d')
                 infoLabels['duration'] = e - s
             infoLabels['contentType'] = infoLabels['mediatype'] = 'event'
-            infoLabels['isPrime'] = True
         return infoLabels
 
     def getMedia(self, item, infoLabels=None, cust='fanart,thumb,poster'):
@@ -632,7 +638,6 @@ class PrimeVideo(Singleton):
         infoLabels['DisplayTitle'] = infoLabels['title'] = self.cleanTitle(item[tpe + 'Title'])
         infoLabels['thumb'] = self.cleanIMGurl(item.get(tpe + 'ImageUrl'))
         infoLabels['plot'] = ''
-        infoLabels['isPrime'] = True
         shedule = item.get('schedule')
         upnext = False
         if shedule:

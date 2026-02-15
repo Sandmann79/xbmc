@@ -336,7 +336,7 @@ def PlayVideo(name, asin, adultstr, streamtype, forcefb=0):
             detail = return_item(state, 'detail', 'detail', tid)
             msg = return_item(state, 'action', 'atf',  tid, 'messages')
             ent = msg.get('entitlementType', 'entitled').lower() == 'entitled'
-            notif = get_key('', msg, 'buyBoxMessage' if ent else'focusMessage', 'dvMessage', 'string').replace('{lineBreak}', '\n')
+            notif = get_key('', msg, 'buyBoxMessage' if ent else 'focusMessage', 'dvMessage', 'string').replace('{lineBreak}', '\n')
             pid, livestate = _listStreams(state, tid, detail['liveState'].get('id', '').lower())
             if not livestate:
                 return -1, -1
@@ -362,9 +362,10 @@ def PlayVideo(name, asin, adultstr, streamtype, forcefb=0):
             streams = cont.get('entities', [])
             for stream in streams:
                 live_state = get_key('replay', stream, 'liveInfo', 'status').lower()
+                is_entitled = get_key('', stream, 'entitlementCues', 'focusMessage', 'icon') != 'OFFER_ICON'
                 widget_type = stream.get('widgetType', '').lower()
-                if live_state not in ['upcoming', 'ended'] and widget_type != 'titlecard':
-                   str_list.append([f"{heading}: {stream['displayTitle']}", stream['titleID'], live_state])
+                if live_state not in ['upcoming', 'ended'] and widget_type != 'titlecard' and is_entitled:
+                    str_list.append([f"{heading}: {stream['displayTitle']}", stream['titleID'], live_state])
         if len(str_list) > 0:
             num = 0 if len(str_list) == 1 else _g.dialog.select('', [s[0] for s in str_list], preselect=0)
             return [str_list[num][1], str_list[num][2]] if num > -1 else [pid, False]
@@ -373,6 +374,7 @@ def PlayVideo(name, asin, adultstr, streamtype, forcefb=0):
     def _IStreamPlayback(asin, name, streamtype, isAdult, extern):
         from .ages import AgeRestrictions
         bypassproxy = _s.proxy_mpdalter or (streamtype > 1)
+        notLiveTV = streamtype != 2
         if streamtype == 3:
             streamtype, asin = _EventState(asin)
             if streamtype < 0:
@@ -393,7 +395,7 @@ def PlayVideo(name, asin, adultstr, streamtype, forcefb=0):
         # and try again. This is neccessary for content like Amazon Freevee, which is not
         # available though token based authentification.
 
-        for preferTokenToCookie in ([True, False] if _s.wvl1_device else [False]):
+        for preferTokenToCookie in ([True, False] if _s.wvl1_device and notLiveTV else [False]):
             cookie, req_param, headers, dtid, req_headers = _getPlaybackVars(preferToken=preferTokenToCookie)
             if not cookie:
                 _g.dialog.notification(getString(30203), getString(30200), xbmcgui.NOTIFICATION_ERROR)

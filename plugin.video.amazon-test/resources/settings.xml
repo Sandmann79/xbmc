@@ -24,7 +24,7 @@
         <setting id="waitprepin" type="labelenum" values="1|2|3|4|5|6|7|8|9|10|11|12|13|14|15|16|17|18|19|20|21|22|23|24|25|26|27|28|29|30" label="30057" default="10" visible="eq(-4,false) + lt(-15,2)" enable="eq(-2,true) + eq(-4,false)"/>
         <setting id="waitpin" type="labelenum" values="1|2|3|4|5|6|7|8|9|10|11|12|13|14|15|16|17|18|19|20|21|22|23|24|25|26|27|28|29|30" enable="eq(-3,true) + eq(-5,true)" label="30047" default="5" visible="eq(-5,true) + lt(-16,2)"/>
         <!-- Inputstream -->
-        <setting id="pref_host" type="labelenum" label="30019" visible="eq(-17,3)" values="Auto|Akamai|Cloudfront|Level3|Limelight" default="Auto"/>
+        <setting id="pref_host" type="labelenum" label="30019" visible="eq(-17,3)" values="Auto|Akamai|Cloudfront|Level3|Limelight|Fastly|Cdn77" default="Auto"/>
         <setting id="is_settings" type="action" label="30013" visible="eq(-18,3)" action="RunPlugin(plugin://plugin.video.amazon-test/?mode=openSettings&url=is)" option="close"/>
         <setting id="age_settings" type="action" label="30018" visible="eq(-19,3)" action="RunPlugin(plugin://plugin.video.amazon-test/?mode=ageSettings)" option="close"/>
         <setting id="wvl1_device" type="bool" label="30006" visible="eq(-20,3)" enable="System.Platform.Android|System.Platform.webOS" default="false"/>

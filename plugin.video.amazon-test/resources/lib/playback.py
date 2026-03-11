@@ -356,15 +356,24 @@ def PlayVideo(name, asin, adultstr, streamtype, forcefb=0):
     def _listStreams(state, tid, livestate):
         pid = findKey('playbackID', state)
         container = get_key([], state, 'containers', tid)
+        pbActions = get_key([], state, 'action', 'atf', tid, 'playbackActions', 'main', 'children')
         str_list = []
+        for child in pbActions:
+            title = child['label'].replace('{lineBreak}', ' / ')
+            state = 'live' if child['videoMaterialType'].lower() == 'live' else 'replay'
+            str_list.append([title, child['playbackID'], state])
         for cont in container:
             heading = cont['title']
             streams = cont.get('entities', [])
             for stream in streams:
+                ec = stream.get('entitlementCues', {})
                 live_state = get_key('replay', stream, 'liveInfo', 'status').lower()
-                is_entitled = get_key('', stream, 'entitlementCues', 'focusMessage', 'icon') != 'OFFER_ICON'
+                live_badge = 'inactive' not in get_key('inactive', ec, 'titleMetadataBadge', 'level')
+                is_entitled = get_key('', ec, 'focusMessage', 'icon') != 'OFFER_ICON'
                 widget_type = stream.get('widgetType', '').lower()
-                if live_state not in ['upcoming', 'ended'] and widget_type != 'titlecard' and is_entitled:
+                if live_badge and live_state == 'upcoming':
+                    live_state = 'live'
+                if live_state not in ['upcoming', 'ended'] and widget_type != 'titlecard' and is_entitled and stream['titleID'] not in [x[1] for x in str_list]:
                     str_list.append([f"{heading}: {stream['displayTitle']}", stream['titleID'], live_state])
         if len(str_list) > 0:
             num = 0 if len(str_list) == 1 else _g.dialog.select('', [s[0] for s in str_list], preselect=0)

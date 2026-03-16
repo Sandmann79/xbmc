@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <addon id="plugin.video.amazon-test"
        name="Amazon VOD"
-       version="1.2.0~beta1+matrix.1"
+       version="1.2.1~beta1+matrix.1"
        provider-name="Sandmann79, Varstahl">
   <requires>
     <import addon="xbmc.python" version="3.0.0"/>

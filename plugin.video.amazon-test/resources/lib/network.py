@@ -14,7 +14,7 @@ from urllib3.util.retry import Retry
 
 import xbmcgui
 
-from .common import Globals, Settings, sleep, MechanizeLogin
+from .common import Globals, Settings, sleep, MechanizeLogin, get_key, findKey
 from .logging import Log, WriteLog, LogJSON
 from .l10n import getString
 from .configs import getConfig, writeConfig
@@ -317,37 +317,13 @@ def FQify(URL):
 
 def GrabJSON(url, postData=None):
     """ Extract JSON objects from HTMLs while keeping the API ones intact """
-    from html.entities import name2codepoint
+    from html import unescape
 
     def Unescape(text):
-        """ Unescape various html/xml entities in dictionary values, courtesy of Fredrik Lundh """
-
-        def fixup(m):
-            """ Unescape entities except for double quotes, lest the JSON breaks """
-            text = m.group(0)  # First group is the text to replace
-
-            # Unescape if possible
-            if text[:2] == "&#":
-                # character reference
-                try:
-                    bHex = ("&#x" == text[:3])
-                    char = int(text[3 if bHex else 2:-1], 16 if bHex else 10)
-                    if 34 == char:
-                        text = u'\\"'
-                    else:
-                        text = chr(char)
-                except ValueError:
-                    pass
-            else:
-                # named entity
-                char = text[1:-1]
-                if 'quot' == char:
-                    text = u'\\"'
-                elif char in name2codepoint:
-                    text = chr(name2codepoint[char])
-            return text
-
-        text = re.sub('&#?\\w+;', fixup, text)
+        if text.startswith('{&#34;'):
+            text = unescape(text)
+        else:
+            text = unescape(text.replace('&#34;', '\\"'))
         try:
             text = text.encode('latin-1').decode('utf-8')
         except (UnicodeEncodeError, UnicodeDecodeError):
@@ -429,7 +405,7 @@ def GrabJSON(url, postData=None):
                 Prune(o)
             return o
 
-        matches = BeautifulSoup(r, 'html.parser').find_all('script', {'type': re.compile('(?:text/template|application/json)'), 'id': ''})
+        matches = BeautifulSoup(r, 'html.parser').find_all('script', {'type': re.compile('(?:text/template|application/json)')})
         if not matches:
             matches = Captcha(r)
             if not matches:
@@ -443,17 +419,23 @@ def GrabJSON(url, postData=None):
 
             if ('widgets' in m) and ('Storefront' in m['widgets']):
                 m = m['widgets']['Storefront']
-            elif 'props' in m:
-                m = m['props']
-                if 'body' in m and len(m['body']) > 0:
-                    bodies = m['body']
-                    if 'siteWide' in m and 'bodyStart' in m['siteWide'] and len(m['siteWide']['bodyStart']) > 0:
-                        for bs in m['siteWide']['bodyStart']:
+            elif 'props' in m or 'init' in m:
+                bodies = findKey('body', m)
+                sw = findKey('siteWide', m)
+                m = m.get('props', m.get('init', {}))
+                if len(bodies) > 0:
+                    if 'bodyStart' in sw and len(sw['bodyStart']) > 0:
+                        for bs in sw['bodyStart']:
                             if 'name' in bs and bs['name'] == 'navigation-bar' and 'props' in bs:
                                 m = bs['props']
-                    for bd in bodies:
-                        if 'props' in bd:
-                            body = bd['props']
+                    else:
+                        m = bodies
+                        sw = findKey('sitewide-navigation-bar', m)
+                        Merge(m, sw)
+
+                    if isinstance(bodies, list):
+                        for body in bodies:
+                            body = body.get('props', body)
                             for p in ['atf', 'btf', 'landingPage', 'browse', 'search', 'categories', 'genre']:
                                 Merge(m, body.get(p, {}))
                             for p in ['content']:

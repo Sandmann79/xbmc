@@ -429,14 +429,14 @@ def GrabJSON(url, postData=None):
                             if 'name' in bs and bs['name'] == 'navigation-bar' and 'props' in bs:
                                 m = bs['props']
                     else:
-                        m = bodies
-                        sw = findKey('sitewide-navigation-bar', m)
-                        Merge(m, sw)
+                        if isinstance(bodies, dict):
+                            bodies = [bodies]
+                        m = findKey('sitewide-navigation-bar', m)
 
                     if isinstance(bodies, list):
                         for body in bodies:
                             body = body.get('props', body)
-                            for p in ['atf', 'btf', 'landingPage', 'browse', 'search', 'categories', 'genre']:
+                            for p in ['atf', 'btf', 'landingPage', 'browse', 'search', 'categories', 'genre', 'containers', 'pagination']:
                                 Merge(m, body.get(p, {}))
                             for p in ['content']:
                                 Merge(m, {p: body.get(p, {})})

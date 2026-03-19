@@ -390,28 +390,24 @@ class PrimeVideo(Singleton):
             return False
 
         # Insert the searching mechanism
-        if self._g.UsePrimeVideo:
-            # Insert the searching mechanism
-            try:
-                if 'nav' in home:
-                    sfa = home['nav']['searchBar']['submitSearchDestructuredEndpoint']
-                    title = home['nav']['searchBar']['searchBarPlaceholderLabel']
-                else:
-                    sfa = home['searchBar']['searchFormAction']
-                    title = home['searchBar']['searchFormPlaceholder']
-                # Build the query parametrization
-                query = ''
-                if 'query' in sfa:
-                    query += '&'.join([f'{k}={v}' for k, v in sfa['query'].items()])
-                query = query if not query else query + '&'
-                self._catalog['root']['Search'] = {
-                    'title': self._BeautifyText(title),
-                    'verb': '?mode=Search',
-                    'endpoint': f"{sfa['partialURL']}?{query}phrase={{}}"
-                }
-            except:
-                Log('Search functionality not found', Log.ERROR)
-        else:
+        try:
+            if 'nav' in home:
+                sfa = home['nav']['searchBar']['submitSearchDestructuredEndpoint']
+                title = home['nav']['searchBar']['searchBarPlaceholderLabel']
+            else:
+                sfa = home['searchBar']['searchFormAction']
+                title = home['searchBar']['searchFormPlaceholder']
+            # Build the query parametrization
+            query = ''
+            if 'query' in sfa:
+                query += '&'.join([f'{k}={v}' for k, v in sfa['query'].items()])
+            query = query if not query else query + '&'
+            self._catalog['root']['Search'] = {
+                'title': self._BeautifyText(title),
+                'verb': '?mode=Search',
+                'endpoint': f"{sfa['partialURL']}?{query}phrase={{}}"
+            }
+        except:
             self._catalog['root']['Search'] = {
                 'title': getString(30108),
                 'verb': '?mode=Search',

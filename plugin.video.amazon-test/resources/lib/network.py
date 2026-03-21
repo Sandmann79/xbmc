@@ -320,10 +320,10 @@ def GrabJSON(url, postData=None):
     from html import unescape
 
     def Unescape(text):
-        if text.startswith('{&#34;'):
-            text = unescape(text)
-        else:
-            text = unescape(text.replace('&#34;', '\\"'))
+        if not text.startswith('{&#34;'):
+            text = text.replace('&#34;', '\\"')
+        text = unescape(text)
+
         try:
             text = text.encode('latin-1').decode('utf-8')
         except (UnicodeEncodeError, UnicodeDecodeError):
@@ -415,6 +415,9 @@ def GrabJSON(url, postData=None):
         # Create a single object containing all the data from the multiple JSON objects in the page
         o = {}
         for m in matches:
+            if not (m.id is None or 'hydration-data' in m.id):
+                continue
+
             m = json.loads(Unescape(m.string.strip()))
 
             if ('widgets' in m) and ('Storefront' in m['widgets']):
@@ -436,9 +439,9 @@ def GrabJSON(url, postData=None):
                     if isinstance(bodies, list):
                         for body in bodies:
                             body = body.get('props', body)
-                            for p in ['atf', 'btf', 'landingPage', 'browse', 'search', 'categories', 'genre', 'containers', 'pagination']:
+                            for p in ['atf', 'btf', 'landingPage', 'browse', 'search', 'categories', 'genre', 'pagination']:
                                 Merge(m, body.get(p, {}))
-                            for p in ['content']:
+                            for p in ['content', 'containers']:
                                 Merge(m, {p: body.get(p, {})})
 
                 if _s.json_dump_raw:
@@ -453,6 +456,8 @@ def GrabJSON(url, postData=None):
                                 del st[k]
                             elif k in ['features', 'customerPreferences']:
                                 del st[k]
+            else:
+                m = {}
             # Prune sensitive context info and merge into o
             if _s.json_dump_raw:
                 Prune(m)

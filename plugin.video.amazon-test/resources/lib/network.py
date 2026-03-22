@@ -55,16 +55,9 @@ def getUA(blacklist=False):
 
     if not UAlist:
         Log('Loading list of common UserAgents')
-        # [{'pct': int percent, 'ua': 'useragent string'}, …]
-        html = getURL('https://www.useragents.me', rjson=False)
-        soup = BeautifulSoup(html, 'html.parser')
-        desk = soup.find('div', attrs={'id': 'most-common-desktop-useragents-json-csv'})
-        for div in desk.find_all('div'):
-            if div.h3.string == 'JSON':
-                ua = json.loads(div.textarea.string)
-                break
-        sorted_ua = sorted(ua, key=lambda x:x.get('pct', 0), reverse=True)
-        UAlist = [ua['ua'] for ua in sorted_ua if 'windows' in ua['ua'].lower() and ua['ua'] not in UAcur]
+        result = getURL('https://microlink.io/user-agents.json')
+        sorted_ua = result.get('user', {})
+        UAlist = [ua for ua in sorted_ua if 'windows' in ua.lower() and ua not in UAcur]
         if not UAlist:
             UAlist = ['Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36']
         writeConfig('UAlist', json.dumps(UAlist))

@@ -11,7 +11,7 @@ _g = Globals()
 _s = Settings()
 
 
-def setContentAndView(content, updateListing=False):
+def setContentAndView(content, **kwargs):
     if content == 'movie':
         ctype = 'movies'
         cview = 'movieview'
@@ -42,7 +42,7 @@ def setContentAndView(content, updateListing=False):
         if viewid == -1:
             viewid = int(getattr(_s, cview.replace('view', 'id')))
         xbmc.executebuiltin(f'Container.SetViewMode({viewid})')
-    xbmcplugin.endOfDirectory(_g.pluginhandle, updateListing=updateListing)
+    xbmcplugin.endOfDirectory(_g.pluginhandle, **kwargs)
 
 
 def addDir(name, mode='', url='', infoLabels=None, opt='', catalog='Browse', cm=None, page=1, export=False, thumb=None):

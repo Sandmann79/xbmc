@@ -644,8 +644,7 @@ class PrimeVideo(Singleton):
             ][0 if bNoSort or ('nextPage' in node) else folderType])
 
             folderType = 0 if 2 > folderType else folderType
-            setContentAndView([None, 'videos', 'series', 'season', 'episode', 'movie'][folderType])
-            xbmcplugin.endOfDirectory(self._g.pluginhandle, succeeded=True, cacheToDisc=False)
+            setContentAndView([None, 'videos', 'series', 'season', 'episode', 'movie'][folderType], cacheToDisc=False)
         elif maincall:
             writeConfig('exporting', '')
             Log('Export finished')
@@ -1193,7 +1192,7 @@ class PrimeVideo(Singleton):
 
                 # Contributors (`producers` are ignored)
                 if 'contributors' in item:
-                    for k, v in OrderedDict([('directors', 'director'), ('starringActors', 'cast'), ('supportingActors', 'cast')]).items():
+                    for k, v in OrderedDict([('directors', 'director'), ('starringActors', 'cast'), ('supportingActors', 'cast'), ('cast', 'cast')]).items():
                         if k in item['contributors']:
                             for p in item['contributors'][k]:
                                 if 'name' in p:

@@ -292,7 +292,17 @@ def LogIn(retToken=False):
                 if form:
                     br.select_form(f'form[name="{form}"]')
                 elif link:
-                    br.follow_link(attrs=link)
+                    link = [link] if isinstance(link, dict) else link
+                    suc = False
+                    for lnk in link:
+                        try:
+                            br.follow_link(attrs=lnk)
+                            suc = True
+                            break
+                        except mechanicalsoup.LinkNotFoundError:
+                            pass
+                    if not suc:
+                        raise mechanicalsoup.LinkNotFoundError
                 break
             except mechanicalsoup.LinkNotFoundError:
                 sleep(randint(750, 3000) / 1000)
@@ -384,7 +394,7 @@ def LogIn(retToken=False):
                 br.session.headers.update(_g.headers_android)
                 br.open('https://www.' + user['sidomain'])
                 WriteLog(str(br.get_current_page()), 'login-bu')
-                if not _findElem(br, link={'class': 'nav-show-sign-in'}, log='bu'):
+                if not _findElem(br, link=[{'class': 'nav-show-sign-in'}, {'data-nav-ref': 'nav_ya_signin'}], log='bu'):
                     return False
                 up = urlparse(br.get_url())
                 query = {k: v[0] for k, v in parse_qs(up.query).items()}

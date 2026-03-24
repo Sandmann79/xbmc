@@ -540,24 +540,34 @@ class PrimeVideo(Singleton):
                 # Log('Encoded PrimeVideo refresh URL: pv/refresh/{}'.format(itemPathURI), Log.DEBUG)
                 ctxitems.append((getString(30268), f'RunPlugin({self._g.pluginid}pv/refresh/{itemPathURI})'))
 
+            mt = get_key('', entry, 'metadata', 'videometa', 'mediatype')
+            # use seasons metadata if missing in epsiodes
+            if 'episode' == mt and 'parent' in entry:
+                pid = entry['parent']
+                for k, v in self._videodata[pid]['metadata']['artmeta'].items():
+                    if k not in entry['metadata']['artmeta']:
+                        entry['metadata']['artmeta'][k] = v
+                for k in ['cast', 'genres', 'director']:
+                    if k not in entry['metadata']['videometa'] and k in self._videodata[pid]['metadata']['videometa']:
+                        entry['metadata']['videometa'][k] = self._videodata[pid]['metadata']['videometa'][k]
             # In case of tv shows find the oldest season and apply its art
-            try:
-                if ('tvshow' == entry['metadata']['videometa']['mediatype']) and (1 < len(entry['children'])):
-                    sn = None
-                    snid = None
-                    for child in entry['children']:
-                        try:
-                            childsn = self._videodata[child]['metadata']['videometa']['season']
-                            if (None is sn) or (sn > childsn):
-                                sn = childsn
-                                snid = child
-                        except: pass
-                    if snid:
-                        entry['metadata']['artmeta'] = self._videodata[snid]['metadata']['artmeta']
-                        entry['metadata']['videometa']['cast'] = self._videodata[snid]['metadata']['videometa'].get('cast', [])
-                        entry['metadata']['videometa']['plot'] = '{}\n\n{}'.format(getString(30253).format(len(entry['children'])),
-                                                                                   self._videodata[snid]['metadata']['videometa'].get('plot', ''))  # "# series" as plot/description
-            except: pass
+            elif ('tvshow' == mt) and (1 < len(entry.get('children', []))):
+                sn = None
+                snid = None
+                for child in entry['children']:
+                    try:
+                        childsn = self._videodata[child]['metadata']['videometa']['season']
+                        if (None is sn) or (sn > childsn):
+                            sn = childsn
+                            snid = child
+                    except:
+                        pass
+                if snid:
+                    entry['metadata']['artmeta'] = self._videodata[snid]['metadata']['artmeta']
+                    entry['metadata']['videometa']['cast'] = self._videodata[snid]['metadata']['videometa'].get('cast', [])
+                    entry['metadata']['videometa']['plot'] = '{}\n\n{}'.format(getString(30253).format(len(entry['children'])),
+                                                                               self._videodata[snid]['metadata']['videometa'].get('plot',
+                                                                                                                                  ''))  # "# series" as plot/description
 
             folder = True
             if 'metadata' in entry:

@@ -132,10 +132,11 @@ class PrimeVideo(Singleton):
                 for cid in node['children']:
                     if cid not in node:
                         node[cid] = {}
-                        try:
-                            if 0 == len(self._videodata[cid]['children']):
-                                node[cid]['lazyLoadURL'] = self._videodata[cid]['ref']
-                        except: pass
+                    try:
+                        if 0 == len(self._videodata[cid]['children']):
+                            node[cid]['lazyLoadURL'] = self._videodata[cid]['ref']
+                    except: pass
+
             if nodeName not in node:
                 self._g.dialog.notification('Catalog error', 'Catalog path not available…', xbmcgui.NOTIFICATION_ERROR)
                 return None, None

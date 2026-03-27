@@ -938,3 +938,43 @@ msgstr "Colore per i contenuti a pagamento"
 msgctxt "#30293"
 msgid "Color for Prime content"
 msgstr "Colore per il contenuto dell'Prime"
+
+msgctxt "#30294"
+msgid "Browser"
+msgstr "Browser"
+
+msgctxt "#30295"
+msgid "UltraHD / 4K"
+msgstr "UltraHD / 4K"
+
+msgctxt "#30296"
+msgid "HDR10+"
+msgstr "HDR10+"
+
+msgctxt "#30297"
+msgid "Dolby Vision"
+msgstr "Dolby Vision"
+
+msgctxt "#30298"
+msgid "Dolby Atmos"
+msgstr "Dolby Atmos"
+
+msgctxt "#30299"
+msgid "View ID"
+msgstr "ID vista"
+
+msgctxt "#30300"
+msgid "Artwork"
+msgstr "Grafica"
+
+msgctxt "#30301"
+msgid "Parameter ({u} - URL / {f} - Framerate)"
+msgstr "Parameter ({u} - URL / {f} - Framerate)"
+
+msgctxt "#30302"
+msgid "Region"
+msgstr "Regione"
+
+msgctxt "#30303"
+msgid "Log"
+msgstr "Log"

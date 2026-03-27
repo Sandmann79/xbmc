@@ -916,3 +916,42 @@ msgctxt "#30293"
 msgid "Color for Prime content"
 msgstr ""
 
+msgctxt "#30294"
+msgid "Browser"
+msgstr ""
+
+msgctxt "#30295"
+msgid "UltraHD / 4K"
+msgstr ""
+
+msgctxt "#30296"
+msgid "HDR10+"
+msgstr ""
+
+msgctxt "#30297"
+msgid "Dolby Vision"
+msgstr ""
+
+msgctxt "#30298"
+msgid "Dolby Atmos"
+msgstr ""
+
+msgctxt "#30299"
+msgid "View ID"
+msgstr ""
+
+msgctxt "#30300"
+msgid "Artwork"
+msgstr ""
+
+msgctxt "#30301"
+msgid "Parameter ({u} - URL / {f} - Framerate)"
+msgstr ""
+
+msgctxt "#30302"
+msgid "Region"
+msgstr ""
+
+msgctxt "#30303"
+msgid "Log"
+msgstr ""

@@ -90,6 +90,7 @@ def PlayVideo(name, asin, adultstr, streamtype, forcefb=0):
         bypassproxy = bypassproxy if streamtype != 1 else True
         subUrls = []
         hosts = []
+        auxKey = None
 
         if not suc:
             return False, data, None
@@ -113,6 +114,10 @@ def PlayVideo(name, asin, adultstr, streamtype, forcefb=0):
             '''
             hosts = [h_dict[k] for k in h_dict]
             hosts.insert(0, h_dict[defid])
+            if 'auxCacheKey' in data['playbackUrls'] and len(data['playbackUrls']['auxCacheKey']) > 0:
+                auxKey = data['playbackUrls']['auxCacheKey'][1:]
+
+        Log(f"auxCacheKey: {auxKey}", Log.DEBUG)
 
         while hosts:
             for cdn in hosts:
@@ -134,6 +139,11 @@ def PlayVideo(name, asin, adultstr, streamtype, forcefb=0):
                     continue
 
                 returl = urlset['url']
+                if auxKey and auxKey in returl:
+                    Log(f"returl befor mod: {returl}", Log.DEBUG)
+                    regex = r'(.*\/)([^\/]*' + auxKey + r'[^\/]*\/)'
+                    returl = re.sub(regex, r'\1', returl)
+
                 if (not _s.audio_description) and (streamtype != 2) and webid:
                     mod = [i for i in returl.split('/')[:-1] if '_' in i]
                     mod = mod[0] if len(mod) > 0 else None

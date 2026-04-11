@@ -8,7 +8,7 @@ import requests
 from timeit import default_timer as timer
 from bs4 import BeautifulSoup
 from copy import deepcopy
-from urllib.parse  import urlencode, quote_plus, urlparse, parse_qs
+from urllib.parse import urlencode, quote_plus, urlparse, parse_qs
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
@@ -26,8 +26,9 @@ _s = Settings()
 
 
 def _Error(data):
-    code = data['errorCode'].lower()
-    Log(f"{data['message']} ({code}) ", Log.ERROR)
+    code = data.get('errorCode', data.get('code', '')).lower()
+    msg = data.get('message', '')
+    Log(f"{msg} ({code}) ", Log.ERROR)
     if 'invalidrequest' in code:
         return getString(30204)
     elif 'noavailablestreams' in code:
@@ -39,7 +40,7 @@ def _Error(data):
     elif 'temporarilyunavailable' in code:
         return getString(30208)
     else:
-        return f"{data['message']} ({code}) "
+        return f"{msg} ({code}) "
 
 
 def getUA(blacklist=False):
@@ -175,10 +176,155 @@ def getURL(url, useCookie=False, silent=False, headers=None, rjson=True, check=F
     return res
 
 
+def _device_data(vmt):
+    data = {
+        "globalParameters": {
+            "deviceCapabilityFamily": "WebPlayer",
+            "playbackEnvelope": "",
+            "capabilityDiscriminators": {
+                "operatingSystem": {"name": "Windows", "version": "10.0"},
+                "middleware": {"name": "Chrome", "version": "138.0.0.0"},
+                "nativeApplication": {"name": "Chrome", "version": "138.0.0.0"},
+                "hfrControlMode": "Legacy",
+                "displayResolution": {"height": 1152, "width": 1728}
+            }
+        },
+        "auditPingsRequest": {},
+        "widevineServiceCertificateRequest": {},
+        "playbackDataRequest": {},
+        "timedTextUrlsRequest": {"supportedTimedTextFormats": ["TTMLv2", "DFXP"]},
+        "trickplayUrlsRequest": {},
+        "transitionTimecodesRequest": {},
+        "vodPlaylistedPlaybackUrlsRequest": {
+            "ads": {"gdpr": {"consentMap": {}, "enabled": False}},
+            "capVideoDefinition": "SD",
+            "device": {
+                "hdcpLevel": "1.4",
+                "maxVideoResolution": "576p",
+                "supportedStreamingTechnologies": ["DASH"],
+                "streamingTechnologies": {
+                    "DASH": {
+                        "bitrateAdaptations": ["CBR", "CVBR"],
+                        "codecs": ["H264"],
+                        "drmKeyScheme": "DualKey",
+                        "drmType": "Widevine",
+                        "dynamicRangeFormats": ["None"],
+                        "edgeDeliveryAuthorizationSchemes": ["PVExchangeV1", "Transparent"],
+                        "fragmentRepresentations": ["ByteOffsetRange", "SeparateFile"],
+                        "frameRates": ["Standard", "High"],
+                        "stitchType": "MultiPeriod",
+                        "segmentInfoType": "Base",
+                        "timedTextRepresentations": ["NotInManifestNorStream", "SeparateStreamInManifest"],
+                        "trickplayRepresentations": ["NotInManifestNorStream"],
+                        "variableAspectRatio": "supported"
+                    }
+                },
+                "displayWidth": 1728,
+                "displayHeight": 1152
+            },
+            "playbackSettingsRequest": {
+                "firmware": "UNKNOWN",
+                "playerType": "xp",
+                "responseFormatVersion": "1.0.0",
+                "titleId": ""
+            }
+        }}
+    if vmt == 'live':
+        data['livePlaybackUrlsRequest'] = data.pop('vodPlaylistedPlaybackUrlsRequest')
+        data['livePlaybackUrlsRequest']['device']['liveManifestTypes'] = ['PatternTemplate', 'Accumulating', 'Live']
+        data['syeurlrequest'] = {
+            "ads": {"gdpr": {"consentMap": {}, "enabled": False}},
+            "device": {
+                "browserName": "Chrome",
+                "browserVersion": "138.0.0.0",
+                "clientVersion": "ATVWebPlayerSDK-1.0.235614.0",
+                "codecs": ["H264"],
+                "deviceModel": None,
+                "dynamicRangeFormats": ["None"],
+                "firmware": None,
+                "frameRates": ["Standard", "High"],
+                "hdcpLevel": "1.4",
+                "operatingSystemName": "Windows",
+                "operatingSystemVersion": "10.0",
+                "playerType": "xp"
+            }
+        }
+        data['livePlaybackUrlsRequest']['device']['playableLiveManifestTypes'] = {
+            "PatternTemplate": {
+                "daiSettings": {
+                    "supportsDai": "supported",
+                    "supportedDaiFeatures": {"supportsEmbeddedTrickplay": "supported"}
+                },
+                "embeddedTrickplaySettings": {"supportsEmbeddedTrickplay": "supported"}
+            },
+            "Accumulating": {
+                "daiSettings": {
+                    "supportsDai": "supported",
+                    "supportedDaiFeatures": {"supportsEmbeddedTrickplay": "supported"}
+                },
+                "embeddedTrickplaySettings": {"supportsEmbeddedTrickplay": "supported"}
+            },
+            "Live": {
+                "daiSettings": {
+                    "supportsDai": "supported",
+                    "supportedDaiFeatures": {"supportsEmbeddedTrickplay": "supported"}
+                },
+                "embeddedTrickplaySettings": {"supportsEmbeddedTrickplay": "supported"}
+            }
+        }
+        del data['transitionTimecodesRequest']
+        del data['trickplayUrlsRequest']
+    return data
+
+
+def getVODData(mode, asin, devicetypeid=_g.dtid_web, useCookie=False, returl=False, data=''):
+    penv = vmt = None
+    vmt_map = {'feature': {'prs_endp': '/playback/prs/GetVodPlaybackResources', 'drm_endp': '/playback/drm-vod/GetWidevineLicense',
+                           'url_req': 'vodPlaylistedPlaybackUrlsRequest'},
+               'live': {'prs_endp': '/playback/prs/GetLivePlaybackResources', 'drm_endp': '/playback/drm/GetWidevineLicense',
+                        'url_req': 'livePlaybackUrlsRequest'}}
+
+    if not returl and not data:
+        penv = None
+        u_path = '' if _g.UsePrimeVideo else '/gp/video'
+        metadata = '{"placement":"STANDARD_HERO","playback":"true","preroll":"true","trailer":"true","watchlist":"true"}'
+        titleids = json.dumps([asin]).replace(' ', '')
+        query = f'jic=8|EgNhbGw=&metadataToEnrich={metadata}&titleIDsToEnrich={titleids}&isCleanSlateActive=1&journeyIngressContext='
+        data = GrabJSON(_g.BaseUrl + u_path + '/api/enrichItemMetadata?' + quote_plus(query, safe='=&'))
+        bba = get_key(None, data, 'enrichments', asin, 'buyBoxActions')
+        pba = get_key([], data, 'enrichments', asin, 'playbackActions')
+        for enrich in bba if bba else pba:
+            if ('actionType' in enrich and enrich['actionType'] == 'PLAY') or 'playbackExperienceMetadata' in enrich:
+                payload = get_key(enrich, enrich, 'payload', 'playbackPayload')
+                penv = payload['playbackExperienceMetadata']['playbackEnvelope']
+                asin = payload['titleID']
+                vmt = payload['videoMaterialType'].lower()
+
+        if penv is None:
+            return False, 'no playbackaction'
+        data = _device_data(vmt)
+        data['globalParameters']['playbackEnvelope'] = penv
+        data[vmt_map[vmt]['url_req']]['playbackSettingsRequest']['titleId'] = asin
+
+    url = _g.ATVUrl + (mode if vmt is None else vmt_map[vmt][mode])
+    url += '?titleId=' + asin
+    url += '&deviceTypeID=' + devicetypeid
+    url += '&firmware=1'
+    url += '&deviceID=' + _g.deviceID
+    url += '&marketplaceID=' + _g.MarketID
+    url += '&uxLocale=en_EN'
+    url += '&gascEnabled=' + str(_g.UsePrimeVideo).lower()
+    if not returl:
+        resp = getURL(url, useCookie=useCookie, rjson=True, postdata=json.dumps(data))
+        if 'globalError' in resp:
+            return False, _Error(resp['globalError'])
+        return True, {**{'asin': asin, 'penv': penv, 'data': resp}, **vmt_map[vmt]}
+    return url
+
+
 def getURLData(mode, asin, retformat='json', devicetypeid=_g.dtid_web, version=2, firmware='1', opt='', extra=False,
                useCookie=False, retURL=False, vMT='Feature', dRes='PlaybackUrls,SubtitleUrls,ForcedNarratives',
                proxyEndpoint=None, silent=False):
-
     playback_req = 'PlaybackUrls' in dRes or 'Widevine2License' in dRes
     url = _g.ATVUrl + '/cdp/' + mode
     url += '?asin=' + asin
@@ -190,7 +336,8 @@ def getURLData(mode, asin, retformat='json', devicetypeid=_g.dtid_web, version=2
     url += '&version=' + str(version)
     url += '&gascEnabled=' + str(_g.UsePrimeVideo).lower()
     url += "&subtitleFormat=TTMLv2" if 'SubtitleUrls' in dRes else ''
-    url += '&operatingSystemName=Windows' if playback_req and (_g.platform & _g.OS_ANDROID or _g.platform & _g.OS_WEBOS) and devicetypeid == _g.dtid_web and _s.wvl1_device else ''  # cookie auth on android
+    url += '&operatingSystemName=Windows' if playback_req and (
+                _g.platform & _g.OS_ANDROID or _g.platform & _g.OS_WEBOS) and devicetypeid == _g.dtid_web and _s.wvl1_device else ''  # cookie auth on android
     if extra:
         url += '&resourceUsage=ImmediateConsumption&consumptionType=Streaming&deviceDrmOverride=CENC' \
                '&deviceStreamingTechnologyOverride=DASH&deviceProtocolOverride=Https' \
@@ -378,6 +525,7 @@ def GrabJSON(url, postData=None):
     def do(url, postData):
         GrabJSON.runs = True
         """ Wrapper to facilitate logging """
+        headers = {'accept': 'application/json'}
         if re.match(r'/(?:gp/video/)?search(?:Default)?/', url):
             up = urlparse(url)
             qs = parse_qs(up.query)
@@ -388,46 +536,33 @@ def GrabJSON(url, postData=None):
             url = up.geturl()
         if '/api/storefront' in url:
             postData = ""
-        r = getURL(FQify(url), silent=True, useCookie=True, rjson=False, postdata=postData)
+        if '/api/' in url:
+            headers = None
+        r = getURL(FQify(url), silent=True, useCookie=True, rjson=False, postdata=postData, headers=headers)
         if not r:
             return None
         r = r.strip()
-        if r.startswith('{'):
+        if '/api/' in url:
             o = json.loads(Unescape(r))
             if _s.json_dump_raw:
                 Prune(o)
-            return o
-
-        matches = BeautifulSoup(r, 'html.parser').find_all('script', {'type': re.compile('(?:text/template|application/json)')})
-        if not matches:
-            matches = Captcha(r)
-            if not matches:
-                Log('No JSON objects found in the page', Log.ERROR)
-                return None
-
-        # Create a single object containing all the data from the multiple JSON objects in the page
-        o = {}
-        for m in matches:
-            if not (m.id is None or 'hydration-data' in m.id):
-                continue
-
-            m = json.loads(Unescape(m.string.strip()))
-
+        else:
+            m = json.loads(r)
             if ('widgets' in m) and ('Storefront' in m['widgets']):
                 m = m['widgets']['Storefront']
-            elif 'props' in m or 'init' in m:
+            elif 'body' in m or 'props' in m or 'init' in m:
                 bodies = findKey('body', m)
                 sw = findKey('siteWide', m)
-                m = m.get('props', m.get('init', {}))
+                m = m.get('props', m.get('init', m))
                 if len(bodies) > 0:
                     if 'bodyStart' in sw and len(sw['bodyStart']) > 0:
                         for bs in sw['bodyStart']:
                             if 'name' in bs and bs['name'] == 'navigation-bar' and 'props' in bs:
                                 m = bs['props']
                     else:
+                        m = bodies['sitewide'].get('sitewide-navigation-bar', {}) if 'sitewide' in bodies else {}
                         if isinstance(bodies, dict):
                             bodies = [bodies]
-                        m = findKey('sitewide-navigation-bar', m)
 
                     if isinstance(bodies, list):
                         for body in bodies:
@@ -454,7 +589,7 @@ def GrabJSON(url, postData=None):
             # Prune sensitive context info and merge into o
             if _s.json_dump_raw:
                 Prune(m)
-            Merge(o, m)
+            o = m
         return o if o else None
 
     def Captcha(r):

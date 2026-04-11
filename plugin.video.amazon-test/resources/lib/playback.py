@@ -20,7 +20,7 @@ from inputstreamhelper import Helper
 from .common import Globals, Settings, jsonRPC, sleep, MechanizeLogin, findKey, return_item, get_key
 from .logging import Log
 from .configs import getConfig
-from .network import getURL, getURLData, getATVData, GrabJSON
+from .network import getURL, getURLData, getATVData, GrabJSON, getVODData
 from .l10n import getString
 
 
@@ -88,33 +88,47 @@ def PlayVideo(name, asin, adultstr, streamtype, forcefb=0):
     def _ParseStreams(suc, data, retmpd=False, bypassproxy=False, webid=False):
         HostSet = 'Cloudfront' if _s.pref_host == 'Auto' and (not _s.audio_description) and (streamtype != 2) and webid else _s.pref_host
         bypassproxy = bypassproxy if streamtype != 1 else True
-        subUrls = []
         hosts = []
         auxKey = None
+        params = {'subs': [], 'skip': []}
 
         if not suc:
-            return False, data, None
+            return False, data
 
-        timecodes = data.get('transitionTimecodes', {})
+        params['token'] = get_key(None, data, 'sessionization', 'sessionHandoffToken')
+        if 'transitionTimecodes' in data:
+            params['skip'] = data['transitionTimecodes'].get('skipElements')
+            if params['skip'] is None:
+                params['skip'] = []
+                for tc in get_key([], data['transitionTimecodes'], 'result', 'events'):
+                    if 'endTimeMs' not in tc:
+                        continue
+                    tcn = {}
+                    for k, v in tc.items():
+                        new = k.replace('TimeMs', 'TimecodeMs')
+                        if new != k:
+                            tcn[new] = tc[k]
+                    tcn['elementType'] = tc['eventType'].replace('SKIP_', '')
+                    params['skip'].append(tcn)
 
         if retmpd and ('subtitles' in data):
-            subUrls = [sub['url'] for sub in data['subtitles'] if 'url' in sub.keys()]
+            params['subs'] = [sub['url'] for sub in data['subtitles'] if 'url' in sub.keys()]
 
-        if 'audioVideoUrls' in data.keys():
+        if 'audioVideoUrls' in data:
             hosts = data['audioVideoUrls']['avCdnUrlSets']
-        elif 'playbackUrls' in data.keys():
-            defid = data['playbackUrls']['defaultUrlSetId']
-            h_dict = data['playbackUrls']['urlSets']
-            '''
-            defid_dis = [h_dict[k]['urlSetId'] for k in h_dict if 'DUB' in h_dict[k]['urls']['manifest']['origin']]
-            defid = defid_dis[0] if defid_dis else defid
-            failover = h_dict[defid]['failover']
-            defid_dis = [failover[k]['urlSetId'] for k in failover if failover[k]['mode'] == 'discontinuous']
-            defid = defid_dis[0] if defid_dis else defid
-            '''
-            hosts = [h_dict[k] for k in h_dict]
-            hosts.insert(0, h_dict[defid])
-            if 'auxCacheKey' in data['playbackUrls'] and len(data['playbackUrls']['auxCacheKey']) > 0:
+        elif 'vodPlaylistedPlaybackUrls' in data:
+            manifests = get_key([], data['vodPlaylistedPlaybackUrls'], 'result', 'playbackUrls', 'intraTitlePlaylist')
+            for m in manifests:
+                if m['type'].lower() == 'main':
+                    hosts = m['urls']
+        elif 'playbackUrls' in data or 'livePlaybackUrls' in data:
+            urls = get_key(data.get('playbackUrls'), data, 'livePlaybackUrls',  'result')
+            defid = urls['defaultUrlSetId']
+            h_dict = hosts = urls['urlSets']
+            if isinstance(h_dict, dict):
+                hosts = [h_dict[k] for k in h_dict]
+                hosts.insert(0, h_dict[defid])
+            if len(get_key([], urls, 'auxCacheKey')) > 0:
                 auxKey = data['playbackUrls']['auxCacheKey'][1:]
 
         Log(f"auxCacheKey: {auxKey}", Log.DEBUG)
@@ -139,14 +153,17 @@ def PlayVideo(name, asin, adultstr, streamtype, forcefb=0):
                     continue
 
                 returl = urlset['url']
+                Log(f"returl befor mod: {returl}", Log.DEBUG)
                 if auxKey and auxKey in returl:
-                    Log(f"returl befor mod: {returl}", Log.DEBUG)
                     regex = r'(.*\/)([^\/]*' + auxKey + r'[^\/]*\/)'
                     returl = re.sub(regex, r'\1', returl)
 
                 if (not _s.audio_description) and (streamtype != 2) and webid:
                     mod = [i for i in returl.split('/')[:-1] if '_' in i]
                     mod = mod[0] if len(mod) > 0 else None
+                    while '$_dis' in returl:
+                        regex = r'(.*\/)([^\/]*\$[^\/]*\/)'
+                        returl = re.sub(regex, r'\1', returl)
                     if 'amazon.pv-cdn.net' in returl:
                         returl = re.sub(r'(.*\/\/[^\.]*)([^\/]*)', r'\1.shard-2-na-reg.dash.pv-cdn.net', returl)
                         returl = returl.replace( f'{mod}/', '') if mod else returl
@@ -163,9 +180,11 @@ def PlayVideo(name, asin, adultstr, streamtype, forcefb=0):
 
                 if not bypassproxy:
                     returl = f'http://{_s.proxyaddress}/mpd/{quote_plus(returl)}'
-                return (returl, subUrls, timecodes) if retmpd else (True, _extrFr(data), None)
 
-        return False, getString(30217), None
+                params['mpd'] = returl
+                return True, params if retmpd else _extrFr(data)
+
+        return False, getString(30217)
 
     def _getCmdLine(videoUrl, asin):
         scr_path = _s.scr_path
@@ -393,13 +412,12 @@ def PlayVideo(name, asin, adultstr, streamtype, forcefb=0):
     def _IStreamPlayback(asin, name, streamtype, isAdult, extern):
         from .ages import AgeRestrictions
         bypassproxy = _s.proxy_mpdalter or (streamtype > 1)
+        vod_config = {}
+
         if streamtype == 3:
             streamtype, asin = _EventState(asin)
             if streamtype < 0:
                 return False
-        vMT = ['Feature', 'Trailer', 'LiveStreaming'][streamtype]
-        dRes = 'PlaybackUrls' if streamtype > 1 else 'PlaybackUrls,SubtitleUrls,ForcedNarratives,TransitionTimecodes'
-        opt = '&liveManifestType=accumulating,live&playerType=xp&playerAttributes={"frameRate":"HFR"}&deviceFrameRateOverride=High' if streamtype > 1 else ''
         mpaa_str = AgeRestrictions().GetRestrictedAges() + getString(30171)
 
         inputstream_helper = Helper('mpd', drm='com.widevine.alpha')
@@ -414,30 +432,34 @@ def PlayVideo(name, asin, adultstr, streamtype, forcefb=0):
         # available though token based authentification.
 
         for preferTokenToCookie in ([True, False] if _s.wvl1_device and streamtype != 2 else [False]):
-            cookie, req_param, headers, dtid, req_headers = _getPlaybackVars(preferToken=preferTokenToCookie)
-            if not cookie:
+            data = _getPlaybackVars(preferToken=preferTokenToCookie)
+            if not data:
                 _g.dialog.notification(getString(30203), getString(30200), xbmcgui.NOTIFICATION_ERROR)
                 Log('Login error at playback')
                 return False
-
-            success, data = getURLData('catalog/GetPlaybackResources', asin, extra=True, vMT=vMT, dRes=dRes, useCookie=cookie, devicetypeid=dtid,
-                                       proxyEndpoint=(None if bypassproxy else 'gpr'), opt=opt)
-            if success or not isinstance(cookie, dict):
+            vod_config.update(data)
+            suc, data = getVODData('prs_endp', asin, devicetypeid=vod_config['dtid'], useCookie=vod_config['cookie'])
+            if suc or not isinstance(vod_config['cookie'], dict):
                 break
 
-        mpd, subs, timecodes = _ParseStreams(success, data, retmpd=True, bypassproxy=bypassproxy, webid=dtid == _g.dtid_web)
-        if not mpd:
-            _g.dialog.notification(getString(30203), subs, xbmcgui.NOTIFICATION_ERROR)
+        if not suc:
+            return False
+        vod_config.update(data)
+        suc, data = _ParseStreams(True, vod_config['data'], retmpd=True, bypassproxy=bypassproxy, webid=vod_config['dtid'] == _g.dtid_web)
+        if not suc:
+            _g.dialog.notification(getString(30203), data, xbmcgui.NOTIFICATION_ERROR)
             return False
 
-        licURL = getURLData('catalog/GetPlaybackResources', asin, devicetypeid=dtid, opt=req_param, extra=True, vMT=vMT, dRes='Widevine2License', retURL=True)
-        skip = timecodes.get('skipElements')
-        Log(f'Skip Items: {skip}', Log.DEBUG)
+        vod_config.update(data)
+        Log(f'Skip Items: {vod_config["skip"]}', Log.DEBUG)
+        vod_config['wv']['playbackEnvelope'] = vod_config['penv']
+        vod_config['wv']['sessionHandoffToken'] = vod_config['token']
+        vod_config['lic']['server_url'] = getVODData(vod_config['drm_endp'], vod_config['asin'], devicetypeid=vod_config['dtid'], returl=True)
 
         from xbmcaddon import Addon as KodiAddon
         is_version = KodiAddon(_g.is_addon).getAddonInfo('version') if _g.is_addon else '0'
 
-        Log(mpd, Log.DEBUG)
+        Log(vod_config['mpd'], Log.DEBUG)
 
         mpaa_check = _getListItem('MPAA') in mpaa_str + mpaa_str.replace(' ', '') or isAdult
         title = _getListItem('Label')
@@ -457,37 +479,31 @@ def PlayVideo(name, asin, adultstr, streamtype, forcefb=0):
 
         Log(f'Using {_g.is_addon} Version: {is_version}')
 
-        listitem = xbmcgui.ListItem(label=title, path=mpd)
+        listitem = xbmcgui.ListItem(label=title, path=vod_config['mpd'])
         if (_g.KodiVersion < 21) and ('adaptive' in _g.is_addon):
             listitem.setProperty('inputstream.adaptive.manifest_type', 'mpd')
         listitem.setArt({'thumb': thumb})
-        listitem.setSubtitles(subs)
+        listitem.setSubtitles(vod_config['subs'])
         listitem.setProperty('inputstream', _g.is_addon)
         listitem.setMimeType('application/dash+xml')
-        listitem.setProperty(f'{_g.is_addon}.manifest_headers', urlencode(headers))
+        listitem.setProperty(f'{_g.is_addon}.manifest_headers', urlencode(vod_config['headers']))
         listitem.setContentLookup(False)
 
         if list(map(int, is_version.split('.'))) < [22, 1, 5]:
+            vod_config['wv']['licenseChallenge'] = 'b{SSM}'
+            vod_config['lic']['req_data'] = json.dumps(vod_config['wv'])
+            lic_key = '|'.join([v for k, v in vod_config['lic'].items() if k in ['server_url', 'req_headers', 'req_data', 'resp_data']])
             listitem.setProperty(f'{_g.is_addon}.license_type', 'com.widevine.alpha')
-            listitem.setProperty(f'{_g.is_addon}.license_key', licURL + req_param)
+            listitem.setProperty(f'{_g.is_addon}.license_key', lic_key)
         else:
-            drm_cfg = {'com.widevine.alpha':
-                           {'force_single_session': True,
-                            'license':
-                                {'server_url': licURL,
-                                 'req_headers': urlencode(req_headers),
-                                 'req_data': base64.b64encode(b'widevine2Challenge={CHA-B64U}').decode('utf-8'),
-                                 'unwrapper': 'json,base64',
-                                 'unwrapper_params': {'path_data': 'widevine2License/license'}
-                                 }
-                            }
-                       }
-
+            vod_config['lic']['req_data'] = json.dumps(vod_config['wv'])
+            vod_config['lic'].pop('resp_data')
+            drm_cfg = {'com.widevine.alpha': {'force_single_session': False, 'license': vod_config['lic']}}
             listitem.setProperty('inputstream.adaptive.drm', json.dumps(drm_cfg))
 
         player = _AmazonPlayer()
-        player.asin = asin
-        player.cookie = cookie
+        player.asin = vod_config['asin']
+        player.cookie = vod_config['cookie']
         player.content = streamtype
         player.extern = extern
         player.resolve(listitem)
@@ -501,8 +517,8 @@ def PlayVideo(name, asin, adultstr, streamtype, forcefb=0):
                 if time.time() > (starttime + player.interval):
                     starttime = time.time()
                     player.updateStream()
-                if skip and _s.skip_scene > 0:
-                    for elem in skip:
+                if vod_config['skip'] and _s.skip_scene > 0:
+                    for elem in vod_config['skip']:
                         st_pos = elem.get('startTimecodeMs')
                         et_pos = (elem.get('endTimecodeMs') - 5000)  # * 0.9 + st_pos
                         btn_type = elem.get('elementType')
@@ -530,10 +546,10 @@ def PlayVideo(name, asin, adultstr, streamtype, forcefb=0):
                 headers = {'User-Agent': getConfig('UserAgent')}
             req_headers.update({'Content-Type': 'application/octet-stream'})
             req_headers.update(headers)
-            req_param = '|' + urlencode(req_headers)
-            req_param += '|widevine2Challenge=B{SSM}'
-            req_param += '|JBlicense'
-            return cookie, req_param, headers, dtid, req_headers
+            wv_dict = {'includeHdcpTestKey': 'true', 'licenseChallenge': '{CHA-B64U}'}
+            req_lic = {'server_url': '', 'req_headers': urlencode(req_headers), 'req_data': {}, 'resp_data': 'JBlicense', 'unwrapper': 'json,base64',
+                       'unwrapper_params': {'path_data': 'widevine2License/license'}}
+            return {'cookie': cookie, 'lic': req_lic, 'headers': headers, 'dtid': dtid, 'wv': wv_dict}
         return False
 
     isAdult = adultstr == '1'

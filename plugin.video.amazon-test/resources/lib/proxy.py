@@ -63,7 +63,7 @@ class ProxyHTTPD(BaseHTTPRequestHandler):
         # Retrieve headers and data
         headers = {k: self.headers[k] for k in self.headers if k not in ['host', 'content-length']}
         data_length = self.headers.get('content-length')
-        data = {k: v for k, v in parse_qsl(self.rfile.read(int(data_length)))} if data_length else None
+        data = self.rfile.read(int(data_length)) if data_length else None
         return path, headers, data
 
     def _ForwardRequest(self, method, endpoint, headers, data, stream=False):
@@ -219,7 +219,7 @@ class ProxyHTTPD(BaseHTTPRequestHandler):
         from urllib.parse import quote_plus
         from xbmc import convertLanguage, ENGLISH_NAME
 
-        status_code, headers, content = self._ForwardRequest('get', endpoint, headers, data)
+        status_code, headers, content = self._ForwardRequest('post', endpoint, headers, data)
 
         # Grab the subtitle urls, merge them in a single list, append the locale codes to let Kodi figure
         # out which URL has which language, then sort them neatly in a human digestible order.
@@ -230,7 +230,11 @@ class ProxyHTTPD(BaseHTTPRequestHandler):
         chosen_found = 0
 
         # Count the number of duplicates with the same ISO 639-1 codes
-        langCount = {'forcedNarratives': {}, 'subtitleUrls': {}}
+        if 'timedTextUrls' in content:
+            content.update(content['timedTextUrls'].get('result', {}))
+            langCount = {'forcedNarrativeUrls': {}, 'subtitleUrls': {}}
+        else:
+            langCount = {'forcedNarratives': {}, 'subtitleUrls': {}}
         for sub_type in list(langCount):  # list() instead of .keys() to avoid py3 iteration errors
             if sub_type in content:
                 for i in range(0, len(content[sub_type])):
@@ -254,7 +258,7 @@ class ProxyHTTPD(BaseHTTPRequestHandler):
                     if ic in chosen_langs or chosen_langs == 'all':
                         variants = '{}{}'.format(
                             '-[CC]' if 'sdh' == content[sub_type][i]['type'] else '',
-                            '.Forced' if 'forcedNarratives' == sub_type else ''
+                            '.Forced' if 'forcedNarratives' in sub_type else ''
                         )
                         # Proxify the URLs, with a make believe Kodi-friendly file name
                         escapedurl = quote_plus(content[sub_type][i]['url'])
@@ -349,7 +353,7 @@ class ProxyHTTPD(BaseHTTPRequestHandler):
                 if trackId is not None:
                     if lang in chosen_langs or chosen_langs == 'all':
                         imp = ' impaired="true"' if 'descriptive' == trackId[1] else ''
-                        newLocale = self._AdjustLocale(trackId[0], langCount[self.split_lang(trackId[0])])
+                        newLocale = self._AdjustLocale(trackId[0], langCount.get(self.split_lang(trackId[0]), 0))
                         setTag = setTag.replace(f'lang="{lang}"', f'lang="{newLocale}"{imp}')
                         repres = re.findall(r'<Representation[^>]*>.*?</Representation>', setData, flags=re.DOTALL)
                         if len(repres):

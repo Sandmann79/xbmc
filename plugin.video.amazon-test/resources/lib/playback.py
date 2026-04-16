@@ -111,7 +111,7 @@ def PlayVideo(name, asin, adultstr, streamtype, forcefb=0):
                     tcn['elementType'] = tc['eventType'].replace('SKIP_', '')
                     params['skip'].append(tcn)
 
-        if retmpd and ('subtitles' in data):
+        if retmpd and 'subtitles' in data:
             params['subs'] = [sub['url'] for sub in data['subtitles'] if 'url' in sub.keys()]
 
         if 'audioVideoUrls' in data:
@@ -153,30 +153,19 @@ def PlayVideo(name, asin, adultstr, streamtype, forcefb=0):
                     continue
 
                 returl = urlset['url']
-                Log(f"returl befor mod: {returl}", Log.DEBUG)
+                Log(f"returl before mod: {returl}", Log.DEBUG)
                 if auxKey and auxKey in returl:
                     regex = r'(.*\/)([^\/]*' + auxKey + r'[^\/]*\/)'
                     returl = re.sub(regex, r'\1', returl)
 
                 if (not _s.audio_description) and (streamtype != 2) and webid:
-                    mod = [i for i in returl.split('/')[:-1] if '_' in i]
-                    mod = mod[0] if len(mod) > 0 else None
-                    while '$_dis' in returl:
+                    while '$' in returl:
                         regex = r'(.*\/)([^\/]*\$[^\/]*\/)'
                         returl = re.sub(regex, r'\1', returl)
                     if 'amazon.pv-cdn.net' in returl:
-                        returl = re.sub(r'(.*\/\/[^\.]*)([^\/]*)', r'\1.shard-2-na-reg.dash.pv-cdn.net', returl)
-                        returl = returl.replace( f'{mod}/', '') if mod else returl
-                    if (mod and mod not in returl) or not mod:
-                        import random, string
-                        let = string.ascii_letters + string.digits
-                        rnd = [random.choice(let) for _ in range(random.randint(2, 10))]
-                        try:
-                            returl = re.sub(r'(\/3\$[^\/]*)', r'\1' + ''.join(rnd), returl)
-                            if not getURL(returl, rjson=False, check=retmpd):
-                                returl = urlset['url']
-                        except:
-                            pass
+                        returl = returl.replace( '/dm/', '/')
+                    if not getURL(returl, rjson=False, check=retmpd):
+                        returl = urlset['url']
 
                 if not bypassproxy:
                     returl = f'http://{_s.proxyaddress}/mpd/{quote_plus(returl)}'
@@ -438,7 +427,8 @@ def PlayVideo(name, asin, adultstr, streamtype, forcefb=0):
                 Log('Login error at playback')
                 return False
             vod_config.update(data)
-            suc, data = getVODData('prs_endp', asin, devicetypeid=vod_config['dtid'], useCookie=vod_config['cookie'])
+            suc, data = getVODData('prs_endp', asin, devicetypeid=vod_config['dtid'], useCookie=vod_config['cookie'],
+                                   proxyEndpoint=(None if bypassproxy else 'gpr'))
             if suc or not isinstance(vod_config['cookie'], dict):
                 break
 

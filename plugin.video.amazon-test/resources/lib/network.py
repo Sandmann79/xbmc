@@ -25,22 +25,16 @@ _g = Globals()
 _s = Settings()
 
 
-def _Error(data):
+def _Error(data, show_dlg=False):
+    err_map = {'invalidrequest': 30204, 'noavailablestreams': 30205, 'notowned': 30206, 'invalidgeoip': 30207, 'dependency': 30207,
+               'temporarilyunavailable': 30208}
     code = data.get('errorCode', data.get('code', '')).lower()
     msg = data.get('message', '')
-    Log(f"{msg} ({code}) ", Log.ERROR)
-    if 'invalidrequest' in code:
-        return getString(30204)
-    elif 'noavailablestreams' in code:
-        return getString(30205)
-    elif 'notowned' in code:
-        return getString(30206)
-    elif 'invalidgeoip' or 'dependency' in code:
-        return getString(30207)
-    elif 'temporarilyunavailable' in code:
-        return getString(30208)
-    else:
-        return f"{msg} ({code}) "
+    Log(f"HTTP {getURL.lastResponseCode} - {msg} ({code})", Log.ERROR)
+    trans_msg = getString(err_map[code]) if code in err_map else msg
+    if show_dlg:
+        _g.dialog.notification(trans_msg, msg, xbmcgui.NOTIFICATION_ERROR)
+    return trans_msg
 
 
 def getUA(blacklist=False):
@@ -98,7 +92,7 @@ def _get_session(retry=True):
 def getURL(url, useCookie=False, silent=False, headers=None, rjson=True, check=False, postdata=None, binary=False, allow_redirects=True):
     getURL.lastResponseCode = 0
     retval = {} if rjson else ''
-    method = 'POST' if postdata is not None else 'GET'
+    method = 'POST' if postdata else 'HEAD' if check else 'GET'
     headers = {} if not headers else deepcopy(headers)
     session = _get_session(not check)
 
@@ -196,7 +190,6 @@ def _device_data(vmt):
         "trickplayUrlsRequest": {},
         "transitionTimecodesRequest": {},
         "vodPlaylistedPlaybackUrlsRequest": {
-            "ads": {"gdpr": {"consentMap": {}, "enabled": False}},
             "capVideoDefinition": "SD",
             "device": {
                 "hdcpLevel": "1.4",
@@ -277,7 +270,7 @@ def _device_data(vmt):
     return data
 
 
-def getVODData(mode, asin, devicetypeid=_g.dtid_web, useCookie=False, returl=False, data=''):
+def getVODData(mode, asin, devicetypeid=_g.dtid_web, useCookie=False, returl=False, data='', proxyEndpoint=None):
     penv = vmt = None
     vmt_map = {'feature': {'prs_endp': '/playback/prs/GetVodPlaybackResources', 'drm_endp': '/playback/drm-vod/GetWidevineLicense',
                            'url_req': 'vodPlaylistedPlaybackUrlsRequest'},
@@ -291,17 +284,21 @@ def getVODData(mode, asin, devicetypeid=_g.dtid_web, useCookie=False, returl=Fal
         titleids = json.dumps([asin]).replace(' ', '')
         query = f'jic=8|EgNhbGw=&metadataToEnrich={metadata}&titleIDsToEnrich={titleids}&isCleanSlateActive=1&journeyIngressContext='
         data = GrabJSON(_g.BaseUrl + u_path + '/api/enrichItemMetadata?' + quote_plus(query, safe='=&'))
-        bba = get_key(None, data, 'enrichments', asin, 'buyBoxActions')
-        pba = get_key([], data, 'enrichments', asin, 'playbackActions')
-        for enrich in bba if bba else pba:
+        enr = get_key({}, data, 'enrichments', asin)
+        bba = get_key([], enr, 'buyBoxActions')
+        bba += get_key([], enr, 'playbackActions')
+        for enrich in bba:
             if ('actionType' in enrich and enrich['actionType'] == 'PLAY') or 'playbackExperienceMetadata' in enrich:
                 payload = get_key(enrich, enrich, 'payload', 'playbackPayload')
                 penv = payload['playbackExperienceMetadata']['playbackEnvelope']
                 asin = payload['titleID']
                 vmt = payload['videoMaterialType'].lower()
-
+        if len(bba) == 0:
+            msg = get_key({}, enr, 'entitlementCues', 'focusMessage')
+            if msg['icon'] == 'OFFER_ICON':
+                return False, _Error({'code': 'notowned', 'message': msg['message']}, True)
         if penv is None:
-            return False, 'no playbackaction'
+            return False, _Error({'code': 'invalidrequest', 'message': 'no playbackactions'}, True)
         data = _device_data(vmt)
         data['globalParameters']['playbackEnvelope'] = penv
         data[vmt_map[vmt]['url_req']]['playbackSettingsRequest']['titleId'] = asin
@@ -315,9 +312,10 @@ def getVODData(mode, asin, devicetypeid=_g.dtid_web, useCookie=False, returl=Fal
     url += '&uxLocale=en_EN'
     url += '&gascEnabled=' + str(_g.UsePrimeVideo).lower()
     if not returl:
-        resp = getURL(url, useCookie=useCookie, rjson=True, postdata=json.dumps(data))
+        resp = getURL(url if not proxyEndpoint else f"http://{getConfig('proxyaddress')}/{proxyEndpoint}/{quote_plus(url)}",
+                      useCookie=useCookie, rjson=True, postdata=json.dumps(data))
         if 'globalError' in resp:
-            return False, _Error(resp['globalError'])
+            return False, _Error(resp['globalError'], True)
         return True, {**{'asin': asin, 'penv': penv, 'data': resp}, **vmt_map[vmt]}
     return url
 

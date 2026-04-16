@@ -97,7 +97,7 @@ def _get_session(retry=True):
 def getURL(url, useCookie=False, silent=False, headers=None, rjson=True, check=False, postdata=None, binary=False, allow_redirects=True):
     getURL.lastResponseCode = 0
     retval = {} if rjson else ''
-    method = 'POST' if postdata is not None else 'GET'
+    method = 'POST' if postdata is not None else 'HEAD' if check else 'GET'
     headers = {} if not headers else deepcopy(headers)
     session = _get_session(not check)
 
@@ -378,6 +378,7 @@ def GrabJSON(url, postData=None):
     def do(url, postData):
         GrabJSON.runs = True
         """ Wrapper to facilitate logging """
+        headers = {'accept': 'application/json'}
         if re.match(r'/(?:gp/video/)?search(?:Default)?/', url):
             up = urlparse(url)
             qs = parse_qs(up.query)
@@ -388,46 +389,33 @@ def GrabJSON(url, postData=None):
             url = up.geturl()
         if '/api/storefront' in url:
             postData = ""
-        r = getURL(FQify(url), silent=True, useCookie=True, rjson=False, postdata=postData)
+        if '/api/' in url:
+            headers = None
+        r = getURL(FQify(url), silent=True, useCookie=True, rjson=False, postdata=postData, headers=headers)
         if not r:
             return None
         r = r.strip()
-        if r.startswith('{'):
+        if '/api/' in url:
             o = json.loads(Unescape(r))
             if _s.json_dump_raw:
                 Prune(o)
-            return o
-
-        matches = BeautifulSoup(r, 'html.parser').find_all('script', {'type': re.compile('(?:text/template|application/json)')})
-        if not matches:
-            matches = Captcha(r)
-            if not matches:
-                Log('No JSON objects found in the page', Log.ERROR)
-                return None
-
-        # Create a single object containing all the data from the multiple JSON objects in the page
-        o = {}
-        for m in matches:
-            if not (m.id is None or 'hydration-data' in m.id):
-                continue
-
-            m = json.loads(Unescape(m.string.strip()))
-
+        else:
+            m = json.loads(r)
             if ('widgets' in m) and ('Storefront' in m['widgets']):
                 m = m['widgets']['Storefront']
-            elif 'props' in m or 'init' in m:
+            elif 'body' in m or 'props' in m or 'init' in m:
                 bodies = findKey('body', m)
                 sw = findKey('siteWide', m)
-                m = m.get('props', m.get('init', {}))
+                m = m.get('props', m.get('init', m))
                 if len(bodies) > 0:
                     if 'bodyStart' in sw and len(sw['bodyStart']) > 0:
                         for bs in sw['bodyStart']:
                             if 'name' in bs and bs['name'] == 'navigation-bar' and 'props' in bs:
                                 m = bs['props']
                     else:
+                        m = bodies['sitewide'].get('sitewide-navigation-bar', {}) if 'sitewide' in bodies else {}
                         if isinstance(bodies, dict):
                             bodies = [bodies]
-                        m = findKey('sitewide-navigation-bar', m)
 
                     if isinstance(bodies, list):
                         for body in bodies:
@@ -454,7 +442,7 @@ def GrabJSON(url, postData=None):
             # Prune sensitive context info and merge into o
             if _s.json_dump_raw:
                 Prune(m)
-            Merge(o, m)
+            o = m
         return o if o else None
 
     def Captcha(r):

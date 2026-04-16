@@ -219,7 +219,7 @@ class ProxyHTTPD(BaseHTTPRequestHandler):
         from urllib.parse import quote_plus
         from xbmc import convertLanguage, ENGLISH_NAME
 
-        status_code, headers, content = self._ForwardRequest('get', endpoint, headers, data)
+        status_code, headers, content = self._ForwardRequest('post', endpoint, headers, data)
 
         # Grab the subtitle urls, merge them in a single list, append the locale codes to let Kodi figure
         # out which URL has which language, then sort them neatly in a human digestible order.

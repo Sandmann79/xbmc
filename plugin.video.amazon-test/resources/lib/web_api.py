@@ -43,7 +43,7 @@ class PrimeVideo(Singleton):
                                    [r'\.\.\.', '…']]  # Replace triple dots with ellipsis
         # rex compilation
         self._imageRefiner = re.compile(r'\._.*_\.')
-        self._reURN = re.compile(r'(?:/gp/video)?/d(?:p|etail)/([^/]+)/')
+        self._reURN = re.compile(r'(?:/gp/video)?/d(?:p|etail)/([^/?]+)(?:/|\?)')
         self._dateParserData['generic'] = re.compile(self._dateParserData['generic'], re.UNICODE)
         self._dateParserData['asianMonthExtractor'] = re.compile(self._dateParserData['asianMonthExtractor'])
         for k in self._dateParserData:
@@ -324,7 +324,7 @@ class PrimeVideo(Singleton):
 
         # Specify `None` instead of just not empty to avoid multiple queries to the same endpoint
         if home is None:
-            home = GrabJSON(self._g.BaseUrl + ('' if self._g.UsePrimeVideo else '/gp/video/storefront'))
+            home = GrabJSON(self._g.BaseUrl + ('/storefront' if self._g.UsePrimeVideo else '/gp/video/storefront'))
             if not home:
                 return False
             self._UpdateProfiles(home)

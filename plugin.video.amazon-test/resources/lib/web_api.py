@@ -977,7 +977,7 @@ class PrimeVideo(Singleton):
                 del state['seasons']
 
             if ('self' in state) and (oid not in state['self']):
-                res = [x for x in state['self'] if oid in (state['self'][x].get('compactGTI', '') if self._g.UsePrimeVideo else state['self'][x].get('asins', ''))]
+                res = [x for x in state['self'] if oid in (state['self'][x].get('compactGTI' if self._g.UsePrimeVideo else 'asins') or '')]
                 if len(res) > 1:
                     oid = res[0]
 

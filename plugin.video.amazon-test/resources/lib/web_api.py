@@ -1129,7 +1129,7 @@ class PrimeVideo(Singleton):
 
                 # Meta prep
                 if 'metadata' not in vd:
-                    vd['metadata'] = {'compactGTI': urn, 'artmeta': {}, 'videometa': {}}
+                    vd['metadata'] = {'compactGTI': urn if urn is not None else title_id, 'artmeta': {}, 'videometa': {}}
                     bUpdated = True
                 if 'artmeta' not in vd['metadata']:
                     vd['metadata']['artmeta'] = {}

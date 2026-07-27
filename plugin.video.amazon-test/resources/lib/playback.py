@@ -164,6 +164,8 @@ def PlayVideo(name, asin, adultstr, streamtype, forcefb=0):
                         returl = re.sub(regex, r'\1', returl)
                     if 'amazon.pv-cdn.net' in returl:
                         returl = returl.replace( '/dm/', '/')
+                    returl = re.sub(r'(\/ww_[^\/]*)', '', returl)
+                    returl = returl.replace('/ondemand/', '/').replace('/iad_2/', '/')
                     if not getURL(returl, rjson=False, check=retmpd):
                         returl = urlset['url']
 
@@ -407,6 +409,9 @@ def PlayVideo(name, asin, adultstr, streamtype, forcefb=0):
             streamtype, asin = _EventState(asin)
             if streamtype < 0:
                 return False
+        vMT = ['Feature', 'Trailer', 'LiveStreaming'][streamtype]
+        dRes = 'PlaybackUrls' if streamtype > 1 else 'PlaybackUrls,SubtitleUrls,ForcedNarratives,TransitionTimecodes'
+        opt = '&liveManifestType=accumulating,live&playerType=xp&playerAttributes={"frameRate":"HFR"}&deviceFrameRateOverride=High' if streamtype > 1 else ''
         mpaa_str = AgeRestrictions().GetRestrictedAges() + getString(30171)
 
         inputstream_helper = Helper('mpd', drm='com.widevine.alpha')
@@ -494,6 +499,7 @@ def PlayVideo(name, asin, adultstr, streamtype, forcefb=0):
         player = _AmazonPlayer()
         player.asin = vod_config['asin']
         player.cookie = vod_config['cookie']
+        player.dtid = vod_config['dtid']
         player.content = streamtype
         player.extern = extern
         player.resolve(listitem)
@@ -675,6 +681,7 @@ class _AmazonPlayer(xbmc.Player):
         self.video_lastpos = 0
         self.video_totaltime = 0
         self.dbid = 0
+        self.dtid = None
         self.asin = ''
         self.cookie = None
         self.interval = 60
@@ -767,7 +774,7 @@ class _AmazonPlayer(xbmc.Player):
             return
         perc = (self.video_lastpos * 100) / self.video_totaltime if self.video_lastpos > 0 and self.video_totaltime > 0 else 0
         if 0 < self.sendvp <= perc:
-            suc, msg = getURLData('usage/UpdateStream', self.asin, useCookie=self.cookie, opt=f'&event={self.event}&timecode={self.video_lastpos}')
+            suc, msg = getURLData('usage/UpdateStream', self.asin, useCookie=self.cookie, devicetypeid=self.dtid, opt=f'&event={self.event}&timecode={self.video_lastpos}')
             self.event = 'PLAY'
             if suc and 'statusCallbackIntervalSeconds' in str(msg):
                 self.interval = msg['message']['body']['statusCallbackIntervalSeconds']

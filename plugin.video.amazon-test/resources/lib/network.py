@@ -92,7 +92,7 @@ def _get_session(retry=True):
 def getURL(url, useCookie=False, silent=False, headers=None, rjson=True, check=False, postdata=None, binary=False, allow_redirects=True):
     getURL.lastResponseCode = 0
     retval = {} if rjson else ''
-    method = 'POST' if postdata else 'HEAD' if check else 'GET'
+    method = 'POST' if postdata is not None else 'HEAD' if check else 'GET'
     headers = {} if not headers else deepcopy(headers)
     session = _get_session(not check)
 
@@ -323,6 +323,7 @@ def getVODData(mode, asin, devicetypeid=_g.dtid_web, useCookie=False, returl=Fal
 def getURLData(mode, asin, retformat='json', devicetypeid=_g.dtid_web, version=2, firmware='1', opt='', extra=False,
                useCookie=False, retURL=False, vMT='Feature', dRes='PlaybackUrls,SubtitleUrls,ForcedNarratives',
                proxyEndpoint=None, silent=False):
+
     playback_req = 'PlaybackUrls' in dRes or 'Widevine2License' in dRes
     url = _g.ATVUrl + '/cdp/' + mode
     url += '?asin=' + asin
@@ -334,8 +335,7 @@ def getURLData(mode, asin, retformat='json', devicetypeid=_g.dtid_web, version=2
     url += '&version=' + str(version)
     url += '&gascEnabled=' + str(_g.UsePrimeVideo).lower()
     url += "&subtitleFormat=TTMLv2" if 'SubtitleUrls' in dRes else ''
-    url += '&operatingSystemName=Windows' if playback_req and (
-                _g.platform & _g.OS_ANDROID or _g.platform & _g.OS_WEBOS) and devicetypeid == _g.dtid_web and _s.wvl1_device else ''  # cookie auth on android
+    url += '&operatingSystemName=Windows' if playback_req and (_g.platform & _g.OS_ANDROID or _g.platform & _g.OS_WEBOS) and devicetypeid == _g.dtid_web and _s.wvl1_device else ''  # cookie auth on android
     if extra:
         url += '&resourceUsage=ImmediateConsumption&consumptionType=Streaming&deviceDrmOverride=CENC' \
                '&deviceStreamingTechnologyOverride=DASH&deviceProtocolOverride=Https' \
@@ -523,7 +523,7 @@ def GrabJSON(url, postData=None):
     def do(url, postData):
         GrabJSON.runs = True
         """ Wrapper to facilitate logging """
-        headers = {'accept': 'application/json'}
+        headers = {'accept': 'application/json', "X-Requested-With": "XMLHttpRequest"}
         if re.match(r'/(?:gp/video/)?search(?:Default)?/', url):
             up = urlparse(url)
             qs = parse_qs(up.query)
@@ -545,7 +545,7 @@ def GrabJSON(url, postData=None):
             if _s.json_dump_raw:
                 Prune(o)
         else:
-            m = json.loads(r)
+            m = HTMLdoc(r) if '<!doctype html>' in r else json.loads(r)
             if ('widgets' in m) and ('Storefront' in m['widgets']):
                 m = m['widgets']['Storefront']
             elif 'body' in m or 'props' in m or 'init' in m:
@@ -589,6 +589,23 @@ def GrabJSON(url, postData=None):
                 Prune(m)
             o = m
         return o if o else None
+
+    def HTMLdoc(r):
+        matches = BeautifulSoup(r, 'html.parser').find_all('script', {'type': re.compile('(?:text/template|application/json)')})
+        if not matches:
+            matches = Captcha(r)
+            if not matches:
+                Log('No JSON objects found in the page', Log.ERROR)
+                return None
+
+        # Create a single object containing all the data from the multiple JSON objects in the page
+        o = {}
+        for m in matches:
+            if not (m.id is None or 'hydration-data' in m.id):
+                continue
+            m = json.loads(Unescape(m.string.strip()))
+            Merge(o, m)
+        return o
 
     def Captcha(r):
         from .login import MFACheck

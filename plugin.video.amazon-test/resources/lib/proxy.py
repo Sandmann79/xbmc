@@ -3,7 +3,6 @@
 # Author: Varstahl
 # Module: CryptoProxy
 # Created: 12/01/2019
-from contextlib import contextmanager
 from http.server import BaseHTTPRequestHandler  # Python3 HTTP Server
 from socketserver import ThreadingTCPServer
 
@@ -15,6 +14,14 @@ class ProxyHTTPD(BaseHTTPRequestHandler):
     protocol_version = 'HTTP/1.1'  # Allow keep-alive
     server_version = 'AmazonVOD/0.1'
     sessions = {}  # Keep-Alive sessions
+    _min_audio_keep_bitrate = 192000
+    _log_audio_selection_details = False
+    _host_re = None
+    _track_id_re = None
+    _tag_attr_re = None
+    _representation_re = None
+    _atmos_re = None
+    _adaptation_set_re = None
     _purgeHeaders = [  # List of headers not to forward to the client
         'Transfer-Encoding',
         'Content-Encoding',
@@ -63,18 +70,20 @@ class ProxyHTTPD(BaseHTTPRequestHandler):
         # Retrieve headers and data
         headers = {k: self.headers[k] for k in self.headers if k not in ['host', 'content-length']}
         data_length = self.headers.get('content-length')
-        data = self.rfile.read(int(data_length)) if data_length else None
+        data = {k: v for k, v in parse_qsl(self.rfile.read(int(data_length)))} if data_length else None
         return path, headers, data
 
-    def _ForwardRequest(self, method, endpoint, headers, data, stream=False):
+    def _ForwardRequest(self, method, endpoint, headers, data, stream=False, use_auth=True):
         """Forwards the request to the proper target"""
 
-        from resources.lib.common import MechanizeLogin
         import re
         import requests
 
+        if self._host_re is None:
+            self.__class__._host_re = re.compile('://([^/]+)/')
+
         # Create sessions for keep-alives and connection pooling
-        host = re.search('://([^/]+)/', endpoint)  # Try to extract the host from the URL
+        host = self._host_re.search(endpoint)  # Try to extract the host from the URL
         if None is not host:
             host = host.group(1)
             if host not in self.sessions:
@@ -83,32 +92,34 @@ class ProxyHTTPD(BaseHTTPRequestHandler):
         else:
             session = requests.Session()
 
-        cookie = MechanizeLogin(preferToken=True)
-        if not cookie:
-            Log('[PS] Not logged in', Log.DEBUG)
-            self.send_error(440)
-            return (None, None, None)
-        if isinstance(cookie, dict):
-            headers.update(cookie)
-            cookie = None
+        cookie = None
+        if use_auth:
+            from resources.lib.common import MechanizeLogin
+            cookie = MechanizeLogin(preferToken=True)
+            if not cookie:
+                Log('[PS] Not logged in', Log.DEBUG)
+                self.send_error(440)
+                return (None, None, None)
+            if isinstance(cookie, dict):
+                headers.update(cookie)
+                cookie = None
 
         if 'Host' in headers: del headers['Host']  # Forcibly strip the host (py3 compliance)
         Log(f'[PS] Forwarding the {method.upper()} request towards {endpoint}', Log.DEBUG)
         r = session.request(method, endpoint, data=data, headers=headers, cookies=cookie, stream=stream, verify=self.server._s.ssl_verif)
         return r.status_code, r.headers, r if stream else r.content.decode('utf-8')
 
-    def _gzip(self, data=None, stream=False):
+    @staticmethod
+    def _gzip(data):
         """Compress the output data"""
 
         from io import BytesIO
         from gzip import GzipFile
         out = BytesIO()
         f = GzipFile(fileobj=out, mode='w', compresslevel=5)
-        if not stream:
-            f.write(data)
-            f.close()
-            return out.getvalue()
-        return (f, out)
+        f.write(data)
+        f.close()
+        return out.getvalue()
 
     def _SendHeaders(self, code, headers):
         self.send_response(code)
@@ -129,56 +140,11 @@ class ProxyHTTPD(BaseHTTPRequestHandler):
             headers['Content-Encoding'] = 'gzip'
         headers['Content-Length'] = len(data)
 
-        self._SendHeaders(code, headers)
-        self.wfile.write(data)
-
-    @contextmanager
-    def _PrepareChunkedResponse(self, code, headers):
-        """Prep the stream for gzipped chunked transfers"""
-
-        Log('[PS] Chunked transfer: prepping', Log.DEBUG)
-        headers = {k: headers[k] for k in headers if k not in self._purgeHeaders}
-        headers['Connection'] = 'Keep-Alive'
-        headers['Transfer-Encoding'] = 'chunked'
-        headers['Content-Encoding'] = 'gzip'
-
-        self._SendHeaders(code, headers)
-        gzstream = self._gzip(stream=True)
-
         try:
-            yield gzstream
-        finally:
-            gzstream[0].close()
-            gzstream[1].close()
-
-    def _SendChunk(self, gzstream, data=None):
-        """Send a gzipped chunk"""
-
-        # Log('[PS] Chunked transfer: sending chunk', Log.DEBUG)
-
-        if None is not data:
-            gzstream[0].write(data.encode('utf-8'))
-            gzstream[0].flush()
-        chunk = gzstream[1].getvalue()
-        gzstream[1].seek(0)
-        gzstream[1].truncate()
-
-        if 0 == len(chunk):
-            return
-
-        data = b'%s\r\n%s\r\n' % (hex(len(chunk))[2:].upper().encode(), chunk)
-        self.wfile.write(data)
-
-    def _EndChunkedTransfer(self, gzstream):
-        """Terminate the transfer"""
-
-        Log('[PS] Chunked transfer: last chunks', Log.DEBUG)
-        gzstream[0].flush()
-        gzstream[0].close()
-        self._SendChunk(gzstream)
-        gzstream[1].close()
-
-        self.wfile.write(b'0\r\n\r\n')
+            self._SendHeaders(code, headers)
+            self.wfile.write(data)
+        except OSError as exc:
+            Log(f'[PS] Client disconnected while sending response: {exc}', Log.DEBUG)
 
     def do_POST(self):
         """Respond to POST requests"""
@@ -212,6 +178,246 @@ class ProxyHTTPD(BaseHTTPRequestHandler):
     def split_lang(lng):
         return lng.split('-' if '-' in lng else '_')[0]
 
+    def _ParseAudioTrackInfo(self, track_id, lang=None, track_subtype=None):
+        import re
+
+        if self._track_id_re is None:
+            self.__class__._track_id_re = re.compile(r'([^_]+)_(.+?)(?:_\d+)?$')
+        if track_id:
+            match = self._track_id_re.match(track_id)
+            if match:
+                return match.group(1) or lang, match.group(2)
+            parts = track_id.split('_')
+            if len(parts) > 1:
+                return parts[0] or lang, parts[1] or track_subtype or ''
+            if lang or track_subtype:
+                return lang or track_id, track_subtype or ''
+        if lang:
+            return lang, track_subtype or ''
+        return None, None
+
+    @staticmethod
+    def _ParseTagAttributes(tag):
+        import re
+
+        if ProxyHTTPD._tag_attr_re is None:
+            ProxyHTTPD._tag_attr_re = re.compile(r'([^\s=/>]+)="([^"]*)"')
+        return {k: v for k, v in ProxyHTTPD._tag_attr_re.findall(tag)}
+
+    @staticmethod
+    def _EscapeAttr(value):
+        return str(value).replace('&', '&amp;').replace('"', '&quot;')
+
+    def _UpdateTagAttributes(self, tag, updates=None, removals=None):
+        import re
+
+        updates = updates or {}
+        removals = removals or []
+        for attr in removals:
+            tag = re.sub(rf'\s+{re.escape(attr)}="[^"]*"', '', tag)
+        for attr, value in updates.items():
+            value = self._EscapeAttr(value)
+            pattern = rf'(\s+{re.escape(attr)}=")[^"]*(")'
+            if re.search(pattern, tag):
+                tag = re.sub(pattern, rf'\g<1>{value}\2', tag)
+            else:
+                tag = f'{tag[:-1]} {attr}="{value}">'
+        return tag
+
+    @staticmethod
+    def _IsAudioAdaptationSetTag(attrs):
+        mime_type = attrs.get('mimeType', '')
+        return attrs.get('contentType') == 'audio' or mime_type.startswith('audio/') or 'audioTrackId' in attrs
+
+    def _SelectAudioRepresentationsText(self, adaptation_tag, adaptation_body):
+        if self._representation_re is None:
+            import re
+            self.__class__._representation_re = re.compile(r'<Representation\b[^>]*>.*?</Representation>', flags=re.DOTALL)
+            self.__class__._atmos_re = re.compile(r'<SupplementalProperty\b[^>]*value="JOC"[^>]*>')
+        representations = list(self._representation_re.finditer(adaptation_body))
+        if not representations:
+            return [], 0, 0, False, 0, adaptation_body
+
+        prefer_atmos = self.server._s.enable_atmos is not False
+        candidates = []
+        found_atmos = False
+        set_codecs = self._ParseTagAttributes(adaptation_tag).get('codecs', '').lower()
+
+        for match in representations:
+            rep = match.group(0)
+            attrs = self._ParseTagAttributes(rep[:rep.find('>') + 1])
+            bitrate = int(attrs.get('bandwidth', '0') or 0)
+            atmos = self._atmos_re.search(rep) is not None
+            codecs = (attrs.get('codecs', '') or set_codecs).lower()
+            codec_rank = 2 if 'ec-3' in codecs else 1 if 'ac-3' in codecs else 0
+
+            if atmos and prefer_atmos and not found_atmos:
+                found_atmos = True
+                candidates = []
+
+            if prefer_atmos and found_atmos and not atmos:
+                continue
+
+            candidates.append({
+                'match': match,
+                'bitrate': bitrate,
+                'atmos': atmos,
+                'codec_rank': codec_rank,
+            })
+
+        if not candidates:
+            return [], 0, 0, False, 0, adaptation_body
+
+        kept = [item for item in candidates if item['bitrate'] >= self._min_audio_keep_bitrate]
+        if not kept:
+            kept = [max(candidates, key=lambda item: (item['codec_rank'], item['bitrate']))]
+
+        kept.sort(key=lambda item: item['match'].start())
+        bitrates = [item['bitrate'] for item in kept]
+        best_codec_rank = max(item['codec_rank'] for item in kept)
+        kept_ranges = {(item['match'].start(), item['match'].end()) for item in kept}
+        body_parts = []
+        body_last = 0
+        for rep_match in representations:
+            body_parts.append(adaptation_body[body_last:rep_match.start()])
+            if (rep_match.start(), rep_match.end()) in kept_ranges:
+                body_parts.append(rep_match.group(0))
+            body_last = rep_match.end()
+        body_parts.append(adaptation_body[body_last:])
+        filtered_body = ''.join(body_parts)
+        return kept, min(bitrates), max(bitrates), any(item['atmos'] for item in kept), best_codec_rank, filtered_body
+
+    def _AudioSetScore(self, max_bitrate, atmos, codec_rank):
+        prefer_atmos = self.server._s.enable_atmos is not False
+        return (1 if prefer_atmos and atmos else 0, codec_rank, max_bitrate)
+
+    def _AlterPeriodAudio(self, period_data):
+        import re
+
+        if self._adaptation_set_re is None:
+            self.__class__._adaptation_set_re = re.compile(r'<AdaptationSet\b[^>]*>.*?</AdaptationSet>', flags=re.DOTALL)
+        chosen_langs = {
+            lang.strip()
+            for lang in getConfig('audio_langs', 'all').split(',')
+            if lang.strip()
+        }
+        allow_all = not chosen_langs or 'all' in chosen_langs
+        matches = list(self._adaptation_set_re.finditer(period_data))
+        all_infos = []
+        infos = []
+
+        for index, match in enumerate(matches):
+            full = match.group(0)
+            tag_end = full.find('>') + 1
+            if tag_end <= 0:
+                continue
+            set_tag = full[:tag_end]
+            set_body = full[tag_end:-16]  # len('</AdaptationSet>') == 16
+            attrs = self._ParseTagAttributes(set_tag)
+            if not self._IsAudioAdaptationSetTag(attrs):
+                continue
+
+            track_lang, track_kind = self._ParseAudioTrackInfo(
+                attrs.get('audioTrackId', ''),
+                attrs.get('lang'),
+                attrs.get('audioTrackSubtype', '')
+            )
+            if not track_lang:
+                continue
+
+            base_lang = self.split_lang(track_lang)
+            kept_representations, min_bitrate, max_bitrate, best_atmos, codec_rank, filtered_body = self._SelectAudioRepresentationsText(set_tag, set_body)
+            if not kept_representations:
+                continue
+
+            info = {
+                'index': index,
+                'match': match,
+                'tag': set_tag,
+                'attrs': attrs,
+                'track_id': attrs.get('audioTrackId', track_lang),
+                'track_lang': track_lang,
+                'track_kind': track_kind,
+                'base_lang': base_lang,
+                'kept_representations': kept_representations,
+                'min_bitrate': min_bitrate,
+                'max_bitrate': max_bitrate,
+                'best_atmos': best_atmos,
+                'codec_rank': codec_rank,
+                'filtered_body': filtered_body,
+            }
+            all_infos.append(info)
+
+            if not allow_all and base_lang not in chosen_langs:
+                continue
+
+            infos.append(info)
+
+        if not infos and not allow_all:
+            infos = list(all_infos)
+
+        grouped = {}
+        for info in infos:
+            grouped.setdefault(info['track_id'], []).append(info)
+
+        selected_infos = []
+        for track_infos in grouped.values():
+            keep_high = [info for info in track_infos if info['max_bitrate'] >= self._min_audio_keep_bitrate]
+            if keep_high:
+                selected_infos.extend(keep_high)
+                continue
+
+            best_info = max(
+                track_infos,
+                key=lambda item: self._AudioSetScore(item['max_bitrate'], item['best_atmos'], item['codec_rank'])
+            )
+            selected_infos.append(best_info)
+
+        Log(
+            f'[PS] Selected {len(selected_infos)} audio AdaptationSets from {len(all_infos)} candidates',
+            Log.DEBUG
+        )
+
+        lang_count = {}
+        for info in selected_infos:
+            lang_count[info['base_lang']] = lang_count.get(info['base_lang'], 0) + 1
+
+        selected_indexes = {info['index']: info for info in selected_infos}
+        audio_indexes = {info['index'] for info in all_infos}
+        result = []
+        last = 0
+        for index, match in enumerate(matches):
+            result.append(period_data[last:match.start()])
+            info = selected_indexes.get(index)
+            if info is not None:
+                new_lang = self._AdjustLocale(info['track_lang'], lang_count[info['base_lang']])
+                suffix = ''
+                if info['best_atmos'] and self.server._s._g.KodiVersion < 21:
+                    suffix = ' (Atmos)'
+                elif 'boosted' in info['track_kind']:
+                    suffix = f" (Dialog Boost: {info['track_kind'].replace('boosteddialog', '').capitalize()})"
+
+                updates = {
+                    'lang': new_lang,
+                    'name': f'{int(info["max_bitrate"] / 1000)} kbps{suffix}',
+                    'minBandwidth': str(info['min_bitrate']),
+                    'maxBandwidth': str(info['max_bitrate']),
+                }
+                removals = ['impaired']
+                if info['track_kind'] == 'descriptive':
+                    updates['impaired'] = 'true'
+
+                set_tag = self._UpdateTagAttributes(info['tag'], updates, removals)
+                if self._log_audio_selection_details:
+                    Log(f'[PS] Audio AdaptationSet attrs: {self._ParseTagAttributes(set_tag)}', Log.DEBUG)
+                result.append(f'{set_tag}{info["filtered_body"]}</AdaptationSet>')
+            elif index not in audio_indexes:
+                result.append(match.group(0))
+            last = match.end()
+
+        result.append(period_data[last:])
+        return ''.join(result)
+
     def _AlterGPR(self, endpoint, headers, data):
         """ GPR data alteration for better language parsing and subtitles streaming instead of pre-caching """
 
@@ -230,11 +436,7 @@ class ProxyHTTPD(BaseHTTPRequestHandler):
         chosen_found = 0
 
         # Count the number of duplicates with the same ISO 639-1 codes
-        if 'timedTextUrls' in content:
-            content.update(content['timedTextUrls'].get('result', {}))
-            langCount = {'forcedNarrativeUrls': {}, 'subtitleUrls': {}}
-        else:
-            langCount = {'forcedNarratives': {}, 'subtitleUrls': {}}
+        langCount = {'forcedNarratives': {}, 'subtitleUrls': {}}
         for sub_type in list(langCount):  # list() instead of .keys() to avoid py3 iteration errors
             if sub_type in content:
                 for i in range(0, len(content[sub_type])):
@@ -258,7 +460,7 @@ class ProxyHTTPD(BaseHTTPRequestHandler):
                     if ic in chosen_langs or chosen_langs == 'all':
                         variants = '{}{}'.format(
                             '-[CC]' if 'sdh' == content[sub_type][i]['type'] else '',
-                            '.Forced' if 'forcedNarratives' in sub_type else ''
+                            '.Forced' if 'forcedNarratives' == sub_type else ''
                         )
                         # Proxify the URLs, with a make believe Kodi-friendly file name
                         escapedurl = quote_plus(content[sub_type][i]['url'])
@@ -285,108 +487,49 @@ class ProxyHTTPD(BaseHTTPRequestHandler):
 
         # Extrapolate the base CDN url to avoid proxying data we don't need to
         url_parts = urlparse(endpoint)
-        baseurl = url_parts.scheme + '://' + url_parts.netloc + re.sub(r'[^/]+$', '', url_parts.path)
-
-        def _rebase(data):
-            data = data.replace('<BaseURL>', '<BaseURL>' + baseurl)
-            data = re.sub(r'(<SegmentTemplate\s+[^>]*?\s*media=")', r'\1' + baseurl, data)
-            data = re.sub(r'(<SegmentTemplate\s+[^>]*?\s*initialization=")', r'\1' + baseurl, data)
-            data = re.sub(r'<Role[^>]*>', '', data)
-            return data
+        baseurl = endpoint.rsplit('/', 1)[0] + '/'
+        rooturl = url_parts.scheme + '://' + url_parts.netloc
 
         # Start the chunked reception
-        status_code, headers, r = self._ForwardRequest('get', endpoint, headers, data, True)
+        status_code, headers, r = self._ForwardRequest('get', endpoint, headers, data, True, use_auth=False)
+        if r is None:
+            return
 
-        with self._PrepareChunkedResponse(status_code, headers) as gzstream:
-            Log(f'[PS] Loading MPD and rebasing as {baseurl}', Log.DEBUG)
+        Log(f'[PS] Loading MPD and rebasing as {baseurl} (upstream {status_code})', Log.DEBUG)
+        try:
             if r.encoding is None:
                 r.encoding = 'utf-8'
-            buffer = r.content.decode(r.encoding)
-            bPeriod = False
-            pos = True
-            while pos is not None:
-                pos = re.search(r'(<AdaptationSet[^>]*contentType="video"[^>]*>.*?</AdaptationSet>)' if bPeriod else r'(<Period[^>]*>)', buffer, flags=re.DOTALL)
-                if pos:
-                    if 0 < pos.start(1):
-                        self._SendChunk(gzstream, buffer[0:pos.start(1)])
-                    if not bPeriod:
-                        bPeriod = True
-                        self._SendChunk(gzstream, buffer[pos.start(1):pos.end(1)])
-                    else:
-                        self._SendChunk(gzstream, _rebase(buffer[pos.start(1):pos.end(1)]))
-                    buffer = buffer[pos.end(1):]
+            mpd = r.content.decode(r.encoding, errors='replace')
 
-            # Count the number of duplicates with the same ISO 639-1 codes
-            Log('[PS] Parsing languages', Log.DEBUG)
-            chosen_langs = getConfig('audio_langs', 'all').split(',')
-            chosen_found = 0
-            languages = []
-            langCount = {}
-            term = 'audioTrackId' if 'audioTrackId' in buffer else 'lang'
-            for lang in re.findall(rf'<AdaptationSet[^>]*(?:{term})="([^"]+)"[^>]*>', buffer):
-                lang = lang.split('_')[0]
-                if lang not in languages:
-                    languages.append(lang)
-            for lang in languages:
-                lang = self.split_lang(lang)
-                if lang not in langCount:
-                    if lang in chosen_langs or chosen_langs == 'all':
-                        chosen_found += 1
-                    langCount[lang] = 0
-                langCount[lang] += 1
-            if chosen_found == 0:
-                chosen_langs = 'all'
-            # Send corrected AdaptationSets, one at a time through chunked transfer
-            Log('[PS] Altering <AdaptationSet>s', Log.DEBUG)
-            while True:
-                pos = re.search(r'(<AdaptationSet[^>]*>)(.*?</AdaptationSet>)', buffer, flags=re.DOTALL)
-                if None is pos:
-                    break
-                # Log('[PS] AdaptationSet position: ([{}:{}], [{}:{}])'.format(pos.start(1), pos.end(1), pos.start(2), pos.end(2)))
-                setTag = buffer[pos.start(1):pos.end(1)]
-                setData = buffer[pos.start(2):pos.end(2)]
-                lang = re.search(r'\s+lang="([^"]+)"', setTag)
-                trackId = re.search(r'\s+audioTrackId="([^_]+)_([a-zA-Z0-9]+)', setTag)
-                trackId = trackId.groups() if trackId is not None else None
-                lang = lang.group(1) if lang is not None else None
-                trackId = [lang, ''] if trackId is None and lang is not None else trackId
-                if trackId is not None:
-                    if lang in chosen_langs or chosen_langs == 'all':
-                        imp = ' impaired="true"' if 'descriptive' == trackId[1] else ''
-                        newLocale = self._AdjustLocale(trackId[0], langCount.get(self.split_lang(trackId[0]), 0))
-                        setTag = setTag.replace(f'lang="{lang}"', f'lang="{newLocale}"{imp}')
-                        repres = re.findall(r'<Representation[^>]*>.*?</Representation>', setData, flags=re.DOTALL)
-                        if len(repres):
-                            best_found = [0, '', False]
-                            found_atmos = False
-                            while 0 < len(repres):
-                                track = repres.pop(0)
-                                atmos = re.search(r'<SupplementalProperty[^>]*value="JOC"[^>]*>', track) is not None
-                                bitrate = int(re.search(r'\s+bandwidth="([^"]+)"', track).group(1))
-                                if atmos and not found_atmos:
-                                    found_atmos = True
-                                    best_found[0] = 0
-                                if bitrate > best_found[0]:
-                                    if atmos or (not atmos and not found_atmos) or self.server._s.enable_atmos is False:
-                                        best_found = [bitrate, track, atmos]
-                                setData = setData.replace(track, '' if 0 < len(repres) else best_found[1])
-                            setTag = re.sub(r' (min|max)Bandwidth="[^"]+"', '', setTag)
-                            apx = ''
-                            if best_found[2] and self.server._s._g.KodiVersion < 21:
-                                apx = ' (Atmos)'
-                            elif 'boosted' in trackId[1]:
-                                apx = f" (Dialog Boost: {trackId[1].replace('boosteddialog', '').capitalize()})"
-                            setTag = f'{setTag[:-1]} name="{int(best_found[0] / 1000)} kbps{apx}">'
+            def _rebase(data):
+                data = re.sub(r'<Role\b[^>]*/>', '', data)
+                data = re.sub(r'<Role\b[^>]*>.*?</Role>', '', data, flags=re.DOTALL)
+                data = data.replace('<BaseURL>', '<BaseURL>' + baseurl)
+                data = re.sub(r'(<SegmentTemplate\b[^>]*\bmedia=")(?![a-z]+:|//|/)', r'\1' + baseurl, data)
+                data = re.sub(r'(<SegmentTemplate\b[^>]*\binitialization=")(?![a-z]+:|//|/)', r'\1' + baseurl, data)
+                data = re.sub(r'(<SegmentTemplate\b[^>]*\bmedia=")/', r'\1' + rooturl + '/', data)
+                data = re.sub(r'(<SegmentTemplate\b[^>]*\binitialization=")/', r'\1' + rooturl + '/', data)
+                data = re.sub(r'<BaseURL>/([^<]*)</BaseURL>', rf'<BaseURL>{rooturl}/\1</BaseURL>', data)
+                return data
 
-                        Log('[PS] ' + setTag, Log.DEBUG)
-                        self._SendChunk(gzstream, setTag)
-                        self._SendChunk(gzstream, _rebase(setData))
-                buffer = buffer[pos.end(2):]
+            Log('[PS] Altering audio <AdaptationSet>s', Log.DEBUG)
+            parts = []
+            last = 0
+            period_pattern = re.compile(r'(<Period\b[^>]*>)(.*?)(</Period>)', flags=re.DOTALL)
+            for period in period_pattern.finditer(mpd):
+                parts.append(_rebase(mpd[last:period.start()]))
+                period_open, period_body, period_close = period.groups()
+                parts.append(_rebase(period_open + self._AlterPeriodAudio(period_body) + period_close))
+                last = period.end()
+            parts.append(_rebase(mpd[last:]))
+            mpd = ''.join(parts)
 
-            # Send the rest and signal EOT
-            if 0 < len(buffer):
-                self._SendChunk(gzstream, buffer)
-            self._EndChunkedTransfer(gzstream)
+            self._SendResponse(200 if status_code and int(status_code) >= 400 else status_code, headers, mpd, False)
+        except Exception as e:
+            Log(f'[PS] MPD rewrite failed, forwarding original document: {e}', Log.ERROR)
+            if r.encoding is None:
+                r.encoding = 'utf-8'
+            self._SendResponse(status_code, headers, r.content.decode(r.encoding, errors='replace'), False)
 
     def _TranscodeSubtitle(self, endpoint, headers, data, filename):
         """ On-the-fly subtitle transcoding (TTMLv2 => SRT) """

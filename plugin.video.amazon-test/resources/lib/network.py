@@ -33,7 +33,7 @@ def _Error(data, show_dlg=False):
     Log(f"HTTP {getURL.lastResponseCode} - {msg} ({code})", Log.ERROR)
     trans_msg = getString(err_map[code]) if code in err_map else msg
     if show_dlg:
-        _g.dialog.notification(trans_msg, msg, xbmcgui.NOTIFICATION_ERROR)
+        _g.dialog.notification(trans_msg if msg else _g.__plugin__, msg if msg else trans_msg, xbmcgui.NOTIFICATION_ERROR)
     return trans_msg
 
 
@@ -278,27 +278,34 @@ def getVODData(mode, asin, devicetypeid=_g.dtid_web, useCookie=False, returl=Fal
                         'url_req': 'livePlaybackUrlsRequest'}}
 
     if not returl and not data:
-        penv = None
         u_path = '' if _g.UsePrimeVideo else '/gp/video'
-        metadata = '{"placement":"STANDARD_HERO","playback":"true","preroll":"true","trailer":"true","watchlist":"true"}'
+        # placements: HOVER, STANDARD_HERO, DETAIL_BTF
+        metadata = '{"placement":"DETAIL_BTF","playback":"true","preroll":"true","trailer":"true","watchlist":"true"}'
         titleids = json.dumps([asin]).replace(' ', '')
         query = f'jic=8|EgNhbGw=&metadataToEnrich={metadata}&titleIDsToEnrich={titleids}&isCleanSlateActive=1&journeyIngressContext='
         data = GrabJSON(_g.BaseUrl + u_path + '/api/enrichItemMetadata?' + quote_plus(query, safe='=&'))
         enr = get_key({}, data, 'enrichments', asin)
         bba = get_key([], enr, 'buyBoxActions')
         bba += get_key([], enr, 'playbackActions')
+        streams = []
         for enrich in bba:
             if ('actionType' in enrich and enrich['actionType'] == 'PLAY') or 'playbackExperienceMetadata' in enrich:
                 payload = get_key(enrich, enrich, 'payload', 'playbackPayload')
-                penv = payload['playbackExperienceMetadata']['playbackEnvelope']
-                asin = payload['titleID']
-                vmt = payload['videoMaterialType'].lower()
-        if len(bba) == 0:
-            msg = get_key({}, enr, 'entitlementCues', 'focusMessage')
-            if msg['icon'] == 'OFFER_ICON':
-                return False, _Error({'code': 'notowned', 'message': msg['message']}, True)
-        if penv is None:
-            return False, _Error({'code': 'invalidrequest', 'message': 'no playbackactions'}, True)
+                streams.append((payload['label'], payload['titleID'], payload['videoMaterialType'].lower(), payload['playbackExperienceMetadata']['playbackEnvelope']))
+        if len(streams) == 0:
+            data = GrabJSON(_g.BaseUrl + u_path + '/api/enrichItemMetadata?' + quote_plus(query.replace('DETAIL_BTF', 'STANDARD_HERO'), safe='=&'))
+            ent = get_key({}, data, 'enrichments', asin, 'entitlementCues')
+            foc_msg = get_key({}, ent, 'focusMessage')
+            bad_msg = get_key(None, ent, 'titleMetadataBadge', 'message')
+            if 'icon' not in foc_msg or foc_msg['icon'] == 'OFFER_ICON':
+                return False, _Error({'code': 'notowned', 'message': foc_msg['message'] if 'message' in foc_msg else ''}, True)
+            elif bad_msg:
+                return False, _Error({'code': 'noavailablestreams', 'message': bad_msg}, True)
+        if len(streams) > 0:
+            num = 0 if len(streams) == 1 else _g.dialog.select('', [s[0] for s in streams], preselect=0)
+            if num < 0:
+                return False, ''
+            asin, vmt, penv = streams[num][1:]
         data = _device_data(vmt)
         data['globalParameters']['playbackEnvelope'] = penv
         data[vmt_map[vmt]['url_req']]['playbackSettingsRequest']['titleId'] = asin

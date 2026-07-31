@@ -357,6 +357,7 @@ def PlayVideo(name, asin, adultstr, streamtype, forcefb=0):
             msg = return_item(state, 'action', 'atf',  tid, 'messages')
             ent = msg.get('entitlementType', 'entitled').lower() == 'entitled'
             notif = get_key('', msg, 'buyBoxMessage' if ent else 'focusMessage', 'dvMessage', 'string').replace('{lineBreak}', '\n')
+            return streamtype, asin
             pid, livestate = _listStreams(state, tid, detail['liveState'].get('id', '').lower())
             if not livestate:
                 return -1, -1
@@ -404,16 +405,10 @@ def PlayVideo(name, asin, adultstr, streamtype, forcefb=0):
         from .ages import AgeRestrictions
         bypassproxy = _s.proxy_mpdalter or (streamtype > 1)
         vod_config = {}
-
-        if streamtype == 3:
-            streamtype, asin = _EventState(asin)
-            if streamtype < 0:
-                return False
-        vMT = ['Feature', 'Trailer', 'LiveStreaming'][streamtype]
-        dRes = 'PlaybackUrls' if streamtype > 1 else 'PlaybackUrls,SubtitleUrls,ForcedNarratives,TransitionTimecodes'
-        opt = '&liveManifestType=accumulating,live&playerType=xp&playerAttributes={"frameRate":"HFR"}&deviceFrameRateOverride=High' if streamtype > 1 else ''
+        streamtype, asin = _EventState(asin)
+        if streamtype < 0:
+            return False
         mpaa_str = AgeRestrictions().GetRestrictedAges() + getString(30171)
-
         inputstream_helper = Helper('mpd', drm='com.widevine.alpha')
         if not inputstream_helper.check_inputstream():
             Log('No Inputstream Addon found or activated')

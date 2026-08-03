@@ -62,6 +62,7 @@ class ProxyHTTPD(BaseHTTPRequestHandler):
     def _ParseBaseRequest(self, method):
         """Return path, headers and post data commonly required by all methods"""
         from urllib.parse import urlparse, parse_qsl
+        import json
 
         path = urlparse(self.path).path[1:]  # Get URI without the trailing slash
         path = path.split('/')  # license/<asin>/<ATV endpoint>
@@ -70,7 +71,7 @@ class ProxyHTTPD(BaseHTTPRequestHandler):
         # Retrieve headers and data
         headers = {k: self.headers[k] for k in self.headers if k not in ['host', 'content-length']}
         data_length = self.headers.get('content-length')
-        data = {k: v for k, v in parse_qsl(self.rfile.read(int(data_length)))} if data_length else None
+        data = json.dumps(json.loads(self.rfile.read(int(data_length)))) if data_length else None
         return path, headers, data
 
     def _ForwardRequest(self, method, endpoint, headers, data, stream=False, use_auth=True):

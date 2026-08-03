@@ -475,20 +475,21 @@ def PlayVideo(name, asin, adultstr, streamtype, forcefb=0):
         listitem.setArt({'thumb': thumb})
         listitem.setSubtitles(vod_config['subs'])
         listitem.setProperty('inputstream', _g.is_addon)
+        # listitem.setProperty('inputstream.adaptive.config', json.dumps({'check_hdcp': 'license'}))
         listitem.setMimeType('application/dash+xml')
         listitem.setProperty(f'{_g.is_addon}.manifest_headers', urlencode(vod_config['headers']))
         listitem.setContentLookup(False)
 
         if list(map(int, is_version.split('.'))) < [22, 1, 5]:
             vod_config['wv']['licenseChallenge'] = 'b{SSM}'
-            vod_config['lic']['req_data'] = json.dumps(vod_config['wv'])
+            vod_config['lic']['req_data'] = base64.b64encode(json.dumps(vod_config['wv']).encode('utf-8')).decode('utf-8')
             lic_key = '|'.join([v for k, v in vod_config['lic'].items() if k in ['server_url', 'req_headers', 'req_data', 'resp_data']])
             listitem.setProperty(f'{_g.is_addon}.license_type', 'com.widevine.alpha')
             listitem.setProperty(f'{_g.is_addon}.license_key', lic_key)
         else:
-            vod_config['lic']['req_data'] = json.dumps(vod_config['wv'])
+            vod_config['lic']['req_data'] = base64.b64encode(json.dumps(vod_config['wv']).encode('utf-8')).decode('utf-8')
             vod_config['lic'].pop('resp_data')
-            drm_cfg = {'com.widevine.alpha': {'force_single_session': False, 'license': vod_config['lic']}}
+            drm_cfg = {'com.widevine.alpha': {'force_single_session': True, 'license': vod_config['lic']}}
             listitem.setProperty('inputstream.adaptive.drm', json.dumps(drm_cfg))
 
         player = _AmazonPlayer()
@@ -537,9 +538,9 @@ def PlayVideo(name, asin, adultstr, streamtype, forcefb=0):
                 headers = {'User-Agent': getConfig('UserAgent')}
             req_headers.update({'Content-Type': 'application/octet-stream'})
             req_headers.update(headers)
-            wv_dict = {'includeHdcpTestKey': 'true', 'licenseChallenge': '{CHA-B64U}'}
+            wv_dict = {'includeHdcpTestKey': True, 'licenseChallenge': '{CHA-B64}'}
             req_lic = {'server_url': '', 'req_headers': urlencode(req_headers), 'req_data': {}, 'resp_data': 'JBlicense', 'unwrapper': 'json,base64',
-                       'unwrapper_params': {'path_data': 'widevine2License/license'}}
+                       'unwrapper_params': {'path_data': 'widevineLicense/license'}}
             return {'cookie': cookie, 'lic': req_lic, 'headers': headers, 'dtid': dtid, 'wv': wv_dict}
         return False
 

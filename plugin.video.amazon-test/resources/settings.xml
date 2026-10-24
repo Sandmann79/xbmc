@@ -397,6 +397,19 @@
 					</dependencies>
 					<control type="toggle"/>
 				</setting>
+				<setting id="l3_request_hd" type="boolean" label="30304" help="">
+					<level>2</level>
+					<default>false</default>
+					<dependencies>
+						<dependency type="visible">
+							<and>
+								<condition operator="is" setting="playmethod">3</condition>
+								<condition operator="is" setting="wvl1_device">false</condition>
+							</and>
+						</dependency>
+					</dependencies>
+					<control type="toggle"/>
+				</setting>
 				<setting id="proxy_mpdalter" type="boolean" label="30248" help="">
 					<level>0</level>
 					<default>true</default>

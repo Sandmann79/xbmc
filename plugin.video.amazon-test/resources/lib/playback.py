@@ -443,6 +443,8 @@ def PlayVideo(name, asin, adultstr, streamtype, forcefb=0):
             return True
 
         Log(f'Using {_g.is_addon} Version: {is_version}')
+        if streamtype == 0 and not _s.wvl1_device:
+            Log('No Widevine L1: ' + ('requesting HD, the license may be refused' if _s.l3_request_hd else 'requesting SD'))
 
         listitem = xbmcgui.ListItem(label=title, path=mpd)
         if (_g.KodiVersion < 21) and ('adaptive' in _g.is_addon):

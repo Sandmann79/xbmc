@@ -14,6 +14,7 @@ class ProxyHTTPD(BaseHTTPRequestHandler):
     protocol_version = 'HTTP/1.1'  # Allow keep-alive
     server_version = 'AmazonVOD/0.1'
     sessions = {}  # Keep-Alive sessions
+    _refused_licenses = {}  # license URL -> Amazon's refusal, answered locally when inputstream.adaptive asks again
     _min_audio_keep_bitrate = 192000
     _log_audio_selection_details = False
     _host_re = None
@@ -70,7 +71,8 @@ class ProxyHTTPD(BaseHTTPRequestHandler):
         # Retrieve headers and data
         headers = {k: self.headers[k] for k in self.headers if k not in ['host', 'content-length']}
         data_length = self.headers.get('content-length')
-        data = {k: v for k, v in parse_qsl(self.rfile.read(int(data_length)))} if data_length else None
+        self.raw_data = self.rfile.read(int(data_length)) if data_length else None
+        data = {k: v for k, v in parse_qsl(self.raw_data)} if self.raw_data else None
         return path, headers, data
 
     def _ForwardRequest(self, method, endpoint, headers, data, stream=False, use_auth=True):
@@ -155,6 +157,8 @@ class ProxyHTTPD(BaseHTTPRequestHandler):
 
         if ('gpr' == path[0]) and (2 == len(path)):
             self._AlterGPR(unquote(path[1]), headers, data)
+        elif ('lic' == path[0]) and (2 == len(path)):
+            self._ForwardLicense(unquote(path[1]), headers)
         else:
             Log('[PS] Invalid request received', Log.DEBUG)
             self.send_error(501, 'Invalid request')
@@ -479,6 +483,26 @@ class ProxyHTTPD(BaseHTTPRequestHandler):
             content['subtitles'].append(sub[0])
 
         self._SendResponse(status_code, headers, json.dumps(content), True)
+
+    def _ForwardLicense(self, endpoint, headers):
+        """ Pass the Widevine license request through unchanged, log why Amazon refused it """
+
+        # The challenge is sent as is: parsing it as form data would turn the + of base64 into spaces
+        # inputstream.adaptive asks again about 90 times after a refusal, answer them at once so that it
+        # gives up quickly. Stopping the player from Python instead deadlocks Kodi: it waits for
+        # inputstream.adaptive, which waits for this proxy.
+        if endpoint in self._refused_licenses:
+            self._SendResponse(200, {'Content-Type': 'application/json'}, self._refused_licenses[endpoint])
+            return
+        headers = {k: v for k, v in headers.items() if k.lower() != 'content-length'}
+        status_code, headers, content = self._ForwardRequest('post', endpoint, headers, self.raw_data, use_auth=False)
+        if status_code is None:
+            return
+        if 'widevine2License' not in content:
+            Log(f'[PS] License request refused (HTTP {status_code}): {content[:2000]}', Log.ERROR)
+            if 'HdContentNotAllowed' in content:
+                self._refused_licenses[endpoint] = content
+        self._SendResponse(status_code, headers, content)
 
     def _AlterMPD(self, endpoint, headers, data):
         """ MPD alteration for better language parsing """

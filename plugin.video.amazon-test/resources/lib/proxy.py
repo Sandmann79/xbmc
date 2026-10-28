@@ -426,11 +426,18 @@ class ProxyHTTPD(BaseHTTPRequestHandler):
         from xbmc import convertLanguage, ENGLISH_NAME
 
         status_code, headers, content = self._ForwardRequest('post', endpoint, headers, data)
+        if status_code is None:
+            return
+        try:
+            content = json.loads(content)
+        except ValueError:
+            Log(f'[PS] GetPlaybackResources returned HTTP {status_code} without JSON data', Log.ERROR)
+            self._SendResponse(status_code, headers, json.dumps({'error': {'errorCode': f'HTTP{status_code}', 'message': f'HTTP Error {status_code}'}}))
+            return
 
         # Grab the subtitle urls, merge them in a single list, append the locale codes to let Kodi figure
         # out which URL has which language, then sort them neatly in a human digestible order.
         chosen_langs = getConfig('sub_langs', 'all').split(',')
-        content = json.loads(content)
         content['subtitles'] = []
         newsubs = []
         chosen_found = 0
@@ -524,7 +531,7 @@ class ProxyHTTPD(BaseHTTPRequestHandler):
             parts.append(_rebase(mpd[last:]))
             mpd = ''.join(parts)
 
-            self._SendResponse(200 if status_code and int(status_code) >= 400 else status_code, headers, mpd, False)
+            self._SendResponse(status_code or 200, headers, mpd, False)
         except Exception as e:
             Log(f'[PS] MPD rewrite failed, forwarding original document: {e}', Log.ERROR)
             if r.encoding is None:
@@ -537,6 +544,8 @@ class ProxyHTTPD(BaseHTTPRequestHandler):
         import re
 
         status_code, headers, content = self._ForwardRequest('get', endpoint, headers, data)
+        if status_code is None:
+            return
         if 0 < len(content):
             # Apply a bunch of regex to the content instead of line-by-line to save computation time
             content = re.sub(r'<(|/)span[^>]*>', r'<\1i>', content)  # Using (|<search>) instead of ()? to avoid py2.7 empty matching error
@@ -547,11 +556,11 @@ class ProxyHTTPD(BaseHTTPRequestHandler):
             if self.server._s.sub_stretch:
                 def _stretch(f):
                     millis = int(f.group('h')) * 3600000 + int(f.group('m')) * 60000 + int(f.group('s')) * 1000 + int(f.group('ms'))
-                    h, m = divmod(millis * _stretch.factor, 3600000)
+                    h, m = divmod(int(millis * _stretch.factor), 3600000)
                     m, s = divmod(m, 60000)
                     s, ms = divmod(s, 1000)
                     # Truncate to the decimal of a ms (for lazyness)
-                    return '{h:02}:{m:02}:{s:02},{ms:03}'
+                    return f'{h:02}:{m:02}:{s:02},{ms:03}'
                 _stretch.factor = self.server._s.subtitleStretchFactor
                 content = re.sub(r'(?P<h>\d+):(?P<m>\d+):(?P<s>\d+),(?P<ms>\d+)', _stretch, content)
 
@@ -588,16 +597,22 @@ class ProxyTCPD(ThreadingTCPServer):
         """ Initialisation of the Proxy TCP server """
         self._s = settings  # Make settings available to the RequestHandler
 
+        # Let the OS pick a free port; retry a few times in case another process grabs it in between
         from socket import socket, AF_INET, SOCK_STREAM
-        sock = socket(AF_INET, SOCK_STREAM)
+        from time import sleep
 
-        while True:
+        for attempt in range(10):
+            sock = socket(AF_INET, SOCK_STREAM)
             try:
                 sock.bind(('127.0.0.1', 0))
                 _, port = sock.getsockname()
+            finally:
                 sock.close()
+            try:
                 ThreadingTCPServer.__init__(self, ('127.0.0.1', port), ProxyHTTPD)
                 self.port = port  # Save the current binded port
-                break
-            except:
-                pass
+                return
+            except OSError as e:
+                Log(f'[PS] Unable to bind port {port}: {e}', Log.WARNING)
+                sleep(0.2)
+        raise OSError('[PS] No free port for the proxy')

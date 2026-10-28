@@ -709,7 +709,8 @@ class _AmazonPlayer(xbmc.Player):
 
     def getResumePoint(self):
         from codecs import open as co
-        if not xbmcvfs.exists(self.resumedb) or self.content == 2:
+        # Trailers and live streams share the ASIN of the feature, they must not touch its resume point
+        if not xbmcvfs.exists(self.resumedb) or self.content in (1, 2):
             return {}
         with co(self.resumedb, 'rb') as fp:
             try:
@@ -722,12 +723,12 @@ class _AmazonPlayer(xbmc.Player):
 
     def saveResumePoint(self):
         from codecs import open as co
-        if self.content == 2:
+        if self.content in (1, 2):
             return
         items = self.getResumePoint()
         with co(self.resumedb, 'wb+') as fp:
-            if self.watched and self.asin in items.keys():
-                del items[self.asin]
+            if self.watched:
+                items.pop(self.asin, None)
             else:
                 items.update({self.asin: {'resume': self.video_lastpos}})
             pickle.dump(items, fp, 2)
@@ -746,7 +747,8 @@ class _AmazonPlayer(xbmc.Player):
             jsonRPC('Player.SetSubtitle', param={'playerid': 1, 'subtitle': cur_sub['index']})
 
     def updateStream(self):
-        if not self.asin:
+        # A trailer would report progress for the feature with the same ASIN
+        if not self.asin or self.content == 1:
             return
         perc = (self.video_lastpos * 100) / self.video_totaltime if self.video_lastpos > 0 and self.video_totaltime > 0 else 0
         if 0 < self.sendvp <= perc:

@@ -457,6 +457,10 @@ def PlayVideo(name, asin, adultstr, streamtype, forcefb=0):
         listitem.setMimeType('application/dash+xml')
         listitem.setProperty(f'{_g.is_addon}.manifest_headers', urlencode(headers))
         listitem.setContentLookup(False)
+        if _s.stream_quality == 0:
+            # The default chooser of inputstream.adaptive never updates its bandwidth estimate on
+            # Amazon's small segments and stays on the initial low resolution for the whole video
+            listitem.setProperty('inputstream.adaptive.stream_selection_type', 'fixed-res')
 
         if list(map(int, is_version.split('.'))) < [22, 1, 5]:
             listitem.setProperty(f'{_g.is_addon}.license_type', 'com.widevine.alpha')

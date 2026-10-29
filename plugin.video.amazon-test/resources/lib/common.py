@@ -154,7 +154,7 @@ class Settings(Singleton):
     _integer = 'int("0" + self._gs("%s"))'
     _bool_true = 'self._gs("%s") == "true"'
     _bool_false = 'self._gs("%s") == "false"'
-    _ret_types = {_integer: ['playmethod', 'browser', 'items_perpage', 'tvdb_art', 'tmdb_art', 'region', 'skip_scene', 'data_source', 'send_vp'],
+    _ret_types = {_integer: ['playmethod', 'browser', 'items_perpage', 'tvdb_art', 'tmdb_art', 'region', 'skip_scene', 'data_source', 'send_vp', 'stream_quality'],
                   _bool_true:
                       ['useshowfanart', 'disptvshow', 'paycont', 'logging', 'json_dump', 'json_dump_collisions', 'sub_stretch', 'log_http', 'remotectrl',
                        'remote_vol', 'multiuser', 'wl_export', 'audio_description', 'pv_episode_thumbnails', 'tld_episode_thumbnails', 'use_h265', 'enable_atmos',

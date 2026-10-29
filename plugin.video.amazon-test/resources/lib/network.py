@@ -203,7 +203,7 @@ def getURLData(mode, asin, retformat='json', devicetypeid=_g.dtid_web, version=2
             url += '&deviceVideoCodecOverride=H264' + (',H265' if _s.use_h265 else '')
             url += '&deviceHdrFormatsOverride=' + supported_hdr()
             url += '&deviceVideoQualityOverride=' + ('UHD' if _s.enable_uhd else 'HD')
-        elif playback_req and vMT == 'Feature' and not _s.l3_request_hd:
+        elif playback_req and vMT in ('Feature', 'LiveStreaming') and not _s.l3_request_hd:
             # Since Oct 2026 Amazon refuses the HD Widevine license for devices without L1 (software CDM),
             # the license response then holds no license and IS.A retries endlessly. Request SD for both
             # the manifest and the license, so the keys Amazon grants match the streams in the manifest.

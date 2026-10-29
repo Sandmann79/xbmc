@@ -991,3 +991,21 @@ msgstr "Região"
 msgctxt "#30303"
 msgid "Log"
 msgstr "Log"
+
+msgctxt "#30304"
+msgid ""
+"Request HD on devices without Widevine L1 (Amazon may refuse the license)"
+msgstr ""
+"Pede HD em dispositivos sem Widevine L1 (a Amazon pode recusar a licença)"
+
+msgctxt "#30310"
+msgid "Video quality"
+msgstr "Qualidade do vídeo"
+
+msgctxt "#30311"
+msgid "Best available"
+msgstr "A melhor opção disponível"
+
+msgctxt "#30312"
+msgid "Adaptive (inputstream.adaptive)"
+msgstr "Adaptativo (inputstream.adaptive)"

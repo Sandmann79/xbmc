@@ -1000,3 +1000,22 @@ msgstr "Régió"
 msgctxt "#30303"
 msgid "Log"
 msgstr "Log"
+
+msgctxt "#30304"
+msgid ""
+"Request HD on devices without Widevine L1 (Amazon may refuse the license)"
+msgstr ""
+"Widevine L1 nélküli eszközökön kérjen HD-t (az Amazon elutasíthatja a "
+"licencet)"
+
+msgctxt "#30310"
+msgid "Video quality"
+msgstr "Videóminőség"
+
+msgctxt "#30311"
+msgid "Best available"
+msgstr "A legjobb elérhető"
+
+msgctxt "#30312"
+msgid "Adaptive (inputstream.adaptive)"
+msgstr "Adaptív (inputstream.adaptive)"

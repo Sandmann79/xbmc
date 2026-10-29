@@ -945,6 +945,10 @@ msgctxt "#30303"
 msgid "Log"
 msgstr "Log"
 
+msgctxt "#30304"
+msgid "Request HD on devices without Widevine L1 (Amazon may refuse the license)"
+msgstr "HD auf Geräten ohne Widevine L1 anfordern (Amazon kann die Lizenz verweigern)"
+
 msgctxt "#30310"
 msgid "Video quality"
 msgstr "Videoqualität"

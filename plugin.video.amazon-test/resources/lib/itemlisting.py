@@ -47,7 +47,7 @@ def setContentAndView(content, **kwargs):
 
 def addDir(name, mode='', url='', infoLabels=None, opt='', catalog='Browse', cm=None, page=1, export=False, thumb=None):
     if export and mode == 'getPage':
-        exec(f'_g.pv.{mode}("{url}", "{opt}", {page}, export={export})')
+        getattr(_g.pv, mode)(url, opt, page, export=export)
         return
 
     useatv = _s.data_source == 1

@@ -82,7 +82,8 @@ def PlayVideo(name, asin, adultstr, streamtype, forcefb=0):
 
     def _extrFr(data):
         fps_string = re.compile('frameRate="([^"]*)').findall(data)[0]
-        fr = round(eval(fps_string + '.0'), 3)
+        num, _, den = fps_string.partition('/')
+        fr = round(float(num) / float(den or 1), 3)
         return str(fr).replace('.0', '')
 
     def _ParseStreams(suc, data, retmpd=False, bypassproxy=False, webid=False):
@@ -113,7 +114,7 @@ def PlayVideo(name, asin, adultstr, streamtype, forcefb=0):
         Log(f"auxCacheKey: {auxKey}", Log.DEBUG)
 
         while hosts:
-            for cdn in hosts:
+            for cdn in list(hosts):
                 prefHost = False if HostSet not in str(hosts) or HostSet == 'Auto' else HostSet
                 cdn_item = cdn
 
@@ -401,11 +402,12 @@ def PlayVideo(name, asin, adultstr, streamtype, forcefb=0):
         # available though token based authentification.
 
         for preferTokenToCookie in ([True, False] if _s.wvl1_device and streamtype != 2 else [False]):
-            cookie, req_param, headers, dtid, req_headers = _getPlaybackVars(preferToken=preferTokenToCookie)
-            if not cookie:
+            playback_vars = _getPlaybackVars(preferToken=preferTokenToCookie)
+            if not playback_vars:
                 _g.dialog.notification(getString(30203), getString(30200), xbmcgui.NOTIFICATION_ERROR)
                 Log('Login error at playback')
                 return False
+            cookie, req_param, headers, dtid, req_headers = playback_vars
 
             success, data = getURLData('catalog/GetPlaybackResources', asin, extra=True, vMT=vMT, dRes=dRes, useCookie=cookie, devicetypeid=dtid,
                                        proxyEndpoint=(None if bypassproxy else 'gpr'), opt=opt)

@@ -386,7 +386,7 @@ def detectWidevine():
         from .logging import Log
         crypto_session = xbmcdrm.CryptoSession('edef8ba9-79d6-4ace-a3c8-27dcd51d21ed', 'AES/CBC/NoPadding', 'HmacSHA256')
         sec_level = crypto_session.GetPropertyString('securityLevel')
-        Log('Detected Widevine security level: {}'.format(sec_level, Log.DEBUG))
+        Log(f'Detected Widevine security level: {sec_level}', Log.DEBUG)
         res = sec_level.upper() == 'L1'
     except:
         res = False

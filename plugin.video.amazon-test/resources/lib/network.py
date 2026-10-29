@@ -34,7 +34,7 @@ def _Error(data):
         return getString(30205)
     elif 'notowned' in code:
         return getString(30206)
-    elif 'invalidgeoip' or 'dependency' in code:
+    elif 'invalidgeoip' in code or 'dependency' in code:
         return getString(30207)
     elif 'temporarilyunavailable' in code:
         return getString(30208)
@@ -494,8 +494,10 @@ def GrabJSON(url, postData=None):
     if hasattr(GrabJSON, 'runs') and GrabJSON.runs:
         while GrabJSON.runs:
             sleep(1)
-    j = do(url, postData)
-    GrabJSON.runs = False
+    try:
+        j = do(url, postData)
+    finally:
+        GrabJSON.runs = False
     LogJSON(j, url)
     return j
 

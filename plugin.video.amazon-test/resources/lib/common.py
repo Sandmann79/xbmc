@@ -159,7 +159,7 @@ class Settings(Singleton):
                       ['useshowfanart', 'disptvshow', 'paycont', 'logging', 'json_dump', 'json_dump_collisions', 'sub_stretch', 'log_http', 'remotectrl',
                        'remote_vol', 'multiuser', 'wl_export', 'audio_description', 'pv_episode_thumbnails', 'tld_episode_thumbnails', 'use_h265', 'enable_atmos',
                        'profiles', 'show_pass', 'enable_uhd', 'show_recents', 'preload_seasons', 'preload_all_seasons', 'wvl1_device', 'search_history',
-                       'hide_trailers', 'export_not_aired', 'show_cats'],
+                       'hide_trailers', 'export_not_aired', 'show_cats', 'l3_request_hd'],
                   _bool_false: ['json_dump_raw', 'ssl_verif', 'proxy_mpdalter']}
 
     def __getattr__(self, name):
@@ -386,7 +386,7 @@ def detectWidevine():
         from .logging import Log
         crypto_session = xbmcdrm.CryptoSession('edef8ba9-79d6-4ace-a3c8-27dcd51d21ed', 'AES/CBC/NoPadding', 'HmacSHA256')
         sec_level = crypto_session.GetPropertyString('securityLevel')
-        Log('Detected Widevine security level: {}'.format(sec_level, Log.DEBUG))
+        Log(f'Detected Widevine security level: {sec_level}', Log.DEBUG)
         res = sec_level.upper() == 'L1'
     except:
         res = False

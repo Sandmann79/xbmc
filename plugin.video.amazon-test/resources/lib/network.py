@@ -34,7 +34,7 @@ def _Error(data):
         return getString(30205)
     elif 'notowned' in code:
         return getString(30206)
-    elif 'invalidgeoip' or 'dependency' in code:
+    elif 'invalidgeoip' in code or 'dependency' in code:
         return getString(30207)
     elif 'temporarilyunavailable' in code:
         return getString(30208)
@@ -203,6 +203,11 @@ def getURLData(mode, asin, retformat='json', devicetypeid=_g.dtid_web, version=2
             url += '&deviceVideoCodecOverride=H264' + (',H265' if _s.use_h265 else '')
             url += '&deviceHdrFormatsOverride=' + supported_hdr()
             url += '&deviceVideoQualityOverride=' + ('UHD' if _s.enable_uhd else 'HD')
+        elif playback_req and vMT in ('Feature', 'LiveStreaming') and not _s.l3_request_hd:
+            # Since Oct 2026 Amazon refuses the HD Widevine license for devices without L1 (software CDM),
+            # the license response then holds no license and IS.A retries endlessly. Request SD for both
+            # the manifest and the license, so the keys Amazon grants match the streams in the manifest.
+            url += '&deviceVideoQualityOverride=SD'
 
     if retURL:
         return url
@@ -489,8 +494,10 @@ def GrabJSON(url, postData=None):
     if hasattr(GrabJSON, 'runs') and GrabJSON.runs:
         while GrabJSON.runs:
             sleep(1)
-    j = do(url, postData)
-    GrabJSON.runs = False
+    try:
+        j = do(url, postData)
+    finally:
+        GrabJSON.runs = False
     LogJSON(j, url)
     return j
 

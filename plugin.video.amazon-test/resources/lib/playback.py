@@ -420,6 +420,9 @@ def PlayVideo(name, asin, adultstr, streamtype, forcefb=0):
             return False
 
         licURL = getURLData('catalog/GetPlaybackResources', asin, devicetypeid=dtid, opt=req_param, extra=True, vMT=vMT, dRes='Widevine2License', retURL=True)
+        if not bypassproxy:
+            # through the proxy, which logs Amazon's reason when it refuses the license
+            licURL = f'http://{_s.proxyaddress}/lic/{quote_plus(licURL)}'
         skip = timecodes.get('skipElements')
         Log(f'Skip Items: {skip}', Log.DEBUG)
 

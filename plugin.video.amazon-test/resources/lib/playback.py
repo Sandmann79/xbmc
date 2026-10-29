@@ -482,6 +482,7 @@ def PlayVideo(name, asin, adultstr, streamtype, forcefb=0):
         player.cookie = cookie
         player.content = streamtype
         player.extern = extern
+        player.path = mpd
         player.resolve(listitem)
 
         starttime = time.time()
@@ -489,6 +490,10 @@ def PlayVideo(name, asin, adultstr, streamtype, forcefb=0):
 
         while (not _g.monitor.abortRequested()) and player.running:
             if player.isPlayingVideo():
+                if not player.isPlayingOwn():
+                    # replaced by another video without a stop event: keep the position of ours as resume point
+                    player.finished()
+                    break
                 player.video_lastpos = player.getTime()
                 if time.time() > (starttime + player.interval):
                     starttime = time.time()
@@ -674,6 +679,23 @@ class _AmazonPlayer(xbmc.Player):
         self.resumedb = OSPJoin(_g.DATA_PATH, 'resume.db')
         self.sendvp = _s.send_vp
         self.event = 'START'
+        self.av_started = False
+        self.path = ''
+
+    def isPlayingOwn(self):
+        # Only our own video counts: after a failed start another add-on may start its own file,
+        # and a video started from a list replaces ours without a stop event
+        try:
+            playing = self.getPlayingFile()
+        except RuntimeError:
+            return False
+        return playing == self.path or playing.startswith('plugin://plugin.video.amazon')
+
+    def onAVStarted(self):
+        if self.isPlayingOwn():
+            self.av_started = True
+        else:
+            Log('Ignoring start of another file', Log.DEBUG)
 
     def resolve(self, li):
         if self.extern and not self.checkResume():
@@ -738,7 +760,18 @@ class _AmazonPlayer(xbmc.Player):
             fp.close()
 
     def onPlayBackEnded(self):
+        self._failedBeforeStart()
         self.finished()
+
+    def onPlayBackError(self):
+        self._failedBeforeStart()
+
+    def _failedBeforeStart(self):
+        # Playback ended before the video started (e.g. no license): stop waiting for it, or getTimes would
+        # take the next file that starts for this video and save its position as resume point
+        if not self.av_started and self.running:
+            Log('Playback ended before the video started', Log.ERROR)
+            self.running = False
 
     def onPlayBackStopped(self):
         self.finished()
@@ -771,10 +804,19 @@ class _AmazonPlayer(xbmc.Player):
                 self.watched = 1 if (self.video_lastpos * 100) / self.video_totaltime >= 90 else 0
                 self.saveResumePoint()
 
-    def getTimes(self, msg):
+    def getTimes(self, msg, timeout=60):
+        # Give up when playback never starts (e.g. a license error), instead of waiting forever
+        deadline = time.time() + timeout
         while self.video_totaltime <= 0:
+            if not self.running:
+                return
+            if time.time() > deadline:
+                Log(f'{msg}: playback did not start within {timeout}s', Log.ERROR)
+                self.running = False
+                return
             sleep(self.sleeptm)
-            if self.isPlaying() and self.getTotalTime() >= self.getTime() >= 0:
+            # a video that was playing before (e.g. a trailer) keeps running until the new one has started
+            if self.av_started and self.isPlaying() and self.getTotalTime() >= self.getTime() >= 0:
                 self.video_totaltime = self.getTotalTime()
                 self.video_lastpos = self.getTime()
         Log(f'{msg}: {self.video_lastpos}/{self.video_totaltime}')

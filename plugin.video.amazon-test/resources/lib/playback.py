@@ -4,7 +4,6 @@
 import base64
 import os
 import re
-import pickle
 import shlex
 import json
 import subprocess
@@ -18,6 +17,7 @@ import xbmc, xbmcgui, xbmcvfs, xbmcplugin
 from inputstreamhelper import Helper
 
 from .common import Globals, Settings, jsonRPC, sleep, MechanizeLogin, findKey, return_item, get_key
+from .db import get_resume_point, save_resume_point
 from .logging import Log
 from .configs import getConfig
 from .network import getURL, getURLData, getATVData, GrabJSON
@@ -740,31 +740,16 @@ class _AmazonPlayer(xbmc.Player):
         return True
 
     def getResumePoint(self):
-        from codecs import open as co
         # Trailers and live streams share the ASIN of the feature, they must not touch its resume point
-        if not xbmcvfs.exists(self.resumedb) or self.content in (1, 2):
+        if self.content in (1, 2) or not self.asin:
             return {}
-        with co(self.resumedb, 'rb') as fp:
-            try:
-                items = pickle.load(fp)
-            except (KeyError, pickle.UnpicklingError, EOFError):
-                items = {}
-            self.resume = items.get(self.asin, {}).get('resume', 0)
-            fp.close()
-        return items
+        self.resume = get_resume_point(_g.DATA_PATH, getattr(_g, 'MarketID', 'default'), self.asin)
+        return {self.asin: {'resume': self.resume}} if self.resume else {}
 
     def saveResumePoint(self):
-        from codecs import open as co
-        if self.content in (1, 2):
+        if self.content in (1, 2) or not self.asin:
             return
-        items = self.getResumePoint()
-        with co(self.resumedb, 'wb+') as fp:
-            if self.watched:
-                items.pop(self.asin, None)
-            else:
-                items.update({self.asin: {'resume': self.video_lastpos}})
-            pickle.dump(items, fp, 2)
-            fp.close()
+        save_resume_point(_g.DATA_PATH, getattr(_g, 'MarketID', 'default'), self.asin, self.video_lastpos, watched=bool(self.watched))
 
     def onPlayBackEnded(self):
         self._failedBeforeStart()

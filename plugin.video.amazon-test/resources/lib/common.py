@@ -109,8 +109,11 @@ class Globals(Singleton):
             self._globals['platform'] |= self.OS_ANDROID
         if xbmc.getCondVisibility('system.platform.webos'):
             self._globals['platform'] |= self.OS_WEBOS
-        if (xbmcvfs.exists('/etc/os-release')) and ('libreelec' in xbmcvfs.File('/etc/os-release').read()):
-            self._globals['platform'] |= self.OS_LE
+        if xbmcvfs.exists('/etc/os-release'):
+            with xbmcvfs.File('/etc/os-release') as f_os:
+                os_rel = f_os.read()
+            if 'libreelec' in os_rel:
+                self._globals['platform'] |= self.OS_LE
 
         # Save the language code for HTTP requests and set the locale for l10n
         loc = getdefaultlocale()[0]

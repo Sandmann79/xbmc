@@ -12,6 +12,7 @@ from urllib.parse import quote_plus
 import xbmc, xbmcgui, xbmcplugin, xbmcvfs
 
 from .common import findKey, MechanizeLogin
+from .db import load_legacy_cache_bytes
 from .logging import Log, WriteLog
 from .ages import AgeRestrictions
 from .singleton import Singleton
@@ -65,11 +66,12 @@ class PrimeVideo(Singleton):
     def getRecents(self):
         all_rec = {}
         if xbmcvfs.exists(self.recentsdb):
-            with open(self.recentsdb, 'rb') as fp:
-                try:
-                    all_rec = pickle.load(fp)
-                except:
-                    pass
+            try:
+                with xbmcvfs.File(self.recentsdb) as fp:
+                    raw = bytes(fp.readBytes())
+                all_rec = load_legacy_cache_bytes(raw) or {}
+            except Exception:
+                all_rec = {}
 
         cur_user = loadUser('name') + getConfig('profileID')
         user_rec = all_rec.get(cur_user, [])
@@ -99,13 +101,13 @@ class PrimeVideo(Singleton):
         if len(rec) > 200:
             rec = rec[0:200]
 
-        with open(self.recentsdb, 'wb') as fp:
+        with xbmcvfs.File(self.recentsdb, 'w') as fp:
             cur_user = loadUser('name') + getConfig('profileID')
             if cur_user in all_rec.keys():
                 all_rec[cur_user] = rec
             else:
                 all_rec.update({cur_user: rec})
-            pickle.dump(all_rec, fp)
+            fp.write(bytearray(pickle.dumps(all_rec)))
         if rem == 1:
             xbmc.executebuiltin(f"Container.Update(\"{xbmc.getInfoLabel('Container.FolderPath')}\", replace)")
 
@@ -176,7 +178,8 @@ class PrimeVideo(Singleton):
         if not data:
             jsonfile = os.path.join(self._g.PLUGIN_PATH, 'resources', 'menu', self._g.MarketID + '.json')
             jsonfile = jsonfile.replace(self._g.MarketID, 'ATVPDKIKX0DER') if not xbmcvfs.exists(jsonfile) else jsonfile
-            data = json.load(open(jsonfile))
+            with xbmcvfs.File(jsonfile) as jf:
+                data = json.loads(jf.read())
         self._createDB(self._menu_tbl)
         self.parseNodes(data)
         self.updateTime()
@@ -946,7 +949,7 @@ class PrimeVideo(Singleton):
         active = 0
         for item in j['profiles']:
             url = self._g.BaseUrl + item['switchLink']['partialURL']
-            n = item.get('name', 'Default').encode('utf-8')
+            n = item.get('name', 'Default')
             profiles.append((n, url, item['switchLink']['query'], item['avatarUrl']))
             if item.get('isSelected', False):
                 active = len(profiles) - 1
@@ -977,7 +980,7 @@ class PrimeVideo(Singleton):
             searchString = args.get('searchstring')
             self.Search(searchString)
         elif mode in ['checkMissing', 'Recent', 'switchProfile']:
-            exec (f'self._g.pv.{mode}()')
+            getattr(self._g.pv, mode)()
         elif mode == 'Channel':
             self.Channel(url=args.get('url'), uid=args.get('opt'))
         elif mode == 'updateRecents':
@@ -986,7 +989,6 @@ class PrimeVideo(Singleton):
             self._g.dialog.notification(self._g.__plugin__, getString(30269))
         elif mode == 'ageSettings':
             AgeRestrictions().Settings()
-
 
 
 

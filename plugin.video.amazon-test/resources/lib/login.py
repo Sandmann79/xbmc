@@ -651,7 +651,8 @@ class _Captcha(pyxbmct.AddonDialogWindow):
         if '.gif' in self.picurl:
             cap = getURL(self.picurl, rjson=False, binary=True)
             self.picurl = OSPJoin(_g.DATA_PATH, f'cap-{int(time.time() * 1000)}.gif')
-            open(self.picurl, 'wb').write(cap)
+            with xbmcvfs.File(self.picurl, 'w') as fp_cap:
+                fp_cap.write(bytearray(cap))
         self.title = title.get_text(strip=True)
         self.image = pyxbmct.Image('', aspectRatio=2)
         self.tb_head = pyxbmct.TextBox()

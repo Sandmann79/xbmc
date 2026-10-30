@@ -44,20 +44,18 @@ def WriteLog(data, fn='avod', force=False, comment=None):
         if not xbmcvfs.exists(path):
             break
         cnt += 1
-    logfile = xbmcvfs.File(path, 'w')
-    if comment:
-        logfile.write(comment)
-    logfile.write(data)
-    logfile.close()
+    with xbmcvfs.File(path, 'w') as logfile:
+        if comment:
+            logfile.write(comment)
+        logfile.write(data)
     Log(f'Saved Log with filename “{file}”', Log.DEBUG)
 
 
 def LogJSON(o, comment=None, optionalName=None):
-    from json import dump
+    from json import dumps
 
     if (not o) or (not _s.json_dump):
         return
-    from codecs import open as co
     from datetime import datetime
     try:
         LogJSON.counter += 1
@@ -68,14 +66,15 @@ def LogJSON(o, comment=None, optionalName=None):
         LogJSON.counter,
         '_' + optionalName if optionalName else ''
     )
-    with co(OSPJoin(_g.LOG_PATH, fn), 'w+', 'utf-8') as f:
+    with xbmcvfs.File(OSPJoin(_g.LOG_PATH, fn), 'w') as f:
         if comment:
             f.write(f'/* {comment} */\n')
-        dump(o, f, sort_keys=True, indent=4)
+        f.write(dumps(o, sort_keys=True, indent=4))
         Log(f'Saved JSON data with filename “{fn}”', Log.DEBUG)
 
 
 def createZIP():
+    import io
     from zipfile import ZipFile, ZIP_DEFLATED
     from datetime import datetime
     from .common import translatePath, getString
@@ -83,12 +82,17 @@ def createZIP():
     kodilog = OSPJoin(translatePath('special://logpath'), 'kodi.log')
     arcfile = OSPJoin(_g.DATA_PATH, f"logfiles_{datetime.now().strftime('%Y%m%d-%H%M%S')}.zip")
     arccmp = {'compresslevel': 5} if _g.KodiVersion >= 19 else {}
-    arc = ZipFile(arcfile, 'w', ZIP_DEFLATED, **arccmp)
-
-    for fn in xbmcvfs.listdir(_g.LOG_PATH)[1]:
-        arc.write(OSPJoin(_g.LOG_PATH, fn), arcname=(OSPJoin('log', fn)))
-    arc.write(kodilog, arcname='kodi.log')
-    arc.close()
+    buf = io.BytesIO()
+    with ZipFile(buf, 'w', ZIP_DEFLATED, **arccmp) as arc:
+        for fn in xbmcvfs.listdir(_g.LOG_PATH)[1]:
+            fpath = OSPJoin(_g.LOG_PATH, fn)
+            with xbmcvfs.File(fpath) as lf:
+                arc.writestr(OSPJoin('log', fn), bytes(lf.readBytes()))
+        if xbmcvfs.exists(kodilog):
+            with xbmcvfs.File(kodilog) as kf:
+                arc.writestr('kodi.log', bytes(kf.readBytes()))
+    with xbmcvfs.File(arcfile, 'w') as zf:
+        zf.write(bytearray(buf.getvalue()))
     _g.dialog.notification(_g.__plugin__, getString(30281).format(arcfile))
     Log(f'Archive created at {arcfile}', Log.DEBUG)
 

@@ -1,11 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-import os.path
 import re
 import time
 import json
 from copy import deepcopy
-from sqlite3 import dbapi2 as sqlite
 from threading import Thread
 from urllib.parse import quote_plus, urlencode, parse_qs
 
@@ -13,6 +11,7 @@ import xbmcgui, xbmc, xbmcplugin
 
 from .singleton import Singleton
 from .common import findKey, MechanizeLogin, get_key
+from .db import init_dbs
 from .logging import LogJSON, Log
 from .ages import AgeRestrictions
 from .network import getURL, LocaleSelector
@@ -177,7 +176,8 @@ class PrimeVideo(Singleton):
             else:
                 if self._s.show_cats and flt.get('current'):
                     self.writeCache(flt, resp['id'])
-                    self._cacheDb.commit()
+                    with self._dbLock:
+                        self._cacheDb.commit()
                     addDir(f'[B]{flt["text"]}: {flt["current"]}[/B]', 'getPage', 'cache', opt=quote_plus(resp['id']))
 
             if page == 'details':
@@ -255,7 +255,8 @@ class PrimeVideo(Singleton):
                     elif col_lst and 'heroCarousel' not in col_typ:
                         self.writeCache(item)
                         addDir(title, 'getPage', 'cache', opt=quote_plus(item['collectionId']), thumb=faceimg)
-                self._cacheDb.commit()
+                with self._dbLock:
+                    self._cacheDb.commit()
             else:
                 titles = resp['titles'][0] if 'titles' in resp and len(resp.get('titles', {})) > 0 else resp
                 col = titles.get('collectionItemList', [])
@@ -316,7 +317,8 @@ class PrimeVideo(Singleton):
             q['pageSize'] = self.def_ps
             q['startIndex'] = findKey('startIndex', pgmodel)
             self.writeCache({'col': resp['collections']}, urlencode(q))
-            self._cacheDb.commit()
+            with self._dbLock:
+                self._cacheDb.commit()
             return q
         return None
 
@@ -331,13 +333,18 @@ class PrimeVideo(Singleton):
 
     def writeCache(self, content, cont_id=None):
         cont_id = content['collectionId'] if cont_id is None else cont_id
-        c = self._cacheDb.cursor()
-        c.execute(f'insert or ignore into {self._cache_tbl} values (?,?)', [quote_plus(cont_id), json.dumps(content)])
-        c.close()
+        with self._dbLock:
+            self._cacheDb.execute(
+                f'INSERT OR IGNORE INTO {self._cache_tbl} (market_id, id, content) VALUES (?, ?, ?)',
+                (self._g.MarketID, quote_plus(cont_id), json.dumps(content))
+            )
 
     def loadCache(self, col_id):
-        c = self._cacheDb.cursor()
-        result = c.execute(f'select content from {self._cache_tbl} where id = (?)', (col_id,)).fetchone()
+        with self._dbLock:
+            result = self._cacheDb.execute(
+                f'SELECT content FROM {self._cache_tbl} WHERE market_id = ? AND id = ?',
+                (self._g.MarketID, col_id)
+            ).fetchone()
         if result and len(result) > 0:
             return json.loads(result[0])
         return {}
@@ -360,62 +367,18 @@ class PrimeVideo(Singleton):
             self._g.dialog.notification(self._g.__plugin__, msg, xbmcgui.NOTIFICATION_ERROR)
 
     def _createDB(self, table):
-        c = self._cacheDb.cursor()
         if table == self._cache_tbl:
-            c.execute(f'drop table if exists {self._cache_tbl}')
-            c.execute(f'''CREATE TABLE {self._cache_tbl}(
-                        id TEXT,
-                        content TEXT,
-                        PRIMARY KEY(id)
-                        );''')
-            self._cacheDb.commit()
-        elif table == self._art_tbl:
-            c = self._db.cursor()
-            c.execute(f'''CREATE TABLE IF NOT EXISTS {self._art_tbl}(
-                        asin TEXT UNIQUE,
-                        season INTEGER,
-                        info TEXT,
-                        date INTEGER,
-                        PRIMARY KEY(asin, season)
-                        );''')
-            c.execute('''CREATE TABLE IF NOT EXISTS miss(
-                        asins TEXT UNIQUE,
-                        title TEXT,
-                        year TEXT,
-                        content TEXT,
-                        info TEXT,
-                        PRIMARY KEY(asins, title)
-                        );''')
-            c.execute('''CREATE TABLE IF NOT EXISTS seasons(
-                        seriesasin TEXT,
-                        season INTEGER,
-                        art TEXT,
-                        PRIMARY KEY(seriesasin, season)
-                        );''')
-            self._db.commit()
-        c.close()
-
-    @staticmethod
-    def get_sqlite3_thread_safety():
-        # Source: https://ricardoanderegg.com/posts/python-sqlite-thread-safety
-        # Mape value from SQLite's THREADSAFE to Python's DBAPI 2.0
-        # threadsafety attribute.
-        sqlite_threadsafe2python_dbapi = {0: 0, 2: 1, 1: 3}
-        conn = sqlite.connect(":memory:")
-        threadsafety = conn.execute("select * from pragma_compile_options where compile_options like 'THREADSAFE=%'").fetchone()[0]
-        conn.close()
-        threadsafety_value = int(threadsafety.split("=")[1])
-        return sqlite_threadsafe2python_dbapi[threadsafety_value]
+            with self._dbLock:
+                with self._cacheDb:
+                    self._cacheDb.execute(
+                        f'DELETE FROM {self._cache_tbl} WHERE market_id = ?',
+                        (self._g.MarketID,)
+                    )
 
     def _initialiseDB(self):
-        check_same_thread = False if self.get_sqlite3_thread_safety() == 3 else True
         self._cache_tbl = 'cache'
         self._art_tbl = 'art'
-        self._dbFile = os.path.join(self._g.DATA_PATH, f'art-{self._g.MarketID}.db')
-        self._db = sqlite.connect(self._dbFile, check_same_thread=check_same_thread)
-        self._cacheFile = os.path.join(self._g.DATA_PATH, f'cache-{self._g.MarketID}.db')
-        self._cacheDb = sqlite.connect(self._cacheFile, check_same_thread=check_same_thread)
-        self._createDB(self._art_tbl)
+        self._cacheDb, self._db, self._dbLock = init_dbs(self._g.DATA_PATH, self._g.MarketID)
 
     @staticmethod
     def cleanTitle(title, search=False):
@@ -430,48 +393,56 @@ class PrimeVideo(Singleton):
         infoLabels = self.getMedia(item, infoLabels)
         if not self._s.preload_seasons:
             return infoLabels
-        c = self._db.cursor()
         asins = infoLabels['asins']
         season = int(infoLabels.get('season', -2))
         series = contentType == 'season' and self._s.disptvshow
         series_art = season > -1 and self._s.useshowfanart and self._s.tvdb_art != 0
         extra = f' and season = {season}' if season > -2 else ''
-        for asin in asins.split(','):
-            j = None
-            result = c.execute('select info from art where asin like (?)' + extra, ('%' + asin + '%',)).fetchone()
-            if result:
-                j = {k: v for k, v in json.loads(result[0]).items() if v != self._g.na and v is not None}
-                if 'poster' in j and contentType != 'episode':
-                    infoLabels['thumb'] = j['poster']
-                if 'poster' in j and contentType != 'movie':
-                    infoLabels['poster'] = j['poster']
-                if 'fanart' in j:
-                    infoLabels['fanart'] = j['fanart']
-                if 'banner' in j:
-                    infoLabels['banner'] = j['banner']
-                infoLabels.update({k: v for k, v in j.items() if k not in ['poster', 'fanart', 'banner', 'settings', 'title', 'isPrime']})
-            if (series_art and result) or series and 'seriesasin' in infoLabels:
-                result = c.execute('select info from art where asin like (?) and season = -1', ('%' + infoLabels['seriesasin'] + '%',)).fetchone()
+        with self._dbLock:
+            for asin in asins.split(','):
+                j = None
+                result = self._db.execute(
+                    'SELECT info FROM art WHERE market_id = ? AND asin LIKE (?)' + extra,
+                    (self._g.MarketID, '%' + asin + '%')
+                ).fetchone()
                 if result:
-                    j = {k: v for k, v in json.loads(result[0]).items() if v != self._g.na or v is None}
-                    if 'fanart' in j and series_art:
+                    j = {k: v for k, v in json.loads(result[0]).items() if v != self._g.na and v is not None}
+                    if 'poster' in j and contentType != 'episode':
+                        infoLabels['thumb'] = j['poster']
+                    if 'poster' in j and contentType != 'movie':
+                        infoLabels['poster'] = j['poster']
+                    if 'fanart' in j:
                         infoLabels['fanart'] = j['fanart']
-                    if series:
-                        infoLabels.update({k: v for k, v in j.items() if k not in ['settings', 'title', 'isPrime']})
-            if j is not None:
-                return infoLabels
+                    if 'banner' in j:
+                        infoLabels['banner'] = j['banner']
+                    infoLabels.update({k: v for k, v in j.items() if k not in ['poster', 'fanart', 'banner', 'settings', 'title', 'isPrime']})
+                if (series_art and result) or series and 'seriesasin' in infoLabels:
+                    result = self._db.execute(
+                        'SELECT info FROM art WHERE market_id = ? AND asin LIKE (?) AND season = -1',
+                        (self._g.MarketID, '%' + infoLabels['seriesasin'] + '%')
+                    ).fetchone()
+                    if result:
+                        j = {k: v for k, v in json.loads(result[0]).items() if v != self._g.na or v is None}
+                        if 'fanart' in j and series_art:
+                            infoLabels['fanart'] = j['fanart']
+                        if series:
+                            infoLabels.update({k: v for k, v in j.items() if k not in ['settings', 'title', 'isPrime']})
+                if j is not None:
+                    return infoLabels
 
-        if contentType in ['movie', 'seasonslist', 'season']:
-            il = {}
-            title = infoLabels['title']
-            if 'seasonslist' in contentType:
-                title = infoLabels['tvshowtitle']
-                il = infoLabels if infoLabels['season'] == item['selectedSeason']['seasonNumber'] else {}
-            elif 'movie' in contentType:
-                il = self.getMedia(item, il)
-            c.execute('insert or ignore into miss values (?,?,?,?,?)', (asins, title, infoLabels['year'], contentType, json.dumps(il)))
-        c.close()
-        self._db.commit()
+            if contentType in ['movie', 'seasonslist', 'season']:
+                il = {}
+                title = infoLabels['title']
+                if 'seasonslist' in contentType:
+                    title = infoLabels['tvshowtitle']
+                    il = infoLabels if infoLabels['season'] == item['selectedSeason']['seasonNumber'] else {}
+                elif 'movie' in contentType:
+                    il = self.getMedia(item, il)
+                with self._db:
+                    self._db.execute(
+                        'INSERT OR IGNORE INTO miss (market_id, asins, title, year, content, info) VALUES (?, ?, ?, ?, ?, ?)',
+                        (self._g.MarketID, asins, title, infoLabels['year'], contentType, json.dumps(il))
+                    )
         return infoLabels
 
     def checkMissing(self):
@@ -482,15 +453,21 @@ class PrimeVideo(Singleton):
 
     def processMissing(self):
         Log('Starting Fanart Update')
-        c = self._db.cursor()
         data = ''
         while data is not None and not self._g.monitor.abortRequested():
-            data = c.execute('select * from miss limit 1').fetchone()
+            with self._dbLock:
+                data = self._db.execute(
+                    'SELECT asins, title, year, content, info FROM miss WHERE market_id = ? LIMIT 1',
+                    (self._g.MarketID,)
+                ).fetchone()
+                if data is not None:
+                    with self._db:
+                        self._db.execute(
+                            'DELETE FROM miss WHERE market_id = ? AND asins = ?',
+                            (self._g.MarketID, data[0])
+                        )
             if data is not None:
-                c.execute('delete from miss where asins = ?', (data[0],))
-                self._db.commit()
                 self.retrieveArtWork(*data)
-        c.close()
         Log('Finished Fanart Update')
 
     def retrieveArtWork(self, asins, title, year, contentType, il):
@@ -499,7 +476,6 @@ class PrimeVideo(Singleton):
         aw = Artwork()
         il = json.loads(il)
         title = self.cleanTitle(title, True)
-        cur = self._db.cursor()
 
         if not asins:
             return
@@ -508,14 +484,21 @@ class PrimeVideo(Singleton):
         if item and 'selectedSeason' in item:
             il = self.getInfos(item['selectedSeason'], item, True)
             if len(item.get('seasons', 0)) > 1 and contentType != 'seasonslist' and self._s.preload_all_seasons:
-                for season in item['seasons']:
-                    s_id = season['titleId']
-                    s_num = season['seasonNumber']
-                    if s_num != il['season']:
-                        result = cur.execute('select asin from art where asin like (?)', ('%' + s_id + '%',)).fetchone()
-                        if result is None:
-                            cur.execute('insert or ignore into miss values (?,?,?,?,?)', (s_id, il['tvshowtitle'], None, 'season', '{}'))
-                self._db.commit()
+                with self._dbLock:
+                    with self._db:
+                        for season in item['seasons']:
+                            s_id = season['titleId']
+                            s_num = season['seasonNumber']
+                            if s_num != il['season']:
+                                result = self._db.execute(
+                                    'SELECT asin FROM art WHERE market_id = ? AND asin LIKE (?)',
+                                    (self._g.MarketID, '%' + s_id + '%')
+                                ).fetchone()
+                                if result is None:
+                                    self._db.execute(
+                                        'INSERT OR IGNORE INTO miss (market_id, asins, title, year, content, info) VALUES (?, ?, ?, ?, ?, ?)',
+                                        (self._g.MarketID, s_id, il['tvshowtitle'], None, 'season', '{}')
+                                    )
         il['setting'] = self._s.tmdb_art if contentType == 'movie' else self._s.tvdb_art
         season_number = il.get('season', -1)
         seriesasin = il.get('seriesasin')
@@ -525,28 +508,49 @@ class PrimeVideo(Singleton):
             il.update(aw.getTMDBImages(title, year=year)[0])
         if 'season' in contentType and ((self._s.tvdb_art == 1 and il.get('fanart') is None) or self._s.tvdb_art > 1):
             if seriesasin and season_number > -1:
-                result = cur.execute('select art from seasons where seriesasin like (?) and season=(?)', ('%' + seriesasin + '%', season_number)).fetchone()
-                if result:
-                    artwork = {season_number: json.loads(result[0])}
-                    cur.execute('delete from seasons where seriesasin like (?) and season=(?)', ('%' + seriesasin + '%', season_number))
+                with self._dbLock:
+                    result = self._db.execute(
+                        'SELECT art FROM seasons WHERE market_id = ? AND seriesasin LIKE (?) AND season = (?)',
+                        (self._g.MarketID, '%' + seriesasin + '%', season_number)
+                    ).fetchone()
+                    if result:
+                        artwork = {season_number: json.loads(result[0])}
+                        with self._db:
+                            self._db.execute(
+                                'DELETE FROM seasons WHERE market_id = ? AND seriesasin LIKE (?) AND season = (?)',
+                                (self._g.MarketID, '%' + seriesasin + '%', season_number)
+                            )
             if not artwork:
                 year = None if season_number > 1 else year
                 artwork = aw.getTVDBImages(self.cleanTitle(il.get('tvshowtitle', title), True), year)
             il.update(artwork.get(season_number, {}))
 
-        if 'season' in contentType:
-            if len(cur.execute('select asin from art where asin like (?)', ('%' + seriesasin + '%',)).fetchall()) == 0:
-                s_il = deepcopy(il)
-                s_il['title'] = il['tvshowtitle']
-                s_il.update(artwork.get(-1, {}))
-                cur.execute('insert or ignore into art values (?,?,?,?)', (seriesasin, -1, json.dumps(s_il), self.days_since_epoch()))
-                if artwork:
-                    for s, data in artwork.items():
-                        if s > 0 and s != season_number:
-                            cur.execute('insert or ignore into seasons values (?,?,?)', (seriesasin, s, json.dumps(data)))
-        cur.execute('insert or ignore into art values (?,?,?,?)', (asins, season_number, json.dumps(il), self.days_since_epoch()))
-        self._db.commit()
-        cur.close()
+        with self._dbLock:
+            with self._db:
+                if 'season' in contentType and seriesasin:
+                    existing_series = self._db.execute(
+                        'SELECT asin FROM art WHERE market_id = ? AND asin LIKE (?)',
+                        (self._g.MarketID, '%' + seriesasin + '%')
+                    ).fetchall()
+                    if len(existing_series) == 0:
+                        s_il = deepcopy(il)
+                        s_il['title'] = il.get('tvshowtitle', title)
+                        s_il.update(artwork.get(-1, {}))
+                        self._db.execute(
+                            'INSERT OR IGNORE INTO art (market_id, asin, season, info, date) VALUES (?, ?, ?, ?, ?)',
+                            (self._g.MarketID, seriesasin, -1, json.dumps(s_il), self.days_since_epoch())
+                        )
+                        if artwork:
+                            for s, data in artwork.items():
+                                if s > 0 and s != season_number:
+                                    self._db.execute(
+                                        'INSERT OR IGNORE INTO seasons (market_id, seriesasin, season, art) VALUES (?, ?, ?, ?)',
+                                        (self._g.MarketID, seriesasin, s, json.dumps(data))
+                                    )
+                self._db.execute(
+                    'INSERT OR IGNORE INTO art (market_id, asin, season, info, date) VALUES (?, ?, ?, ?, ?)',
+                    (self._g.MarketID, asins, season_number, json.dumps(il), self.days_since_epoch())
+                )
 
     @staticmethod
     def getAsins(content, crIL=True):
@@ -711,7 +715,7 @@ class PrimeVideo(Singleton):
         profiles = []
         active = 0
         for item in resp['profiles']:
-            n = item.get('name', 'Default').encode('utf-8')
+            n = item.get('name', 'Default')
             profiles.append((n, item['profileId'], item['avatar']['avatarUrls']['round']))
             if item.get('isActive', False):
                 active = len(profiles) - 1

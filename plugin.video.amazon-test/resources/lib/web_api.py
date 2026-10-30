@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 
 import json
-import pickle
 import re
 import time
 from collections import OrderedDict
@@ -14,6 +13,7 @@ import xbmc, xbmcplugin, xbmcgui
 from .singleton import Singleton
 from .common import key_exists, return_item, return_value, sleep, findKey, MechanizeLogin, decode_token, get_key
 from .network import getURL, getURLData, FQify, GrabJSON, LocaleSelector
+from .db import init_dbs, SQLiteVideoData
 from .logging import Log
 from .itemlisting import setContentAndView, addVideo, addDir
 from .users import loadUsers, loadUser, saveUserCookies, switchUser
@@ -27,8 +27,9 @@ class PrimeVideo(Singleton):
 
     _catalog = {}  # Catalog cache
     _videodata = {'urn2gti': {}}  # Video data cache
-    _catalogCache = None  # Catalog cache file name
-    _videodataCache = None  # Video data cache file name
+    _menuDb = None
+    _videoDb = None
+    _dbLock = None
     _separator = '/'  # Virtual path separator
 
     def __init__(self, globalsInstance, settingsInstance):
@@ -57,46 +58,54 @@ class PrimeVideo(Singleton):
         self._LoadCache()
 
     def _Flush(self, bFlushCacheData=True, bFlushVideoData=False):
-        """ Cache catalog and video data """
+        """ Cache catalog and video data into central SQLite databases """
+        if self._menuDb is None or self._videoDb is None:
+            self._LoadCache()
 
-        if bFlushCacheData:
-            with open(self._catalogCache, 'wb+') as fp:
-                pickle.dump(self._catalog, fp, -1)
+        if bFlushCacheData and self._catalog:
+            now = int(time.time())
+            exp = int(self._catalog.get('expiration', now + self._s.catalogCacheExpiry))
+            try:
+                cat_json = json.dumps(self._catalog, separators=(',', ':'))
+                with self._dbLock:
+                    with self._menuDb:
+                        self._menuDb.execute(
+                            'INSERT OR REPLACE INTO menu_cache (market_id, expiration, catalog_json, updated_at) VALUES (?, ?, ?, ?)',
+                            (self._g.MarketID, exp, cat_json, now)
+                        )
+            except Exception as exc:
+                Log(f'Failed to flush catalog to menuCache.db: {exc}', Log.ERROR)
+
         if bFlushVideoData:
-            with open(self._videodataCache, 'w+') as fp:
-                bPretty = self._s.logging
-                json.dump(self._videodata, fp, indent=2 if bPretty else None, separators=None if bPretty else (',', ':'), sort_keys=True)
+            try:
+                if isinstance(self._videodata, SQLiteVideoData):
+                    self._videodata.flush()
+            except Exception as exc:
+                Log(f'Failed to flush videodata to videoCache.db: {exc}', Log.ERROR)
 
     def _LoadCache(self):
-        """ Load cached catalog and video data """
-        from os.path import join as OSPJoin
-        from xbmcvfs import exists, delete
+        """ Load cached catalog and video data from menuCache.db and videoCache.db """
+        self._menuDb, self._videoDb, self._dbLock = init_dbs(self._g.DATA_PATH, self._g.MarketID)
+        self._videodata = SQLiteVideoData(self._videoDb, self._dbLock, self._g.MarketID)
+        self._catalog = {}
 
-        self._catalogCache = OSPJoin(self._g.DATA_PATH, f'PVCatalog{self._g.MarketID}.pvcp')
-        self._videodataCache = OSPJoin(self._g.DATA_PATH, f'PVVideoData{self._g.MarketID}.pvdp')
-
-        if exists(self._videodataCache):
-            try:
-                with open(self._videodataCache, 'r') as fp:
-                    data = json.load(fp)
-                if 'urn2gti' not in data:
-                    raise Exception('Old, unsafe cache data')
-                self._videodata = data
-            except:
-                Log(f'Removing corrupted cache file “{self._videodataCache}”', Log.DEBUG)
-                delete(self._videodataCache)
-                self._g.dialog.notification('Corrupted video cache', 'Unable to load the video cache data', xbmcgui.NOTIFICATION_ERROR)
-
-        if exists(self._catalogCache):
-            try:
-                with open(self._catalogCache, 'rb') as fp:
-                    cached = pickle.load(fp)
-                if time.time() < cached['expiration']:
-                    self._catalog = cached
-            except:
-                Log(f'Removing corrupted cache file “{self._catalogCache}”', Log.DEBUG)
-                delete(self._catalogCache)
-                self._g.dialog.notification('Corrupted catalog cache', 'Unable to load the catalog cache data', xbmcgui.NOTIFICATION_ERROR)
+        try:
+            with self._dbLock:
+                cur = self._menuDb.execute(
+                    'SELECT expiration, catalog_json FROM menu_cache WHERE market_id = ?',
+                    (self._g.MarketID,)
+                )
+                row = cur.fetchone()
+            if row is not None:
+                exp, raw_json = row
+                if time.time() < exp:
+                    self._catalog = json.loads(raw_json, object_pairs_hook=OrderedDict)
+        except Exception as exc:
+            Log(f'Corrupted catalog cache in menuCache.db: {exc}', Log.WARNING)
+            with self._dbLock:
+                with self._menuDb:
+                    self._menuDb.execute('DELETE FROM menu_cache WHERE market_id = ?', (self._g.MarketID,))
+            self._g.dialog.notification('Corrupted catalog cache', 'Unable to load the catalog cache data', xbmcgui.NOTIFICATION_ERROR)
 
     def _BeautifyText(self, title):
         """ Correct stylistic errors in Amazon's titles """
@@ -165,7 +174,7 @@ class PrimeVideo(Singleton):
                 if p.get('isDefault', False):
                     self._catalog['profiles']['default'] = p['id']
                 self._catalog['profiles'][p['id']] = {
-                    'title': p.get('name', 'Default').encode('utf-8'),
+                    'title': p.get('name', 'Default'),
                     'metadata': {'artmeta': {'thumb': p['avatarUrl']}},
                     'verb': f"pv/profiles/switch/{p['id']}",
                     'endpoint': p['switchLink'],
@@ -271,7 +280,6 @@ class PrimeVideo(Singleton):
     def DeleteCache(self, clear=0):
         """ Pops up a dialog asking cache purge confirmation """
         from .dialogs import PV_ClearCache
-        from xbmcvfs import delete
 
         # ClearCache.value returns a boolean bitmask
         if 0 == clear:
@@ -279,16 +287,21 @@ class PrimeVideo(Singleton):
         if 0 > clear:
             return
 
-        # Clear catalog (PVCP)
+        # Clear catalog (menuCache.db)
         if 1 & clear:
             self._catalog = {}
-            delete(self._catalogCache)
+            if self._menuDb is not None:
+                with self._dbLock:
+                    with self._menuDb:
+                        self._menuDb.execute('DELETE FROM menu_cache WHERE market_id = ?', (self._g.MarketID,))
             Log('Deleting catalog', Log.DEBUG)
 
-        # Clear video data (PVDP)
+        # Clear video data (videoCache.db)
         if 2 & clear:
-            self._videodata = {'urn2gti': {}}
-            delete(self._videodataCache)
+            if isinstance(self._videodata, SQLiteVideoData):
+                self._videodata.clear_market()
+            else:
+                self._videodata = SQLiteVideoData(self._videoDb, self._dbLock, self._g.MarketID)
             Log('Deleting video data', Log.DEBUG)
 
         del clear
@@ -496,6 +509,19 @@ class PrimeVideo(Singleton):
             if 'nextPage' in nodeKeys:
                 nodeKeys.pop(nodeKeys.index('nextPage'))
                 nodeKeys.append('nextPage')
+
+        # Batch-Preload aller benötigten GTIs (inkl. Kind-/Parent-GTIs) in einer einzigen SQLite-Abfrage
+        if isinstance(self._videodata, SQLiteVideoData) and nodeKeys:
+            self._videodata.preload(nodeKeys)
+            extra_keys = []
+            for k in nodeKeys:
+                if k in self._videodata:
+                    vd_entry = self._videodata[k]
+                    extra_keys.extend(vd_entry.get('children', []))
+                    if 'parent' in vd_entry:
+                        extra_keys.append(vd_entry['parent'])
+            if extra_keys:
+                self._videodata.preload(extra_keys)
 
         ft_exp = (2, 0, 1, 3, 0, 2)
         folderType = 0 if 'root' == path else 1
@@ -917,7 +943,9 @@ class PrimeVideo(Singleton):
                 bEpisodesOnly = oid == gti
                 siblings = [] if bEpisodesOnly else vd['siblings'][:]
                 siblings.append(gti)
-                siblings = sorted(siblings, key=(lambda k: self._videodata[k]['metadata']['videometa']['season']))
+                if isinstance(self._videodata, SQLiteVideoData):
+                    self._videodata.preload(siblings)
+                siblings = sorted(siblings, key=(lambda k: get_key(0, self._videodata.get(k, {}), 'metadata', 'videometa', 'season')))
                 for gti in siblings:
                     # Add season if we're not inside a season already
                     if (not bEpisodesOnly) and (gti not in o):

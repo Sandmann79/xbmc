@@ -151,8 +151,6 @@ class Globals(Singleton):
             from .web_api import PrimeVideo
         elif ds == 1:
             from .android_api import PrimeVideo
-        elif ds == 2:
-            from .atv_api import PrimeVideo
         cur_pv = self._globals.get('pv')
         if cur_pv is None or not isinstance(cur_pv, PrimeVideo) or getattr(cur_pv, '_active_mid', None) != mid:
             self._globals['pv'] = PrimeVideo(self, Settings())

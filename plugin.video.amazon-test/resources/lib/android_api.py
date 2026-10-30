@@ -3,6 +3,7 @@
 import re
 import time
 import json
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from copy import deepcopy
 from threading import Thread
 from urllib.parse import quote_plus, urlencode, parse_qs
@@ -453,21 +454,32 @@ class PrimeVideo(Singleton):
 
     def processMissing(self):
         Log('Starting Fanart Update')
-        data = ''
-        while data is not None and not self._g.monitor.abortRequested():
+        while not self._g.monitor.abortRequested():
             with self._dbLock:
-                data = self._db.execute(
-                    'SELECT asins, title, year, content, info FROM miss WHERE market_id = ? LIMIT 1',
+                rows = self._db.execute(
+                    'SELECT asins, title, year, content, info FROM miss WHERE market_id = ? LIMIT 6',
                     (self._g.MarketID,)
-                ).fetchone()
-                if data is not None:
-                    with self._db:
-                        self._db.execute(
-                            'DELETE FROM miss WHERE market_id = ? AND asins = ?',
-                            (self._g.MarketID, data[0])
-                        )
-            if data is not None:
-                self.retrieveArtWork(*data)
+                ).fetchall()
+                if not rows:
+                    break
+                with self._db:
+                    self._db.executemany(
+                        'DELETE FROM miss WHERE market_id = ? AND asins = ?',
+                        [(self._g.MarketID, r[0]) for r in rows]
+                    )
+
+            if len(rows) == 1:
+                self.retrieveArtWork(*rows[0])
+            else:
+                with ThreadPoolExecutor(max_workers=min(3, len(rows))) as executor:
+                    futures = [executor.submit(self.retrieveArtWork, *row) for row in rows]
+                    for fut in as_completed(futures):
+                        if self._g.monitor.abortRequested():
+                            break
+                        try:
+                            fut.result()
+                        except Exception as exc:
+                            Log(f'retrieveArtWork worker error: {exc}', Log.WARNING)
         Log('Finished Fanart Update')
 
     def retrieveArtWork(self, asins, title, year, contentType, il):

@@ -3,12 +3,16 @@
 
 import json
 import mechanicalsoup
+import random
 import re
 import requests
+import threading
+import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from timeit import default_timer as timer
 from bs4 import BeautifulSoup
 from copy import deepcopy
-from urllib.parse  import urlencode, quote_plus, urlparse, parse_qs
+from urllib.parse import urlencode, quote_plus, urlparse, parse_qs
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
@@ -21,8 +25,56 @@ from .configs import getConfig, writeConfig
 from .metrics import addNetTime
 
 _session = None
+_grabjson_lock = threading.RLock()
 _g = Globals()
 _s = Settings()
+
+
+class _RateLimiter:
+    """
+    Adaptiver Rate-Limiter für paralleles Webscraping:
+    - Begrenzt gleichzeitige Requests über ein BoundedSemaphore.
+    - Pausiert alle Worker-Threads bei HTTP 429 / 503 oder Captcha-Erkennung mit Exponential Backoff + Jitter.
+    """
+    def __init__(self, max_concurrent=4):
+        self.semaphore = threading.BoundedSemaphore(max_concurrent)
+        self._lock = threading.Lock()
+        self._cooldown_until = 0.0
+        self._consecutive_429 = 0
+
+    def wait_before_request(self):
+        while not _g.monitor.abortRequested():
+            with self._lock:
+                wait_sec = self._cooldown_until - time.monotonic()
+            if wait_sec <= 0:
+                break
+            if _g.monitor.waitForAbort(min(wait_sec, 0.5)):
+                break
+
+    def trigger_cooldown(self, retry_after_header=None, reason='HTTP 429/503'):
+        with self._lock:
+            self._consecutive_429 = min(self._consecutive_429 + 1, 5)
+            delay = None
+            if retry_after_header:
+                try:
+                    delay = min(float(retry_after_header), 30.0)
+                except (ValueError, TypeError):
+                    delay = None
+            if delay is None:
+                base = min(1.5 * (2 ** (self._consecutive_429 - 1)), 15.0)
+                delay = base + random.uniform(0.15, 0.75)
+            target = time.monotonic() + delay
+            if target > self._cooldown_until:
+                self._cooldown_until = target
+                Log(f'RateLimiter cooldown ({reason}): pausing parallel workers for {delay:.2f}s', Log.WARNING)
+
+    def record_success(self):
+        with self._lock:
+            if self._consecutive_429 > 0 and time.monotonic() >= self._cooldown_until:
+                self._consecutive_429 = max(0, self._consecutive_429 - 1)
+
+
+_rate_limiter = _RateLimiter(max_concurrent=4)
 
 
 def _Error(data):
@@ -76,14 +128,15 @@ def mobileUA(content):
 def _get_session(retry=True):
     global _session
 
-    if _session is not None and retry:
+    if _session is not None:
         return _session
 
     session = requests.Session()
     retries = Retry(
-        total=6 if retry else 0,
-        backoff_factor=0.5,
+        total=4,
+        backoff_factor=0.6,
         status_forcelist=[500, 502, 503, 504, 408, 429],
+        respect_retry_after_header=True,
         raise_on_status=False
     )
     adapter = HTTPAdapter(pool_connections=20, pool_maxsize=20, max_retries=retries)
@@ -135,17 +188,34 @@ def getURL(url, useCookie=False, silent=False, headers=None, rjson=True, check=F
         headers['X-Requested-With'] = 'XMLHttpRequest'
 
     try:
-        session.headers.update(headers)
-        getURL.headers = session.headers
+        req_headers = dict(session.headers)
+        req_headers.update(headers)
+        getURL.headers = req_headers
         starttime = timer()
-        r = session.request(method, url, data=postdata, verify=_s.ssl_verif, stream=True, allow_redirects=allow_redirects)
+        _rate_limiter.wait_before_request()
+        if _g.monitor.abortRequested():
+            return retval
+        with _rate_limiter.semaphore:
+            r = session.request(method, url, data=postdata, headers=req_headers, verify=_s.ssl_verif, stream=True, allow_redirects=allow_redirects, timeout=(10, 20))
+            if check and r.status_code in (400, 403, 404, 405, 501):
+                r.close()
+                r = session.request('GET', url, data=postdata, headers=req_headers, verify=_s.ssl_verif, stream=True, allow_redirects=allow_redirects, timeout=(10, 20))
         getURL.lastResponseCode = r.status_code  # Set last response code
+        if check:
+            r.close()
+        if r.status_code in (429, 503):
+            _rate_limiter.trigger_cooldown(r.headers.get('Retry-After'), f'HTTP {r.status_code}')
+        elif 200 <= r.status_code < 400:
+            _rate_limiter.record_success()
         response = 'OK' if 400 > r.status_code >= 200 else ''
         if not check:
-            response = r.content if binary else r.json() if rjson else r.text
-            if _s.log_http:
-                WriteLog(BeautifulSoup(r.text, 'html.parser').prettify(), 'html', True, comment=f'<-- {url} -->')
-        if useCookie and 'auth-cookie-warning-message' in response:
+            try:
+                response = r.content if binary else r.json() if rjson else r.text
+                if _s.log_http:
+                    WriteLog(BeautifulSoup(r.text, 'html.parser').prettify(), 'html', True, comment=f'<-- {url} -->')
+            finally:
+                r.close()
+        if useCookie and isinstance(response, str) and 'auth-cookie-warning-message' in response:
             Log('Cookie invalid', Log.ERROR)
             _g.dialog.notification(_g.__plugin__, getString(30266), xbmcgui.NOTIFICATION_ERROR)
             return retval
@@ -396,7 +466,7 @@ def GrabJSON(url, postData=None):
             postData = ""
         if '/api/' in url:
             headers = None
-        r = getURL(FQify(url), silent=True, useCookie=True, rjson=False, postdata=postData, headers=headers)
+        r = getURL(FQify(url), silent=True, useCookie=cj if cj else True, rjson=False, postdata=postData, headers=headers)
         if not r:
             return None
         r = r.strip()
@@ -468,38 +538,106 @@ def GrabJSON(url, postData=None):
         return o
 
     def Captcha(r):
-        from .login import MFACheck
-        from .common import parseHTML
-        u = FQify(url)
-        cj = MechanizeLogin()
-        br = mechanicalsoup.StatefulBrowser(soup_config={'features': 'html.parser'})
-        br.session.headers = getURL.headers
-        br.set_cookiejar(cj)
-        br.open_fake_page(r, u)
-        r, soup = parseHTML(br)
-        if any(sp in r for sp in _g.mfa_keywords):
-            br = MFACheck(br, '', soup)
-            if br is None:
-                return False
-            if not br.get_current_form() is None:
-                br.submit_selected()
-            from .users import saveUserCookies
-            saveUserCookies(cj)
-            r = getURL(u, useCookie=True, rjson=False, postdata=postData)
+        with _grabjson_lock:
+            _rate_limiter.trigger_cooldown(reason='Captcha/MFA challenge detected')
+            from .login import MFACheck
+            from .common import parseHTML
+            u = FQify(url)
+            cj_cap = MechanizeLogin()
+            br = mechanicalsoup.StatefulBrowser(soup_config={'features': 'html.parser'})
+            br.session.headers = getattr(getURL, 'headers', {})
+            br.set_cookiejar(cj_cap)
             br.open_fake_page(r, u)
             r, soup = parseHTML(br)
-            WriteLog(r, 'captcha-webapi')
-        return BeautifulSoup(r, 'html.parser').find_all('script', {'type': re.compile('(?:text/template|application/json)'), 'id': ''})
+            if any(sp in r for sp in _g.mfa_keywords):
+                br = MFACheck(br, '', soup)
+                if br is None:
+                    return False
+                if not br.get_current_form() is None:
+                    br.submit_selected()
+                from .users import saveUserCookies
+                saveUserCookies(cj_cap)
+                r = getURL(u, useCookie=True, rjson=False, postdata=postData)
+                br.open_fake_page(r, u)
+                r, soup = parseHTML(br)
+                WriteLog(r, 'captcha-webapi')
+            return BeautifulSoup(r, 'html.parser').find_all('script', {'type': re.compile('(?:text/template|application/json)'), 'id': ''})
 
-    if hasattr(GrabJSON, 'runs') and GrabJSON.runs:
-        while GrabJSON.runs:
-            sleep(1)
-    try:
-        j = do(url, postData)
-    finally:
-        GrabJSON.runs = False
+    cj = getattr(GrabJSON, '_shared_cj', None)
+    j = do(url, postData)
     LogJSON(j, url)
     return j
+
+
+def getURLParallel(urls, useCookie=False, rjson=True, headers=None, max_workers=4):
+    """
+    Ruft mehrere URLs parallel und rate-limitiert über den globalen Connection-Pool ab.
+    Gibt ein Dict {url: response} in deterministischer Reihenfolge zurück.
+    """
+    unique_urls = list(dict.fromkeys(u for u in urls if u))
+    if not unique_urls:
+        return {}
+    if useCookie is True:
+        useCookie = MechanizeLogin()
+        if not useCookie:
+            return {}
+    if len(unique_urls) == 1:
+        u0 = unique_urls[0]
+        return {u0: getURL(u0, useCookie=useCookie, silent=True, headers=headers, rjson=rjson)}
+
+    results = {}
+    workers = min(max_workers, len(unique_urls), 4)
+    with ThreadPoolExecutor(max_workers=workers) as executor:
+        future_to_url = {
+            executor.submit(getURL, u, useCookie=useCookie, silent=True, headers=headers, rjson=rjson): u
+            for u in unique_urls
+        }
+        for future in as_completed(future_to_url):
+            u = future_to_url[future]
+            if _g.monitor.abortRequested():
+                break
+            try:
+                results[u] = future.result()
+            except Exception as exc:
+                Log(f'getURLParallel error for {u}: {exc}', Log.ERROR)
+                results[u] = {} if rjson else ''
+    return {u: results.get(u, {} if rjson else '') for u in unique_urls}
+
+
+def GrabJSONParallel(urls, max_workers=4):
+    """
+    Lädt und parst mehrere Web-API-Seiten (HTML oder JSON) parallel in Worker-Threads
+    unter Berücksichtigung des adaptiven Rate-Limiters.
+    Gibt ein Dict {url: parsed_json_dict} zurück.
+    """
+    unique_urls = list(dict.fromkeys(u for u in urls if u))
+    if not unique_urls:
+        return {}
+    cj = MechanizeLogin()
+    if not cj:
+        return {}
+    if len(unique_urls) == 1:
+        u0 = unique_urls[0]
+        return {u0: GrabJSON(u0)}
+
+    results = {}
+    workers = min(max_workers, len(unique_urls), 4)
+    GrabJSON._shared_cj = cj
+    try:
+        with ThreadPoolExecutor(max_workers=workers) as executor:
+            future_to_url = {executor.submit(GrabJSON, u): u for u in unique_urls}
+            for future in as_completed(future_to_url):
+                u = future_to_url[future]
+                if _g.monitor.abortRequested():
+                    break
+                try:
+                    results[u] = future.result()
+                except Exception as exc:
+                    Log(f'GrabJSONParallel error for {u}: {exc}', Log.ERROR)
+                    results[u] = None
+    finally:
+        GrabJSON._shared_cj = None
+    return {u: results.get(u) for u in unique_urls}
 
 
 def LocaleSelector():

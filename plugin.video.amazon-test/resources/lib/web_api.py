@@ -5,6 +5,7 @@ import json
 import re
 import time
 from collections import OrderedDict
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from copy import deepcopy
 from urllib.parse import quote_plus, unquote_plus, quote
 
@@ -12,7 +13,7 @@ import xbmc, xbmcplugin, xbmcgui
 
 from .singleton import Singleton
 from .common import key_exists, return_item, return_value, sleep, findKey, MechanizeLogin, decode_token, get_key
-from .network import getURL, getURLData, FQify, GrabJSON, LocaleSelector
+from .network import getURL, getURLData, FQify, GrabJSON, GrabJSONParallel, LocaleSelector
 from .db import init_dbs, SQLiteVideoData
 from .logging import Log
 from .itemlisting import setContentAndView, addVideo, addDir
@@ -885,7 +886,52 @@ class PrimeVideo(Singleton):
             elif 'images' in item:
                 o[urn]['metadata']['artmeta']['thumb'] = MaxSize(findKey('url', item['images']))
 
-        def AddSeason(oid, o, bCacheRefresh, url):
+        def _fetch_tv_ancestor_show(episode_gti):
+            """Ermittelt den übergeordneten Serien-Knoten (SHOW) einer Episode via GetPlaybackResources."""
+            try:
+                suc, res = getURLData(
+                    'catalog/GetPlaybackResources',
+                    episode_gti,
+                    silent=True,
+                    extra=True,
+                    useCookie=cj if cj else True,
+                    opt='&titleDecorationScheme=primary-content',
+                    dRes='CatalogMetadata'
+                )
+                if suc and isinstance(res, dict):
+                    family = res.get('catalogMetadata', {}).get('family', {}).get('tvAncestors', [])
+                    for a in family:
+                        if a.get('catalog', {}).get('type') == 'SHOW':
+                            return a['catalog']
+            except Exception:
+                pass
+            return None
+
+        def _apply_show_parent(seasonGTI, parent_cat):
+            """Verknüpft eine Staffel und ihre Siblings deterministisch mit dem Serien-Parent-Knoten."""
+            if not parent_cat or seasonGTI not in self._videodata:
+                return None, False
+            pid = parent_cat['id']
+            self._videodata[seasonGTI]['parent'] = pid
+            if pid not in self._videodata:
+                self._videodata[pid] = {
+                    'title': parent_cat['title'],
+                    'metadata': {'videometa': {'mediatype': 'tvshow'}},
+                    'children': [seasonGTI]
+                }
+            else:
+                if 'children' not in self._videodata[pid]:
+                    self._videodata[pid]['children'] = []
+                if seasonGTI not in self._videodata[pid]['children']:
+                    self._videodata[pid]['children'].append(seasonGTI)
+            for gti in self._videodata[seasonGTI].get('siblings', []):
+                if gti in self._videodata:
+                    self._videodata[gti]['parent'] = pid
+                if gti not in self._videodata[pid]['children']:
+                    self._videodata[pid]['children'].append(gti)
+            return pid, True
+
+        def AddSeason(oid, o, bCacheRefresh, url, preloaded_data=None, pending_ancestors=None):
             """ Given a season, adds TV Shows to the catalog """
             urn = ExtractURN(url)
             parent = None
@@ -894,26 +940,18 @@ class PrimeVideo(Singleton):
             if bCacheRefresh or (urn not in self._videodata['urn2gti']):
                 # Find the show the season belongs to
                 url += ('' if 'episodeListSize' in url else ('&' if '?' in url else '?') + 'episodeListSize=9999')
-                bUpdatedVideoData |= ParseSinglePage(oid, season, bCacheRefresh, url=url)
-                seasonGTI = self._videodata['urn2gti'][urn]
-                try:
-                    # Query an episode to find its ancestors
-                    family = getURLData('catalog/GetPlaybackResources', self._videodata[seasonGTI]['children'][0], silent=True, extra=True, useCookie=True,
-                                        opt='&titleDecorationScheme=primary-content', dRes='CatalogMetadata')[1]['catalogMetadata']['family']['tvAncestors']
-                    # Grab the 'SHOW' ancestor ({SHOW: [{SEASON: [EPISODE, …], …}])
-                    parent = [a['catalog'] for a in family if 'SHOW' == a['catalog']['type']][0]
-                except: pass
-                if parent:
-                    # {'id': gti, 'title': …, 'type': 'SHOW', …}
-                    pid = parent['id']
-                    self._videodata[seasonGTI]['parent'] = pid
-                    self._videodata[pid] = {'title': parent['title'], 'metadata': {'videometa': {'mediatype': 'tvshow'}}, 'children': [seasonGTI]}
-                    for gti in self._videodata[seasonGTI]['siblings']:
-                        self._videodata[gti]['parent'] = pid
-                        if gti not in self._videodata[pid]['children']:
-                            self._videodata[pid]['children'].append(gti)
-                    parent = pid
-                    bUpdatedVideoData = True
+                bUpdatedVideoData |= ParseSinglePage(oid, season, bCacheRefresh, data=preloaded_data, url=url)
+                seasonGTI = self._videodata['urn2gti'].get(urn)
+                if seasonGTI and seasonGTI in self._videodata:
+                    children = self._videodata[seasonGTI].get('children', [])
+                    if children:
+                        if pending_ancestors is not None:
+                            pending_ancestors.append((oid, o, season, seasonGTI, children[0]))
+                            return bUpdatedVideoData
+                        parent_cat = _fetch_tv_ancestor_show(children[0])
+                        if parent_cat:
+                            parent, upd = _apply_show_parent(seasonGTI, parent_cat)
+                            bUpdatedVideoData |= upd
             else:
                 parent = self._videodata[self._videodata['urn2gti'][urn]].get('parent')
             bSeasonOnly = (not parent) or (oid == parent)
@@ -1314,48 +1352,64 @@ class PrimeVideo(Singleton):
         pageNumber = 1  # Page number
 
         while 0 < len(requestURLs):
-            requestURL = requestURLs.pop(0)  # rURLs: FIFO stack
-            o = obj
+            # Stufe: Wenn mehrere Folge-URLs (z.B. Episoden-Paginierung oder Siblings) in der Queue liegen,
+            # rufen wir den aktuellen Batch parallel über GrabJSONParallel ab.
+            batch_urls = []
+            while requestURLs and len(batch_urls) < 4:
+                u = requestURLs.pop(0)
+                if u is not None:
+                    u += ('' if 'episodeListSize' in u or '/api/' in u else ('&' if '?' in u else '?') + 'episodeListSize=9999')
+                batch_urls.append(u)
 
-            # Too many instances to track, append the episode finder to about every query and cross fingers
-            if requestURL is not None:
-                requestURL += ('' if 'episodeListSize' in requestURL or '/api/' in requestURL else ('&' if '?' in requestURL else '?') + 'episodeListSize=9999')
+            prefetched_batch = {}
+            urls_to_grab = [
+                u for u in batch_urls
+                if u is not None and 'lazyLoadData' not in obj and (
+                    bCacheRefresh or not ExtractURN(u) or ExtractURN(u) not in self._videodata['urn2gti']
+                )
+            ]
+            if len(urls_to_grab) > 1:
+                prefetched_batch = GrabJSONParallel(urls_to_grab, max_workers=4)
 
-            # Load content
-            bCouldNotParse = False
-            try:
-                cnt = None
+            for requestURL in batch_urls:
+                o = obj
 
-                # Use cached data, if available
-                if 'lazyLoadData' in o:
-                    cnt = o['lazyLoadData']
-                    del o['lazyLoadData']
+                # Load content
+                bCouldNotParse = False
+                try:
+                    cnt = None
 
-                # Load content from an external url
-                if not cnt:
-                    urn = ExtractURN(requestURL)
-                    if (not bCacheRefresh) and urn and (urn in self._videodata['urn2gti']):
-                        # There are no API endpoints for movie/series pages, so we handle them in a separate function
-                        bUpdatedVideoData |= ParseSinglePage(breadcrumb[-1], o, bCacheRefresh, url=requestURL)
-                        if 'lazyLoadURL' in o:
-                            if 'ref' not in o:
-                                o['ref'] = o['lazyLoadURL']
-                            del o['lazyLoadURL']
-                        continue
-                    else:
-                        cnt = GrabJSON(requestURL)
+                    # Use cached data, if available
+                    if 'lazyLoadData' in o:
+                        cnt = o['lazyLoadData']
+                        del o['lazyLoadData']
 
-                # Don't switch direct action for reference until we have content to show for it
-                if cnt and ('lazyLoadURL' in o):
-                    if 'ref' not in o:
-                        o['ref'] = o['lazyLoadURL']
-                    del o['lazyLoadURL']
-            except:
-                bCouldNotParse = True
-            if bCouldNotParse or (not cnt):
-                self._g.dialog.notification(getString(30251), requestURL[:48], xbmcgui.NOTIFICATION_ERROR)
-                Log(f'Unable to fetch the url: {requestURL}', Log.ERROR)
-                continue
+                    # Load content from an external url
+                    if not cnt:
+                        urn = ExtractURN(requestURL)
+                        if (not bCacheRefresh) and urn and (urn in self._videodata['urn2gti']):
+                            # There are no API endpoints for movie/series pages, so we handle them in a separate function
+                            with self._dbLock:
+                                bUpdatedVideoData |= ParseSinglePage(breadcrumb[-1], o, bCacheRefresh, url=requestURL)
+                                if 'lazyLoadURL' in o:
+                                    if 'ref' not in o:
+                                        o['ref'] = o['lazyLoadURL']
+                                    del o['lazyLoadURL']
+                            continue
+                        else:
+                            cnt = prefetched_batch.get(requestURL) if requestURL in prefetched_batch else GrabJSON(requestURL)
+
+                    # Don't switch direct action for reference until we have content to show for it
+                    if cnt and ('lazyLoadURL' in o):
+                        if 'ref' not in o:
+                            o['ref'] = o['lazyLoadURL']
+                        del o['lazyLoadURL']
+                except:
+                    bCouldNotParse = True
+                if bCouldNotParse or (not cnt):
+                    self._g.dialog.notification(getString(30251), (requestURL or '')[:48], xbmcgui.NOTIFICATION_ERROR)
+                    Log(f'Unable to fetch the url: {requestURL}', Log.ERROR)
+                    continue
 
             # Submenus
             mmpos = [len(breadcrumb)-i for i, x in enumerate(breadcrumb) if 'mmlinks' in x]
@@ -1461,6 +1515,12 @@ class PrimeVideo(Singleton):
                 if isinstance(vo, list):
                     vo = vo[0]
                 items = vo.get('entities', []) + vo.get('items', []) + vo.get('content', {}).get('items', [])
+
+                # Stufe 1 (Paralleler Prefetch der Katalog-Elemente):
+                # Sammle alle Ziel-URLs (Filme & Serien/Staffeln), die noch nicht im SQLite-Cache liegen,
+                # und lade sie in einer parallelen Welle über GrabJSONParallel vorab.
+                parsed_items = []
+                urls_to_prefetch = []
                 for item in items:
                     tile = return_value(item, 'image', 'alternateText')
                     tile_cov = item.get('image', {})
@@ -1480,6 +1540,21 @@ class PrimeVideo(Singleton):
                             t = item[wl]['endpoint']['query']['titleType'].lower()
                         except:
                             t = ''
+                        is_season_or_show = (t in ['season', 'show']) or ('season' in item) or ('show' in item)
+                        fetch_url = iu
+                        if iu and not ('station' in item or (tile and iu) or ('liveInfo' in item) or ('event' == t)):
+                            urn = ExtractURN(iu)
+                            if is_season_or_show:
+                                fetch_url = iu + ('' if 'episodeListSize' in iu else ('&' if '?' in iu else '?') + 'episodeListSize=9999')
+                            if bCacheRefresh or (urn and urn not in self._videodata['urn2gti']):
+                                urls_to_prefetch.append(fetch_url)
+                        parsed_items.append((item, tile, tile_cov, iu, fetch_url, t, is_season_or_show))
+
+                prefetched_pages = GrabJSONParallel(urls_to_prefetch, max_workers=4) if urls_to_prefetch else {}
+                pending_ancestors = []
+
+                with self._dbLock:
+                    for item, tile, tile_cov, iu, fetch_url, t, is_season_or_show in parsed_items:
                         if 'station' in item:
                             AddLiveTV(o, item)
                         elif tile and iu:
@@ -1487,17 +1562,58 @@ class PrimeVideo(Singleton):
                             o[id] = {'title': tile, 'lazyLoadURL': iu, 'metadata': {'artmeta': {'thumb': findKey('url', tile_cov)}}}
                         elif ('liveInfo' in item) or ('event' == t):
                             AddLiveEvent(o, item, iu)
-                        elif t not in ['season', 'show'] and 'season' not in item and 'show' not in item:
-                            bUpdatedVideoData |= ParseSinglePage(breadcrumb[-1], o, bCacheRefresh, url=iu)
+                        elif not is_season_or_show:
+                            bUpdatedVideoData |= ParseSinglePage(
+                                breadcrumb[-1], o, bCacheRefresh,
+                                data=prefetched_pages.get(fetch_url), url=iu
+                            )
                         else:
-                            bUpdatedVideoData |= AddSeason(breadcrumb[-1], o, bCacheRefresh, iu)
+                            bUpdatedVideoData |= AddSeason(
+                                breadcrumb[-1], o, bCacheRefresh, iu,
+                                preloaded_data=prefetched_pages.get(fetch_url),
+                                pending_ancestors=pending_ancestors
+                            )
+
+                # Stufe 2 (Serien-Hierarchie & tvAncestors parallel auflösen):
+                if pending_ancestors:
+                    ep_gtis = list(dict.fromkeys(pa[4] for pa in pending_ancestors if pa[4]))
+                    ancestor_map = {}
+                    if len(ep_gtis) == 1:
+                        ancestor_map[ep_gtis[0]] = _fetch_tv_ancestor_show(ep_gtis[0])
+                    elif len(ep_gtis) > 1:
+                        with ThreadPoolExecutor(max_workers=min(4, len(ep_gtis))) as executor:
+                            fut_map = {executor.submit(_fetch_tv_ancestor_show, ep): ep for ep in ep_gtis}
+                            for fut in as_completed(fut_map):
+                                ep = fut_map[fut]
+                                if self._g.monitor.abortRequested():
+                                    break
+                                try:
+                                    ancestor_map[ep] = fut.result()
+                                except Exception:
+                                    ancestor_map[ep] = None
+
+                    with self._dbLock:
+                        for oid_pa, o_pa, season_pa, seasonGTI_pa, ep_gti_pa in pending_ancestors:
+                            parent_cat = ancestor_map.get(ep_gti_pa)
+                            parent_id = None
+                            if parent_cat:
+                                parent_id, upd = _apply_show_parent(seasonGTI_pa, parent_cat)
+                                bUpdatedVideoData |= upd
+                            bSeasonOnly = (not parent_id) or (oid_pa == parent_id)
+                            target_o = o_pa
+                            if not bSeasonOnly:
+                                target_o[parent_id] = deepcopy(self._videodata[parent_id])
+                                target_o = target_o[parent_id]
+                            for sid in season_pa:
+                                target_o[sid] = season_pa[sid]
 
 
                 # Single page
                 bSinglePage = False
                 if 'state' in cnt or 'widgets' in cnt:
                     bSinglePage = True
-                    bUpdatedVideoData |= ParseSinglePage(breadcrumb[-1], o, bCacheRefresh, data=cnt, url=requestURL)
+                    with self._dbLock:
+                        bUpdatedVideoData |= ParseSinglePage(breadcrumb[-1], o, bCacheRefresh, data=cnt, url=requestURL)
                 # Pagination
                 if ('pagination' in cnt) or (key_exists(cnt, 'viewOutput', 'features', wl_lib, 'content', 'seeMoreHref'))\
                         or ('hasMoreItems' in cnt) or ('paginationTargetId' in vo):

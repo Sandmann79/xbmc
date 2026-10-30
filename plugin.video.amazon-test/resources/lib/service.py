@@ -2,7 +2,8 @@
 # -*- coding: utf-8 -*-
 import threading
 
-import xbmc, xbmcgui
+import xbmc
+from xbmcaddon import Addon
 
 from .logging import Log
 from .configs import getConfig, writeConfig
@@ -27,8 +28,8 @@ class BackgroundService(xbmc.Monitor):
         self.proxy_thread = threading.Thread(target=self.proxy.serve_forever, daemon=True)
 
     def onSettingsChanged(self):
-        super(BackgroundService, self).__init__()
         xbmc.sleep(500)
+        self._s._g._globals['addon'] = Addon()
         self.wl_export = self._s.wl_export
 
     def start(self):
@@ -68,31 +69,3 @@ class BackgroundService(xbmc.Monitor):
             Log('Service: Exporting the Watchlist')
             self.lastExport = cur_time
             xbmc.executebuiltin('RunPlugin(plugin://plugin.video.amazon-test/?mode=exportWatchlist)')
-
-
-class SettingsMonitor(xbmc.Monitor):
-    def __init__(self):
-        super(SettingsMonitor, self).__init__()
-        self.mon_prop = 'amazon_settingsmonitor_state'
-        self.window = xbmcgui.Window(10000)
-        self._abort = False
-
-    def onSettingsChanged(self):
-        super(SettingsMonitor, self).__init__()
-        Log('Service: Settings changed', Log.DEBUG)
-        xbmc.sleep(500)
-        self._abort = True
-
-    def start(self):
-        if self.window.getProperty(self.mon_prop) == '1':
-            return
-
-        self.window.setProperty(self.mon_prop, '1')
-        Log('Service: Settings Monitor started ', Log.DEBUG)
-        while not self.abortRequested() and not self._abort:
-            if self.waitForAbort(2):
-                break
-
-        self.window.setProperty(self.mon_prop, '')
-        Log('Service: Settings Monitor stopped ', Log.DEBUG)
-        exit()

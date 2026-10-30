@@ -130,9 +130,16 @@ class Globals(Singleton):
         ]
 
     def __getattr__(self, name):
+        if name == 'pluginhandle':
+            return int(argv[1]) if (1 < len(argv)) and argv[0] else -1
+        if name == 'addon':
+            addon = Addon()
+            self._globals['addon'] = addon
+            return addon
         return self._globals[name]
 
     def InitialiseProvider(self, mid, burl, atv, pv, did):
+        self._globals['addon'] = Addon()
         self._globals['MarketID'] = mid
         self._globals['BaseUrl'] = burl
         self._globals['ATVUrl'] = atv
@@ -146,14 +153,15 @@ class Globals(Singleton):
             from .android_api import PrimeVideo
         elif ds == 2:
             from .atv_api import PrimeVideo
-        if 'pv' not in self._globals:
+        cur_pv = self._globals.get('pv')
+        if cur_pv is None or not isinstance(cur_pv, PrimeVideo) or getattr(cur_pv, '_active_mid', None) != mid:
             self._globals['pv'] = PrimeVideo(self, Settings())
+            self._globals['pv']._active_mid = mid
 
 
 class Settings(Singleton):
     """ A singleton instance of various settings that could be needed to reload during runtime """
     _g = Globals()
-    _gs = _g.addon.getSetting
     _INT_SETTINGS = frozenset([
         'playmethod', 'browser', 'items_perpage', 'tvdb_art', 'tmdb_art', 'region',
         'skip_scene', 'data_source', 'send_vp', 'stream_quality'
@@ -169,6 +177,9 @@ class Settings(Singleton):
     _BOOL_FALSE_SETTINGS = frozenset([
         'json_dump_raw', 'ssl_verif', 'proxy_mpdalter'
     ])
+
+    def _gs(self, name):
+        return self._g.addon.getSetting(name)
 
     def __getattr__(self, name):
         if name in ['MOVIE_PATH', 'TV_SHOWS_PATH']:

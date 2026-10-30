@@ -27,6 +27,19 @@ from .configs import getConfig, writeConfig
 _g = Globals()
 _s = Settings()
 
+_RE_REDACT_SENSITIVE = re.compile(
+    r'(?i)((?:access_token|refresh_token|source_token|password|guess|otpCode|pin|authorization|cookie|x-amzn-sessionid|ubid-\w+|at-\w+|sess-at-\w+|session-token)["\'\s:=]+)([^"\'&\s,;}{]+)'
+)
+
+
+def _redact_sensitive(text, email=None):
+    if not text:
+        return ''
+    s = str(text)
+    if email:
+        s = s.replace(email, '**@**')
+    return _RE_REDACT_SENSITIVE.sub(r'\1***REDACTED***', s)
+
 
 def getTerritory(user):
     if len(user.get('deviceid', '')) != 32:
@@ -249,7 +262,7 @@ def MFACheck(br, email, soup):
                 br.submit_selected()
                 response, soup = parseHTML(br)
                 form_id = form_poll
-                WriteLog(response.replace(email, '**@**'), 'login-pollingform')
+                WriteLog(_redact_sensitive(response, email), 'login-pollingform')
                 stat = soup.find('input', attrs={'name': 'transactionApprovalStatus'})['value']
                 if stat in ['TransactionCompleted', 'TransactionCompletionTimeout']:
                     parsed_url = urlparse(url)
@@ -313,7 +326,7 @@ def LogIn(retToken=False):
                     br.session.headers.update({'User-Agent': getConfig('UserAgent')})
                 Log(f'Connect to SignIn Page {-caperr} attempts left')
                 br.refresh()
-                WriteLog(str(br.get_current_page()), f'login-{log}')
+                WriteLog(_redact_sensitive(br.get_current_page(), email), f'login-{log}')
         else:
             _g.dialog.ok(getString(30200), getString(30213).format(_g.LOG_PATH))
             return False
@@ -393,7 +406,7 @@ def LogIn(retToken=False):
                 init_cookie = {'frc': frc, 'map-md': b64encode(json.dumps(map_md).encode()).decode(), 'sid': ''}
                 br.session.headers.update(_g.headers_android)
                 br.open('https://www.' + user['sidomain'])
-                WriteLog(str(br.get_current_page()), 'login-bu')
+                WriteLog(_redact_sensitive(br.get_current_page(), email), 'login-bu')
                 if not _findElem(br, link=[{'class': 'nav-show-sign-in'}, {'data-nav-ref': 'nav_ya_signin'}], log='bu'):
                     return False
                 up = urlparse(br.get_url())
@@ -447,7 +460,7 @@ def LogIn(retToken=False):
                     pass
             br.submit_selected()
             response, soup = parseHTML(br)
-            WriteLog(response.replace(email, '**@**'), 'login')
+            WriteLog(_redact_sensitive(response, email), 'login')
 
             while any(sp in response for sp in _g.mfa_keywords):
                 br = MFACheck(br, email, soup)
@@ -456,14 +469,14 @@ def LogIn(retToken=False):
                 if not br.get_current_form() is None:
                     br.submit_selected()
                 response, soup = parseHTML(br)
-                WriteLog(response.replace(email, '**@**'), 'login-mfa')
+                WriteLog(_redact_sensitive(response, email), 'login-mfa')
 
             if 'accountFixup' in response:
                 Log('Login AccountFixup')
                 skip_link = br.find_link(id='ap-account-fixup-phone-skip-link')
                 br.follow_link(skip_link)
                 response, soup = parseHTML(br)
-                WriteLog(response.replace(email, '**@**'), 'login-fixup')
+                WriteLog(_redact_sensitive(response, email), 'login-fixup')
 
             # Some PrimeVideo endpoints still return you to the store, directly
             url = br.get_url()
@@ -543,7 +556,7 @@ def registerDevice(url, user, verifier, clientid):
     headers = _g.headers_android
     headers.update({'x-amzn-identity-auth-domain': 'api.' + domain, 'x-amzn-requestid': str(uuid4()).replace('-', ''), 'Content-Type': 'application/json'})
     resp = getURL(f'https://api.{domain}/auth/register', headers=headers, postdata=json.dumps(data))
-    WriteLog(str(resp), 'login-register')
+    WriteLog(_redact_sensitive(resp), 'login-register')
 
     if 'error' in resp['response']:
         _g.dialog.notification(_g.__plugin__, resp['response']['error']['message'], xbmcgui.NOTIFICATION_INFO)

@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
-from inspect import currentframe, getframeinfo
+from inspect import currentframe
 from os.path import join as OSPJoin, basename as opb
+import re
 
 import xbmc, xbmcvfs
 
@@ -9,12 +10,27 @@ from .common import Globals, Settings
 _g = Globals()
 _s = Settings()
 
+_RE_SENSITIVE = re.compile(
+    r'(?i)((?:access_token|refresh_token|source_token|password|guess|otpCode|pin|authorization|cookie|x-amzn-sessionid|ubid-\w+|at-\w+|sess-at-\w+|session-token)["\'\s:=]+)([^"\'&\s,;}{]+)'
+)
+
+
+def _sanitize(text):
+    """Maskiert sensible Tokens, Passwörter und Session-Cookies vor dem Schreiben ins Log."""
+    if not text:
+        return ''
+    return _RE_SENSITIVE.sub(r'\1***REDACTED***', str(text))
+
 
 def Log(msg, level=xbmc.LOGINFO):
     if level == xbmc.LOGDEBUG and _s.logging:
         level = xbmc.LOGINFO
-    fi = getframeinfo(currentframe().f_back)
-    msg = f"[{_g.__plugin__}]{('' if not _s.logging else f' {opb(fi.filename)}:{fi.lineno}')} {msg}"
+    loc = ''
+    if _s.logging:
+        frame = currentframe().f_back
+        if frame is not None:
+            loc = f' {opb(frame.f_code.co_filename)}:{frame.f_lineno}'
+    msg = f'[{_g.__plugin__}]{loc} {_sanitize(msg)}'
     xbmc.log(msg, level)
 
 
@@ -27,9 +43,10 @@ Log.WARNING = xbmc.LOGWARNING
 
 def LogCaller():
     frame = currentframe().f_back
-    fcaller = getframeinfo(frame.f_back)
-    fcallee = getframeinfo(frame)
-    msg = f'[{_g.__plugin__}] {opb(fcallee.filename)}:{fcallee.lineno} called from: {opb(fcaller.filename)}:{fcaller.lineno}'
+    fcaller = frame.f_back if frame else None
+    if frame and fcaller:
+        msg = f'[{_g.__plugin__}] {opb(frame.f_code.co_filename)}:{frame.f_lineno} called from: {opb(fcaller.f_code.co_filename)}:{fcaller.f_lineno}'
+        xbmc.log(msg, Log.INFO)
     xbmc.log(msg, Log.INFO)
 
 
@@ -46,8 +63,8 @@ def WriteLog(data, fn='avod', force=False, comment=None):
         cnt += 1
     with xbmcvfs.File(path, 'w') as logfile:
         if comment:
-            logfile.write(comment)
-        logfile.write(data)
+            logfile.write(_sanitize(comment))
+        logfile.write(_sanitize(data))
     Log(f'Saved Log with filename “{file}”', Log.DEBUG)
 
 
@@ -68,8 +85,8 @@ def LogJSON(o, comment=None, optionalName=None):
     )
     with xbmcvfs.File(OSPJoin(_g.LOG_PATH, fn), 'w') as f:
         if comment:
-            f.write(f'/* {comment} */\n')
-        f.write(dumps(o, sort_keys=True, indent=4))
+            f.write(f'/* {_sanitize(comment)} */\n')
+        f.write(_sanitize(dumps(o, sort_keys=True, indent=4)))
         Log(f'Saved JSON data with filename “{fn}”', Log.DEBUG)
 
 

@@ -252,10 +252,18 @@ def PlayVideo(name, asin, adultstr, streamtype, forcefb=0):
             process = subprocess.Popen(args)
             if _g.platform & _g.OS_LE:
                 result = 1
-                while result != 0:
-                    p = subprocess.Popen('pgrep chrome > /dev/null', shell=True)
-                    p.wait()
-                    result = p.returncode
+                le_deadline = time.time() + 15.0
+                while result != 0 and time.time() < le_deadline and not _g.monitor.abortRequested():
+                    try:
+                        cp = subprocess.run(
+                            ['pgrep', 'chrome'],
+                            stdout=subprocess.DEVNULL,
+                            stderr=subprocess.DEVNULL,
+                            timeout=2
+                        )
+                        result = cp.returncode
+                    except Exception:
+                        break
 
         if isAdult and pininput:
             if fullscr:

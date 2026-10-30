@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 import pyxbmct
+import secrets
 import xbmcgui
 
 from .common import Globals
@@ -30,7 +31,7 @@ class AgeRestrictions:
         AgePin = getConfig('age_pin')
         if AgePin:
             pin = self._g.dialog.input('PIN', type=xbmcgui.INPUT_ALPHANUM, option=xbmcgui.ALPHANUM_HIDE_INPUT)
-            return pin == AgePin
+            return secrets.compare_digest(pin or '', AgePin)
         return True
 
     def GetRestrictedAges(self):
@@ -54,7 +55,7 @@ class _AgeSettings(pyxbmct.AddonDialogWindow):
             exit()
         self.pin_req = int(getConfig('pin_req', '0'))
         self.pin = pyxbmct.Edit('', _alignment=pyxbmct.ALIGN_CENTER)
-        self.btn_ages = pyxbmct.Button(self.age_list[0 if self.pin_req > len(self.age_list) else self.pin_req])
+        self.btn_ages = pyxbmct.Button(self.age_list[0 if self.pin_req >= len(self.age_list) else self.pin_req])
         self.btn_save = pyxbmct.Button(getString(30122))
         self.btn_close = pyxbmct.Button(getString(30123))
         self.setGeometry(500, 300, 5, 2)

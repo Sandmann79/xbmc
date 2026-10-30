@@ -1,9 +1,10 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-import pyxbmct
+# -*- coding: utf-8 -*-
 
 import datetime
 import os.path
 import re
+from xml.sax.saxutils import escape as xml_escape
 
 import xbmc, xbmcvfs
 
@@ -92,29 +93,30 @@ def CreateInfoFile(nfofile, path, content, Info, language, hasSubtitles=False):
     fileinfo = '<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>\n'
     fileinfo += f'<{content}>\n'
     if 'Duration' in Info.keys():
-        fileinfo += f"<runtime>{Info['Duration']}</runtime>\n"
+        fileinfo += f"<runtime>{xml_escape(str(Info['Duration']))}</runtime>\n"
     if 'Genre' in Info.keys():
         for genre in Info['genre'].split('/'):
-            fileinfo += f'<genre>{genre.strip()}</genre>\n'
+            fileinfo += f'<genre>{xml_escape(genre.strip())}</genre>\n'
     if 'Cast' in Info.keys():
         for actor in Info['Cast']:
             fileinfo += '<actor>\n'
-            fileinfo += f'    <name>{actor.strip()}</name>\n'
+            fileinfo += f'    <name>{xml_escape(actor.strip())}</name>\n'
             fileinfo += '</actor>\n'
     for key, value in Info.items():
         lkey = key.lower()
         if value:
+            esc_val = xml_escape(str(value))
             if lkey == 'tvshowtitle':
-                fileinfo += f'<showtitle>{value}</showtitle>\n'
+                fileinfo += f'<showtitle>{esc_val}</showtitle>\n'
             elif lkey == 'premiered' and 'tvshowtitle' in Info:
-                fileinfo += f'<aired>{value}</aired>\n'
+                fileinfo += f'<aired>{esc_val}</aired>\n'
             elif lkey == 'thumb':
                 aspect = '' if 'episode' in content else ' aspect="poster"'
-                fileinfo += f'<{lkey}{aspect}>{value}</{lkey}>\n'
+                fileinfo += f'<{lkey}{aspect}>{esc_val}</{lkey}>\n'
             elif lkey == 'fanart' and not 'episode' in content:
-                fileinfo += f'<{lkey}>\n    <thumb>{value}</thumb>\n</{lkey}>\n'
+                fileinfo += f'<{lkey}>\n    <thumb>{esc_val}</thumb>\n</{lkey}>\n'
             elif lkey not in skip_keys:
-                fileinfo += f'<{lkey}>{value}</{lkey}>\n'
+                fileinfo += f'<{lkey}>{esc_val}</{lkey}>\n'
 
     if content != 'tvshow':
         fileinfo += '<fileinfo>\n'
@@ -136,7 +138,7 @@ def CreateInfoFile(nfofile, path, content, Info, language, hasSubtitles=False):
                 fileinfo += '           <height>480</height>\n'
                 fileinfo += '           <width>720</width>\n'
         if language:
-            fileinfo += f'           <language>{language}</language>\n'
+            fileinfo += f'           <language>{xml_escape(str(language))}</language>\n'
         fileinfo += '           <scantype>Progressive</scantype>\n'
         fileinfo += '       </video>\n'
         fileinfo += '   </streamdetails>\n'
@@ -189,5 +191,4 @@ def SetupAmazonLibrary():
         _g.dialog.ok(getString(30187), getString(30188))
         if _g.dialog.yesno(getString(30191), getString(30192)):
             xbmc.executebuiltin('RestartApp')
-
 

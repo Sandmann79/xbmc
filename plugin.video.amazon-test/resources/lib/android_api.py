@@ -765,7 +765,7 @@ class PrimeVideo(Singleton):
             searchString = args.get('searchstring')
             self.Search(searchString)
         elif mode in ['processMissing', 'switchProfile', 'languageselect']:
-            exec (f'self._g.pv.{mode}()')
+            getattr(self._g.pv, mode)()
         elif mode == 'ageSettings':
             AgeRestrictions().Settings()
         elif mode == 'getPage':

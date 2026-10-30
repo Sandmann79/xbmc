@@ -88,7 +88,16 @@ def EntryPoint(argv):
         from .login import LogIn, remLoginData
         from .users import removeUser, renameUser
         from .logging import createZIP, removeLogs
-        exec(f'{mode}()')
+        actions = {
+            'LogIn': LogIn,
+            'remLoginData': remLoginData,
+            'removeUser': removeUser,
+            'renameUser': renameUser,
+            'switchUser': switchUser,
+            'createZIP': createZIP,
+            'removeLogs': removeLogs,
+        }
+        actions[mode]()
     else:
         _g.pv.Route(mode, args)
 

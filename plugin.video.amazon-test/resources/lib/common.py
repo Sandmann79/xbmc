@@ -154,16 +154,21 @@ class Settings(Singleton):
     """ A singleton instance of various settings that could be needed to reload during runtime """
     _g = Globals()
     _gs = _g.addon.getSetting
-    _integer = 'int("0" + self._gs("%s"))'
-    _bool_true = 'self._gs("%s") == "true"'
-    _bool_false = 'self._gs("%s") == "false"'
-    _ret_types = {_integer: ['playmethod', 'browser', 'items_perpage', 'tvdb_art', 'tmdb_art', 'region', 'skip_scene', 'data_source', 'send_vp', 'stream_quality'],
-                  _bool_true:
-                      ['useshowfanart', 'disptvshow', 'paycont', 'logging', 'json_dump', 'json_dump_collisions', 'sub_stretch', 'log_http', 'remotectrl',
-                       'remote_vol', 'multiuser', 'wl_export', 'audio_description', 'pv_episode_thumbnails', 'tld_episode_thumbnails', 'use_h265', 'enable_atmos',
-                       'profiles', 'show_pass', 'enable_uhd', 'show_recents', 'preload_seasons', 'preload_all_seasons', 'wvl1_device', 'search_history',
-                       'hide_trailers', 'export_not_aired', 'show_cats', 'l3_request_hd'],
-                  _bool_false: ['json_dump_raw', 'ssl_verif', 'proxy_mpdalter']}
+    _INT_SETTINGS = frozenset([
+        'playmethod', 'browser', 'items_perpage', 'tvdb_art', 'tmdb_art', 'region',
+        'skip_scene', 'data_source', 'send_vp', 'stream_quality'
+    ])
+    _BOOL_TRUE_SETTINGS = frozenset([
+        'useshowfanart', 'disptvshow', 'paycont', 'logging', 'json_dump', 'json_dump_collisions',
+        'sub_stretch', 'log_http', 'remotectrl', 'remote_vol', 'multiuser', 'wl_export',
+        'audio_description', 'pv_episode_thumbnails', 'tld_episode_thumbnails', 'use_h265',
+        'enable_atmos', 'profiles', 'show_pass', 'enable_uhd', 'show_recents',
+        'preload_seasons', 'preload_all_seasons', 'wvl1_device', 'search_history',
+        'hide_trailers', 'export_not_aired', 'show_cats', 'l3_request_hd'
+    ])
+    _BOOL_FALSE_SETTINGS = frozenset([
+        'json_dump_raw', 'ssl_verif', 'proxy_mpdalter'
+    ])
 
     def __getattr__(self, name):
         if name in ['MOVIE_PATH', 'TV_SHOWS_PATH']:
@@ -208,13 +213,13 @@ class Settings(Singleton):
             primecol = self._gs('primecol')
             return primecol if primecol else 'FF00A8E0'
 
-        value = None
-        for cmd in self._ret_types:
-            if self._ret_types[cmd].count(name) > 0:
-                value = eval(cmd % name)
-
-        value = self._gs(name) if value is None else value
-        return value
+        if name in self._INT_SETTINGS:
+            return int('0' + self._gs(name))
+        if name in self._BOOL_TRUE_SETTINGS:
+            return self._gs(name) == 'true'
+        if name in self._BOOL_FALSE_SETTINGS:
+            return self._gs(name) == 'false'
+        return self._gs(name)
 
     def __setattr__(self, name, value):
         if not name.startswith('_'):

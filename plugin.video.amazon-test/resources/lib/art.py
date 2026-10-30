@@ -19,7 +19,8 @@ class Artwork:
         import time
         headers = {'Accept': 'application/json', 'Content-Type': 'application/json'}
         art_ids = {1: 'banner', 2: 'poster', 3: 'fanart', 6: 'banner', 7: 'poster', 8: 'fanart'}
-        artwork = data = {}
+        artwork = {}
+        data = {}
         season_ids = {-1: {}}
         def _gen_token():
             data = getURL('https://api4.thetvdb.com/v4/login', headers=headers, postdata=json.dumps({'apikey': self._g.tvdb}))
@@ -92,16 +93,18 @@ class Artwork:
             for a in v:
                 artwork[s][a] = artwork[s][a]['image']
         if 'overviews' in data:
-            if not -1 in artwork:
-                artwork[-1] = {}
-            artwork[-1]['plot'] = data['overviews'][[l for l in languages if l in data['overviews']][0]]
+            matching_langs = [l for l in languages if l in data['overviews']]
+            if matching_langs:
+                if -1 not in artwork:
+                    artwork[-1] = {}
+                artwork[-1]['plot'] = data['overviews'][matching_langs[0]]
         return artwork
 
     def getTMDBImages(self, title, content='movie', year=None, season=0):
         Log(f'searching fanart for {title.upper()} at tmdb.com')
         tmdb_id = None
         splitter = [' - ', ': ', ', ']
-        TMDB_URL = 'http://image.tmdb.org/t/p/original'
+        TMDB_URL = 'https://image.tmdb.org/t/p/original'
         titleorg = title
         headers = {'accept': 'application/json', 'Accept-Encoding': ''}
         lang = get_user_lang().replace('_', '-')
@@ -110,9 +113,9 @@ class Artwork:
         while not tmdb_id and title:
             str_year = f'&primary_release_year={year}' if year else ''
             movie = quote_plus(title.encode('utf-8'))
-            data = getURL(f'http://api.themoviedb.org/3/search/{content}?api_key={self._g.tmdb}&language={lang}&query={movie}{str_year}', silent=True, headers=headers)
+            data = getURL(f'https://api.themoviedb.org/3/search/{content}?api_key={self._g.tmdb}&language={lang}&query={movie}{str_year}', silent=True, headers=headers)
             if not data:
-                continue
+                break
 
             if data.get('total_results', 0) > 0:
                 result = data['results'][0]
@@ -135,7 +138,7 @@ class Artwork:
                 if result.get('poster_path'):
                     artwork[dic]['poster'] = TMDB_URL + result['poster_path']
                 if result.get('overview') and content == 'tv':
-                    artwork['series']['plot'] = result['overview']
+                    artwork[-1]['plot'] = result['overview']
             else:
                 oldtitle = title
                 for splitchar in splitter:

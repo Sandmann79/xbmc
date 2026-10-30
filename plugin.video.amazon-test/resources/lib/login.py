@@ -553,7 +553,7 @@ def registerDevice(url, user, verifier, clientid):
         },
     }
 
-    headers = _g.headers_android
+    headers = _g.headers_android.copy()
     headers.update({'x-amzn-identity-auth-domain': 'api.' + domain, 'x-amzn-requestid': str(uuid4()).replace('-', ''), 'Content-Type': 'application/json'})
     resp = getURL(f'https://api.{domain}/auth/register', headers=headers, postdata=json.dumps(data))
     WriteLog(_redact_sensitive(resp), 'login-register')
@@ -611,7 +611,7 @@ def refreshToken(user, aid=None):
     else:
         data['requested_token_type'] = 'access_token'
         data['source_token'] = token['refresh']
-    headers = dict(_g.headers_android)
+    headers = _g.headers_android.copy()
     headers.pop('x-gasc-enabled', '')
     headers.pop('X-Requested-With', '')
     headers.update({'x-amzn-identity-auth-domain': 'api.' + domain, 'Accept-Language': 'en-US', 'x-amzn-requestid': str(uuid4()).replace('-', '')})
@@ -740,9 +740,9 @@ class _Challenge(pyxbmct.AddonDialogWindow):
         img = msg.find('img', attrs={'alt': 'captcha'})
         box = img.find_parent('div', class_='a-box-inner a-padding-extra-large') if img else None
         if box is None:
-            self.hint = msg.find('p', class_='a-last')
-            if self.hint:
-                self.hint.get_text(strip=True)
+            hint_node = msg.find('p', class_='a-last')
+            if hint_node:
+                self.hint = hint_node.get_text(strip=True)
                 form = msg.find('form').find('div', class_='a-box-inner')
                 self.task = form.h4.get_text(strip=True)
                 self.img_url = form.find('img')['src']

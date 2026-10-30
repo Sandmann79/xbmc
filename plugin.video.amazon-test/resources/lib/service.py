@@ -21,9 +21,10 @@ class BackgroundService(xbmc.Monitor):
         self.wl_export = self._s.wl_export
         self.proxy = ProxyTCPD(self._s)
         writeConfig('loginlock', '')
-        writeConfig('proxyaddress', f'127.0.0.1:{self.proxy.port}')
+        writeConfig('proxytoken', self.proxy.token)
+        writeConfig('proxyaddress', f'127.0.0.1:{self.proxy.port}/{self.proxy.token}')
         Log(f'Service: Proxy bound to {self._s.proxyaddress}')
-        self.proxy_thread = threading.Thread(target=self.proxy.serve_forever)
+        self.proxy_thread = threading.Thread(target=self.proxy.serve_forever, daemon=True)
 
     def onSettingsChanged(self):
         super(BackgroundService, self).__init__()
@@ -31,8 +32,6 @@ class BackgroundService(xbmc.Monitor):
         self.wl_export = self._s.wl_export
 
     def start(self):
-        self.proxy.server_activate()
-        self.proxy.timeout = 1
         self.proxy_thread.start()
         Log('Service: Proxy server started')
 
@@ -52,9 +51,15 @@ class BackgroundService(xbmc.Monitor):
         self.stop()
 
     def stop(self):
-        self.proxy.server_close()
         self.proxy.shutdown()
-        self.proxy_thread.join()
+        self.proxy.server_close()
+        self.proxy_thread.join(timeout=5)
+        for session in list(getattr(self.proxy.RequestHandlerClass, 'sessions', {}).values()):
+            try:
+                session.close()
+            except Exception:
+                pass
+        getattr(self.proxy.RequestHandlerClass, 'sessions', {}).clear()
         Log('Service: Proxy server stopped')
 
     def export_watchlist(self, cur_time=0):

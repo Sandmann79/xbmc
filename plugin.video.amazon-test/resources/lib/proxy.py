@@ -4,25 +4,110 @@
 # Module: CryptoProxy
 # Created: 12/01/2019
 from http.server import BaseHTTPRequestHandler  # Python3 HTTP Server
+import ipaddress
+import re
+import secrets
+import socket
+import threading
 from socketserver import ThreadingTCPServer
+from unicodedata import lookup as _uni_lookup
+from urllib.parse import parse_qsl, unquote, urlparse
 
 from resources.lib.logging import Log
-from .configs import getConfig
+from .configs import getConfig, writeConfig
+
+MAX_CONTENT_LENGTH = 70 * 1024 * 1024  # 10 MB DoS limit
+
+_ALLOWED_HOST_SUFFIXES = (
+    '.amazon.com',
+    '.amazon.de',
+    '.amazon.co.uk',
+    '.amazon.co.jp',
+    '.amazon.ca',
+    '.amazon.fr',
+    '.amazon.es',
+    '.amazon.it',
+    '.amazon.com.au',
+    '.amazon.com.br',
+    '.amazon.com.mx',
+    '.amazon.in',
+    '.amazon.nl',
+    '.amazon.pl',
+    '.amazon.se',
+    '.amazon.sg',
+    '.amazon.ae',
+    '.amazon.sa',
+    '.amazon.com.tr',
+    '.amazon.eg',
+    '.primevideo.com',
+    '.aiv-cdn.net',
+    '.pv-cdn.net',
+    '.cloudfront.net',
+    '.akamaihd.net',
+    '.akamaized.net',
+    '.llnwd.net',
+    '.footprint.net',
+    '.level3.net',
+    '.media-amazon.com',
+)
+
+# Pre-compiled regex patterns for TTMLv2 to SRT subtitle conversion (_CleanSubs) and MPD parsing
+_RE_SUB_SPAN = re.compile(r'<(|/)span[^>]*>')
+_RE_SUB_TIMESTAMP = re.compile(r'([0-9]{2}:[0-9]{2}:[0-9]{2})\.')
+_RE_SUB_BR = re.compile(r'(?:\s*<(?:tt:)?br\s*/>\s*)+')
+_RE_SUB_STRETCH = re.compile(r'(?P<h>\d+):(?P<m>\d+):(?P<s>\d+),(?P<ms>\d+)')
+_RE_SUB_PARAGRAPH = re.compile(r'<(?:tt:)?p begin="([^"]+)"[^>]*end="([^"]+)"[^>]*>\s*(.*?)\s*</(?:tt:)?p>', re.DOTALL)
+_RTL_MARK = _uni_lookup('RIGHT-TO-LEFT MARK')
+_RTL_EMBEDDING = _uni_lookup('RIGHT-TO-LEFT EMBEDDING')
+_RE_SUB_ARABIC_RTL = re.compile(rf'^(?!{_RTL_MARK}|{_RTL_EMBEDDING})', flags=re.MULTILINE)
+_RE_MPD_PERIOD = re.compile(r'(<Period\b[^>]*>)(.*?)(</Period>)', flags=re.DOTALL)
+_RE_MPD_ROLE_SELF = re.compile(r'<Role\b[^>]*/>')
+_RE_MPD_ROLE_PAIR = re.compile(r'<Role\b[^>]*>.*?</Role>', flags=re.DOTALL)
+_RE_MPD_SEG_MEDIA_REL = re.compile(r'(<SegmentTemplate\b[^>]*\bmedia=")(?![a-z]+:|//|/)')
+_RE_MPD_SEG_INIT_REL = re.compile(r'(<SegmentTemplate\b[^>]*\binitialization=")(?![a-z]+:|//|/)')
+_RE_MPD_SEG_MEDIA_ROOT = re.compile(r'(<SegmentTemplate\b[^>]*\bmedia=")/')
+_RE_MPD_SEG_INIT_ROOT = re.compile(r'(<SegmentTemplate\b[^>]*\binitialization=")/')
+_RE_MPD_BASEURL_ROOT = re.compile(r'<BaseURL>/([^<]*)</BaseURL>')
+
+
+def _is_safe_upstream_url(endpoint):
+    """SSRF-Schutz: Erlaubt nur http/https-URLs auf autorisierten Amazon-/CDN-Domains ohne private/Loopback-IPs."""
+    if not endpoint:
+        return False
+    try:
+        parsed = urlparse(endpoint)
+        if parsed.scheme not in ('http', 'https'):
+            return False
+        host = (parsed.hostname or '').lower().rstrip('.')
+        if not host or host == 'localhost':
+            return False
+        try:
+            ip = ipaddress.ip_address(host)
+            if ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_multicast or ip.is_reserved or ip.is_unspecified:
+                return False
+            return False
+        except ValueError:
+            pass
+        return any(host == suffix[1:] or host.endswith(suffix) for suffix in _ALLOWED_HOST_SUFFIXES)
+    except Exception:
+        return False
 
 
 class ProxyHTTPD(BaseHTTPRequestHandler):
-    protocol_version = 'HTTP/1.1'  # Allow keep-alive
+    protocol_version = 'HTTP/1.1'
+    timeout = 10  # Prevent hung local Keep-Alive sockets from blocking handler threads forever
     server_version = 'AmazonVOD/0.1'
     sessions = {}  # Keep-Alive sessions
+    _sessions_lock = threading.RLock()
     _refused_licenses = {}  # license URL -> Amazon's refusal, answered locally when inputstream.adaptive asks again
     _min_audio_keep_bitrate = 192000
     _log_audio_selection_details = False
-    _host_re = None
-    _track_id_re = None
-    _tag_attr_re = None
-    _representation_re = None
-    _atmos_re = None
-    _adaptation_set_re = None
+    _host_re = re.compile(r'://([^/]+)/')
+    _track_id_re = re.compile(r'([^_]+)_(.+?)(?:_\d+)?$')
+    _tag_attr_re = re.compile(r'([^\s=/>]+)="([^"]*)"')
+    _representation_re = re.compile(r'<Representation\b[^>]*>.*?</Representation>', flags=re.DOTALL)
+    _atmos_re = re.compile(r'<SupplementalProperty\b[^>]*value="JOC"[^>]*>')
+    _adaptation_set_re = re.compile(r'<AdaptationSet\b[^>]*>.*?</AdaptationSet>', flags=re.DOTALL)
     _purgeHeaders = [  # List of headers not to forward to the client
         'Transfer-Encoding',
         'Content-Encoding',
@@ -34,6 +119,14 @@ class ProxyHTTPD(BaseHTTPRequestHandler):
     def log_message(self, *args):
         """Disable the BaseHTTPServer Log"""
         pass
+
+    def handle_one_request(self):
+        """Guard against socket timeouts or abrupt client disconnects during local Keep-Alive"""
+        try:
+            super().handle_one_request()
+        except (socket.timeout, ConnectionError, OSError) as exc:
+            Log(f'[PS] Local client connection closed or timed out: {exc}', Log.DEBUG)
+            self.close_connection = True
 
     def _AdjustLocale(self, langCode, count=2, separator='-'):
         """Locale conversion helper"""
@@ -62,37 +155,76 @@ class ProxyHTTPD(BaseHTTPRequestHandler):
 
     def _ParseBaseRequest(self, method):
         """Return path, headers and post data commonly required by all methods"""
-        from urllib.parse import urlparse, parse_qsl
+        client_ip = self.client_address[0] if self.client_address else ''
+        try:
+            if not ipaddress.ip_address(client_ip).is_loopback:
+                Log(f'[PS] Rejecting non-loopback client {client_ip}', Log.ERROR)
+                self.send_error(403, 'Forbidden: local access only')
+                return None, None, None
+        except ValueError:
+            self.send_error(403, 'Forbidden: invalid client address')
+            return None, None, None
 
-        path = urlparse(self.path).path[1:]  # Get URI without the trailing slash
-        path = path.split('/')  # license/<asin>/<ATV endpoint>
+        parsed_url = urlparse(self.path)
+        path = [p for p in parsed_url.path.lstrip('/').split('/') if p]
+        expected_token = getattr(self.server, 'token', None) or getConfig('proxytoken')
+        if expected_token:
+            token_valid = False
+            if path and secrets.compare_digest(path[0], expected_token):
+                token_valid = True
+                path = path[1:]
+            else:
+                hdr_token = self.headers.get('X-Proxy-Token', '')
+                if hdr_token and secrets.compare_digest(hdr_token, expected_token):
+                    token_valid = True
+                else:
+                    query_params = dict(parse_qsl(parsed_url.query))
+                    q_token = query_params.get('token', '')
+                    if q_token and secrets.compare_digest(q_token, expected_token):
+                        token_valid = True
+            if not token_valid:
+                Log(f'[PS] Blocked unauthorized {method} request (invalid runtime token)', Log.ERROR)
+                self.send_error(403, 'Forbidden: invalid proxy token')
+                return None, None, None
+
+        if not path:
+            self.send_error(400, 'Empty request path')
+            return None, None, None
         Log(f'[PS] Requested {method} path {path}', Log.DEBUG)
 
         # Retrieve headers and data
-        headers = {k: self.headers[k] for k in self.headers if k not in ['host', 'content-length']}
+        headers = {k: self.headers[k] for k in self.headers if k.lower() not in ['host', 'content-length', 'x-proxy-token']}
         data_length = self.headers.get('content-length')
-        self.raw_data = self.rfile.read(int(data_length)) if data_length else None
+        if data_length:
+            try:
+                length = int(data_length)
+            except ValueError:
+                self.send_error(400, 'Invalid Content-Length')
+                return None, None, None
+            if length < 0 or length > MAX_CONTENT_LENGTH:
+                Log(f'[PS] Rejecting request with excessive Content-Length: {length}', Log.ERROR)
+                self.send_error(413, 'Payload Too Large')
+                return None, None, None
+            self.raw_data = self.rfile.read(length)
+        else:
+            self.raw_data = None
         data = {k: v for k, v in parse_qsl(self.raw_data)} if self.raw_data else None
         return path, headers, data
 
     def _ForwardRequest(self, method, endpoint, headers, data, stream=False, use_auth=True):
         """Forwards the request to the proper target"""
-
-        import re
         import requests
 
-        if self._host_re is None:
-            self.__class__._host_re = re.compile('://([^/]+)/')
+        if not _is_safe_upstream_url(endpoint):
+            Log(f'[PS] Blocked disallowed upstream URL (SSRF protection): {endpoint}', Log.ERROR)
+            self.send_error(403, 'Forbidden upstream host')
+            return (None, None, None)
 
         # Create sessions for keep-alives and connection pooling
         host = self._host_re.search(endpoint)  # Try to extract the host from the URL
-        if None is not host:
-            host = host.group(1)
-            if host not in self.sessions:
-                self.sessions[host] = requests.Session()
-            session = self.sessions[host]
-        else:
-            session = requests.Session()
+        host_key = host.group(1) if host is not None else None
+        with self._sessions_lock:
+            session = self.sessions.setdefault(host_key, requests.Session()) if host_key else requests.Session()
 
         cookie = None
         if use_auth:
@@ -108,7 +240,25 @@ class ProxyHTTPD(BaseHTTPRequestHandler):
 
         if 'Host' in headers: del headers['Host']  # Forcibly strip the host (py3 compliance)
         Log(f'[PS] Forwarding the {method.upper()} request towards {endpoint}', Log.DEBUG)
-        r = session.request(method, endpoint, data=data, headers=headers, cookies=cookie, stream=stream, verify=self.server._s.ssl_verif)
+        try:
+            r = session.request(method, endpoint, data=data, headers=headers, cookies=cookie, stream=stream, verify=self.server._s.ssl_verif, timeout=(10, 20))
+        except requests.exceptions.RequestException as exc:
+            Log(f'[PS] Upstream request failed ({exc.__class__.__name__}): {exc}', Log.ERROR)
+            if host_key:
+                with self._sessions_lock:
+                    old_sess = self.sessions.pop(host_key, None)
+                if old_sess:
+                    try:
+                        old_sess.close()
+                    except Exception:
+                        pass
+            self.send_error(502, 'Upstream request failed')
+            return (None, None, None)
+        if not stream and len(r.content) > MAX_CONTENT_LENGTH:
+            Log(f'[PS] Upstream response exceeded MAX_CONTENT_LENGTH ({len(r.content)} bytes)', Log.ERROR)
+            r.close()
+            self.send_error(502, 'Upstream response too large')
+            return (None, None, None)
         return r.status_code, r.headers, r if stream else r.content.decode('utf-8')
 
     @staticmethod
@@ -135,7 +285,8 @@ class ProxyHTTPD(BaseHTTPRequestHandler):
         # We don't use chunked or gunzipped transfers locally, so we removed the relative headers and
         # attach the contact length, before returning the response
         headers = {k: headers[k] for k in headers if k not in self._purgeHeaders}
-        headers['Connection'] = 'Keep-Alive'
+        headers['Connection'] = 'close'
+        self.close_connection = True
         data = data.encode('utf-8') if data else b''
         if gzip:
             data = self._gzip(data)
@@ -150,8 +301,6 @@ class ProxyHTTPD(BaseHTTPRequestHandler):
 
     def do_POST(self):
         """Respond to POST requests"""
-        from urllib.parse import unquote
-
         path, headers, data = self._ParseBaseRequest('POST')
         if None is path: return
 
@@ -165,8 +314,6 @@ class ProxyHTTPD(BaseHTTPRequestHandler):
 
     def do_GET(self):
         """Respond to GET requests"""
-        from urllib.parse import unquote
-
         path, headers, data = self._ParseBaseRequest('GET')
         if None is path: return
 
@@ -424,10 +571,18 @@ class ProxyHTTPD(BaseHTTPRequestHandler):
 
     def _AlterGPR(self, endpoint, headers, data):
         """ GPR data alteration for better language parsing and subtitles streaming instead of pre-caching """
+        return self._ParseGPR(endpoint, headers, data)
 
+    def _ParseGPR(self, endpoint, headers, data):
+        """ GPR data alteration for better language parsing and subtitles streaming instead of pre-caching """
         import json
         from urllib.parse import quote_plus
         from xbmc import convertLanguage, ENGLISH_NAME
+
+        if not _is_safe_upstream_url(endpoint):
+            Log(f'[PS] Blocked disallowed GPR URL: {endpoint}', Log.ERROR)
+            self.send_error(403, 'Forbidden upstream host')
+            return
 
         status_code, headers, content = self._ForwardRequest('post', endpoint, headers, data)
         if status_code is None:
@@ -475,8 +630,9 @@ class ProxyHTTPD(BaseHTTPRequestHandler):
                         )
                         # Proxify the URLs, with a make believe Kodi-friendly file name
                         escapedurl = quote_plus(content[sub_type][i]['url'])
-                        content[sub_type][i]['url'] = 'http://127.0.0.1:{}/subtitles/{}/{}{}.srt'.format(
+                        content[sub_type][i]['url'] = 'http://127.0.0.1:{}/{}/subtitles/{}/{}{}.srt'.format(
                             self.server.port,
+                            getattr(self.server, 'token', ''),
                             escapedurl,
                             fn,
                             variants
@@ -498,6 +654,11 @@ class ProxyHTTPD(BaseHTTPRequestHandler):
         # inputstream.adaptive asks again about 90 times after a refusal, answer them at once so that it
         # gives up quickly. Stopping the player from Python instead deadlocks Kodi: it waits for
         # inputstream.adaptive, which waits for this proxy.
+        if not _is_safe_upstream_url(endpoint):
+            Log(f'[PS] Blocked disallowed License URL: {endpoint}', Log.ERROR)
+            self.send_error(403, 'Forbidden upstream host')
+            return
+
         if endpoint in self._refused_licenses:
             self._SendResponse(200, {'Content-Type': 'application/json'}, self._refused_licenses[endpoint])
             return
@@ -513,8 +674,10 @@ class ProxyHTTPD(BaseHTTPRequestHandler):
 
     def _AlterMPD(self, endpoint, headers, data):
         """ MPD alteration for better language parsing """
-        import re
-        from urllib.parse import urlparse
+        if not _is_safe_upstream_url(endpoint):
+            Log(f'[PS] Blocked disallowed MPD URL: {endpoint}', Log.ERROR)
+            self.send_error(403, 'Forbidden upstream host')
+            return
 
         # Extrapolate the base CDN url to avoid proxying data we don't need to
         url_parts = urlparse(endpoint)
@@ -530,24 +693,24 @@ class ProxyHTTPD(BaseHTTPRequestHandler):
         try:
             if r.encoding is None:
                 r.encoding = 'utf-8'
-            mpd = r.content.decode(r.encoding, errors='replace')
+            raw_mpd = r.content
+            mpd = raw_mpd.decode(r.encoding, errors='replace')
 
             def _rebase(data):
-                data = re.sub(r'<Role\b[^>]*/>', '', data)
-                data = re.sub(r'<Role\b[^>]*>.*?</Role>', '', data, flags=re.DOTALL)
+                data = _RE_MPD_ROLE_SELF.sub('', data)
+                data = _RE_MPD_ROLE_PAIR.sub('', data)
                 data = data.replace('<BaseURL>', '<BaseURL>' + baseurl)
-                data = re.sub(r'(<SegmentTemplate\b[^>]*\bmedia=")(?![a-z]+:|//|/)', r'\1' + baseurl, data)
-                data = re.sub(r'(<SegmentTemplate\b[^>]*\binitialization=")(?![a-z]+:|//|/)', r'\1' + baseurl, data)
-                data = re.sub(r'(<SegmentTemplate\b[^>]*\bmedia=")/', r'\1' + rooturl + '/', data)
-                data = re.sub(r'(<SegmentTemplate\b[^>]*\binitialization=")/', r'\1' + rooturl + '/', data)
-                data = re.sub(r'<BaseURL>/([^<]*)</BaseURL>', rf'<BaseURL>{rooturl}/\1</BaseURL>', data)
+                data = _RE_MPD_SEG_MEDIA_REL.sub(r'\1' + baseurl, data)
+                data = _RE_MPD_SEG_INIT_REL.sub(r'\1' + baseurl, data)
+                data = _RE_MPD_SEG_MEDIA_ROOT.sub(r'\1' + rooturl + '/', data)
+                data = _RE_MPD_SEG_INIT_ROOT.sub(r'\1' + rooturl + '/', data)
+                data = _RE_MPD_BASEURL_ROOT.sub(rf'<BaseURL>{rooturl}/\1</BaseURL>', data)
                 return data
 
             Log('[PS] Altering audio <AdaptationSet>s', Log.DEBUG)
             parts = []
             last = 0
-            period_pattern = re.compile(r'(<Period\b[^>]*>)(.*?)(</Period>)', flags=re.DOTALL)
-            for period in period_pattern.finditer(mpd):
+            for period in _RE_MPD_PERIOD.finditer(mpd):
                 parts.append(_rebase(mpd[last:period.start()]))
                 period_open, period_body, period_close = period.groups()
                 parts.append(_rebase(period_open + self._AlterPeriodAudio(period_body) + period_close))
@@ -561,65 +724,65 @@ class ProxyHTTPD(BaseHTTPRequestHandler):
             if r.encoding is None:
                 r.encoding = 'utf-8'
             self._SendResponse(status_code, headers, r.content.decode(r.encoding, errors='replace'), False)
+        finally:
+            r.close()
+
+    def _CleanSubs(self, content, filename):
+        """Vorab kompilierte TTMLv2-zu-SRT-Konvertierung."""
+        if not content:
+            return ''
+        content = _RE_SUB_SPAN.sub(r'<\1i>', content)
+        content = _RE_SUB_TIMESTAMP.sub(r'\1,', content)
+        content = _RE_SUB_BR.sub('\n', content)
+
+        if self.server._s.sub_stretch:
+            factor = self.server._s.subtitleStretchFactor
+
+            def _stretch(f):
+                millis = int(f.group('h')) * 3600000 + int(f.group('m')) * 60000 + int(f.group('s')) * 1000 + int(f.group('ms'))
+                h, m = divmod(int(millis * factor), 3600000)
+                m, s = divmod(m, 60000)
+                s, ms = divmod(s, 1000)
+                return f'{h:02}:{m:02}:{s:02},{ms:03}'
+
+            content = _RE_SUB_STRETCH.sub(_stretch, content)
+
+        num = 0
+        srt_parts = []
+        is_es = filename.startswith('es')
+        is_ar = filename.startswith('ar')
+        for begin_ts, end_ts, text in _RE_SUB_PARAGRAPH.findall(content):
+            if is_es:
+                text = text.replace('\xA8', '¿').replace('\xAD', '¡').replace('ń', 'ñ')
+            if is_ar:
+                text = _RE_SUB_ARABIC_RTL.sub(_RTL_EMBEDDING, text).replace('?', '؟').replace(',', '،')
+            for src_ent, dst_chr in (('&amp;', '&'), ('&quot;', '"'), ('&lt;', '<'), ('&gt;', '>'), ('&apos;', "'")):
+                text = text.replace(src_ent, dst_chr)
+            num += 1
+            srt_parts.append(f'{num}\n{begin_ts} --> {end_ts}\n{text}\n\n')
+        return ''.join(srt_parts)
 
     def _TranscodeSubtitle(self, endpoint, headers, data, filename):
         """ On-the-fly subtitle transcoding (TTMLv2 => SRT) """
-
-        import re
 
         status_code, headers, content = self._ForwardRequest('get', endpoint, headers, data)
         if status_code is None:
             return
         if 0 < len(content):
-            # Apply a bunch of regex to the content instead of line-by-line to save computation time
-            content = re.sub(r'<(|/)span[^>]*>', r'<\1i>', content)  # Using (|<search>) instead of ()? to avoid py2.7 empty matching error
-            content = re.sub(r'([0-9]{2}:[0-9]{2}:[0-9]{2})\.', r'\1,', content)  # SRT-like timestamps
-            content = re.sub(r'(?:\s*<(?:tt:)?br\s*/>\s*)+', '\n', content)  # Replace <br/> with actual new lines
-
-            # Subtitle timing stretch
-            if self.server._s.sub_stretch:
-                def _stretch(f):
-                    millis = int(f.group('h')) * 3600000 + int(f.group('m')) * 60000 + int(f.group('s')) * 1000 + int(f.group('ms'))
-                    h, m = divmod(int(millis * _stretch.factor), 3600000)
-                    m, s = divmod(m, 60000)
-                    s, ms = divmod(s, 1000)
-                    # Truncate to the decimal of a ms (for lazyness)
-                    return f'{h:02}:{m:02}:{s:02},{ms:03}'
-                _stretch.factor = self.server._s.subtitleStretchFactor
-                content = re.sub(r'(?P<h>\d+):(?P<m>\d+):(?P<s>\d+),(?P<ms>\d+)', _stretch, content)
-
-            # Convert dfxp or ttml2 to srt
-            num = 0
-            srt = ''
-            for tt in re.compile(r'<(?:tt:)?p begin="([^"]+)"[^>]*end="([^"]+)"[^>]*>\s*(.*?)\s*</(?:tt:)?p>', re.DOTALL).findall(content):
-                text = tt[2]
-
-                # Fix Spanish characters
-                if filename.startswith("es"):
-                    text = text.replace('\xA8', u'¿')
-                    text = text.replace('\xAD', u'¡')
-                    text = text.replace(u'ń', u'ñ')
-
-                # Embed RTL and change the punctuation where needed
-                if filename.startswith("ar"):
-                    from unicodedata import lookup
-                    text = re.sub(rf"^(?!{lookup('RIGHT-TO-LEFT MARK')}|{lookup('RIGHT-TO-LEFT EMBEDDING')})",
-                                  lookup('RIGHT-TO-LEFT EMBEDDING'), text, flags=re.MULTILINE)
-                    text = text.replace('?', '؟').replace(',', '،')
-
-                for ec in [('&amp;', '&'), ('&quot;', '"'), ('&lt;', '<'), ('&gt;', '>'), ('&apos;', "'")]:
-                    text = text.replace(ec[0], ec[1])
-                num += 1
-                srt += f'{num}\n{tt[0]} --> {tt[1]}\n{text}\n\n'
-            content = srt
+            content = self._CleanSubs(content, filename)
 
         self._SendResponse(status_code, headers, content)  # Kodi doesn't quite like gzip'd subtitles
 
 
 class ProxyTCPD(ThreadingTCPServer):
+    allow_reuse_address = True
+    daemon_threads = True
+
     def __init__(self, settings):
         """ Initialisation of the Proxy TCP server """
         self._s = settings  # Make settings available to the RequestHandler
+        self.token = secrets.token_urlsafe(32)
+        writeConfig('proxytoken', self.token)
 
         # Let the OS pick a free port; retry a few times in case another process grabs it in between
         from socket import socket, AF_INET, SOCK_STREAM

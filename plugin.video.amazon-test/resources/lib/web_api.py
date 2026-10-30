@@ -917,7 +917,7 @@ class PrimeVideo(Singleton):
                 bEpisodesOnly = oid == gti
                 siblings = [] if bEpisodesOnly else vd['siblings'][:]
                 siblings.append(gti)
-                siblings = sorted(siblings, key=(lambda k: self._videodata[k]['metadata']['videometa']['season']))
+                siblings = sorted(siblings, key=(lambda k: ((self._videodata.get(k) or {}).get('metadata') or {}).get('videometa', {}).get('season', 999)))
                 for gti in siblings:
                     # Add season if we're not inside a season already
                     if (not bEpisodesOnly) and (gti not in o):
@@ -1129,7 +1129,7 @@ class PrimeVideo(Singleton):
 
                 # Meta prep
                 if 'metadata' not in vd:
-                    vd['metadata'] = {'compactGTI': urn, 'artmeta': {}, 'videometa': {}}
+                    vd['metadata'] = {'compactGTI': urn if urn is not None else title_id, 'artmeta': {}, 'videometa': {}}
                     bUpdated = True
                 if 'artmeta' not in vd['metadata']:
                     vd['metadata']['artmeta'] = {}

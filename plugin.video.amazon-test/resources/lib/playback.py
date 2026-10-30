@@ -86,7 +86,7 @@ def PlayVideo(name, asin, adultstr, streamtype, forcefb=0):
         fr = round(float(num) / float(den or 1), 3)
         return str(fr).replace('.0', '')
 
-    def _ParseStreams(suc, data, retmpd=False, bypassproxy=False, webid=False):
+    def _ParseStreams(suc, data, retmpd=False, bypassproxy=False, webid=False, streamtype=0):
         HostSet = 'Cloudfront' if _s.pref_host == 'Auto' and (not _s.audio_description) and (streamtype != 2) and webid else _s.pref_host
         bypassproxy = bypassproxy if streamtype != 1 else True
         subUrls = []
@@ -137,7 +137,6 @@ def PlayVideo(name, asin, adultstr, streamtype, forcefb=0):
                 if auxKey and auxKey in returl:
                     regex = r'(.*\/)([^\/]*' + auxKey + r'[^\/]*\/)'
                     returl = re.sub(regex, r'\1', returl)
-
                 if (not _s.audio_description) and (streamtype != 2) and webid:
                     while '$' in returl:
                         regex = r'(.*\/)([^\/]*\$[^\/]*\/)'
@@ -375,11 +374,12 @@ def PlayVideo(name, asin, adultstr, streamtype, forcefb=0):
                     str_list.append([f"{heading}: {stream['displayTitle']}", stream['titleID'], live_state])
         if len(str_list) > 0:
             num = 0 if len(str_list) == 1 else _g.dialog.select('', [s[0] for s in str_list], preselect=0)
-            return [str_list[num][1], str_list[num][2]] if num > -1 else [pid, False]
+            return str_list[num][1:3] if num > -1 else [pid, False]
         return pid, livestate
 
     def _IStreamPlayback(asin, name, streamtype, isAdult, extern):
         from .ages import AgeRestrictions
+        mpaa_str = AgeRestrictions().GetRestrictedAges() + getString(30171)
         bypassproxy = _s.proxy_mpdalter or (streamtype > 1)
         if streamtype == 3:
             streamtype, asin = _EventState(asin)
@@ -388,7 +388,6 @@ def PlayVideo(name, asin, adultstr, streamtype, forcefb=0):
         vMT = ['Feature', 'Trailer', 'LiveStreaming'][streamtype]
         dRes = 'PlaybackUrls' if streamtype > 1 else 'PlaybackUrls,SubtitleUrls,ForcedNarratives,TransitionTimecodes'
         opt = '&liveManifestType=accumulating,live&playerType=xp&playerAttributes={"frameRate":"HFR"}&deviceFrameRateOverride=High' if streamtype > 1 else ''
-        mpaa_str = AgeRestrictions().GetRestrictedAges() + getString(30171)
 
         inputstream_helper = Helper('mpd', drm='com.widevine.alpha')
         if not inputstream_helper.check_inputstream():
@@ -402,7 +401,7 @@ def PlayVideo(name, asin, adultstr, streamtype, forcefb=0):
         # available though token based authentification.
 
         for preferTokenToCookie in ([True, False] if _s.wvl1_device and streamtype != 2 else [False]):
-            playback_vars = _getPlaybackVars(preferToken=preferTokenToCookie)
+            playback_vars = _getPlaybackVars(preferTokenToCookie)
             if not playback_vars:
                 _g.dialog.notification(getString(30203), getString(30200), xbmcgui.NOTIFICATION_ERROR)
                 Log('Login error at playback')
@@ -414,7 +413,7 @@ def PlayVideo(name, asin, adultstr, streamtype, forcefb=0):
             if success or not isinstance(cookie, dict):
                 break
 
-        mpd, subs, timecodes = _ParseStreams(success, data, retmpd=True, bypassproxy=bypassproxy, webid=dtid == _g.dtid_web)
+        mpd, subs, timecodes = _ParseStreams(success, data, retmpd=True, bypassproxy=bypassproxy, webid=dtid == _g.dtid_web, streamtype=streamtype)
         if not mpd:
             _g.dialog.notification(getString(30203), subs, xbmcgui.NOTIFICATION_ERROR)
             return False

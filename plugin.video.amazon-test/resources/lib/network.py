@@ -451,7 +451,6 @@ def GrabJSON(url, postData=None):
                 Prune(v)
 
     def do(url, postData):
-        GrabJSON.runs = True
         """ Wrapper to facilitate logging """
         headers = {'accept': 'application/json', "X-Requested-With": "XMLHttpRequest"}
         if re.match(r'/(?:gp/video/)?search(?:Default)?/', url):
@@ -491,15 +490,13 @@ def GrabJSON(url, postData=None):
                         m = bodies['sitewide'].get('sitewide-navigation-bar', {}) if 'sitewide' in bodies else {}
                         if isinstance(bodies, dict):
                             bodies = [bodies]
-
                     if isinstance(bodies, list):
                         for body in bodies:
                             body = body.get('props', body)
                             for p in ['atf', 'btf', 'landingPage', 'browse', 'search', 'categories', 'genre']:
                                 Merge(m, body.get(p, {}))
-                            for p in ['content', 'containers', 'pagination']:
+                            for p in ['content', 'containers', 'pagination', 'profiles', 'permissions']:
                                 Merge(m, {p: body.get(p, {})})
-
                 if _s.json_dump_raw:
                     # Prune useless/sensitive info
                     for k in list(m):  # list() instead of .keys() to avoid py3 iteration errors
@@ -577,7 +574,7 @@ def getURLParallel(urls, useCookie=False, rjson=True, headers=None, max_workers=
     unique_urls = list(dict.fromkeys(u for u in urls if u))
     if not unique_urls:
         return {}
-    if useCookie is True:
+    if useCookie:
         useCookie = MechanizeLogin()
         if not useCookie:
             return {}

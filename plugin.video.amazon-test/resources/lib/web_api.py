@@ -260,6 +260,7 @@ class PrimeVideo(Singleton):
 
             if path[1] == self._catalog['profiles']['active']:
                 if not_selected:
+                    self.BuildRoot()
                     List(home)
             else:
                 self._g.dialog.notification(self._g.addon.getAddonInfo('name'), 'Profile switching unavailable at the moment, please try again', time=1000, sound=False)
@@ -344,7 +345,7 @@ class PrimeVideo(Singleton):
             self._UpdateProfiles(home)
 
         # Profil PIN required
-        if home.get('pageType') == 'ATVProfiles':
+        if home.get('pageType') == 'ATVProfiles' or (len(home) == 2 and 'profiles' in home):
             self.Profile(self._separator.join(['switch', self._catalog['profiles']['active']]))
             return self.BuildRoot()
 

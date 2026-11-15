@@ -45,7 +45,7 @@ def writeConfig(cfile, value):
                 xbmcvfs.delete(cfglockfile)
 
 def langSettings(config_id):
-    from .common import Globals
+    from .common import Globals, Settings
     _g = Globals()
     supported_langs = ['all', 'ar', 'bg', 'ca', 'cmn', 'cs', 'da', 'de', 'en', 'es', 'et', 'fi', 'fr', 'he', 'hi', 'hr', 'hu', 'is', 'it', 'ja',
                        'ko', 'lt', 'lv', 'nb', 'nl', 'pl', 'pt', 'ro', 'ru', 'sk', 'sl', 'sr', 'sv', 'ta', 'te', 'th', 'tr', 'uk', 'vi', 'yue']
@@ -60,4 +60,4 @@ def langSettings(config_id):
             sel.remove(0)
         langs = ','.join([supported_langs[x] for x in sel])
         writeConfig(config_id, langs)
-        _g.addon.setSetting(config_id, langs)
+        setattr(Settings(), config_id, langs)

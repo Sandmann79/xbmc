@@ -19,9 +19,11 @@ def EntryPoint(argv):
     """ Main entry point of the Amazon VOD addon """
 
     # Initialise globals and settings before doing anything else
+    _s.reset()
 
     if not xbmcvfs.exists(os.path.join(_g.DATA_PATH, 'settings.xml')):
         _g.addon.openSettings()
+        _s.reset()
         exit()
 
     from socket import setdefaulttimeout
@@ -72,6 +74,7 @@ def EntryPoint(argv):
         aid = _g.is_addon if aid == 'is' else aid
         import xbmcaddon
         xbmcaddon.Addon(aid).openSettings()
+        _s.reset()
     elif mode == 'exportWatchlist':
         if hasattr(_g.pv, 'getListMenu'):
             _g.pv.getListMenu(_g.watchlist, export=2)

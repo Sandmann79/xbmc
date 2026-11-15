@@ -28,8 +28,9 @@ def Log(msg, level=xbmc.LOGINFO):
     loc = ''
     if _s.logging:
         frame = currentframe().f_back
-        if frame is not None:
-            loc = f' {opb(frame.f_code.co_filename)}:{frame.f_lineno}'
+        fcaller = frame.f_back if frame else None
+        if frame and fcaller:
+            loc = f' {opb(fcaller.f_code.co_filename)}:{fcaller.f_lineno} > {opb(frame.f_code.co_filename)}:{frame.f_lineno}'
     msg = f'[{_g.__plugin__}]{loc} {_sanitize(msg)}'
     xbmc.log(msg, level)
 
@@ -39,15 +40,6 @@ Log.ERROR = xbmc.LOGERROR
 Log.FATAL = xbmc.LOGFATAL
 Log.INFO = xbmc.LOGINFO
 Log.WARNING = xbmc.LOGWARNING
-
-
-def LogCaller():
-    frame = currentframe().f_back
-    fcaller = frame.f_back if frame else None
-    if frame and fcaller:
-        msg = f'[{_g.__plugin__}] {opb(frame.f_code.co_filename)}:{frame.f_lineno} called from: {opb(fcaller.f_code.co_filename)}:{fcaller.f_lineno}'
-        xbmc.log(msg, Log.INFO)
-    xbmc.log(msg, Log.INFO)
 
 
 def WriteLog(data, fn='avod', force=False, comment=None):

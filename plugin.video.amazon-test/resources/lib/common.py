@@ -132,20 +132,21 @@ class Globals(Singleton):
     def __getattr__(self, name):
         if name == 'pluginhandle':
             return int(argv[1]) if (1 < len(argv)) and argv[0] else -1
-        if name == 'addon':
-            addon = Addon()
-            self._globals['addon'] = addon
-            return addon
         return self._globals[name]
 
+    def reloadAddon(self):
+        addon = Addon()
+        self._globals['addon'] = addon
+        return addon
+
     def InitialiseProvider(self, mid, burl, atv, pv, did):
-        self._globals['addon'] = Addon()
         self._globals['MarketID'] = mid
         self._globals['BaseUrl'] = burl
         self._globals['ATVUrl'] = atv
         self._globals['UsePrimeVideo'] = pv
         self._globals['deviceID'] = did
-        ds = int('0' + self._globals['addon'].getSetting('data_source'))
+        _s = Settings()
+        ds = _s.data_source
 
         if ds == 0:
             from .web_api import PrimeVideo
@@ -153,7 +154,7 @@ class Globals(Singleton):
             from .android_api import PrimeVideo
         cur_pv = self._globals.get('pv')
         if cur_pv is None or not isinstance(cur_pv, PrimeVideo) or getattr(cur_pv, '_active_mid', None) != mid:
-            self._globals['pv'] = PrimeVideo(self, Settings())
+            self._globals['pv'] = PrimeVideo(self, _s)
             self._globals['pv']._active_mid = mid
 
 
@@ -176,10 +177,24 @@ class Settings(Singleton):
         'json_dump_raw', 'ssl_verif', 'proxy_mpdalter'
     ])
 
+    def __init__(self):
+        self._cache = {}
+
+    def reset(self):
+        self._cache.clear()
+        self._g.reloadAddon()
+
     def _gs(self, name):
         return self._g.addon.getSetting(name)
 
     def __getattr__(self, name):
+        if name in self._cache:
+            return self._cache[name]
+        val = self._read_setting(name)
+        self._cache[name] = val
+        return val
+
+    def _read_setting(self, name):
         if name in ['MOVIE_PATH', 'TV_SHOWS_PATH']:
             export = self._g.DATA_PATH
             if self._gs('enablelibraryfolder') == 'true':
@@ -233,6 +248,9 @@ class Settings(Singleton):
     def __setattr__(self, name, value):
         if not name.startswith('_'):
             self._g.addon.setSetting(name, value)
+            self._cache.clear()
+        else:
+            super(Settings, self).__setattr__(name, value)
 
 
 def jsonRPC(method, props='', param=None):

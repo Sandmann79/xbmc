@@ -3,7 +3,6 @@
 import threading
 
 import xbmc
-from xbmcaddon import Addon
 
 from .logging import Log
 from .configs import getConfig, writeConfig
@@ -29,7 +28,7 @@ class BackgroundService(xbmc.Monitor):
 
     def onSettingsChanged(self):
         xbmc.sleep(500)
-        self._s._g._globals['addon'] = Addon()
+        self._s.reset()
         self.wl_export = self._s.wl_export
 
     def start(self):

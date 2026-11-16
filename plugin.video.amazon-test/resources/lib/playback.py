@@ -489,6 +489,9 @@ def PlayVideo(name, asin, adultstr, streamtype, forcefb=0):
                        }
 
             listitem.setProperty('inputstream.adaptive.drm', json.dumps(drm_cfg))
+            # On some platforms the audio secure decoder is not supported by ISA, you need to set "check_hdcp" to exclude them
+            isa_cfg = {"check_hdcp": "license"}
+            listitem.setProperty('inputstream.adaptive.config', json.dumps(isa_cfg))
 
         player = _AmazonPlayer()
         player.asin = asin

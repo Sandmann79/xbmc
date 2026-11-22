@@ -51,7 +51,7 @@ def addDir(name, mode='', url='', infoLabels=None, opt='', catalog='Browse', cm=
         return
 
     useatv = _s.data_source == 1
-    folder = mode not in ['switchUser', 'text'] if useatv else mode == 'True'
+    folder = mode not in ['switchUser', 'switchProfile', 'text'] if useatv else mode == 'True'
     sep = '?' if useatv else ''
     u = urlencode({'mode': mode, 'url': url, 'page': page, 'opt': opt, 'cat': catalog}) if useatv else url
     url = f'{_g.pluginid}{sep}{u}' if mode != 'text' else _g.pluginid

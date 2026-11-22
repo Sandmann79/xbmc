@@ -19,7 +19,7 @@ from .network import getURL, LocaleSelector
 from .login import refreshToken
 from .itemlisting import addDir, addVideo, setContentAndView
 from .users import loadUsers, loadUser, updateUser
-from .configs import writeConfig
+from .configs import getConfig, writeConfig
 from .l10n import getString, datetimeParser
 from .export import SetupLibrary
 
@@ -59,9 +59,13 @@ class PrimeVideo(Singleton):
         if self._s.multiuser and 1 < len(loadUsers()):
             addDir(getString(30134).format(loadUser('name')), 'switchUser', '', cm=self._g.CONTEXTMENU_MULTIUSER)
         if self._s.profiles:
-            act, profiles = self.getProfiles()
-            if act is not False:
-                addDir(profiles[act][0], 'switchProfile', '', thumb=profiles[act][2])
+            prof = self._loadActiveProfile()
+            if prof is None:
+                act, profiles = self.getProfiles()
+                if act is not False:
+                    prof = {'name': profiles[act][0], 'id': profiles[act][1], 'thumb': profiles[act][2]}
+            if prof:
+                addDir(prof['name'], 'switchProfile', '', thumb=prof.get('thumb'))
         addDir('Watchlist', 'getPage', self._g.watchlist, cm=cm_wl)
         self.getPage(root=True)
         addDir(getString(30100), 'getPage', self._g.library, cm=cm_lb)
@@ -720,30 +724,89 @@ class PrimeVideo(Singleton):
         # r'\.[^/]+(\.[^/]+$)', '\\1'
         return re.sub(r'\._.*_\.', r'.', img) if img else None
 
+    @staticmethod
+    def _loadActiveProfile():
+        user = loadUser()
+        did = user.get('deviceid', '')
+        if not did:
+            return None
+        try:
+            cached = json.loads(getConfig('profile', '{}'))
+        except (ValueError, TypeError):
+            return None
+        entry = cached.get(did) if isinstance(cached, dict) else None
+        if not isinstance(entry, dict) or not entry.get('name') or not entry.get('id'):
+            return None
+        token = user.get('token')
+        actor_id = token.get('actor_id') if isinstance(token, dict) else None
+        if actor_id:
+            return entry if entry['id'] == actor_id else None
+        return entry if entry.get('isDefault') else None
+
+    @staticmethod
+    def _saveActiveProfile(profile, did=None):
+        did = did or loadUser('deviceid')
+        if not did:
+            return
+        try:
+            cached = json.loads(getConfig('profile', '{}'))
+            if not isinstance(cached, dict):
+                cached = {}
+        except (ValueError, TypeError):
+            cached = {}
+        cached[did] = {
+            'name': profile[0],
+            'id': profile[1],
+            'thumb': profile[2],
+            'isDefault': bool(profile[3]),
+        }
+        writeConfig('profile', json.dumps(cached))
+
     def getProfiles(self):
         resp = self.getPage('profiles')
-        if not resp:
+        if not resp or not resp.get('profiles'):
             return False, False
+        user = loadUser()
+        token = user.get('token')
+        actor_id = token.get('actor_id') if isinstance(token, dict) else None
         profiles = []
-        active = 0
+        active = None
+        default_idx = 0
         for item in resp['profiles']:
             n = item.get('name', 'Default')
-            profiles.append((n, item['profileId'], item['avatar']['avatarUrls']['round']))
-            if item.get('isActive', False):
-                active = len(profiles) - 1
-                writeConfig('profileID', '' if item.get('isDefault', False) else n)
+            pid = item['profileId']
+            avatar = get_key(None, item, 'avatar', 'avatarUrls', 'round')
+            is_def = item.get('isDefaultProfile', item.get('isDefault', False))
+            profiles.append((n, pid, avatar, is_def))
+            idx = len(profiles) - 1
+            if is_def:
+                default_idx = idx
+            if actor_id and pid == actor_id:
+                active = idx
+            elif not actor_id and item.get('isActive', False):
+                active = idx
+        if active is None:
+            active = default_idx
+        self._saveActiveProfile(profiles[active], user.get('deviceid'))
         return active, profiles
 
     def switchProfile(self):
-        self._g.dialog.notification(self._g.__plugin__, 'Feature not implemented yet', xbmcgui.NOTIFICATION_INFO)
-        exit()
+        user = loadUser()
+        token = user.get('token')
+        if not isinstance(token, dict) or not token.get('parent_refresh'):
+            self._g.dialog.ok(self._g.__plugin__, getString(30313))
+            return
         active, profiles = self.getProfiles()
-        if active is not False:
-            ret = self._g.dialog.select('Amazon', [i[0] for i in profiles])
+        if active is not False and profiles:
+            ret = self._g.dialog.select(getString(30024), [i[0] for i in profiles], preselect=active)
             if ret >= 0 and ret != active:
-                if refreshToken(loadUser(), profiles[ret][1]):
-                    exit()
-        exit()
+                newtoken = refreshToken(user, profiles[ret][1])
+                if newtoken:
+                    updateUser('token', newtoken)
+                    self._saveActiveProfile(profiles[ret], user.get('deviceid'))
+                    xbmc.executebuiltin('Container.Refresh')
+                else:
+                    self._g.dialog.notification(self._g.__plugin__, getString(30266), xbmcgui.NOTIFICATION_ERROR)
 
     def languageselect(self):
         loc, lang = LocaleSelector()

@@ -7,12 +7,13 @@ import mechanicalsoup
 import re
 import requests
 import time
-from base64 import urlsafe_b64encode, b64encode, b16encode
+from base64 import urlsafe_b64encode, b64encode, b64decode, b16encode
 from random import randint
 from hashlib import sha256
 from os.path import join as OSPJoin
 from uuid import uuid4
 from urllib.parse import urlencode, urlparse, parse_qs
+import xml.etree.ElementTree as ET
 
 import pyxbmct
 import xbmcgui, xbmc, xbmcvfs
@@ -28,7 +29,13 @@ _g = Globals()
 _s = Settings()
 
 _RE_REDACT_SENSITIVE = re.compile(
-    r'(?i)((?:access_token|refresh_token|source_token|password|guess|otpCode|pin|authorization|cookie|x-amzn-sessionid|ubid-\w+|at-\w+|sess-at-\w+|session-token)["\'\s:=]+)([^"\'&\s,;}{]+)'
+    r'(?i)((?:access_token|refresh_token|source_token|actor_access_token|actor_refresh_token|account_refresh_token|password|guess|otpCode|pin|authorization|cookie|x-amzn-sessionid|ubid-\w+|at-\w+|sess-at-\w+|session-token)["\'\s:=]+)([^"\'&\s,;}{]+)'
+)
+_RE_REDACT_PEM = re.compile(
+    r'-----BEGIN [A-Z ]*PRIVATE KEY-----[\s\S]*?-----END [A-Z ]*PRIVATE KEY-----'
+)
+_RE_REDACT_ADP = re.compile(
+    r'(?i)(<(?:adp_token|device_private_key|store_authentication_cookie)>).*?(</(?:adp_token|device_private_key|store_authentication_cookie)>)|(\{enc:[^}]+\}(?:\{[^}]+\})+)'
 )
 
 
@@ -38,7 +45,80 @@ def _redact_sensitive(text, email=None):
     s = str(text)
     if email:
         s = s.replace(email, '**@**')
+    s = _RE_REDACT_PEM.sub('***REDACTED_PRIVATE_KEY***', s)
+    s = _RE_REDACT_ADP.sub(lambda m: f'{m.group(1)}***REDACTED***{m.group(2)}' if m.group(1) else '***REDACTED_ADP_TOKEN***', s)
     return _RE_REDACT_SENSITIVE.sub(r'\1***REDACTED***', s)
+
+
+def _read_der_len(buf, idx):
+    b = buf[idx]
+    idx += 1
+    if b < 0x80:
+        return b, idx
+    n = b & 0x7f
+    return int.from_bytes(buf[idx:idx + n], 'big'), idx + n
+
+
+def _parse_rsa_private_key(pem_str):
+    b64 = ''.join(line.strip() for line in pem_str.strip().splitlines() if not line.startswith('-----'))
+    der = b64decode(b64)
+    if der[0] != 0x30:
+        raise ValueError('Invalid DER RSA private key')
+    _, idx = _read_der_len(der, 1)
+    # version INTEGER
+    if der[idx] != 0x02:
+        raise ValueError('Invalid DER RSA key version')
+    v_len, idx = _read_der_len(der, idx + 1)
+    idx += v_len
+    # PKCS#8 wraps PKCS#1 key inside an OCTET STRING after AlgorithmIdentifier SEQUENCE
+    if der[idx] == 0x30:
+        alg_len, idx = _read_der_len(der, idx + 1)
+        idx += alg_len
+        if der[idx] != 0x04:
+            raise ValueError('Invalid PKCS#8 private key octet string')
+        key_len, idx = _read_der_len(der, idx + 1)
+        der = der[idx:idx + key_len]
+        if der[0] != 0x30:
+            raise ValueError('Invalid inner PKCS#1 RSA key')
+        _, idx = _read_der_len(der, 1)
+        if der[idx] != 0x02:
+            raise ValueError('Invalid inner PKCS#1 version')
+        v_len, idx = _read_der_len(der, idx + 1)
+        idx += v_len
+    ints = []
+    while len(ints) < 3 and idx < len(der):
+        if der[idx] != 0x02:
+            raise ValueError('Expected ASN.1 INTEGER in RSA key')
+        length, idx = _read_der_len(der, idx + 1)
+        ints.append(int.from_bytes(der[idx:idx + length], 'big'))
+        idx += length
+    # modulus (n), publicExponent (e), privateExponent (d)
+    return ints[0], ints[1], ints[2]
+
+
+def _rsa_sign_sha256(pem_str, data_bytes):
+    n, _, d = _parse_rsa_private_key(pem_str)
+    k = (n.bit_length() + 7) // 8
+    digest = sha256(data_bytes).digest()
+    # PKCS#1 v1.5 DigestInfo prefix for SHA-256
+    digest_info = bytes.fromhex('3031300d060960864801650304020105000420') + digest
+    ps_len = k - len(digest_info) - 3
+    if ps_len < 8:
+        raise ValueError('RSA key too short for SHA-256 signature')
+    em = b'\x00\x01' + (b'\xff' * ps_len) + b'\x00' + digest_info
+    sig_int = pow(int.from_bytes(em, 'big'), d, n)
+    return b64encode(sig_int.to_bytes(k, 'big')).decode('ascii')
+
+
+def _adp_sign_headers(method, path, body, adp_token, private_key):
+    timestamp = time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime())
+    payload = f'{method}\n{path}\n{timestamp}\n{body}\n{adp_token}'.encode('utf-8')
+    sig = _rsa_sign_sha256(private_key, payload)
+    return {
+        'x-adp-token': adp_token,
+        'x-adp-alg': 'SHA256WithRSA:1.0',
+        'x-adp-signature': f'{sig}:{timestamp}',
+    }
 
 
 def getTerritory(user):
@@ -391,17 +471,17 @@ def LogIn(retToken=False):
                     'Upgrade-Insecure-Requests': '1'
                 })
             else:
-                clientid = b16encode(user['deviceid'].encode() + b'#A1MPSLFC7L5AFK').decode().lower()  # + _g.dtid_android.encode()
+                clientid = b16encode(f"{user['deviceid']}#{_g.dtid_android_parent}".encode()).decode().lower()
                 verifier = urlsafe_b64encode(os.urandom(32)).rstrip(b"=")
                 challenge = urlsafe_b64encode(sha256(verifier).digest()).rstrip(b"=")
                 frc = b64encode(os.urandom(313)).decode("ascii")
                 map_md = {'device_registration_data': {'software_version': '130050002'},
                           'app_identifier': {'package': 'com.amazon.avod.thirdpartyclient',
                                              'SHA-256': ['2f19adeb284eb36f7f07786152b9a1d14b21653203ad0b04ebbf9c73ab6d7625'],
-                                             'app_version': '351003955',
-                                             'app_version_name': '3.0.351.3955',
+                                             'app_version': '404000357',
+                                             'app_version_name': '3.0.404.357',
                                              'app_sms_hash': 'e0kK4QFSWp0',
-                                             'map_version': 'MAPAndroidLib-1.3.14913.0'},
+                                             'map_version': 'MAPAndroidLib-1.3.34875.0'},
                           'app_info': {'auto_pv': 0, 'auto_pv_with_smsretriever': 0, 'smartlock_supported': 0, 'permission_runtime_grant': 0}}
                 init_cookie = {'frc': frc, 'map-md': b64encode(json.dumps(map_md).encode()).decode(), 'sid': ''}
                 br.session.headers.update(_g.headers_android)
@@ -482,7 +562,9 @@ def LogIn(retToken=False):
             url = br.get_url()
             if url.endswith('?ref_=av_auth_return_redir') or ('action=sign-out' in response) or ('openid.oa2.authorization_code' in url):
                 if 'openid.oa2.authorization_code' in url:
-                    user = registerDevice(url, user, verifier, clientid)
+                    user = registerDevice(url, user, verifier, clientid, frc)
+                    if not user:
+                        return False
                 else:  # Raw HTML
                     try:
                         name = re.search(r'config\.customerName[\x27,]+([^\x27]+)', response).group(1)
@@ -525,22 +607,26 @@ def LogIn(retToken=False):
     return False
 
 
-def registerDevice(url, user, verifier, clientid):
+def registerDevice(url, user, verifier, clientid, frc=None):
     parsed_url = parse_qs(urlparse(url).query)
     auth_code = parsed_url["openid.oa2.authorization_code"][0]
     domain = user['sidomain']
 
+    # Step 1: Register parent MAP/Android device (A1MPSLFC7L5AFK) with mac_dms credentials
     data = {
         'auth_data': {
+            'use_global_authentication': 'true',
             'client_id': clientid,
             'authorization_code': auth_code,
             'code_verifier': verifier.decode(),
             'code_algorithm': 'SHA-256',
             'client_domain': 'DeviceLegacy',
         },
-        'registration_data': deviceData(user),
+        'registration_data': deviceData(user, _g.dtid_android_parent),
         'requested_token_type': [
             'bearer',
+            'mac_dms',
+            'store_authentication_cookie',
             'website_cookies',
         ],
         'requested_extensions': [
@@ -551,35 +637,168 @@ def registerDevice(url, user, verifier, clientid):
             'domain': '.' + domain,
             'website_cookies': [],
         },
+        'device_metadata': _deviceMetadata(user, _g.dtid_android_parent),
     }
+    if frc:
+        data['user_context_map'] = {'frc': frc}
 
     headers = _g.headers_android.copy()
-    headers.update({'x-amzn-identity-auth-domain': 'api.' + domain, 'x-amzn-requestid': str(uuid4()).replace('-', ''), 'Content-Type': 'application/json'})
+    headers.update({
+        'x-amzn-identity-auth-domain': 'api.' + domain,
+        'X-Amzn-RequestId': str(uuid4()),
+        'Accept-Language': user.get('lang', 'en_US').replace('_', '-'),
+        'Content-Type': 'application/json',
+        'Accept-Encoding': 'gzip',
+    })
     resp = getURL(f'https://api.{domain}/auth/register', headers=headers, postdata=json.dumps(data))
     WriteLog(_redact_sensitive(resp), 'login-register')
 
-    if 'error' in resp['response']:
-        _g.dialog.notification(_g.__plugin__, resp['response']['error']['message'], xbmcgui.NOTIFICATION_INFO)
+    resp_body = resp.get('response', {}) if isinstance(resp, dict) else {}
+    if 'error' in resp_body or 'success' not in resp_body:
+        err_msg = resp_body.get('error', {}).get('message', 'Device registration failed')
+        Log(f'Parent device registration failed: {err_msg}', Log.ERROR)
+        _g.dialog.notification(_g.__plugin__, err_msg, xbmcgui.NOTIFICATION_INFO)
         return False
 
-    data = resp['response']['success']
-    bearer = data['tokens']['bearer']
-    customer = data['extensions']['customer_info']
+    reg_data = resp_body['success']
+    parent_tokens = reg_data['tokens']
+    parent_bearer = parent_tokens['bearer']
+    mac_dms = parent_tokens.get('mac_dms', {})
+    if not mac_dms.get('adp_token') or not mac_dms.get('device_private_key'):
+        Log('Missing mac_dms credentials in /auth/register response', Log.ERROR)
+        _g.dialog.notification(_g.__plugin__, 'Missing mac_dms credentials', xbmcgui.NOTIFICATION_ERROR)
+        return False
+
+    # Step 2: Register associated Prime Video device (A43PXU4ZN2AL1) via FIRS
+    firs_path = '/FirsProxy/registerAssociatedDevice'
+    pid = sha256(user['deviceid'].encode('utf-8')).hexdigest().upper()[23:31]
+    firs_body = (
+        '<?xml version="1.0" encoding="UTF-8"?>'
+        '<request><parameters>'
+        f'<deviceType>{_g.dtid_android}</deviceType>'
+        f'<deviceSerialNumber>{user["deviceid"]}</deviceSerialNumber>'
+        f'<pid>{pid}</pid>'
+        '<deregisterExisting>true</deregisterExisting>'
+        '<softwareVersion>404000357</softwareVersion>'
+        '<softwareComponentId>com.amazon.avod.thirdpartyclient</softwareComponentId>'
+        '</parameters></request>'
+    )
+    firs_headers = _adp_sign_headers('POST', firs_path, firs_body, mac_dms['adp_token'], mac_dms['device_private_key'])
+    firs_headers.update({
+        'Content-Type': 'text/xml',
+        'X-Amzn-RequestId': str(uuid4()),
+        'User-Agent': _g.headers_android['User-Agent'],
+        'Accept-Encoding': 'gzip',
+    })
+    firs_resp = getURL('https://firs-ta-g7g.amazon.com' + firs_path, headers=firs_headers, postdata=firs_body, rjson=False)
+    WriteLog(_redact_sensitive(firs_resp), 'login-register-assoc')
+
+    child_adp_token = None
+    child_private_key = None
+    if firs_resp:
+        try:
+            root = ET.fromstring(firs_resp)
+            child_adp_token = root.findtext('adp_token')
+            child_private_key = root.findtext('device_private_key')
+        except ET.ParseError as exc:
+            Log(f'Failed to parse FIRS XML response: {exc}', Log.ERROR)
+    if not child_adp_token or not child_private_key:
+        Log('Associated device registration failed', Log.ERROR)
+        _g.dialog.notification(_g.__plugin__, 'Associated device registration failed', xbmcgui.NOTIFICATION_ERROR)
+        return False
+
+    # Step 3: Exchange child dms_token for A43PXU4ZN2AL1 bearer access + refresh tokens
+    tok_path = '/auth/token'
+    tok_body = json.dumps({
+        'app_name': 'com.amazon.avod.thirdpartyclient',
+        'app_version': '130050002',
+        'source_token_type': 'dms_token',
+        'source_token': 'source_token',
+        'requested_token_type': 'refresh_token',
+        'device_metadata': _deviceMetadata(user, _g.dtid_android),
+        'map_version': {
+            'current_version': '20241101N',
+            'package_name': 'com.amazon.avod.thirdpartyclient',
+            'platform': 'Android',
+            'client_metrics_integrated': True,
+        },
+    }, separators=(',', ':'))
+    tok_headers = _adp_sign_headers('POST', tok_path, tok_body, child_adp_token, child_private_key)
+    tok_headers.update({
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+        'X-Amzn-RequestId': str(uuid4()),
+        'x-amzn-identity-auth-domain': 'api.' + domain,
+        'User-Agent': _g.headers_android['User-Agent'],
+        'Accept-Encoding': 'gzip',
+    })
+    child_resp = getURL(f'https://api.{domain}{tok_path}', headers=tok_headers, postdata=tok_body)
+    WriteLog(_redact_sensitive(child_resp), 'login-register-token')
+
+    if not isinstance(child_resp, dict) or 'access_token' not in child_resp or 'refresh_token' not in child_resp:
+        Log('Failed to exchange associated device dms_token for refresh_token', Log.ERROR)
+        _g.dialog.notification(_g.__plugin__, 'Failed to obtain device token', xbmcgui.NOTIFICATION_ERROR)
+        return False
+
+    website_cookies = parent_tokens.get('website_cookies', [])
+    if not website_cookies:
+        cookie_headers = {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'User-Agent': 'AmazonWebView/MAPClientLib/130050002/Android/11/SHIELD Android TV',
+            'X-Amzn-RequestId': str(uuid4()),
+            'x-amzn-identity-auth-domain': 'api.' + domain,
+            'Accept-Encoding': 'gzip',
+        }
+        cookie_data = {
+            'requested_token_type': 'auth_cookies',
+            'app_name': 'com.amazon.avod.thirdpartyclient',
+            'app_version': '130050002',
+            'di.sdk.version': '20241101N',
+            'domain': '.' + domain,
+            'source_token_type': 'refresh_token',
+            'source_token': parent_bearer['refresh_token'],
+        }
+        cookie_resp = getURL(f'https://api.{domain}/auth/token', headers=cookie_headers, postdata=cookie_data)
+        if isinstance(cookie_resp, dict):
+            website_cookies = cookie_resp.get('response', {}).get('tokens', {}).get('cookies', {}).get('.' + domain, [])
+
+    customer = reg_data['extensions']['customer_info']
     user['name'] = customer.get('given_name', customer.get('name', getString(30209)))
-    user['token'] = {'access': bearer['access_token'], 'refresh': bearer['refresh_token'], 'expires': int(time.time()) + int(bearer['expires_in'])}
-    user['cookie'] = {c['Name'] + '-av' if c['Name'].endswith('-main') and user['pv'] else c['Name']: c['Value'] for c in data['tokens']['website_cookies']}
+    user['token'] = {
+        'access': child_resp['access_token'],
+        'refresh': child_resp['refresh_token'],
+        'expires': int(time.time()) + int(child_resp.get('expires_in', 3600)),
+        'parent_refresh': parent_bearer['refresh_token'],
+    }
+    user['cookie'] = {
+        c['Name'] + '-av' if c['Name'].endswith('-main') and user['pv'] else c['Name']: c['Value'].strip('"')
+        for c in website_cookies
+    }
     return user
 
 
-def deviceData(user):
+def deviceData(user, dtid=None):
     return {
         'domain': 'DeviceLegacy',
-        'device_type': _g.dtid_android,
+        'device_type': dtid or _g.dtid_android,
         'device_serial': user['deviceid'],
         'app_name': 'com.amazon.avod.thirdpartyclient',
-        'app_version': '296016847',
+        'app_version': '404000357',
         'device_model': 'mdarcy/nvidia/SHIELD Android TV',
-        'os_version': 'NVIDIA/mdarcy/mdarcy:11/RQ1A.210105.003/7094531_2971.7725:user/release-keys'
+        'os_version': 'NVIDIA/mdarcy/mdarcy:11/RQ1A.210105.003/7094531_2971.7725:user/release-keys',
+        'software_version': '130050002',
+    }
+
+
+def _deviceMetadata(user, dtid):
+    return {
+        'device_os_family': 'android',
+        'device_type': dtid,
+        'device_serial': user['deviceid'],
+        'manufacturer': 'NVIDIA',
+        'model': 'SHIELD Android TV',
+        'os_version': '30',
+        'product': 'mdarcy',
     }
 
 
@@ -589,34 +808,110 @@ def getToken(user=None):
         user = loadUser()
     token = user.get('token')
     if isinstance(token, dict):
-        if int(time.time()) > token['expires']:
+        if int(time.time()) >= token['expires'] - 60:
             newtoken = refreshToken(user)
             if not newtoken:
                 return False
+            user['token'] = newtoken
             updateUser('token', newtoken)
         return {'Authorization': 'Bearer ' + user['token']['access']}
     return False
 
 
+def _requestActorToken(user, actor_id, use_actor_refresh=False):
+    domain = user['sidomain']
+    token = user['token']
+    parent_entry = {
+        'device_type': _g.dtid_android_parent,
+        'account_refresh_token': {'token': token['parent_refresh']},
+    }
+    if use_actor_refresh and token.get('actor_refresh'):
+        parent_entry['actor_refresh_token'] = {'token': token['actor_refresh']}
+
+    payload = {
+        'app_name': 'com.amazon.avod.thirdpartyclient',
+        'app_version': '130050002',
+        'source_token_type': 'refresh_token',
+        'requested_token_type': 'actor_access_token',
+        'source_device_tokens': [
+            parent_entry,
+            {
+                'device_type': _g.dtid_android,
+                'account_refresh_token': {'token': token['refresh']},
+            },
+        ],
+        'actor_id': actor_id,
+    }
+    headers = {
+        'Content-Type': 'application/json',
+        'User-Agent': 'AmazonWebView/MAPClientLib/130050002/Android/11/SHIELD Android TV',
+        'X-Amzn-RequestId': str(uuid4()),
+        'x-amzn-identity-auth-domain': 'api.' + domain,
+        'Accept-Encoding': 'gzip',
+    }
+    return getURL(f'https://api.{domain}/auth/token', headers=headers, postdata=json.dumps(payload, separators=(',', ':')))
+
+
 def refreshToken(user, aid=None):
     domain = user['sidomain']
     token = user['token']
+    target_aid = aid if aid else token.get('actor_id')
+
+    if target_aid:
+        if not token.get('parent_refresh'):
+            Log('Missing parent_refresh token for profile switching; please log in again', Log.ERROR)
+            if aid:
+                return False
+            token.pop('actor_id', None)
+            token.pop('actor_refresh', None)
+        else:
+            use_actor_refresh = (aid is None or aid == token.get('actor_id')) and bool(token.get('actor_refresh'))
+            response = _requestActorToken(user, target_aid, use_actor_refresh=use_actor_refresh)
+            # If renewing with cached actor_refresh_token fails, retry once using only account_refresh_tokens
+            if use_actor_refresh and (not isinstance(response, dict) or 'device_tokens' not in response):
+                Log('Actor token refresh with actor_refresh_token failed, retrying with account_refresh_tokens', Log.WARNING)
+                use_actor_refresh = False
+                response = _requestActorToken(user, target_aid, use_actor_refresh=False)
+
+            device_tokens = response.get('device_tokens') if isinstance(response, dict) else None
+            if device_tokens:
+                child_access = None
+                parent_actor_refresh = None
+                for dt in device_tokens:
+                    dtype = dt.get('device_type')
+                    if dtype == _g.dtid_android and 'actor_access_token' in dt:
+                        child_access = dt['actor_access_token']
+                    elif dtype == _g.dtid_android_parent and 'actor_refresh_token' in dt:
+                        parent_actor_refresh = dt['actor_refresh_token'].get('token')
+                if child_access and 'token' in child_access:
+                    token['access'] = child_access['token']
+                    token['expires'] = int(time.time()) + int(child_access.get('expires_in', 3600))
+                    token['actor_id'] = target_aid
+                    if parent_actor_refresh:
+                        token['actor_refresh'] = parent_actor_refresh
+                    elif not use_actor_refresh:
+                        token.pop('actor_refresh', None)
+                    Log('Actor token renewed')
+                    return token
+
+            LogJSON(response)
+            Log('Actor token not renewed', Log.ERROR)
+            if aid:
+                return False
+            # Fall back to standard account access_token renewal if stored profile is no longer valid
+            token.pop('actor_id', None)
+            token.pop('actor_refresh', None)
+
     data = deviceData(user)
     data['source_token_type'] = 'refresh_token'
-    #data['source_token'] = token['refresh']
-    if aid:
-        data['requested_token_type'] = 'actor_access_token'
-        data['source_device_tokens'] = [{'device_type': _g.dtid_android, 'account_refresh_token': {'token': token['refresh']}}]
-        data['actor_id'] = aid
-    else:
-        data['requested_token_type'] = 'access_token'
-        data['source_token'] = token['refresh']
+    data['requested_token_type'] = 'access_token'
+    data['source_token'] = token['refresh']
     headers = _g.headers_android.copy()
     headers.pop('x-gasc-enabled', '')
     headers.pop('X-Requested-With', '')
     headers.update({'x-amzn-identity-auth-domain': 'api.' + domain, 'Accept-Language': 'en-US', 'x-amzn-requestid': str(uuid4()).replace('-', '')})
     response = getURL(f'https://api.{domain}/auth/token', headers=headers, postdata=data)
-    if 'access_token' in response:
+    if isinstance(response, dict) and 'access_token' in response:
         token['access'] = response['access_token']
         token['expires'] = int(time.time() + int(response['expires_in']))
         Log('Token renewed')
@@ -638,6 +933,8 @@ def remLoginData(info=True):
 
     if info:
         writeConfig('accounts.lst', '')
+        writeConfig('profile', '')
+        writeConfig('profileID', '')
         _s.login_acc = ''
         _g.dialog.notification(_g.__plugin__, getString(30211), xbmcgui.NOTIFICATION_INFO)
 

@@ -53,6 +53,7 @@ class Globals(Singleton):
     langID = {'movie': 30165, 'series': 30166, 'season': 30167, 'episode': 30173, 'tvshow': 30166, 'video': 30173, 'event': 30174, 'live': 30174}
     KodiVersion = int(xbmc.getInfoLabel('System.BuildVersion').split('.')[0])
     dtid_android = 'A43PXU4ZN2AL1'
+    dtid_android_parent = 'A1MPSLFC7L5AFK'
     dtid_web = 'AOAGZA014O5RE'
     headers_android = {'Accept-Charset': 'utf-8', 'User-Agent': 'Dalvik/2.1.0 (Linux; U; Android 11; SHIELD Android TV RQ1A.210105.003)',
                        'X-Requested-With': 'com.amazon.avod.thirdpartyclient', 'x-gasc-enabled': 'true'}

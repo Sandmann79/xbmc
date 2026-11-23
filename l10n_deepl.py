@@ -89,7 +89,6 @@ def deepl_batch_translate(texts, target_lang):
         "text": texts,
         "target_lang": target_lang.upper(),
         "source_lang": "EN",
-        "tag_handling": "xml",           # WICHTIG: Sagt DeepL, dass XML kommt
         "ignore_tags": ["notranslate"],   # WICHTIG: Schützt alles in <notranslate>
         "formality": "less",              # BONUS: "Du"-Form ist oft kürzer
         "context": "This is a user interface string for a media player plugin. Keep it very short and concise."

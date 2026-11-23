@@ -964,3 +964,63 @@ msgstr "Adaptiv (inputstream.adaptive)"
 msgctxt "#30313"
 msgid "In order to use the profile change function, you will need to log in again."
 msgstr "Für die Verwendung des Profilwechsels ist eine erneute Anmeldung erforderlich."
+
+msgctxt "#30314"
+msgid "QR Code / Web Browser"
+msgstr "QR-Code / Webbrowser"
+
+msgctxt "#30315"
+msgid "Email & Password"
+msgstr "E-Mail & Passwort"
+
+msgctxt "#30316"
+msgid "Scan the QR code with your smartphone or open the URL in a browser on the same network:"
+msgstr "Scanne den QR-Code mit dem Smartphone oder öffne die URL im Browser im selben Netzwerk:"
+
+msgctxt "#30317"
+msgid "Enter code/URL manually"
+msgstr "Code/URL manuell eingeben"
+
+msgctxt "#30318"
+msgid "Paste redirect URL or authorization code"
+msgstr "Weiterleitungs-URL oder Autorisierungscode einfügen"
+
+msgctxt "#30319"
+msgid "Kodi Prime Video – Sign In"
+msgstr "Kodi Prime Video – Anmeldung"
+
+msgctxt "#30320"
+msgid "1. Sign in to Amazon"
+msgstr "1. Bei Amazon anmelden"
+
+msgctxt "#30321"
+msgid "Open Amazon Sign-In"
+msgstr "Amazon-Anmeldung öffnen"
+
+msgctxt "#30322"
+msgid "Sign in to Amazon in the new tab (e.g. using a Passkey). After sign-in, Amazon redirects to a blank or \"Page not found\" page (/ap/maplanding?...) – this is expected!"
+msgstr "Melde dich im neuen Tab bei Amazon an (z. B. per Passkey). Nach der Anmeldung erscheint eine leere Seite oder „Seite nicht gefunden“ (/ap/maplanding?...) – das ist normal!"
+
+msgctxt "#30323"
+msgid "2. Send redirect URL to Kodi"
+msgstr "2. Weiterleitungs-URL an Kodi senden"
+
+msgctxt "#30324"
+msgid "Copy the entire URL from your browser address bar, paste it below, and submit:"
+msgstr "Kopiere die komplette URL aus der Adresszeile der Amazon-Seite, füge sie hier ein und sende sie ab:"
+
+msgctxt "#30325"
+msgid "Send to Kodi"
+msgstr "An Kodi senden"
+
+msgctxt "#30326"
+msgid "Sign-in sent to Kodi!"
+msgstr "Anmeldung an Kodi übermittelt!"
+
+msgctxt "#30327"
+msgid "Kodi is completing the sign-in now. You can close this tab."
+msgstr "Kodi schließt die Anmeldung jetzt automatisch ab. Du kannst dieses Fenster schließen."
+
+msgctxt "#30328"
+msgid "No valid authorization code found. Please paste the full redirect URL (/ap/maplanding?...)."
+msgstr "Kein gültiger Autorisierungscode gefunden. Bitte die komplette Weiterleitungs-URL (/ap/maplanding?...) einfügen."

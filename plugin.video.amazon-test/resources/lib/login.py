@@ -1,13 +1,18 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+import html
 import os
 import json
 import mechanicalsoup
 import re
 import requests
+import secrets
+import socket
+import threading
 import time
 from base64 import urlsafe_b64encode, b64encode, b64decode, b16encode
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from random import randint
 from hashlib import sha256
 from os.path import join as OSPJoin
@@ -23,6 +28,7 @@ from .network import getURL
 from .logging import Log, WriteLog, LogJSON
 from .l10n import getString, datetimeParser
 from .configs import getConfig, writeConfig
+from .qrcode import make_qr_png
 
 
 _g = Globals()
@@ -359,6 +365,283 @@ def MFACheck(br, email, soup):
     return br
 
 
+_LOCALE_COUNTRY = {'de': 'DE', 'uk': 'GB', 'us': 'US', 'jp': 'JP'}
+_RE_RAW_AUTH_CODE = re.compile(r'^[A-Za-z0-9_-]{12,256}$')
+
+
+def _get_local_ip():
+    for target in (('8.8.8.8', 80), ('192.0.2.1', 80)):
+        try:
+            with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
+                sock.connect(target)
+                ip = sock.getsockname()[0]
+                if ip and not ip.startswith('127.'):
+                    return ip
+        except OSError:
+            pass
+    try:
+        ip = socket.gethostbyname(socket.gethostname())
+        if ip and not ip.startswith('127.'):
+            return ip
+    except OSError:
+        pass
+    return '127.0.0.1'
+
+
+def _build_oauth_url(user, clientid, challenge):
+    domain = user['sidomain']
+    lang = user.get('lang', 'en_US')
+    country = _LOCALE_COUNTRY.get(user.get('locale', '').lower()) or lang.split('_')[-1].upper()
+    challenge_str = challenge.decode('ascii') if isinstance(challenge, bytes) else str(challenge)
+    query = {
+        'accountStatusPolicy': 'P1',
+        'countryCode': country,
+        'disableLoginPrepopulate': 0,
+        'language': lang,
+        'openid.assoc_handle': 'amzn_piv_android_v2_' + user['locale'],
+        'openid.claimed_id': 'http://specs.openid.net/auth/2.0/identifier_select',
+        'openid.identity': 'http://specs.openid.net/auth/2.0/identifier_select',
+        'openid.mode': 'checkid_setup',
+        'openid.ns': 'http://specs.openid.net/auth/2.0',
+        'openid.ns.oa2': 'http://www.amazon.com/ap/ext/oauth/2',
+        'openid.ns.pape': 'http://specs.openid.net/extensions/pape/1.0',
+        'openid.oa2.client_id': f'device:{clientid}',
+        'openid.oa2.code_challenge': challenge_str,
+        'openid.oa2.code_challenge_method': 'S256',
+        'openid.oa2.response_type': 'code',
+        'openid.oa2.scope': 'device_auth_access',
+        'openid.pape.max_auth_age': 0,
+        'openid.return_to': f'https://www.{domain}/ap/maplanding',
+        'pageId': 'amzn_dv_ios_blue',
+    }
+    return f'https://www.{domain}/ap/signin?{urlencode(query)}'
+
+
+def _extract_auth_code(raw_value):
+    if not raw_value:
+        return None
+    val = str(raw_value).strip()
+    if not val:
+        return None
+    if 'openid.oa2.authorization_code' in val:
+        parsed = urlparse(val)
+        for source in (parsed.query, parsed.fragment, val.lstrip('?')):
+            if not source:
+                continue
+            codes = parse_qs(source).get('openid.oa2.authorization_code')
+            if codes and codes[0].strip():
+                return codes[0].strip()
+        return None
+    if _RE_RAW_AUTH_CODE.fullmatch(val):
+        return val
+    return None
+
+
+def _render_qr_login_page(oauth_url, form_action, lang, texts, error=None, done=False):
+    lang_attr = html.escape(str(lang or 'en').split('_')[0].lower(), quote=True)
+    host = urlparse(oauth_url).netloc or 'www.amazon.com'
+    placeholder = f'https://{host}/ap/maplanding?openid.oa2.authorization_code=...'
+
+    if done:
+        body = (
+            f'<div class="card ok"><h2>{html.escape(texts["done_head"])}</h2>'
+            f'<p>{html.escape(texts["done_msg"])}</p></div>'
+        )
+    else:
+        err_html = f'<div class="err">{html.escape(error)}</div>' if error else ''
+        body = (
+            f'<div class="card">'
+            f'<h2>{html.escape(texts["step1_head"])}</h2>'
+            f'<a class="btn" href="{html.escape(oauth_url, quote=True)}" target="_blank" rel="noopener noreferrer">{html.escape(texts["step1_btn"])}</a>'
+            f'<p class="hint">{html.escape(texts["step1_hint"])}</p>'
+            f'</div>'
+            f'<div class="card">'
+            f'<h2>{html.escape(texts["step2_head"])}</h2>'
+            f'<p class="hint">{html.escape(texts["step2_hint"])}</p>'
+            f'{err_html}'
+            f'<form method="POST" action="{html.escape(form_action, quote=True)}">'
+            f'<textarea name="redirect_url" rows="3" placeholder="{html.escape(placeholder, quote=True)}" '
+            f'spellcheck="false" autocomplete="off" autocapitalize="off" required></textarea>'
+            f'<button class="btn submit" type="submit">{html.escape(texts["submit_btn"])}</button>'
+            f'</form>'
+            f'</div>'
+        )
+
+    return (
+        f'<!DOCTYPE html><html lang="{lang_attr}"><head>'
+        '<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
+        f'<title>{html.escape(texts["title"])}</title>'
+        '<style>'
+        'body{margin:0;padding:16px;background:#0f171e;color:#f2f4f8;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;}'
+        '.wrap{max-width:520px;margin:0 auto;}'
+        'h1{font-size:1.25rem;margin:0 0 16px;color:#00a8e1;text-align:center;}'
+        'h2{font-size:1.05rem;margin:0 0 12px;}'
+        '.card{background:#1a242f;border-radius:10px;padding:16px;margin-bottom:14px;box-shadow:0 2px 8px rgba(0,0,0,.35);}'
+        '.card.ok{border:1px solid #2ecc71;text-align:center;}'
+        '.hint{font-size:.9rem;color:#c3ccd4;line-height:1.45;margin:10px 0 0;}'
+        '.btn{display:block;width:100%;box-sizing:border-box;text-align:center;padding:13px 16px;border:0;border-radius:8px;'
+        'background:#00a8e1;color:#fff;font-size:1rem;font-weight:600;text-decoration:none;cursor:pointer;}'
+        '.btn.submit{background:#1f8b4c;margin-top:10px;}'
+        'textarea{width:100%;box-sizing:border-box;padding:10px;border-radius:8px;border:1px solid #3c4d5e;'
+        'background:#0f171e;color:#fff;font-size:.9rem;resize:vertical;}'
+        '.err{background:#5a1e24;border:1px solid #e74c3c;color:#ffd6d6;padding:10px;border-radius:8px;margin-bottom:10px;font-size:.9rem;}'
+        '</style></head><body><div class="wrap">'
+        f'<h1>{html.escape(texts["title"])}</h1>{body}</div></body></html>'
+    ).encode('utf-8')
+
+
+class _ReusableThreadingHTTPServer(ThreadingHTTPServer):
+    allow_reuse_address = True
+    daemon_threads = True
+
+
+def _start_login_server(oauth_url, lang):
+    token = secrets.token_urlsafe(9)
+    expected_path = f'/{token}'
+    texts = {
+        'title': getString(30319),
+        'step1_head': getString(30320),
+        'step1_btn': getString(30321),
+        'step1_hint': getString(30322),
+        'step2_head': getString(30323),
+        'step2_hint': getString(30324),
+        'submit_btn': getString(30325),
+        'done_head': getString(30326),
+        'done_msg': getString(30327),
+        'invalid_msg': getString(30328),
+    }
+    state = {
+        'event': threading.Event(),
+        'lock': threading.Lock(),
+        'auth_code': None,
+        'on_received': None,
+    }
+
+    class _Handler(BaseHTTPRequestHandler):
+        def log_message(self, format, *args):
+            return
+
+        def _send_html(self, status, content):
+            self.send_response(status)
+            self.send_header('Content-Type', 'text/html; charset=utf-8')
+            self.send_header('Content-Length', str(len(content)))
+            self.send_header('Cache-Control', 'no-store')
+            self.end_headers()
+            self.wfile.write(content)
+
+        def _path_ok(self):
+            req_path = urlparse(self.path).path.rstrip('/')
+            return req_path == expected_path
+
+        def do_GET(self):
+            if not self._path_ok():
+                self.send_error(404)
+                return
+            with state['lock']:
+                done = state['auth_code'] is not None
+            page = _render_qr_login_page(oauth_url, expected_path, lang, texts, done=done)
+            self._send_html(200, page)
+
+        def do_POST(self):
+            if not self._path_ok():
+                self.send_error(404)
+                return
+            try:
+                length = int(self.headers.get('Content-Length', '0'))
+            except ValueError:
+                length = 0
+            if length <= 0 or length > 16384:
+                self.send_error(413 if length > 16384 else 400)
+                return
+            raw_body = self.rfile.read(length).decode('utf-8', errors='replace')
+            form = parse_qs(raw_body)
+            submitted = form.get('redirect_url', [''])[0]
+            code = _extract_auth_code(submitted)
+            if not code:
+                page = _render_qr_login_page(oauth_url, expected_path, lang, texts, error=texts['invalid_msg'])
+                self._send_html(400, page)
+                return
+            cb = None
+            with state['lock']:
+                if state['auth_code'] is None:
+                    state['auth_code'] = code
+                    state['event'].set()
+                    cb = state['on_received']
+            page = _render_qr_login_page(oauth_url, expected_path, lang, texts, done=True)
+            self._send_html(200, page)
+            if cb:
+                try:
+                    cb()
+                except Exception:
+                    pass
+
+    server = _ReusableThreadingHTTPServer(('0.0.0.0', 0), _Handler)
+    port = server.server_address[1]
+    lan_ip = _get_local_ip()
+    lan_url = f'http://{lan_ip}:{port}{expected_path}'
+    thread = threading.Thread(target=server.serve_forever, kwargs={'poll_interval': 0.2}, daemon=True)
+    thread.start()
+    Log(f'QR login helper server listening on {lan_ip}:{port}', Log.DEBUG)
+    return server, lan_url, state
+
+
+def _browser_qr_login(user, clientid, challenge):
+    oauth_url = _build_oauth_url(user, clientid, challenge)
+    server, lan_url, state = _start_login_server(oauth_url, user.get('lang', 'en_US'))
+    qr_path = OSPJoin(_g.DATA_PATH, f'qr-login-{int(time.time() * 1000)}.png')
+    stop_watcher = threading.Event()
+    dlg = None
+    try:
+        png_bytes = make_qr_png(lan_url, scale=10, border=4)
+        with xbmcvfs.File(qr_path, 'w') as fp_qr:
+            fp_qr.write(bytearray(png_bytes))
+
+        dlg = _QRLoginDialog(getString(30314), qr_path, lan_url)
+        with state['lock']:
+            state['on_received'] = dlg.close
+
+        monitor = xbmc.Monitor()
+
+        def _watch():
+            while not stop_watcher.is_set():
+                if state['event'].is_set() or monitor.abortRequested():
+                    try:
+                        dlg.close()
+                    except Exception:
+                        pass
+                    break
+                state['event'].wait(0.25)
+
+        watcher = threading.Thread(target=_watch, daemon=True)
+        watcher.start()
+        dlg.doModal()
+    finally:
+        stop_watcher.set()
+        try:
+            server.shutdown()
+            server.server_close()
+        except Exception:
+            pass
+        if xbmcvfs.exists(qr_path):
+            xbmcvfs.delete(qr_path)
+
+    auth_code = state['auth_code']
+    if not auth_code and dlg and dlg.manual_requested:
+        while True:
+            keyboard = xbmc.Keyboard('', getString(30318))
+            keyboard.doModal()
+            if not keyboard.isConfirmed():
+                return None
+            auth_code = _extract_auth_code(keyboard.getText())
+            if auth_code:
+                break
+            _g.dialog.ok(getString(30200), getString(30318))
+
+    if not auth_code:
+        return None
+    return f"https://www.{user['sidomain']}/ap/maplanding?{urlencode({'openid.oa2.authorization_code': auth_code})}"
+
+
 def LogIn(retToken=False):
     def _setLoginPW(visible):
         keyboard = xbmc.Keyboard('', getString(30003))
@@ -412,6 +695,20 @@ def LogIn(retToken=False):
             return False
         return True
 
+    def _finalize_login(user, cj, addUser):
+        if _s.multiuser:
+            user['name'] = _g.dialog.input(getString(30135), user['name'])
+            if not user['name']:
+                return False
+
+        remLoginData(False)
+        _s.login_acc = user['name']
+        if not _s.multiuser:
+            _g.dialog.ok(getString(30215), f"{getString(30014)} {user['name']}")
+
+        addUser(user)
+        return getToken(user) if retToken else cj
+
     class LoginLocked(Exception):
         pass
 
@@ -442,6 +739,26 @@ def LogIn(retToken=False):
         if False is user[1]:
             return False
         user = user[0]
+
+        sel = _g.dialog.select(getString(30008).split('…')[0], [getString(30314), getString(30315)])
+        if sel < 0:
+            return False
+
+        if sel == 0:
+            clientid = b16encode(f"{user['deviceid']}#{_g.dtid_android_parent}".encode()).decode().lower()
+            verifier = urlsafe_b64encode(os.urandom(32)).rstrip(b"=")
+            challenge = urlsafe_b64encode(sha256(verifier).digest()).rstrip(b"=")
+            url = _browser_qr_login(user, clientid, challenge)
+            if not url:
+                return False
+            user = registerDevice(url, user, verifier, clientid)
+            if not user:
+                return False
+            cj = requests.cookies.RequestsCookieJar()
+            for cname, cval in (user.get('cookie') or {}).items():
+                cj.set(cname, cval)
+            return _finalize_login(user, cj, addUser)
+
         password = ''
         keyboard = xbmc.Keyboard('', getString(30002))
         keyboard.doModal()
@@ -573,18 +890,7 @@ def LogIn(retToken=False):
                         name = getString(30209) if name is None else name.get_text(strip=True)
                     user.update({'name': name, 'cookie': cj.get_dict()})
 
-                if _s.multiuser:
-                    user['name'] = _g.dialog.input(getString(30135), user['name'])
-                    if not user['name']:
-                        return False
-
-                remLoginData(False)
-                _s.login_acc = user['name']
-                if not _s.multiuser:
-                    _g.dialog.ok(getString(30215), f"{getString(30014)} {user['name']}")
-
-                addUser(user)
-                return getToken(user) if retToken else cj
+                return _finalize_login(user, cj, addUser)
             elif 'message_error' in response:
                 writeConfig('login_pass', '')
                 msg = soup.find('div', attrs={'id': 'message_error'})
@@ -1175,3 +1481,46 @@ class _ProgressDialog(pyxbmct.AddonDialogWindow):
 
     def cancel(self):
         self.iscanceled = True
+
+
+class _QRLoginDialog(pyxbmct.AddonDialogWindow):
+    def __init__(self, title, qr_path, lan_url):
+        super(_QRLoginDialog, self).__init__(title)
+        self.setGeometry(700, 560, 10, 2)
+        self.qr_path = qr_path
+        self.lan_url = lan_url
+        self.manual_requested = False
+        self.cancelled = False
+        self.tb_info = pyxbmct.TextBox()
+        self.img_qr = pyxbmct.Image('', aspectRatio=2)
+        self.btn_manual = pyxbmct.Button(getString(30317))
+        self.btn_cancel = pyxbmct.Button(getString(30123))
+        self.set_controls()
+        self.set_navigation()
+
+    def set_controls(self):
+        self.placeControl(self.tb_info, 0, 0, rowspan=2, columnspan=2)
+        self.placeControl(self.img_qr, 2, 0, rowspan=7, columnspan=2, pad_y=6)
+        self.placeControl(self.btn_manual, 9, 0)
+        self.placeControl(self.btn_cancel, 9, 1)
+        self.connect(self.btn_manual, self._manual)
+        self.connect(self.btn_cancel, self._cancel)
+        self.connect(pyxbmct.ACTION_NAV_BACK, self._cancel)
+        self.tb_info.setText(f'{getString(30316)}\n[B]{self.lan_url}[/B]')
+        self.img_qr.setImage(self.qr_path, False)
+
+    def set_navigation(self):
+        self.btn_manual.controlRight(self.btn_cancel)
+        self.btn_manual.controlLeft(self.btn_cancel)
+        self.btn_cancel.controlRight(self.btn_manual)
+        self.btn_cancel.controlLeft(self.btn_manual)
+        self.setFocus(self.btn_manual)
+
+    def _manual(self):
+        self.manual_requested = True
+        self.close()
+
+    def _cancel(self):
+        self.cancelled = True
+        self.close()
+

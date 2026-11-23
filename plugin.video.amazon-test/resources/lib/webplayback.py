@@ -59,32 +59,41 @@ def _detail(asin):
 
 
 def find_envelope(asin):
-    """ The playback envelope of the title from its detail page (state/action/<ASIN>/.../payload/playback) """
+    """ Envelope and title ID of the feature's playback action on the detail page (state/action/<ASIN>/.../playback)
+
+    The page also holds envelopes of trailers (secondaryActions, autoplayTrailerHero), those are skipped. The playback ID
+    of a movie is its GTI, of an episode its ASIN.
+    """
     data = _detail(asin)
     best = None
     for node, path in _walk(data):
         env = _envelope_value(node.get('playbackEnvelope'))
-        if not env or node.get('isTrailer') or node.get('videoMaterialType') == 'Trailer':
+        if not env:
             continue
-        if node.get('playbackID') == asin or node.get('titleID') == asin:
+        vmt = node.get('videoMaterialType')
+        if node.get('isTrailer') or vmt == 'Trailer' or (vmt is None and node.get('isTrailer') is None):
+            continue
+        pid = node.get('playbackID') or node.get('titleID') or ''
+        if pid == asin:
             score = 0
         elif asin in path:
             score = 1
         else:
             continue
+        if node.get('entitlementType') in ('PURCHASE', 'RENTAL', 'PRIME', 'SUBSCRIPTION', 'FREE'):
+            score -= 0.5
         if best is None or score < best[0]:
-            best = (score, env, path)
+            best = (score, env, pid, path)
     if best is None:
         Log(f'[Web] No playback envelope for {asin} on its detail page', Log.INFO)
-        return None
-    Log(f'[Web] Playback envelope of {asin} at {"/".join(map(str, best[2]))}', Log.DEBUG)
-    return best[1]
+        return None, None
+    Log(f'[Web] Playback envelope of {asin} at {"/".join(map(str, best[3]))}', Log.DEBUG)
+    return best[1], best[2] if best[2].startswith('amzn1.dv.gti.') or best[2] == asin else asin
 
-
-def _params(asin):
+def _params(title_id):
     g = Globals()
     return {'deviceID': g.deviceID, 'deviceTypeID': WEB_DTID, 'gascEnabled': str(g.UsePrimeVideo).lower(),
-            'marketplaceID': g.MarketID, 'firmware': '1', 'titleId': asin}
+            'marketplaceID': g.MarketID, 'firmware': '1', 'titleId': title_id}
 
 
 def _request_body(envelope):
@@ -177,7 +186,7 @@ def _skip_elements(timecodes):
 def prepare(asin):
     """ Playback data for inputstream.adaptive, or None to fall back to the classic API """
     g, s = Globals(), Settings()
-    envelope = find_envelope(asin)
+    envelope, title_id = find_envelope(asin)
     if not envelope:
         return None
     cookie = MechanizeLogin(preferToken=False)
@@ -187,7 +196,7 @@ def prepare(asin):
 
     ua = getConfig('UserAgent')
     origin = {'Origin': g.BaseUrl, 'Referer': g.BaseUrl + '/'}
-    url = f'{g.ATVUrl}/playback/prs/GetVodPlaybackResources?' + urlencode(_params(asin))
+    url = f'{g.ATVUrl}/playback/prs/GetVodPlaybackResources?' + urlencode(_params(title_id))
     data = getURL(url, useCookie=cookie, postdata=json.dumps(_request_body(envelope)), silent=True,
                   headers=dict(origin, **{'Content-Type': 'text/plain;charset=UTF-8', 'Accept': '*/*'}))
     if not data:
@@ -205,7 +214,7 @@ def prepare(asin):
         return None
     cert = ((data.get('widevineServiceCertificate') or {}).get('result') or {}).get('encodedServiceCertificate')
 
-    lic_url = f'{g.ATVUrl}/playback/drm-vod/GetWidevineLicense?' + urlencode(_params(asin))
+    lic_url = f'{g.ATVUrl}/playback/drm-vod/GetWidevineLicense?' + urlencode(_params(title_id))
     req_headers = dict(origin, **{'Cookie': '; '.join(f'{k}={v}' for k, v in cookie.items()), 'User-Agent': ua,
                                   'X-Pv-Envelope': envelope, 'X-Pv-Handoff': handoff})
     timecodes = {'skipElements': _skip_elements(data.get('transitionTimecodes') or {})}

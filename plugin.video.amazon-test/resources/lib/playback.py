@@ -402,34 +402,50 @@ def PlayVideo(name, asin, adultstr, streamtype, forcefb=0):
             Log('No Inputstream Addon found or activated')
             return False
 
-        # The following code can run two times. In the first iteration, token auth
-        # will be prefered. If the request is successful, the loop will be aborted.
-        # If not, then the second iteration will fall back to cookie authentification
-        # and try again. This is neccessary for content like Amazon Freevee, which is not
-        # available though token based authentification.
+        # Without Widevine L1 the web player's API licenses up to 960x540, the classic API only SD (webplayback.py)
+        web = None
+        if streamtype == 0 and not _s.wvl1_device and _s.l3_web_api:
+            from .webplayback import prepare as web_prepare
+            try:
+                web = web_prepare(asin)
+            except Exception as e:
+                import traceback
+                Log(f'[Web] Web player API failed: {e} {traceback.format_exc()}', Log.ERROR)
+            if not web:
+                Log('[Web] Falling back to the classic playback API', Log.INFO)
+        if web:
+            mpd, subs, timecodes = web['mpd'], web['subs'], web['timecodes']
+            licURL, req_param, headers, req_headers = web['lic_url'], web['req_param'], web['headers'], web['req_headers']
+            cookie, dtid = web['cookie'], _g.dtid_web
+        else:
+            # The following code can run two times. In the first iteration, token auth
+            # will be prefered. If the request is successful, the loop will be aborted.
+            # If not, then the second iteration will fall back to cookie authentification
+            # and try again. This is neccessary for content like Amazon Freevee, which is not
+            # available though token based authentification.
 
-        for preferTokenToCookie in ([True, False] if _s.wvl1_device and streamtype != 2 else [False]):
-            playback_vars = _getPlaybackVars(preferTokenToCookie)
-            if not playback_vars:
-                _g.dialog.notification(getString(30203), getString(30200), xbmcgui.NOTIFICATION_ERROR)
-                Log('Login error at playback')
+            for preferTokenToCookie in ([True, False] if _s.wvl1_device and streamtype != 2 else [False]):
+                playback_vars = _getPlaybackVars(preferTokenToCookie)
+                if not playback_vars:
+                    _g.dialog.notification(getString(30203), getString(30200), xbmcgui.NOTIFICATION_ERROR)
+                    Log('Login error at playback')
+                    return False
+                cookie, req_param, headers, dtid, req_headers = playback_vars
+
+                success, data = getURLData('catalog/GetPlaybackResources', asin, extra=True, vMT=vMT, dRes=dRes, useCookie=cookie, devicetypeid=dtid,
+                                           proxyEndpoint=(None if bypassproxy else 'gpr'), opt=opt)
+                if success or not isinstance(cookie, dict):
+                    break
+
+            mpd, subs, timecodes = _ParseStreams(success, data, retmpd=True, bypassproxy=bypassproxy, webid=dtid == _g.dtid_web, streamtype=streamtype)
+            if not mpd:
+                _g.dialog.notification(getString(30203), subs, xbmcgui.NOTIFICATION_ERROR)
                 return False
-            cookie, req_param, headers, dtid, req_headers = playback_vars
 
-            success, data = getURLData('catalog/GetPlaybackResources', asin, extra=True, vMT=vMT, dRes=dRes, useCookie=cookie, devicetypeid=dtid,
-                                       proxyEndpoint=(None if bypassproxy else 'gpr'), opt=opt)
-            if success or not isinstance(cookie, dict):
-                break
-
-        mpd, subs, timecodes = _ParseStreams(success, data, retmpd=True, bypassproxy=bypassproxy, webid=dtid == _g.dtid_web, streamtype=streamtype)
-        if not mpd:
-            _g.dialog.notification(getString(30203), subs, xbmcgui.NOTIFICATION_ERROR)
-            return False
-
-        licURL = getURLData('catalog/GetPlaybackResources', asin, devicetypeid=dtid, opt=req_param, extra=True, vMT=vMT, dRes='Widevine2License', retURL=True)
-        if not bypassproxy:
-            # through the proxy, which logs Amazon's reason when it refuses the license
-            licURL = f'http://{_s.proxyaddress}/lic/{quote_plus(licURL)}'
+            licURL = getURLData('catalog/GetPlaybackResources', asin, devicetypeid=dtid, opt=req_param, extra=True, vMT=vMT, dRes='Widevine2License', retURL=True)
+            if not bypassproxy:
+                # through the proxy, which logs Amazon's reason when it refuses the license
+                licURL = f'http://{_s.proxyaddress}/lic/{quote_plus(licURL)}'
         skip = timecodes.get('skipElements')
         Log(f'Skip Items: {skip}', Log.DEBUG)
 
@@ -455,7 +471,9 @@ def PlayVideo(name, asin, adultstr, streamtype, forcefb=0):
             return True
 
         Log(f'Using {_g.is_addon} Version: {is_version}')
-        if streamtype == 0 and not _s.wvl1_device:
+        if web:
+            Log('No Widevine L1: web player API, up to 960x540', Log.INFO)
+        elif streamtype == 0 and not _s.wvl1_device:
             Log('No Widevine L1: ' + ('requesting HD, the license may be refused' if _s.l3_request_hd else 'requesting SD'))
 
         listitem = xbmcgui.ListItem(label=title, path=mpd)
@@ -475,6 +493,13 @@ def PlayVideo(name, asin, adultstr, streamtype, forcefb=0):
         if list(map(int, is_version.split('.'))) < [22, 1, 5]:
             listitem.setProperty(f'{_g.is_addon}.license_type', 'com.widevine.alpha')
             listitem.setProperty(f'{_g.is_addon}.license_key', licURL + req_param)
+            if web and web.get('cert'):
+                listitem.setProperty(f'{_g.is_addon}.server_certificate', web['cert'])
+        elif web:
+            # raw challenge to the proxy, which answers with the bare license
+            drm_cfg = {'com.widevine.alpha': {'force_single_session': True,
+                                              'license': {'server_url': licURL, 'req_headers': urlencode(req_headers)}}}
+            listitem.setProperty('inputstream.adaptive.drm', json.dumps(drm_cfg))
         else:
             drm_cfg = {'com.widevine.alpha':
                            {'force_single_session': True,

@@ -172,7 +172,7 @@ class Settings(Singleton):
         'audio_description', 'pv_episode_thumbnails', 'tld_episode_thumbnails', 'use_h265',
         'enable_atmos', 'profiles', 'show_pass', 'enable_uhd', 'show_recents',
         'preload_seasons', 'preload_all_seasons', 'wvl1_device', 'search_history',
-        'hide_trailers', 'export_not_aired', 'show_cats', 'l3_request_hd'
+        'hide_trailers', 'export_not_aired', 'show_cats', 'l3_request_hd', 'l3_web_api'
     ])
     _BOOL_FALSE_SETTINGS = frozenset([
         'json_dump_raw', 'ssl_verif', 'proxy_mpdalter'

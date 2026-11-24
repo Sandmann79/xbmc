@@ -49,6 +49,7 @@ _ALLOWED_HOST_SUFFIXES = (
     '.footprint.net',
     '.level3.net',
     '.media-amazon.com',
+    '.amazon.fastly-edge.com',
 )
 
 # Pre-compiled regex patterns for TTMLv2 to SRT subtitle conversion (_CleanSubs) and MPD parsing
@@ -60,6 +61,7 @@ _RE_SUB_PARAGRAPH = re.compile(r'<(?:tt:)?p begin="([^"]+)"[^>]*end="([^"]+)"[^>
 _RTL_MARK = _uni_lookup('RIGHT-TO-LEFT MARK')
 _RTL_EMBEDDING = _uni_lookup('RIGHT-TO-LEFT EMBEDDING')
 _RE_SUB_ARABIC_RTL = re.compile(rf'^(?!{_RTL_MARK}|{_RTL_EMBEDDING})', flags=re.MULTILINE)
+_RE_MPD_BASEURL_REL = re.compile(r'<BaseURL>(?![a-z]+://)')
 _RE_MPD_PERIOD = re.compile(r'(<Period\b[^>]*>)(.*?)(</Period>)', flags=re.DOTALL)
 _RE_MPD_ROLE_SELF = re.compile(r'<Role\b[^>]*/>')
 _RE_MPD_ROLE_PAIR = re.compile(r'<Role\b[^>]*>.*?</Role>', flags=re.DOTALL)
@@ -208,7 +210,11 @@ class ProxyHTTPD(BaseHTTPRequestHandler):
             self.raw_data = self.rfile.read(length)
         else:
             self.raw_data = None
-        data = {k: v for k, v in parse_qsl(self.raw_data)} if self.raw_data else None
+        try:
+            data = {k: v for k, v in parse_qsl(self.raw_data)} if self.raw_data else None
+        except UnicodeDecodeError:
+            # binary body (raw Widevine challenge of the web player license), Python 3.8 fails to read it as form data
+            data = None
         return path, headers, data
 
     def _ForwardRequest(self, method, endpoint, headers, data, stream=False, use_auth=True):
@@ -308,6 +314,8 @@ class ProxyHTTPD(BaseHTTPRequestHandler):
             self._AlterGPR(unquote(path[1]), headers, data)
         elif ('lic' == path[0]) and (2 == len(path)):
             self._ForwardLicense(unquote(path[1]), headers)
+        elif ('wvlic' == path[0]) and (2 == len(path)):
+            self._ForwardWebLicense(unquote(path[1]), headers)
         else:
             Log('[PS] Invalid request received', Log.DEBUG)
             self.send_error(501, 'Invalid request')
@@ -319,6 +327,9 @@ class ProxyHTTPD(BaseHTTPRequestHandler):
 
         if ('mpd' == path[0]) and (2 == len(path)):
             self._AlterMPD(unquote(path[1]), headers, data)
+        elif ('mpd' == path[0]) and (3 == len(path)):
+            # web player manifest plus the Dolby audio of the unfiltered manifest
+            self._AlterMPD(unquote(path[1]), headers, data, extra_audio=unquote(path[2]))
         elif ('subtitles' == path[0]) and (3 == len(path)):
             self._TranscodeSubtitle(unquote(path[1]), headers, data, path[2])
         else:
@@ -676,7 +687,88 @@ class ProxyHTTPD(BaseHTTPRequestHandler):
                 self._refused_licenses[endpoint] = content
         self._SendResponse(status_code, headers, content)
 
-    def _AlterMPD(self, endpoint, headers, data):
+    def _ForwardWebLicense(self, endpoint, headers):
+        """ License through the web player API (webplayback.py), wraps the raw challenge into its JSON body """
+        import json
+        from base64 import b64encode, b64decode
+
+        if not _is_safe_upstream_url(endpoint):
+            Log(f'[PS] Blocked disallowed License URL: {endpoint}', Log.ERROR)
+            self.send_error(403, 'Forbidden upstream host')
+            return
+        lower = {k.lower(): k for k in headers}
+        envelope = headers.pop(lower.get('x-pv-envelope', ''), None)
+        handoff = headers.pop(lower.get('x-pv-handoff', ''), None)
+        cache_key = f'{endpoint}#{handoff}'
+        if cache_key in self._refused_licenses:
+            self._SendResponse(403, {'Content-Type': 'application/json'}, self._refused_licenses[cache_key])
+            return
+        headers = {k: v for k, v in headers.items() if k.lower() not in ('content-length', 'content-type')}
+        headers['Content-Type'] = 'text/plain;charset=UTF-8'
+        body = json.dumps({'includeHdcpTestKey': True, 'playbackEnvelope': envelope, 'sessionHandoffToken': handoff,
+                           'licenseChallenge': b64encode(self.raw_data or b'').decode('ascii')})
+        status_code, _, content = self._ForwardRequest('post', endpoint, headers, body, use_auth=False)
+        if status_code is None:
+            return
+        try:
+            lic = json.loads(content).get('widevineLicense') or {}
+        except ValueError:
+            lic = {}
+        if not lic.get('license'):
+            Log(f'[PS] Web license refused (HTTP {status_code}): {content[:2000]}', Log.ERROR)
+            self._refused_licenses[cache_key] = content
+            self._SendResponse(403, {'Content-Type': 'application/json'}, content)
+            return
+        keys = [(k.get('keyType'), (k.get('cdmUsageLevel') or '').replace('CDM_LEVEL_', ''), (k.get('hdcp') or {}).get('hdcp'))
+                for k in (lic.get('metadata') or {}).get('keyMetadata', [])]
+        Log(f'[PS] Web license granted, keys {keys}', Log.DEBUG)
+        data = b64decode(lic['license'])
+        try:
+            self._SendHeaders(200, {'Content-Type': 'application/octet-stream', 'Content-Length': len(data), 'Connection': 'Keep-Alive'})
+            self.wfile.write(data)
+        except OSError as exc:
+            Log(f'[PS] Client disconnected while sending the license: {exc}', Log.DEBUG)
+
+    def _InjectAudio(self, mpd, url):
+        """ Adds the Dolby Digital Plus audio of the unfiltered manifest to the web player manifest
+
+        The web player API only lists AAC stereo. The unfiltered manifest of the same title also holds the DD+ tracks,
+        encrypted with the same audio key the web license grants. Tracks encrypted with the video key are skipped, that
+        key can only be used by the CDM's video decoder.
+        """
+        if not _is_safe_upstream_url(url):
+            Log(f'[PS] Blocked disallowed MPD URL: {url}', Log.ERROR)
+            return mpd
+        status_code, _, full = self._ForwardRequest('get', url, {}, None, use_auth=False)
+        if status_code != 200 or not full:
+            Log(f'[PS] No unfiltered manifest (HTTP {status_code}), AAC audio only', Log.DEBUG)
+            return mpd
+        set_re = re.compile(r'<AdaptationSet\b.*?</AdaptationSet>', re.DOTALL)
+        kid_re = re.compile(r'default_KID="([^"]+)"', re.IGNORECASE)
+        web_periods, full_periods = list(_RE_MPD_PERIOD.finditer(mpd)), list(_RE_MPD_PERIOD.finditer(full))
+        if not web_periods or len(web_periods) != len(full_periods):
+            Log(f'[PS] Manifest periods differ ({len(web_periods)}/{len(full_periods)}), AAC audio only', Log.DEBUG)
+            return mpd
+        base = url.rsplit('/', 1)[0] + '/'
+        parts, last, added = [], 0, 0
+        for web, unfiltered in zip(web_periods, full_periods):
+            sets = set_re.findall(web.group(2))
+            audio_kids = {k.lower() for s in sets if 'contentType="audio"' in s for k in kid_re.findall(s)}
+            video_kids = {k.lower() for s in sets if 'contentType="video"' in s for k in kid_re.findall(s)}
+            extra = []
+            for s in set_re.findall(unfiltered.group(2)):
+                kids = {k.lower() for k in kid_re.findall(s)}
+                if 'contentType="audio"' not in s or 'ec-3' not in s or not kids or not kids <= audio_kids or kids & video_kids:
+                    continue
+                extra.append(re.sub(r'<BaseURL>(?![a-z]+://)', '<BaseURL>' + base, s))
+            parts += [mpd[last:web.start(3)], ''.join(extra)]
+            last = web.start(3)
+            added += len(extra)
+        parts.append(mpd[last:])
+        Log(f'[PS] Added {added} Dolby Digital Plus audio sets from the unfiltered manifest', Log.DEBUG)
+        return ''.join(parts)
+
+    def _AlterMPD(self, endpoint, headers, data, extra_audio=None):
         """ MPD alteration for better language parsing """
         if not _is_safe_upstream_url(endpoint):
             Log(f'[PS] Blocked disallowed MPD URL: {endpoint}', Log.ERROR)
@@ -699,11 +791,13 @@ class ProxyHTTPD(BaseHTTPRequestHandler):
                 r.encoding = 'utf-8'
             raw_mpd = r.content
             mpd = raw_mpd.decode(r.encoding, errors='replace')
+            if extra_audio:
+                mpd = self._InjectAudio(mpd, extra_audio)
 
             def _rebase(data):
                 data = _RE_MPD_ROLE_SELF.sub('', data)
                 data = _RE_MPD_ROLE_PAIR.sub('', data)
-                data = data.replace('<BaseURL>', '<BaseURL>' + baseurl)
+                data = _RE_MPD_BASEURL_REL.sub('<BaseURL>' + baseurl, data)
                 data = _RE_MPD_SEG_MEDIA_REL.sub(r'\1' + baseurl, data)
                 data = _RE_MPD_SEG_INIT_REL.sub(r'\1' + baseurl, data)
                 data = _RE_MPD_SEG_MEDIA_ROOT.sub(r'\1' + rooturl + '/', data)

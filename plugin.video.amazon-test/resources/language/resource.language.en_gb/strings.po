@@ -960,6 +960,10 @@ msgctxt "#30304"
 msgid "Request HD on devices without Widevine L1 (Amazon may refuse the license)"
 msgstr ""
 
+msgctxt "#30305"
+msgid "Use the web player interface without Widevine L1 (up to 960x540 instead of SD)"
+msgstr ""
+
 msgctxt "#30310"
 msgid "Video quality"
 msgstr ""

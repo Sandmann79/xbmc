@@ -949,6 +949,10 @@ msgctxt "#30304"
 msgid "Request HD on devices without Widevine L1 (Amazon may refuse the license)"
 msgstr "HD auf Geräten ohne Widevine L1 anfordern (Amazon kann die Lizenz verweigern)"
 
+msgctxt "#30305"
+msgid "Use the web player interface without Widevine L1 (up to 960x540 instead of SD)"
+msgstr "Web-Player-Schnittstelle ohne Widevine L1 nutzen (bis 960x540 statt SD)"
+
 msgctxt "#30310"
 msgid "Video quality"
 msgstr "Videoqualität"
